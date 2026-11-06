@@ -33,6 +33,8 @@ import org.jetbrains.annotations.Nullable;
  *   <li><b>R</b>: bij een storing een tap-rack; anders herladen (met een magazijnpouch kies je een magazijn, zonder gooit
  *       het pistool zijn magazijn eruit); <b>sneak + R</b>: met de hand een patroon in de kamer;</li>
  *   <li><b>R met een magazijn in je hand</b>: een patroon erin (inhouden = doorgaan);</li>
+ *   <li><b>U</b> (hoofdstuk 54, jouw wens: unload): met een pistool het magazijn eruit (in je pouch als er plek is), zonder
+ *       magazijn de patroon uit de kamer; met een magazijn in je hand één patroon eruit (inhouden = doorgaan);</li>
  *   <li><b>H</b> bekijkt het pistool; sprinten laat het zakken.</li>
  * </ul>
  * Een handeling vraag je aan de server (FirearmActionPayload); die zegt hoe lang hij duurt, en zo lang loopt hier de
@@ -192,6 +194,17 @@ public final class FirearmControl {
                     repeatAt = now + 4;
                 }
             }
+            // U: een patroon eruit; inhouden = doorgaan.
+            boolean unload = false;
+            while (ImtKeys.GUN_UNLOAD.consumeClick()) {
+                unload = true;
+            }
+            if (unload || (ImtKeys.GUN_UNLOAD.isDown() && now >= repeatAt)) {
+                if (!busy()) {
+                    request(Firearms.ActionKind.UNLOAD_ROUND, 0);
+                    repeatAt = now + 4;
+                }
+            }
             drainInspect();
             return;
         }
@@ -209,6 +222,9 @@ public final class FirearmControl {
 
         while (ImtKeys.GUN_RELOAD.consumeClick()) {
             onReloadKey(player, main);
+        }
+        while (ImtKeys.GUN_UNLOAD.consumeClick()) {
+            onUnloadKey(player, main);
         }
         while (ImtKeys.GUN_INSPECT.consumeClick()) {
             if (action == null && aim < 0.1f) {
@@ -229,6 +245,9 @@ public final class FirearmControl {
 
     private static void drainKeys() {
         while (ImtKeys.GUN_RELOAD.consumeClick()) {
+            // niets
+        }
+        while (ImtKeys.GUN_UNLOAD.consumeClick()) {
             // niets
         }
         drainInspect();
@@ -269,6 +288,27 @@ public final class FirearmControl {
         request(Firearms.ActionKind.EJECT_MAG, 0);
     }
 
+    /** U met een pistool (hoofdstuk 54): het magazijn eruit, of zonder magazijn de patroon uit de kamer. */
+    private static void onUnloadKey(LocalPlayer player, ItemStack gun) {
+        if (busy() || drawn(0) < 1) {
+            return;
+        }
+        inspectAt = -1;
+        if (FirearmItem.jam(gun) != FirearmItem.JAM_NONE) {
+            player.displayClientMessage(Component.translatable("gun.imttech.jammed_unload").withStyle(ChatFormatting.RED), true);
+            return;
+        }
+        if (FirearmItem.hasMagazine(gun)) {
+            request(Firearms.ActionKind.EJECT_MAG, 0);
+            return;
+        }
+        if (FirearmItem.chambered(gun)) {
+            request(Firearms.ActionKind.UNLOAD_CHAMBER, 0);
+            return;
+        }
+        player.displayClientMessage(Component.translatable("gun.imttech.nothing_to_unload").withStyle(ChatFormatting.RED), true);
+    }
+
     /** Een handeling aan de server vragen; zodra hij antwoordt, begint de animatie. */
     public static void request(Firearms.ActionKind kind, int arg) {
         waiting = true;
@@ -298,7 +338,7 @@ public final class FirearmControl {
         inspectAt = -1;
         aim = 0;
         LocalPlayer player = Minecraft.getInstance().player;
-        if (player != null && kind == Firearms.ActionKind.LOAD_ROUND) {
+        if (player != null && (kind == Firearms.ActionKind.LOAD_ROUND || kind == Firearms.ActionKind.UNLOAD_ROUND)) {
             play(player, ModSounds.GLOCK_ROUND_LOAD.get(), 0.5f);
         }
     }

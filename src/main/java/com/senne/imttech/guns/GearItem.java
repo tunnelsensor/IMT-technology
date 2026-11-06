@@ -6,9 +6,14 @@ import com.senne.imttech.weapons.GrenadeItem;
 import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.level.Level;
 
 /**
  * De dingen die je draagt om snel bij je wapens te kunnen (hoofdstuk 52, stap 2, jouw wens): de <b>Holster</b> (één
@@ -60,6 +65,15 @@ public class GearItem extends Item {
 
     public Kind kind() {
         return kind;
+    }
+
+    /** Rechtsklik met de holster of pouch in je hand: openen, om hem te vullen (hoofdstuk 54). */
+    @Override
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+        if (player instanceof ServerPlayer serverPlayer) {
+            Gear.openHeld(serverPlayer, hand);
+        }
+        return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand), level.isClientSide);
     }
 
     /** Wat voor ding dit is, of null. */

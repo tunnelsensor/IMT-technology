@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 405 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 408 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -4567,6 +4567,114 @@ leest, uitvoert en dan leegmaakt".
       staan nu in de volgorde van het spel, elk met een eigen kopje (De Power Battery, Handboeien, Autorisatiecodes, De
       I.M.T Phone, Torens en bunkers uit kamers, Vuurwapens: de Glock 19).
 - [x] **4. De notities zijn leeg.**
+
+---
+
+### 54. Uit je showcase-notities van 6 november, en een unload (6 november)
+
+Jouw vraag: "Ik wil dat je de notities van de showcase leest, uitvoert en dan leegmaakt. Zijn er dingen niet duidelijk,
+vraag het dan. Nog één ding dat ik niet in de notities had gezet maar wel wil: een **unload** voor zowel een gun mag uit een
+gun als kogel per kogel uit een mag." Vierentwintig notities bij negentien functies. De kleine en duidelijke zijn in stap 1
+gebouwd (hieronder); de grote (Raven-soldaten, torentjes, raiddrones, de toren, het datacenter, de handboeien, het
+schild, de koepel, het laserkanon, apps op de kern) komen in stap 2, en bij twee notities heb ik een vraag (onderaan).
+
+**Mijn invulling** (zeg het als je het anders wil):
+- **Unload** zit op **U** (met een pistool of magazijn in je hand doet U dan niet de ping): met het pistool gooit U het
+  magazijn eruit (ook met een pouch om: het gaat erin als er plek is, anders in je inventaris); zonder magazijn trekt U de
+  patroon uit de kamer (de slede naar achteren, de patroon springt er rechts uit, in je inventaris); met een magazijn in je
+  hand haalt U er één patroon uit (inhouden gaat door). Zit er nog een magazijn met patronen in, dan kan de kamer niet
+  leeg (eerst het magazijn eruit), en bij een storing eerst de tap-rack. Twee nieuwe tijden onder `[guns]`
+  (`unloadRoundTicks` 6, `unloadChamberTicks` 16).
+- **Gun skills** staan niet meer in het G-menu (jouw notitie 11) maar in het **wiel** (linker Alt), als laatste optie; de
+  toets "Gun skills" blijft (standaard geen toets).
+- **De pouches openen** (notitie 114): in het wiel staat voor elke pouch die je draagt "Open ...", en er zijn vijf nieuwe
+  toetsen zonder standaardtoets (Quickdraw: pistol, Quickdraw: grenade, Open the holster, Open the grenade pouch, Open the
+  magazine pouch). Rechtsklik met een holster of pouch in je hand opent hem ook (om hem te vullen voor je hem aantrekt).
+  Het scherm (`GearPouchMenu`/`GearPouchScreen`) heeft de vakjes van de pouch boven je inventaris; shift-klik werkt;
+  het vakje van je werkbalk met de open pouch erin zit op slot.
+- **Het laadstation** (notities 59 en 60): de balk onder de bril, het upgrade-vakje met zijn pijl én het redstone-vakje
+  (het vierkant naast de grote balk) zijn weg: het station laadt alleen nog, uit het net. Redstone gaat er dus niet meer
+  in (`energyPerRedstone` en `energyPerRedstoneBlock` zijn uit de config); zet een zonnepaneel of warmtegenerator met een
+  kabel. Upgrades bouw je in aan de **harnas-werkbank**: de bril is daar het **vierde stuk** op het hologram (boven de
+  borstplaat), je legt hem erop en bouwt er een batterij-, scanner- of drone-upgrade in zoals bij het harnas (60 ticks,
+  stroom). **Sneak + rechtsklik op de werkbank** kiest het volgende stuk (borst, broek, laarzen, bril: oranje hoekjes op
+  het hologram), een gewone klik op de werkbank werkt op dat stuk (ook met iets in je hand). Een bril bouwen kan niet
+  (geen blauwdruk: die ligt in de toren).
+- **De generatoren** (notitie 61): geen brilvakje meer in het zonnepaneel en de warmtegenerator; alleen de warmtegenerator
+  houdt zijn brandstofvakje (rechts), STORED en MADE SO FAR staan groot in het midden. Een bril die er nog in lag bij
+  het laden van een oude wereld, is weg.
+- **De Gunsmith Table** (notitie 113): de loop, de veren en de slagpin zitten **onder de slede**: zit de slede erop, dan
+  kun je er niet bij (geen slepen, geen [x], en erin leggen kan ook niet) tot de slede eraf is, zoals bij een echte
+  Glock. De losse onderdelen liggen verder uit elkaar (slede erboven, loop en veren ervoor, slagpin erachter, trekker
+  eronder), het pistool is iets kleiner (zoom 6,6), en de namen vallen nooit buiten de tafel of achter het 3D-model.
+- **Battery Glass** (notitie 108): zes vlaggetjes per blok (north...down, zoals een hek) zeggen waar nog een Battery Glass
+  staat; het model is een "multipart": het glas zelf, plus per vlak vier randstukjes die alleen getekend worden waar geen
+  glas naast zit. Zo is een raam één raam met één rand. Ook een blok dat met een commando of in een structuur neergezet
+  is, kijkt naar zijn buren (`BatteryGlassBlock.onPlace`).
+
+- [x] **1. Notitie 7, de dreigingsscan** ("de vorm van de pijltjes is niet zo goed, en naar achteren staan ze onder je
+      hotbar") — echte pijlpunten (een driehoek met een donker randje en een inkeping, gedraaid in de richting) op een
+      **ovaal** rond het midden dat onderaan boven je hartjes en je werkbalk blijft; de afstand staat aan de binnenkant
+      van de pijl. Boven een dreiging in beeld wijst dezelfde pijl naar beneden. `ThreatMarkerWidget`; screenshot
+      `31_threat_arrows` (`-Ponly=hud`).
+- [x] **2. Notitie 11, "gun skills moeten niet in de G-menu staan"** — zie Mijn invulling; `ImtMenuScreen`,
+      `GearWheelScreen`.
+- [x] **3. Notities 59 en 60, het laadstation en de bril upgraden** — zie Mijn invulling; `ChargingStationBlockEntity`
+      (één vakje), `ChargingStationMenu`, `ChargingStationScreen`, `textures/gui/charging_station.png`,
+      `HoloPiece.GLASSES`, `SuitWorkbenchBlockEntity` (`selected`, `selectNext`, upgrades van de bril),
+      `SuitWorkbenchBlock` (sneak + klik), `doesSneakBypassUse` op het harnas, de bril en de upgrades,
+      `SuitHologramRenderer` (de bril met het plaatje van de bril, oranje hoekjes), `WorkbenchHologram` (het kaartje ook
+      als je naar de werkbank kijkt). Tests: `workbench_upgrades_the_glasses` (nieuw), `biebia_tower` (het station neemt
+      geen redstone of upgrade meer aan), `charging_station_charges_a_cell` (via een generator); `redstone_is_a_small_top_up`
+      is weg. Screenshots `w10`-`w13` (`-Ponly=workbench`); showcase 59 en 60 aangepast.
+- [x] **4. Notitie 61, de generatoren** — zie Mijn invulling; `ChargerBlockEntity` (`SLOT_FUEL` = 0), `ChargerMenu`,
+      `ChargerScreen`, `SolarPanelBlockEntity`, `HeatGeneratorBlockEntity`; test `heat_generator_charges` aangepast
+      (geen bril meer); screenshot `pw01` (`-Ponly=power`).
+- [x] **5. Notitie 62, het stroomnet** — "zorg dat als een blok open ligt maar je er niet rechtstreeks op kijkt de cable
+      x-ray ook werkt": met de xray aan tekent `CableRenderer` dichtbij (24 blokken) **alle** kabels nog eens door alles
+      heen, ook open kabels in een andere kamer, en `CableTraffic` de stroom en signalen erover ook. De eerste helft van
+      de notitie ("stromende stroom niet door muren zonder x-ray") kon ik niet nadoen: de stroom en signalen over open
+      kabels worden met dieptetest getekend en verdwijnen achter een muur; zie de vraag onderaan.
+- [x] **6. Notitie 100, de plakgranaten in het creative-vakje** — hun brede kleefkussen stak uit het vakje: in je
+      inventaris nu 1,25 in plaats van 1,7 groot (`generate_weapon_models.sticky`); screenshot `ct03_weapons`.
+- [x] **7. Notitie 105 (eerste helft), "als je een tabje sluit en dat is de laatste opent die automatisch opnieuw"** — elke
+      momentopname van de server opende Status opnieuw als er geen venster meer was. Nu alleen de eerste keer (en als
+      de kern net een app wegnam); sluit je zelf het laatste venster, dan blijft het bureaublad leeg.
+      `SecurityOsScreen.update`.
+- [x] **8. Notitie 108, Battery Glass zoals framed glass van Create** — zie Mijn invulling; `BatteryGlassBlock`,
+      `blockstates/battery_glass.json` (multipart), `models/block/battery_glass_edge_*` (24), `battery_glass_pane.png`
+      (`generate_textures.battery_textures`). Test `battery_glass_links_to_its_neighbours`; screenshot
+      `bt01b_battery_glass_close`.
+- [x] **9. Notitie 113, de Glock** ("het 3D-model is nog niet super mooi; je kunt niet goed aan elk onderdeel") — het model
+      heeft afgeschuinde bovenranden en een afgeschuinde neus op de slede, de groef van de sledestop, een donkere monding,
+      de magazijnknop, de tang achter de greep, de magazijnmond, de pennen van het sluitblok en een schuin hoekje onder de
+      trekkerbeugel (`generate_gun_models.py`); de tafel: zie Mijn invulling (`FirearmRig.exploded`, `GunsmithScreen`,
+      `GunsmithTableBlockEntity.underSlide`). Screenshots `gl11`, `gl18`.
+- [x] **10. Notitie 114, de holster en de pouches** ("de models zien er nog niet geweldig uit; je ziet niet of er iets in zit;
+      keybinds voor elke quickdraw en elke pouch") — nieuwe modellen: een gevormde holster met een band en een riemlus,
+      een granaatpouch met vier open vakjes (twee naast elkaar, twee diep) en een magazijnpouch met drie open vakjes en
+      een elastiek; **wat erin zit zie je**: de granaten steken met hun bovenkant uit de vakjes, de magazijnen staan
+      rechtop in de hunne (`GearLayer`, de plekken in `generate_gun_models.GRENADE_POCKETS`/`MAG_POCKETS`). De toetsen
+      en het pouchscherm: zie Mijn invulling (`ImtKeys`, `GearControl`, `Gear.openPouch`/`openHeld`, `GearPouchMenu`,
+      `GearPouchScreen`, `GearItem.use`, menu `gear_pouch`). Het wiel is een ovaal dat meegroeit met het aantal opties.
+      Test `pouch_screen_moves_magazines_in_and_out`; screenshots `ge08b`-`ge08d` (van dichtbij), `ge09` (het scherm).
+- [x] **11. De unload** — zie Mijn invulling; `Firearms.ActionKind.UNLOAD_ROUND` en `UNLOAD_CHAMBER`, `FirearmControl`
+      (U), `FirearmRenderer` (de patroon eruit, de slede), `ImtKeys.GUN_UNLOAD`, `ImtClientEvents` (de ping). Test
+      `unload_takes_rounds_out_of_magazine_and_chamber`; screenshot `gl14b_magazine_unloading`; showcase 113 en 114
+      aangepast.
+- [ ] **12. Stap 2: de grote notities** — 35 (het persoonlijke schild als blauwe bol), 38 (de koepel ook onder de
+      generator), 45 (het laserkanon in je eigen beeld), 65 (Raven-soldaten: mooier, met de wapens van de mod, het
+      Raven-geweer weg), 66 (alleen een laser- en een raketturret, allebei via een security OS), 67 (raiddrones: eerst
+      de verdediging slopen, alleen spawnen buiten een basis met een kern), 68 (de toren: één generatorkamer achter
+      rayshields, een zwakke plek, keycards van bewakers, en de toren legt de beveiliging uit), 75/77 (een datacenter
+      van minstens 30 racks, racks los van elkaar via kabels), 105 (tweede helft: apps op de kern installeren en
+      verwijderen), 109 (de handboeien: alleen via de rug, de handen op de rug, de geboeide vóór je).
+
+**Vragen** (de notities zijn nog niet leeg; dat doe ik als stap 2 klaar is):
+- Notitie 76 (Logic: names, sums and loops) zegt alleen "sd". Een tikfout, of bedoelde je iets?
+- Notitie 62, "stromende stroom of andere dingen niet door muren zonder x-ray": waar zag je dat? De gele streepjes en het
+  vakje over een open kabel verdwijnen bij mij achter een muur; over een kabel in een muur zie je ze alleen met de xray
+  aan. Zag je het met een shaderpack (Iris/Oculus), of iets anders dan de kabels (de rand van een zone, een laserstraal)?
 
 ---
 

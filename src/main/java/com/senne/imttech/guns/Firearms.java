@@ -45,6 +45,10 @@ import org.jetbrains.annotations.Nullable;
  * <b>Herladen</b> (jouw keuze): met een magazijnpouch kies je een magazijn uit de pouch (hoofdstuk 52, stap 2). Zonder
  * pouch: R gooit het magazijn eruit (het komt in je inventaris), je scrolt naar een magazijn, rechtsklik duwt het in
  * het pistool, en als je het pistool weer pakt, laat je de slede los. Dat duurt langer, en zo hoort het.
+ *
+ * <b>Unload</b> (hoofdstuk 54, jouw wens): <b>U</b> met het pistool gooit het magazijn eruit (ook met een pouch: het gaat
+ * erin als er plek is, anders in je inventaris); zonder magazijn trekt U de patroon uit de kamer. <b>U met een magazijn in
+ * je hand</b> haalt er één patroon uit (inhouden = doorgaan), in je inventaris.
  */
 public final class Firearms {
     private Firearms() {}
@@ -72,7 +76,11 @@ public final class Firearms {
         /** R met een magazijnpouch: dit magazijn uit de pouch erin (stap 2). */
         RELOAD_POUCH,
         /** Trekken uit de holster (stap 2). */
-        DRAW
+        DRAW,
+        /** U met een magazijn in je hand: één patroon eruit (hoofdstuk 54). */
+        UNLOAD_ROUND,
+        /** U met een pistool zonder magazijn: de slede naar achteren, de patroon uit de kamer (hoofdstuk 54). */
+        UNLOAD_CHAMBER
     }
 
     /** Een handeling die bezig is: wat, in welk vakje het item zit waarmee je bezig bent, iets extra, en wanneer klaar. */
@@ -238,9 +246,11 @@ public final class Firearms {
             case LOAD_ROUND -> ImtConfig.Guns.LOAD_ROUND_TICKS;
             case RELOAD_POUCH -> ImtConfig.Guns.POUCH_RELOAD_TICKS;
             case DRAW -> ImtConfig.Guns.DRAW_TICKS;
+            case UNLOAD_ROUND -> ImtConfig.Guns.UNLOAD_ROUND_TICKS;
+            case UNLOAD_CHAMBER -> ImtConfig.Guns.UNLOAD_CHAMBER_TICKS;
         };
         float factor = 1;
-        if (gun != null && FirearmItem.typeOf(gun) != null && kind != ActionKind.LOAD_ROUND) {
+        if (gun != null && FirearmItem.typeOf(gun) != null && kind != ActionKind.LOAD_ROUND && kind != ActionKind.UNLOAD_ROUND) {
             factor *= FirearmItem.parts(gun).materialOf(GunPart.FRAME).handlingFactor();
         }
         factor *= GunSkillHooks.timeFactor(player, kind, gun);
@@ -259,6 +269,8 @@ public final class Firearms {
             case CHAMBER_ROUND -> chamberRound(player);
             case LOAD_ROUND -> loadRound(player);
             case RELOAD_POUCH -> GunGearHooks.reloadFromPouch(player, arg);
+            case UNLOAD_ROUND -> unloadRound(player);
+            case UNLOAD_CHAMBER -> unloadChamber(player);
             case INSERT_MAG, SLIDE_RELEASE, DRAW -> false; // die beginnen niet op verzoek
         };
         if (!started) {
@@ -382,6 +394,41 @@ public final class Firearms {
         return start(player, ActionKind.LOAD_ROUND, player.getInventory().selected, 0, null);
     }
 
+    /** U met een magazijn in je hand: één patroon eruit (hoofdstuk 54). */
+    private static boolean unloadRound(ServerPlayer player) {
+        ItemStack magazine = player.getMainHandItem();
+        if (MagazineItem.typeOf(magazine) == null || isBusy(player)) {
+            return false;
+        }
+        if (MagazineItem.rounds(magazine) <= 0) {
+            tell(player, Component.translatable("gun.imttech.magazine_empty"));
+            return false;
+        }
+        return start(player, ActionKind.UNLOAD_ROUND, player.getInventory().selected, 0, null);
+    }
+
+    /** U met een pistool zonder magazijn: de patroon uit de kamer (hoofdstuk 54). Met een vol magazijn erin: eerst dat eruit. */
+    private static boolean unloadChamber(ServerPlayer player) {
+        ItemStack gun = heldGun(player);
+        if (gun == null || isBusy(player)) {
+            return false;
+        }
+        if (FirearmItem.jam(gun) != FirearmItem.JAM_NONE) {
+            tell(player, Component.translatable("gun.imttech.jammed_unload"));
+            return false;
+        }
+        if (FirearmItem.roundsInMagazine(gun) > 0) {
+            tell(player, Component.translatable("gun.imttech.eject_first"));
+            return false;
+        }
+        if (!FirearmItem.chambered(gun)) {
+            tell(player, Component.translatable("gun.imttech.nothing_to_unload"));
+            return false;
+        }
+        sound(player, ModSounds.GLOCK_SLIDE.get(), 0.7f);
+        return start(player, ActionKind.UNLOAD_CHAMBER, player.getInventory().selected, 0, gun);
+    }
+
     /** Het vakje met patronen (niet je hand), of -1. */
     private static int findRound(ServerPlayer player) {
         Inventory inventory = player.getInventory();
@@ -450,7 +497,7 @@ public final class Firearms {
         ItemStack held = player.getMainHandItem();
         boolean sameSlot = inventory.selected == action.slot();
         boolean stillValid = sameSlot && switch (action.kind()) {
-            case LOAD_ROUND -> MagazineItem.typeOf(held) != null;
+            case LOAD_ROUND, UNLOAD_ROUND -> MagazineItem.typeOf(held) != null;
             case INSERT_MAG -> MagazineItem.typeOf(held) != null && FirearmItem.typeOf(inventory.getItem(action.arg())) != null;
             default -> FirearmItem.typeOf(held) != null;
         };
@@ -518,6 +565,21 @@ public final class Firearms {
             }
             case RELOAD_POUCH -> GunGearHooks.finishPouchReload(player, held, action.arg());
             case DRAW -> GunSkillHooks.drawn(player, held);
+            case UNLOAD_ROUND -> {
+                int rounds = MagazineItem.rounds(held);
+                if (rounds > 0) {
+                    MagazineItem.setRounds(held, rounds - 1);
+                    give(player, new ItemStack(ModItems.ROUND_9MM.get()));
+                    sound(player, ModSounds.GLOCK_ROUND_LOAD.get(), 0.6f);
+                }
+            }
+            case UNLOAD_CHAMBER -> {
+                if (FirearmItem.chambered(held) && FirearmItem.roundsInMagazine(held) == 0) {
+                    FirearmItem.setChambered(held, false);
+                    give(player, new ItemStack(ModItems.ROUND_9MM.get()));
+                    sound(player, ModSounds.CASING_TINK.get(), 0.5f);
+                }
+            }
         }
     }
 

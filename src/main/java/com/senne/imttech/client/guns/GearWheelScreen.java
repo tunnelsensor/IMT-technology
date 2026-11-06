@@ -6,6 +6,8 @@ import com.senne.imttech.guns.FirearmItem;
 import com.senne.imttech.guns.Gear;
 import com.senne.imttech.guns.GearItem;
 import com.senne.imttech.network.GearActionPayload;
+import com.senne.imttech.registry.ModAttachments;
+import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.registry.ModSounds;
 import com.senne.imttech.weapons.GrenadeItem;
 import java.util.ArrayList;
@@ -28,9 +30,15 @@ import org.jetbrains.annotations.Nullable;
  * Houd <b>linker Alt</b> ingedrukt: het wiel komt in het midden van je scherm, met je pistool uit de holster, elke soort
  * granaat uit je pouch (met hoeveel), en "Put away" (wat je vasthoudt wegsteken). Wijs er een aan en laat Alt los (of
  * klik). Wat je in je hand had, valt op de grond (jouw keuze); het pistool of de granaat komt in dat vakje.
+ *
+ * Sinds hoofdstuk 54 (jouw notities van 6 november) staan er ook op: elke pouch die je draagt openen (om er magazijnen of
+ * granaten in te stoppen of uit te halen, zie GearPouchMenu) en de skilltree van je vuurwapens (die stond in het G-menu en
+ * hoort daar niet).
  */
 public class GearWheelScreen extends Screen {
-    private static final int RADIUS = 72;
+    /** De ring is een ovaal dat meegroeit met het aantal opties (hoofdstuk 54: er staan er nu tot acht op). */
+    private static final int MIN_RX = 72;
+    private static final int MIN_RY = 72;
     private static final int BOX_W = 92;
     private static final int BOX_H = 30;
     private static final int DEAD_ZONE = 22;
@@ -38,9 +46,14 @@ public class GearWheelScreen extends Screen {
     /** Eén punt op het wiel. */
     private record Option(ItemStack icon, Component label, Component sub, boolean enabled, int action, int arg) {}
 
+    /** Een keuze die het wiel zelf afhandelt (niet de server): de skilltree openen. */
+    private static final int LOCAL_SKILLS = 100;
+
     private final List<Option> options = new ArrayList<>();
     private boolean holdMode;
     private long openedAt;
+    /** Wat er moet gebeuren zodra het wiel dicht is (een ander scherm openen). */
+    private @Nullable Runnable after;
 
     public GearWheelScreen() {
         super(Component.translatable("screen.imttech.wheel"));
@@ -99,6 +112,30 @@ public class GearWheelScreen extends Screen {
                 Component.translatable("screen.imttech.wheel.put_away"),
                 room == null ? Component.translatable("screen.imttech.wheel.nothing") : Component.translatable("screen.imttech.wheel.into", room.text()),
                 room != null, Gear.ACTION_HOLSTER, 0));
+        // Elke pouch die je draagt openen: magazijnen of granaten erin stoppen of eruit halen (hoofdstuk 54).
+        for (GearItem.Kind kind : new GearItem.Kind[] {GearItem.Kind.MAG_POUCH, GearItem.Kind.GRENADE_POUCH}) {
+            ItemStack worn = Gear.get(player, kind);
+            if (!worn.isEmpty()) {
+                options.add(new Option(worn, Component.translatable("screen.imttech.wheel.open", kind.text()),
+                        Component.translatable("screen.imttech.wheel.filled", GearItem.filled(worn), kind.size()), true,
+                        Gear.ACTION_OPEN, kind.ordinal()));
+            }
+        }
+        // De skilltree (jouw keuze: niet in het G-menu).
+        int points = player.getData(ModAttachments.GUN_SKILLS).points();
+        options.add(new Option(new ItemStack(ModItems.GLOCK_19.get()), Component.translatable("screen.imttech.menu.gun_skills"),
+                Component.translatable("screen.imttech.wheel.skills_sub", points), true, LOCAL_SKILLS, 0));
+    }
+
+    /** Dicht, en dan wat er nog moest gebeuren (de skilltree openen). */
+    @Override
+    public void onClose() {
+        super.onClose();
+        if (after != null) {
+            Runnable run = after;
+            after = null;
+            run.run();
+        }
     }
 
     /** Geen wazige achtergrond van Minecraft: alleen onze eigen lichte verduistering (zie HudStyle.dim). */
@@ -134,20 +171,22 @@ public class GearWheelScreen extends Screen {
         HudStyle.dim(g, width, height);
         int cx = width / 2;
         int cy = height / 2;
+        int rx = rx();
+        int ry = ry();
         int hovered = hovered(mouseX, mouseY);
         // De ring.
         for (int i = 0; i < 48; i++) {
             double a = i * Math.PI * 2 / 48;
-            int x = (int) Math.round(cx + Math.cos(a) * (RADIUS - 10));
-            int y = (int) Math.round(cy + Math.sin(a) * (RADIUS - 10));
+            int x = (int) Math.round(cx + Math.cos(a) * (rx - 10));
+            int y = (int) Math.round(cy + Math.sin(a) * (ry - 10));
             g.fill(x, y, x + 1, y + 1, HudStyle.argb(90, HudStyle.ORANGE));
         }
         g.drawCenteredString(font, Component.translatable("screen.imttech.wheel"), cx, cy - 4, HudStyle.argb(200, HudStyle.ORANGE));
         for (int i = 0; i < options.size(); i++) {
             Option option = options.get(i);
             double angle = angleOf(i);
-            int bx = (int) Math.round(cx + Math.cos(angle) * RADIUS) - BOX_W / 2;
-            int by = (int) Math.round(cy + Math.sin(angle) * RADIUS) - BOX_H / 2;
+            int bx = (int) Math.round(cx + Math.cos(angle) * rx) - BOX_W / 2;
+            int by = (int) Math.round(cy + Math.sin(angle) * ry) - BOX_H / 2;
             boolean hot = i == hovered && option.enabled;
             int frame = option.enabled ? (hot ? HudStyle.argb(255, HudStyle.CYAN) : HudStyle.argb(200, HudStyle.ORANGE))
                     : HudStyle.argb(120, 0x8A9BA0);
@@ -163,22 +202,33 @@ public class GearWheelScreen extends Screen {
             g.pose().popPose();
         }
         g.drawCenteredString(font, Component.translatable(holdMode ? "screen.imttech.wheel.release" : "screen.imttech.wheel.click"),
-                cx, cy + RADIUS + 26, HudStyle.argb(150, HudStyle.WHITE));
+                cx, Math.max(4, cy - ry - BOX_H / 2 - 12), HudStyle.argb(150, HudStyle.WHITE));
         super.render(g, mouseX, mouseY, partialTick);
+    }
+
+    /** De halve breedte en hoogte van het ovaal: groter met meer opties, maar altijd binnen het scherm. */
+    private int rx() {
+        int n = Math.max(1, options.size());
+        return Math.max(MIN_RX, Math.min(width / 2 - BOX_W / 2 - 6, 40 + 16 * n));
+    }
+
+    private int ry() {
+        int n = Math.max(1, options.size());
+        return Math.max(MIN_RY, Math.min(height / 2 - BOX_H / 2 - 42, 50 + 5 * n));
     }
 
     private double angleOf(int index) {
         return -Math.PI / 2 + index * Math.PI * 2 / Math.max(1, options.size());
     }
 
-    /** Welke optie je aanwijst (de richting vanuit het midden), of -1. */
+    /** Welke optie je aanwijst (de richting vanuit het midden, op het ovaal), of -1. */
     private int hovered(double mouseX, double mouseY) {
         double dx = mouseX - width / 2.0;
         double dy = mouseY - height / 2.0;
         if (options.isEmpty() || Math.sqrt(dx * dx + dy * dy) < DEAD_ZONE) {
             return -1;
         }
-        double angle = Math.atan2(dy, dx);
+        double angle = Math.atan2(dy / ry(), dx / rx());
         int best = -1;
         double bestDiff = Double.MAX_VALUE;
         for (int i = 0; i < options.size(); i++) {
@@ -197,6 +247,10 @@ public class GearWheelScreen extends Screen {
         }
         Option option = options.get(index);
         if (!option.enabled) {
+            return;
+        }
+        if (option.action == LOCAL_SKILLS) {
+            after = () -> Minecraft.getInstance().setScreen(new SkillTreeScreen());
             return;
         }
         PacketDistributor.sendToServer(new GearActionPayload(option.action, option.arg));
@@ -234,6 +288,17 @@ public class GearWheelScreen extends Screen {
     /** Voor de showcase en de screenshots: deze optie kiezen alsof je hem aanwees. */
     public void chooseIndex(int index) {
         choose(index);
+        onClose();
+    }
+
+    /** Voor de showcase en de screenshots: de optie met deze actie (Gear.ACTION_...) kiezen. */
+    public void chooseAction(int action) {
+        for (int i = 0; i < options.size(); i++) {
+            if (options.get(i).action == action) {
+                chooseIndex(i);
+                return;
+            }
+        }
         onClose();
     }
 

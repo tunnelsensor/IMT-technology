@@ -1,7 +1,201 @@
 {
-  "variants": {
-    "": {
-      "model": "imttech:block/battery_glass"
+  "multipart": [
+    {
+      "apply": {
+        "model": "imttech:block/battery_glass"
+      }
+    },
+    {
+      "when": {
+        "up": "false"
+      },
+      "apply": {
+        "model": "imttech:block/battery_glass_edge_north_up"
+      }
+    },
+    {
+      "when": {
+        "down": "false"
+      },
+      "apply": {
+        "model": "imttech:block/battery_glass_edge_north_down"
+      }
+    },
+    {
+      "when": {
+        "west": "false"
+      },
+      "apply": {
+        "model": "imttech:block/battery_glass_edge_north_west"
+      }
+    },
+    {
+      "when": {
+        "east": "false"
+      },
+      "apply": {
+        "model": "imttech:block/battery_glass_edge_north_east"
+      }
+    },
+    {
+      "when": {
+        "up": "false"
+      },
+      "apply": {
+        "model": "imttech:block/battery_glass_edge_south_up"
+      }
+    },
+    {
+      "when": {
+        "down": "false"
+      },
+      "apply": {
+        "model": "imttech:block/battery_glass_edge_south_down"
+      }
+    },
+    {
+      "when": {
+        "west": "false"
+      },
+      "apply": {
+        "model": "imttech:block/battery_glass_edge_south_west"
+      }
+    },
+    {
+      "when": {
+        "east": "false"
+      },
+      "apply": {
+        "model": "imttech:block/battery_glass_edge_south_east"
+      }
+    },
+    {
+      "when": {
+        "up": "false"
+      },
+      "apply": {
+        "model": "imttech:block/battery_glass_edge_west_up"
+      }
+    },
+    {
+      "when": {
+        "down": "false"
+      },
+      "apply": {
+        "model": "imttech:block/battery_glass_edge_west_down"
+      }
+    },
+    {
+      "when": {
+        "north": "false"
+      },
+      "apply": {
+        "model": "imttech:block/battery_glass_edge_west_north"
+      }
+    },
+    {
+      "when": {
+        "south": "false"
+      },
+      "apply": {
+        "model": "imttech:block/battery_glass_edge_west_south"
+      }
+    },
+    {
+      "when": {
+        "up": "false"
+      },
+      "apply": {
+        "model": "imttech:block/battery_glass_edge_east_up"
+      }
+    },
+    {
+      "when": {
+        "down": "false"
+      },
+      "apply": {
+        "model": "imttech:block/battery_glass_edge_east_down"
+      }
+    },
+    {
+      "when": {
+        "north": "false"
+      },
+      "apply": {
+        "model": "imttech:block/battery_glass_edge_east_north"
+      }
+    },
+    {
+      "when": {
+        "south": "false"
+      },
+      "apply": {
+        "model": "imttech:block/battery_glass_edge_east_south"
+      }
+    },
+    {
+      "when": {
+        "north": "false"
+      },
+      "apply": {
+        "model": "imttech:block/battery_glass_edge_up_north"
+      }
+    },
+    {
+      "when": {
+        "south": "false"
+      },
+      "apply": {
+        "model": "imttech:block/battery_glass_edge_up_south"
+      }
+    },
+    {
+      "when": {
+        "west": "false"
+      },
+      "apply": {
+        "model": "imttech:block/battery_glass_edge_up_west"
+      }
+    },
+    {
+      "when": {
+        "east": "false"
+      },
+      "apply": {
+        "model": "imttech:block/battery_glass_edge_up_east"
+      }
+    },
+    {
+      "when": {
+        "north": "false"
+      },
+      "apply": {
+        "model": "imttech:block/battery_glass_edge_down_north"
+      }
+    },
+    {
+      "when": {
+        "south": "false"
+      },
+      "apply": {
+        "model": "imttech:block/battery_glass_edge_down_south"
+      }
+    },
+    {
+      "when": {
+        "west": "false"
+      },
+      "apply": {
+        "model": "imttech:block/battery_glass_edge_down_west"
+      }
+    },
+    {
+      "when": {
+        "east": "false"
+      },
+      "apply": {
+        "model": "imttech:block/battery_glass_edge_down_east"
+      }
     }
-  }
+  ]
 }

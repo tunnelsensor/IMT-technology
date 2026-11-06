@@ -51,6 +51,13 @@ import org.jetbrains.annotations.Nullable;
  *   dan wisselen ze).
  * - EEN UPGRADE (of het raketpakket): die BOUW je IN het stuk waar je op klikt. Er moet dan wel
  *   een echt stuk liggen, en de upgrade moet er (nog) in passen.
+ * - DE BRIL (hoofdstuk 54, jouw notitie): die leg je er net zo op (het vierde stuk, boven de
+ *   borstplaat) en upgrade je net als de rest (batterij, scanner, drones). Bouwen kan niet: de
+ *   bril vind je in de toren.
+ *
+ * Sneak + rechtsklik op de werkbank zelf kiest het volgende stuk ({@link #selected()}: borst,
+ * broek, laarzen, bril); een gewone klik op de werkbank doet dan hetzelfde als een klik op dat
+ * stuk van het hologram. Zo hoef je niet precies te mikken.
  *
  * Bouwen en inbouwen kosten tijd en stroom van het net (een stroomkabel naar een zonnepaneel of
  * warmtegenerator, of er direct tegenaan). Is er even geen stroom, dan wacht de werkbank.
@@ -69,8 +76,10 @@ public class SuitWorkbenchBlockEntity extends BlockEntity {
     /** Verder weg dan dit? Dan blijft het stuk gewoon op het hologram liggen. */
     private static final double FLY_RANGE = 24.0;
 
-    /** De echte stukken die op het hologram liggen (borst, broek, laarzen). */
-    private final ItemStack[] laid = {ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY};
+    /** De echte stukken die op het hologram liggen (borst, broek, laarzen, bril). */
+    private final ItemStack[] laid = {ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY};
+    /** Het stuk dat gekozen is (sneak + klik op de werkbank kiest het volgende). */
+    private HoloPiece selected = HoloPiece.CHEST;
     private int job = JOB_NONE;
     private HoloPiece jobPiece = HoloPiece.CHEST;
     /** De upgrade die er nu in gaat. */
@@ -99,6 +108,19 @@ public class SuitWorkbenchBlockEntity extends BlockEntity {
 
     public ItemStack laid(HoloPiece piece) {
         return laid[piece.ordinal()];
+    }
+
+    public HoloPiece selected() {
+        return selected;
+    }
+
+    /** Sneak + rechtsklik op de werkbank: het volgende stuk kiezen (hoofdstuk 54). */
+    public void selectNext(ServerPlayer player) {
+        selected = selected.next();
+        player.displayClientMessage(Component.translatable("workbench.imttech.selected",
+                Component.translatable(selected.langKey())), true);
+        play(ModSounds.IMT_SELECT.get(), 0.6f, 1.3f);
+        sync();
     }
 
     public int job() {
@@ -146,13 +168,17 @@ public class SuitWorkbenchBlockEntity extends BlockEntity {
         if (upgrade.getItem() instanceof SuitModuleItem suitModule) {
             return suitModule.canApplyTo(piece);
         }
+        if (upgrade.getItem() instanceof com.senne.imttech.imt.UpgradeItem glassesUpgrade) {
+            return com.senne.imttech.imt.ImtData.isGlasses(piece) && glassesUpgrade.canApplyTo(piece);
+        }
         return upgrade.getItem() instanceof RocketPackItem && piece.getItem() instanceof TechSuitItem suit
                 && suit.getType() == ArmorItem.Type.CHESTPLATE && !RocketPackItem.installedOn(piece);
     }
 
     /** Is dit een upgrade die je aan de werkbank inbouwt? */
     public static boolean isUpgrade(ItemStack stack) {
-        return stack.getItem() instanceof SuitModuleItem || stack.getItem() instanceof RocketPackItem;
+        return stack.getItem() instanceof SuitModuleItem || stack.getItem() instanceof RocketPackItem
+                || stack.getItem() instanceof com.senne.imttech.imt.UpgradeItem;
     }
 
     // ================================================================ Klikken op het hologram
@@ -166,8 +192,9 @@ public class SuitWorkbenchBlockEntity extends BlockEntity {
             return refuse(player, "workbench.imttech.busy");
         }
         ItemStack hand = player.getMainHandItem();
-        if (hand.getItem() instanceof TechSuitItem suit) {
-            return lay(player, suit, hand);
+        HoloPiece own = HoloPiece.ofItem(hand);
+        if (own != null) {
+            return lay(player, own, hand);
         }
         if (isUpgrade(hand)) {
             return startInstall(player, piece, hand);
@@ -187,12 +214,8 @@ public class SuitWorkbenchBlockEntity extends BlockEntity {
         return startBuild(player, piece);
     }
 
-    /** Een stuk harnas uit je hand op het hologram leggen (en wat er lag, komt in je hand). */
-    private boolean lay(ServerPlayer player, TechSuitItem suit, ItemStack hand) {
-        HoloPiece target = HoloPiece.of(suit.getType());
-        if (target == null) {
-            return false;
-        }
+    /** Een stuk harnas (of de bril) uit je hand op het hologram leggen (en wat er lag, komt in je hand). */
+    private boolean lay(ServerPlayer player, HoloPiece target, ItemStack hand) {
         if (job != JOB_NONE && jobPiece == target) {
             return refuse(player, "workbench.imttech.busy");
         }
@@ -237,6 +260,12 @@ public class SuitWorkbenchBlockEntity extends BlockEntity {
             return false;
         }
         Blueprint blueprint = piece.blueprint();
+        if (blueprint == null) {
+            if (player instanceof ServerPlayer serverPlayer) {
+                refuse(serverPlayer, "workbench.imttech.no_blueprint");
+            }
+            return false;
+        }
         spent.clear();
         if (!player.getAbilities().instabuild) {
             if (!blueprint.affordable(player.getInventory())) {
@@ -340,12 +369,15 @@ public class SuitWorkbenchBlockEntity extends BlockEntity {
             ItemStack piece = laid(jobPiece);
             if (module.getItem() instanceof SuitModuleItem suitModule) {
                 suitModule.applyTo(piece);
+            } else if (module.getItem() instanceof com.senne.imttech.imt.UpgradeItem glassesUpgrade) {
+                glassesUpgrade.applyTo(piece);
             } else if (module.getItem() instanceof RocketPackItem) {
                 piece.set(ModDataComponents.ROCKET_PACK.get(), true);
             }
             module = ItemStack.EMPTY;
         } else {
-            ItemStack built = new ItemStack(jobPiece.blueprint().result());
+            Blueprint blueprint = jobPiece.blueprint();
+            ItemStack built = blueprint == null ? ItemStack.EMPTY : new ItemStack(blueprint.result());
             spent.clear();
             Player player = orderedBy == null ? null : level.getPlayerByUUID(orderedBy);
             if (inRange(player)) {
@@ -473,6 +505,7 @@ public class SuitWorkbenchBlockEntity extends BlockEntity {
         }
         tag.putInt("Job", job);
         tag.putInt("JobPiece", jobPiece.ordinal());
+        tag.putInt("Selected", selected.ordinal());
         tag.putInt("Progress", progress);
         tag.putBoolean("Powered", powered);
         if (!module.isEmpty()) {
@@ -495,6 +528,8 @@ public class SuitWorkbenchBlockEntity extends BlockEntity {
         job = tag.getInt("Job");
         HoloPiece piece = HoloPiece.byId(tag.getInt("JobPiece"));
         jobPiece = piece == null ? HoloPiece.CHEST : piece;
+        HoloPiece chosen = HoloPiece.byId(tag.getInt("Selected"));
+        selected = chosen == null ? HoloPiece.CHEST : chosen;
         progress = tag.getInt("Progress");
         powered = tag.getBoolean("Powered");
         module = read(tag, "Module", registries);

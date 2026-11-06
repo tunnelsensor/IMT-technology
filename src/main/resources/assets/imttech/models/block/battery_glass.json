@@ -1,7 +1,7 @@
 {
   "parent": "minecraft:block/cube_all",
   "textures": {
-    "all": "imttech:block/battery_glass"
+    "all": "imttech:block/battery_glass_pane"
   },
   "render_type": "minecraft:translucent"
 }

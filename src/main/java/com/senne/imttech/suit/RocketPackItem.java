@@ -1,5 +1,6 @@
 package com.senne.imttech.suit;
 
+import net.minecraft.core.BlockPos;
 import com.senne.imttech.registry.ModDataComponents;
 import java.util.List;
 import net.minecraft.ChatFormatting;
@@ -68,5 +69,11 @@ public class RocketPackItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         tooltip.add(Component.translatable("tooltip.imttech.rocket_pack").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.imttech.rocket_pack.install").withStyle(ChatFormatting.DARK_AQUA));
+    }
+
+    /** Sneak + klik op de harnas-werkbank gaat naar de werkbank (het volgende stuk kiezen, hoofdstuk 54), ook met dit in je hand. */
+    @Override
+    public boolean doesSneakBypassUse(ItemStack stack, net.minecraft.world.level.LevelReader level, BlockPos pos, Player player) {
+        return level.getBlockState(pos).is(com.senne.imttech.registry.ModBlocks.SUIT_WORKBENCH.get());
     }
 }

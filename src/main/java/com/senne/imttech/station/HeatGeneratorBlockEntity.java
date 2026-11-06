@@ -1,7 +1,6 @@
 package com.senne.imttech.station;
 
 import com.senne.imttech.config.ImtConfig;
-import com.senne.imttech.imt.ImtData;
 import com.senne.imttech.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -117,11 +116,7 @@ public class HeatGeneratorBlockEntity extends ChargerBlockEntity {
 
     @Override
     public boolean canPlaceItem(int slot, ItemStack stack) {
-        return switch (slot) {
-            case SLOT_GLASSES -> ImtData.isGlasses(stack);
-            case SLOT_FUEL -> stack.getBurnTime(null) > 0;
-            default -> false;
-        };
+        return slot == SLOT_FUEL && stack.getBurnTime(null) > 0;
     }
 
     @Override

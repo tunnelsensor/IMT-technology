@@ -5,7 +5,7 @@ import com.senne.imttech.energy.PowerConnectable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -90,9 +90,14 @@ public class SuitWorkbenchBlock extends BaseEntityBlock implements PowerConnecta
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
                                                BlockHitResult hit) {
-        // Op het blok zelf klikken doet niets; het werk gebeurt op het hologram erboven.
-        if (!level.isClientSide) {
-            player.displayClientMessage(Component.translatable("workbench.imttech.hint"), true);
+        // Hoofdstuk 54 (jouw notitie): sneak + klik op de werkbank kiest het volgende stuk (borst, broek, laarzen,
+        // bril); een gewone klik op de werkbank werkt op het gekozen stuk, net als een klik op het hologram.
+        if (player instanceof ServerPlayer serverPlayer && level.getBlockEntity(pos) instanceof SuitWorkbenchBlockEntity bench) {
+            if (player.isShiftKeyDown()) {
+                bench.selectNext(serverPlayer);
+            } else {
+                bench.interact(serverPlayer, bench.selected());
+            }
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }

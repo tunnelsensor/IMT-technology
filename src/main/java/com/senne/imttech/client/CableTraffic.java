@@ -203,23 +203,25 @@ public final class CableTraffic {
         if (!signals && !flows) {
             return;
         }
-        for (boolean hidden : new boolean[] {false, true}) {
-            if (hidden && !xray) {
+        // Eerst gewoon (alleen over open kabels, achter een muur onzichtbaar); met de kabel-xray aan daarna nog eens door
+        // alles heen, over ALLE kabels (ook open kabels in een andere kamer, hoofdstuk 54).
+        for (boolean through : new boolean[] {false, true}) {
+            if (through && !xray) {
                 continue;
             }
-            RenderType type = hidden ? GLOW_XRAY : GLOW;
+            RenderType type = through ? GLOW_XRAY : GLOW;
             VertexConsumer vc = buffers.getBuffer(type);
             if (flows) {
                 for (Flow flow : FLOWS.values()) {
                     if (flow.route().centre().distanceToSqr(cam) < RANGE * RANGE) {
-                        drawFlow(m, vc, flow, now, hidden);
+                        drawFlow(m, vc, flow, now, through);
                     }
                 }
             }
             if (signals) {
                 for (Signal signal : SIGNALS) {
                     if (signal.route().centre().distanceToSqr(cam) < RANGE * RANGE) {
-                        drawSignal(m, vc, signal, now, hidden);
+                        drawSignal(m, vc, signal, now, through);
                     }
                 }
             }
@@ -240,7 +242,7 @@ public final class CableTraffic {
     }
 
     /** Het vakje van een signaal, op de plek waar het nu is (met een zachte gloed eromheen). */
-    private static void drawSignal(Matrix4f m, VertexConsumer vc, Signal signal, double now, boolean hidden) {
+    private static void drawSignal(Matrix4f m, VertexConsumer vc, Signal signal, double now, boolean through) {
         Route route = signal.route();
         double distance = (now - signal.start()) / signal.duration() * route.length();
         for (Segment segment : route.segments()) {
@@ -248,7 +250,7 @@ public final class CableTraffic {
                 continue;
             }
             Cell cell = route.cells().get(segment.cell());
-            if (cell.cable() && cell.hidden() == hidden) {
+            if (cell.cable() && (through || !cell.hidden())) {
                 Vec3 p = segment.at(distance);
                 cuboid(m, vc, p, p, 0.07, cell.colour(), 230);
                 cuboid(m, vc, p, p, 0.14, cell.colour(), 70);
@@ -258,7 +260,7 @@ public final class CableTraffic {
     }
 
     /** De gele streepjes van de stroom over elk stukje kabel van de weg, lopend van de leverancier naar het apparaat. */
-    private static void drawFlow(Matrix4f m, VertexConsumer vc, Flow flow, double now, boolean hidden) {
+    private static void drawFlow(Matrix4f m, VertexConsumer vc, Flow flow, double now, boolean through) {
         Route route = flow.route();
         // Het laatste halve seconde vervaagt hij (als er geen nieuw pakketje kwam: het apparaat haalt geen stroom meer).
         int alpha = (int) (210 * Math.max(0, Math.min(1, (flow.until() - now) / 10.0)));
@@ -268,7 +270,7 @@ public final class CableTraffic {
         double offset = (now * FLOW_SPEED) % DASH_PERIOD;
         for (Segment segment : route.segments()) {
             Cell cell = route.cells().get(segment.cell());
-            if (!cell.cable() || cell.hidden() != hidden || segment.length() <= 0) {
+            if (!cell.cable() || (!through && cell.hidden()) || segment.length() <= 0) {
                 continue;
             }
             double end = segment.from() + segment.length();

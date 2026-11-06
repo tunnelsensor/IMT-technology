@@ -156,4 +156,51 @@ public final class GearGameTests {
         player.inventoryMenu.setCarried(ItemStack.EMPTY);
         helper.succeed();
     }
+
+    /**
+     * Het scherm van een pouch (hoofdstuk 54, jouw notitie: volle magazijnen erin, lege eruit): een gedragen pouch openen
+     * geeft een menu met zijn vakjes; shift-klik zet een magazijn uit je inventaris erin en de pouch om je heup weet het
+     * meteen. Een diamant past er niet in. Een pouch in je hand gaat ook open; dan zit dat vakje van je werkbalk op slot.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "guns")
+    public static void pouch_screen_moves_magazines_in_and_out(GameTestHelper helper) {
+        check(!Gear.curios(), "Deze test is voor zonder Curios");
+        ServerPlayer player = player(helper, "pouch-filler");
+        check(Gear.set(player, GearItem.Kind.MAG_POUCH, gear(GearItem.Kind.MAG_POUCH, MagazineItem.of(FirearmType.GLOCK_19, 15))),
+                "De pouch ging niet om");
+        player.getInventory().setItem(1, MagazineItem.of(FirearmType.GLOCK_19, 7));
+        player.getInventory().setItem(2, new ItemStack(Items.DIAMOND));
+        check(!Gear.openPouch(player, GearItem.Kind.GRENADE_POUCH.ordinal()), "Een pouch die je niet draagt ging open");
+        // Het menu zelf (het openen stuurt een pakketje, en een nep-speler heeft geen verbinding).
+        com.senne.imttech.guns.GearPouchMenu menu = new com.senne.imttech.guns.GearPouchMenu(7, player.getInventory(),
+                GearItem.Kind.MAG_POUCH, com.senne.imttech.guns.GearPouchMenu.WORN);
+        player.containerMenu = menu;
+        check(menu.stillValid(player), "Het pouchscherm van een gedragen pouch is niet geldig");
+        int pouchSlots = GearItem.Kind.MAG_POUCH.size();
+        check(!menu.getSlot(1).mayPlace(new ItemStack(Items.DIAMOND)), "Een diamant past in de pouch");
+        // Shift-klik op het magazijn van 7 in werkbalkvakje 1: het gaat in het eerste lege vakje van de pouch.
+        menu.quickMoveStack(player, pouchSlots + 27 + 1);
+        List<ItemStack> contents = Gear.contents(player, GearItem.Kind.MAG_POUCH);
+        check(MagazineItem.rounds(contents.get(1)) == 7, "Het magazijn van 7 kwam niet in vakje 2 van de pouch");
+        check(player.getInventory().getItem(1).isEmpty(), "Het magazijn zit nog in je werkbalk");
+        // Shift-klik op het volle magazijn in de pouch: terug in je inventaris.
+        menu.quickMoveStack(player, 0);
+        contents = Gear.contents(player, GearItem.Kind.MAG_POUCH);
+        check(contents.get(0).isEmpty(), "Het magazijn van 15 zit nog in de pouch");
+        check(player.getInventory().countItem(ModItems.GLOCK_19_MAGAZINE.get()) == 1, "Het magazijn van 15 kwam niet in je inventaris");
+        player.closeContainer();
+        // Een pouch in je hand: open, en het vakje van je hand op slot.
+        player.setItemInHand(InteractionHand.MAIN_HAND, gear(GearItem.Kind.GRENADE_POUCH));
+        player.getInventory().setItem(3, new ItemStack(ModItems.FRAG_GRENADE.get(), 2));
+        com.senne.imttech.guns.GearPouchMenu held = new com.senne.imttech.guns.GearPouchMenu(8, player.getInventory(),
+                GearItem.Kind.GRENADE_POUCH, com.senne.imttech.guns.GearPouchMenu.MAIN_HAND);
+        player.containerMenu = held;
+        check(held.stillValid(player), "Het pouchscherm van een pouch in je hand is niet geldig");
+        int grenadeSlots = GearItem.Kind.GRENADE_POUCH.size();
+        check(!held.getSlot(grenadeSlots + 27).mayPickup(player), "Het vakje met de open pouch zit niet op slot");
+        held.quickMoveStack(player, grenadeSlots + 27 + 3);
+        check(GearItem.contents(player.getMainHandItem()).get(0).getCount() == 2, "De granaten kwamen niet in de pouch in je hand");
+        player.closeContainer();
+        helper.succeed();
+    }
 }

@@ -1,0 +1,27 @@
+{
+  "textures": {
+    "edge": "imttech:block/battery_glass",
+    "particle": "imttech:block/battery_glass"
+  },
+  "render_type": "minecraft:cutout",
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        15.98
+      ],
+      "to": [
+        16,
+        2,
+        15.98
+      ],
+      "faces": {
+        "south": {
+          "texture": "#edge",
+          "cullface": "south"
+        }
+      }
+    }
+  ]
+}

@@ -1,7 +1,6 @@
 package com.senne.imttech.station;
 
 import com.senne.imttech.config.ImtConfig;
-import com.senne.imttech.imt.ImtData;
 import com.senne.imttech.energy.EnergyCarry;
 import com.senne.imttech.energy.EnergySource;
 import com.senne.imttech.energy.PowerGrid;
@@ -32,9 +31,12 @@ import net.minecraft.world.level.block.state.BlockState;
  * Twee slots: 0 is de bril, 1 is brandstof (alleen de warmtegenerator doet daar iets mee).
  */
 public abstract class ChargerBlockEntity extends BaseContainerBlockEntity implements EnergySource {
-    public static final int SLOT_GLASSES = 0;
-    public static final int SLOT_FUEL = 1;
-    public static final int SLOT_COUNT = 2;
+    /**
+     * Sinds hoofdstuk 54 (jouw notitie van 6 november) laad je hier geen bril meer op: alleen de warmtegenerator heeft nog
+     * een vakje, voor brandstof. Je bril laad je aan het laadstation of via een kabel.
+     */
+    public static final int SLOT_FUEL = 0;
+    public static final int SLOT_COUNT = 1;
 
     /** Nummers voor de gegevens die naar het scherm gestuurd worden. */
     public static final int DATA_ENERGY = 0;
@@ -82,7 +84,6 @@ public abstract class ChargerBlockEntity extends BaseContainerBlockEntity implem
     /** Alles wat dit blok ooit heeft opgewekt (voor het tekstje bij de balk). */
     private double totalProduced;
     /** Het stukje van STATION_CHARGE_RATE dat nog geen hele stroom is (zie EnergyCarry). */
-    private final EnergyCarry charge = new EnergyCarry();
 
     // Meten voor het overzicht van het net: wat er dit venster bij kwam, eruit ging en tekort was...
     private double windowMade;
@@ -236,7 +237,6 @@ public abstract class ChargerBlockEntity extends BaseContainerBlockEntity implem
         }
         rate = made;
         boolean changed = made > 0;
-        changed |= chargeGlasses();
         // Hoofdstuk 46: een kabel of machine van een andere mod ertegenaan krijgt FE geduwd.
         int pushed = com.senne.imttech.energy.FeBridge.push(level, pos, this);
         if (pushed > 0) {
@@ -296,19 +296,6 @@ public abstract class ChargerBlockEntity extends BaseContainerBlockEntity implem
         return (int) Math.min(Integer.MAX_VALUE, Math.round(perTick * 100));
     }
 
-    /** Stuurt energie uit de buffer naar de bril in het slot. */
-    private boolean chargeGlasses() {
-        ItemStack glasses = items.get(SLOT_GLASSES);
-        if (energy <= 0 || !ImtData.isGlasses(glasses)) {
-            return false;
-        }
-        int give = Math.min(charge.take(Math.min(ImtConfig.Power.STATION_CHARGE_RATE, energy)), energy());
-        int added = ImtData.addEnergy(glasses, give);
-        energy -= added;
-        windowUsed += added; // ook de bril in het vakje gebruikt stroom
-        return added > 0;
-    }
-
     // ---------------------------------------------------------------- Opslag
 
     @Override
@@ -329,8 +316,11 @@ public abstract class ChargerBlockEntity extends BaseContainerBlockEntity implem
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
+        // Van voor hoofdstuk 54 had hij twee vakjes (bril, brandstof); nu alleen brandstof op 0. Een bril die er nog in lag, is weg.
+        NonNullList<ItemStack> loaded = NonNullList.withSize(2, ItemStack.EMPTY);
+        ContainerHelper.loadAllItems(tag, loaded, registries);
         items = NonNullList.withSize(SLOT_COUNT, ItemStack.EMPTY);
-        ContainerHelper.loadAllItems(tag, items, registries);
+        items.set(SLOT_FUEL, tag.getBoolean("FuelOnly") ? loaded.get(0) : loaded.get(1));
         energy = tag.getDouble("Energy"); // ook goed voor een oude wereld, waar het nog een heel getal was
         totalProduced = tag.getDouble("TotalProduced");
         if (!tag.contains("EnergyUnits")) {
@@ -343,6 +333,7 @@ public abstract class ChargerBlockEntity extends BaseContainerBlockEntity implem
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
+        tag.putBoolean("FuelOnly", true);
         ContainerHelper.saveAllItems(tag, items, registries);
         tag.putDouble("Energy", energy);
         tag.putDouble("TotalProduced", totalProduced);

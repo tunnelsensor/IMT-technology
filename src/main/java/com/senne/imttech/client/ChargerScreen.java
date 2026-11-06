@@ -2,8 +2,6 @@ package com.senne.imttech.client;
 
 import com.senne.imttech.client.hud.HudStyle;
 import com.senne.imttech.ImtTech;
-import com.senne.imttech.imt.ImtData;
-import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.station.ChargerMenu;
 import com.senne.imttech.client.hud.PowerReadout;
 import java.util.ArrayList;
@@ -21,28 +19,27 @@ import net.minecraft.world.item.Items;
  * Het scherm van het zonnepaneel en de warmtegenerator.
  *
  * <pre>
- *  [balk]   Glasses [bril]     STORED
- *  [    ]   ======= (balk)     1234 / 5000
- *  [    ]   Fuel    [kolen]    MADE SO FAR
- *  [    ]                      56789
- *  Producing: 4 per tick                    [/tick]
+ *  [balk]        STORED                   [/tick]
+ *  [    ]      1234 / 5000       [kolen]
+ *  [    ]      MADE SO FAR        FUEL
+ *  [    ]        56789
+ *  Producing: 4 per tick
  * </pre>
- * Links een verticale balk met wat het apparaat zelf heeft opgeslagen, in het midden je bril met
- * daaronder zijn eigen balk, rechts de getallen, en onderaan wat het nu oplevert (of waarom het
- * niets doet: nacht, geen brandstof, geen hitte).
+ * Links een verticale balk met wat het apparaat zelf heeft opgeslagen, in het midden (groot) de
+ * getallen, en onderaan wat het nu oplevert (of waarom het niets doet: nacht, geen brandstof,
+ * geen hitte). Sinds hoofdstuk 54 (jouw notitie) is er geen brilvakje meer: je laadt hier niets op.
  *
- * Alleen de warmtegenerator heeft een vakje voor brandstof; het zonnepaneel niet. Die vakjes
- * tekenen we hier zelf (niet in het achtergrondplaatje), met een vaag voorbeeld erin zolang ze
- * leeg zijn, zodat je ziet wat erin hoort.
+ * Alleen de warmtegenerator heeft een vakje voor brandstof; het zonnepaneel niet. Dat vakje
+ * tekenen we hier zelf (niet in het achtergrondplaatje), met een vaag voorbeeld erin zolang het
+ * leeg is, zodat je ziet wat erin hoort.
  */
 public class ChargerScreen extends AbstractContainerScreen<ChargerMenu> {
     private static final ResourceLocation TEXTURE =
             ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "textures/gui/charger.png");
 
     private static final int BUFFER_BAR_X = 10, BUFFER_BAR_Y = 17, BUFFER_BAR_W = 10, BUFFER_BAR_H = 52;
-    private static final int GLASSES_BAR_X = 62, GLASSES_BAR_Y = 45, GLASSES_BAR_W = 52, GLASSES_BAR_H = 4;
-    /** Waar de getallen rechts beginnen (zo dat "20000 / 20000" er nog net in past). */
-    private static final int STATS_X = 118;
+    /** Het midden van de getallen (tussen de balk links en het brandstofvakje rechts). */
+    private static final int STATS_CX = 84;
 
     // Dezelfde kleuren als het achtergrondplaatje (tools/generate_textures.py).
     private static final int FRAME = HudStyle.argb(255, 0x465460);
@@ -82,25 +79,9 @@ public class ChargerScreen extends AbstractContainerScreen<ChargerMenu> {
                     HudStyle.argb(255, 0xFFE07F), HudStyle.argb(255, 0xB56B12));
         }
 
-        // De bril die erin ligt (of een vaag voorbeeld), met zijn eigen balk eronder.
-        ItemStack glasses = menu.getGlasses();
-        slot(g, x + ChargerMenu.GLASSES_X, y + ChargerMenu.GLASSES_Y,
-                glasses.isEmpty() ? new ItemStack(ModItems.IMT_GLASSES.get()) : ItemStack.EMPTY);
-        g.fill(x + GLASSES_BAR_X, y + GLASSES_BAR_Y, x + GLASSES_BAR_X + GLASSES_BAR_W,
-                y + GLASSES_BAR_Y + GLASSES_BAR_H, WELL);
-        if (ImtData.isGlasses(glasses)) {
-            float glassesFraction = (float) ImtData.getEnergy(glasses) / ImtData.getMaxEnergy(glasses);
-            int width = Math.round(GLASSES_BAR_W * Math.min(1.0f, glassesFraction));
-            if (width > 0) {
-                g.fill(x + GLASSES_BAR_X, y + GLASSES_BAR_Y,
-                        x + GLASSES_BAR_X + width, y + GLASSES_BAR_Y + GLASSES_BAR_H,
-                        HudStyle.argb(255, HudStyle.CYAN));
-            }
-        }
-
         // Alleen de warmtegenerator: het vakje voor brandstof.
         if (menu.usesFuel()) {
-            boolean empty = menu.getSlot(1).getItem().isEmpty();
+            boolean empty = menu.getSlot(0).getItem().isEmpty();
             slot(g, x + ChargerMenu.FUEL_X, y + ChargerMenu.FUEL_Y, empty ? new ItemStack(Items.COAL) : ItemStack.EMPTY);
         }
     }
@@ -137,12 +118,6 @@ public class ChargerScreen extends AbstractContainerScreen<ChargerMenu> {
         super.render(g, mouseX, mouseY, partialTick);
         renderTooltip(g, mouseX, mouseY);
         // Sinds hoofdstuk 47 (jouw keuze) zie je het hele net alleen nog in de Power Battery; hier alleen dit apparaat.
-        ItemStack glasses = menu.getGlasses();
-        if (ImtData.isGlasses(glasses) && over(mouseX, mouseY, GLASSES_BAR_X, GLASSES_BAR_Y,
-                GLASSES_BAR_W, GLASSES_BAR_H)) {
-            g.renderTooltip(font, Component.translatable("screen.imttech.charger.glasses",
-                    ImtData.getEnergy(glasses), ImtData.getMaxEnergy(glasses)), mouseX, mouseY);
-        }
         if (overBuffer(mouseX, mouseY)) {
             g.renderComponentTooltip(font, List.<Component>of(
                     Component.translatable("screen.imttech.charger.stored", menu.getEnergy(), capacity()),
@@ -247,26 +222,23 @@ public class ChargerScreen extends AbstractContainerScreen<ChargerMenu> {
                         : "screen.imttech.charger.idle_solar");
     }
 
-    /** De namen bij de vakjes, de getallen rechts, en onderaan wat het nu oplevert. */
+    /** De naam bij het brandstofvakje, de getallen groot in het midden, en onderaan wat het nu oplevert. */
     @Override
     protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {
         super.renderLabels(g, mouseX, mouseY);
-        int label = HudStyle.argb(170, HudStyle.WHITE);
-        smallRight(g, Component.translatable("screen.imttech.charger.slot_glasses").getString(),
-                ChargerMenu.GLASSES_X - 4, ChargerMenu.GLASSES_Y + 5, label);
         if (menu.usesFuel()) {
-            smallRight(g, Component.translatable("screen.imttech.charger.slot_fuel").getString(),
-                    ChargerMenu.FUEL_X - 4, ChargerMenu.FUEL_Y + 5, label);
+            String fuel = Component.translatable("screen.imttech.charger.slot_fuel").getString().toUpperCase();
+            small(g, fuel, ChargerMenu.FUEL_X + 8 - (int) Math.ceil(font.width(fuel) * 0.75f / 2), ChargerMenu.FUEL_Y + 19,
+                    HudStyle.argb(170, HudStyle.WHITE));
         }
 
-        int dim = HudStyle.argb(150, HudStyle.ORANGE);
-        int value = HudStyle.argb(230, HudStyle.WHITE);
-        small(g, Component.translatable("screen.imttech.charger.label_stored").getString().toUpperCase(),
-                STATS_X, 20, dim);
-        small(g, menu.getEnergy() + " / " + capacity(), STATS_X, 28, value);
-        small(g, Component.translatable("screen.imttech.charger.label_total").getString().toUpperCase(),
-                STATS_X, 42, dim);
-        small(g, String.valueOf(menu.getTotalProduced()), STATS_X, 50, value);
+        // Groot en in het midden (jouw notitie): het kopje klein erboven, het getal op volle grootte eronder.
+        int dim = HudStyle.argb(170, HudStyle.ORANGE);
+        int value = HudStyle.argb(240, HudStyle.WHITE);
+        smallCentred(g, Component.translatable("screen.imttech.charger.label_stored").getString().toUpperCase(), STATS_CX, 16, dim);
+        g.drawCenteredString(font, menu.getEnergy() + " / " + capacity(), STATS_CX, 25, value);
+        smallCentred(g, Component.translatable("screen.imttech.charger.label_total").getString().toUpperCase(), STATS_CX, 42, dim);
+        g.drawCenteredString(font, String.valueOf(menu.getTotalProduced()), STATS_CX, 51, value);
 
         g.drawString(font, status(), 8, 71, menu.getRate() > 0 ? HudStyle.argb(255, HudStyle.GREEN)
                 : HudStyle.argb(200, HudStyle.ORANGE), false);
@@ -281,8 +253,8 @@ public class ChargerScreen extends AbstractContainerScreen<ChargerMenu> {
         g.pose().popPose();
     }
 
-    /** Kleine tekst (75%), rechts uitgelijnd tegen {@code right}. */
-    private void smallRight(GuiGraphics g, String text, int right, int y, int colour) {
-        small(g, text, right - (int) Math.ceil(font.width(text) * 0.75f), y, colour);
+    /** Kleine tekst (75%), gecentreerd op {@code centerX}. */
+    private void smallCentred(GuiGraphics g, String text, int centerX, int y, int colour) {
+        small(g, text, centerX - (int) Math.ceil(font.width(text) * 0.75f / 2), y, colour);
     }
 }

@@ -226,6 +226,17 @@ public final class FirearmRenderer {
             FirearmModels.render(pose, buffers, FirearmModels.location("round"), light, OverlayTexture.NO_OVERLAY);
             pose.popPose();
         }
+        // De patroon die bij een unload uit de kamer springt (hoofdstuk 54): een boogje naar rechts.
+        if (action == Firearms.ActionKind.UNLOAD_CHAMBER && progress > 0.3f && progress < 0.6f) {
+            float t = (progress - 0.3f) / 0.3f;
+            pose.pushPose();
+            pose.translate(rig.port.x + 0.4f + 6.5f * t, rig.port.y + 0.5f + 5f * t - 8f * t * t, rig.port.z + 2.5f * t);
+            pose.mulPose(new Quaternionf().rotateZ((float) Math.toRadians(-40 - 120 * t)));
+            pose.translate(-8, -8.3f, -8);
+            pose.scale(16, 16, 16);
+            FirearmModels.render(pose, buffers, FirearmModels.location("round"), light, OverlayTexture.NO_OVERLAY);
+            pose.popPose();
+        }
         if (since < 1.8f && since >= 0) {
             flash(pose, buffers.getBuffer(SuitEffects.GLOW), rig.muzzle, 1 - since / 1.8f);
         }
@@ -274,6 +285,10 @@ public final class FirearmRenderer {
             back = Math.max(0, rack) * rig.cycle;
         } else if (action == Firearms.ActionKind.CHAMBER_ROUND) {
             float rack = t < 0.3f ? ease(t / 0.3f) * 1.1f : t < 0.72f ? 1.1f : 1.1f * (1 - ease((t - 0.72f) / 0.2f));
+            back = rack * rig.cycle;
+        } else if (action == Firearms.ActionKind.UNLOAD_CHAMBER) {
+            // De slede naar achteren trekken (de patroon springt eruit), even vasthouden, loslaten.
+            float rack = t < 0.3f ? ease(t / 0.3f) * 1.1f : t < 0.6f ? 1.1f : 1.1f * (1 - ease((t - 0.6f) / 0.25f));
             back = rack * rig.cycle;
         } else if (action == Firearms.ActionKind.RELOAD_POUCH && t > 0.8f) {
             back = rig.cycle * (1 - ease((t - 0.8f) / 0.2f)) * (FirearmItem.chambered(stack) ? 0 : 1);
@@ -350,6 +365,11 @@ public final class FirearmRenderer {
                 if (t < 0.8f) return atSlide;
                 return lerp(atSlide, rest, ease((t - 0.8f) / 0.2f));
             }
+            case UNLOAD_CHAMBER -> {
+                if (t < 0.3f) return lerp(rest, atSlide, ease(t / 0.3f));
+                if (t < 0.6f) return atSlide;
+                return lerp(atSlide, rest, ease((t - 0.6f) / 0.4f));
+            }
             case CHAMBER_ROUND -> {
                 Vector3f port = new Vector3f(rig.port.x + 3.2f, rig.port.y - 1.0f, rig.port.z + 2.5f);
                 if (t < 0.3f) return lerp(rest, atSlide, ease(t / 0.3f));
@@ -380,7 +400,9 @@ public final class FirearmRenderer {
         float draw = ease(FirearmControl.drawn(pt));
         float sprint = FirearmControl.sprint(pt);
         boolean loading = FirearmControl.action() == Firearms.ActionKind.LOAD_ROUND;
-        float t = loading ? FirearmControl.action(pt) : -1;
+        // Een unload (U, hoofdstuk 54) is dezelfde beweging achterstevoren: de patroon komt eruit.
+        boolean unloading = FirearmControl.action() == Firearms.ActionKind.UNLOAD_ROUND;
+        float t = loading || unloading ? FirearmControl.action(pt) : -1;
 
         pose.pushPose();
         Vector3f place = new Vector3f(-0.06f, -0.26f - (1 - draw) * 0.4f - 0.05f * sprint, -0.58f);
@@ -409,11 +431,11 @@ public final class FirearmRenderer {
         pose.popPose();
         // De patroon die erin gaat: van rechtsboven naar de bovenkant van het magazijn.
         Vector3f top = new Vector3f(8, 9.2f, 11.9f);
-        if (loading) {
+        if (loading || unloading) {
             float k = ease(Mth.clamp(t / 0.75f, 0, 1));
             Vector3f from = new Vector3f(14, 14, 10);
-            Vector3f at = lerp(from, top, k);
-            if (t < 0.85f) {
+            Vector3f at = loading ? lerp(from, top, k) : lerp(top, from, k);
+            if (loading ? t < 0.85f : t > 0.08f) {
                 pose.pushPose();
                 pose.translate(at.x, at.y, at.z);
                 pose.mulPose(new Quaternionf().rotateZ((float) Math.toRadians(90)).rotateX((float) Math.toRadians(90)));
@@ -429,9 +451,11 @@ public final class FirearmRenderer {
         Vector3f leftAt = mag.transformPosition(new Vector3f(8.6f, 4.2f, 12.2f));
         Vector3f rightRest = mag.transformPosition(new Vector3f(16, 12, 8));
         Vector3f rightAt = rightRest;
-        if (loading) {
+        if (loading || unloading) {
             float k = ease(Mth.clamp(t / 0.75f, 0, 1));
-            rightAt = mag.transformPosition(lerp(new Vector3f(16, 12, 8), new Vector3f(9.8f, 11.0f, 11.6f), k));
+            Vector3f away = new Vector3f(16, 12, 8);
+            Vector3f atTop = new Vector3f(9.8f, 11.0f, 11.6f);
+            rightAt = mag.transformPosition(loading ? lerp(away, atTop, k) : lerp(atTop, away, k));
         }
         HumanoidArm main = player.getMainArm();
         HumanoidArm other = main.getOpposite();

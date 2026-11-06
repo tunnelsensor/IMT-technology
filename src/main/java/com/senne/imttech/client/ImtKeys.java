@@ -91,13 +91,29 @@ public final class ImtKeys {
      * klikken). Alt doet in Minecraft zelf niets.
      */
     public static final KeyMapping GEAR_WHEEL = key("gear_wheel", InputConstants.KEY_LALT);
-    /** Hoofdstuk 52 (stap 3): de skilltree van je vuurwapens. Standaard op geen toets (ook via G > Combat). */
+    /** Hoofdstuk 52 (stap 3): de skilltree van je vuurwapens. Standaard op geen toets (ook via het wiel, linker Alt). */
     public static final KeyMapping SKILL_TREE = key("skill_tree", InputConstants.UNKNOWN.getValue());
 
     public static final KeyMapping GUN_RELOAD = new KeyMapping("key.imttech.gun_reload", GunKeys.CONTEXT, Type.KEYSYM,
             InputConstants.KEY_R, CATEGORY);
     public static final KeyMapping GUN_INSPECT = new KeyMapping("key.imttech.gun_inspect", GunKeys.CONTEXT, Type.KEYSYM,
             InputConstants.KEY_H, CATEGORY);
+    /**
+     * Hoofdstuk 54 (jouw wens): U = unload. Met een pistool: het magazijn eruit (zonder magazijn: de patroon uit de kamer);
+     * met een magazijn in je hand: één patroon eruit. Met een pistool of magazijn in je hand doet U dan niet ook de ping.
+     */
+    public static final KeyMapping GUN_UNLOAD = new KeyMapping("key.imttech.gun_unload", GunKeys.CONTEXT, Type.KEYSYM,
+            InputConstants.KEY_U, CATEGORY);
+    /**
+     * Hoofdstuk 54 (jouw notitie): een eigen toets voor elke quickdraw en om elke pouch te openen (magazijnen en granaten
+     * erin stoppen of eruit halen). Standaard op geen toets (bijna alle letters zijn bezet); kies ze in Opties > Besturing.
+     * Het wiel (linker Alt) kan het allemaal ook.
+     */
+    public static final KeyMapping DRAW_GUN = key("draw_gun", InputConstants.UNKNOWN.getValue());
+    public static final KeyMapping DRAW_GRENADE = key("draw_grenade", InputConstants.UNKNOWN.getValue());
+    public static final KeyMapping OPEN_HOLSTER = key("open_holster", InputConstants.UNKNOWN.getValue());
+    public static final KeyMapping OPEN_GRENADE_POUCH = key("open_grenade_pouch", InputConstants.UNKNOWN.getValue());
+    public static final KeyMapping OPEN_MAG_POUCH = key("open_mag_pouch", InputConstants.UNKNOWN.getValue());
 
     /** Wanneer de toetsen van een geweer werken: in het spel (geen scherm open) en met een lasergeweer, een pistool of een magazijn (hoofdstuk 52) in je hand. */
     private static final class GunKeys implements net.neoforged.neoforge.client.settings.IKeyConflictContext {
@@ -150,5 +166,11 @@ public final class ImtKeys {
         event.register(GEAR_WHEEL);
         event.register(SKILL_TREE);
         event.register(GUN_INSPECT);
+        event.register(GUN_UNLOAD);
+        event.register(DRAW_GUN);
+        event.register(DRAW_GRENADE);
+        event.register(OPEN_HOLSTER);
+        event.register(OPEN_GRENADE_POUCH);
+        event.register(OPEN_MAG_POUCH);
     }
 }

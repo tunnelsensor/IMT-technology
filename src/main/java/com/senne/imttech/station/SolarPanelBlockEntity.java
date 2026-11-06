@@ -38,8 +38,8 @@ public class SolarPanelBlockEntity extends ChargerBlockEntity {
 
     @Override
     public boolean canPlaceItem(int slot, ItemStack stack) {
-        // Alleen de bril; brandstof doet een zonnepaneel niets.
-        return slot == SLOT_GLASSES && com.senne.imttech.imt.ImtData.isGlasses(stack);
+        // Niets: een zonnepaneel heeft geen vakje (hoofdstuk 54).
+        return false;
     }
 
     @Override

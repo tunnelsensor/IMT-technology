@@ -91,12 +91,24 @@ public class GunsmithTableBlockEntity extends BlockEntity implements MenuProvide
                 tell(player, Component.translatable("gunsmith.imttech.occupied", part.text()));
                 return false;
             }
+            if (underSlide(part, parts)) {
+                tell(player, Component.translatable("gunsmith.imttech.under_slide"));
+                return false;
+            }
             FirearmItem.setParts(gun, parts.with(part, GunPartItem.stateOf(stack)));
             items.setChanged();
         }
         stack.shrink(1);
         click(player);
         return true;
+    }
+
+    /**
+     * De loop, de veren en de slagpin zitten onder de slede (hoofdstuk 54): zit de slede erop, dan kun je er niet bij,
+     * net als bij een echte Glock. Eerst de slede eraf.
+     */
+    public static boolean underSlide(GunPart part, GunParts parts) {
+        return (part == GunPart.BARREL || part == GunPart.SPRINGS || part == GunPart.STRIKER) && parts.has(GunPart.SLIDE);
     }
 
     /** Dit onderdeel uit het pistool, terug in je inventaris. */
@@ -112,6 +124,10 @@ public class GunsmithTableBlockEntity extends BlockEntity implements MenuProvide
         }
         if (part == GunPart.FRAME && parts.parts().size() > 1) {
             tell(player, Component.translatable("gunsmith.imttech.frame_last"));
+            return false;
+        }
+        if (underSlide(part, parts)) {
+            tell(player, Component.translatable("gunsmith.imttech.under_slide"));
             return false;
         }
         GunParts rest = parts.without(part);

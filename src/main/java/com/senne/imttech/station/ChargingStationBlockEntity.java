@@ -2,17 +2,14 @@ package com.senne.imttech.station;
 
 import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.imt.ImtData;
-import com.senne.imttech.imt.UpgradeItem;
 import com.senne.imttech.energy.EnergyCarry;
 import com.senne.imttech.energy.EnergySource;
 import com.senne.imttech.energy.PowerGrid;
 import com.senne.imttech.registry.ModBlockEntities;
-import com.senne.imttech.registry.ModSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -25,23 +22,19 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 
 /**
- * De "binnenkant" van het laadstation: 3 slots, een energie-opslag en een upgrade-teller.
+ * De "binnenkant" van het laadstation: één vakje (de bril, of een energiecel) en een energie-opslag.
  *
- * Slot 0 = de bril, slot 1 = brandstof (redstone), slot 2 = een upgrade.
- *
- * Stroom komt uit redstone (de noodvoorraad) of van het stroomnet: zonnepanelen en
- * warmtegeneratoren die via stroomkabels (of er direct tegenaan) verbonden zijn.
+ * Sinds hoofdstuk 54 (jouw notitie van 6 november) doet het station alleen nog laden: het redstone-vakje en het
+ * upgrade-vakje zijn weg. Stroom komt van het stroomnet (zonnepanelen en warmtegeneratoren via stroomkabels, of er
+ * direct tegenaan); upgrades bouw je in aan de harnas-werkbank (de bril ligt daar als vierde stuk op het hologram).
  */
 public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
     public static final int SLOT_GLASSES = 0;
-    public static final int SLOT_FUEL = 1;
-    public static final int SLOT_UPGRADE = 2;
-    public static final int SLOT_COUNT = 3;
+    public static final int SLOT_COUNT = 1;
 
     /** Nummers voor de gegevens die naar het scherm gestuurd worden. */
     public static final int DATA_ENERGY = 0;
-    public static final int DATA_UPGRADE_PROGRESS = 1;
-    public static final int DATA_COUNT = 2;
+    public static final int DATA_COUNT = 1;
 
     private NonNullList<ItemStack> items = NonNullList.withSize(SLOT_COUNT, ItemStack.EMPTY);
     /** Hoeveel stroom erin zit; een kommagetal, zodat ook 0.5 per redstone werkt. */
@@ -50,25 +43,18 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
     private final EnergyCarry gridCarry = new EnergyCarry();
     private final EnergyCarry storeCarry = new EnergyCarry();
     private final EnergyCarry chargeCarry = new EnergyCarry();
-    private int upgradeProgress;
 
     /** Stuurt energie en upgrade-voortgang naar het scherm van spelers die het station open hebben. */
     private final ContainerData data = new ContainerData() {
         @Override
         public int get(int index) {
-            return switch (index) {
-                case DATA_ENERGY -> (int) energy;
-                case DATA_UPGRADE_PROGRESS -> upgradeProgress;
-                default -> 0;
-            };
+            return index == DATA_ENERGY ? (int) energy : 0;
         }
 
         @Override
         public void set(int index, int value) {
-            switch (index) {
-                case DATA_ENERGY -> energy = value;
-                case DATA_UPGRADE_PROGRESS -> upgradeProgress = value;
-                default -> { }
+            if (index == DATA_ENERGY) {
+                energy = value;
             }
         }
 
@@ -85,26 +71,12 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
     // ---------------------------------------------------------------- Elke tick (alleen op de server)
 
     public void serverTick(ServerLevel level, BlockPos pos, BlockState state) {
-        boolean changed = burnFuel();
-        changed |= pullFromGrid(level, pos);
+        boolean changed = pullFromGrid(level, pos);
         changed |= storeSpareFromGrid(level, pos);
         changed |= chargeGlasses();
-        changed |= tickUpgrade(level, pos);
         if (changed) {
             setChanged();
         }
-    }
-
-    /** Stopt redstone uit het brandstof-slot in de energie-opslag, als daar plek voor is. */
-    private boolean burnFuel() {
-        ItemStack fuel = items.get(SLOT_FUEL);
-        float value = getFuelValue(fuel);
-        if (value > 0 && energy + value <= ImtConfig.Power.STATION_CAPACITY) {
-            fuel.shrink(1);
-            energy += value;
-            return true;
-        }
-        return false;
     }
 
     /**
@@ -182,52 +154,12 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
         return added > 0;
     }
 
-    /** Bouwt langzaam de upgrade in de bril in. */
-    private boolean tickUpgrade(ServerLevel level, BlockPos pos) {
-        ItemStack glasses = items.get(SLOT_GLASSES);
-        ItemStack upgrade = items.get(SLOT_UPGRADE);
-        boolean canUpgrade = ImtData.isGlasses(glasses)
-                && upgrade.getItem() instanceof UpgradeItem upgradeItem
-                && upgradeItem.canApplyTo(glasses);
-
-        if (!canUpgrade) {
-            if (upgradeProgress != 0) {
-                upgradeProgress = 0;
-                return true;
-            }
-            return false;
-        }
-
-        upgradeProgress++;
-        if (upgradeProgress >= Math.round(ImtConfig.Glasses.UPGRADE_INSTALL_TIME)) {
-            ((UpgradeItem) upgrade.getItem()).applyTo(glasses);
-            upgrade.shrink(1);
-            upgradeProgress = 0;
-            level.playSound(null, pos, ModSounds.STATION_UPGRADE.get(), SoundSource.BLOCKS, 1.0f, 1.0f);
-        }
-        return true;
-    }
-
-    public static float getFuelValue(ItemStack stack) {
-        if (stack.is(Items.REDSTONE)) {
-            return ImtConfig.Power.ENERGY_PER_REDSTONE;
-        }
-        if (stack.is(Items.REDSTONE_BLOCK)) {
-            return ImtConfig.Power.ENERGY_PER_REDSTONE_BLOCK;
-        }
-        return 0;
-    }
-
     // ---------------------------------------------------------------- Welke items mogen in welk slot
 
     @Override
     public boolean canPlaceItem(int slot, ItemStack stack) {
-        return switch (slot) {
-            case SLOT_GLASSES -> ImtData.isGlasses(stack) || stack.getItem() instanceof com.senne.imttech.weapons.EnergyCellItem;
-            case SLOT_FUEL -> getFuelValue(stack) > 0;
-            case SLOT_UPGRADE -> stack.getItem() instanceof UpgradeItem;
-            default -> false;
-        };
+        return slot == SLOT_GLASSES
+                && (ImtData.isGlasses(stack) || stack.getItem() instanceof com.senne.imttech.weapons.EnergyCellItem);
     }
 
     // ---------------------------------------------------------------- Opslaan en laden
@@ -235,10 +167,12 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
+        // Een station van voor hoofdstuk 54 had drie vakjes; de bril stond ook toen op 0 (wat in de andere twee lag, is weg).
+        NonNullList<ItemStack> loaded = NonNullList.withSize(3, ItemStack.EMPTY);
+        ContainerHelper.loadAllItems(tag, loaded, registries);
         items = NonNullList.withSize(getContainerSize(), ItemStack.EMPTY);
-        ContainerHelper.loadAllItems(tag, items, registries);
+        items.set(SLOT_GLASSES, loaded.get(SLOT_GLASSES));
         energy = tag.getDouble("energy"); // ook goed voor een oude wereld, waar het nog een heel getal was
-        upgradeProgress = tag.getInt("upgrade_progress");
     }
 
     @Override
@@ -246,7 +180,6 @@ public class ChargingStationBlockEntity extends BaseContainerBlockEntity {
         super.saveAdditional(tag, registries);
         ContainerHelper.saveAllItems(tag, items, registries);
         tag.putDouble("energy", energy);
-        tag.putInt("upgrade_progress", upgradeProgress);
     }
 
     // ---------------------------------------------------------------- Container-dingen

@@ -49,6 +49,9 @@ import org.joml.Matrix4f;
  * zijn eigen harnas, zodat het precies om hem heen valt.
  */
 public class SuitHologramRenderer implements BlockEntityRenderer<SuitWorkbenchBlockEntity> {
+    /** De bril: het plaatje van de helm-laag van de bril (hoofdstuk 54). */
+    private static final ResourceLocation GLASSES_TEXTURE =
+            ResourceLocation.fromNamespaceAndPath(com.senne.imttech.ImtTech.MODID, "textures/models/armor/imt_layer_1.png");
     private static final ResourceLocation OUTER_TEXTURE =
             ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "textures/models/armor/tech_layer_1.png");
     private static final ResourceLocation INNER_TEXTURE =
@@ -129,6 +132,9 @@ public class SuitHologramRenderer implements BlockEntityRenderer<SuitWorkbenchBl
             }
             if (glow) {
                 corners(pose, buffers.getBuffer(RenderType.lines()), piece.box(), HudStyle.CYAN, 200);
+            } else if (piece == bench.selected()) {
+                // Het gekozen stuk (sneak + klik op de werkbank, hoofdstuk 54): oranje hoekjes.
+                corners(pose, buffers.getBuffer(RenderType.lines()), piece.box(), HudStyle.ORANGE, 150);
             }
         }
 
@@ -171,7 +177,7 @@ public class SuitHologramRenderer implements BlockEntityRenderer<SuitWorkbenchBl
             parts.get(i).skipDraw = true; // de kinderen (details) worden nog wel getekend
         }
         model.renderToBuffer(pose, buffers.getBuffer(RenderType.entityTranslucentEmissive(
-                        piece == HoloPiece.LEGS ? HOLO_INNER : HOLO_OUTER)),
+                        piece == HoloPiece.GLASSES ? GLASSES_TEXTURE : piece == HoloPiece.LEGS ? HOLO_INNER : HOLO_OUTER)),
                 LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, (alpha << 24) | rgb);
         for (ModelPart part : parts) {
             part.skipDraw = false;
@@ -184,6 +190,10 @@ public class SuitHologramRenderer implements BlockEntityRenderer<SuitWorkbenchBl
      */
     private static HumanoidModel<LivingEntity> prepare(HoloPiece piece, ItemStack stack) {
         HumanoidModel<LivingEntity> model = TechSuitModel.forSlot(piece.slot());
+        if (piece == HoloPiece.GLASSES) {
+            // De bril: het gewone mensmodel (hoofd en hoedlaag) met het plaatje van de bril.
+            model = glassesModel();
+        }
         for (ModelPart part : List.of(model.head, model.hat, model.body, model.rightArm, model.leftArm,
                 model.rightLeg, model.leftLeg)) {
             part.resetPose();
@@ -212,7 +222,19 @@ public class SuitHologramRenderer implements BlockEntityRenderer<SuitWorkbenchBl
             case CHEST -> List.of(model.body, model.rightArm, model.leftArm);
             case LEGS -> List.of(model.body, model.rightLeg, model.leftLeg);
             case BOOTS -> List.of(model.rightLeg, model.leftLeg);
+            case GLASSES -> List.of(model.head, model.hat);
         };
+    }
+
+    private static HumanoidModel<LivingEntity> glasses;
+
+    /** Het gewone mensmodel voor de bril (de helm-laag, zoals Minecraft een helm tekent). */
+    private static HumanoidModel<LivingEntity> glassesModel() {
+        if (glasses == null) {
+            glasses = new HumanoidModel<>(net.minecraft.client.Minecraft.getInstance().getEntityModels()
+                    .bakeLayer(net.minecraft.client.model.geom.ModelLayers.PLAYER_OUTER_ARMOR));
+        }
+        return glasses;
     }
 
     /** Alle plaatjes van een stuk, in de volgorde waarin ze gebouwd worden: eerst de romp. */
@@ -226,7 +248,7 @@ public class SuitHologramRenderer implements BlockEntityRenderer<SuitWorkbenchBl
     }
 
     private static ResourceLocation texture(HoloPiece piece) {
-        return piece == HoloPiece.LEGS ? INNER_TEXTURE : OUTER_TEXTURE;
+        return piece == HoloPiece.GLASSES ? GLASSES_TEXTURE : piece == HoloPiece.LEGS ? INNER_TEXTURE : OUTER_TEXTURE;
     }
 
     // ================================================================ Het vliegende stuk

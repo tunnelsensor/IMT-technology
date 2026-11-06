@@ -617,6 +617,34 @@ public final class VisualCheck {
             t.shot(40, "w08_workbench_installing");
             t.onServer(80, player -> player.getInventory().setItem(0, ItemStack.EMPTY));
             t.shot(10, "w09_workbench_upgraded");
+            // Hoofdstuk 54: sneak + klik op de werkbank kiest het volgende stuk (tot de bril), de bril erop, een
+            // batterij-upgrade erin, en het station zonder redstone- en upgradevakje.
+            t.onServer(0, player -> player.getInventory().setItem(0, DevWorld.ownGlasses(player)));
+            Vec3 glassesBox = new Vec3(-79.5, -57.35, 60.5);
+            t.stand(0, -79.5, -60, 56.2, 0, 0);
+            t.lookAt(5, Vec3.atCenterOf(bench));
+            t.key(0, () -> Minecraft.getInstance().options.keyShift, true);
+            t.step(5, click);
+            t.step(8, click);
+            t.step(8, click);
+            t.key(5, () -> Minecraft.getInstance().options.keyShift, false);
+            t.shot(10, "w10_workbench_glasses_selected");
+            t.step(0, click);
+            t.lookAt(5, glassesBox);
+            t.shot(10, "w11_workbench_glasses_laid");
+            t.onServer(5, player -> player.getInventory().setItem(0, new ItemStack(ModItems.BATTERY_UPGRADE.get())));
+            t.step(10, click);
+            t.shot(30, "w12_workbench_glasses_upgrading");
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setBlockAndUpdate(bench.west(), ModBlocks.CHARGING_STATION.get().defaultBlockState());
+                if (level.getBlockEntity(bench.west()) instanceof com.senne.imttech.station.ChargingStationBlockEntity station) {
+                    station.setItem(com.senne.imttech.station.ChargingStationBlockEntity.SLOT_GLASSES, DevWorld.ownGlasses(player));
+                    player.openMenu(station);
+                }
+            });
+            t.shot(15, "w13_charging_station_screen");
+            t.close(0);
             t.command(0, "gamemode creative @a");
             t.command(0, "difficulty easy");
         }
@@ -773,6 +801,24 @@ public final class VisualCheck {
         if (want("hud")) {
             t.view(10, 6.5, -60, -4.5, 180, 8);
             t.shot(60, "30_hud_target");
+            // De dreigingsscan (hoofdstuk 54: echte pijlpunten, en de pijl naar een dreiging achter je boven je werkbalk).
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                for (BlockPos at : new BlockPos[] {new BlockPos(6, -60, -16), new BlockPos(2, -60, 6), new BlockPos(14, -60, -2)}) {
+                    net.minecraft.world.entity.monster.Husk husk = net.minecraft.world.entity.EntityType.HUSK.create(level);
+                    if (husk != null) {
+                        husk.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0, 0);
+                        husk.setNoAi(true);
+                        husk.setTarget(player); // zo telt hij als dreiging (zie ImtThreats)
+                        husk.addTag("imt_visual_threat");
+                        level.addFreshEntity(husk);
+                    }
+                }
+            });
+            t.step(10, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.THREAT_SCAN.getKey()));
+            t.shot(30, "31_threat_arrows");
+            t.step(0, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.THREAT_SCAN.getKey()));
+            t.command(5, "kill @e[tag=imt_visual_threat]");
         }
 
         // --- Het harnas
@@ -3196,6 +3242,9 @@ public final class VisualCheck {
             t.view(20, b.getX() - 3.5, b.getY() + 3.0, b.getZ() + 11.5, 200, 15);
             t.lookAt(5, Vec3.atCenterOf(b.offset(2, 1, 2)));
             t.shot(40, "bt01_battery_box");
+            t.view(0, b.getX() + 2.5, b.getY() + 1.6, b.getZ() + 7.5, 180, 5);
+            t.lookAt(5, Vec3.atCenterOf(b.offset(2, 2, 4)));
+            t.shot(15, "bt01b_battery_glass_close");
             t.onServer(0, player -> {
                 if (player.serverLevel().getBlockEntity(port) instanceof com.senne.imttech.battery.BatteryPortBlockEntity entity) {
                     entity.tourHistory();
@@ -3258,6 +3307,9 @@ public final class VisualCheck {
             t.shot(15, "gl13_magazine_in_hand");
             t.step(0, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
             t.shot(4, "gl14_magazine_loading");
+            // U: een patroon er weer uit (hoofdstuk 54).
+            t.step(12, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_UNLOAD.getKey()));
+            t.shot(4, "gl14b_magazine_unloading");
             t.step(15, () -> selectSlot(6));
             t.shot(15, "gl15_barrel_broken");
             t.step(5, () -> selectSlot(4));
@@ -3319,13 +3371,31 @@ public final class VisualCheck {
             t.step(0, () -> ShowcaseFeatures.magPick(0));
             t.shot(12, "ge06_pouch_reload");
             t.key(30, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true);
-            t.step(10, () -> ShowcaseFeatures.wheelChooseLast());
+            t.step(10, () -> ShowcaseFeatures.wheelChoosePutAway());
             t.key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false);
             t.camera(20, CameraType.THIRD_PERSON_FRONT);
             t.shot(15, "ge07_holster_on_the_hip_front");
             t.camera(0, CameraType.THIRD_PERSON_BACK);
             t.shot(15, "ge08_pouches_back");
+            // Van dichtbij (ingezoomd, zonder HUD): de granaten en de magazijnen in hun vakjes (hoofdstuk 54).
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(30));
+            t.stand(0, stand.x, stand.y, stand.z, 90, 0);
+            t.camera(0, CameraType.THIRD_PERSON_FRONT);
+            t.shot(12, "ge08b_gear_close_front");
+            t.camera(0, CameraType.THIRD_PERSON_BACK);
+            t.shot(12, "ge08c_gear_close_back");
+            t.stand(0, stand.x, stand.y, stand.z, 0, 0);
+            t.camera(0, CameraType.THIRD_PERSON_BACK);
+            t.shot(12, "ge08d_gear_close_side");
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(70));
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.stand(0, stand.x, stand.y, stand.z, 0, 2);
             t.camera(0, CameraType.FIRST_PERSON);
+            // De magazijnpouch open (hoofdstuk 54): zijn vakjes boven je inventaris.
+            t.onServer(5, player -> com.senne.imttech.guns.Gear.openPouch(player, com.senne.imttech.guns.GearItem.Kind.MAG_POUCH.ordinal()));
+            t.shot(15, "ge09_magazine_pouch_open");
+            t.close(0);
             t.command(0, "gamemode creative @a");
         }
 

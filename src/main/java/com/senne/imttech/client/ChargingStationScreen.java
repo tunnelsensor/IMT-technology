@@ -13,16 +13,16 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Het scherm van het laadstation. De achtergrond is een plaatje
- * (textures/gui/charging_station.png); de balken tekenen we er zelf overheen.
+ * Het scherm van het laadstation. De achtergrond is een plaatje (textures/gui/charging_station.png); de balk tekenen
+ * we er zelf overheen. Sinds hoofdstuk 54 (jouw notitie) is het kaal: links de balk met wat het station heeft, in het
+ * midden het vakje voor de bril (of een energiecel) met ernaast hoe vol die is. Geen redstone-vakje, geen balk onder
+ * de bril en geen upgrade-pijl meer: upgrades bouw je in aan de harnas-werkbank.
  */
 public class ChargingStationScreen extends AbstractContainerScreen<ChargingStationMenu> {
     private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "textures/gui/charging_station.png");
 
-    // Posities van de balken (moeten kloppen met het plaatje).
+    // De plek van de balk (moet kloppen met het plaatje).
     private static final int STATION_BAR_X = 10, STATION_BAR_Y = 17, STATION_BAR_W = 10, STATION_BAR_H = 52;
-    private static final int GLASSES_BAR_X = 62, GLASSES_BAR_Y = 56, GLASSES_BAR_W = 52, GLASSES_BAR_H = 4;
-    private static final int ARROW_X = 104, ARROW_Y = 37, ARROW_W = 26, ARROW_H = 8;
 
     public ChargingStationScreen(ChargingStationMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -31,7 +31,7 @@ public class ChargingStationScreen extends AbstractContainerScreen<ChargingStati
         inventoryLabelY = imageHeight - 94;
     }
 
-    /** De achtergrond: eerst het plaatje, dan onze eigen balken erover. */
+    /** De achtergrond: eerst het plaatje, dan onze eigen balk erover. */
     @Override
     protected void renderBg(GuiGraphics g, float partialTick, int mouseX, int mouseY) {
         int x = leftPos;
@@ -45,47 +45,46 @@ public class ChargingStationScreen extends AbstractContainerScreen<ChargingStati
                     x + STATION_BAR_X + STATION_BAR_W, y + STATION_BAR_Y + STATION_BAR_H,
                     HudStyle.argb(255, 0x7FEBFF), HudStyle.argb(255, 0x1283B5));
         }
-
-        // Energie van de bril: horizontale balk onder het bril-slot.
-        ItemStack glasses = menu.getGlasses();
-        if (ImtData.isGlasses(glasses)) {
-            int glassesFill = Math.round(GLASSES_BAR_W * ImtData.getEnergyFraction(glasses));
-            g.fill(x + GLASSES_BAR_X, y + GLASSES_BAR_Y, x + GLASSES_BAR_X + glassesFill, y + GLASSES_BAR_Y + GLASSES_BAR_H,
-                    HudStyle.argb(255, HudStyle.CYAN));
-        }
-
-        // Upgrade-pijl: vult van rechts (upgrade) naar links (bril).
-        int arrowFill = Math.round(ARROW_W * menu.getUpgradeProgress());
-        if (arrowFill > 0) {
-            g.fill(x + ARROW_X + ARROW_W - arrowFill, y + ARROW_Y + 2, x + ARROW_X + ARROW_W, y + ARROW_Y + ARROW_H - 2,
-                    HudStyle.argb(255, HudStyle.ORANGE));
-        }
     }
 
-    /** Titels in I.M.T-blauw in plaats van het standaard donkergrijs. */
+    /** Titels in I.M.T-blauw, en naast het vakje hoe vol de bril (of de cel) is. */
     @Override
     protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {
         g.drawString(font, title, titleLabelX, titleLabelY, HudStyle.argb(255, HudStyle.CYAN), false);
         g.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, HudStyle.argb(255, 0x9FC9D6), false);
+        int dim = HudStyle.argb(170, HudStyle.WHITE);
+        small(g, Component.translatable("screen.imttech.station.slot_glasses").getString().toUpperCase(),
+                ChargingStationMenu.GLASSES_X - 1, ChargingStationMenu.GLASSES_Y + 20, dim);
+        ItemStack glasses = menu.getGlasses();
+        int textX = ChargingStationMenu.GLASSES_X + 24;
+        if (ImtData.isGlasses(glasses)) {
+            small(g, Component.translatable("screen.imttech.station.glasses_energy", ImtData.getEnergy(glasses),
+                    ImtData.getMaxEnergy(glasses)).getString(), textX, ChargingStationMenu.GLASSES_Y + 2, HudStyle.argb(230, HudStyle.WHITE));
+            HudStyle.bar(g, textX, ChargingStationMenu.GLASSES_Y + 11, 60, 3, ImtData.getEnergyFraction(glasses), HudStyle.CYAN);
+        } else if (glasses.getItem() instanceof com.senne.imttech.weapons.EnergyCellItem) {
+            small(g, glasses.getHoverName().getString(), textX, ChargingStationMenu.GLASSES_Y + 2, HudStyle.argb(230, HudStyle.WHITE));
+        } else {
+            small(g, Component.translatable("screen.imttech.station.empty").getString(), textX, ChargingStationMenu.GLASSES_Y + 2, dim);
+        }
+        small(g, Component.translatable("screen.imttech.station.upgrades_moved").getString(), 8, 63, HudStyle.argb(140, HudStyle.ORANGE));
+    }
+
+    /** Kleine tekst (75%). */
+    private void small(GuiGraphics g, String text, int x, int y, int colour) {
+        g.pose().pushPose();
+        g.pose().translate(x, y, 0);
+        g.pose().scale(0.75f, 0.75f, 1.0f);
+        g.drawString(font, text, 0, 0, colour, false);
+        g.pose().popPose();
     }
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
         renderTooltip(g, mouseX, mouseY);
-
-        // Uitleg als je met de muis over een balk gaat.
         if (isHovering(STATION_BAR_X, STATION_BAR_Y, STATION_BAR_W, STATION_BAR_H, mouseX, mouseY)) {
             g.renderTooltip(font, Component.translatable("screen.imttech.station.energy",
                     menu.getStationEnergy(), (int) ImtConfig.Power.STATION_CAPACITY), mouseX, mouseY);
-        }
-        ItemStack glasses = menu.getGlasses();
-        if (ImtData.isGlasses(glasses) && isHovering(GLASSES_BAR_X, GLASSES_BAR_Y - 2, GLASSES_BAR_W, GLASSES_BAR_H + 4, mouseX, mouseY)) {
-            g.renderTooltip(font, Component.translatable("screen.imttech.station.glasses_energy",
-                    ImtData.getEnergy(glasses), ImtData.getMaxEnergy(glasses)), mouseX, mouseY);
-        }
-        if (isHovering(ARROW_X, ARROW_Y, ARROW_W, ARROW_H, mouseX, mouseY)) {
-            g.renderTooltip(font, Component.translatable("screen.imttech.station.upgrade_hint"), mouseX, mouseY);
         }
     }
 }

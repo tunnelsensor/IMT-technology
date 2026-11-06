@@ -81,15 +81,19 @@ public final class FirearmRig {
         };
     }
 
-    /** Hoe ver een onderdeel uit elkaar geschoven ligt op de Gunsmith Table als het er niet in zit (model-pixels). */
+    /**
+     * Hoe ver een onderdeel uit elkaar geschoven ligt op de Gunsmith Table als het er niet in zit (model-pixels). Sinds
+     * hoofdstuk 54 (jouw notitie: "je kunt niet goed aan elk onderdeel") liggen ze verder uit elkaar, elk in zijn eigen
+     * hoek: de slede erboven, de loop en de veren ervoor, de slagpin erachter, de trekker eronder.
+     */
     public static Vector3f exploded(GunPart part) {
         return switch (part) {
             case FRAME -> new Vector3f(0, 0, 0);
-            case SLIDE -> new Vector3f(0, 4.5f, 0);
-            case BARREL -> new Vector3f(0, 2.4f, -4.5f);
-            case SPRINGS -> new Vector3f(0, -3.0f, -5.0f);
-            case STRIKER -> new Vector3f(0, 3.2f, 4.5f);
-            case TRIGGER -> new Vector3f(0, -3.4f, 0);
+            case SLIDE -> new Vector3f(0, 6.0f, 0);
+            case BARREL -> new Vector3f(0, 2.6f, -5.5f);
+            case SPRINGS -> new Vector3f(0, -2.2f, -7.0f);
+            case STRIKER -> new Vector3f(0, 4.0f, 4.5f);
+            case TRIGGER -> new Vector3f(0, -8.0f, -3.0f);
         };
     }
 }

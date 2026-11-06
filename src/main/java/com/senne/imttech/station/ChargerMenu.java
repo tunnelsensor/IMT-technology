@@ -16,15 +16,14 @@ import net.minecraft.world.item.ItemStack;
 /**
  * Het menu van een lader (zonnepaneel of warmtegenerator): welke slots er zijn.
  *
- * Een slot voor de bril die opgeladen wordt, en alleen bij de warmtegenerator een slot voor
- * brandstof. Het zonnepaneel heeft dat niet nodig en krijgt het dus ook niet.
+ * Alleen de warmtegenerator heeft een slot, voor brandstof; het zonnepaneel heeft er geen. Een bril laad je hier sinds
+ * hoofdstuk 54 niet meer op (jouw notitie: "er mag geen item slot zijn").
  *
  * Welk van de twee het is, stuurt de server mee als het scherm opengaat (zie ChargerBlock):
  * anders zou jouw spel het niet weten, want ze delen dit menu.
  */
 public class ChargerMenu extends AbstractContainerMenu {
-    public static final int GLASSES_X = 80, GLASSES_Y = 24;
-    public static final int FUEL_X = 80, FUEL_Y = 52;
+    public static final int FUEL_X = 148, FUEL_Y = 36;
 
     private final Container container;
     private final ContainerData data;
@@ -48,7 +47,6 @@ public class ChargerMenu extends AbstractContainerMenu {
         this.usesFuel = usesFuel;
         container.startOpen(inventory.player);
 
-        addSlot(new FilteredSlot(container, ChargerBlockEntity.SLOT_GLASSES, GLASSES_X, GLASSES_Y, 1));
         if (usesFuel) {
             addSlot(new FilteredSlot(container, ChargerBlockEntity.SLOT_FUEL, FUEL_X, FUEL_Y, 64));
         }
@@ -145,10 +143,6 @@ public class ChargerMenu extends AbstractContainerMenu {
         return (int) (usesFuel ? ImtConfig.Power.HEAT_CAPACITY : ImtConfig.Power.SOLAR_CAPACITY);
     }
 
-    public ItemStack getGlasses() {
-        return container.getItem(ChargerBlockEntity.SLOT_GLASSES);
-    }
-
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
         Slot slot = slots.get(index);
@@ -157,14 +151,14 @@ public class ChargerMenu extends AbstractContainerMenu {
         }
         ItemStack stack = slot.getItem();
         ItemStack original = stack.copy();
-        // De slots van het apparaat komen eerst (1 of 2), daarna die van jou.
-        int inventoryStart = usesFuel ? 2 : 1;
+        // Het slot van het apparaat komt eerst (alleen de warmtegenerator heeft er een), daarna die van jou.
+        int inventoryStart = usesFuel ? 1 : 0;
         if (index < inventoryStart) {
             // Uit het apparaat naar je eigen tassen.
             if (!moveItemStackTo(stack, inventoryStart, slots.size(), true)) {
                 return ItemStack.EMPTY;
             }
-        } else if (!moveItemStackTo(stack, 0, inventoryStart, false)) {
+        } else if (inventoryStart == 0 || !moveItemStackTo(stack, 0, inventoryStart, false)) {
             return ItemStack.EMPTY;
         }
         if (stack.isEmpty()) {

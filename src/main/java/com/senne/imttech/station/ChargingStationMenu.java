@@ -1,8 +1,6 @@
 package com.senne.imttech.station;
 
 import com.senne.imttech.config.ImtConfig;
-import com.senne.imttech.imt.ImtData;
-import com.senne.imttech.imt.UpgradeItem;
 import com.senne.imttech.registry.ModMenus;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
@@ -20,9 +18,7 @@ import net.minecraft.world.item.ItemStack;
  */
 public class ChargingStationMenu extends AbstractContainerMenu {
     // Posities van de slots op het scherm (in pixels, vanaf de linkerbovenhoek van de GUI).
-    public static final int GLASSES_X = 80, GLASSES_Y = 33;
-    public static final int FUEL_X = 26, FUEL_Y = 53;
-    public static final int UPGRADE_X = 134, UPGRADE_Y = 33;
+    public static final int GLASSES_X = 80, GLASSES_Y = 35;
 
     private final Container container;
     private final ContainerData data;
@@ -42,8 +38,6 @@ public class ChargingStationMenu extends AbstractContainerMenu {
         container.startOpen(inventory.player);
 
         addSlot(new FilteredSlot(container, ChargingStationBlockEntity.SLOT_GLASSES, GLASSES_X, GLASSES_Y, 1));
-        addSlot(new FilteredSlot(container, ChargingStationBlockEntity.SLOT_FUEL, FUEL_X, FUEL_Y, 64));
-        addSlot(new FilteredSlot(container, ChargingStationBlockEntity.SLOT_UPGRADE, UPGRADE_X, UPGRADE_Y, 64));
         // De inventaris van de speler: drie rijen van negen, en daaronder de hotbar.
         // (In 1.21.1 moet je die zelf toevoegen.)
         for (int row = 0; row < 3; row++) {
@@ -87,10 +81,6 @@ public class ChargingStationMenu extends AbstractContainerMenu {
         return (float) getStationEnergy() / ImtConfig.Power.STATION_CAPACITY;
     }
 
-    public float getUpgradeProgress() {
-        return (float) data.get(ChargingStationBlockEntity.DATA_UPGRADE_PROGRESS) / Math.round(ImtConfig.Glasses.UPGRADE_INSTALL_TIME);
-    }
-
     public ItemStack getGlasses() {
         return container.getItem(ChargingStationBlockEntity.SLOT_GLASSES);
     }
@@ -114,14 +104,8 @@ public class ChargingStationMenu extends AbstractContainerMenu {
             }
         } else {
             // Van de speler naar het juiste slot in het station.
-            int target = -1;
-            if (ImtData.isGlasses(stack)) {
-                target = ChargingStationBlockEntity.SLOT_GLASSES;
-            } else if (ChargingStationBlockEntity.getFuelValue(stack) > 0) {
-                target = ChargingStationBlockEntity.SLOT_FUEL;
-            } else if (stack.getItem() instanceof UpgradeItem) {
-                target = ChargingStationBlockEntity.SLOT_UPGRADE;
-            }
+            int target = container.canPlaceItem(ChargingStationBlockEntity.SLOT_GLASSES, stack)
+                    ? ChargingStationBlockEntity.SLOT_GLASSES : -1;
             if (target < 0 || !moveItemStackTo(stack, target, target + 1, false)) {
                 return ItemStack.EMPTY;
             }

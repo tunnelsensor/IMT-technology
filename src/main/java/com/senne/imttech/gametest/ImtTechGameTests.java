@@ -1638,6 +1638,49 @@ public final class ImtTechGameTests {
     }
 
     /**
+     * Hoofdstuk 54 (jouw notitie): de bril is het vierde stuk op het hologram. Je legt hem erop, bouwt er een
+     * batterij-upgrade in zoals bij het harnas (de werkbank doet het, met stroom), en pakt hem terug (hij gaat op je
+     * hoofd). Bouwen kan niet (geen blauwdruk), en sneak + klik op de werkbank kiest het volgende stuk, rond.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 300, batch = "workbench")
+    public static void workbench_upgrades_the_glasses(GameTestHelper helper) {
+        var bench = placeWorkbench(helper, new BlockPos(12, 3, 12));
+        ServerPlayer player = benchUser(helper);
+        var hand = net.minecraft.world.InteractionHand.MAIN_HAND;
+        var glassesPiece = com.senne.imttech.workbench.HoloPiece.GLASSES;
+        if (bench.interact(player, glassesPiece)) {
+            throw new GameTestAssertException("De werkbank begon een bril te bouwen");
+        }
+        ItemStack glasses = new ItemStack(ModItems.IMT_GLASSES.get());
+        player.setItemInHand(hand, glasses);
+        if (!bench.interact(player, glassesPiece) || !player.getMainHandItem().isEmpty()
+                || !ImtData.isGlasses(bench.laid(glassesPiece))) {
+            throw new GameTestAssertException("De bril kwam niet op het hologram");
+        }
+        player.setItemInHand(hand, new ItemStack(ModItems.THRUSTER_UPGRADE.get()));
+        if (bench.interact(player, glassesPiece)) {
+            throw new GameTestAssertException("Een stuwraket-upgrade ging in de bril");
+        }
+        player.setItemInHand(hand, new ItemStack(ModItems.BATTERY_UPGRADE.get(), 2));
+        if (!bench.interact(player, glassesPiece) || player.getMainHandItem().getCount() != 1) {
+            throw new GameTestAssertException("De batterij-upgrade ging er niet in");
+        }
+        // Sneak + klik kiest het volgende stuk: borst -> broek -> laarzen -> bril -> borst.
+        for (var expected : new com.senne.imttech.workbench.HoloPiece[] {com.senne.imttech.workbench.HoloPiece.LEGS,
+                com.senne.imttech.workbench.HoloPiece.BOOTS, glassesPiece, com.senne.imttech.workbench.HoloPiece.CHEST}) {
+            bench.selectNext(player);
+            if (bench.selected() != expected) {
+                throw new GameTestAssertException("Na sneak + klik is " + bench.selected() + " gekozen, niet " + expected);
+            }
+        }
+        helper.succeedWhen(() -> {
+            if (ImtData.getUpgrades(bench.laid(glassesPiece)).battery() != 1) {
+                throw new GameTestAssertException("De batterij-upgrade is nog niet ingebouwd");
+            }
+        });
+    }
+
+    /**
      * Een werkbank uit een oudere versie (met vakjes): het harnasstuk uit het werkvak komt op
      * het hologram, de materialen vallen eruit.
      */
@@ -2589,16 +2632,15 @@ public final class ImtTechGameTests {
         if (!(helper.getBlockEntity(pos) instanceof HeatGeneratorBlockEntity generator)) {
             throw new GameTestAssertException("De warmtegenerator heeft geen block entity");
         }
-        // Een lege bril en een stuk kolen erin.
-        ItemStack glasses = new ItemStack(ModItems.IMT_GLASSES.get());
-        ImtData.setEnergy(glasses, 0);
-        generator.setItem(ChargerBlockEntity.SLOT_GLASSES, glasses);
+        // Een stuk kolen erin (een brilvakje is er sinds hoofdstuk 54 niet meer: hij laadt alleen zijn buffer).
         generator.setItem(ChargerBlockEntity.SLOT_FUEL, new ItemStack(Items.COAL, 4));
+        if (generator.canPlaceItem(ChargerBlockEntity.SLOT_FUEL, new ItemStack(ModItems.IMT_GLASSES.get()))) {
+            throw new GameTestAssertException("Een bril past nog in de generator");
+        }
         helper.succeedWhen(() -> {
             generator.serverTick(helper.getLevel(), helper.absolutePos(pos), helper.getBlockState(pos));
-            ItemStack inside = generator.getItem(ChargerBlockEntity.SLOT_GLASSES);
-            if (ImtData.getEnergy(inside) <= 0) {
-                throw new GameTestAssertException("De bril wordt niet opgeladen");
+            if (generator.energy() <= 0) {
+                throw new GameTestAssertException("De generator maakt geen stroom van de kolen");
             }
             // Zolang hij brandt, gloeit zijn rooster (en geeft hij licht).
             if (!helper.getBlockState(pos).getValue(HeatGeneratorBlock.LIT)) {
@@ -4523,28 +4565,6 @@ public final class ImtTechGameTests {
         helper.succeed();
     }
 
-    /** Redstone is noodvoorraad, geen stroomvoorziening: een volle bril kost er honderden. */
-    @GameTest(template = ARENA, timeoutTicks = 100, batch = "voice")
-    public static void redstone_is_a_small_top_up(GameTestHelper helper) {
-        float perRedstone = ChargingStationBlockEntity.getFuelValue(new ItemStack(Items.REDSTONE));
-        if (perRedstone != ImtConfig.Power.ENERGY_PER_REDSTONE) {
-            throw new GameTestAssertException("Redstone geeft " + perRedstone + " in plaats van "
-                    + ImtConfig.Power.ENERGY_PER_REDSTONE);
-        }
-        // Een lege bril vol krijgen hoort meer dan een stapel redstone te kosten.
-        int needed = (int) (ImtConfig.Glasses.BASE_CAPACITY / perRedstone);
-        if (needed <= 64) {
-            throw new GameTestAssertException("Een volle bril kost maar " + needed + " redstone; dat is te makkelijk");
-        }
-        // Een blok hoort ongeveer negen losse stuks waard te zijn, niet meer.
-        float perBlock = ChargingStationBlockEntity.getFuelValue(new ItemStack(Items.REDSTONE_BLOCK));
-        if (perBlock < perRedstone * 9 || perBlock > perRedstone * 10) {
-            throw new GameTestAssertException("Een redstone-blok geeft " + perBlock
-                    + "; verwacht ongeveer negen keer " + perRedstone);
-        }
-        helper.succeed();
-    }
-
     @GameTest(template = ARENA, timeoutTicks = 100, batch = "voice")
     public static void threats_only_attackers(GameTestHelper helper) {
         ServerPlayer owner = makeImtOwner(helper, new BlockPos(1, 3, 1));
@@ -5085,19 +5105,20 @@ public final class ImtTechGameTests {
         }
         checkVault(helper);
 
-        // 2. Het laadstation laadt op en bouwt een upgrade in.
+        // 2. Het laadstation (hoofdstuk 54: alleen nog laden) neemt een bril aan, en geen redstone of upgrade meer.
         ChargingStationBlockEntity station = (ChargingStationBlockEntity) helper.getBlockEntity(STATION_POS);
+        if (station.getContainerSize() != 1 || station.canPlaceItem(0, new ItemStack(Items.REDSTONE))
+                || station.canPlaceItem(0, new ItemStack(ModItems.BATTERY_UPGRADE.get()))) {
+            throw new GameTestAssertException("Het laadstation heeft nog een vakje voor redstone of upgrades");
+        }
         station.setItem(ChargingStationBlockEntity.SLOT_GLASSES, new ItemStack(ModItems.IMT_GLASSES.get()));
-        int redstone = 4;
-        station.setItem(ChargingStationBlockEntity.SLOT_FUEL, new ItemStack(Items.REDSTONE, redstone));
-        station.setItem(ChargingStationBlockEntity.SLOT_UPGRADE, new ItemStack(ModItems.BATTERY_UPGRADE.get()));
-
+        // Een generator ernaast (op de rij van het station) voedt hem via het net.
+        BlockPos generator = STATION_POS.east();
+        helper.setBlock(generator, ModBlocks.HEAT_GENERATOR.get());
+        ((ChargerBlockEntity) helper.getBlockEntity(generator)).fill(20_000);
         helper.succeedWhen(() -> {
             ItemStack glasses = station.getItem(ChargingStationBlockEntity.SLOT_GLASSES);
-            if (ImtData.getUpgrades(glasses).battery() != 1) {
-                throw new GameTestAssertException("Upgrade nog niet ingebouwd");
-            }
-            if (ImtData.getEnergy(glasses) < redstone * ImtConfig.Power.ENERGY_PER_REDSTONE) {
+            if (ImtData.getEnergy(glasses) <= 0) {
                 throw new GameTestAssertException("Bril nog niet opgeladen: " + ImtData.getEnergy(glasses));
             }
         });

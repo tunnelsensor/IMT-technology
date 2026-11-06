@@ -75,11 +75,8 @@ public class ImtMenuScreen extends Screen {
                             : new Status(Component.translatable("screen.imttech.cost", Numbers.text(ImtConfig.Suit.LASER_CANNON_COST)), GREY),
                     LaserCannonControl::toggle),
             action(ImtAction.ROCKETS),
-            action(ImtAction.TOGGLE_SHIELD),
-            // Hoofdstuk 52 (stap 3): de skilltree van je vuurwapens (zonder bril ook te openen, via de toets).
-            new Option(Component.translatable("screen.imttech.menu.gun_skills"),
-                    glasses -> new Status(Component.translatable("screen.imttech.menu.open"), HudStyle.ORANGE),
-                    () -> Minecraft.getInstance().setScreen(new com.senne.imttech.client.guns.SkillTreeScreen())));
+            action(ImtAction.TOGGLE_SHIELD));
+    // De skilltree van je vuurwapens staat sinds hoofdstuk 54 (jouw notitie) niet meer hier, maar in het wiel (linker Alt).
 
     /** Tabblad Satellite & Arsenal: de drie aanvallen apart, en de schermen van satelliet en arsenaal. */
     private static final List<Option> SATELLITE = List.of(

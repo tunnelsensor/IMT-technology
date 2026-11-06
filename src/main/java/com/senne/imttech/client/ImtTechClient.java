@@ -180,6 +180,7 @@ public class ImtTechClient {
         event.register(ModMenus.ROBOT_ASSEMBLER.get(), com.senne.imttech.client.robot.RobotAssemblerScreen::new);
         event.register(ModMenus.GUNSMITH_TABLE.get(), com.senne.imttech.client.guns.GunsmithScreen::new);
         event.register(ModMenus.RELOADING_BENCH.get(), com.senne.imttech.client.guns.ReloadingBenchScreen::new);
+        event.register(ModMenus.GEAR_POUCH.get(), com.senne.imttech.client.guns.GearPouchScreen::new);
     }
 
     private static void registerEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {

@@ -389,7 +389,8 @@ def sticky(name, shell, ring, light_material):
         box((7.5, 7.2, 4.9), (8.5, 7.5, 5.0), light_material, glow=True),
         box((7.5, 7.2, 11.0), (8.5, 7.5, 11.1), light_material, glow=True),
     ]
-    disp = display(1.7, (0, 1.5, 0), 0.7, 0.7, gui_rotation=(30, -135, 0), third=((0, 0, 0), (0, 3, 1)),
+    # In je inventaris iets kleiner dan de ronde granaten: het brede kleefkussen stak anders uit zijn vakje (hoofdstuk 54).
+    disp = display(1.25, (0, 0.5, 0), 0.7, 0.7, gui_rotation=(30, -135, 0), third=((0, 0, 0), (0, 3, 1)),
                    first=((10, -30, 0), (0, 3, -2)), first_scale=0.45)
     save_parts(name, {"body": body, "light": light}, disp)
 

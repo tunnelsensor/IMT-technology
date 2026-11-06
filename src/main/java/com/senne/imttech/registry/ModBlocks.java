@@ -98,9 +98,9 @@ public final class ModBlocks {
     public static final DeferredBlock<com.senne.imttech.battery.BatteryCasingBlock> BATTERY_CASING = BLOCKS.registerBlock("battery_casing",
             properties -> new com.senne.imttech.battery.BatteryCasingBlock(properties, false),
             BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(3.0f, 8.0f).requiresCorrectToolForDrops().sound(SoundType.METAL));
-    /** Battery Glass: een doorzichtig wandblok, zodat je de cellen ziet. */
-    public static final DeferredBlock<com.senne.imttech.battery.BatteryCasingBlock> BATTERY_GLASS = BLOCKS.registerBlock("battery_glass",
-            properties -> new com.senne.imttech.battery.BatteryCasingBlock(properties, true),
+    /** Battery Glass: een doorzichtig wandblok, zodat je de cellen ziet; hangt aan elkaar (hoofdstuk 54). */
+    public static final DeferredBlock<com.senne.imttech.battery.BatteryGlassBlock> BATTERY_GLASS = BLOCKS.registerBlock("battery_glass",
+            com.senne.imttech.battery.BatteryGlassBlock::new,
             BlockBehaviour.Properties.of().mapColor(MapColor.NONE).strength(3.0f, 8.0f).requiresCorrectToolForDrops().sound(SoundType.GLASS)
                     .noOcclusion().isViewBlocking((state, level, pos) -> false).isSuffocating((state, level, pos) -> false));
     /** Battery Cell: binnenin de doos, elke cel is opslag. */

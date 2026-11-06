@@ -900,22 +900,60 @@ final class ShowcaseFeatures {
                 .look(10, 180, -60)
                 .pause(160));
 
-        add("Charging station", "Het laadstation: bril laden en upgraden. Stroom komt uit redstone of "
-                + "van het net (de kabel eronder), maar alleen als er een bril in ligt die nog niet vol is.",
+        add("Charging station", "Het laadstation: alleen nog een bril (of een energiecel) laden (hoofdstuk 54, jouw "
+                + "notitie: geen balk onder de bril, geen redstone-vakje en geen upgrade-pijl meer). Stroom komt van het net "
+                + "(de kabel eronder), maar alleen als er een bril in ligt die nog niet vol is. Een bijna lege bril ligt "
+                + "erin en loopt vol.",
                 new Vec3(-2.5, -60, 3.5), 0, 20, s -> s
+                .onServer(0, ShowcaseFeatures::fillStation)
                 .step(10, () -> rightClick(CHARGING_STATION))
                 .pause(120)
                 .close(0));
 
-        add("Glasses upgrades", "In het laadstation een bril upgraden: een tweede bril (bijna leeg), redstone "
-                + "als stroom en drie batterij-upgrades. De bril laadt op, de voortgangsbalk van de upgrade "
-                + "loopt vol, 'ding', en de volgende gaat erin (3 seconden per stuk). Er zijn drie soorten: "
-                + "batterij (meer energie), scanner (grotere ertsscan) en drones (meer drones in de zwerm).",
-                new Vec3(-2.5, -60, 3.5), 0, 20, s -> s
-                .onServer(0, ShowcaseFeatures::fillStation)
-                .step(10, () -> rightClick(CHARGING_STATION))
-                .pause(230)
-                .close(0));
+        add("Glasses upgrades", "De bril upgraden gaat sinds hoofdstuk 54 aan de harnas-werkbank, net als het harnas: "
+                + "de bril is het vierde stuk op het hologram, boven de borstplaat. Je houdt een tweede bril vast en klikt op "
+                + "de werkbank zelf: sneak + klik kiest het volgende stuk (borst, broek, laarzen, bril; het gekozen stuk heeft "
+                + "oranje hoekjes), een gewone klik werkt op dat stuk. De bril komt op het hologram; dan een batterij-upgrade "
+                + "in je hand en klik: de ring loopt vol en de upgrade zit erin (dat zie je in de tooltip). Er zijn drie "
+                + "soorten: batterij (meer energie), scanner (grotere ertsscan) en drones (meer drones in de zwerm).",
+                GameType.SURVIVAL, new Vec3(0.5, -60, -0.5), 180, 20, s -> {
+            BlockPos bench = ShowcaseScene.START.offset(0, 0, -3);
+            Runnable clickBench = () -> rightClick(bench);
+            s.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setBlockAndUpdate(bench, com.senne.imttech.registry.ModBlocks.SUIT_WORKBENCH.get().defaultBlockState());
+                level.setBlockAndUpdate(bench.east(), com.senne.imttech.registry.ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+                if (level.getBlockEntity(bench.east()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
+                    generator.fill(200_000);
+                }
+                player.getInventory().setItem(0, DevWorld.ownGlasses(player));
+                player.getInventory().setItem(1, new ItemStack(ModItems.BATTERY_UPGRADE.get(), 2));
+                player.getInventory().selected = 0;
+            })
+            .lookAt(10, Vec3.atCenterOf(bench))
+            // Sneak + klik: borst -> broek -> laarzen -> bril.
+            .key(0, () -> Minecraft.getInstance().options.keyShift, true)
+            .step(10, clickBench).step(25, clickBench).step(25, clickBench)
+            .key(5, () -> Minecraft.getInstance().options.keyShift, false)
+            .pause(20)
+            // De bril erop, en de upgrade erin.
+            .step(0, clickBench)
+            .pause(30)
+            .step(0, () -> hotbar(1))
+            .pause(15)
+            .step(0, clickBench)
+            .pause(100)
+            .lookAt(0, new Vec3(0.5, -57.3, -2.5))
+            .pause(60)
+            .onServer(0, player -> {
+                player.getInventory().clearContent();
+                if (player.serverLevel().getBlockEntity(bench) instanceof com.senne.imttech.workbench.SuitWorkbenchBlockEntity be) {
+                    be.dropAll(player.serverLevel());
+                }
+                player.serverLevel().setBlockAndUpdate(bench, Blocks.AIR.defaultBlockState());
+                player.serverLevel().setBlockAndUpdate(bench.east(), Blocks.AIR.defaultBlockState());
+            });
+        });
 
         add("Solar panel and heat generator", "Stroom maken: een zonnepaneel (een schuin paneel op een "
                 + "paaltje) en een warmtegenerator op magma (een kast met koelribben, koperen pijpen achter "
@@ -2898,9 +2936,11 @@ final class ShowcaseFeatures {
                 + "vanzelf naar voren (de eerste patroon in de kamer, dus 3 + 1). Dan een schot met een storing (de huls blijft "
                 + "klem zitten, half uit de uitwerpopening): 'JAMMED - PRESS R', en R doet een tap-rack: een klap op het magazijn, "
                 + "de slede naar achteren, de huls valt eruit. Dan H: het pistool bekijken. Dan het lege magazijn in je hand: "
-                + "elke R duwt er een patroon in. Je kijkt naar de hulzen op de grond en raapt ze op met rechtsklik. Tot slot de "
-                + "Gunsmith Table (een pistool van een frame, slede en trekker; links je losse onderdelen om erin te slepen; wat "
-                + "ontbreekt staat gestippeld ernaast) en de Reloading Bench (huls + kogelpunt + buskruit = een 9mm-patroon).",
+                + "elke R duwt er een patroon in, en U (unload, hoofdstuk 54) haalt er weer een uit. Je kijkt naar de hulzen op "
+                + "de grond en raapt ze op met rechtsklik. Tot slot de Gunsmith Table (een pistool van een frame, slede en "
+                + "trekker; links je losse onderdelen om erin te slepen; wat ontbreekt staat gestippeld ernaast, en wat onder "
+                + "de slede zit kun je pas pakken als die eraf is) en de Reloading Bench (huls + kogelpunt + buskruit = een "
+                + "9mm-patroon).",
                 stand, 90, 4, s -> s
                 .onServer(0, ShowcaseScene::buildWeapons)
                 .onServer(0, player -> buildGunBenches(player, w.above()))
@@ -2939,6 +2979,9 @@ final class ShowcaseFeatures {
                 .step(0, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()))
                 .step(14, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()))
                 .step(14, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()))
+                .pause(20)
+                // U: een patroon er weer uit (hoofdstuk 54).
+                .step(0, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_UNLOAD.getKey()))
                 .pause(30)
                 // De hulzen oprapen: ze liggen rechts van je (het noorden).
                 .step(0, () -> hotbar(4))
@@ -2968,8 +3011,11 @@ final class ShowcaseFeatures {
                 + "hoeveel, en 'Put away'. Het pistool: de steen valt op de grond en het pistool komt uit je holster omhoog in je "
                 + "hand (trekken duurt even). Twee schoten, dan R: de magazijnpouch gaat open en je kiest het volle magazijn; "
                 + "het oude komt op zijn plek in de pouch. Dan het wiel: 'Put away', het pistool gaat terug in de holster. Dan "
-                + "een EMP-granaat uit het wiel, gooien, en de tweede komt vanzelf in je hand. Tot slot in derde persoon: de "
-                + "holster met het pistool op je rechterheup, de granaatpouch links en de magazijnpouch achter.",
+                + "een EMP-granaat uit het wiel, gooien, en de tweede komt vanzelf in je hand. Dan in derde persoon: de "
+                + "holster met het pistool op je rechterheup, de granaatpouch links en de magazijnpouch achter, en je ziet wat "
+                + "erin zit (de granaten en de magazijnen steken eruit). Tot slot (hoofdstuk 54) de magazijnpouch open uit het "
+                + "wiel: een scherm met zijn vakjes boven je inventaris, om magazijnen erin te stoppen of eruit te halen (er "
+                + "zijn ook eigen toetsen voor, in Opties > Besturing). In het wiel staat sinds hoofdstuk 54 ook 'Gun skills'.",
                 GameType.SURVIVAL, stand, 90, 4, s -> s
                 .onServer(0, ShowcaseScene::buildWeapons)
                 .onServer(0, ShowcaseFeatures::giveGear)
@@ -2997,7 +3043,7 @@ final class ShowcaseFeatures {
                 // Wegsteken.
                 .key(0, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true)
                 .pause(40)
-                .step(0, () -> wheelChooseLast())
+                .step(0, () -> wheelChoosePutAway())
                 .key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false)
                 .pause(40)
                 // Een granaat, en de volgende komt vanzelf.
@@ -3013,6 +3059,10 @@ final class ShowcaseFeatures {
                 .camera(0, net.minecraft.client.CameraType.THIRD_PERSON_BACK)
                 .pause(50)
                 .camera(0, net.minecraft.client.CameraType.FIRST_PERSON)
+                // De magazijnpouch open (hoofdstuk 54).
+                .onServer(10, player -> com.senne.imttech.guns.Gear.openPouch(player, com.senne.imttech.guns.GearItem.Kind.MAG_POUCH.ordinal()))
+                .pause(80)
+                .close(0)
                 .onServer(0, player -> player.getInventory().clearContent()));
     }
 
@@ -3022,7 +3072,7 @@ final class ShowcaseFeatures {
         Vec3 stand = new Vec3(w.getX() + 0.5, w.getY() + 1, w.getZ() + 0.5);
         add("Gun skills", "Hoofdstuk 52, stap 3. Alles wat je met een pistool doet geeft ervaring (een schot, een treffer, "
                 + "herladen, een tap-rack, een patroon in een magazijn, trekken); elke keer dat de balk vol is krijg je een "
-                + "skillpunt, en elk volgend punt kost meer. Je begint hier met 7 punten. G > Combat > Gun skills: links de "
+                + "skillpunt, en elk volgend punt kost meer. Je begint hier met 7 punten. Het wiel (linker Alt) > Gun skills: links de "
                 + "globale skills (voor elk vuurwapen, 5% per niveau, een niveau kost het dubbele), rechts die van de Glock 19 "
                 + "zelf (8% per niveau); ze tellen op. Ik leer Reload op de Glock (1 punt), nog eens (2 punten), en Reload "
                 + "globaal (2 punten): onderaan staat wat dat samen oplevert. Daarna een magazijnwissel die merkbaar sneller "
@@ -3088,11 +3138,11 @@ final class ShowcaseFeatures {
         }
     }
 
-    /** De laatste optie van het wiel: wegsteken. */
-    static void wheelChooseLast() {
+    /** In het wiel (als het open is) "Put away" kiezen (sinds hoofdstuk 54 niet meer de laatste optie). */
+    static void wheelChoosePutAway() {
         com.senne.imttech.client.guns.GearWheelScreen wheel = com.senne.imttech.client.guns.GearWheelScreen.current();
         if (wheel != null) {
-            wheel.chooseIndex(Integer.MAX_VALUE);
+            wheel.chooseAction(com.senne.imttech.guns.Gear.ACTION_HOLSTER);
         }
     }
 
@@ -4769,14 +4819,12 @@ final class ShowcaseFeatures {
         mc.gameMode.interact(mc.player, drone, InteractionHand.MAIN_HAND);
     }
 
-    /** Het laadstation vullen: een bijna lege bril, redstone en drie batterij-upgrades. */
+    /** Het laadstation vullen: een bijna lege bril (hoofdstuk 54: redstone en upgrades gaan er niet meer in). */
     private static void fillStation(ServerPlayer player) {
         if (player.serverLevel().getBlockEntity(CHARGING_STATION) instanceof ChargingStationBlockEntity station) {
             ItemStack glasses = DevWorld.ownGlasses(player);
             ImtData.setEnergy(glasses, ImtData.getMaxEnergy(glasses) / 5);
             station.setItem(ChargingStationBlockEntity.SLOT_GLASSES, glasses);
-            station.setItem(ChargingStationBlockEntity.SLOT_FUEL, new ItemStack(Items.REDSTONE, 16));
-            station.setItem(ChargingStationBlockEntity.SLOT_UPGRADE, new ItemStack(ModItems.BATTERY_UPGRADE.get(), 3));
         }
     }
 

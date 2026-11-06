@@ -235,15 +235,7 @@ public final class ImtConfig {
         public static float HEAT_CAPACITY = 50_000.0f;
 
         // ------------------------------------------------------------------------- Laadstation (voor de bril)
-        /**
-         * Energie uit één stuk redstone. Bewust weinig: een volle bril kost zo ongeveer twee stapels.
-         * Redstone is een noodvoorraad in je zak; voor gewone stroom zet je een generator neer.
-         */
-        @Tunable(value = "Energy from one redstone dust in a charging station", energy = true)
-        public static float ENERGY_PER_REDSTONE = 500.0f;
-        /** Energie uit één redstone-blok (9 redstone en een beetje bonus). */
-        @Tunable(value = "Energy from one redstone block in a charging station", energy = true)
-        public static float ENERGY_PER_REDSTONE_BLOCK = 4_800.0f;
+        // (Sinds hoofdstuk 54 gaat er geen redstone meer in het station: alleen stroom van het net.)
         /** Hoeveel het laadstation zelf kan opslaan (hooguit 32000, anders klopt de balk in het scherm niet). */
         @Tunable(value = "Energy a charging station can store", min = 1, max = 32_000, energy = true)
         public static float STATION_CAPACITY = 300_000.0f;
@@ -2092,7 +2084,7 @@ public final class ImtConfig {
         public static float MISFIRE_CHANCE = 0.15f;
 
         // ------------------------------------------------------------------------- Hoe lang alles duurt (ticks)
-        @Tunable(value = "Ticks to drop the magazine out of the pistol (R without a magazine pouch)", min = 1, max = 200)
+        @Tunable(value = "Ticks to drop the magazine out of the pistol (R without a magazine pouch, or U)", min = 1, max = 200)
         public static float EJECT_TICKS = 8.0f;
         @Tunable(value = "Ticks to push a magazine into the pistol (right-click with a magazine)", min = 1, max = 200)
         public static float INSERT_TICKS = 12.0f;
@@ -2104,6 +2096,10 @@ public final class ImtConfig {
         public static float CHAMBER_TICKS = 22.0f;
         @Tunable(value = "Ticks to push one round into a magazine you hold (R)", min = 1, max = 200)
         public static float LOAD_ROUND_TICKS = 6.0f;
+        @Tunable(value = "Ticks to take one round out of a magazine you hold (U)", min = 1, max = 200)
+        public static float UNLOAD_ROUND_TICKS = 6.0f;
+        @Tunable(value = "Ticks to rack the round out of the chamber by hand (U with a pistol without a magazine)", min = 1, max = 200)
+        public static float UNLOAD_CHAMBER_TICKS = 16.0f;
         @Tunable(value = "Ticks to reload from a magazine pouch (R, then pick a magazine)", min = 1, max = 200)
         public static float POUCH_RELOAD_TICKS = 30.0f;
         @Tunable(value = "Ticks to draw the pistol from its holster", min = 1, max = 200)

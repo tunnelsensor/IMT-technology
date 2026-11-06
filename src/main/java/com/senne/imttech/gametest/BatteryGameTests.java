@@ -144,4 +144,36 @@ public final class BatteryGameTests {
             helper.succeed();
         });
     }
+
+    /**
+     * Battery Glass hangt aan elkaar zoals het framed glass van Create (hoofdstuk 54, jouw notitie): elk blok weet aan
+     * welke kanten er ook Battery Glass zit (dan tekent het model daar geen rand), ook als het met een commando of in
+     * een structuur neergezet is, en het vergeet een buur die weggaat.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "battery")
+    public static void battery_glass_links_to_its_neighbours(GameTestHelper helper) {
+        BlockPos a = new BlockPos(2, 3, 2);
+        BlockPos b = a.east();
+        BlockPos c = a.above();
+        helper.setBlock(a, ModBlocks.BATTERY_GLASS.get());
+        helper.setBlock(b, ModBlocks.BATTERY_GLASS.get());
+        helper.setBlock(c, ModBlocks.BATTERY_GLASS.get());
+        helper.setBlock(a.west(), Blocks.STONE);
+        helper.runAfterDelay(2, () -> {
+            check(helper.getBlockState(a).getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.EAST),
+                    "Het glas weet niet dat er rechts glas zit");
+            check(helper.getBlockState(a).getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.UP),
+                    "Het glas weet niet dat er boven glas zit");
+            check(!helper.getBlockState(a).getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.WEST),
+                    "Steen telt als glas");
+            check(helper.getBlockState(b).getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.WEST),
+                    "Het rechterglas weet niet dat er links glas zit");
+            helper.setBlock(b, Blocks.AIR);
+            helper.runAfterDelay(2, () -> {
+                check(!helper.getBlockState(a).getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.EAST),
+                        "Het glas vergeet een buur niet die weg is");
+                helper.succeed();
+            });
+        });
+    }
 }

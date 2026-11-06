@@ -109,8 +109,8 @@ public final class CableRenderer {
         };
     }
 
-    /** Een kabel in een muur die we met de bril tekenen: waar, en welke soort. */
-    private record Hidden(BlockPos cell, CableKind kind) {}
+    /** Een kabel die we met de bril door alles heen tekenen: waar, welke soort, en of hij in een muur zit (anders ligt hij open). */
+    private record Hidden(BlockPos cell, CableKind kind, boolean inWall) {}
 
     public static void onRenderLevel(RenderLevelStageEvent event) {
         // Na de wezens: in deze fase draait de camera al mee in de PoseStack (net als bij de illusies).
@@ -146,12 +146,14 @@ public final class CableRenderer {
                         continue;
                     }
                     cells.forEach(cell -> {
-                        if (PowerCables.isSolid(level, cell)) {
-                            if (xray && cell.distToCenterSqr(cam) < XRAY_RANGE * XRAY_RANGE) {
-                                hidden.add(new Hidden(cell, kind));
-                            }
-                        } else {
+                        boolean inWall = PowerCables.isSolid(level, cell);
+                        if (!inWall) {
                             drawCell(m, solid, level, cell, kind, LevelRenderer.getLightColor(level, cell), false);
+                        }
+                        // Met de xray aan tekenen we dichtbij ALLE kabels nog eens door alles heen: ook een kabel die open
+                        // ligt, maar achter een muur of in een andere kamer (hoofdstuk 54, jouw notitie).
+                        if (xray && cell.distToCenterSqr(cam) < XRAY_RANGE * XRAY_RANGE) {
+                            hidden.add(new Hidden(cell, kind, inWall));
                         }
                     });
                 }
@@ -165,7 +167,7 @@ public final class CableRenderer {
                 VertexConsumer vc = buffers.getBuffer(type);
                 for (Hidden cable : hidden) {
                     if (look(cable.kind()).glow() == glowing) {
-                        drawCell(m, vc, level, cable.cell(), cable.kind(), 0, true);
+                        drawCell(m, vc, level, cable.cell(), cable.kind(), 0, true, cable.inWall());
                     }
                 }
                 buffers.endBatch(type);
@@ -180,7 +182,13 @@ public final class CableRenderer {
 
     private static void drawCell(Matrix4f m, VertexConsumer vc, ClientLevel level, BlockPos cell, CableKind kind,
                                  int light, boolean xray) {
-        CableGeometry.Lay lay = CableGeometry.lay(level, cell, kind, xray);
+        drawCell(m, vc, level, cell, kind, light, xray, xray);
+    }
+
+    /** {@code inWall}: hoe de kabel ligt (in een muur recht door het midden, open langs vloer en muur); {@code xray}: hoe hij getekend wordt. */
+    private static void drawCell(Matrix4f m, VertexConsumer vc, ClientLevel level, BlockPos cell, CableKind kind,
+                                 int light, boolean xray, boolean inWall) {
+        CableGeometry.Lay lay = CableGeometry.lay(level, cell, kind, inWall);
         Look look = look(kind);
         EnumSet<Direction> links = linksOf(level, cell, kind);
         Vec3 base = Vec3.atLowerCornerOf(cell);
@@ -197,8 +205,8 @@ public final class CableRenderer {
             BlockPos next = cell.relative(d);
             CableKind other = neighbourKind(level, next, kind);
             if (other != null && d.getAxisDirection() == Direction.AxisDirection.POSITIVE
-                    && PowerCables.isSolid(level, next) == xray) {
-                Vec3 g = Vec3.atLowerCornerOf(next).add(CableGeometry.lay(level, next, other, xray).facePoint(d.getOpposite()));
+                    && PowerCables.isSolid(level, next) == inWall) {
+                Vec3 g = Vec3.atLowerCornerOf(next).add(CableGeometry.lay(level, next, other, inWall).facePoint(d.getOpposite()));
                 if (g.distanceToSqr(f) > 1.0E-6) {
                     path(m, vc, f, g, List.of(), light, look, xray);
                 }

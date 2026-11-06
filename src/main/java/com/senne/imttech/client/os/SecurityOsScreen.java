@@ -174,7 +174,8 @@ public class SecurityOsScreen extends Screen {
      */
     public void update(CompoundTag snapshot) {
         this.data = snapshot;
-        if (!gotFirstSnapshot) {
+        boolean first = !gotFirstSnapshot;
+        if (first) {
             gotFirstSnapshot = true;
             // De vensters van de vorige keer weer op hun plek (19 oktober), zoals bij een pc die aan bleef.
             restoreDesktop(snapshot.getList("desk", Tag.TAG_COMPOUND));
@@ -185,13 +186,17 @@ public class SecurityOsScreen extends Screen {
             }
         }
         // Hoofdstuk 40: op een Computer alleen de apps die de kern toestaat (dat kan ook veranderen terwijl je zit te kijken).
+        boolean closedAny = false;
         for (Win win : List.copyOf(windows)) {
             if (!shows(win.app)) {
                 closeWindow(win);
+                closedAny = true;
             }
         }
+        // Alleen de eerste keer (of als de kern net een app wegnam) begint hij met een venster open. Sluit je zelf het
+        // laatste venster, dan blijft het bureaublad leeg (hoofdstuk 54, jouw notitie: Status kwam steeds terug).
         List<App> visible = visibleApps();
-        if (windows.isEmpty() && !visible.isEmpty()) {
+        if ((first || closedAny) && windows.isEmpty() && !visible.isEmpty()) {
             openApp(visible.getFirst());
         }
         if (snapshot.contains("fs")) {

@@ -810,8 +810,9 @@ public final class WeaponGameTests {
         check(station.canPlaceItem(com.senne.imttech.station.ChargingStationBlockEntity.SLOT_GLASSES, cell),
                 "Een energiecel past niet in het station");
         station.setItem(com.senne.imttech.station.ChargingStationBlockEntity.SLOT_GLASSES, cell);
-        station.setItem(com.senne.imttech.station.ChargingStationBlockEntity.SLOT_FUEL,
-                new ItemStack(net.minecraft.world.item.Items.REDSTONE_BLOCK, 64));
+        // Stroom van het net (hoofdstuk 54: er gaat geen redstone meer in het station).
+        helper.setBlock(at.east(), ModBlocks.HEAT_GENERATOR.get());
+        ((com.senne.imttech.station.ChargerBlockEntity) helper.getBlockEntity(at.east())).fill(20_000);
         helper.startSequence()
                 .thenWaitUntil(() -> check(com.senne.imttech.weapons.EnergyCellItem.charge(
                                 station.getItem(com.senne.imttech.station.ChargingStationBlockEntity.SLOT_GLASSES)) > 10,

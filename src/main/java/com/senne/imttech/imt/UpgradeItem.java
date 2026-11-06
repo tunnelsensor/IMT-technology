@@ -1,5 +1,7 @@
 package com.senne.imttech.imt;
 
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.core.BlockPos;
 import com.senne.imttech.config.ImtConfig;
 import java.util.List;
 import net.minecraft.ChatFormatting;
@@ -9,7 +11,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 
 /**
- * Een upgrade die je in het laadstation in de bril kunt bouwen.
+ * Een upgrade voor de bril (batterij, scanner, drones). Sinds hoofdstuk 54 bouw je hem in aan de harnas-werkbank: de
+ * bril op het hologram, de upgrade in je hand, klik (zoals de upgrades van het harnas).
  */
 public class UpgradeItem extends Item {
     public enum Type {
@@ -56,5 +59,11 @@ public class UpgradeItem extends Item {
         };
         tooltip.add(Component.translatable(key).withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.imttech.upgrade_hint").withStyle(ChatFormatting.DARK_AQUA));
+    }
+
+    /** Sneak + klik op de harnas-werkbank gaat naar de werkbank (het volgende stuk kiezen, hoofdstuk 54), ook met dit in je hand. */
+    @Override
+    public boolean doesSneakBypassUse(ItemStack stack, net.minecraft.world.level.LevelReader level, BlockPos pos, Player player) {
+        return level.getBlockState(pos).is(com.senne.imttech.registry.ModBlocks.SUIT_WORKBENCH.get());
     }
 }

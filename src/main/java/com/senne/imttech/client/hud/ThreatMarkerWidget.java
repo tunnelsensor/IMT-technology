@@ -4,6 +4,8 @@ import static com.senne.imttech.client.hud.HudStyle.RED;
 import static com.senne.imttech.client.hud.HudStyle.argb;
 import static com.senne.imttech.client.hud.HudStyle.smallText;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import com.senne.imttech.client.ImtClientState;
 import com.senne.imttech.client.WorldProjection;
 import net.minecraft.client.gui.GuiGraphics;
@@ -16,13 +18,24 @@ import net.minecraft.world.phys.Vec3;
  * Wat jou aanvalt, in beeld gebracht.
  *
  * Staat de dreiging op je scherm, dan krijgt hij een rood pijltje boven zijn hoofd met de
- * afstand erbij. Zit hij achter je of buiten beeld, dan verschijnt er een pijl aan de rand
- * van het scherm die de kant op wijst waar hij vandaan komt - een kompas dus, zodat je
- * meteen weet welke kant je op moet kijken.
+ * afstand erbij. Zit hij achter je of buiten beeld, dan verschijnt er een pijl op een ovaal
+ * rond het midden van je scherm die de kant op wijst waar hij vandaan komt - een kompas dus,
+ * zodat je meteen weet welke kant je op moet kijken.
+ *
+ * Sinds hoofdstuk 54 (jouw showcase-notitie van 6 november): echte pijlpunten (een driehoek
+ * met een donker randje, gedraaid in de richting), en het ovaal blijft onderaan boven je
+ * hartjes en je werkbalk, zodat een dreiging achter je niet onder de hotbar verdwijnt.
  */
 public final class ThreatMarkerWidget implements HudWidget {
     /** Meer dan zoveel dreigingen tekenen we niet; anders staat je scherm vol pijltjes. */
     private static final int MAX_DRAWN = 16;
+    /** Het ovaal van de kompaspijlen: hooguit zo ver van het midden (pixels)... */
+    private static final int MAX_RX = 150;
+    private static final int MAX_RY = 90;
+    /** ...en zoveel ruimte houden we vrij onderaan (hartjes, honger, werkbalk) en opzij. */
+    private static final int BOTTOM_ROOM = 64;
+    private static final int SIDE_ROOM = 36;
+    private static final int OUTLINE = argb(210, 0x1A0000);
 
     @Override
     public boolean visible(HudContext c) {
@@ -43,31 +56,26 @@ public final class ThreatMarkerWidget implements HudWidget {
             if (point != null && c.projection.isOnScreen(point, 0)) {
                 markOnScreen(c, threat, point);
             } else {
-                markOffScreen(c, at);
+                markOffScreen(c, threat, at);
             }
         }
     }
 
-    /** Een pijltje boven het doelwit, met hoe ver het van je af is. */
+    /** Een pijltje boven het doelwit dat naar hem wijst, met hoe ver hij van je af is erboven. */
     private void markOnScreen(HudContext c, Entity threat, WorldProjection.ScreenPoint point) {
-        GuiGraphics g = c.g;
         int x = (int) point.x();
         int y = (int) point.y();
-        g.fill(x - 3, y - 4, x + 4, y - 3, argb(230, RED));
-        g.fill(x - 2, y - 3, x + 3, y - 2, argb(230, RED));
-        g.fill(x - 1, y - 2, x + 2, y - 1, argb(230, RED));
-        g.fill(x, y - 1, x + 1, y, argb(230, RED));
-        smallText(g, c.font, Math.round(c.player.distanceTo(threat)) + "m", x, y - 11, argb(220, RED));
+        arrowAt(c.g, x, y - 9, (float) Math.PI, argb(235, RED));
+        smallText(c.g, c.font, Math.round(c.player.distanceTo(threat)) + "m", x, y - 22, argb(220, RED));
     }
 
     /**
-     * Een kompaspijl aan de rand van het scherm: hij wijst naar de dreiging die je niet ziet.
-     *
-     * We rekenen de hoek uit tussen de kant waar jij naar kijkt en de kant waar de dreiging
-     * vandaan komt. Die hoek zetten we op een cirkel rond het midden van je scherm, en daar
-     * tekenen we een driehoekje dat naar buiten wijst.
+     * Een kompaspijl op het ovaal rond het midden van je scherm: hij wijst naar de dreiging die je
+     * niet ziet. We rekenen de hoek uit tussen de kant waar jij naar kijkt en de kant waar de
+     * dreiging vandaan komt, zetten die hoek op het ovaal en tekenen daar een pijl die naar
+     * buiten wijst; de afstand staat aan de binnenkant van de pijl.
      */
-    private void markOffScreen(HudContext c, Vec3 threatPos) {
+    private void markOffScreen(HudContext c, Entity threat, Vec3 threatPos) {
         Player player = c.player;
         double dx = threatPos.x - player.getX();
         double dz = threatPos.z - player.getZ();
@@ -80,27 +88,36 @@ public final class ThreatMarkerWidget implements HudWidget {
 
         int centerX = c.width / 2;
         int centerY = c.height / 2;
-        int radius = Math.min(c.width, c.height) / 2 - 24;
+        int rx = Math.max(40, Math.min(MAX_RX, c.width / 2 - SIDE_ROOM));
+        int ry = Math.max(30, Math.min(MAX_RY, c.height / 2 - BOTTOM_ROOM));
         // Rechts van je = positieve x op het scherm, vóór je = omhoog.
-        int x = centerX + (int) (Math.sin(relative) * radius);
-        int y = centerY - (int) (Math.cos(relative) * radius);
+        int x = centerX + (int) Math.round(Math.sin(relative) * rx);
+        int y = centerY - (int) Math.round(Math.cos(relative) * ry);
         arrowAt(c.g, x, y, relative, argb(235, RED));
+        int tx = centerX + (int) Math.round(Math.sin(relative) * (rx - 17));
+        int ty = centerY - (int) Math.round(Math.cos(relative) * (ry - 17));
+        smallText(c.g, c.font, Math.round(player.distanceTo(threat)) + "m", tx, ty - 3, argb(210, RED));
     }
 
-    /** Een driehoekje op (x, y) dat naar buiten wijst, weg van het midden. */
-    private void arrowAt(GuiGraphics g, int x, int y, float angle, int colour) {
-        // Zeven laagjes die steeds smaller worden: samen een pijl van het midden af gezien.
-        double outX = Math.sin(angle);
-        double outY = -Math.cos(angle);
-        for (int step = 0; step < 7; step++) {
-            int half = 3 - step / 2;
-            int px = x + (int) Math.round(outX * step);
-            int py = y + (int) Math.round(outY * step);
-            // Dwars op de richting uitsmeren, zodat de punt naar buiten wijst.
-            int sx = (int) Math.round(-outY * half);
-            int sy = (int) Math.round(outX * half);
-            g.fill(px - Math.abs(sx) - 1, py - Math.abs(sy) - 1,
-                    px + Math.abs(sx) + 1, py + Math.abs(sy) + 1, colour);
+    /**
+     * Een pijlpunt op (x, y) die in richting {@code angle} wijst (0 = omhoog, met de klok mee): een
+     * driehoek met een donker randje en een inkeping onderaan, gedraaid met de PoseStack.
+     */
+    private static void arrowAt(GuiGraphics g, int x, int y, float angle, int colour) {
+        PoseStack pose = g.pose();
+        pose.pushPose();
+        pose.translate(x, y, 0);
+        pose.mulPose(Axis.ZP.rotation(angle));
+        // De punt op (0, -7), de voet op y = +2. Eerst het randje (één pixel breder), dan de pijl zelf.
+        for (int row = 0; row < 11; row++) {
+            int half = row * 6 / 10 + 1;
+            g.fill(-half - 1, -8 + row, half + 2, -7 + row, OUTLINE);
         }
+        for (int row = 0; row < 9; row++) {
+            int half = row * 6 / 10;
+            g.fill(-half, -7 + row, half + 1, -6 + row, colour);
+        }
+        g.fill(-2, 0, 3, 2, OUTLINE);
+        pose.popPose();
     }
 }

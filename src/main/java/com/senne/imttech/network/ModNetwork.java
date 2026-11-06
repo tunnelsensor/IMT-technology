@@ -304,6 +304,7 @@ public final class ModNetwork {
                     case com.senne.imttech.guns.Gear.ACTION_DRAW_GUN -> com.senne.imttech.guns.Gear.drawGun(player);
                     case com.senne.imttech.guns.Gear.ACTION_DRAW_GRENADE -> com.senne.imttech.guns.Gear.drawGrenade(player, payload.arg());
                     case com.senne.imttech.guns.Gear.ACTION_HOLSTER -> com.senne.imttech.guns.Gear.holsterHand(player);
+                    case com.senne.imttech.guns.Gear.ACTION_OPEN -> com.senne.imttech.guns.Gear.openPouch(player, payload.arg());
                     default -> { }
                 }
             }

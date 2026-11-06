@@ -407,4 +407,39 @@ public final class GunGameTests {
         check(bounds != null, "");
         helper.succeed();
     }
+
+    /**
+     * Unload (hoofdstuk 54, jouw wens): U met een magazijn in je hand haalt er één patroon uit (in je inventaris); U met
+     * een pistool gooit het magazijn eruit, en zonder magazijn trekt U de patroon uit de kamer. Met patronen in het
+     * magazijn kan de kamer niet leeg (eerst het magazijn eruit), en een leeg magazijn geeft niets.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "guns")
+    public static void unload_takes_rounds_out_of_magazine_and_chamber(GameTestHelper helper) {
+        deterministic();
+        ServerPlayer player = holder(helper, "unloader", new BlockPos(4, 2, 4), MagazineItem.of(FirearmType.GLOCK_19, 5),
+                new Vec3(4.5, 3, 10));
+        check(Firearms.request(player, Firearms.ActionKind.UNLOAD_ROUND, 0), "Een patroon uit het magazijn halen begon niet");
+        Firearms.finishNow(player);
+        check(MagazineItem.rounds(player.getMainHandItem()) == 4, "Het magazijn hoort 4 te hebben");
+        check(player.getInventory().countItem(ModItems.ROUND_9MM.get()) == 1, "De patroon kwam niet in je inventaris");
+        player.setItemInHand(InteractionHand.MAIN_HAND, MagazineItem.of(FirearmType.GLOCK_19, 0));
+        check(!Firearms.request(player, Firearms.ActionKind.UNLOAD_ROUND, 0), "Een leeg magazijn gaf een patroon");
+        // Een pistool met 3 + 1: eerst moet het magazijn eruit, dan de kamer.
+        ItemStack gun = FirearmItem.loaded(FirearmType.GLOCK_19, GunMaterial.STEEL);
+        FirearmItem.setMagazine(gun, MagazineItem.of(FirearmType.GLOCK_19, 3));
+        player.setItemInHand(InteractionHand.MAIN_HAND, gun);
+        check(!Firearms.request(player, Firearms.ActionKind.UNLOAD_CHAMBER, 0), "De kamer ging leeg terwijl het magazijn er nog in zat");
+        check(Firearms.request(player, Firearms.ActionKind.EJECT_MAG, 0), "Het magazijn eruit begon niet");
+        Firearms.finishNow(player);
+        check(!FirearmItem.hasMagazine(player.getMainHandItem()), "Het magazijn zit er nog in");
+        check(player.getInventory().countItem(ModItems.GLOCK_19_MAGAZINE.get()) == 1, "Het magazijn kwam niet in je inventaris");
+        check(FirearmItem.chambered(player.getMainHandItem()), "De patroon in de kamer verdween met het magazijn");
+        check(Firearms.request(player, Firearms.ActionKind.UNLOAD_CHAMBER, 0), "De kamer leegmaken begon niet");
+        Firearms.finishNow(player);
+        check(!FirearmItem.chambered(player.getMainHandItem()), "De kamer is niet leeg");
+        check(player.getInventory().countItem(ModItems.ROUND_9MM.get()) == 2, "De patroon uit de kamer kwam niet in je inventaris");
+        check(!Firearms.request(player, Firearms.ActionKind.UNLOAD_CHAMBER, 0), "Een lege kamer gaf nog een patroon");
+        restore();
+        helper.succeed();
+    }
 }

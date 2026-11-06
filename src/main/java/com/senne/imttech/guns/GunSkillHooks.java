@@ -17,7 +17,8 @@ public final class GunSkillHooks {
         return switch (kind) {
             case EJECT_MAG, INSERT_MAG, SLIDE_RELEASE, RELOAD_POUCH, CHAMBER_ROUND -> GunSkill.RELOAD;
             case TAP_RACK -> GunSkill.CLEARING;
-            case LOAD_ROUND -> GunSkill.MAG_HANDLING;
+            case LOAD_ROUND, UNLOAD_ROUND -> GunSkill.MAG_HANDLING;
+            case UNLOAD_CHAMBER -> GunSkill.RELOAD;
             case DRAW -> GunSkill.QUICKDRAW;
         };
     }

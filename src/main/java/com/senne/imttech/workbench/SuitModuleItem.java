@@ -1,5 +1,7 @@
 package com.senne.imttech.workbench;
 
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.core.BlockPos;
 import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.suit.RocketPackItem;
 import com.senne.imttech.suit.TechSuitItem;
@@ -71,5 +73,11 @@ public class SuitModuleItem extends Item {
         String id = kind.name().toLowerCase(java.util.Locale.ROOT);
         tooltip.add(Component.translatable("tooltip.imttech.module." + id).withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.imttech.module.hint").withStyle(ChatFormatting.DARK_AQUA));
+    }
+
+    /** Sneak + klik op de harnas-werkbank gaat naar de werkbank (het volgende stuk kiezen, hoofdstuk 54), ook met dit in je hand. */
+    @Override
+    public boolean doesSneakBypassUse(ItemStack stack, net.minecraft.world.level.LevelReader level, BlockPos pos, Player player) {
+        return level.getBlockState(pos).is(com.senne.imttech.registry.ModBlocks.SUIT_WORKBENCH.get());
     }
 }

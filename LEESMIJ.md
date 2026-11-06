@@ -33,10 +33,10 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (375 automati
   andere: het laadstation, de relais, de laserzenders en de upgrades.
 - Zet de bril op je hoofd (helm-slot). De eerste die hem opzet is de eigenaar; anderen krijgen
   "toegang geweigerd".
-- Craft het **laadstation** om de bril op te laden. Redstone kan erin, maar geeft weinig
-  (50 per stuk): dat is je noodvoorraad. Voor echte stroom zet je een **zonnepaneel** of een
-  **warmtegenerator** neer en verbind je die met **stroomkabels** (zie "Stroom en kabels").
-  In het station bouw je ook upgrades in (batterij, scanner, drones).
+- Craft het **laadstation** om de bril op te laden. Het laadt alleen uit het net (sinds 6 november
+  gaat er geen redstone meer in): zet een **zonnepaneel** of een **warmtegenerator** neer en verbind
+  die met **stroomkabels** (zie "Stroom en kabels"). Upgrades (batterij, scanner, drones) bouw je in
+  aan de **harnas-werkbank**: de bril is daar het vierde stuk op het hologram (zie "Het harnas").
 - Zoek een **Biebia's Industries Tower** in je wereld: een wolkenkrabber van 41 x 110 blokken met een
   verlicht BIEBIA-logo en een blauwe lichtstraal uit de kroon (die zie je van ver). Binnen: een
   lobby met receptie, een lab, een archief, een hangar, een woonverdieping, de beveiliging,
@@ -125,15 +125,17 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (375 automati
 | **'** | Redstone-scherm (al je relais) |
 | **Y** | Drone-camera (verkenner) |
 | **M** | Navigatie / waypoints |
-| **U** | Ping plaatsen |
+| **U** | Ping plaatsen (met een pistool of magazijn in je hand: **unload**, zie "Vuurwapens") |
 | **O** | Comms (berichten naar andere I.M.T-dragers) |
 | **Z** | Spraaktoets: ingedrukt houden en praten |
 | **I** | Laser cannon aan/uit (met de borstplaat aan); vuren met de aanvalsknop |
 | **X** | Salvo mini-raketten (hele harnas + raketpakket) |
 
 Alle toetsen kun je aanpassen: **Opties > Besturing > I.M.T** Daar staan ook "Cable X-ray
-on/off" (verborgen kabels door muren heen zien) en "Zone border on/off" (de rand van je zones),
-allebei standaard zonder toets.
+on/off" (verborgen kabels door muren heen zien), "Zone border on/off" (de rand van je zones), "Gun
+skills", en de quickdraws en pouches van de vuurwapens ("Quickdraw: pistol", "Quickdraw: grenade",
+"Open the holster", "Open the grenade pouch", "Open the magazine pouch"), allemaal standaard zonder
+toets.
 
 ---
 
@@ -320,7 +322,8 @@ stroom opslaat, en sinds dit hoofdstuk **de enige plek waar je het hele stroomne
 zonnepaneel of warmtegenerator zegt alleen nog wat hij zelf maakt en opslaat.
 - Bouw een **dichte doos van Battery Casing** (acht ijzer rond een computerchip = 8 stuks), van
   3 × 3 × 3 tot 18 × 18 × 18. Een wandblok mag ook **Battery Glass** zijn (glas rond een casing = 4),
-  dan zie je de cellen erin. Zet **Battery Cells** binnenin (vier redstoneblokken en vier ijzer rond
+  dan zie je de cellen erin; glas naast glas hangt aan elkaar als één raam met één rand (zoals het
+  framed glass van Create). Zet **Battery Cells** binnenin (vier redstoneblokken en vier ijzer rond
   een chip): elke cel is **1.000.000 FE** opslag (`[power] batteryCellCapacity`); lucht erin mag ook.
   Minstens één **Battery Port** in de wand (koper, een kabel, een casing en een chip): daar sluiten
   je kabels aan (en de kabels van andere mods). Meer poorten mag; ze delen dezelfde stroom.
@@ -348,7 +351,8 @@ Kabels zijn **geen blokken**: je **tekent** ze.
   **met de bril op**: dan lichten ze op door de muur heen (tot 24 blokken ver): een stroomkabel
   grijs, een netwerkkabel wit en een PoE-kabel gloeiend groen. Dat zet je aan of uit met
   **G > Information > Cable X-ray** (of geef het een eigen toets in Opties > Besturing > I.M.T:
-  "Cable X-ray on/off").
+  "Cable X-ray on/off"). Met de xray aan zie je dichtbij ook **open** kabels door een muur heen
+  (een kabel in de kamer ernaast), en de stroom en signalen die erover lopen.
 - Er zijn **drie soorten kabel**: de stroomkabel (grijs), de **netwerkkabel** (wit) en de
   **PoE-kabel** (groen, stroom en netwerk samen). Ze mogen op dezelfde plek liggen (dan liggen ze
   netjes boven elkaar) zonder elkaar te raken. Over de netwerkkabel en de PoE-kabel lees je meer
@@ -364,7 +368,9 @@ Kabels zijn **geen blokken**: je **tekent** ze.
 - Een **warmtegenerator** stookt brandstof, en haalt gratis warmte uit lava, magma of vuur om
   hem heen (hoe meer, hoe beter). Bij een lavameer hoef je er nooit meer naar om te kijken.
   Zijn voorkant (het rooster) wijst naar je toe als je hem neerzet; zolang hij warmte
-  opwekt, gloeit het rooster oranje en geeft hij wat licht.
+  opwekt, gloeit het rooster oranje en geeft hij wat licht. In het scherm van een generator laad
+  je niets op (sinds 6 november geen brilvakje meer): je ziet groot wat hij heeft en al maakte, en
+  bij de warmtegenerator het vakje voor brandstof.
 - Zonder stroom doen de laserpoort, de laserbrug, de holotafel en de koepel niets.
 - Het **laadstation** laadt een bril die erin ligt uit het net, en vult daarna ook zijn eigen
   voorraad, maar alleen met wat over is: de generatoren houden altijd de helft achter voor de
@@ -1764,8 +1770,10 @@ het vervangt.
 **De Gunsmith Table** (staal, ijzer en een werkbank). Rechtsklik: links zie je alleen de onderdelen en pistolen uit je
 inventaris, in het midden ligt het pistool groot op de tafel. **Sleep** een onderdeel naar zijn plek; kom je in de
 buurt, dan licht de plek op en klikt het vast. Begin met een frame (dat is de basis); wat nog ontbreekt staat
-gestippeld ernaast. Sleep een onderdeel van het pistool af (of klik op zijn [x] rechts) en het komt met zijn conditie
-terug in je inventaris; het frame kan er pas als laatste uit. Scrollen op de tafel draait het pistool, rechts slepen
+gestippeld ernaast (de slede erboven, de loop en de veren ervoor, de slagpin erachter, de trekker eronder). Sleep een
+onderdeel van het pistool af (of klik op zijn [x] rechts) en het komt met zijn conditie terug in je inventaris; het frame
+kan er pas als laatste uit, en de loop, de veren en de slagpin zitten **onder de slede**: zit de slede erop, dan kun je er
+niet bij (eerst de slede eraf, zoals bij een echte Glock). Scrollen op de tafel draait het pistool, rechts slepen
 kantelt het. "Take the pistol" neemt het mee; een pistool uit je inventaris sleep je op de tafel om het te repareren.
 
 **Patronen en de Reloading Bench.** Een **9mm Round** pers je op de **Reloading Bench** (ijzer, planken en een werkbank)
@@ -1776,7 +1784,7 @@ dan pers je er weer patronen van.
 
 **Het magazijn, kogel per kogel.** Een **Glock 19 Magazine** (staal en een veer) houdt 15 patronen en stapelt niet: elk
 magazijn heeft zijn eigen inhoud (het streepje). Houd het vast en druk **R**: elke druk duwt er één patroon uit je
-inventaris in (inhouden gaat door). In het pistool zit er nog één in de **kamer** (15 + 1): heb je een magazijn van 5 en
+inventaris in (inhouden gaat door), en **U** haalt er weer één uit (unload, ook inhouden). In het pistool zit er nog één in de **kamer** (15 + 1): heb je een magazijn van 5 en
 herlaad je, dan heeft het magazijn er 4 en de kamer 1; een nieuw magazijn van 6 erin = 7 in totaal. **Sneak + R** met
 het pistool steekt met de hand één patroon in de kamer, ook zonder magazijn.
 
@@ -1784,19 +1792,24 @@ het pistool steekt met de hand één patroon in de kamer, ook zonder magazijn.
 1-3, of nog eens R voor het volste) en het gaat erin; het oude magazijn komt op zijn plek in de pouch. Zonder pouch:
 **R** gooit het magazijn uit het pistool (het komt in je inventaris), je scrolt naar een ander magazijn, **rechtsklik**
 duwt het in het pistool, en als je het pistool weer pakt, laat je de slede los (de eerste patroon gaat in de kamer).
-Dat duurt langer, en zo hoort het: een pouch is echt beter.
+Dat duurt langer, en zo hoort het: een pouch is echt beter. **U** met het pistool is de **unload**: het magazijn eruit
+(ook met een pouch om: het gaat erin als er plek is, anders in je inventaris), en zonder magazijn trekt U de patroon uit
+de kamer (die komt in je inventaris). Zit er nog een magazijn met patronen in, dan eerst dat eruit.
 
 **De holster, de pouches en het wiel.** Een **Holster** (leer en een ijzerklompje) houdt één pistool, een **Grenade
 Pouch** (leer en touw) vier stapels granaten, een **Magazine Pouch** (leer en een ijzerklompje) drie magazijnen. Je
 draagt ze in de drie vakjes rechts van je poppetje in je inventaris (klik erin met het item aan je muis); zit
 **Curios** in je modpack, dan zie je die vakjes niet en zitten ze in de Curios-slots "Holster" en "Pouch". Houd
-**linker Alt** in: het wiel. Wijs je pistool aan, een granaatsoort (met hoeveel je er hebt) of "Put away", en laat Alt
-los (of tik Alt en klik). Trekken: wat je vasthield **valt op de grond** en het pistool (of de granaat) komt in dat
+**linker Alt** in: het wiel. Wijs je pistool aan, een granaatsoort (met hoeveel je er hebt), "Put away", "Open ..." (een
+pouch die je draagt openen) of "Gun skills", en laat Alt los (of tik Alt en klik). Trekken: wat je vasthield **valt op de grond** en het pistool (of de granaat) komt in dat
 vakje; het pistool trekken duurt even. Gooi je je laatste granaat van een soort, dan komt de volgende uit de pouch
 vanzelf in je hand. "Put away" steekt weg wat je vasthoudt (het pistool in de holster, een granaat in de pouch, een
 magazijn in de magazijnpouch). Een magazijn dat je met R uitwerpt, gaat in de magazijnpouch als daar plek is. Anderen
-zien de holster met het pistool op je rechterheup, de granaatpouch links en de magazijnpouch achter. Ga je dood zonder
-keepInventory, dan vallen ze op de grond zoals de rest.
+zien de holster met het pistool op je rechterheup, de granaatpouch links en de magazijnpouch achter, mét wat erin zit:
+de granaten steken uit hun vakjes, de magazijnen staan rechtop in de hunne. **Een pouch vullen of leeghalen**: open hem
+(uit het wiel, met een eigen toets uit Opties > Besturing, of rechtsklik met de pouch in je hand): een scherm met zijn
+vakjes boven je inventaris; sleep of shift-klik magazijnen of granaten erin en eruit. Ga je dood zonder keepInventory,
+dan vallen ze op de grond zoals de rest.
 
 **Schieten.** Linkerklik = één schot (een Glock is semi-automatisch), rechterklik = richten over de korrel en de keep,
 **H** = bekijken. De kogel vliegt echt (16 blokken per tick, dus niet meteen raak), zakt een heel klein beetje, doet
@@ -1813,8 +1826,8 @@ gaat erin.
 
 **De skills.** Alles wat je met een pistool doet geeft ervaring (een schot 1, een treffer 2, iemand doodschieten 10,
 herladen 3, een tap-rack 2, een patroon in een magazijn 1, trekken 1); elke keer dat de balk vol is krijg je een
-**skillpunt** (het eerste bij 60, elk volgende 20% meer). Open de boom via **G > Combat > Gun skills** (of een eigen
-toets): links de **globale** skills (voor elk vuurwapen, 5% per niveau, een niveau kost het dubbele), rechts die van
+**skillpunt** (het eerste bij 60, elk volgende 20% meer). Open de boom via het **wiel (linker Alt) > Gun skills** (of een
+eigen toets): links de **globale** skills (voor elk vuurwapen, 5% per niveau, een niveau kost het dubbele), rechts die van
 de **Glock 19** zelf (8% per niveau); ze tellen bij elkaar op (tot 70% eraf). Reload (magazijnen, de slede, de
 kamer), Recoil control (de terugslag), Steady aim (de spreiding), Quickdraw (trekken), Clearing (de tap-rack) en
 Magazine handling (patronen in een magazijn); elk tot niveau 5, en elk volgend niveau kost een punt meer. Jouw keuze:
@@ -1881,9 +1894,11 @@ ijzer), of gebruik die in het lab van een Biebia's Industries Tower. Hij heeft *
 naar een zonnepaneel of warmtegenerator, of er direct tegenaan.
 
 Er is **geen scherm**: boven de werkbank zweeft het harnas als een blauw **hologram** dat langzaam
-ronddraait (zonder stroom flikkert het). **Kijk naar een stuk** (borstplaat, broek of laarzen): het
-licht op, en naast je vizier staat een kaartje met wat een **rechtsklik** zou doen. Met **shift**
-ingedrukt doet rechtsklikken weer het gewone.
+ronddraait (zonder stroom flikkert het). **Kijk naar een stuk** (borstplaat, broek, laarzen, of de
+**bril** bovenaan): het licht op, en naast je vizier staat een kaartje met wat een **rechtsklik** zou
+doen. Mikken hoeft niet: **sneak + rechtsklik op de werkbank zelf** kiest het volgende stuk (oranje
+hoekjes op het hologram, ook met iets in je hand), en een gewone klik op de werkbank doet hetzelfde als
+een klik op dat stuk.
 
 - **Bouwen** (lege hand, of iets anders dan harnas of upgrades): klik op een stuk dat nog een
   hologram is. Het kaartje laat zien wat het kost en wat je bij je hebt (groen = genoeg, rood = te
@@ -1907,6 +1922,9 @@ ingedrukt doet rechtsklikken weer het gewone.
     Craft: ijzer, buskruit, computerchips en een trechter.
   - **Rocket Warhead** (borstplaat met raketpakket, tot 3): 40% meer schade per raket. Craft:
     ijzer, blazepoeder, computerchips en TNT.
+  - **De bril** (sinds 6 november): leg hem op het hologram (het vierde stuk, boven de borstplaat) en
+    bouw er een **Battery Upgrade**, **Scanner Upgrade** of **Drone Upgrade** in, net zo. Een bril
+    bouwen kan hier niet: die ligt in de kluis van een Biebia's Industries Tower.
   In de tooltip van een stuk harnas zie je ook welke upgrades erin zitten.
 - De werkbank doet één ding tegelijk. Breek je hem af, dan vallen alle stukken eruit, en ook de
   upgrade of de materialen van wat hij aan het maken was.

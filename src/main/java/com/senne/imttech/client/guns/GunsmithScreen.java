@@ -17,6 +17,7 @@ import java.util.Map;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -45,6 +46,10 @@ import org.joml.Vector3f;
  * onderdeel naar zijn plek: kom je in de buurt, dan licht de plek op en klikt het vast als je loslaat (de server zet
  * het erin, zie GunsmithTableBlockEntity). Sleep een onderdeel van het pistool af (of klik op zijn [x] rechts) en het
  * komt terug in je inventaris. Een pistool uit je inventaris sleep je op de tafel; "Take the pistol" neemt het mee.
+ *
+ * Hoofdstuk 54 (jouw notitie: "je kunt niet goed aan elk onderdeel"): de loop, de veren en de slagpin zitten ONDER de
+ * slede. Zit de slede erop, dan kun je er niet bij (niet slepen, geen [x]): eerst de slede eraf, zoals bij een echte
+ * Glock. De losse onderdelen liggen verder uit elkaar, elk in zijn eigen vak, en hun naam valt nooit buiten de tafel.
  */
 public class GunsmithScreen extends AbstractContainerScreen<GunsmithMenu> {
     private static final int FRAME = HudStyle.argb(255, 0x465460);
@@ -54,8 +59,8 @@ public class GunsmithScreen extends AbstractContainerScreen<GunsmithMenu> {
     private static final int TRAY_X = 6, TRAY_Y = 26, TRAY_W = 74, TRAY_H = 152;
     private static final int VIEW_X = 84, VIEW_Y = 18, VIEW_W = 150, VIEW_H = 160;
     private static final int SIDE_X = 238, SIDE_W = 84;
-    /** Zo groot is het pistool: pixels op je scherm per pixel van het model. */
-    private static final float ZOOM = 7.8f;
+    /** Zo groot is het pistool: pixels op je scherm per pixel van het model (sinds hoofdstuk 54 iets kleiner: de losse onderdelen liggen verder uit elkaar). */
+    private static final float ZOOM = 6.6f;
     /** Tot zo ver (pixels) van zijn plek klikt een onderdeel vast. */
     private static final int SNAP = 16;
 
@@ -111,9 +116,20 @@ public class GunsmithScreen extends AbstractContainerScreen<GunsmithMenu> {
         take.active = !gun.isEmpty();
         for (GunPart part : GunPart.values()) {
             Button button = removeButtons.get(part);
+            boolean covered = underSlide(part, parts);
             button.visible = parts.has(part);
-            button.active = parts.has(part) && (part != GunPart.FRAME || parts.parts().size() == 1);
+            button.active = parts.has(part) && !covered && (part != GunPart.FRAME || parts.parts().size() == 1);
+            button.setTooltip(covered ? Tooltip.create(Component.translatable("screen.imttech.gunsmith.under_slide")) : null);
         }
+    }
+
+    /**
+     * Zit dit onderdeel onder de slede (de loop, de veren en de slagpin) terwijl de slede erop zit? Dan kun je er niet bij:
+     * niet om het eruit te halen, en niet om het erin te leggen. (Sleep je de slede net weg, dan wel.)
+     */
+    private boolean underSlide(GunPart part, GunParts parts) {
+        return (part == GunPart.BARREL || part == GunPart.SPRINGS || part == GunPart.STRIKER)
+                && parts.has(GunPart.SLIDE) && dragPart != GunPart.SLIDE;
     }
 
     /** De lijst links: onderdelen en pistolen uit je inventaris (niets anders). */
@@ -267,18 +283,30 @@ public class GunsmithScreen extends AbstractContainerScreen<GunsmithMenu> {
             zones.put(part, zone(project, part, installed ? new Vector3f() : FirearmRig.exploded(part)));
         }
         GunPart under = dragSlot < 0 && dragPart == null ? hoveredPart(mouseX, mouseY) : null;
+        pose.pushPose();
+        pose.translate(0, 0, 200); // boven het pistool
         for (GunPart part : GunPart.values()) {
             boolean installed = parts.has(part) && part != dragPart;
             int[] zone = zones.get(part);
             boolean hot = hotZone(part, mouseX, mouseY);
             if (!installed) {
-                dashed(g, zone, hot ? HudStyle.argb(255, HudStyle.CYAN) : HudStyle.argb(110, HudStyle.WHITE));
-                small(g, part.text().getString().toUpperCase(java.util.Locale.ROOT), zone[0] + 2, zone[1] - 7,
-                        HudStyle.argb(hot ? 255 : 170, hot ? HudStyle.CYAN : HudStyle.WHITE));
+                boolean covered = underSlide(part, parts);
+                dashed(g, zone, hot ? HudStyle.argb(255, HudStyle.CYAN) : HudStyle.argb(covered ? 45 : 110, HudStyle.WHITE));
+                label(g, part.text().getString().toUpperCase(java.util.Locale.ROOT), zone,
+                        HudStyle.argb(hot ? 255 : covered ? 80 : 170, hot ? HudStyle.CYAN : HudStyle.WHITE));
             } else if (under == part) {
                 g.renderOutline(zone[0], zone[1], zone[2] - zone[0], zone[3] - zone[1], HudStyle.argb(160, HudStyle.ORANGE));
             }
         }
+        pose.popPose();
+    }
+
+    /** De naam bij een vak: erboven, of eronder als dat niet past; nooit buiten de tafel. */
+    private void label(GuiGraphics g, String text, int[] zone, int colour) {
+        int width = (int) Math.ceil(font.width(text) * 0.75f);
+        int x = Mth.clamp(zone[0] + 2, leftPos + VIEW_X + 2, leftPos + VIEW_X + VIEW_W - 2 - width);
+        int y = zone[1] - 7 >= topPos + VIEW_Y + 2 ? zone[1] - 7 : zone[3] + 1;
+        small(g, text, x, y, colour);
     }
 
     /** Is dit het vak waar het gesleepte onderdeel heen moet, en is de muis er dichtbij? */
@@ -287,20 +315,21 @@ public class GunsmithScreen extends AbstractContainerScreen<GunsmithMenu> {
             return false;
         }
         Row row = draggedRow();
-        if (row == null || row.part != part) {
+        if (row == null || row.part != part || underSlide(part, FirearmItem.parts(menu.gun()))) {
             return false;
         }
         int[] zone = zones.get(part);
         return zone != null && near(zone, mouseX, mouseY);
     }
 
-    /** Het onderdeel onder de muis (het kleinste vak wint). */
+    /** Het onderdeel onder de muis (het kleinste vak wint; wat onder de slede zit, telt niet mee). */
     private @Nullable GunPart hoveredPart(double mouseX, double mouseY) {
         GunPart best = null;
         long bestArea = Long.MAX_VALUE;
+        GunParts parts = FirearmItem.parts(menu.gun());
         for (Map.Entry<GunPart, int[]> entry : zones.entrySet()) {
             int[] zone = entry.getValue();
-            if (inside(zone, mouseX, mouseY)) {
+            if (inside(zone, mouseX, mouseY) && !underSlide(entry.getKey(), parts)) {
                 long area = (long) (zone[2] - zone[0]) * (zone[3] - zone[1]);
                 if (area < bestArea) {
                     bestArea = area;
@@ -470,7 +499,8 @@ public class GunsmithScreen extends AbstractContainerScreen<GunsmithMenu> {
                     click(GunsmithMenu.PUT_GUN + slot);
                 } else if (row.part != null) {
                     int[] zone = zones.get(row.part);
-                    if (zone != null && near(zone, mouseX, mouseY) && !FirearmItem.parts(menu.gun()).has(row.part)) {
+                    GunParts parts = FirearmItem.parts(menu.gun());
+                    if (zone != null && near(zone, mouseX, mouseY) && !parts.has(row.part) && !underSlide(row.part, parts)) {
                         click(GunsmithMenu.INSTALL + slot);
                     }
                 }

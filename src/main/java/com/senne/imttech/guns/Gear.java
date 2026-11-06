@@ -12,6 +12,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.ItemStack;
@@ -45,6 +46,8 @@ public final class Gear {
     public static final int ACTION_DRAW_GUN = 0;
     public static final int ACTION_DRAW_GRENADE = 1;
     public static final int ACTION_HOLSTER = 2;
+    /** Hoofdstuk 54: een pouch (of de holster) die je draagt openen, om er dingen in te stoppen of uit te halen. */
+    public static final int ACTION_OPEN = 3;
 
     private static Boolean curiosLoaded;
 
@@ -81,7 +84,7 @@ public final class Gear {
         return GearItem.contents(get(player, kind));
     }
 
-    private static void setContents(Player player, GearItem.Kind kind, List<ItemStack> contents) {
+    static void setContents(Player player, GearItem.Kind kind, List<ItemStack> contents) {
         ItemStack gear = get(player, kind);
         if (gear.isEmpty()) {
             return;
@@ -234,6 +237,45 @@ public final class Gear {
                 return;
             }
         }
+    }
+
+    // ================================================================ Een pouch openen (hoofdstuk 54)
+
+    /**
+     * Een holster of pouch die je draagt openen (uit het wiel of met een eigen toets, jouw notitie: "nu kun je geen nieuwe
+     * volle magazijnen in de pouch steken en kun je ook geen lege er uit halen"): een scherm met zijn vakjes en je
+     * inventaris (zie GearPouchMenu).
+     */
+    public static boolean openPouch(ServerPlayer player, int kindOrdinal) {
+        GearItem.Kind[] kinds = GearItem.Kind.values();
+        if (kindOrdinal < 0 || kindOrdinal >= kinds.length) {
+            return false;
+        }
+        GearItem.Kind kind = kinds[kindOrdinal];
+        ItemStack worn = get(player, kind);
+        if (worn.isEmpty()) {
+            tell(player, Component.translatable("gear.imttech.not_wearing", kind.text()));
+            return false;
+        }
+        open(player, kind, GearPouchMenu.WORN, worn.getHoverName());
+        return true;
+    }
+
+    /** Rechtsklik met een holster of pouch in je hand: die openen (om hem te vullen voor je hem aantrekt). */
+    public static void openHeld(ServerPlayer player, InteractionHand hand) {
+        ItemStack held = player.getItemInHand(hand);
+        GearItem.Kind kind = GearItem.kindOf(held);
+        if (kind == null) {
+            return;
+        }
+        open(player, kind, hand == InteractionHand.MAIN_HAND ? GearPouchMenu.MAIN_HAND : GearPouchMenu.OFF_HAND, held.getHoverName());
+    }
+
+    private static void open(ServerPlayer player, GearItem.Kind kind, int where, Component title) {
+        player.openMenu(new SimpleMenuProvider((id, inventory, p) -> new GearPouchMenu(id, inventory, kind, where), title), buf -> {
+            buf.writeVarInt(kind.ordinal());
+            buf.writeVarInt(where);
+        });
     }
 
     // ================================================================ De magazijnpouch

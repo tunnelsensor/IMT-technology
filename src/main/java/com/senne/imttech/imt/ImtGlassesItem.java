@@ -1,5 +1,7 @@
 package com.senne.imttech.imt;
 
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.core.BlockPos;
 import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.registry.ModArmorMaterials;
 import java.util.List;
@@ -66,5 +68,11 @@ public class ImtGlassesItem extends ArmorItem {
         tooltip.add(Component.translatable("tooltip.imttech.upgrade.battery", upgrades.battery(), Math.round(ImtConfig.Glasses.MAX_BATTERY_UPGRADES)).withStyle(ChatFormatting.DARK_GRAY));
         tooltip.add(Component.translatable("tooltip.imttech.upgrade.scanner", upgrades.scanner(), ImtConfig.Scanner.MAX_SCANNER_UPGRADES).withStyle(ChatFormatting.DARK_GRAY));
         tooltip.add(Component.translatable("tooltip.imttech.upgrade.drones", upgrades.drones(), Math.round(ImtConfig.Drones.MAX_UPGRADES)).withStyle(ChatFormatting.DARK_GRAY));
+    }
+
+    /** Sneak + klik op de harnas-werkbank gaat naar de werkbank (het volgende stuk kiezen, hoofdstuk 54), ook met dit in je hand. */
+    @Override
+    public boolean doesSneakBypassUse(ItemStack stack, net.minecraft.world.level.LevelReader level, BlockPos pos, Player player) {
+        return level.getBlockState(pos).is(com.senne.imttech.registry.ModBlocks.SUIT_WORKBENCH.get());
     }
 }

@@ -3,7 +3,6 @@ package com.senne.imttech.client.workbench;
 import com.senne.imttech.client.DroneCamera;
 import com.senne.imttech.client.hud.HudStyle;
 import com.senne.imttech.network.WorkbenchClickPayload;
-import com.senne.imttech.suit.TechSuitItem;
 import com.senne.imttech.workbench.Blueprint;
 import com.senne.imttech.workbench.HoloPiece;
 import com.senne.imttech.workbench.SuitWorkbenchBlockEntity;
@@ -148,6 +147,13 @@ public final class WorkbenchHologram {
     public static void renderHint(GuiGraphics g, DeltaTracker delta) {
         Minecraft mc = Minecraft.getInstance();
         Target target = hovered;
+        boolean viaBench = false;
+        if (target == null && mc.hitResult instanceof net.minecraft.world.phys.BlockHitResult blockHit
+                && mc.level != null && mc.level.getBlockEntity(blockHit.getBlockPos()) instanceof SuitWorkbenchBlockEntity bench) {
+            // Je kijkt naar de werkbank zelf: een klik werkt op het gekozen stuk (hoofdstuk 54).
+            target = new Target(blockHit.getBlockPos(), bench.selected(), 0);
+            viaBench = true;
+        }
         if (target == null || mc.options.hideGui || mc.player == null || mc.level == null
                 || !(mc.level.getBlockEntity(target.pos()) instanceof SuitWorkbenchBlockEntity bench)) {
             return;
@@ -155,6 +161,10 @@ public final class WorkbenchHologram {
         List<Line> lines = new ArrayList<>();
         float progress = -1;
         HoloPiece piece = target.piece();
+        if (viaBench) {
+            lines.add(new Line(Component.translatable("workbench.imttech.selected_short", Component.translatable(piece.langKey())),
+                    HudStyle.ORANGE));
+        }
         ItemStack onIt = bench.laid(piece);
         Component name = Component.translatable(piece.langKey());
         lines.add(new Line(onIt.isEmpty()
@@ -175,8 +185,8 @@ public final class WorkbenchHologram {
             }
         } else if (!bench.flying().isEmpty()) {
             lines.add(new Line(Component.translatable("workbench.imttech.busy"), HudStyle.ORANGE));
-        } else if (hand.getItem() instanceof TechSuitItem suit) {
-            HoloPiece own = HoloPiece.of(suit.getType());
+        } else if (HoloPiece.ofItem(hand) != null) {
+            HoloPiece own = HoloPiece.ofItem(hand);
             boolean busy = own != null && working && bench.jobPiece() == own;
             if (busy) {
                 lines.add(new Line(Component.translatable("workbench.imttech.busy"), HudStyle.ORANGE));
@@ -202,9 +212,14 @@ public final class WorkbenchHologram {
             upgradeLines(mc, onIt, lines);
         } else if (working) {
             lines.add(new Line(Component.translatable("workbench.imttech.busy"), HudStyle.ORANGE));
+        } else if (piece.blueprint() == null) {
+            lines.add(new Line(Component.translatable("workbench.imttech.no_blueprint"), 0x8A9BA0));
         } else {
             lines.add(new Line(click.copy().append(Component.translatable("workbench.imttech.action.build")), HudStyle.WHITE));
             costLines(mc.player, piece.blueprint(), lines);
+        }
+        if (viaBench) {
+            lines.add(new Line(Component.translatable("workbench.imttech.action.next"), 0x8A9BA0));
         }
         draw(g, mc.font, lines, progress);
     }

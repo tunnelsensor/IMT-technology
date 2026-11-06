@@ -955,6 +955,11 @@ def battery_textures():
     d.rectangle([1, 1, 14, 14], outline=steel)
     px(glass, [(3, 3), (4, 4), (12, 12), (11, 11)], (220, 240, 255, 120))
     save(glass, "block/battery_glass.png")
+    # Hoofdstuk 54: het glas hangt aan elkaar (zie BatteryGlassBlock). Het vlak zelf zonder rand; de rand komt uit
+    # battery_glass.png, per kant alleen waar geen ander Battery Glass zit.
+    pane = img(16, 16, (160, 200, 230, 40))
+    px(pane, [(3, 3), (4, 4), (12, 12), (11, 11)], (220, 240, 255, 120))
+    save(pane, "block/battery_glass_pane.png")
     # Cel: donker met vier gloeiende blauwe vakjes.
     cell = img(16, 16, (22, 28, 44, 255))
     d = ImageDraw.Draw(cell)
