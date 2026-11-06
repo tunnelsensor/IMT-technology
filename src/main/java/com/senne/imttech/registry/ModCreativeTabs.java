@@ -39,6 +39,12 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.ROCKET_WARHEAD.get());
                 output.accept(ModItems.ROCKET_MAGAZINE.get());
                 output.accept(ModItems.REPAIR_PASTE.get());
+                // De materialen van de vuurwapens (hoofdstuk 52).
+                output.accept(ModItems.STEEL_BLEND.get());
+                output.accept(ModItems.STEEL_INGOT.get());
+                output.accept(ModItems.TITANIUM_BLEND.get());
+                output.accept(ModItems.TITANIUM_INGOT.get());
+                output.accept(ModItems.POLYMER.get());
             });
 
     /** Wat je draagt of bij je hebt: de bril, het harnas, het raketpakket en de drone. */
@@ -78,6 +84,24 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.EMP_TRIGGER.get());
                 output.accept(ModItems.REMOTE_FRAG.get());
                 output.accept(ModItems.FRAG_TRIGGER.get());
+                // De vuurwapens (hoofdstuk 52): een geladen Glock 19, zijn onderdelen per materiaal, munitie en de banken.
+                output.accept(com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.GLOCK_19,
+                        com.senne.imttech.guns.GunMaterial.STEEL));
+                output.accept(com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.GLOCK_19, 0));
+                output.accept(com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.GLOCK_19,
+                        com.senne.imttech.guns.FirearmType.GLOCK_19.capacity()));
+                for (com.senne.imttech.guns.GunPart part : com.senne.imttech.guns.GunPart.values()) {
+                    for (com.senne.imttech.guns.GunMaterial material : com.senne.imttech.guns.GunMaterial.values()) {
+                        if (part.accepts(material)) {
+                            output.accept(com.senne.imttech.guns.GunPartItem.of(part, material));
+                        }
+                    }
+                }
+                output.accept(ModItems.ROUND_9MM.get());
+                output.accept(ModItems.CASING_9MM.get());
+                output.accept(ModItems.BULLET_9MM.get());
+                output.accept(ModItems.GUNSMITH_TABLE.get());
+                output.accept(ModItems.RELOADING_BENCH.get());
             });
 
     /** De kabels (stroom, netwerk, PoE) en wat stroom maakt of opslaat. */

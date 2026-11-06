@@ -28,7 +28,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "31";
+    private static final String PROTOCOL_VERSION = "32";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -289,6 +289,23 @@ public final class ModNetwork {
                         (payload, context) -> {
                             if (context.player() instanceof ServerPlayer player) {
                                 ImtSuit.setEngaged(player, payload.engaged());
+                            }
+                        }));
+        // De vuurwapens (hoofdstuk 52): de trekker, en de handelingen (herladen, tap-rack...) met hun duur terug.
+        registrar.playToServer(FirearmFirePayload.TYPE, FirearmFirePayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                com.senne.imttech.guns.Firearms.fire(player, payload.yaw(), payload.pitch(), payload.aiming());
+            }
+        });
+        registrar.playBidirectional(FirearmActionPayload.TYPE, FirearmActionPayload.STREAM_CODEC,
+                new DirectionalPayloadHandler<>(
+                        (payload, context) -> ClientPayloadHandlers.onFirearmAction(payload, context),
+                        (payload, context) -> {
+                            if (context.player() instanceof ServerPlayer player) {
+                                com.senne.imttech.guns.Firearms.ActionKind[] kinds = com.senne.imttech.guns.Firearms.ActionKind.values();
+                                if (payload.kind() >= 0 && payload.kind() < kinds.length) {
+                                    com.senne.imttech.guns.Firearms.request(player, kinds[payload.kind()], payload.arg());
+                                }
                             }
                         }));
         // De lasergeweren (hoofdstuk 35): jouw spel schiet en herlaadt; de server zegt als herladen niet kan.

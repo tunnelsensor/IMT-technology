@@ -91,13 +91,15 @@ public final class ImtKeys {
     public static final KeyMapping GUN_INSPECT = new KeyMapping("key.imttech.gun_inspect", GunKeys.CONTEXT, Type.KEYSYM,
             InputConstants.KEY_H, CATEGORY);
 
-    /** Wanneer de toetsen van een geweer werken: in het spel (geen scherm open) en met een lasergeweer in je hand. */
+    /** Wanneer de toetsen van een geweer werken: in het spel (geen scherm open) en met een lasergeweer, een pistool of een magazijn (hoofdstuk 52) in je hand. */
     private static final class GunKeys implements net.neoforged.neoforge.client.settings.IKeyConflictContext {
         static final GunKeys CONTEXT = new GunKeys();
 
         @Override
         public boolean isActive() {
-            return KeyConflictContext.IN_GAME.isActive() && com.senne.imttech.client.weapons.GunControl.held() != null;
+            return KeyConflictContext.IN_GAME.isActive() && (com.senne.imttech.client.weapons.GunControl.held() != null
+                    || com.senne.imttech.client.guns.FirearmControl.held() != null
+                    || com.senne.imttech.client.guns.FirearmControl.heldMagazine());
         }
 
         @Override

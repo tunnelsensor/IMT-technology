@@ -1,0 +1,8 @@
+{
+ "parent": "minecraft:block/orientable",
+ "textures": {
+  "front": "imttech:block/gunsmith_table_front",
+  "side": "imttech:block/gunsmith_table_side",
+  "top": "imttech:block/gunsmith_table_top"
+ }
+}

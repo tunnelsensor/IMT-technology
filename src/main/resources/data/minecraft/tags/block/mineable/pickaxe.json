@@ -36,6 +36,7 @@
     "imttech:robot_dock",
     "imttech:training_start",
     "imttech:training_goal",
-    "imttech:training_end"
+    "imttech:training_end",
+    "imttech:gunsmith_table"
   ]
 }

@@ -22,13 +22,13 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 392 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 401 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
 **Publiceren:** klaar voor CurseForge onder de MIT-licentie (17 oktober): de beschrijving, het logo, de
 changelog en een stappenplan staan in `publish/` (begin bij `publish/HOE-PUBLICEREN.md`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 112 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 113 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -4450,6 +4450,87 @@ klassieke `biebia_tower.nbt` en `biebia_bunker.nbt` blijven (showcase, tests, ee
       en een bunker op vlak land), screenshots `-Ponly=rooms` (`rm01` de torens, `rm02` de bunker van voren, `rm03` van opzij).
 - [ ] **3. In een echte wereld** — alleen op vlak land bekeken: `gradlew runStructureCheck` (of `/locate`) in een nieuwe
       wereld om te zien of de toren op het oppervlak komt en de bunker een berg vindt.
+
+### 52. Vuurwapens: de Glock 19 uit onderdelen (6 november)
+
+Jouw wens: "Ik wil dat je guns toevoegd, begin eerst met enkel een Glock. De bedoeling is dat het supper realistisch is":
+een pistool uit onderdelen (slede, trekker, hamer, handvat, loop, veren) die elk kapot kunnen, beter materiaal = sterker,
+in elkaar te zetten via een GUI met een echt model; een magazijn dat je kogel per kogel laadt (een magazijn van 3 en een
+van 5 = 8 kogels, na 3 schoten wisselen); herladen als skill in een skilltree; een holster (Curios of een eigen slot), een
+granaatpouch, en één groot wiel om snel te kiezen. Ik stelde zeventien vragen, jij koos.
+
+**Jouw antwoorden** (6 november):
+- **Eigen materialen** (polymeer, staal, titanium); beter materiaal = kleinere kans per schot om kapot te gaan ("in code
+  moet het percentage om kapot te gaan lager zijn"), en de rest van mijn voorstel (loop, veren, slede, frame, trekker en
+  slagpin doen elk iets).
+- **Storingen**, met een **tap-rack via R** en een tap-rack-animatie.
+- **Een nieuw blok**, "niet met GUI vakjes maar echt een tafel met de onderdelen die je kunt gebruiken en in je inventory
+  hebt (een spring zie je wel, een diamond niet), en dan versleep je de onderdelen naar waar het moet komen, met snap in
+  place".
+- **Merknamen mogen**; het 3D-model moet echt de Glock zijn: eerst de **Glock 19** van airsoftdoctor.be (een Umarex, zwart).
+- **Kogels realistisch**: een eigen werkbank waar een huls + buskruit + kogelpunt een 9mm-patroon geeft; bij elk schot
+  vliegt de huls eruit en die raap je op met rechtsklik op de grond.
+- **Een magazijn vul je** door het vast te houden en per kogel op R te drukken; magazijnen stapelen niet; daarom ook een
+  **magazijnpouch** (zoals de holster en de granaatpouch).
+- **R opent de magazijnpouch**, je klikt het magazijn dat je wilt; zonder pouch: R op het pistool, scrollen naar het
+  magazijn, rechtsklik, en terug naar het pistool ("dit duurt langer, waardoor een magpouch hebben echt belangrijk is").
+- **Een patroon in de kamer** (15 + 1), ook met de hand zonder magazijn: een magazijn van 5, herladen = 4 in het magazijn
+  en 1 in de kamer; een nieuw magazijn van 6 erin = 1 extra kogel.
+- **Skills met skillpoints** om te verdelen (tactiek: waar steek ik veel en waar weinig in); punten krijg je door alles wat
+  met een pistool te maken heeft. **Globale skills én per wapen** (aim voor elk pistool, en nog eens voor dit pistool).
+- **Curios optioneel**, anders eigen vakjes naast je harnas: "exact hoe ik het bedoel".
+- **Trekken uit de holster** laat vallen wat je in je hand had, het pistool komt in dat vakje.
+- De granaatpouch (vier vakjes, de volgende komt vanzelf) en het wiel (eigen wiel, linker Alt, de holster en de pouches
+  ook op je heup te zien) zoals ik voorstelde.
+- **Kogels met een vliegtijd**: heel snel, maar niet meteen raak of mis. De lasers blijven meteen raak (het is licht).
+
+**Mijn invulling** (zeg het als je het anders wil): een Glock heeft geen hamer maar een **slagpin** (striker): dat
+onderdeel heet dus zo. Polymeer kan alleen voor het frame en de trekker (zoals echt). Onderdelen zijn **één item per
+soort** met hun materiaal erop (`gun_material`) en hun conditie (`part_condition`, 100 = nieuw; een onderdeel uit een
+gebruikt pistool houdt die); het pistool onthoudt zijn onderdelen (`gun_parts`), zijn magazijn (`gun_magazine`), of er een
+in de kamer zit (`gun_chambered`) en een storing (`gun_jam`). **Slijtage**: per schot per onderdeel een kans van zijn
+materiaal (polymeer 4%, staal 2%, titanium 0,8%) op één punt minder; onder 40% versleten (tot 3 keer meer storingen), op 0
+kapot. **Storingen**: een huls die klem blijft zitten (0,4% basis, de veren en de slede) en een ketser (0,15%, de slagpin
+en de trekker); titanium geeft 0,6 keer zo veel, polymeer 1,5 keer. De loop bepaalt schade en spreiding, de slede de
+terugslag, het frame hoe snel trekken en herladen gaan. **Munitie**: 9mm Round (huls van koper, kogelpunt van
+ijzerklompjes, buskruit), geperst op de **Reloading Bench** (één per keer, shift-klik een stapel). Hulzen liggen 10
+minuten; rechtsklik binnen 1,5 blok raapt alles op. **Magazijn**: 15 (config), elke R één patroon (inhouden gaat door), 6
+ticks per patroon. **Herladen zonder pouch**: R = magazijn eruit (8 ticks, in je inventaris), rechtsklik met een magazijn
+= erin (12 ticks, in het pistool in je werkbalk dat er geen heeft), en de server laat de slede vanzelf los (7 ticks)
+zodra je een pistool vasthoudt met een leeg kamer en patronen in het magazijn. Tap-rack 26 ticks, een patroon met de hand
+in de kamer (sneak + R) 22 ticks. **Kogels**: een eigen entity, 16 blokken per tick, een beetje zwaartekracht, volle
+schade (5, hoofd x2) tot 24 blokken en de helft op 80; muren, wezens en schildkoepels houden hem tegen; glas breekt
+(niet in een zone, geen verstevigd glas). De Glock schiet zo snel als je klikt (max 3 ticks). **De Gunsmith Table**: een
+menu zonder zichtbare vakjes (alles gaat als "knop" naar de server: INSTALL + vakje, REMOVE + onderdeel, PUT_GUN,
+TAKE_GUN); het scherm tekent de onderdelen in 3D, berekent per onderdeel zijn vak op het scherm (het frame is de basis;
+wat ontbreekt ligt uit elkaar geschoven), en klikt vast binnen 16 pixels. Het 3D-model (`tools/generate_gun_models.py`):
+een Gen 3 Glock 19 met vingergroeven, rail, vierkante slede met groeven, wit stipje op de korrel en witte U op de keep,
+uitwerpopening met de glimmende loop-hood; elk onderdeel in elk materiaal apart (`models/firearm/glock_19/`), en als
+item met een override per materiaal. Eigen geluiden (`generate_sounds.py`: schot, klik, slede, magazijn uit/in, patroon,
+tap-rack, huls, inslag, holster). Een geladen Glock, de onderdelen per materiaal, de munitie en de banken staan in het
+tabblad Weapons; de staven, blends en polymeer in Resources.
+
+- [x] **1. De Glock 19, de onderdelen, de Gunsmith Table, magazijnen en patronen, de Reloading Bench, hulzen en storingen**
+      — `guns/` (GunMaterial, GunPart, PartState, GunParts, FirearmType, FirearmItem, GunPartItem, MagazineItem,
+      Firearms = schieten + alle handelingen, BulletEntity, CasingEntity, GunsmithTableBlock/BlockEntity/Menu,
+      ReloadingBenchBlock/BlockEntity/Menu, de hooks GunSkillHooks en GunGearHooks voor stap 2 en 3), `client/guns/`
+      (FirearmModels, FirearmRig, FirearmControl, FirearmRenderer = het pistool en het magazijn in je beeld met alle
+      animaties, FirearmHud, BulletRenderer, CasingRenderer, GunsmithScreen = het slepen, ReloadingBenchScreen),
+      FirearmFirePayload en FirearmActionPayload (twee kanten: vraag, en hoe lang het duurt), config `[guns]` (45
+      getallen), 7 data components, 2 entities, 10 geluiden, 27 recepten, `tools/generate_gun_models.py`, LEESMIJ.md
+      "Vuurwapens: de Glock 19 uit onderdelen". Tests in `GunGameTests`: `glock_fires_chambers_next_round_and_ejects_a_casing`,
+      `glock_chamber_and_magazine_math` (jouw voorbeeld 5 -> 4 + 1, 6 erin = 7, zonder pouch via uitwerpen, rechtsklik en
+      de slede), `glock_jams_and_tap_rack_clears`, `glock_parts_wear_and_break`, `magazine_loads_round_by_round_and_chamber_by_hand`,
+      `gunsmith_table_assembles_and_takes_apart`, `reloading_bench_presses_rounds`, `bullets_break_glass_only_when_allowed`,
+      `gun_items_carry_their_data`.
+- [ ] **2. De holster, de granaatpouch en de magazijnpouch** (eigen vakjes naast je harnas, of Curios als dat in je
+      modpack zit), herladen uit de pouch, trekken (wat je vasthield valt), het wiel op linker Alt, en de holster en de
+      pouches op je heup.
+- [ ] **3. De skills**: punten door te doen, globaal en per wapen, de boom (G > Combat en een eigen toets), en wat ze doen
+      (herladen, terugslag, richten, trekken, storingen verhelpen, magazijnen vullen).
+- [x] **4. Showcase en screenshots** — showcase 113 **"Glock 19: parts, magazines and casings"**, screenshots
+      `-Ponly=glock` (`gl01`-`gl21`: heup, richten, schot, slede, magazijn uit en in, slede los, storing, tap-rack, met de
+      hand in de kamer, bekijken, een magazijn vullen, kapotte loop, hulzen, de twee banken, derde persoon).
 
 ---
 

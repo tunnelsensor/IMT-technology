@@ -961,6 +961,108 @@ def laser_gun_aim():
     return finish(total, peak=0.3)
 
 
+
+# ---------------------------------------------------------------- De vuurwapens (hoofdstuk 52)
+
+def glock_fire():
+    """
+    Een 9mm-schot: een snoeiharde, korte knal. Een scherpe krak (hoge ruis die meteen wegvalt), een vollere klap
+    eronder, een diepe dreun, en een korte staart van galm.
+    """
+    total = np.zeros(int(RATE * 0.6))
+    place(total, bandpass(noise(0.05), 1500, 9000) * decay(0.05, 90) * 1.6, 0.0)
+    place(total, bandpass(noise(0.18), 300, 3000) * decay(0.18, 28) * 1.0, 0.0)
+    place(total, np.sin(sweep(140, 45, 0.25)) * decay(0.25, 14) * 0.9, 0.0)
+    place(total, bandpass(noise(0.45), 500, 4000) * decay(0.45, 9) * 0.25, 0.02)
+    return finish(total, peak=0.85)
+
+
+def glock_dry():
+    """Een droge klik: de slagpin slaat, maar er gebeurt niets."""
+    total = np.zeros(int(RATE * 0.12))
+    place(total, metal_tap(0.06, [2600, 4100], 90) * 0.9, 0.0)
+    place(total, np.sin(sweep(1400, 900, 0.04)) * decay(0.04, 60) * 0.15, 0.005)
+    return finish(total, peak=0.45)
+
+
+def slide_rack(total, at, forward_gain=1.0):
+    """De slede: een schraapje naar achteren, een klak, en even later de klak naar voren."""
+    scrape = bandpass(noise(0.12), 800, 3000) * np.sin(np.linspace(0, np.pi, int(RATE * 0.12))) * 0.35
+    place(total, scrape, at)
+    place(total, metal_tap(0.05, [1200, 2100, 3400], 70) * 0.8, at + 0.11)
+    place(total, metal_tap(0.06, [900, 1600, 2800], 55) * 1.1 * forward_gain, at + 0.3)
+    place(total, bandpass(noise(0.05), 400, 2000) * decay(0.05, 50) * 0.4 * forward_gain, at + 0.3)
+    return total
+
+
+def glock_slide():
+    """De slede naar achteren en weer naar voren."""
+    total = np.zeros(int(RATE * 0.5))
+    slide_rack(total, 0.0)
+    return finish(total, peak=0.6)
+
+
+def glock_mag_out():
+    """Het magazijn: een klik op de knop, het schuift eruit, en een zachte plof."""
+    total = np.zeros(int(RATE * 0.4))
+    place(total, metal_tap(0.04, [2200, 3300], 100) * 0.8, 0.0)
+    place(total, bandpass(noise(0.1), 400, 2000) * decay(0.1, 20) * 0.4, 0.04)
+    place(total, np.sin(sweep(220, 120, 0.08)) * decay(0.08, 30) * 0.5, 0.25)
+    return finish(total, peak=0.5)
+
+
+def glock_mag_in():
+    """Het magazijn erin: een duw en een stevige klak."""
+    total = np.zeros(int(RATE * 0.3))
+    place(total, bandpass(noise(0.08), 500, 2500) * np.sin(np.linspace(0, np.pi, int(RATE * 0.08))) * 0.4, 0.0)
+    place(total, metal_tap(0.06, [900, 1500, 2400], 60) * 1.2, 0.06)
+    return finish(total, peak=0.6)
+
+
+def glock_round_load():
+    """Een patroon die in het magazijn klikt: een klein, helder tikje."""
+    total = np.zeros(int(RATE * 0.1))
+    place(total, metal_tap(0.03, [3200, 4800], 140) * 0.8, 0.0)
+    place(total, np.sin(sweep(900, 600, 0.03)) * decay(0.03, 80) * 0.2, 0.01)
+    return finish(total, peak=0.4)
+
+
+def glock_tap_rack():
+    """Een tap-rack: een klap met de hand op het magazijn, dan de slede naar achteren en naar voren."""
+    total = np.zeros(int(RATE * 0.75))
+    place(total, lowpass(noise(0.05), 1200) * decay(0.05, 60) * 1.4, 0.0)
+    place(total, metal_tap(0.04, [700, 1100], 80) * 0.5, 0.0)
+    slide_rack(total, 0.25)
+    return finish(total, peak=0.65)
+
+
+def casing_tink():
+    """Een huls die op de grond valt: twee hoge tinkjes, de tweede zachter."""
+    total = np.zeros(int(RATE * 0.25))
+    place(total, metal_tap(0.08, [5200, 7800, 9900], 60), 0.0)
+    place(total, metal_tap(0.06, [5600, 8300], 70) * 0.5, 0.08)
+    return finish(total, peak=0.4)
+
+
+def bullet_impact():
+    """Een kogel die in een blok slaat: een krak, een doffe klap en wat rondspattend gruis."""
+    total = np.zeros(int(RATE * 0.3))
+    place(total, bandpass(noise(0.03), 2000, 9000) * decay(0.03, 120) * 1.2, 0.0)
+    place(total, bandpass(noise(0.08), 200, 2500) * decay(0.08, 40) * 0.9, 0.0)
+    place(total, np.sin(sweep(180, 60, 0.1)) * decay(0.1, 25) * 0.6, 0.0)
+    place(total, crackle(0.2, 10, 1500, 6000) * np.linspace(1, 0, int(RATE * 0.2)) * 0.4, 0.03)
+    return finish(total, peak=0.6)
+
+
+def holster_draw():
+    """Een pistool uit een leren holster: een zoef van leer en een klikje van de sluiting."""
+    total = np.zeros(int(RATE * 0.3))
+    swish = bandpass(noise(0.18), 300, 2200) * np.sin(np.linspace(0, np.pi, int(RATE * 0.18))) * 0.6
+    place(total, swish, 0.0)
+    place(total, metal_tap(0.03, [1800, 2600], 120) * 0.5, 0.12)
+    return finish(total, peak=0.45)
+
+
 SOUNDS = {
     "imt_boot": imt_boot,
     "imt_blip": imt_blip,
@@ -1020,6 +1122,16 @@ SOUNDS = {
     "laser_gun_cell_in": laser_gun_cell_in,
     "laser_gun_cycle": laser_gun_cycle,
     "laser_gun_aim": laser_gun_aim,
+    "glock_fire": glock_fire,
+    "glock_dry": glock_dry,
+    "glock_slide": glock_slide,
+    "glock_mag_out": glock_mag_out,
+    "glock_mag_in": glock_mag_in,
+    "glock_round_load": glock_round_load,
+    "glock_tap_rack": glock_tap_rack,
+    "casing_tink": casing_tink,
+    "bullet_impact": bullet_impact,
+    "holster_draw": holster_draw,
 }
 
 

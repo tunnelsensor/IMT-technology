@@ -3212,6 +3212,74 @@ public final class VisualCheck {
                     ModBlocks.BATTERY_CASING.get().defaultBlockState()));
         }
 
+        // --- De Glock 19 (hoofdstuk 52): vanuit de heup, gericht, een schot, het magazijn eruit en erin, de slede, een
+        // storing en de tap-rack, een patroon met de hand in de kamer, bekijken, een magazijn vullen, de hulzen, de twee
+        // banken, derde persoon, en een kapotte loop.
+        if (want("glock")) {
+            BlockPos g = GUN_RANGE.above();
+            Vec3 stand = new Vec3(g.getX() + 0.5, g.getY(), g.getZ() + 0.5);
+            t.onServer(0, VisualCheck::buildGunRange);
+            t.onServer(0, player -> ShowcaseFeatures.buildGunBenches(player, g));
+            t.onServer(0, ShowcaseFeatures::giveGlock);
+            t.stand(20, stand.x, stand.y, stand.z, 0, 2);
+            t.step(0, () -> selectSlot(0));
+            t.shot(25, "gl01_glock_hip");
+            t.key(0, () -> Minecraft.getInstance().options.keyUse, true);
+            t.shot(12, "gl02_glock_aim");
+            t.key(0, () -> Minecraft.getInstance().options.keyAttack, true);
+            t.key(1, () -> Minecraft.getInstance().options.keyAttack, false);
+            t.shot(0, "gl03_glock_fire");
+            t.shot(2, "gl04_glock_slide_back");
+            t.key(6, () -> Minecraft.getInstance().options.keyUse, false);
+            t.step(10, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
+            t.shot(5, "gl05_magazine_out");
+            t.step(15, () -> selectSlot(1));
+            t.tap(15, () -> Minecraft.getInstance().options.keyUse);
+            t.shot(7, "gl06_magazine_in");
+            t.step(15, () -> selectSlot(0));
+            t.shot(3, "gl07_slide_release");
+            t.onServer(20, player -> com.senne.imttech.config.ImtConfig.Guns.JAM_CHANCE = 100);
+            t.key(2, () -> Minecraft.getInstance().options.keyAttack, true);
+            t.key(1, () -> Minecraft.getInstance().options.keyAttack, false);
+            t.onServer(4, player -> com.senne.imttech.config.ImtConfig.Guns.JAM_CHANCE = 0.4f);
+            t.shot(8, "gl08_jammed_casing_stuck");
+            t.step(5, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
+            t.shot(13, "gl09_tap_rack");
+            t.step(30, () -> selectSlot(5));
+            t.key(15, () -> Minecraft.getInstance().options.keyShift, true);
+            t.step(2, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
+            t.key(2, () -> Minecraft.getInstance().options.keyShift, false);
+            t.shot(10, "gl10_chamber_by_hand");
+            t.step(25, () -> selectSlot(0));
+            t.step(15, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_INSPECT.getKey()));
+            t.shot(12, "gl11_inspect_side");
+            t.shot(18, "gl12_inspect_top");
+            t.step(30, () -> selectSlot(3));
+            t.shot(15, "gl13_magazine_in_hand");
+            t.step(0, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
+            t.shot(4, "gl14_magazine_loading");
+            t.step(15, () -> selectSlot(6));
+            t.shot(15, "gl15_barrel_broken");
+            t.step(5, () -> selectSlot(4));
+            t.lookAt(5, new Vec3(stand.x - 1.2, stand.y + 0.05, stand.z + 0.6));
+            t.shot(15, "gl16_casings_on_the_floor");
+            t.tap(0, () -> Minecraft.getInstance().options.keyUse);
+            t.shot(8, "gl17_casings_picked_up");
+            t.onServer(10, player -> ShowcaseFeatures.openBench(player, g.offset(-2, 0, -2)));
+            t.shot(25, "gl18_gunsmith_table");
+            t.close(5);
+            t.onServer(5, player -> ShowcaseFeatures.openBench(player, g.offset(-2, 0, 2)));
+            t.shot(25, "gl19_reloading_bench");
+            t.close(5);
+            t.step(5, () -> selectSlot(0));
+            t.stand(5, stand.x, stand.y, stand.z, 0, 2);
+            t.camera(5, CameraType.THIRD_PERSON_FRONT);
+            t.shot(20, "gl20_third_person");
+            t.camera(0, CameraType.FIRST_PERSON);
+            t.lookAt(5, new Vec3(stand.x - 1.5, stand.y + 0.5, stand.z - 1.5));
+            t.shot(15, "gl21_benches");
+        }
+
         // --- Handboeien (hoofdstuk 48): het aftellen tijdens het vasthouden, Bram geboeid met het touw, en de
         // soldaat die aan het touw achter je aan komt.
         if (want("cuffs")) {

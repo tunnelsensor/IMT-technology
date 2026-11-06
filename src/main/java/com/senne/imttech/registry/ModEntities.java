@@ -157,6 +157,24 @@ public final class ModEntities {
                     .updateInterval(2)
                     .build("sticky_emp_grenade"));
 
+    /** Hoofdstuk 52: een kogel uit een pistool (vliegt echt, heel snel; zie BulletEntity). */
+    public static final DeferredHolder<EntityType<?>, EntityType<com.senne.imttech.guns.BulletEntity>> BULLET =
+            ENTITIES.register("bullet", () -> EntityType.Builder.<com.senne.imttech.guns.BulletEntity>of(
+                            com.senne.imttech.guns.BulletEntity::new, MobCategory.MISC)
+                    .sized(0.1f, 0.1f)
+                    .clientTrackingRange(8)
+                    .updateInterval(1)
+                    .build("bullet"));
+
+    /** Hoofdstuk 52: een lege huls die uit het pistool springt en blijft liggen (zie CasingEntity). */
+    public static final DeferredHolder<EntityType<?>, EntityType<com.senne.imttech.guns.CasingEntity>> CASING =
+            ENTITIES.register("casing", () -> EntityType.Builder.<com.senne.imttech.guns.CasingEntity>of(
+                            com.senne.imttech.guns.CasingEntity::new, MobCategory.MISC)
+                    .sized(0.1f, 0.1f)
+                    .clientTrackingRange(4)
+                    .updateInterval(3)
+                    .build("casing"));
+
     /** Levenspunten, snelheid enz. van elk wezen. */
     public static void registerAttributes(EntityAttributeCreationEvent event) {
         event.put(DRONE.get(), DroneEntity.createAttributes().build());

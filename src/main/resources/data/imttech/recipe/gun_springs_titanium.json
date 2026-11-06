@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "M": {
+      "item": "imttech:titanium_ingot"
+    }
+  },
+  "pattern": [
+    "M ",
+    " M"
+  ],
+  "result": {
+    "id": "imttech:gun_springs",
+    "count": 2,
+    "components": {
+      "imttech:gun_material": "titanium"
+    }
+  }
+}

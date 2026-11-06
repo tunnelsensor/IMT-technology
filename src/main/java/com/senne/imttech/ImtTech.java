@@ -129,6 +129,7 @@ public class ImtTech {
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.AuthGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.PhoneGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.StructureGameTests.class));
+        modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.GunGameTests.class));
         // Controle van de wereldgeneratie (alleen met "gradlew runStructureCheck").
         com.senne.imttech.gametest.StructureCheck.registerIfEnabled();
 
@@ -206,6 +207,12 @@ public class ImtTech {
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.weapons.LaserGuns::onLoggedOut);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->
                 com.senne.imttech.weapons.LaserGuns.clear());
+        // De vuurwapens (hoofdstuk 52): handelingen afmaken, de slede loslaten, hulzen oprapen, en wie weggaat vergeten.
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.guns.Firearms::onServerTick);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.guns.Firearms::onLoggedOut);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.guns.Firearms::onRightClickBlock);
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->
+                com.senne.imttech.guns.Firearms.clear());
         // De rookwolken van de smokebom: vergeten als ze op zijn.
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.weapons.Smoke::onServerTick);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->

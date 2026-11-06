@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "P": {
+      "tag": "minecraft:planks"
+    },
+    "C": {
+      "item": "minecraft:crafting_table"
+    }
+  },
+  "pattern": [
+    "III",
+    "PCP",
+    "P P"
+  ],
+  "result": {
+    "id": "imttech:reloading_bench",
+    "count": 1
+  }
+}

@@ -1,0 +1,8 @@
+{
+ "parent": "minecraft:block/orientable",
+ "textures": {
+  "front": "imttech:block/reloading_bench_front",
+  "side": "imttech:block/reloading_bench_side",
+  "top": "imttech:block/reloading_bench_top"
+ }
+}

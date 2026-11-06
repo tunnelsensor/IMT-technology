@@ -2660,6 +2660,136 @@ final class ShowcaseFeatures {
         addAuth();
         addPhone();
         addRooms();
+        addGuns();
+    }
+
+    /**
+     * Hoofdstuk 52: de Glock 19. Op het wapenveld, met de Gunsmith Table en de Reloading Bench naast je.
+     */
+    private static void addGuns() {
+        BlockPos w = ShowcaseScene.WEAPONS;
+        Vec3 stand = new Vec3(w.getX() + 0.5, w.getY() + 1, w.getZ() + 0.5);
+        add("Glock 19: parts, magazines and casings", "Hoofdstuk 52. Een Glock 19 (uit zes onderdelen, hier van staal). Je richt "
+                + "over de korrel en de keep en schiet drie keer: de slede schiet terug, een gele vlam, de huls springt rechts "
+                + "uit het pistool en tinkelt op de vloer; rechtsonder telt het magazijn af ('13 +1 / 15'). Dan R: het magazijn "
+                + "valt eruit (je hebt geen pouch, dus het komt in je inventaris). Je scrolt naar het magazijn met 4 patronen, "
+                + "rechtsklik: het pistool komt erbij en je linkerhand duwt het erin. Terug naar het pistool: de slede gaat "
+                + "vanzelf naar voren (de eerste patroon in de kamer, dus 3 + 1). Dan een schot met een storing (de huls blijft "
+                + "klem zitten, half uit de uitwerpopening): 'JAMMED - PRESS R', en R doet een tap-rack: een klap op het magazijn, "
+                + "de slede naar achteren, de huls valt eruit. Dan H: het pistool bekijken. Dan het lege magazijn in je hand: "
+                + "elke R duwt er een patroon in. Je kijkt naar de hulzen op de grond en raapt ze op met rechtsklik. Tot slot de "
+                + "Gunsmith Table (een pistool van een frame, slede en trekker; links je losse onderdelen om erin te slepen; wat "
+                + "ontbreekt staat gestippeld ernaast) en de Reloading Bench (huls + kogelpunt + buskruit = een 9mm-patroon).",
+                stand, 90, 4, s -> s
+                .onServer(0, ShowcaseScene::buildWeapons)
+                .onServer(0, player -> buildGunBenches(player, w.above()))
+                .onServer(0, ShowcaseFeatures::giveGlock)
+                .stand(0, stand.x, stand.y, stand.z, 90, 3)
+                .step(0, () -> hotbar(0))
+                .pause(40)
+                .key(0, () -> Minecraft.getInstance().options.keyUse, true)
+                .pause(20)
+                .key(0, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
+                .key(10, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
+                .key(10, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
+                .key(15, () -> Minecraft.getInstance().options.keyUse, false)
+                .pause(20)
+                // R zonder pouch: het magazijn eruit; scrollen naar het magazijn van 4, rechtsklik, en terug.
+                .step(0, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()))
+                .pause(35)
+                .step(0, () -> hotbar(1))
+                .pause(20)
+                .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                .pause(40)
+                .step(0, () -> hotbar(0))
+                .pause(45)
+                // Een storing, en de tap-rack.
+                .onServer(0, player -> com.senne.imttech.config.ImtConfig.Guns.JAM_CHANCE = 100)
+                .key(0, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
+                .onServer(5, player -> com.senne.imttech.config.ImtConfig.Guns.JAM_CHANCE = 0.4f)
+                .pause(35)
+                .step(0, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()))
+                .pause(55)
+                .step(0, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_INSPECT.getKey()))
+                .pause(60)
+                // Het lege magazijn vullen.
+                .step(0, () -> hotbar(3))
+                .pause(25)
+                .step(0, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()))
+                .step(14, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()))
+                .step(14, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()))
+                .pause(30)
+                // De hulzen oprapen: ze liggen rechts van je (het noorden).
+                .step(0, () -> hotbar(4))
+                .lookAt(5, new Vec3(stand.x + 0.4, stand.y + 0.05, stand.z - 1.3))
+                .tap(20, () -> Minecraft.getInstance().options.keyUse)
+                .pause(30)
+                // De twee banken.
+                .lookAt(0, new Vec3(stand.x - 1.5, stand.y + 0.5, stand.z - 1.5))
+                .onServer(15, player -> openBench(player, w.above().offset(-2, 0, -2)))
+                .pause(110)
+                .close(0)
+                .lookAt(5, new Vec3(stand.x - 1.5, stand.y + 0.5, stand.z + 2.5))
+                .onServer(15, player -> openBench(player, w.above().offset(-2, 0, 2)))
+                .pause(70)
+                .close(0)
+                .onServer(0, player -> player.getInventory().clearContent()));
+    }
+
+    /** De Gunsmith Table (met een half pistool erop) en de Reloading Bench (met ingrediënten) naast {@code stand}. */
+    static void buildGunBenches(ServerPlayer player, BlockPos stand) {
+        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+        BlockPos table = stand.offset(-2, 0, -2);
+        BlockPos bench = stand.offset(-2, 0, 2);
+        level.setBlockAndUpdate(table, ModBlocks.GUNSMITH_TABLE.get().defaultBlockState()
+                .setValue(net.minecraft.world.level.block.HorizontalDirectionalBlock.FACING, net.minecraft.core.Direction.EAST));
+        level.setBlockAndUpdate(bench, ModBlocks.RELOADING_BENCH.get().defaultBlockState()
+                .setValue(net.minecraft.world.level.block.HorizontalDirectionalBlock.FACING, net.minecraft.core.Direction.EAST));
+        if (level.getBlockEntity(table) instanceof com.senne.imttech.guns.GunsmithTableBlockEntity gunsmith) {
+            com.senne.imttech.guns.GunParts parts = com.senne.imttech.guns.GunParts.EMPTY
+                    .with(com.senne.imttech.guns.GunPart.FRAME, com.senne.imttech.guns.PartState.fresh(com.senne.imttech.guns.GunMaterial.POLYMER))
+                    .with(com.senne.imttech.guns.GunPart.SLIDE, new com.senne.imttech.guns.PartState(com.senne.imttech.guns.GunMaterial.STEEL, 72))
+                    .with(com.senne.imttech.guns.GunPart.TRIGGER, com.senne.imttech.guns.PartState.fresh(com.senne.imttech.guns.GunMaterial.STEEL));
+            gunsmith.items().setItem(0, com.senne.imttech.guns.FirearmItem.withParts(com.senne.imttech.guns.FirearmType.GLOCK_19, parts));
+        }
+        if (level.getBlockEntity(bench) instanceof com.senne.imttech.guns.ReloadingBenchBlockEntity reloading) {
+            reloading.items().setItem(0, new ItemStack(ModItems.CASING_9MM.get(), 12));
+            reloading.items().setItem(1, new ItemStack(ModItems.BULLET_9MM.get(), 9));
+            reloading.items().setItem(2, new ItemStack(net.minecraft.world.item.Items.GUNPOWDER, 20));
+        }
+    }
+
+    /** Het scherm van de bank op deze plek openen (de Gunsmith Table of de Reloading Bench). */
+    static void openBench(ServerPlayer player, BlockPos pos) {
+        if (player.serverLevel().getBlockEntity(pos) instanceof net.minecraft.world.MenuProvider provider) {
+            player.openMenu(provider, buf -> buf.writeBlockPos(pos));
+        }
+    }
+
+    /**
+     * Een geladen Glock 19 in je hand, een magazijn met 4 patronen, losse patronen, een leeg magazijn, een pistool zonder
+     * magazijn (voor sneak + R), een pistool met een kapotte loop, en losse onderdelen voor de Gunsmith Table.
+     */
+    static void giveGlock(ServerPlayer player) {
+        var inventory = player.getInventory();
+        inventory.clearContent();
+        inventory.setItem(0, com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.GLOCK_19,
+                com.senne.imttech.guns.GunMaterial.STEEL));
+        inventory.setItem(1, com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.GLOCK_19, 4));
+        inventory.setItem(2, new ItemStack(ModItems.ROUND_9MM.get(), 24));
+        inventory.setItem(3, com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.GLOCK_19, 0));
+        ItemStack bare = com.senne.imttech.guns.FirearmItem.withParts(com.senne.imttech.guns.FirearmType.GLOCK_19,
+                com.senne.imttech.guns.GunParts.complete(com.senne.imttech.guns.GunMaterial.TITANIUM));
+        inventory.setItem(5, bare);
+        ItemStack broken = com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.GLOCK_19,
+                com.senne.imttech.guns.GunMaterial.POLYMER);
+        com.senne.imttech.guns.FirearmItem.setParts(broken, com.senne.imttech.guns.FirearmItem.parts(broken)
+                .with(com.senne.imttech.guns.GunPart.BARREL, new com.senne.imttech.guns.PartState(com.senne.imttech.guns.GunMaterial.STEEL, 0)));
+        inventory.setItem(6, broken);
+        inventory.setItem(9, com.senne.imttech.guns.GunPartItem.of(com.senne.imttech.guns.GunPart.BARREL, com.senne.imttech.guns.GunMaterial.TITANIUM));
+        inventory.setItem(10, com.senne.imttech.guns.GunPartItem.of(com.senne.imttech.guns.GunPart.SPRINGS, com.senne.imttech.guns.GunMaterial.STEEL));
+        inventory.setItem(11, com.senne.imttech.guns.GunPartItem.of(com.senne.imttech.guns.GunPart.STRIKER, com.senne.imttech.guns.GunMaterial.STEEL, 40));
+        inventory.setItem(12, com.senne.imttech.guns.GunPartItem.of(com.senne.imttech.guns.GunPart.SLIDE, com.senne.imttech.guns.GunMaterial.TITANIUM));
     }
 
     /** Waar het veldje van de autorisatiecodes (hoofdstuk 49) ligt (zie VisualCheck.buildAuthYard). */

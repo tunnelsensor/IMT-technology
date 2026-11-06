@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "S": {
+      "item": "imttech:steel_ingot"
+    },
+    "P": {
+      "item": "imttech:gun_springs"
+    }
+  },
+  "pattern": [
+    "S S",
+    "SPS",
+    "SSS"
+  ],
+  "result": {
+    "id": "imttech:glock_19_magazine",
+    "count": 1
+  }
+}

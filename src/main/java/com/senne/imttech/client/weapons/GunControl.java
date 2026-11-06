@@ -147,7 +147,11 @@ public final class GunControl {
         if (type == null) {
             aim = 0;
             sprint = 0;
-            drainKeys();
+            // R en H vergeten, behalve als ze van een pistool of magazijn zijn (hoofdstuk 52: FirearmControl).
+            if (com.senne.imttech.client.guns.FirearmControl.held() == null
+                    && !com.senne.imttech.client.guns.FirearmControl.heldMagazine()) {
+                drainKeys();
+            }
             return;
         }
         boolean free = mc.screen == null;

@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:blasting",
+  "category": "misc",
+  "ingredient": {
+    "item": "imttech:titanium_blend"
+  },
+  "result": {
+    "id": "imttech:titanium_ingot"
+  },
+  "experience": 1.0,
+  "cookingtime": 100
+}

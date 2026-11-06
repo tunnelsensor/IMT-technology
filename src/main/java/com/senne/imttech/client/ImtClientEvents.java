@@ -153,7 +153,9 @@ public final class ImtClientEvents {
         }
         // Met een lasergeweer in je hand (hoofdstuk 35) zijn R en H van het geweer (herladen en bekijken): dan niet ook
         // nog de dreigingsscan of een markering.
-        boolean gun = com.senne.imttech.client.weapons.GunControl.held() != null;
+        boolean gun = com.senne.imttech.client.weapons.GunControl.held() != null
+                || com.senne.imttech.client.guns.FirearmControl.held() != null
+                || com.senne.imttech.client.guns.FirearmControl.heldMagazine();
         while (ImtKeys.THREAT_SCAN.consumeClick()) {
             if (!gun || !ImtKeys.THREAT_SCAN.same(ImtKeys.GUN_INSPECT)) {
                 sendAction(ImtAction.TOGGLE_THREAT_SCAN);
@@ -401,6 +403,7 @@ public final class ImtClientEvents {
         com.senne.imttech.client.weapons.SmokeView.clear();
         com.senne.imttech.client.weapons.FlashOverlay.clear();
         com.senne.imttech.client.weapons.GunControl.reset();
+        com.senne.imttech.client.guns.FirearmControl.reset();
         com.senne.imttech.client.weapons.GunEffects.clear();
         com.senne.imttech.client.suit.LaserCannonHand.reset();
         com.senne.imttech.client.illusion.IllusionRenderer.clear();

@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "M": {
+      "item": "imttech:steel_ingot"
+    }
+  },
+  "pattern": [
+    " M",
+    "MM"
+  ],
+  "result": {
+    "id": "imttech:gun_trigger",
+    "count": 1,
+    "components": {
+      "imttech:gun_material": "steel"
+    }
+  }
+}

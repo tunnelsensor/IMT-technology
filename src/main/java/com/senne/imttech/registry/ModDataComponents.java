@@ -201,4 +201,48 @@ public final class ModDataComponents {
             COMPONENTS.registerComponentType("smoke_color", builder -> builder
                     .persistent(net.minecraft.world.item.DyeColor.CODEC)
                     .networkSynchronized(net.minecraft.world.item.DyeColor.STREAM_CODEC));
+
+    // ================================================================ Vuurwapens (hoofdstuk 52)
+
+    /** Van welk materiaal een los onderdeel van een pistool is (polymeer, staal, titanium). */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.imttech.guns.GunMaterial>> GUN_MATERIAL =
+            COMPONENTS.registerComponentType("gun_material", builder -> builder
+                    .persistent(com.senne.imttech.guns.GunMaterial.CODEC)
+                    .networkSynchronized(com.senne.imttech.guns.GunMaterial.STREAM_CODEC));
+
+    /** Hoe heel een los onderdeel nog is (0 tot 100); geen = nieuw. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> PART_CONDITION =
+            COMPONENTS.registerComponentType("part_condition", builder -> builder
+                    .persistent(Codec.INT)
+                    .networkSynchronized(ByteBufCodecs.VAR_INT));
+
+    /** Welke onderdelen er in een pistool zitten, en hoe heel (zie GunParts). */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.imttech.guns.GunParts>> GUN_PARTS =
+            COMPONENTS.registerComponentType("gun_parts", builder -> builder
+                    .persistent(com.senne.imttech.guns.GunParts.CODEC)
+                    .networkSynchronized(com.senne.imttech.guns.GunParts.STREAM_CODEC));
+
+    /** Het magazijn dat in een pistool zit (hoeveel patronen, zie GunMagazine); geen = geen magazijn. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.imttech.guns.GunMagazine>> GUN_MAGAZINE =
+            COMPONENTS.registerComponentType("gun_magazine", builder -> builder
+                    .persistent(com.senne.imttech.guns.GunMagazine.CODEC)
+                    .networkSynchronized(com.senne.imttech.guns.GunMagazine.STREAM_CODEC));
+
+    /** Zit er een patroon in de kamer (15 + 1)? */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Boolean>> GUN_CHAMBERED =
+            COMPONENTS.registerComponentType("gun_chambered", builder -> builder
+                    .persistent(Codec.BOOL)
+                    .networkSynchronized(ByteBufCodecs.BOOL));
+
+    /** Een storing: 1 = een huls die klem zit, 2 = een ketser (zie FirearmItem). */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> GUN_JAM =
+            COMPONENTS.registerComponentType("gun_jam", builder -> builder
+                    .persistent(Codec.INT)
+                    .networkSynchronized(ByteBufCodecs.VAR_INT));
+
+    /** Zoveel patronen zitten er in een magazijn. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> MAG_ROUNDS =
+            COMPONENTS.registerComponentType("mag_rounds", builder -> builder
+                    .persistent(Codec.INT)
+                    .networkSynchronized(ByteBufCodecs.VAR_INT));
 }

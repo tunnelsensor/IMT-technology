@@ -88,6 +88,7 @@ package com.senne.imttech.config;
  *   Raven ........ Raven-soldaten
  *   Raids ........ vijandige raiddrones
  *   Weapons ...... granaten, de Remote EMP en Remote Frag, lasergeweren en energiecellen (hoofdstuk 35)
+ *   Guns ......... vuurwapens: de Glock 19, onderdelen en materialen, magazijnen, kogels, hulzen, storingen (hoofdstuk 52)
  */
 public final class ImtConfig {
     private ImtConfig() {}
@@ -1999,5 +2000,119 @@ public final class ImtConfig {
         /** Zoveel keer meer schade bij een schot in het hoofd. */
         @Tunable(value = "Damage multiplier for a headshot", min = 1, max = 10)
         public static float HEADSHOT = 1.5f;
+    }
+
+    // =============================================================================================== Guns
+
+    @Section("Firearms (chapter 52): the Glock 19, its parts and materials, magazines, bullets, casings, jams and the handling times")
+    public static final class Guns {
+        private Guns() {}
+
+        // ------------------------------------------------------------------------- Per pistool (volgorde: Glock 19)
+        /** Schade van één kogel van dichtbij (halve hartjes). */
+        @Tunable(value = "Damage of one bullet up close (half hearts), per firearm: Glock 19", max = 1_000)
+        public static float[] DAMAGE = {5.0f};
+        /** Zoveel ticks minstens tussen twee schoten (een Glock schiet zo snel als je klikt, tot deze grens). */
+        @Tunable(value = "Ticks between two shots at least (a Glock fires as fast as you click, up to this), per firearm", min = 1, max = 200)
+        public static float[] INTERVAL = {3.0f};
+        /** Tot zo ver doet een kogel zijn volle schade (blokken). */
+        @Tunable(value = "Up to this distance a bullet does its full damage (blocks), per firearm", min = 1, max = 512)
+        public static float[] FULL_RANGE = {24.0f};
+        /** Zo ver vliegt een kogel hoogstens (blokken); op het eind doet hij nog farDamage van zijn schade. */
+        @Tunable(value = "How far a bullet flies at most (blocks), per firearm", min = 1, max = 512)
+        public static float[] RANGE = {80.0f};
+        /** Hoe snel een kogel vliegt (blokken per tick; 16 = ongeveer 300 meter per seconde). */
+        @Tunable(value = "Bullet speed (blocks per tick; 16 is about 300 m/s), per firearm", min = 1, max = 64)
+        public static float[] BULLET_SPEED = {16.0f};
+        /** Zoveel patronen gaan er in een magazijn (een echte Glock 19: 15). */
+        @Tunable(value = "Rounds in a magazine (a real Glock 19 holds 15), per firearm", min = 1, max = 100)
+        public static float[] MAGAZINE_CAPACITY = {15.0f};
+        /** Hoe ver een schot van het midden af kan gaan als je vanuit de heup schiet (graden). */
+        @Tunable(value = "How far a shot can stray when you shoot from the hip (degrees), per firearm", max = 45)
+        public static float[] SPREAD = {3.5f};
+        /** Hetzelfde als je door het vizier richt. */
+        @Tunable(value = "How far a shot can stray while aiming down the sights (degrees), per firearm", max = 45)
+        public static float[] SPREAD_AIMING = {0.8f};
+        /** Zo hard duwt een schot je zicht omhoog (graden), vanuit de heup... */
+        @Tunable(value = "How hard a shot kicks your view up when shooting from the hip (degrees), per firearm", max = 30)
+        public static float[] RECOIL = {1.8f};
+        /** ...en als je richt. */
+        @Tunable(value = "How hard a shot kicks your view up while aiming (degrees), per firearm", max = 30)
+        public static float[] RECOIL_AIMING = {1.1f};
+
+        // ------------------------------------------------------------------------- Kogels en hulzen
+        /** Hoeveel een kogel per tick zakt (blokken per tick per tick): een heel klein beetje. */
+        @Tunable(value = "How much a bullet drops per tick (blocks per tick per tick)", max = 1)
+        public static float BULLET_GRAVITY = 0.02f;
+        /** Zoveel keer meer schade bij een schot in het hoofd. */
+        @Tunable(value = "Damage multiplier for a headshot", min = 1, max = 10)
+        public static float HEADSHOT = 2.0f;
+        /** Zoveel van zijn schade doet een kogel nog op zijn verste punt (0,5 = de helft). */
+        @Tunable(value = "Fraction of the damage a bullet still does at its farthest point (0.5 = half)", max = 1)
+        public static float FAR_DAMAGE = 0.5f;
+        /** Breken kogels glas? (Nooit in een beschermde zone, nooit verstevigd glas.) */
+        @Tunable("Do bullets break glass? (Never in a protected zone, never reinforced glass)")
+        public static boolean BULLETS_BREAK_GLASS = true;
+        /** Na zoveel seconden verdwijnt een huls die op de grond ligt. */
+        @Tunable(value = "Seconds before a casing on the ground disappears", min = 10, max = 86_400)
+        public static float CASING_SECONDS = 600.0f;
+        /** Tot zo ver van waar je klikt raap je hulzen op (blokken). */
+        @Tunable(value = "How far from where you right-click casings are picked up (blocks)", min = 0.5, max = 8)
+        public static float CASING_PICKUP_RADIUS = 1.5f;
+
+        // ------------------------------------------------------------------------- De materialen (volgorde: polymeer, staal, titanium)
+        /** Zoveel procent kans per schot dat een onderdeel van dit materiaal één punt slijt (van de 100). */
+        @Tunable(value = "Percent chance per shot that a part wears one point (of 100), per material: polymer, steel, titanium", max = 100)
+        public static float[] WEAR_CHANCE = {4.0f, 2.0f, 0.8f};
+        /** Hoeveel vaker een onderdeel van dit materiaal een storing geeft (1 = gewoon, 0,6 = veel minder). */
+        @Tunable(value = "How much more often a part of this material jams or misfires (1 = normal), per material", max = 10)
+        public static float[] MATERIAL_RELIABILITY = {1.5f, 1.0f, 0.6f};
+        /** De schade, maal dit, naar het materiaal van de loop. */
+        @Tunable(value = "Damage multiplier by the material of the barrel, per material", min = 0.1, max = 5)
+        public static float[] MATERIAL_DAMAGE = {1.0f, 1.0f, 1.1f};
+        /** De terugslag, maal dit, naar het materiaal van de slede. */
+        @Tunable(value = "Recoil multiplier by the material of the slide, per material", min = 0.1, max = 5)
+        public static float[] MATERIAL_RECOIL = {1.1f, 1.0f, 0.85f};
+        /** Hoe lang trekken, richten en herladen duren, maal dit, naar het materiaal van het frame (kleiner = sneller). */
+        @Tunable(value = "Handling time multiplier (drawing, reloading) by the material of the frame, per material", min = 0.1, max = 5)
+        public static float[] MATERIAL_HANDLING = {0.9f, 1.0f, 1.05f};
+
+        // ------------------------------------------------------------------------- Slijtage en storingen
+        /** Onder deze conditie is een onderdeel versleten en geeft het steeds meer storingen. */
+        @Tunable(value = "Below this condition (of 100) a part counts as worn and causes more and more jams", max = 100)
+        public static float WORN_BELOW = 40.0f;
+        /** Zoveel keer meer storingen geeft een onderdeel dat bijna kapot is. */
+        @Tunable(value = "How many times more jams a nearly broken part causes", max = 50)
+        public static float WORN_JAM_FACTOR = 3.0f;
+        /** Zoveel procent kans per schot dat de huls klem blijft zitten (een stovepipe), met nieuwe stalen onderdelen. */
+        @Tunable(value = "Percent chance per shot that the casing gets stuck (stovepipe), with new steel parts", max = 100)
+        public static float JAM_CHANCE = 0.4f;
+        /** Zoveel procent kans per schot op een ketser (de patroon gaat niet af), met nieuwe stalen onderdelen. */
+        @Tunable(value = "Percent chance per shot of a misfire (the round does not go off), with new steel parts", max = 100)
+        public static float MISFIRE_CHANCE = 0.15f;
+
+        // ------------------------------------------------------------------------- Hoe lang alles duurt (ticks)
+        @Tunable(value = "Ticks to drop the magazine out of the pistol (R without a magazine pouch)", min = 1, max = 200)
+        public static float EJECT_TICKS = 8.0f;
+        @Tunable(value = "Ticks to push a magazine into the pistol (right-click with a magazine)", min = 1, max = 200)
+        public static float INSERT_TICKS = 12.0f;
+        @Tunable(value = "Ticks to release the slide (the first round goes into the chamber)", min = 1, max = 200)
+        public static float SLIDE_TICKS = 7.0f;
+        @Tunable(value = "Ticks for a tap-rack after a jam (R)", min = 1, max = 200)
+        public static float TAP_RACK_TICKS = 26.0f;
+        @Tunable(value = "Ticks to put one round into the chamber by hand (sneak + R)", min = 1, max = 200)
+        public static float CHAMBER_TICKS = 22.0f;
+        @Tunable(value = "Ticks to push one round into a magazine you hold (R)", min = 1, max = 200)
+        public static float LOAD_ROUND_TICKS = 6.0f;
+        @Tunable(value = "Ticks to reload from a magazine pouch (R, then pick a magazine)", min = 1, max = 200)
+        public static float POUCH_RELOAD_TICKS = 30.0f;
+        @Tunable(value = "Ticks to draw the pistol from its holster", min = 1, max = 200)
+        public static float DRAW_TICKS = 12.0f;
+
+        // ------------------------------------------------------------------------- Holster en pouches (stap 2)
+        @Tunable(value = "Grenades that fit in a Grenade Pouch", min = 1, max = 27)
+        public static float GRENADE_POUCH_SIZE = 4.0f;
+        @Tunable(value = "Magazines that fit in a Magazine Pouch", min = 1, max = 9)
+        public static float MAG_POUCH_SIZE = 3.0f;
     }
 }

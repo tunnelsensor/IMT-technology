@@ -482,4 +482,58 @@ public final class ModItems {
     /** Fase 15: een gebouwde drone. Gebruik hem en hij vliegt naar je arsenaal in een baan. */
     public static final DeferredItem<DroneItem> DRONE = ITEMS.registerItem("drone",
             DroneItem::new, new Item.Properties().rarity(Rarity.UNCOMMON));
+
+    // ================================================================ Vuurwapens (hoofdstuk 52)
+
+    /** Hoofdstuk 52: de Glock 19 (jouw keuze: eerst alleen een Glock, de 19 van de airsoftwinkel). */
+    public static final DeferredItem<com.senne.imttech.guns.FirearmItem> GLOCK_19 = ITEMS.registerItem("glock_19",
+            properties -> new com.senne.imttech.guns.FirearmItem(properties, com.senne.imttech.guns.FirearmType.GLOCK_19),
+            new Item.Properties().rarity(Rarity.UNCOMMON));
+
+    /** Hoofdstuk 52: het magazijn van de Glock 19 (15 patronen, kogel per kogel te vullen). */
+    public static final DeferredItem<com.senne.imttech.guns.MagazineItem> GLOCK_19_MAGAZINE = ITEMS.registerItem("glock_19_magazine",
+            properties -> new com.senne.imttech.guns.MagazineItem(properties, com.senne.imttech.guns.FirearmType.GLOCK_19),
+            new Item.Properties());
+
+    /** Hoofdstuk 52: de zes onderdelen (elk in zijn materialen, zie GunPartItem). */
+    private static final Map<com.senne.imttech.guns.GunPart, DeferredItem<com.senne.imttech.guns.GunPartItem>> GUN_PARTS = new EnumMap<>(com.senne.imttech.guns.GunPart.class);
+
+    static {
+        for (com.senne.imttech.guns.GunPart part : com.senne.imttech.guns.GunPart.values()) {
+            GUN_PARTS.put(part, ITEMS.registerItem(part.itemId(),
+                    properties -> new com.senne.imttech.guns.GunPartItem(properties, part), new Item.Properties()));
+        }
+    }
+
+    public static com.senne.imttech.guns.GunPartItem gunPart(com.senne.imttech.guns.GunPart part) {
+        return GUN_PARTS.get(part).get();
+    }
+
+    public static com.senne.imttech.guns.FirearmItem firearm(com.senne.imttech.guns.FirearmType type) {
+        return GLOCK_19.get();
+    }
+
+    public static com.senne.imttech.guns.MagazineItem magazine(com.senne.imttech.guns.FirearmType type) {
+        return GLOCK_19_MAGAZINE.get();
+    }
+
+    /** Hoofdstuk 52: een 9mm-patroon (huls + kogelpunt + buskruit, geperst op de Reloading Bench). */
+    public static final DeferredItem<Item> ROUND_9MM = ITEMS.registerSimpleItem("round_9mm", new Item.Properties());
+    /** Een lege huls: springt bij elk schot uit het pistool; oprapen met rechtsklik op de grond. */
+    public static final DeferredItem<Item> CASING_9MM = ITEMS.registerSimpleItem("casing_9mm", new Item.Properties());
+    /** De kogelpunt (koper om lood). */
+    public static final DeferredItem<Item> BULLET_9MM = ITEMS.registerSimpleItem("bullet_9mm", new Item.Properties());
+
+    /** Hoofdstuk 52: de materialen. Staal en titanium smelt je uit een blend; polymeer maak je van slijm en kool. */
+    public static final DeferredItem<Item> STEEL_BLEND = ITEMS.registerSimpleItem("steel_blend", new Item.Properties());
+    public static final DeferredItem<Item> STEEL_INGOT = ITEMS.registerSimpleItem("steel_ingot", new Item.Properties());
+    public static final DeferredItem<Item> TITANIUM_BLEND = ITEMS.registerSimpleItem("titanium_blend", new Item.Properties());
+    public static final DeferredItem<Item> TITANIUM_INGOT = ITEMS.registerSimpleItem("titanium_ingot", new Item.Properties().rarity(Rarity.UNCOMMON));
+    public static final DeferredItem<Item> POLYMER = ITEMS.registerSimpleItem("polymer", new Item.Properties());
+
+    /** Hoofdstuk 52: de Gunsmith Table (het pistool in elkaar slepen) en de Reloading Bench (patronen persen). */
+    public static final DeferredItem<BlockItem> GUNSMITH_TABLE = ITEMS.registerSimpleBlockItem("gunsmith_table",
+            ModBlocks.GUNSMITH_TABLE, new Item.Properties().rarity(Rarity.UNCOMMON));
+    public static final DeferredItem<BlockItem> RELOADING_BENCH = ITEMS.registerSimpleBlockItem("reloading_bench",
+            ModBlocks.RELOADING_BENCH, new Item.Properties());
 }

@@ -1746,6 +1746,56 @@ het vak van de bril. Rechtsonder op je scherm zie je hoeveel schoten er nog in z
 Recepten: een cel = 4 goudklompjes, 2 glazen ruiten, 2 koper en een redstoneblok; de geweren maak je van ijzer, goud,
 glas, redstone en Computer Chips (de sniper ook met een diamant en een verrekijker).
 
+### Vuurwapens: de Glock 19 uit onderdelen
+Jouw wens (hoofdstuk 52): echte, realistische vuurwapens, te beginnen met één pistool: de **Glock 19** (de zwarte Gen 3,
+zoals de Umarex van de airsoftwinkel). Alle getallen staan in `config/imttech.toml` onder `[guns]`.
+
+**Zes onderdelen, drie materialen.** Een Glock bestaat uit een **frame** (met de greep), een **slede**, een **loop**, de
+**veren** (de terugslagveer op zijn stang), een **slagpin** (een Glock heeft geen hamer) en een **trekker**. Elk
+onderdeel maak je aan de gewone werkbank van **polymeer** (alleen het frame en de trekker, zoals bij de echte Glock),
+**staal** of **titanium**: polymeer = 2 slijmballen + kool, staal = een Steel Blend (ijzer + 2 kool) smelten, titanium =
+een Titanium Blend (2 ijzer, een diamant, goud) smelten. Hoe beter het materiaal, hoe kleiner de kans per schot dat het
+onderdeel een punt slijt (polymeer 4%, staal 2%, titanium 0,8%), en: titanium geeft minder storingen, een titanium
+loop iets meer schade, een titanium slede minder terugslag, een polymeer frame trekt en herlaadt sneller. Onder 40%
+is een onderdeel versleten en geeft het steeds meer storingen; op 0% is het kapot en doet het pistool niets meer tot je
+het vervangt.
+
+**De Gunsmith Table** (staal, ijzer en een werkbank). Rechtsklik: links zie je alleen de onderdelen en pistolen uit je
+inventaris, in het midden ligt het pistool groot op de tafel. **Sleep** een onderdeel naar zijn plek; kom je in de
+buurt, dan licht de plek op en klikt het vast. Begin met een frame (dat is de basis); wat nog ontbreekt staat
+gestippeld ernaast. Sleep een onderdeel van het pistool af (of klik op zijn [x] rechts) en het komt met zijn conditie
+terug in je inventaris; het frame kan er pas als laatste uit. Scrollen op de tafel draait het pistool, rechts slepen
+kantelt het. "Take the pistol" neemt het mee; een pistool uit je inventaris sleep je op de tafel om het te repareren.
+
+**Patronen en de Reloading Bench.** Een **9mm Round** pers je op de **Reloading Bench** (ijzer, planken en een werkbank)
+uit een **9mm Casing** (koper: 8 per staaf), een **9mm Bullet** (2 ijzerklompjes: 4 kogelpunten) en **buskruit**: één
+per keer, shift-klik voor een stapel. Bij elk schot springt de **huls** rechts uit het pistool en blijft hij liggen
+(10 minuten); **rechtsklik op de grond** vlak bij de hulzen (met een lege hand of hulzen in je hand) raapt ze op, en
+dan pers je er weer patronen van.
+
+**Het magazijn, kogel per kogel.** Een **Glock 19 Magazine** (staal en een veer) houdt 15 patronen en stapelt niet: elk
+magazijn heeft zijn eigen inhoud (het streepje). Houd het vast en druk **R**: elke druk duwt er één patroon uit je
+inventaris in (inhouden gaat door). In het pistool zit er nog één in de **kamer** (15 + 1): heb je een magazijn van 5 en
+herlaad je, dan heeft het magazijn er 4 en de kamer 1; een nieuw magazijn van 6 erin = 7 in totaal. **Sneak + R** met
+het pistool steekt met de hand één patroon in de kamer, ook zonder magazijn.
+
+**Herladen** (zonder magazijnpouch, zie hoofdstuk 52 stap 2 voor de pouch): **R** gooit het magazijn uit het pistool
+(het komt in je inventaris), je scrolt naar een ander magazijn, **rechtsklik** duwt het in het pistool, en als je het
+pistool weer pakt, laat je de slede los (de eerste patroon gaat in de kamer). Dat duurt even, en zo hoort het.
+
+**Schieten.** Linkerklik = één schot (een Glock is semi-automatisch), rechterklik = richten over de korrel en de keep,
+**H** = bekijken. De kogel vliegt echt (16 blokken per tick, dus niet meteen raak), zakt een heel klein beetje, doet
+tot 24 blokken zijn volle schade (5, in het hoofd het dubbele) en op 80 blokken nog de helft, breekt glas (niet in een
+beschermde zone, geen verstevigd glas), en een schildkoepel houdt hem tegen. Na het laatste schot met een leeg magazijn
+blijft de slede open staan. Rechtsonder: de patronen in het magazijn, "+1" voor de kamer, hoeveel magazijnen en losse
+patronen je bij je hebt, en wat er aan de hand is.
+
+**Storingen en de tap-rack.** Soms blijft de huls klem zitten (half uit de uitwerpopening: "JAMMED") of gaat de patroon
+niet af (een ketser: "MISFIRE"). Met nieuwe stalen onderdelen gebeurt dat zelden (0,4% en 0,15% per schot); met
+versleten veren, slede, slagpin of trekker steeds vaker. **R** doet dan een **tap-rack**: een klap op het magazijn en
+de slede naar achteren en naar voren; de klemzittende huls valt eruit (een ketser gaat verloren) en de volgende patroon
+gaat erin.
+
 ### Prestaties (advancements)
 De mod heeft een eigen prestatieboom die je door het spel leidt, van je eerste computerchip tot
 vliegen met het harnas. Open je prestaties (standaard **L**) en kijk bij **Biebia's Industries**.
@@ -1921,7 +1971,7 @@ beveiligingskern, zie "Het datacenter"); zonder luistert ze niet. In creative ho
 
 | Bestand | Wat |
 |---------|-----|
-| `config/imttech.toml` | **Alle getallen van de mod** (ruim 300), in hoofdstukken: wat mag er (`[rules]`: hacken, zakkenrollen, raids aan/uit), de bril, **alle stroom** (`[power]`: wat elk blok opwekt, opslaat en gebruikt), drones, de satelliet **per upgrade-niveau**, harnas, torentjes, beveiliging, datacenter, C4, guard robots, Raven, raids... |
+| `config/imttech.toml` | **Alle getallen van de mod** (ruim 350), in hoofdstukken: wat mag er (`[rules]`: hacken, zakkenrollen, raids aan/uit), de bril, **alle stroom** (`[power]`: wat elk blok opwekt, opslaat en gebruikt), drones, de satelliet **per upgrade-niveau**, harnas, torentjes, beveiliging, datacenter, granaten en lasers, de Glock 19 (`[guns]`), guard robots, Raven, raids... |
 | `config/imttech-client.toml` | Stem, volume, spraaktekst, Spotify Client ID, GPU voor de AI, het zachte zoemen van de rayshields (`rayshieldHumVolume`: 1 = normaal, 2 = dubbel zo hard, 0 = uit), het laadzoemen van de guard robots (`robotHumVolume`, net zo), de rotors van de security drones (`droneRotorVolume`, net zo), de rand van zones (`zoneBorder`) |
 | `config/imttech-voice.json` | Alle spraakcommando's (zelf uit te breiden) |
 | `config/imttech-spotify.json` | Je Spotify-token (niet delen) |

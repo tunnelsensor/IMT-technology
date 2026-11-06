@@ -313,6 +313,11 @@ public final class ClientPayloadHandlers {
         }
     }
 
+    /** Een handeling met een pistool of magazijn begint, of gaat niet (hoofdstuk 52). */
+    public static void onFirearmAction(com.senne.imttech.network.FirearmActionPayload payload, IPayloadContext context) {
+        com.senne.imttech.client.guns.FirearmControl.onAction(payload);
+    }
+
     /** Een flashbang verblindt je (hoofdstuk 35). */
     public static void onFlash(com.senne.imttech.network.FlashPayload payload, IPayloadContext context) {
         com.senne.imttech.client.weapons.FlashOverlay.flash(payload.strength(), payload.ticks());

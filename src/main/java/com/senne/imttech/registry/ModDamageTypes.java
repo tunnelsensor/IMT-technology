@@ -68,4 +68,12 @@ public final class ModDamageTypes {
     public static DamageSource droneLaser(ServerLevel level, Entity drone, @Nullable Entity owner) {
         return new DamageSource(level.registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE).getOrThrow(DRONE_LASER), drone, owner);
     }
+
+    /** Hoofdstuk 52: een kogel uit een vuurwapen; de schutter telt als aanvaller ("was shot by"). */
+    public static final ResourceKey<DamageType> BULLET =
+            ResourceKey.create(Registries.DAMAGE_TYPE, ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "bullet"));
+
+    public static DamageSource bullet(ServerLevel level, @Nullable Entity shooter) {
+        return new DamageSource(level.registryAccess().lookupOrThrow(Registries.DAMAGE_TYPE).getOrThrow(BULLET), shooter, shooter);
+    }
 }

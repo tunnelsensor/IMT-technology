@@ -462,5 +462,85 @@
         "name": "imttech:laser_gun_aim"
       }
     ]
+  },
+  "glock.fire": {
+    "subtitle": "subtitles.imttech.glock.fire",
+    "sounds": [
+      {
+        "name": "imttech:glock_fire"
+      }
+    ]
+  },
+  "glock.dry": {
+    "subtitle": "subtitles.imttech.glock.dry",
+    "sounds": [
+      {
+        "name": "imttech:glock_dry"
+      }
+    ]
+  },
+  "glock.slide": {
+    "subtitle": "subtitles.imttech.glock.slide",
+    "sounds": [
+      {
+        "name": "imttech:glock_slide"
+      }
+    ]
+  },
+  "glock.mag_out": {
+    "subtitle": "subtitles.imttech.glock.mag_out",
+    "sounds": [
+      {
+        "name": "imttech:glock_mag_out"
+      }
+    ]
+  },
+  "glock.mag_in": {
+    "subtitle": "subtitles.imttech.glock.mag_in",
+    "sounds": [
+      {
+        "name": "imttech:glock_mag_in"
+      }
+    ]
+  },
+  "glock.round_load": {
+    "subtitle": "subtitles.imttech.glock.round_load",
+    "sounds": [
+      {
+        "name": "imttech:glock_round_load"
+      }
+    ]
+  },
+  "glock.tap_rack": {
+    "subtitle": "subtitles.imttech.glock.tap_rack",
+    "sounds": [
+      {
+        "name": "imttech:glock_tap_rack"
+      }
+    ]
+  },
+  "casing.tink": {
+    "subtitle": "subtitles.imttech.casing.tink",
+    "sounds": [
+      {
+        "name": "imttech:casing_tink"
+      }
+    ]
+  },
+  "bullet.impact": {
+    "subtitle": "subtitles.imttech.bullet.impact",
+    "sounds": [
+      {
+        "name": "imttech:bullet_impact"
+      }
+    ]
+  },
+  "holster.draw": {
+    "subtitle": "subtitles.imttech.holster.draw",
+    "sounds": [
+      {
+        "name": "imttech:holster_draw"
+      }
+    ]
   }
 }

@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "M": {
+      "item": "imttech:polymer"
+    }
+  },
+  "pattern": [
+    "MM",
+    "M ",
+    "M "
+  ],
+  "result": {
+    "id": "imttech:gun_frame",
+    "count": 1,
+    "components": {
+      "imttech:gun_material": "polymer"
+    }
+  }
+}

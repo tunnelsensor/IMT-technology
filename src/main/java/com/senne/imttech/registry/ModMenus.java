@@ -39,4 +39,10 @@ public final class ModMenus {
     /** Het scherm van de Robot Assembler (hoofdstuk 21, zie RobotAssemblerMenu). */
     public static final DeferredHolder<MenuType<?>, MenuType<com.senne.imttech.robot.RobotAssemblerMenu>> ROBOT_ASSEMBLER =
             MENUS.register("robot_assembler", () -> IMenuTypeExtension.create(com.senne.imttech.robot.RobotAssemblerMenu::new));
+    /** Hoofdstuk 52: de Gunsmith Table (slepen, geen vakjes; zie GunsmithMenu). */
+    public static final DeferredHolder<MenuType<?>, MenuType<com.senne.imttech.guns.GunsmithMenu>> GUNSMITH_TABLE =
+            MENUS.register("gunsmith_table", () -> IMenuTypeExtension.create(com.senne.imttech.guns.GunsmithMenu::new));
+    /** Hoofdstuk 52: de Reloading Bench (zie ReloadingBenchMenu). */
+    public static final DeferredHolder<MenuType<?>, MenuType<com.senne.imttech.guns.ReloadingBenchMenu>> RELOADING_BENCH =
+            MENUS.register("reloading_bench", () -> IMenuTypeExtension.create(com.senne.imttech.guns.ReloadingBenchMenu::new));
 }

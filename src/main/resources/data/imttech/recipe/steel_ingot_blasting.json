@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:blasting",
+  "category": "misc",
+  "ingredient": {
+    "item": "imttech:steel_blend"
+  },
+  "result": {
+    "id": "imttech:steel_ingot"
+  },
+  "experience": 0.7,
+  "cookingtime": 100
+}

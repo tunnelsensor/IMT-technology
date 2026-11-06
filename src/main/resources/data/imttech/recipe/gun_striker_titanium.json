@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "M": {
+      "item": "imttech:titanium_ingot"
+    },
+    "N": {
+      "tag": "c:nuggets/iron"
+    }
+  },
+  "pattern": [
+    "M",
+    "N"
+  ],
+  "result": {
+    "id": "imttech:gun_striker",
+    "count": 1,
+    "components": {
+      "imttech:gun_material": "titanium"
+    }
+  }
+}

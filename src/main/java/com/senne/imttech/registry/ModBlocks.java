@@ -538,4 +538,21 @@ public final class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()
                     .sound(SoundType.METAL));
+
+    /** Hoofdstuk 52: de Gunsmith Table, de werkbank waarop je een pistool uit zijn onderdelen in elkaar sleept. */
+    public static final DeferredBlock<com.senne.imttech.guns.GunsmithTableBlock> GUNSMITH_TABLE = BLOCKS.registerBlock(
+            "gunsmith_table", com.senne.imttech.guns.GunsmithTableBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(3.5f, 6.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL));
+
+    /** Hoofdstuk 52: de Reloading Bench, de pers die van een huls, een kogelpunt en buskruit een 9mm-patroon maakt. */
+    public static final DeferredBlock<com.senne.imttech.guns.ReloadingBenchBlock> RELOADING_BENCH = BLOCKS.registerBlock(
+            "reloading_bench", com.senne.imttech.guns.ReloadingBenchBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.WOOD)
+                    .strength(2.5f)
+                    .sound(SoundType.WOOD));
 }

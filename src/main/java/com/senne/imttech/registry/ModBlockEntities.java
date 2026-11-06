@@ -206,4 +206,16 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("training_goal",
                     () -> new BlockEntityType<>(com.senne.imttech.training.TrainingGoalBlockEntity::new,
                             java.util.Set.of(ModBlocks.TRAINING_GOAL.get()), null));
+
+    /** Hoofdstuk 52: de Gunsmith Table (het pistool dat erop ligt). */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.guns.GunsmithTableBlockEntity>> GUNSMITH_TABLE =
+            BLOCK_ENTITIES.register("gunsmith_table",
+                    () -> new BlockEntityType<>(com.senne.imttech.guns.GunsmithTableBlockEntity::new,
+                            java.util.Set.of(ModBlocks.GUNSMITH_TABLE.get()), null));
+
+    /** Hoofdstuk 52: de Reloading Bench (zijn drie vakjes). */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.guns.ReloadingBenchBlockEntity>> RELOADING_BENCH =
+            BLOCK_ENTITIES.register("reloading_bench",
+                    () -> new BlockEntityType<>(com.senne.imttech.guns.ReloadingBenchBlockEntity::new,
+                            java.util.Set.of(ModBlocks.RELOADING_BENCH.get()), null));
 }

@@ -55,6 +55,10 @@ public class ImtTechClient {
         modEventBus.addListener(com.senne.imttech.client.weapons.WeaponModels::registerItemColors);
         // Een lasergeweer houd je in derde persoon met twee handen vast.
         modEventBus.addListener(com.senne.imttech.client.weapons.WeaponModels::registerExtensions);
+        // De vuurwapens (hoofdstuk 52): de losse onderdelen van de Glock 19, het plaatje per materiaal, twee handen.
+        modEventBus.addListener(com.senne.imttech.client.guns.FirearmModels::register);
+        modEventBus.addListener(com.senne.imttech.client.guns.FirearmModels::registerProperties);
+        modEventBus.addListener(com.senne.imttech.client.guns.FirearmModels::registerExtensions);
         // De gloeiende handpalm en reactor op spelers, en het 3D-model van het harnas.
         modEventBus.addListener(LaserCannonHand::addLayers);
         modEventBus.addListener(TechSuitModel::registerExtensions);
@@ -128,6 +132,15 @@ public class ImtTechClient {
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.weapons.GunRenderer::onRenderHand);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.weapons.GunEffects::onRenderLevel);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.weapons.GunHud::onRenderLayer);
+        // De vuurwapens (hoofdstuk 52): bediening, het pistool in je beeld, de HUD.
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.guns.FirearmControl::onClientTick);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.guns.FirearmControl::onInteraction);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.guns.FirearmControl::onMovementInput);
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST,
+                com.senne.imttech.client.guns.FirearmControl::onComputeFov);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.guns.FirearmControl::onPlayerTurn);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.guns.FirearmRenderer::onRenderHand);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.guns.FirearmHud::onRenderLayer);
 
         // Alleen tijdens het ontwikkelen (gradlew runVisualCheck): screenshots van alles maken.
         VisualCheck.registerIfEnabled();
@@ -144,6 +157,9 @@ public class ImtTechClient {
         // Met een lasergeweer (hoofdstuk 35): je munitie rechtsonder, je kruisje en de kijker van de sniper.
         event.registerAbove(VanillaGuiLayers.HOTBAR, ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "laser_gun"),
                 new com.senne.imttech.client.weapons.GunHud());
+        // Met een pistool of magazijn (hoofdstuk 52): je patronen rechtsonder, je kruisje, de handeling.
+        event.registerAbove(VanillaGuiLayers.HOTBAR, ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "firearm"),
+                new com.senne.imttech.client.guns.FirearmHud());
         // Na een flashbang (hoofdstuk 35): een wit scherm over alles heen, ook over je HUD.
         event.registerAboveAll(ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "flashbang"),
                 new com.senne.imttech.client.weapons.FlashOverlay());
@@ -156,6 +172,8 @@ public class ImtTechClient {
         event.register(ModMenus.SERVER_RACK.get(), com.senne.imttech.client.ServerRackScreen::new);
         event.register(ModMenus.CRACK_MACHINE.get(), com.senne.imttech.client.repair.CrackMachineScreen::new);
         event.register(ModMenus.ROBOT_ASSEMBLER.get(), com.senne.imttech.client.robot.RobotAssemblerScreen::new);
+        event.register(ModMenus.GUNSMITH_TABLE.get(), com.senne.imttech.client.guns.GunsmithScreen::new);
+        event.register(ModMenus.RELOADING_BENCH.get(), com.senne.imttech.client.guns.ReloadingBenchScreen::new);
     }
 
     private static void registerEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {
@@ -173,6 +191,9 @@ public class ImtTechClient {
         event.registerEntityRenderer(ModEntities.STICKY_FRAG_GRENADE.get(), com.senne.imttech.client.weapons.GrenadeRenderer::new);
         event.registerEntityRenderer(ModEntities.SMOKE_GRENADE.get(), com.senne.imttech.client.weapons.GrenadeRenderer::new);
         event.registerEntityRenderer(ModEntities.FLASHBANG.get(), com.senne.imttech.client.weapons.GrenadeRenderer::new);
+        // De vuurwapens (hoofdstuk 52): de kogel als streepje, de huls als messing buisje.
+        event.registerEntityRenderer(ModEntities.BULLET.get(), com.senne.imttech.client.guns.BulletRenderer::new);
+        event.registerEntityRenderer(ModEntities.CASING.get(), com.senne.imttech.client.guns.CasingRenderer::new);
         // De holotafel tekent zijn hologram zelf, bovenop het gewone blokmodel.
         event.registerBlockEntityRenderer(ModBlockEntities.HOLO_TABLE.get(), HoloTableRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.DOME_GENERATOR.get(), DomeRenderer::new);

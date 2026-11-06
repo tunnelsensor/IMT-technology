@@ -118,6 +118,25 @@ public final class ModSounds {
     /** De bol stuitert: een metalen tik. */
     public static final DeferredHolder<SoundEvent, SoundEvent> EMP_GRENADE_BOUNCE = register("emp_grenade.bounce");
 
+    /** Hoofdstuk 52: de Glock 19. Een scherpe knal... */
+    public static final DeferredHolder<SoundEvent, SoundEvent> GLOCK_FIRE = register("glock.fire");
+    /** ...een droge klik (leeg, een ketser, een storing)... */
+    public static final DeferredHolder<SoundEvent, SoundEvent> GLOCK_DRY = register("glock.dry");
+    /** ...de slede die naar achteren en weer naar voren gaat... */
+    public static final DeferredHolder<SoundEvent, SoundEvent> GLOCK_SLIDE = register("glock.slide");
+    /** ...het magazijn dat eruit valt en erin wordt geduwd... */
+    public static final DeferredHolder<SoundEvent, SoundEvent> GLOCK_MAG_OUT = register("glock.mag_out");
+    public static final DeferredHolder<SoundEvent, SoundEvent> GLOCK_MAG_IN = register("glock.mag_in");
+    /** ...een patroon die in een magazijn klikt... */
+    public static final DeferredHolder<SoundEvent, SoundEvent> GLOCK_ROUND_LOAD = register("glock.round_load");
+    /** ...een tap-rack (een klap op het magazijn en de slede)... */
+    public static final DeferredHolder<SoundEvent, SoundEvent> TAP_RACK = register("glock.tap_rack");
+    /** ...een huls die op de grond tinkelt, en een kogel die in een blok slaat. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> CASING_TINK = register("casing.tink");
+    public static final DeferredHolder<SoundEvent, SoundEvent> BULLET_IMPACT = register("bullet.impact");
+    /** Een pistool uit de holster trekken (stap 2). */
+    public static final DeferredHolder<SoundEvent, SoundEvent> HOLSTER_DRAW = register("holster.draw");
+
     private static DeferredHolder<SoundEvent, SoundEvent> register(String name) {
         return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, name)));
     }
