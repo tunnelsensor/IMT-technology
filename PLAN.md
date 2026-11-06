@@ -22,13 +22,13 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 404 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 405 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
 **Publiceren:** klaar voor CurseForge onder de MIT-licentie (17 oktober): de beschrijving, het logo, de
 changelog en een stappenplan staan in `publish/` (begin bij `publish/HOE-PUBLICEREN.md`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 114 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 115 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -4535,13 +4535,19 @@ tabblad Weapons; de staven, blends en polymeer in Resources.
       `holster_quickdraw_drops_held_item_and_grenade_pouch_feeds`, `mag_pouch_reload_swaps_the_chosen_magazine`,
       `gear_slots_take_and_give_back`. Curios zelf is niet getest (het zit niet in je modpack); de brug is
       geschreven naar de API van 9.5.1.
-- [ ] **3. De skills**: punten door te doen, globaal en per wapen, de boom (G > Combat en een eigen toets), en wat ze doen
-      (herladen, terugslag, richten, trekken, storingen verhelpen, magazijnen vullen).
+- [x] **3. De skills** — `guns/GunSkill` (zes skills), `GunSkills` (de attachment `gun_skills`: ervaring, punten,
+      niveaus per scope "global" of "glock_19"; een wapenniveau kost zijn nummer in punten, een globaal niveau het
+      dubbele; 5% en 8% per niveau, samen tot 70% eraf), `GunSkillsServer` (ervaring geven, een punt uitgeven, een
+      kogelkill), `GunSkillHooks` (echt: de tijden en de spreiding, en ervaring voor schieten, herladen, tap-racks,
+      patronen en trekken), `SkillLearnPayload`, `client/guns/SkillTreeScreen` (G > Combat > Gun skills, of de toets
+      "Gun skills"), `GunSkillsClient` (terugslag en kruisje), config `[guns]` (14 getallen erbij), LEESMIJ.md "De
+      skills". Test `skills_earn_points_and_make_reloading_faster`.
 - [x] **4. Showcase en screenshots** — showcase 113 **"Glock 19: parts, magazines and casings"**, screenshots
       `-Ponly=glock` (`gl01`-`gl21`: heup, richten, schot, slede, magazijn uit en in, slede los, storing, tap-rack, met de
       hand in de kamer, bekijken, een magazijn vullen, kapotte loop, hulzen, de twee banken, derde persoon); showcase 114
       **"Holster, pouches and the quickdraw wheel"**, screenshots `-Ponly=gear` (`ge01`-`ge08`: de vakjes in je
-      inventaris, het wiel, trekken, de magazijnpouch, herladen, op je heup van voren en van achteren).
+      inventaris, het wiel, trekken, de magazijnpouch, herladen, op je heup van voren en van achteren); showcase 115
+      **"Gun skills"**, screenshots `-Ponly=skills` (`sk01` de boom met punten, `sk02` met niveaus geleerd).
 
 ---
 

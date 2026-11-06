@@ -131,4 +131,14 @@ public final class ModAttachments {
                             && player.connection.hasChannel(SyncAttachmentsPayload.TYPE),
                             com.senne.imttech.guns.GearContents.STREAM_CODEC)
                     .build());
+
+    /** Hoofdstuk 52 (stap 3): wat een speler geleerd heeft met zijn vuurwapens (zie GunSkills). Blijft na je dood; alleen jij krijgt het. */
+    public static final Supplier<AttachmentType<com.senne.imttech.guns.GunSkills>> GUN_SKILLS = ATTACHMENTS.register("gun_skills",
+            () -> AttachmentType.builder(() -> com.senne.imttech.guns.GunSkills.EMPTY)
+                    .serialize(com.senne.imttech.guns.GunSkills.CODEC)
+                    .copyOnDeath()
+                    .sync((holder, player) -> holder == player && player.connection != null
+                            && player.connection.hasChannel(SyncAttachmentsPayload.TYPE),
+                            com.senne.imttech.guns.GunSkills.STREAM_CODEC)
+                    .build());
 }

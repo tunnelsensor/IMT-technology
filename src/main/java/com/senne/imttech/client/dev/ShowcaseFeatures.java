@@ -2662,6 +2662,48 @@ final class ShowcaseFeatures {
         addRooms();
         addGuns();
         addGear();
+        addSkills();
+    }
+
+    /** Hoofdstuk 52, stap 3: de skilltree. */
+    private static void addSkills() {
+        BlockPos w = ShowcaseScene.WEAPONS;
+        Vec3 stand = new Vec3(w.getX() + 0.5, w.getY() + 1, w.getZ() + 0.5);
+        add("Gun skills", "Hoofdstuk 52, stap 3. Alles wat je met een pistool doet geeft ervaring (een schot, een treffer, "
+                + "herladen, een tap-rack, een patroon in een magazijn, trekken); elke keer dat de balk vol is krijg je een "
+                + "skillpunt, en elk volgend punt kost meer. Je begint hier met 7 punten. G > Combat > Gun skills: links de "
+                + "globale skills (voor elk vuurwapen, 5% per niveau, een niveau kost het dubbele), rechts die van de Glock 19 "
+                + "zelf (8% per niveau); ze tellen op. Ik leer Reload op de Glock (1 punt), nog eens (2 punten), en Reload "
+                + "globaal (2 punten): onderaan staat wat dat samen oplevert. Daarna een magazijnwissel die merkbaar sneller "
+                + "gaat dan in de vorige showcase.",
+                stand, 90, 4, s -> s
+                .onServer(0, ShowcaseScene::buildWeapons)
+                .onServer(0, ShowcaseFeatures::giveGear)
+                .onServer(0, player -> player.setData(com.senne.imttech.registry.ModAttachments.GUN_SKILLS,
+                        new com.senne.imttech.guns.GunSkills(20, 7, 7, java.util.Map.of())))
+                .stand(0, stand.x, stand.y, stand.z, 90, 3)
+                .pause(20)
+                .open(0, com.senne.imttech.client.guns.SkillTreeScreen::new)
+                .pause(70)
+                .onServer(0, player -> com.senne.imttech.guns.GunSkillsServer.learn(player, "glock_19", com.senne.imttech.guns.GunSkill.RELOAD))
+                .pause(40)
+                .onServer(0, player -> com.senne.imttech.guns.GunSkillsServer.learn(player, "glock_19", com.senne.imttech.guns.GunSkill.RELOAD))
+                .pause(40)
+                .onServer(0, player -> com.senne.imttech.guns.GunSkillsServer.learn(player, com.senne.imttech.guns.GunSkills.GLOBAL, com.senne.imttech.guns.GunSkill.RELOAD))
+                .pause(80)
+                .close(0)
+                // Trekken en herladen, nu sneller.
+                .key(10, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true)
+                .pause(30)
+                .step(0, () -> wheelChoose(0))
+                .key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false)
+                .pause(30)
+                .step(0, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()))
+                .pause(25)
+                .step(0, () -> magPick(1))
+                .pause(60)
+                .onServer(0, player -> player.setData(com.senne.imttech.registry.ModAttachments.GUN_SKILLS, com.senne.imttech.guns.GunSkills.EMPTY))
+                .onServer(0, player -> player.getInventory().clearContent()));
     }
 
     /** Hoofdstuk 52, stap 2: de holster, de pouches en het wiel, op het wapenveld. */

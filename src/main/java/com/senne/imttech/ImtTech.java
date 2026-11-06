@@ -131,6 +131,7 @@ public class ImtTech {
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.StructureGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.GunGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.GearGameTests.class));
+        modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.SkillGameTests.class));
         // Controle van de wereldgeneratie (alleen met "gradlew runStructureCheck").
         com.senne.imttech.gametest.StructureCheck.registerIfEnabled();
 
@@ -214,6 +215,8 @@ public class ImtTech {
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.guns.Firearms::onRightClickBlock);
         // Hoofdstuk 52 (stap 2): wat je draagt valt op de grond als je doodgaat (zonder keepInventory).
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.guns.Gear::onDeath);
+        // Hoofdstuk 52 (stap 3): iemand doodschieten geeft ervaring.
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.guns.GunSkillsServer::onDeath);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->
                 com.senne.imttech.guns.Firearms.clear());
         // De rookwolken van de smokebom: vergeten als ze op zijn.

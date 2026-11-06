@@ -3280,6 +3280,22 @@ public final class VisualCheck {
             t.shot(15, "gl21_benches");
         }
 
+        // --- De skilltree (hoofdstuk 52, stap 3): leeg, en met een paar niveaus geleerd.
+        if (want("skills")) {
+            t.onServer(0, player -> player.setData(com.senne.imttech.registry.ModAttachments.GUN_SKILLS,
+                    new com.senne.imttech.guns.GunSkills(25, 7, 7, java.util.Map.of())));
+            t.open(10, com.senne.imttech.client.guns.SkillTreeScreen::new);
+            t.shot(20, "sk01_skill_tree_with_points");
+            t.onServer(0, player -> {
+                com.senne.imttech.guns.GunSkillsServer.learn(player, "glock_19", com.senne.imttech.guns.GunSkill.RELOAD);
+                com.senne.imttech.guns.GunSkillsServer.learn(player, "glock_19", com.senne.imttech.guns.GunSkill.RELOAD);
+                com.senne.imttech.guns.GunSkillsServer.learn(player, com.senne.imttech.guns.GunSkills.GLOBAL, com.senne.imttech.guns.GunSkill.AIM);
+            });
+            t.shot(20, "sk02_skill_tree_learned");
+            t.close(0);
+            t.onServer(0, player -> player.setData(com.senne.imttech.registry.ModAttachments.GUN_SKILLS, com.senne.imttech.guns.GunSkills.EMPTY));
+        }
+
         // --- De holster, de pouches en het wiel (hoofdstuk 52, stap 2).
         if (want("gear")) {
             BlockPos g = GUN_RANGE.above();

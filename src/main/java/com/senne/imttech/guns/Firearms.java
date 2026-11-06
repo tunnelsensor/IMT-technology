@@ -139,7 +139,8 @@ public final class Firearms {
         if (Math.toDegrees(Math.acos(Mth.clamp(look.dot(server), -1, 1))) > MAX_AIM_DIFFERENCE) {
             look = server;
         }
-        double spread = Math.toRadians(type.spread(aiming) * (1 + 0.5f * parts.wornFactor(GunPart.BARREL)));
+        double spread = Math.toRadians(type.spread(aiming) * (1 + 0.5f * parts.wornFactor(GunPart.BARREL))
+                * GunSkillHooks.spreadFactor(player, type));
         Vec3 direction = scatter(look, spread, random);
         float damage = type.damage() * parts.materialOf(GunPart.BARREL).damageFactor();
         damage *= 1 - 0.2f * Math.min(1, parts.wornFactor(GunPart.BARREL) / Math.max(0.01f, ImtConfig.Guns.WORN_JAM_FACTOR));
@@ -149,6 +150,7 @@ public final class Firearms {
         if (player.isSprinting()) {
             player.setSprinting(false);
         }
+        GunSkillHooks.fired(player);
 
         // Slijtage: elk onderdeel een kans (van zijn materiaal) op een punt minder.
         GunParts worn = parts;

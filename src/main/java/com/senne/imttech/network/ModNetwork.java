@@ -28,7 +28,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "33";
+    private static final String PROTOCOL_VERSION = "34";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -291,6 +291,12 @@ public final class ModNetwork {
                                 ImtSuit.setEngaged(player, payload.engaged());
                             }
                         }));
+        // De skills (hoofdstuk 52, stap 3): een punt uitgeven.
+        registrar.playToServer(SkillLearnPayload.TYPE, SkillLearnPayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                com.senne.imttech.guns.GunSkillsServer.learn(player, payload.scope(), com.senne.imttech.guns.GunSkill.byId(payload.skill()));
+            }
+        });
         // De holster en de pouches (hoofdstuk 52, stap 2): een keuze uit het wiel, en een klik op een eigen vakje.
         registrar.playToServer(GearActionPayload.TYPE, GearActionPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) {

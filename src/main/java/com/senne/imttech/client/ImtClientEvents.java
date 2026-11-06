@@ -202,6 +202,9 @@ public final class ImtClientEvents {
         while (ImtKeys.REDSTONE.consumeClick()) {
             openIfAuthorized(mc, new RelayListScreen());
         }
+        while (ImtKeys.SKILL_TREE.consumeClick()) {
+            mc.setScreen(new com.senne.imttech.client.guns.SkillTreeScreen());
+        }
         while (ImtKeys.HACK.consumeClick()) {
             sendAction(ImtAction.HACK_PLAYER);
         }

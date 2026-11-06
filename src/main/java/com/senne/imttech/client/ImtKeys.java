@@ -91,6 +91,8 @@ public final class ImtKeys {
      * klikken). Alt doet in Minecraft zelf niets.
      */
     public static final KeyMapping GEAR_WHEEL = key("gear_wheel", InputConstants.KEY_LALT);
+    /** Hoofdstuk 52 (stap 3): de skilltree van je vuurwapens. Standaard op geen toets (ook via G > Combat). */
+    public static final KeyMapping SKILL_TREE = key("skill_tree", InputConstants.UNKNOWN.getValue());
 
     public static final KeyMapping GUN_RELOAD = new KeyMapping("key.imttech.gun_reload", GunKeys.CONTEXT, Type.KEYSYM,
             InputConstants.KEY_R, CATEGORY);
@@ -146,6 +148,7 @@ public final class ImtKeys {
         event.register(ZONE_BORDER);
         event.register(GUN_RELOAD);
         event.register(GEAR_WHEEL);
+        event.register(SKILL_TREE);
         event.register(GUN_INSPECT);
     }
 }

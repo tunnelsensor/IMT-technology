@@ -1810,6 +1810,15 @@ versleten veren, slede, slagpin of trekker steeds vaker. **R** doet dan een **ta
 de slede naar achteren en naar voren; de klemzittende huls valt eruit (een ketser gaat verloren) en de volgende patroon
 gaat erin.
 
+**De skills.** Alles wat je met een pistool doet geeft ervaring (een schot 1, een treffer 2, iemand doodschieten 10,
+herladen 3, een tap-rack 2, een patroon in een magazijn 1, trekken 1); elke keer dat de balk vol is krijg je een
+**skillpunt** (het eerste bij 60, elk volgende 20% meer). Open de boom via **G > Combat > Gun skills** (of een eigen
+toets): links de **globale** skills (voor elk vuurwapen, 5% per niveau, een niveau kost het dubbele), rechts die van
+de **Glock 19** zelf (8% per niveau); ze tellen bij elkaar op (tot 70% eraf). Reload (magazijnen, de slede, de
+kamer), Recoil control (de terugslag), Steady aim (de spreiding), Quickdraw (trekken), Clearing (de tap-rack) en
+Magazine handling (patronen in een magazijn); elk tot niveau 5, en elk volgend niveau kost een punt meer. Jouw keuze:
+punten verdelen, zodat je kiest waar je goed in wordt. Wat je leert blijft na je dood. Alle getallen onder `[guns]`.
+
 ### Prestaties (advancements)
 De mod heeft een eigen prestatieboom die je door het spel leidt, van je eerste computerchip tot
 vliegen met het harnas. Open je prestaties (standaard **L**) en kijk bij **Biebia's Industries**.

@@ -2109,6 +2109,39 @@ public final class ImtConfig {
         @Tunable(value = "Ticks to draw the pistol from its holster", min = 1, max = 200)
         public static float DRAW_TICKS = 12.0f;
 
+        // ------------------------------------------------------------------------- De skills (stap 3)
+        /** Zoveel ervaring geeft elk ding dat je met een pistool doet. */
+        @Tunable(value = "Skill experience for one shot", max = 1_000)
+        public static float XP_SHOT = 1.0f;
+        @Tunable(value = "Skill experience for hitting something with a bullet", max = 1_000)
+        public static float XP_HIT = 2.0f;
+        @Tunable(value = "Skill experience for killing something with a bullet", max = 1_000)
+        public static float XP_KILL = 10.0f;
+        @Tunable(value = "Skill experience for reloading (a magazine in)", max = 1_000)
+        public static float XP_RELOAD = 3.0f;
+        @Tunable(value = "Skill experience for clearing a jam (tap-rack)", max = 1_000)
+        public static float XP_TAP_RACK = 2.0f;
+        @Tunable(value = "Skill experience for loading one round into a magazine", max = 1_000)
+        public static float XP_ROUND_LOADED = 1.0f;
+        @Tunable(value = "Skill experience for drawing from the holster", max = 1_000)
+        public static float XP_DRAW = 1.0f;
+        /** Zoveel ervaring kost het eerste skillpunt; elk volgende punt maal xpGrowth meer. */
+        @Tunable(value = "Experience for the first skill point", min = 1, max = 1_000_000)
+        public static float XP_FIRST_POINT = 60.0f;
+        @Tunable(value = "Each next skill point costs this much more (1.2 = 20% more than the one before)", min = 1, max = 5)
+        public static float XP_GROWTH = 1.2f;
+        /** Het hoogste niveau van een skill. */
+        @Tunable(value = "Highest level of a skill", min = 1, max = 20)
+        public static float SKILL_MAX_LEVEL = 5.0f;
+        /** Hoeveel elk niveau eraf haalt: globaal (geldt voor elk vuurwapen) en per wapen. */
+        @Tunable(value = "How much each level of a GLOBAL skill takes off (0.05 = 5% faster or more accurate)", max = 1)
+        public static float SKILL_GLOBAL_STEP = 0.05f;
+        @Tunable(value = "How much each level of a PER-WEAPON skill takes off (0.08 = 8%)", max = 1)
+        public static float SKILL_WEAPON_STEP = 0.08f;
+        /** Zo kort of klein wordt iets hoogstens (0,3 = 70% eraf). */
+        @Tunable(value = "The lowest the skills can bring a time or spread (0.3 = 70% off at most)", min = 0.05, max = 1)
+        public static float SKILL_MIN_FACTOR = 0.3f;
+
         // ------------------------------------------------------------------------- Holster en pouches (stap 2)
         @Tunable(value = "Grenades that fit in a Grenade Pouch", min = 1, max = 27)
         public static float GRENADE_POUCH_SIZE = 4.0f;

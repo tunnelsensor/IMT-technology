@@ -136,6 +136,7 @@ public class BulletEntity extends Projectile {
             // Meteen: geen "even onkwetsbaar", anders doet een snel tweede schot niets.
             target.invulnerableTime = 0;
             target.hurt(ModDamageTypes.bullet(level, getOwner()), amount);
+            GunSkillsServer.hit(getOwner());
             level.sendParticles(ParticleTypes.CRIT, at.x, at.y, at.z, 6, 0.1, 0.1, 0.1, 0.1);
         } else {
             entity.hurt(ModDamageTypes.bullet(level, getOwner()), amount);
