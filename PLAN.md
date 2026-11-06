@@ -22,13 +22,13 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 401 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 404 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
 **Publiceren:** klaar voor CurseForge onder de MIT-licentie (17 oktober): de beschrijving, het logo, de
 changelog en een stappenplan staan in `publish/` (begin bij `publish/HOE-PUBLICEREN.md`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 113 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 114 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -4523,14 +4523,25 @@ tabblad Weapons; de staven, blends en polymeer in Resources.
       de slede), `glock_jams_and_tap_rack_clears`, `glock_parts_wear_and_break`, `magazine_loads_round_by_round_and_chamber_by_hand`,
       `gunsmith_table_assembles_and_takes_apart`, `reloading_bench_presses_rounds`, `bullets_break_glass_only_when_allowed`,
       `gun_items_carry_their_data`.
-- [ ] **2. De holster, de granaatpouch en de magazijnpouch** (eigen vakjes naast je harnas, of Curios als dat in je
-      modpack zit), herladen uit de pouch, trekken (wat je vasthield valt), het wiel op linker Alt, en de holster en de
-      pouches op je heup.
+- [x] **2. De holster, de granaatpouch en de magazijnpouch** — `guns/GearItem` (de drie items, inhoud in
+      `gear_contents`), `GearContents` (een rijtje items met echte equals), `Gear` (waar ze zitten: de attachment `gear`
+      of Curios; trekken, wegsteken, aanvoeren, herladen uit de pouch, de klik op een eigen vakje, doodgaan),
+      `CuriosGear` (alleen aangeraakt als Curios geladen is; `libs/curios-neoforge-9.5.1+1.21.1-api.jar` om tegen te
+      compileren, `data/imttech/curios/` de slots "holster" en "pouch", `data/curios/tags/item/`), `GearActionPayload`
+      en `GearClickPayload`, `client/guns/GearWheelScreen` (linker Alt: vasthouden en loslaten, of tikken en klikken),
+      `MagPickerScreen` (R met een pouch: klik, 1-3 of nog eens R voor het volste), `GearSlotsOverlay` (de drie vakjes
+      rechts van je poppetje, alleen zonder Curios), `GearLayer` (op je heup), `GearControl`; de granaatpouch voert aan
+      via `GrenadeItem.use`; LEESMIJ.md "De holster, de pouches en het wiel". Tests in `GearGameTests`:
+      `holster_quickdraw_drops_held_item_and_grenade_pouch_feeds`, `mag_pouch_reload_swaps_the_chosen_magazine`,
+      `gear_slots_take_and_give_back`. Curios zelf is niet getest (het zit niet in je modpack); de brug is
+      geschreven naar de API van 9.5.1.
 - [ ] **3. De skills**: punten door te doen, globaal en per wapen, de boom (G > Combat en een eigen toets), en wat ze doen
       (herladen, terugslag, richten, trekken, storingen verhelpen, magazijnen vullen).
 - [x] **4. Showcase en screenshots** — showcase 113 **"Glock 19: parts, magazines and casings"**, screenshots
       `-Ponly=glock` (`gl01`-`gl21`: heup, richten, schot, slede, magazijn uit en in, slede los, storing, tap-rack, met de
-      hand in de kamer, bekijken, een magazijn vullen, kapotte loop, hulzen, de twee banken, derde persoon).
+      hand in de kamer, bekijken, een magazijn vullen, kapotte loop, hulzen, de twee banken, derde persoon); showcase 114
+      **"Holster, pouches and the quickdraw wheel"**, screenshots `-Ponly=gear` (`ge01`-`ge08`: de vakjes in je
+      inventaris, het wiel, trekken, de magazijnpouch, herladen, op je heup van voren en van achteren).
 
 ---
 

@@ -117,7 +117,7 @@ public final class FirearmRenderer {
         place.y += 0.004f * Mth.sin(time * 0.08f) * breathe;
         rotX += 0.4f * Mth.sin(time * 0.06f) * breathe;
         // Pakken: van onder je beeld omhoog (bij een magazijn erin: van rechtsonder, alsof je het pistool erbij pakt).
-        float draw = ease(inserting ? Mth.clamp(progress * 3, 0, 1) : FirearmControl.drawn(pt));
+        float draw = ease(inserting ? Mth.clamp(progress * 3, 0, 1) : action == Firearms.ActionKind.DRAW ? 1 : FirearmControl.drawn(pt));
         place.y -= (1 - draw) * 0.45f;
         rotX -= (1 - draw) * 35;
         if (action == Firearms.ActionKind.DRAW) {

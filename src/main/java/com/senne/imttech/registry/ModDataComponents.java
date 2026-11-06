@@ -245,4 +245,10 @@ public final class ModDataComponents {
             COMPONENTS.registerComponentType("mag_rounds", builder -> builder
                     .persistent(Codec.INT)
                     .networkSynchronized(ByteBufCodecs.VAR_INT));
+
+    /** Hoofdstuk 52 (stap 2): wat er in een holster of pouch zit (zie GearContents). */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.imttech.guns.GearContents>> GEAR_CONTENTS =
+            COMPONENTS.registerComponentType("gear_contents", builder -> builder
+                    .persistent(com.senne.imttech.guns.GearContents.CODEC)
+                    .networkSynchronized(com.senne.imttech.guns.GearContents.STREAM_CODEC));
 }

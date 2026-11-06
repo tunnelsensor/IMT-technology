@@ -3280,6 +3280,39 @@ public final class VisualCheck {
             t.shot(15, "gl21_benches");
         }
 
+        // --- De holster, de pouches en het wiel (hoofdstuk 52, stap 2).
+        if (want("gear")) {
+            BlockPos g = GUN_RANGE.above();
+            Vec3 stand = new Vec3(g.getX() + 0.5, g.getY(), g.getZ() + 0.5);
+            t.onServer(0, VisualCheck::buildGunRange);
+            t.onServer(0, ShowcaseFeatures::giveGear);
+            t.command(0, "gamemode survival @a");
+            t.stand(20, stand.x, stand.y, stand.z, 0, 2);
+            t.step(0, () -> selectSlot(0));
+            t.open(10, () -> new net.minecraft.client.gui.screens.inventory.InventoryScreen(Minecraft.getInstance().player));
+            t.shot(20, "ge01_gear_slots_in_inventory");
+            t.close(0);
+            t.key(10, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true);
+            t.shot(15, "ge02_quickdraw_wheel");
+            t.step(0, () -> ShowcaseFeatures.wheelChoose(0));
+            t.key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false);
+            t.shot(5, "ge03_drawing_from_the_holster");
+            t.shot(15, "ge04_drawn");
+            t.step(5, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
+            t.shot(10, "ge05_magazine_pouch_picker");
+            t.step(0, () -> ShowcaseFeatures.magPick(0));
+            t.shot(12, "ge06_pouch_reload");
+            t.key(30, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true);
+            t.step(10, () -> ShowcaseFeatures.wheelChooseLast());
+            t.key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false);
+            t.camera(20, CameraType.THIRD_PERSON_FRONT);
+            t.shot(15, "ge07_holster_on_the_hip_front");
+            t.camera(0, CameraType.THIRD_PERSON_BACK);
+            t.shot(15, "ge08_pouches_back");
+            t.camera(0, CameraType.FIRST_PERSON);
+            t.command(0, "gamemode creative @a");
+        }
+
         // --- Handboeien (hoofdstuk 48): het aftellen tijdens het vasthouden, Bram geboeid met het touw, en de
         // soldaat die aan het touw achter je aan komt.
         if (want("cuffs")) {

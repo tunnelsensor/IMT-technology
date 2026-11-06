@@ -117,4 +117,18 @@ public final class ModAttachments {
                             && player.connection.hasChannel(SyncAttachmentsPayload.TYPE),
                             com.senne.imttech.cuffs.Handcuffs.State.STREAM_CODEC)
                     .build());
+
+    /**
+     * Hoofdstuk 52 (stap 2): wat een speler draagt zonder Curios: de holster, de granaatpouch en de magazijnpouch (de
+     * drie eigen vakjes naast je harnas). Opgeslagen, mee na je dood als keepInventory aan staat (anders vallen ze op de
+     * grond, zie Gear.onDeath), en naar iedereen gestuurd die je ziet (voor je heup).
+     */
+    public static final Supplier<AttachmentType<com.senne.imttech.guns.GearContents>> GEAR = ATTACHMENTS.register("gear",
+            () -> AttachmentType.builder(() -> com.senne.imttech.guns.GearContents.EMPTY)
+                    .serialize(com.senne.imttech.guns.GearContents.CODEC, contents -> !contents.isEmpty())
+                    .copyOnDeath()
+                    .sync((holder, player) -> player.connection != null
+                            && player.connection.hasChannel(SyncAttachmentsPayload.TYPE),
+                            com.senne.imttech.guns.GearContents.STREAM_CODEC)
+                    .build());
 }

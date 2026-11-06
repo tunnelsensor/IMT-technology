@@ -155,7 +155,7 @@ public final class FirearmControl {
             inspectAt = -1;
             aim = aimO = 0;
             // Een handeling met het vorige item is voorbij (behalve een magazijn erin: dan pak je het pistool erna).
-            if (action != Firearms.ActionKind.INSERT_MAG) {
+            if (action != Firearms.ActionKind.INSERT_MAG && action != Firearms.ActionKind.DRAW) {
                 action = null;
             }
             waiting = false;

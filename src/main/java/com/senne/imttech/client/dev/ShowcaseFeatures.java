@@ -2661,6 +2661,109 @@ final class ShowcaseFeatures {
         addPhone();
         addRooms();
         addGuns();
+        addGear();
+    }
+
+    /** Hoofdstuk 52, stap 2: de holster, de pouches en het wiel, op het wapenveld. */
+    private static void addGear() {
+        BlockPos w = ShowcaseScene.WEAPONS;
+        Vec3 stand = new Vec3(w.getX() + 0.5, w.getY() + 1, w.getZ() + 0.5);
+        add("Holster, pouches and the quickdraw wheel", "Hoofdstuk 52, stap 2. Je draagt een Holster (met je Glock 19 erin), een "
+                + "Grenade Pouch (twee EMP-granaten en een flashbang) en een Magazine Pouch (twee magazijnen): eerst zie je ze in "
+                + "je inventaris in de drie eigen vakjes rechts van je poppetje (zonder Curios; met Curios zitten ze in "
+                + "Curios-slots). Je houdt een steen vast. Dan het wiel (linker Alt): je pistool, je granaten per soort met "
+                + "hoeveel, en 'Put away'. Het pistool: de steen valt op de grond en het pistool komt uit je holster omhoog in je "
+                + "hand (trekken duurt even). Twee schoten, dan R: de magazijnpouch gaat open en je kiest het volle magazijn; "
+                + "het oude komt op zijn plek in de pouch. Dan het wiel: 'Put away', het pistool gaat terug in de holster. Dan "
+                + "een EMP-granaat uit het wiel, gooien, en de tweede komt vanzelf in je hand. Tot slot in derde persoon: de "
+                + "holster met het pistool op je rechterheup, de granaatpouch links en de magazijnpouch achter.",
+                GameType.SURVIVAL, stand, 90, 4, s -> s
+                .onServer(0, ShowcaseScene::buildWeapons)
+                .onServer(0, ShowcaseFeatures::giveGear)
+                .stand(0, stand.x, stand.y, stand.z, 90, 3)
+                .step(0, () -> hotbar(0))
+                .pause(20)
+                .open(0, () -> new net.minecraft.client.gui.screens.inventory.InventoryScreen(Minecraft.getInstance().player))
+                .pause(80)
+                .close(0)
+                .pause(20)
+                // Het wiel: het pistool trekken.
+                .key(0, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true)
+                .pause(50)
+                .step(0, () -> wheelChoose(0))
+                .key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false)
+                .pause(40)
+                .key(0, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
+                .key(10, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
+                .pause(20)
+                // R: de magazijnpouch.
+                .step(0, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()))
+                .pause(50)
+                .step(0, () -> magPick(0))
+                .pause(60)
+                // Wegsteken.
+                .key(0, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true)
+                .pause(40)
+                .step(0, () -> wheelChooseLast())
+                .key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false)
+                .pause(40)
+                // Een granaat, en de volgende komt vanzelf.
+                .key(0, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true)
+                .pause(40)
+                .step(0, () -> wheelChoose(1))
+                .key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false)
+                .pause(30)
+                .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                .pause(60)
+                .camera(0, net.minecraft.client.CameraType.THIRD_PERSON_FRONT)
+                .pause(60)
+                .camera(0, net.minecraft.client.CameraType.THIRD_PERSON_BACK)
+                .pause(50)
+                .camera(0, net.minecraft.client.CameraType.FIRST_PERSON)
+                .onServer(0, player -> player.getInventory().clearContent()));
+    }
+
+    /** Een holster met een Glock, een granaatpouch (twee EMP, een flashbang) en een magazijnpouch (twee magazijnen); een steen in je hand. */
+    static void giveGear(ServerPlayer player) {
+        var inventory = player.getInventory();
+        inventory.clearContent();
+        inventory.setItem(0, new ItemStack(net.minecraft.world.item.Items.STONE, 5));
+        ItemStack holster = new ItemStack(ModItems.HOLSTER.get());
+        com.senne.imttech.guns.GearItem.setContents(holster, java.util.List.of(
+                com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.GLOCK_19, com.senne.imttech.guns.GunMaterial.STEEL)));
+        ItemStack grenades = new ItemStack(ModItems.GRENADE_POUCH.get());
+        com.senne.imttech.guns.GearItem.setContents(grenades, java.util.List.of(new ItemStack(ModItems.EMP_GRENADE.get()),
+                new ItemStack(ModItems.EMP_GRENADE.get()), new ItemStack(ModItems.FLASHBANG.get())));
+        ItemStack magazines = new ItemStack(ModItems.MAG_POUCH.get());
+        com.senne.imttech.guns.GearItem.setContents(magazines, java.util.List.of(
+                com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.GLOCK_19, 15),
+                com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.GLOCK_19, 9)));
+        com.senne.imttech.guns.Gear.set(player, com.senne.imttech.guns.GearItem.Kind.HOLSTER, holster);
+        com.senne.imttech.guns.Gear.set(player, com.senne.imttech.guns.GearItem.Kind.GRENADE_POUCH, grenades);
+        com.senne.imttech.guns.Gear.set(player, com.senne.imttech.guns.GearItem.Kind.MAG_POUCH, magazines);
+    }
+
+    /** In het wiel (als het open is) deze optie kiezen. */
+    static void wheelChoose(int index) {
+        com.senne.imttech.client.guns.GearWheelScreen wheel = com.senne.imttech.client.guns.GearWheelScreen.current();
+        if (wheel != null) {
+            wheel.chooseIndex(index);
+        }
+    }
+
+    /** De laatste optie van het wiel: wegsteken. */
+    static void wheelChooseLast() {
+        com.senne.imttech.client.guns.GearWheelScreen wheel = com.senne.imttech.client.guns.GearWheelScreen.current();
+        if (wheel != null) {
+            wheel.chooseIndex(Integer.MAX_VALUE);
+        }
+    }
+
+    /** In het keuzescherm van de magazijnpouch dit vakje kiezen. */
+    static void magPick(int index) {
+        if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.guns.MagPickerScreen picker) {
+            picker.pickIndex(index);
+        }
     }
 
     /**

@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "L": {
+      "item": "minecraft:leather"
+    },
+    "N": {
+      "tag": "c:nuggets/iron"
+    }
+  },
+  "pattern": [
+    "LL",
+    "LN",
+    "LL"
+  ],
+  "result": {
+    "id": "imttech:holster",
+    "count": 1
+  }
+}

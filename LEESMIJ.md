@@ -1779,9 +1779,23 @@ inventaris in (inhouden gaat door). In het pistool zit er nog één in de **kame
 herlaad je, dan heeft het magazijn er 4 en de kamer 1; een nieuw magazijn van 6 erin = 7 in totaal. **Sneak + R** met
 het pistool steekt met de hand één patroon in de kamer, ook zonder magazijn.
 
-**Herladen** (zonder magazijnpouch, zie hoofdstuk 52 stap 2 voor de pouch): **R** gooit het magazijn uit het pistool
-(het komt in je inventaris), je scrolt naar een ander magazijn, **rechtsklik** duwt het in het pistool, en als je het
-pistool weer pakt, laat je de slede los (de eerste patroon gaat in de kamer). Dat duurt even, en zo hoort het.
+**Herladen.** Met een **Magazine Pouch** om (zie hieronder) toont **R** de magazijnen in je pouch: klik er een (of druk
+1-3, of nog eens R voor het volste) en het gaat erin; het oude magazijn komt op zijn plek in de pouch. Zonder pouch:
+**R** gooit het magazijn uit het pistool (het komt in je inventaris), je scrolt naar een ander magazijn, **rechtsklik**
+duwt het in het pistool, en als je het pistool weer pakt, laat je de slede los (de eerste patroon gaat in de kamer).
+Dat duurt langer, en zo hoort het: een pouch is echt beter.
+
+**De holster, de pouches en het wiel.** Een **Holster** (leer en een ijzerklompje) houdt één pistool, een **Grenade
+Pouch** (leer en touw) vier stapels granaten, een **Magazine Pouch** (leer en een ijzerklompje) drie magazijnen. Je
+draagt ze in de drie vakjes rechts van je poppetje in je inventaris (klik erin met het item aan je muis); zit
+**Curios** in je modpack, dan zie je die vakjes niet en zitten ze in de Curios-slots "Holster" en "Pouch". Houd
+**linker Alt** in: het wiel. Wijs je pistool aan, een granaatsoort (met hoeveel je er hebt) of "Put away", en laat Alt
+los (of tik Alt en klik). Trekken: wat je vasthield **valt op de grond** en het pistool (of de granaat) komt in dat
+vakje; het pistool trekken duurt even. Gooi je je laatste granaat van een soort, dan komt de volgende uit de pouch
+vanzelf in je hand. "Put away" steekt weg wat je vasthoudt (het pistool in de holster, een granaat in de pouch, een
+magazijn in de magazijnpouch). Een magazijn dat je met R uitwerpt, gaat in de magazijnpouch als daar plek is. Anderen
+zien de holster met het pistool op je rechterheup, de granaatpouch links en de magazijnpouch achter. Ga je dood zonder
+keepInventory, dan vallen ze op de grond zoals de rest.
 
 **Schieten.** Linkerklik = één schot (een Glock is semi-automatisch), rechterklik = richten over de korrel en de keep,
 **H** = bekijken. De kogel vliegt echt (16 blokken per tick, dus niet meteen raak), zakt een heel klein beetje, doet

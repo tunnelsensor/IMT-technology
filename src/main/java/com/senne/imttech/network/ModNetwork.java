@@ -28,7 +28,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "32";
+    private static final String PROTOCOL_VERSION = "33";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -291,6 +291,22 @@ public final class ModNetwork {
                                 ImtSuit.setEngaged(player, payload.engaged());
                             }
                         }));
+        // De holster en de pouches (hoofdstuk 52, stap 2): een keuze uit het wiel, en een klik op een eigen vakje.
+        registrar.playToServer(GearActionPayload.TYPE, GearActionPayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                switch (payload.action()) {
+                    case com.senne.imttech.guns.Gear.ACTION_DRAW_GUN -> com.senne.imttech.guns.Gear.drawGun(player);
+                    case com.senne.imttech.guns.Gear.ACTION_DRAW_GRENADE -> com.senne.imttech.guns.Gear.drawGrenade(player, payload.arg());
+                    case com.senne.imttech.guns.Gear.ACTION_HOLSTER -> com.senne.imttech.guns.Gear.holsterHand(player);
+                    default -> { }
+                }
+            }
+        });
+        registrar.playToServer(GearClickPayload.TYPE, GearClickPayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                com.senne.imttech.guns.Gear.click(player, payload.slot());
+            }
+        });
         // De vuurwapens (hoofdstuk 52): de trekker, en de handelingen (herladen, tap-rack...) met hun duur terug.
         registrar.playToServer(FirearmFirePayload.TYPE, FirearmFirePayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) {

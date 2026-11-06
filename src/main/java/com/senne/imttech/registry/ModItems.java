@@ -536,4 +536,12 @@ public final class ModItems {
             ModBlocks.GUNSMITH_TABLE, new Item.Properties().rarity(Rarity.UNCOMMON));
     public static final DeferredItem<BlockItem> RELOADING_BENCH = ITEMS.registerSimpleBlockItem("reloading_bench",
             ModBlocks.RELOADING_BENCH, new Item.Properties());
+
+    /** Hoofdstuk 52 (stap 2): de holster (één pistool), de granaatpouch en de magazijnpouch. */
+    public static final DeferredItem<com.senne.imttech.guns.GearItem> HOLSTER = ITEMS.registerItem("holster",
+            properties -> new com.senne.imttech.guns.GearItem(properties, com.senne.imttech.guns.GearItem.Kind.HOLSTER), new Item.Properties());
+    public static final DeferredItem<com.senne.imttech.guns.GearItem> GRENADE_POUCH = ITEMS.registerItem("grenade_pouch",
+            properties -> new com.senne.imttech.guns.GearItem(properties, com.senne.imttech.guns.GearItem.Kind.GRENADE_POUCH), new Item.Properties());
+    public static final DeferredItem<com.senne.imttech.guns.GearItem> MAG_POUCH = ITEMS.registerItem("mag_pouch",
+            properties -> new com.senne.imttech.guns.GearItem(properties, com.senne.imttech.guns.GearItem.Kind.MAG_POUCH), new Item.Properties());
 }

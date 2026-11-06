@@ -86,6 +86,12 @@ public final class ImtKeys {
      * hand; dan doen R en H niet ook nog wat ze anders doen (markeren en de dreigingsscan, zie ImtClientEvents). Daarom
      * staan ze in Opties > Besturing niet in het rood, ook al delen ze een toets.
      */
+    /**
+     * Hoofdstuk 52 (stap 2): het wiel om snel te trekken. Linker Alt ingedrukt houden, aanwijzen, loslaten (of tikken en
+     * klikken). Alt doet in Minecraft zelf niets.
+     */
+    public static final KeyMapping GEAR_WHEEL = key("gear_wheel", InputConstants.KEY_LALT);
+
     public static final KeyMapping GUN_RELOAD = new KeyMapping("key.imttech.gun_reload", GunKeys.CONTEXT, Type.KEYSYM,
             InputConstants.KEY_R, CATEGORY);
     public static final KeyMapping GUN_INSPECT = new KeyMapping("key.imttech.gun_inspect", GunKeys.CONTEXT, Type.KEYSYM,
@@ -139,6 +145,7 @@ public final class ImtKeys {
         event.register(CABLE_XRAY);
         event.register(ZONE_BORDER);
         event.register(GUN_RELOAD);
+        event.register(GEAR_WHEEL);
         event.register(GUN_INSPECT);
     }
 }

@@ -59,6 +59,8 @@ public class ImtTechClient {
         modEventBus.addListener(com.senne.imttech.client.guns.FirearmModels::register);
         modEventBus.addListener(com.senne.imttech.client.guns.FirearmModels::registerProperties);
         modEventBus.addListener(com.senne.imttech.client.guns.FirearmModels::registerExtensions);
+        // De holster en de pouches op je heup (hoofdstuk 52, stap 2).
+        modEventBus.addListener(com.senne.imttech.client.guns.GearLayer::addLayers);
         // De gloeiende handpalm en reactor op spelers, en het 3D-model van het harnas.
         modEventBus.addListener(LaserCannonHand::addLayers);
         modEventBus.addListener(TechSuitModel::registerExtensions);
@@ -141,6 +143,10 @@ public class ImtTechClient {
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.guns.FirearmControl::onPlayerTurn);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.guns.FirearmRenderer::onRenderHand);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.guns.FirearmHud::onRenderLayer);
+        // De holster en de pouches (hoofdstuk 52, stap 2): het wiel op linker Alt en de eigen vakjes in je inventaris.
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.guns.GearControl::onClientTick);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.guns.GearSlotsOverlay::onRender);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.guns.GearSlotsOverlay::onClick);
 
         // Alleen tijdens het ontwikkelen (gradlew runVisualCheck): screenshots van alles maken.
         VisualCheck.registerIfEnabled();

@@ -73,6 +73,10 @@ public class GrenadeItem extends Item {
         player.getCooldowns().addCooldown(this, COOLDOWN);
         player.awardStat(Stats.ITEM_USED.get(this));
         stack.consume(1, player);
+        // De laatste van deze soort gegooid? Dan komt de volgende uit je granaatpouch in je hand (hoofdstuk 52).
+        if (!level.isClientSide && stack.isEmpty() && player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+            com.senne.imttech.guns.Gear.refillGrenade(serverPlayer, this, hand);
+        }
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
     }
 

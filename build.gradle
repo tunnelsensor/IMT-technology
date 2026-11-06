@@ -189,6 +189,14 @@ dependencies {
         }
     }
 
+    // Curios (hoofdstuk 52, stap 2): alleen om tegen te compileren (de API-jar in libs/); de mod werkt ook zonder Curios.
+    // Wil je het met Curios testen, zet dan de echte Curios-jar (9.5.1+1.21.1) in run/mods.
+    compileOnly files('libs/curios-neoforge-9.5.1+1.21.1-api.jar')
+
+    // Curios (hoofdstuk 52, stap 2): alleen om tegen te compileren (de API-jar in libs/); de mod werkt ook zonder Curios.
+    // Wil je het met Curios testen, zet dan de echte Curios-jar (9.5.1+1.21.1) in run/mods.
+    compileOnly files('libs/curios-neoforge-9.5.1+1.21.1-api.jar')
+
     // Example optional mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
     // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"
