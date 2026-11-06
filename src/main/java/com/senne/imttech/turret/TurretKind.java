@@ -7,14 +7,18 @@ import java.util.Locale;
 import net.minecraft.util.StringRepresentable;
 
 /**
- * De soorten torentjes. Ze hebben dezelfde kop en hetzelfde brein (TurretBlockEntity), maar
- * verschillen in wat ze nodig hebben en op wie ze schieten (zie TurretTargeting).
+ * De twee soorten torentjes (hoofdstuk 54, jouw notitie: "er mogen maar 2 types turrets zijn: laser turret en rocket
+ * turret, elke building gebruikt deze, ze worden aangestuurd via een security OS"). Ze hebben dezelfde kop en hetzelfde
+ * brein (TurretBlockEntity), maar verschillen in wat ze nodig hebben en op wie ze schieten (zie TurretTargeting).
  *
- * - ROCKET:    jouw torentje. Raketten als munitie. Schiet op monsters (en spelers alleen met
- *             PvP, nooit jou of je team).
- * - RAVEN:    in de Biebia's Industries-bunker (stroom van de reactor). Schiet op spelers en drones.
- * - SECURITY: in de Biebia's Industries Tower (stroom van de krachtcentrale). Schiet op indringers, en wie
- *             dat is, zegt de beveiligingskern van de toren (zie SecurityCores).
+ * - ROCKET:   raketten als munitie, en een laser. Hangt hij met een netwerkkabel aan jouw kern, dan volgt hij de regels
+ *             van die kern (de app Access); los werkt hij op zichzelf: monsters, en spelers alleen met PvP.
+ * - SECURITY: de <b>Laser Turret</b>: alleen een laser. Hij hoort altijd bij een beveiligingskern (via zijn netwerkkabel)
+ *             en schiet op wie die kern een indringer noemt: in de Biebia's Industries Tower en de bunker is dat iedereen
+ *             (de kern is van niemand tot je hem hackt), bij jou wat je in de app Access instelt.
+ *
+ * Het oude Raven-torentje van de bunker is sinds hoofdstuk 54 ook een laserturret (het blok raven_turret bestaat nog
+ * voor oude werelden en gedraagt zich precies zo).
  *
  * ALLE torentjes hebben stroom van het net nodig (jouw wens, 27 september): zonder stroom
  * hangt de loop omlaag en doen ze niets, en elk schot kost stroom. Knip je de kabel naar een
@@ -22,7 +26,6 @@ import net.minecraft.util.StringRepresentable;
  */
 public enum TurretKind implements StringRepresentable {
     ROCKET,
-    RAVEN,
     SECURITY;
 
     public static final Codec<TurretKind> CODEC = StringRepresentable.fromEnum(TurretKind::values);
@@ -38,36 +41,24 @@ public enum TurretKind implements StringRepresentable {
     }
 
     public double range() {
-        return switch (this) {
-            case ROCKET -> ImtConfig.Turrets.RANGE;
-            case RAVEN -> ImtConfig.Turrets.RAVEN_RANGE;
-            case SECURITY -> ImtConfig.Turrets.SECURITY_RANGE;
-        };
+        return this == ROCKET ? ImtConfig.Turrets.RANGE : ImtConfig.Turrets.SECURITY_RANGE;
     }
 
     public float laserDamage() {
-        return switch (this) {
-            case ROCKET -> ImtConfig.Turrets.LASER_DAMAGE;
-            case RAVEN -> ImtConfig.Turrets.RAVEN_LASER_DAMAGE;
-            case SECURITY -> ImtConfig.Turrets.SECURITY_LASER_DAMAGE;
-        };
+        return this == ROCKET ? ImtConfig.Turrets.LASER_DAMAGE : ImtConfig.Turrets.SECURITY_LASER_DAMAGE;
     }
 
     public int laserInterval() {
-        return switch (this) {
-            case ROCKET -> Math.round(ImtConfig.Turrets.LASER_INTERVAL);
-            case RAVEN -> Math.round(ImtConfig.Turrets.RAVEN_LASER_INTERVAL);
-            case SECURITY -> Math.round(ImtConfig.Turrets.SECURITY_LASER_INTERVAL);
-        };
+        return Math.round(this == ROCKET ? ImtConfig.Turrets.LASER_INTERVAL : ImtConfig.Turrets.SECURITY_LASER_INTERVAL);
     }
 
-    /** Blauw voor I.M.T-tech, rood voor Raven. */
+    /** Blauw: I.M.T-tech. */
     public BeamEffectPayload.Kind beam() {
-        return this == RAVEN ? BeamEffectPayload.Kind.RAVEN_LASER : BeamEffectPayload.Kind.DRONE_LASER;
+        return BeamEffectPayload.Kind.DRONE_LASER;
     }
 
-    /** Hoe hoog het schot klinkt (Raven lager en grommiger). */
+    /** Hoe hoog het schot klinkt. */
     public float pitch() {
-        return this == RAVEN ? 0.7f : 1.2f;
+        return 1.2f;
     }
 }

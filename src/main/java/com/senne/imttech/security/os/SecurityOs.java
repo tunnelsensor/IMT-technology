@@ -503,6 +503,7 @@ public final class SecurityOs {
                 close(player);
             }
             case "passwd" -> passwd(player, core, session, args.getString("pw"));
+            case "app_hide" -> hideApp(player, core, session, args.getString("app"), args.getBoolean("on"));
             case "auth_set" -> setAuth(player, core, session, args.getInt("len"), args.getInt("min"), args.getBoolean("old"));
             case "req_answer" -> answerRequest(player, core, session, args.getInt("id"), args.getBoolean("ok"));
             case "phone_block" -> blockPhone(player, core, session, args.getString("id"), args.getBoolean("on"));
@@ -643,6 +644,25 @@ public final class SecurityOs {
         }
         core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + ": " + text.toLowerCase(java.util.Locale.ROOT));
         notify(player, core, session, text, false);
+    }
+
+    /**
+     * Hoofdstuk 54 (jouw notitie: "op de security core apps kunnen installeren en verwijderen dat je daar enkel ziet staan
+     * wat je nodig hebt"): een app van het bureaublad halen of terugzetten. Alleen de eigenaar, en Settings zelf nooit
+     * (anders kom je er nooit meer bij).
+     */
+    private static void hideApp(ServerPlayer player, SecurityCoreBlockEntity core, Session session, String app, boolean hidden) {
+        if (!isOwner(player, core)) {
+            notify(player, core, session, "Only the owner can install or remove apps", true);
+            return;
+        }
+        if (app.isEmpty() || app.equals("SETTINGS")) {
+            return;
+        }
+        core.setAppHidden(app, hidden);
+        String name = app.charAt(0) + app.substring(1).toLowerCase(java.util.Locale.ROOT);
+        core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + ": " + (hidden ? "removed " : "installed ") + name);
+        notify(player, core, session, (hidden ? "Removed " : "Installed ") + name, false);
     }
 
     /** Een camera een stukje draaien of kantelen (de pijltjes bij het grote camerabeeld). */
@@ -1317,6 +1337,14 @@ public final class SecurityOs {
         data.putString("owner", core.ownerName());
         data.putBoolean("isOwner", owner);
         data.putBoolean("hasPassword", core.hasPassword());
+        // Hoofdstuk 54: op de kern zelf (en via de laptop) de apps die de eigenaar van het bureaublad haalde.
+        if (rights.full()) {
+            ListTag hidden = new ListTag();
+            for (String app : core.hiddenApps()) {
+                hidden.add(net.minecraft.nbt.StringTag.valueOf(app));
+            }
+            data.put("hidden", hidden);
+        }
         data.putBoolean("online", core.isOnline());
         data.putBoolean("remote", session.remote());
         data.putBoolean("phone", session.phone() != null);

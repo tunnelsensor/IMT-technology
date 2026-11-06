@@ -92,6 +92,10 @@ public final class HandcuffGameTests {
         check(!Handcuffs.instant(victim), "Een gezonde speler zou je twee seconden moeten vasthouden");
         check(Handcuffs.cannotCuff(captor, victim) == null, "De vanger zou hem moeten kunnen boeien: " + Handcuffs.cannotCuff(captor, victim));
         check(Handcuffs.cannotCuff(captor, captor) != null, "Jezelf boeien zou niet mogen");
+        // Alleen via de rug (hoofdstuk 54): draait hij zich om naar de vanger, dan kan het niet.
+        look(victim, 180);
+        check(Handcuffs.cannotCuff(captor, victim) != null, "Van voren boeien zou niet mogen");
+        look(victim, 0);
         // De rechtsklik begint het vasthouden; na holdSeconds zijn de boeien om, een tick eerder nog niet.
         InteractionResult result = cuffs.getItem().interactLivingEntity(cuffs, captor, victim, InteractionHand.MAIN_HAND);
         check(result == InteractionResult.CONSUME && captor.isUsingItem(), "De rechtsklik zou het vasthouden moeten beginnen");
@@ -103,6 +107,9 @@ public final class HandcuffGameTests {
         check(HandcuffsItem.progress(captor, cuffs, needed), "Na " + needed + " ticks zouden de boeien om moeten zijn");
         check(Handcuffs.isCuffed(victim), "Het slachtoffer zou geboeid moeten zijn");
         check(captor.getUUID().equals(Handcuffs.holderOf(victim)), "De vanger zou hem meteen moeten vasthouden");
+        check(victim.getZ() > captor.getZ() + 0.5, "De geboeide hoort vóór de vanger te staan (hoofdstuk 54), niet op z " + victim.getZ());
+        check(Math.abs(net.minecraft.util.Mth.wrapDegrees(victim.getYRot() - captor.getYRot())) < 1,
+                "De geboeide hoort dezelfde kant op te kijken als de vanger: " + victim.getYRot() + " / " + captor.getYRot());
         check(cuffs.getCount() == 1, "Eén paar boeien zou op moeten zijn, er zijn er " + cuffs.getCount());
         check(!captor.isUsingItem(), "Na het omdoen zou de knop los moeten zijn");
         // Geboeid: niets met je handen.
@@ -123,7 +130,8 @@ public final class HandcuffGameTests {
         // De vanger loopt weg: het slachtoffer staat meteen weer vlak achter hem (echt vast, geen lijn).
         teleport(helper, captor, 5.5, 3, 13.5);
         helper.runAfterDelay(3, () -> {
-            check(victim.distanceTo(captor) < 2.0, "Echt vast: hij zou vlak achter de vanger moeten staan, niet op " + victim.distanceTo(captor));
+            check(victim.distanceTo(captor) < 2.0, "Echt vast: hij zou vlak voor de vanger moeten staan, niet op " + victim.distanceTo(captor));
+            check(victim.getZ() > captor.getZ(), "Vast: hij hoort vóór de vanger te staan (naar het zuiden), niet op z " + victim.getZ());
             check(captor.getUUID().equals(Handcuffs.holderOf(victim)), "Op 6 blokken zou de vanger hem nog vast moeten hebben");
             // Ineens heel ver weg (het slachtoffer staat nu vlak achter hem, op 13.5): dan is hij hem kwijt, maar de boeien blijven om.
             teleport(helper, captor, 5.5, 3, 30.5);
@@ -184,6 +192,8 @@ public final class HandcuffGameTests {
         check(robot.state() == RobotState.CUFFED, "Een geboeide robot die opstaat zou Handcuffed moeten zijn, niet " + robot.state());
         // Een soldaat: gezond niet meteen, bijna dood wel. Aan de lijn komt hij mee.
         RavenSoldierEntity soldier = helper.spawn(ModEntities.RAVEN_SOLDIER.get(), new BlockPos(14, 3, 7));
+        soldier.setYRot(0); // naar het zuiden, met zijn rug naar de vanger (die ten noorden van hem komt)
+        soldier.yBodyRot = 0;
         check(!Handcuffs.instant(soldier), "Een gezonde soldaat zou je moeten vasthouden");
         soldier.setHealth(1.0f);
         check(Handcuffs.instant(soldier), "Een soldaat die bijna dood is zou meteen te boeien moeten zijn");

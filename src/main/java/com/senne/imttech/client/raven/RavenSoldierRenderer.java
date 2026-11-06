@@ -46,6 +46,13 @@ public class RavenSoldierRenderer extends HumanoidMobRenderer<RavenSoldierEntity
 
         @Override
         public void prepareMobModel(RavenSoldierEntity soldier, float limbSwing, float limbSwingAmount, float partialTick) {
+            if (com.senne.imttech.cuffs.Handcuffs.isCuffed(soldier)) {
+                // Geboeid (hoofdstuk 54): de handen op de rug.
+                rightArmPose = com.senne.imttech.client.cuffs.CuffArmPoses.CUFFED.getValue();
+                leftArmPose = com.senne.imttech.client.cuffs.CuffArmPoses.CUFFED.getValue();
+                super.prepareMobModel(soldier, limbSwing, limbSwingAmount, partialTick);
+                return;
+            }
             rightArmPose = soldier.isAggressive() ? ArmPose.CROSSBOW_HOLD : ArmPose.ITEM;
             leftArmPose = ArmPose.EMPTY;
             super.prepareMobModel(soldier, limbSwing, limbSwingAmount, partialTick);

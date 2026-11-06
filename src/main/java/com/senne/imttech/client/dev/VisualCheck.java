@@ -947,6 +947,13 @@ public final class VisualCheck {
             t.shot(3, "98_dome_arrow");
             t.open(20, () -> new DomeScreen(DOME));
             t.shot(20, "99_dome_screen");
+            // Het persoonlijke schild als blauwe bol (hoofdstuk 54), van buitenaf.
+            t.close(0);
+            t.step(5, () -> com.senne.imttech.client.ImtClientEvents.sendAction(com.senne.imttech.imt.ImtAction.TOGGLE_SHIELD));
+            t.camera(10, CameraType.THIRD_PERSON_FRONT);
+            t.shot(15, "99b_personal_shield_sphere");
+            t.camera(0, CameraType.FIRST_PERSON);
+            t.step(0, () -> com.senne.imttech.client.ImtClientEvents.sendAction(com.senne.imttech.imt.ImtAction.TOGGLE_SHIELD));
             t.close(0);
             t.view(0, 3.5, -59, 38.5, 160, -35);
             t.shot(20, "99_dome_inside");
@@ -1160,8 +1167,9 @@ public final class VisualCheck {
                         new BlockPos(62, -60, 57), 0);
                 for (Entity soldier : new Entity[] {calm, aiming}) {
                     if (soldier instanceof net.minecraft.world.entity.Mob mob) {
-                        mob.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND,
-                                new ItemStack(ModItems.RAVEN_RIFLE.get()));
+                        // Zijn eigen wapen (hoofdstuk 54: een Glock of een lasergeweer).
+                        mob.finalizeSpawn(level, level.getCurrentDifficultyAt(mob.blockPosition()),
+                                net.minecraft.world.entity.MobSpawnType.SPAWN_EGG, null);
                     }
                 }
                 if (aiming instanceof net.minecraft.world.entity.Mob mob) {
@@ -3408,8 +3416,21 @@ public final class VisualCheck {
             t.lookAt(10, Vec3.atBottomCenterOf(c.offset(2, 0, 4)).add(0, 1.2, 0));
             t.key(10, () -> Minecraft.getInstance().options.keyUse, true);
             t.shot(25, "hc01_handcuffing_countdown");
-            t.shot(40, "hc02_handcuffed_with_rope");
-            t.key(0, () -> Minecraft.getInstance().options.keyUse, false);
+            t.key(23, () -> Minecraft.getInstance().options.keyUse, false); // het boeien duurt twee seconden; niet blijven klikken (dat laat weer los)
+            // Bram is een nep-speler zonder spel erachter: de zet die hem vóór je trekt, voert niemand uit. Dus zetten we hem
+            // zelf op zijn plek (en de boeien om, mocht het aftellen net gemist zijn).
+            t.onServer(8, player -> {
+                ServerPlayer bram = player.serverLevel().getServer().getPlayerList().getPlayerByName("Bram");
+                if (bram != null) {
+                    if (!com.senne.imttech.cuffs.Handcuffs.isCuffed(bram)) {
+                        com.senne.imttech.cuffs.Handcuffs.cuff(player, bram);
+                    }
+                    bram.teleportTo(player.serverLevel(), player.getX(), player.getY(), player.getZ() - ImtConfig.Handcuffs.HOLD_DISTANCE, 180, 0);
+                    bram.setYBodyRot(180);
+                    bram.setYHeadRot(180);
+                }
+            });
+            t.shot(50, "hc02_handcuffed_hands_behind_back"); // het actiebalk-bericht van het aftellen blijft drie seconden staan
             t.lookAt(5, Vec3.atBottomCenterOf(c.offset(4, 0, 4)).add(0, 1.2, 0));
             t.tap(10, () -> Minecraft.getInstance().options.keyUse);
             t.stand(30, c.getX() + 2.5, c.getY(), c.getZ() + 11.5, 180, 10);
@@ -3486,6 +3507,23 @@ public final class VisualCheck {
             t.view(0, y.getX() + 70.5, y.getY() + 40, y.getZ() + 290.5, 0, 0);
             t.lookAt(60, new Vec3(y.getX() + 17.5, y.getY() + 4, y.getZ() + 290.5));
             t.shot(120, "rm03_random_bunker_from_the_side");
+        }
+
+        // --- Hoofdstuk 54: de generatorkamer van de toren, als los stuk: de poort van rayshields met de lezer en de bewaker,
+        // binnenin de cellen, de kast en het rek, en de zwakke plek in de oostmuur.
+        if (want("powerroom")) {
+            BlockPos y = POWER_YARD;
+            t.view(0, y.getX() + 20.5, y.getY() + 2, y.getZ() + 26.5, 180, 4);
+            t.onServer(40, player -> com.senne.imttech.structures.RoomPlacer.placeRoom(player.serverLevel(), "power", POWER_YARD,
+                    net.minecraft.world.level.block.Rotation.NONE));
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.view(60, y.getX() + 20.5, y.getY() + 2, y.getZ() + 23.5, 180, 4);
+            t.shot(40, "pr01_generator_room_gate");
+            t.view(0, y.getX() + 20.5, y.getY() + 2, y.getZ() + 18.5, 180, 6);
+            t.shot(30, "pr02_inside_the_generator_vault");
+            t.view(0, y.getX() + 31.5, y.getY() + 2, y.getZ() + 19.5, 90, 4);
+            t.shot(30, "pr03_service_hatch");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }
 
         // --- Inbreken (hoofdstuk 12, 9 oktober): een keycardlezer hacken met de Bypass Kit. Het
@@ -4049,6 +4087,8 @@ public final class VisualCheck {
 
     /** Hoofdstuk 51: twee torens en een bunker uit kamers (zie "rooms"), heel ver weg (ze zijn groot). */
     private static final BlockPos ROOMS_YARD = new BlockPos(-700, -60, -700);
+    /** Hoofdstuk 54: de generatorkamer van de toren, alleen (zie "powerroom"). */
+    private static final BlockPos POWER_YARD = new BlockPos(-900, -60, -700);
 
     /**
      * Twee willekeurige torens uit kamers naast elkaar (op base en 60 blokken oostelijker), en 250 blokken zuidelijker een
@@ -4219,13 +4259,17 @@ public final class VisualCheck {
             }
         }
         ServerPlayer bram = DevWorld.fakePlayerAt(level, "Bram", base.offset(2, 0, 4));
-        bram.teleportTo(level, base.getX() + 2.5, base.getY(), base.getZ() + 4.5, 0, 0); // naar het zuiden: naar jou
+        bram.teleportTo(level, base.getX() + 2.5, base.getY(), base.getZ() + 4.5, 180, 0); // naar het noorden: met zijn rug naar jou (hoofdstuk 54)
+        bram.setYBodyRot(180);
+        bram.setYHeadRot(180);
+        bram.yBodyRotO = 180;
+        bram.yHeadRotO = 180;
         com.senne.imttech.cuffs.Handcuffs.release(bram, null, false);
-        if (DevWorld.spawnStill(level, com.senne.imttech.registry.ModEntities.RAVEN_SOLDIER.get(), base.offset(4, 0, 4), 0)
+        if (DevWorld.spawnStill(level, com.senne.imttech.registry.ModEntities.RAVEN_SOLDIER.get(), base.offset(4, 0, 4), 180)
                 instanceof com.senne.imttech.raven.RavenSoldierEntity soldier) {
             soldier.setHealth(1.0f);
         }
-        if (DevWorld.spawnStill(level, com.senne.imttech.registry.ModEntities.GUARD_ROBOT.get(), base.offset(0, 0, 6), 0)
+        if (DevWorld.spawnStill(level, com.senne.imttech.registry.ModEntities.GUARD_ROBOT.get(), base.offset(0, 0, 6), 90)
                 instanceof com.senne.imttech.robot.GuardRobotEntity robot) {
             robot.setParts(com.senne.imttech.robot.RobotParts.DEFAULT);
             robot.setOwner(player);
@@ -5285,7 +5329,13 @@ public final class VisualCheck {
         if (level.getBlockEntity(rocket.east()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
             generator.fill(100_000);
         }
-        level.setBlockAndUpdate(new BlockPos(83, -60, 60), ModBlocks.RAVEN_TURRET.get().defaultBlockState());
+        BlockPos laser = new BlockPos(83, -60, 60);
+        level.setBlockAndUpdate(laser, ModBlocks.SECURITY_TURRET.get().defaultBlockState());
+        level.setBlockAndUpdate(laser.north(), ModBlocks.SECURITY_CORE.get().defaultBlockState());
+        level.setBlockAndUpdate(laser.north().below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+        if (level.getBlockEntity(laser.north().below()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
+            generator.fill(100_000);
+        }
         BlockPos off = new BlockPos(87, -60, 60);
         level.setBlockAndUpdate(off, ModBlocks.ROCKET_TURRET.get().defaultBlockState());
         level.setBlockAndUpdate(off, level.getBlockState(off).setValue(com.senne.imttech.turret.TurretBlock.ENABLED, false));

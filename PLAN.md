@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 408 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 413 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -4612,6 +4612,69 @@ schild, de koepel, het laserkanon, apps op de kern) komen in stap 2, en bij twee
   glas naast zit. Zo is een raam één raam met één rand. Ook een blok dat met een commando of in een structuur neergezet
   is, kijkt naar zijn buren (`BatteryGlassBlock.onPlace`).
 
+**Mijn invulling bij stap 2** (zeg het als je het anders wil):
+- **Het persoonlijke schild** (notitie 35) is een zachtblauwe bol van ruim een blok om je heen (`PersonalShieldLayer`), die
+  iedereen ziet, zachtjes ademt, en flikkert als je batterij onder de 15% zit; in een EMP of onzichtbaar: geen bol.
+- **De koepel** (notitie 38) is een hele bol in plaats van een halve: op een berg beschermt hij ook de helling eronder,
+  even diep als hij hoog reikt. Getekend als hele bol (`DomeRenderer`), en `contains`/`defend` kijken niet meer naar de
+  hoogte.
+- **Het laserkanon in je eigen beeld** (notitie 45): de arm is een gestrekte arm met de hand vooruit (geen geknikte
+  hand meer), de lichtkring op de handpalm, en de terugslag duwt de hand omhoog (`LaserCannonHand`).
+- **Raven-soldaten** (notitie 65): het Raven-geweer is weg (item, model, plaatje, taal). Elke soldaat krijgt bij zijn
+  spawn een wapen van de mod: de helft een **Glock 19** (stalen onderdelen, echte kogels met een vliegtijd en hulzen), de
+  rest een **laser rifle** of **laser pistol** met een volle cel (dezelfde stralen als die van jou, via
+  `LaserGuns.fireFrom`); 35% draagt ook één of twee **granaten** (40% EMP, anders frag): verstop je je vlakbij achter een
+  muur, dan gooit hij er een over; op een drone gooit hij een EMP. Zijn wapen valt in 8% van de gevallen. Nieuwe getallen
+  onder `[raven]`: `spread` 4°, `grenadeChance`, `grenadeInterval`, `weaponDropChance`. Het pak heeft een vizier op de
+  helm, magazijntasjes en een borstband op het vest, een radio met antenne op de rug, een mes op het been en een
+  naamplaatje (`generate_textures.raven_soldier`).
+- **Twee soorten torentjes** (notitie 66): de **Rocket Turret** (zoals hij was) en de **Laser Turret** (de vroegere
+  Security Turret). `TurretKind.RAVEN` is weg; het blok `raven_turret` bestaat nog voor oude werelden en gedraagt zich als
+  een Laser Turret ("Laser Turret (old bunker)", in geen enkel creative-tabblad). Een Laser Turret hoort via zijn
+  netwerkkabel bij een beveiligingskern en schiet op wie die kern een indringer noemt: in de toren en de bunker
+  iedereen (van niemand), bij jou wat Access zegt. De **bunker** heeft daarom nu een eigen **beveiligingskern** bij de
+  reactor (van niemand; met de laptop te hacken), elke kabel van de bunker is ook een netwerkkabel, en de zes torentjes
+  zijn Laser Turrets. De config `[turrets]` verloor `ravenLaserDamage`, `ravenLaserInterval` en `ravenRange`.
+- **Raiddrones** (notitie 67): een raid begint **buiten een basis**. Een basis is elke beveiligingskern (ook die van
+  Biebia's) met haar zone, of zonder zone `baseSize` (16) blokken rondom de kern; de drones komen minstens `baseMargin`
+  (12) blokken daarbuiten aan, in dezelfde richting verder naar buiten geschoven, en boven de grond als die daar hoger
+  ligt. Ze onthouden wie ze kwamen halen (`RaidTarget`, tot 600 blokken) in plaats van alleen de dichtstbijzijnde speler
+  binnen 48. Een blok van een **actieve zone** breken ze niet (dat kon al niet): daar gooien ze een **sticky frag** op
+  (om de `breachInterval` ticks, het alarm van de zone gaat af); zit hun doelwit in een zone, dan gooien ze een
+  **EMP-granaat** op het dichtstbijzijnde torentje of de dichtstbijzijnde laserzender van die kern (`deviceReach` 24,
+  om de `empInterval` ticks, alleen met vrij zicht en niet zo dichtbij dat de EMP henzelf raakt).
+- **De toren** (notitie 68): een nieuwe verdieping **power** (de generatorkamer) zit er **altijd** in, net als security
+  (`TowerLayout.POWER`; 5 tot 8 verdiepingen, dus minstens 3 gekozen). Een kluis van obsidiaan met vier reactorcellen
+  (een warmtegenerator in een ring van lava achter glas), de **stroomkast** (de hoofdschakelaar: hij voedt de stijgleiding,
+  dus de hele toren) en een echte **serverkast** met CPU, RAM, SSD en fan. De enige doorgang is een **poort van
+  rayshields** (zes zenders, drie rijen); rechts ervan de keycardlezer "Power door". Biebia's kern krijgt bij zijn eerste
+  tick het diagram **"Generator room"** en de groep **staff** (`TowerGuards.installBiebiaLogic`): een staff-kaart zet
+  de poort acht seconden uit, een andere kaart geeft alarm. De **bewakers** (soldaten met de markering `raven_guard`:
+  in de lobby en voor de poort) laten bij hun dood zo'n kaart vallen, op dat moment op de kern geschreven; op de
+  beveiligingsverdieping staat een gewone soldaat. De **zwakke plek**: in de oostmuur van de kluis zit een luik van twee
+  gebarsten deepslate-tegels met het bordje "VENT 3B - DO NOT BLOCK" (obsidiaan hak je minuten, dit in seconden); het
+  staat ook in `/home/biebia/power.txt` op de kern. De **uitleg door voorbeelden**: bordjes ("GENERATOR ROOM - STAFF
+  CARD", "MAIN CABINET - ALL FLOORS", "LOGIC SERVER - RUNS THE GATE", "GEN 1 - LAVA = HEAT = POWER"), het briefje, en na
+  het hacken het diagram in de app Logic. De beveiligingsverdieping heeft geen krachtcentrale meer: de stroom komt via de
+  stijgleiding naar de kern en de vier torentjes (vroeger hing het torentje in de noordoosthoek nergens aan). De zenders
+  van de poort heten "Power gate" via `TowerGuards.refreshBiebiaDevices` (een kern van niemand heeft geen eigenaar met
+  een apparatenlijst). Biebia's bewakers lopen door de laserwanden van hun eigen toren of bunker (in een gehackte toren
+  branden ze). De klassieke toren in één stuk (`biebia_tower.nbt`) is niet veranderd.
+- **Het datacenter** (notities 75 en 77): alleen het **brein** van I.M.T schaalt anders: zes CPU's (of GPU's) tellen
+  samen als één rekenpunt (`cpusPerPower` 6 onder `[logic]`), dus een handvol racks maakt haar traag en een echt
+  datacenter (dertig racks) vlot; je redstone (Logic) rekent nog gewoon per CPU, anders werden al je diagrammen zes keer
+  zo traag. Racks hoeven niet meer tegen elkaar: alle racks die met een netwerkkabel (of PoE) aan de kern hangen, zijn
+  samen één server (`LogicServer`, als "no cable = dead" aan staat, zoals standaard).
+- **Apps op de kern** (notitie 105, tweede helft): in **Settings** staat rechts "Apps on this desktop" met een vinkje per
+  app (twee kolommen); de eigenaar haalt er apps mee van het bureaublad (`HiddenApps` op de kern, ook via de laptop; de
+  telefoon en de Computers hebben hun eigen rechten) en zet ze terug; Settings zelf kan niet weg. Opdracht `app_hide`.
+- **De handboeien** (notitie 109): boeien kan **alleen via de rug** (achter hem, de halve cirkel en een beetje meer:
+  `Handcuffs.behind`; van voren: "You can only cuff someone from behind"). Wie geboeid is, heeft zijn handen met de
+  boeien **op zijn rug** (armhouding `CUFFED`), wie hem vasthoudt heeft zijn handen **vooruit** aan de boeien
+  (`HOLDING`; allebei via `enumextensions.json`), en de gevangene staat **recht vóór** de vanger (`holdDistance` 1.4),
+  met zijn gezicht naar voren (een speler wordt met een "teleport" op zijn plek omgedraaid). Een korte ketting van je
+  handen naar zijn polsen in plaats van het touw.
+
 - [x] **1. Notitie 7, de dreigingsscan** ("de vorm van de pijltjes is niet zo goed, en naar achteren staan ze onder je
       hotbar") — echte pijlpunten (een driehoek met een donker randje en een inkeping, gedraaid in de richting) op een
       **ovaal** rond het midden dat onderaan boven je hartjes en je werkbalk blijft; de afstand staat aan de binnenkant
@@ -4662,15 +4725,53 @@ schild, de koepel, het laserkanon, apps op de kern) komen in stap 2, en bij twee
       (U), `FirearmRenderer` (de patroon eruit, de slede), `ImtKeys.GUN_UNLOAD`, `ImtClientEvents` (de ping). Test
       `unload_takes_rounds_out_of_magazine_and_chamber`; screenshot `gl14b_magazine_unloading`; showcase 113 en 114
       aangepast.
-- [ ] **12. Stap 2: de grote notities** — 35 (het persoonlijke schild als blauwe bol), 38 (de koepel ook onder de
-      generator), 45 (het laserkanon in je eigen beeld), 65 (Raven-soldaten: mooier, met de wapens van de mod, het
-      Raven-geweer weg), 66 (alleen een laser- en een raketturret, allebei via een security OS), 67 (raiddrones: eerst
-      de verdediging slopen, alleen spawnen buiten een basis met een kern), 68 (de toren: één generatorkamer achter
-      rayshields, een zwakke plek, keycards van bewakers, en de toren legt de beveiliging uit), 75/77 (een datacenter
-      van minstens 30 racks, racks los van elkaar via kabels), 105 (tweede helft: apps op de kern installeren en
-      verwijderen), 109 (de handboeien: alleen via de rug, de handen op de rug, de geboeide vóór je).
+- [x] **12. Notitie 35, het persoonlijke schild** — zie Mijn invulling bij stap 2; `PersonalShieldLayer` (op de
+      spelerrenderer, naast `GearLayer`); screenshot `99b_personal_shield_sphere` (`-Ponly=dome`); showcase aangepast.
+- [x] **13. Notitie 38, de koepel ook onder de generator** — `DomeGeneratorBlockEntity.contains`, `ImtDomes.defend`,
+      `DomeRenderer` (hele bol); screenshots `97_dome_*`; showcase aangepast.
+- [x] **14. Notitie 45, het laserkanon in je eigen beeld** — `LaserCannonHand` (gestrekte arm); screenshots `43*`.
+- [x] **15. Notitie 65, de Raven-soldaten** — zie Mijn invulling bij stap 2; `RavenSoldierEntity` (het wapen, de
+      granaten, `performRangedAttack` met een kogel of een straal), `RavenCombatGoal` (de granaten), `LaserGuns.fireFrom`
+      en `scatter`, `ModItems` (het Raven-geweer weg), `generate_textures.raven_soldier`, config `[raven]`. Test
+      `raven_soldier_shoots_players` aangepast (een Glock of een lasergeweer); screenshots `h01`-`h03` (`-Ponly=raven`);
+      showcase "Raven soldiers" aangepast.
+- [x] **16. Notitie 66, twee soorten torentjes** — zie Mijn invulling bij stap 2; `TurretKind` (ROCKET, SECURITY),
+      `TurretBlock`, `TurretBlockEntity`, `TurretTargeting`, `TurretRenderer`, `ModBlocks` (`raven_turret` als Laser
+      Turret), `ModCreativeTabs`, de taal, config `[turrets]`; `generate_bunker.py` en `generate_bunker_rooms.py` (de
+      kern bij de reactor, `security_turret`, elke kabel ook netwerk), de bunkerbestanden opnieuw gemaakt. Tests
+      `laser_turret_of_nobody_shoots_players` (was `raven_turret_shoots_players`), `biebia_bunker` (zes Laser Turrets en
+      één kern), `bunker_turrets_have_power`, `creative_tabs_hold_every_item` (het oude torentje staat nergens),
+      `StructureCheck`; screenshots `t01`-`t05` (`-Ponly=turrets`), `b01`-`b09` (`-Ponly=bunker`); showcase
+      "Automatic turrets" aangepast.
+- [x] **17. Notitie 67, de raiddrones** — zie Mijn invulling bij stap 2; `ImtRaids` (`basesNear`, `outsideBases`),
+      `RaidDroneEntity` (`raidTarget`, `throwStickyFrag`, `empDefences`), config `[raids]` (`breachInterval`,
+      `empInterval`, `deviceReach`, `baseMargin`, `baseSize`). Tests `raid_starts_outside_a_base` en
+      `raid_drone_blasts_a_zone_wall` (nieuw), `raid_drones_come_for_you` telt alleen zijn eigen drones; showcase
+      "Raid drones" aangepast.
+- [x] **18. Notitie 68, de toren** — zie Mijn invulling bij stap 2; `generate_tower_rooms.py` (`build_power_room`,
+      `security_floor` zonder krachtcentrale, de markeringen `soldier` en `guard`), `structure/tower/power.nbt` (nieuw)
+      en de andere stukken opnieuw gemaakt, `TowerLayout.POWER`, `TowerPiece` (de markeringen), `RoomPlacer.placeRoom`,
+      `structures/TowerGuards` (nieuw: de bewaker, de staff-kaart, het diagram, het telefoonboek), `RavenSoldierEntity`
+      (`keycardGuard`, de kaart valt), `SecurityCoreBlockEntity.ensureSystem` (Biebia's diagram), `LogicRunner.tick`,
+      `SystemDefaults` (`/home/biebia/power.txt`), `LaserWallBlock` (de bewakers lopen erdoor). Tests
+      `tower_rooms_follow_the_rules_and_exist` (power altijd, met alles erin), `tower_guard_drops_a_staff_keycard` en
+      `biebia_core_installs_the_generator_room_logic` (nieuw); screenshots `pr01`-`pr03` (`-Ponly=powerroom`); showcase
+      "Towers and bunkers built from rooms" aangepast.
+- [x] **19. Notities 75 en 77, het datacenter** — zie Mijn invulling bij stap 2; `LogicStats.brainPower`, config
+      `cpusPerPower`, `LogicServer` (racks via het netwerk); tests `DatacenterGameTests` (het brein per zes CPU's) en
+      `brain_reaction_time` aangepast.
+- [x] **20. Notitie 105 (tweede helft), apps op de kern** — zie Mijn invulling bij stap 2; `SecurityCoreBlockEntity`
+      (`hiddenApps`), `SecurityOs` (`app_hide`, "hidden" in de momentopname), `SecurityOsScreen` (`shows`, de lijst in
+      Settings, 400 x 200). Test `owner_removes_apps_from_the_core_desktop`; screenshot `au02_settings_auth_codes`
+      (`-Ponly=auth`); showcase "Security OS desktop" aangepast.
+- [x] **21. Notitie 109, de handboeien** — zie Mijn invulling bij stap 2; `Handcuffs` (`behind`, `hold`, `face`),
+      `CuffArmPoses` (nieuw), `enumextensions.json`, `CuffRenderer`, `RavenSoldierRenderer`, config `holdDistance`,
+      de taal. `HandcuffGameTests` aangepast (van voren mag niet, de gevangene vóór je, dezelfde kant op); screenshots
+      `hc01`-`hc03` (`-Ponly=cuffs`); showcase "Handcuffs" aangepast.
 
-**Vragen** (de notities zijn nog niet leeg; dat doe ik als stap 2 klaar is):
+De notities zijn leeg (alleen de kop staat er nog).
+
+**Vragen**:
 - Notitie 76 (Logic: names, sums and loops) zegt alleen "sd". Een tikfout, of bedoelde je iets?
 - Notitie 62, "stromende stroom of andere dingen niet door muren zonder x-ray": waar zag je dat? De gele streepjes en het
   vakje over een open kabel verdwijnen bij mij achter een muur; over een kabel in een muur zie je ze alleen met de xray
@@ -4683,6 +4784,18 @@ schild, de koepel, het laserkanon, apps op de kern) komen in stap 2, en bij twee
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **De generatorkamer van de toren, de bewakers en het diagram (hoofdstuk 54)**: gezien op screenshots (`-Ponly=powerroom`)
+      als los stuk, en met tests, maar niet in een echte toren gespeeld. Probeer: een nieuwe wereld, `/locate structure
+      imttech:biebia_tower`, versla de bewaker in de lobby, houd zijn staff-kaart tegen de lezer "Power door" (de poort
+      moet acht seconden uitgaan en in het logboek van de kern komt "Staff card at the generator room"), hak het luik
+      VENT 3B weg, en trek de stroomkast eruit (de hele toren moet donker worden). Hack de kern en kijk of "Generator
+      room" in de app Logic staat en de zenders "Power gate" heten in Devices.
+- [ ] **Raiddrones tegen een zone (hoofdstuk 54)**: alleen met tests. Probeer: een zone met torentjes, wacht op een raid
+      (of `/imttech raid`), en kijk of de drones buiten je basis aankomen, sticky frags op je muur gooien en EMP's op je
+      torentjes.
+- [ ] **Raven-soldaten met de wapens van de mod (hoofdstuk 54)**: gezien op screenshots, de bunker niet opnieuw gespeeld.
+      Probeer: de bunker, en kijk of de soldaten met Glocks en lasergeweren je raken, of de granaten over muren komen,
+      en of de Laser Turrets van de bunker op je schieten tot je de kern bij de reactor hackt.
 - [ ] **Torens en bunkers uit kamers (hoofdstuk 51)**: gezien op screenshots (`-Ponly=rooms`, en showcase 112) op vlak land,
       maar niet in een echte wereld. Probeer: `/locate structure imttech:biebia_tower` in een nieuwe wereld en kijk of de
       verdiepingen netjes op elkaar staan (de terrassen, de liftkoker), of de kern het hele gebouw beveiligt en of de

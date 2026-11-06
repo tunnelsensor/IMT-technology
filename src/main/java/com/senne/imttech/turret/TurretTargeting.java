@@ -18,9 +18,8 @@ import org.jetbrains.annotations.Nullable;
  * Spelers alleen als PvP aan staat op de server, en nooit de eigenaar of iemand uit zijn team.
  * Dieren, dorpelingen, je eigen huisdieren en I.M.T-drones laat hij met rust.
  *
- * RAVEN-torentje (in de bunker): spelers (niet in creative) en I.M.T-drones.
- *
- * BEVEILIGINGSTORENTJE (in de Biebia's Industries Tower): wat de beveiligingskern een indringer noemt.
+ * LASERTURRET (SECURITY; in de Biebia's Industries Tower en de bunker, of van jou): wat zijn beveiligingskern een
+ * indringer noemt. Een kern van niemand (de toren, de bunker) noemt iedereen een indringer.
  *
  * Staat een Biebia's Industries-torentje in het gebied van een beveiligingskern van ZIJN eigenaar, dan volgt
  * het de regels van die kern (de Access-app op de desktop): vertrouwde spelers niet, monsters en
@@ -45,9 +44,6 @@ public final class TurretTargeting {
                 return false;
             }
             return com.senne.imttech.security.SecurityCores.isIntruder(level, core, entity);
-        }
-        if (kind == TurretKind.RAVEN) {
-            return entity instanceof DroneEntity || entity instanceof Player player && canHurt(player);
         }
         if (ownerId != null && entity instanceof OwnableEntity pet && ownerId.equals(pet.getOwnerUUID())) {
             return false;

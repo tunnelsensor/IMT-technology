@@ -2,14 +2,13 @@ package com.senne.imttech.raven;
 
 import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.drone.DroneEntity;
-import com.senne.imttech.network.BeamEffectPayload;
-import com.senne.imttech.network.ModNetwork;
 import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.registry.ModSounds;
-import com.senne.imttech.shield.ImtDomes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
@@ -37,17 +36,26 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Een Raven-soldaat: bewaakt de Biebia's Industries-bunker (zie tools/generate_bunker.py).
  *
- * Hij loopt rond tot hij iemand ziet. Dan legt hij zijn lasergeweer aan (twee handen, zoals een
- * kruisboog) en schiet om de zoveel tijd een rode laserstraal: meteen raak, als hij je kan zien.
- * Hij schiet op spelers en op drones (jouw escorte krijgt het dus ook te verduren). Hoe hij
- * vecht staat in RavenCombatGoal: als ploeg, ze omsingelen je, zoeken een plek van waaruit ze je
- * zien als je je verstopt, en doen deuren open om bij je te komen.
+ * Hij loopt rond tot hij iemand ziet. Sinds hoofdstuk 54 (jouw notitie: "zorg dat ze de wapens die er nu aan de game
+ * zijn toegevoegd kunnen gebruiken, en het gun dat ze nu hebben moet volledig weg") draagt hij een wapen van de mod:
+ * de helft een <b>Glock 19</b> (echte kogels, met een vliegtijd), de rest een <b>laser rifle</b> of <b>laser pistol</b>
+ * (dezelfde stralen als die van jou). Een deel heeft ook <b>granaten</b> bij zich (frag of EMP): verstop je je achter een
+ * muur, dan gooit hij er een; op een drone gooit hij een EMP. Hij schiet op spelers en op drones (jouw escorte krijgt
+ * het dus ook te verduren). Hoe hij vecht staat in RavenCombatGoal: als ploeg, ze omsingelen je, zoeken een plek van
+ * waaruit ze je zien als je je verstopt, en doen deuren open om bij je te komen.
  *
  * Staat zijn doelwit onder een schildkoepel, dan stuit het schot op de koepel, net als bij de
  * raiddrones. Soms laat hij een Raven-onderdeel vallen (zie de loot table
- * entities/raven_soldier), zijn geweer nooit.
+ * entities/raven_soldier), en soms (8%) zijn wapen.
  */
 public class RavenSoldierEntity extends Monster implements RangedAttackMob {
+    /** Hoofdstuk 54: een bewaker van de toren met een keycard van die toren op zak (zie structures/TowerGuards). */
+    private boolean keycardGuard;
+    /** Hoeveel granaten hij nog heeft, en of het EMP's zijn (anders frags). */
+    private int grenades;
+    private boolean empGrenades;
+    private int grenadeCooldown;
+
     public RavenSoldierEntity(EntityType<? extends Monster> type, Level level) {
         super(type, level);
         this.xpReward = Math.round(ImtConfig.Raven.XP_REWARD);
@@ -88,11 +96,92 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob {
         targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, DroneEntity.class, true));
     }
 
-    /** Iedereen krijgt een lasergeweer. Dat valt nooit: het werkt alleen met Raven's eigen spullen. */
+    /** Zijn wapen (hoofdstuk 54): de helft een Glock 19, verder een laser rifle of laser pistol; soms granaten erbij. */
     @Override
     protected void populateDefaultEquipmentSlots(net.minecraft.util.RandomSource random, DifficultyInstance difficulty) {
-        setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(ModItems.RAVEN_RIFLE.get()));
-        setDropChance(EquipmentSlot.MAINHAND, 0.0f);
+        float roll = random.nextFloat();
+        ItemStack weapon;
+        if (roll < 0.5f) {
+            weapon = com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.GLOCK_19,
+                    com.senne.imttech.guns.GunMaterial.STEEL);
+        } else {
+            weapon = new ItemStack(roll < 0.8f ? ModItems.LASER_RIFLE.get() : ModItems.LASER_PISTOL.get());
+            com.senne.imttech.weapons.LaserGunItem.setCell(weapon, com.senne.imttech.weapons.EnergyCellItem.FULL);
+        }
+        setItemSlot(EquipmentSlot.MAINHAND, weapon);
+        setDropChance(EquipmentSlot.MAINHAND, ImtConfig.Raven.WEAPON_DROP_CHANCE);
+        grenades = random.nextFloat() < ImtConfig.Raven.GRENADE_CHANCE ? 1 + random.nextInt(2) : 0;
+        empGrenades = random.nextFloat() < 0.4f;
+    }
+
+    public boolean hasGrenades() {
+        return grenades > 0 && grenadeCooldown <= 0;
+    }
+
+    public void setKeycardGuard(boolean guard) {
+        this.keycardGuard = guard;
+    }
+
+    public boolean isKeycardGuard() {
+        return keycardGuard;
+    }
+
+    /** Een bewaker laat zijn keycard vallen (geschreven op de kern van de toren, groep "staff"). */
+    @Override
+    protected void dropCustomDeathLoot(ServerLevel level, net.minecraft.world.damagesource.DamageSource source, boolean recentlyHit) {
+        super.dropCustomDeathLoot(level, source, recentlyHit);
+        if (keycardGuard) {
+            ItemStack card = com.senne.imttech.structures.TowerGuards.staffCard(level, blockPosition());
+            if (!card.isEmpty()) {
+                spawnAtLocation(card);
+            }
+        }
+    }
+
+    public boolean hasEmpGrenades() {
+        return grenades > 0 && empGrenades;
+    }
+
+    /** Een granaat in een boogje naar {@code at} (frag, of een EMP). */
+    public void throwGrenade(Vec3 at) {
+        if (grenades <= 0 || !(level() instanceof ServerLevel level)) {
+            return;
+        }
+        com.senne.imttech.weapons.RollingGrenade grenade = com.senne.imttech.weapons.RollingGrenade.thrown(
+                empGrenades ? com.senne.imttech.weapons.RollingGrenade.Kind.EMP : com.senne.imttech.weapons.RollingGrenade.Kind.FRAG,
+                level, this);
+        Vec3 d = at.subtract(grenade.position());
+        double flat = Math.sqrt(d.x * d.x + d.z * d.z);
+        grenade.shoot(d.x, d.y + flat * 0.22, d.z, (float) Mth.clamp(0.55 + flat * 0.05, 0.6, 1.3), 2.0f);
+        level.addFreshEntity(grenade);
+        level.playSound(null, getX(), getY(), getZ(), SoundEvents.SNOWBALL_THROW, SoundSource.HOSTILE, 0.6f, 0.6f);
+        swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+        grenades--;
+        grenadeCooldown = Math.round(ImtConfig.Raven.GRENADE_INTERVAL);
+    }
+
+    @Override
+    public void aiStep() {
+        super.aiStep();
+        if (grenadeCooldown > 0) {
+            grenadeCooldown--;
+        }
+    }
+
+    @Override
+    public void addAdditionalSaveData(net.minecraft.nbt.CompoundTag tag) {
+        super.addAdditionalSaveData(tag);
+        tag.putInt("Grenades", grenades);
+        tag.putBoolean("EmpGrenades", empGrenades);
+        tag.putBoolean("KeycardGuard", keycardGuard);
+    }
+
+    @Override
+    public void readAdditionalSaveData(net.minecraft.nbt.CompoundTag tag) {
+        super.readAdditionalSaveData(tag);
+        grenades = tag.getInt("Grenades");
+        empGrenades = tag.getBoolean("EmpGrenades");
+        keycardGuard = tag.getBoolean("KeycardGuard");
     }
 
     @Override
@@ -111,6 +200,7 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob {
                 && !com.senne.imttech.weapons.Smoke.blocks(level(), getEyePosition(), entity.getEyePosition());
     }
 
+    /** Eén schot met wat hij in zijn hand heeft: een kogel uit de Glock, of een straal uit zijn lasergeweer. */
     @Override
     public void performRangedAttack(LivingEntity target, float power) {
         if (!(level() instanceof ServerLevel level)) {
@@ -118,14 +208,21 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob {
         }
         Vec3 from = getEyePosition().add(getViewVector(1.0f).scale(0.6)).add(0, -0.25, 0);
         Vec3 to = target.getBoundingBox().getCenter();
-        playSound(ModSounds.DRONE_LASER.get(), 0.9f, 0.7f + random.nextFloat() * 0.1f);
-        Vec3 shield = ImtDomes.blockedAt(level, to, from, null, Math.round(ImtConfig.Dome.COST_LASER));
-        if (shield != null) {
-            ModNetwork.sendNear(level, position(), 64, new BeamEffectPayload(from, shield, BeamEffectPayload.Kind.RAVEN_LASER));
+        Vec3 look = to.subtract(from).normalize();
+        ItemStack weapon = getMainHandItem();
+        if (com.senne.imttech.guns.FirearmItem.typeOf(weapon) != null) {
+            // Een echte kogel (hoofdstuk 52): die vliegt, zakt, en stuit op een koepel (zie BulletEntity).
+            Vec3 direction = com.senne.imttech.weapons.LaserGuns.scatter(look, Math.toRadians(ImtConfig.Raven.SPREAD), random);
+            com.senne.imttech.guns.BulletEntity.shoot(level, this, com.senne.imttech.guns.FirearmType.GLOCK_19,
+                    ImtConfig.Raven.LASER_DAMAGE, direction);
+            level.playSound(null, getX(), getEyeY(), getZ(), ModSounds.GLOCK_FIRE.get(), SoundSource.HOSTILE, 1.0f,
+                    0.9f + random.nextFloat() * 0.1f);
+            com.senne.imttech.guns.CasingEntity.eject(level, this);
             return;
         }
-        target.hurt(damageSources().mobAttack(this), ImtConfig.Raven.LASER_DAMAGE);
-        ModNetwork.sendNear(level, position(), 64, new BeamEffectPayload(from, to, BeamEffectPayload.Kind.RAVEN_LASER));
+        com.senne.imttech.weapons.GunType type = com.senne.imttech.weapons.LaserGunItem.typeOf(weapon);
+        com.senne.imttech.weapons.LaserGuns.fireFrom(level, this, type == null ? com.senne.imttech.weapons.GunType.RIFLE : type,
+                from, look, ImtConfig.Raven.LASER_DAMAGE, Math.toRadians(ImtConfig.Raven.SPREAD));
     }
 
     @Override

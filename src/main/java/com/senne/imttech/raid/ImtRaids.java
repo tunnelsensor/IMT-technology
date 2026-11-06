@@ -6,7 +6,11 @@ import com.senne.imttech.drone.ImtDrones;
 import com.senne.imttech.imt.ImtData;
 import com.senne.imttech.imt.ImtServer;
 import com.senne.imttech.network.ImtMessagePayload;
+import com.senne.imttech.security.zone.ZoneBox;
+import com.senne.imttech.security.zone.ZoneData;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
@@ -17,7 +21,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.level.BlockEvent;
@@ -39,6 +45,10 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
  *
  * Alles wordt per speler bijgehouden en niet opgeslagen: na een herstart begint de klok
  * opnieuw. Dat is expres - je wil niet inloggen en meteen een raid over je heen krijgen.
+ *
+ * Sinds hoofdstuk 54 (jouw notitie) begint een raid altijd <b>buiten een basis</b>: een basis is een beveiligingskern
+ * met zijn zone (of, zonder zone, BASE_SIZE blokken rondom de kern), en de drones komen minstens BASE_MARGIN blokken
+ * daarbuiten aan. Zit je in een beschermde zone, dan moeten ze eerst door je verdediging heen: zie RaidDroneEntity.
  */
 public final class ImtRaids {
     private ImtRaids() {}
@@ -173,16 +183,20 @@ public final class ImtRaids {
     /** Stuurt een golf raiddrones op deze speler af. Geeft terug hoeveel er echt kwamen. */
     public static int startRaid(ServerPlayer player, int count) {
         ServerLevel level = player.serverLevel();
+        List<ZoneBox> bases = basesNear(level, player.blockPosition());
         int spawned = 0;
         for (int i = 0; i < count; i++) {
             // Verspreid rond de speler. Ze duiken in een boog naar een plek iets boven hem (elk
             // uit een andere richting), en beginnen zo hoog als er vrije lucht is: onder een dak
-            // of in een grot dus lager (zie ImtDrones.arcStart).
+            // of in een grot dus lager (zie ImtDrones.arcStart). Maar nooit in een basis (hoofdstuk 54): dan schuift
+            // de plek in dezelfde richting naar buiten, tot buiten de zone en de rand eromheen.
             double angle = i * (Math.PI * 2 / Math.max(1, count));
-            Vec3 landing = new Vec3(player.getX() + Math.cos(angle) * ImtConfig.Raids.SPREAD,
-                    player.getY() + ImtConfig.Raids.HOVER_ABOVE, player.getZ() + Math.sin(angle) * ImtConfig.Raids.SPREAD);
+            Vec3 landing = outsideBases(level, bases, player.position(), angle, ImtConfig.Raids.SPREAD)
+                    .add(0, ImtConfig.Raids.HOVER_ABOVE, 0);
             Vec3 start = ImtDrones.arcStart(level, landing, angle, Math.round(ImtConfig.Raids.ARRIVAL_HEIGHT));
-            if (RaidDroneEntity.spawn(level, start, landing) != null) {
+            RaidDroneEntity drone = RaidDroneEntity.spawn(level, start, landing);
+            if (drone != null) {
+                drone.setRaidTarget(player);
                 spawned++;
             }
         }
@@ -193,6 +207,70 @@ public final class ImtRaids {
                     com.senne.imttech.registry.ModSounds.IMT_ALERT.get(), SoundSource.PLAYERS, 1.0f, 0.6f);
         }
         return spawned;
+    }
+
+    // ================================================================ Buiten de basis (hoofdstuk 54)
+
+    /** Zo ver rondom de speler kijken we naar kernen (een zone reikt tot ZONE_REACH van haar kern). */
+    private static final int NEARBY = 512;
+    /** Hooguit zo ver schuift de aankomst naar buiten, als een basis (of een rij basissen) in de weg ligt. */
+    private static final double MAX_BASE_WALK = 512;
+
+    /**
+     * De basissen in de buurt: elke beveiligingskern telt (jouw woorden: "een base wordt enkel een base genoemd als het
+     * een security core heeft"), ook die van Biebia's. Met haar zone als ze er een heeft, anders BASE_SIZE blokken
+     * rondom de kern.
+     */
+    static List<ZoneBox> basesNear(ServerLevel level, BlockPos around) {
+        List<ZoneBox> bases = new ArrayList<>();
+        int size = Math.max(1, (int) Math.round(ImtConfig.Raids.BASE_SIZE));
+        for (ZoneData.Zone zone : List.copyOf(ZoneData.get(level).in(level.dimension()))) {
+            BlockPos core = zone.core().pos();
+            if (Math.abs(core.getX() - around.getX()) > NEARBY || Math.abs(core.getZ() - around.getZ()) > NEARBY) {
+                continue;
+            }
+            List<ZoneBox> boxes = zone.boxesInReach();
+            if (boxes.isEmpty()) {
+                bases.add(ZoneBox.of(core.offset(-size, -size, -size), core.offset(size, size, size)));
+            } else {
+                bases.addAll(boxes);
+            }
+        }
+        return bases;
+    }
+
+    /**
+     * De plek op {@code distance} blokken van {@code from} in richting {@code angle}; ligt die in (of vlak bij) een basis,
+     * dan schuift hij in dezelfde richting naar buiten. Buiten de basis kan de grond hoger liggen (een basis op een berg):
+     * dan niet in de helling, maar erboven.
+     */
+    static Vec3 outsideBases(ServerLevel level, List<ZoneBox> bases, Vec3 from, double angle, double distance) {
+        double dx = Math.cos(angle);
+        double dz = Math.sin(angle);
+        Vec3 at = from.add(dx * distance, 0, dz * distance);
+        if (!insideAny(bases, at)) {
+            return at;
+        }
+        for (double d = distance + 1; d <= distance + MAX_BASE_WALK; d += 1.0) {
+            at = from.add(dx * d, 0, dz * d);
+            if (!insideAny(bases, at)) {
+                break;
+            }
+        }
+        int surface = level.getHeight(Heightmap.Types.MOTION_BLOCKING, Mth.floor(at.x), Mth.floor(at.z));
+        return new Vec3(at.x, Math.max(at.y, surface + 1), at.z);
+    }
+
+    /** Ligt deze plek in een basis, of binnen BASE_MARGIN ervan? Alleen in het platte vlak: een basis telt ook van bovenaf. */
+    private static boolean insideAny(List<ZoneBox> bases, Vec3 at) {
+        double margin = ImtConfig.Raids.BASE_MARGIN;
+        for (ZoneBox box : bases) {
+            if (at.x >= box.min().getX() - margin && at.x <= box.max().getX() + 1 + margin
+                    && at.z >= box.min().getZ() - margin && at.z <= box.max().getZ() + 1 + margin) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // ================================================================ Opruimen

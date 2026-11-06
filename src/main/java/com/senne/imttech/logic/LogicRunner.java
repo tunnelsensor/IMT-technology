@@ -398,6 +398,7 @@ public final class LogicRunner {
         long now = level.getGameTime();
         if ((now + core.getBlockPos().hashCode()) % REFRESH_DEVICES == 0) {
             LogicDevices.refreshIfOwnerOnline(level, core);
+            com.senne.imttech.structures.TowerGuards.refreshBiebiaDevices(level, core); // een kern van niemand (hoofdstuk 54)
         }
         boolean hasPrograms = !core.logic().programs().isEmpty();
         Runtime runtime = RUNTIMES.get(GlobalPos.of(level.dimension(), core.getBlockPos()));

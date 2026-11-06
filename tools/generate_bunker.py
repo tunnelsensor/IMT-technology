@@ -97,7 +97,16 @@ def soldier(x, y, z):
 
 
 def turret(x, y, z):
-    put(x, y, z, "imttech:raven_turret", {"enabled": "true"})
+    """Een laserturret (hoofdstuk 54: er is geen Raven-torentje meer); via de kabel in de vloer hangt hij aan de kern."""
+    put(x, y, z, "imttech:security_turret", {"enabled": "true"})
+
+
+def security_core(x, y, z):
+    """
+    De beveiligingskern van de bunker (hoofdstuk 54: de torentjes worden via een security OS aangestuurd). Van niemand,
+    dus iedereen is een indringer, tot je hem hackt met de laptop: dan is de bunker van jou.
+    """
+    put(x, y, z, "imttech:security_core", {"facing": "west", "claimed": "false"})
 
 
 def chest(x, y, z, facing, loot):
@@ -352,8 +361,10 @@ def wire_reactor():
     route((31, 5, 21), (33, 5, 21), (33, 1, 21), (33, 1, 25))
     # Van de kast omhoog en onder het plafond naar de lijn naar de lasers.
     route((33, 2, 26), (33, 5, 26), (28, 5, 26), (28, 5, 21))
-    # Een Raven-torentje bij de kast.
+    # Een laserturret bij de kast, en de beveiligingskern bij de deur (hoofdstuk 54), aan de vloerlijn.
     turret(30, 1, 26)
+    security_core(MID + 10, 1, 25)
+    route((MID + 10, 0, 25), (MID + 10, 0, 26))
     # De torentjes: in de vloer, via een lijn door het midden van de bunker.
     route((33, 0, 26), (MID - 6, 0, 26), (MID - 6, 0, 39), (MID + 5, 0, 39))
     route((MID - 6, 0, 26), (MID - 6, 0, 1), (MID + 3, 0, 1))
@@ -394,7 +405,8 @@ def to_nbt():
         "entities": [{
             "blockPos": [Int(x), Int(y), Int(z)],
             "pos": [Double(x + 0.5), Double(y + 0.5), Double(z + 0.5)],
-            "nbt": {"id": "minecraft:marker", "data": {"imttech_cable": Int(1)}},
+            # Hoofdstuk 54: elke kabel van de bunker is ook een netwerkkabel, zodat de torentjes aan de kern hangen.
+            "nbt": {"id": "minecraft:marker", "data": {"imttech_cable": Int(1), "imttech_net_cable": Int(1)}},
         } for (x, y, z) in sorted(cables)],
         "blocks": block_list,
         "palette": palette,

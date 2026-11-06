@@ -141,7 +141,25 @@ public final class Handcuffs {
         if (captor.distanceTo(target) > ImtConfig.Handcuffs.REACH) {
             return Component.translatable("cuffs.imttech.cannot.far");
         }
+        if (!behind(captor, living)) {
+            return Component.translatable("cuffs.imttech.cannot.front");
+        }
         return null;
+    }
+
+    /**
+     * Staat de vanger achter hem (hoofdstuk 54, jouw notitie: "iemand enkel via de rug kunt boeien")? Achter = aan de kant
+     * van zijn rug, ruim genomen (de halve cirkel achter hem, en een beetje meer).
+     */
+    public static boolean behind(Entity captor, LivingEntity target) {
+        float rad = target.getYRot() * Mth.DEG_TO_RAD;
+        Vec3 facing = new Vec3(-Mth.sin(rad), 0, Mth.cos(rad));
+        Vec3 toCaptor = captor.position().subtract(target.position());
+        toCaptor = new Vec3(toCaptor.x, 0, toCaptor.z);
+        if (toCaptor.lengthSqr() < 0.01) {
+            return true;
+        }
+        return facing.dot(toCaptor.normalize()) < 0.2;
     }
 
     /**
@@ -360,14 +378,17 @@ public final class Handcuffs {
     }
 
     /**
-     * Echt vast (jouw notitie van 4 november: "niet echt een lead, maar dat je de speler precies vast hebt"): hij staat
-     * elke tick vlak achter je ({@code [handcuffs] holdDistance}) en draait mee als jij draait. Een klein verschil duwen we
-     * weg met een zetje; is hij toch ver weg geraakt (een klap, een val), dan staat hij in één keer weer achter je.
+     * Echt vast (jouw notitie van 4 november: "niet echt een lead, maar dat je de speler precies vast hebt"; sinds
+     * hoofdstuk 54, jouw notitie van 6 november: "de geboeide staat altijd recht voor de persoon die hem boeit, met zijn
+     * gezicht naar voren"): hij staat elke tick vlak vóór je ({@code [handcuffs] holdDistance}), met zijn rug naar je toe,
+     * en kijkt dezelfde kant op als jij. Een klein verschil duwen we weg met een zetje; is hij toch ver weg geraakt (een
+     * klap, een val), dan staat hij in één keer weer voor je.
      */
     private static void hold(LivingEntity living, ServerPlayer holder) {
-        float yaw = holder.getYRot() * Mth.DEG_TO_RAD;
-        Vec3 behind = new Vec3(Mth.sin(yaw), 0, -Mth.cos(yaw)).scale(ImtConfig.Handcuffs.HOLD_DISTANCE);
-        Vec3 target = holder.position().add(behind);
+        float yawDegrees = holder.getYRot();
+        float yaw = yawDegrees * Mth.DEG_TO_RAD;
+        Vec3 ahead = new Vec3(-Mth.sin(yaw), 0, Mth.cos(yaw)).scale(ImtConfig.Handcuffs.HOLD_DISTANCE);
+        Vec3 target = holder.position().add(ahead);
         Vec3 to = target.subtract(living.position());
         double flat = Math.sqrt(to.x * to.x + to.z * to.z);
         if (flat > 2.5 || Math.abs(to.y) > 2.5) {
@@ -383,6 +404,24 @@ public final class Handcuffs {
         if (living instanceof Mob mob) {
             mob.getNavigation().stop();
         }
+        face(living, yawDegrees);
+    }
+
+    /** Dezelfde kant op kijken als wie hem vasthoudt: zijn gezicht naar voren, zijn rug naar de vanger. */
+    private static void face(LivingEntity living, float yaw) {
+        if (living instanceof ServerPlayer player) {
+            // Een speler draait zijn eigen hoofd; alleen de server kan hem omdraaien, met een "teleport" op zijn plek.
+            if (Math.abs(Mth.wrapDegrees(player.getYRot() - yaw)) > 3) {
+                player.connection.teleport(0, 0, 0, yaw, 0, java.util.EnumSet.of(net.minecraft.world.entity.RelativeMovement.X,
+                        net.minecraft.world.entity.RelativeMovement.Y, net.minecraft.world.entity.RelativeMovement.Z,
+                        net.minecraft.world.entity.RelativeMovement.X_ROT));
+            }
+            return;
+        }
+        living.setYRot(yaw);
+        living.setYHeadRot(yaw);
+        living.yBodyRot = yaw;
+        living.yHeadRot = yaw;
     }
 
     // ================================================================ Gebeurtenissen

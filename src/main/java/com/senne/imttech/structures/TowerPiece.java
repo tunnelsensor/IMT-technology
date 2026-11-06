@@ -46,6 +46,13 @@ public class TowerPiece extends TemplateStructurePiece {
 
     @Override
     protected void handleDataMarker(String name, BlockPos pos, ServerLevelAccessor level, RandomSource random, BoundingBox box) {
-        // De toren heeft geen markeringen: Biebia's drones komen via de docks in de hangar (zie TowerDrones).
+        // Biebia's drones komen via de docks in de hangar (zie TowerDrones); sinds hoofdstuk 54 staan er wel soldaten:
+        // gewone (zoals in de bunker) en bewakers met een keycard van de toren op zak (zie TowerGuards).
+        level.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), net.minecraft.world.level.block.Block.UPDATE_CLIENTS);
+        if (com.senne.imttech.raven.BiebiaBunkerPiece.SOLDIER.equals(name)) {
+            com.senne.imttech.raven.BiebiaBunkerPiece.spawnSoldier(level, pos, random);
+        } else if (TowerGuards.GUARD.equals(name)) {
+            TowerGuards.spawnGuard(level, pos, random);
+        }
     }
 }

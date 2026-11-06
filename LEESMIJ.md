@@ -61,7 +61,8 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (375 automati
   jou en je team met rust, en bewaken ze de toren voor jou. Andere spelers vallen ze dan alleen
   aan als PvP aan staat.
 - Alle beveiliging draait op **stroom** van de verborgen krachtcentrale op de
-  beveiligingsverdieping (een dicht blok met een mantel van **obsidiaan**). Daarin zit de
+  beveiligingsverdieping (een dicht blok met een mantel van **obsidiaan**; in een toren uit kamers is dat de
+  **generatorkamer**, zie "Torens en bunkers uit kamers"). Daarin zit de
   **stroomkast**: een schakelaar voor de lasers en de kluis, en een voor de beveiliging (de
   kern, de torentjes en via de koperen zuil van de lift ook de lobby). Zonder stroom hangen de
   lopen van de torentjes omlaag. De
@@ -378,7 +379,8 @@ Kabels zijn **geen blokken**: je **tekent** ze.
 
 ### Rayshield
 - **Persoonlijk schild** (G > Combat > Rayshield): vangt pijlen, vuurballen, explosies en lasers op. Elke
-  treffer kost energie; batterij leeg = schild weg.
+  treffer kost energie; batterij leeg = schild weg. Je ziet het (sinds 6 november): een zachtblauwe bol om je
+  heen, ook voor anderen; hij flikkert als je batterij bijna leeg is.
 - **Laserzender** (volledig blok met een lens aan de voorkant): een dun, doorzichtig energieveld
   met een zachte, wolkerige gloed waar af en toe op een willekeurige plek een klein kronkeltje
   energie oplicht, en waar niemand door komt. Het schuift uit de lens naar voren tot het eerste blok (of een tweede zender die
@@ -428,7 +430,8 @@ Kabels zijn **geen blokken**: je **tekent** ze.
   - Een brug loopt niet over een andere brug die dwars loopt: hij stopt ertegen.
 - **Schildkoepel-generator** (blok, op stroom): een koepel om je basis. **Rechtsklik** opent
   zijn scherm: aan/uit, kleur, bereik (8 tot 32 blokken) en sterkte (1 tot 5). Groter en
-  sterker kost meer stroom. De koepel houdt alles tegen wat niet van jou of je team komt:
+  sterker kost meer stroom. Het is een hele bol, ook onder de generator (6 november): op een berg beschermt hij
+  ook de helling eronder. De koepel houdt alles tegen wat niet van jou of je team komt:
   pijlen en vuurballen, monsters en raiddrones (die worden naar buiten geduwd), laserschoten
   van raiddrones en andermans drones, en satellietaanvallen van anderen. Jouw eigen aanvallen
   gaan er gewoon doorheen, net als spelers en dieren. Elke treffer kost **schildkracht**; een
@@ -461,6 +464,13 @@ donker, met oranje lampjes, en niet van jou. Ze duiken uit de lucht, cirkelen om
 schieten. Verstop je je achter een muur, dan komen ze dichterbij en breken ze zich een weg naar
 binnen.
 
+Sinds 6 november begint een raid altijd **buiten een basis**: een beveiligingskern met haar zone (zonder zone:
+16 blokken rondom de kern) telt als basis, en de drones komen minstens 12 blokken daarbuiten aan
+(`baseMargin` en `baseSize` onder `[raids]`); ze onthouden wie ze kwamen halen. Zit je in een **beschermde
+zone**, dan breken ze die niet zomaar: op een blok van de zone gooien ze een **sticky frag** (het alarm van de
+zone gaat af), en op je torentjes en laserzenders **EMP-granaten** zodra ze er vrij zicht op hebben
+(`breachInterval`, `empInterval`, `deviceReach`).
+
 - **Vanzelf**: standaard elke 20 tot 45 minuten, zolang je de bril op hebt.
 - **Omdat je erom vroeg**: sloop je in een Biebia's Industries Tower, dan trek je aandacht. Doe je dat te
   vaak, dan komen ze meteen (bij het eerste blok krijg je een waarschuwing).
@@ -482,10 +492,13 @@ een drone). In de kratten eromheen liggen brokstukken. Maar het wrak wordt bewaa
   `minMinutes`, `maxMinutes` en `size` (hoeveel drones per golf, standaard 4). Zie ook hoofdstuk 6.
 
 ### Raven-soldaten
-Raven wil I.M.T-tech. Hun soldaten dragen een zwart tactisch pak, een rode bril en het rode
-embleem op borst en helm. Zien ze je, dan leggen ze hun **lasergeweer** aan en schieten ze rode
-laserstralen (tot 18 blokken ver; een rayshield houdt ze tegen). Ze schieten ook op je drones.
-Ze bewaken de Biebia's Industries-bunker (zie hieronder).
+Raven wil I.M.T-tech. Hun soldaten dragen een zwart tactisch pak met een vest vol magazijntasjes, een radio
+op de rug, een rode bril met vizier en het rode embleem op borst en helm. Sinds 6 november dragen ze de wapens
+van de mod: de helft een **Glock 19** (echte kogels, met een vliegtijd en hulzen), de rest een **laser
+rifle** of **laser pistol** (dezelfde stralen als die van jou; een rayshield houdt ze tegen). Een deel heeft
+ook **granaten** bij zich: verstop je je vlakbij achter een muur, dan gooit hij er een frag of een EMP
+overheen; op een drone gooit hij een EMP. Ze schieten ook op je drones. Ze bewaken de Biebia's
+Industries-bunker (zie hieronder) en sinds 6 november ook de Biebia's Industries Tower uit kamers.
 
 Ze vechten als **ploeg**: ziet één soldaat je, dan weten de soldaten in de buurt het ook. Ze
 verdelen zich rondom je (omsingelen), stappen tijdens het schieten opzij en lopen achteruit als
@@ -493,8 +506,11 @@ je te dichtbij komt. Verstop je je achter een muur, dan zoeken ze een plek om de
 waaruit ze je wel zien; zit je binnen, dan zoeken ze een weg naar binnen, en **deuren doen ze
 gewoon open**.
 
-- Versla je er een, dan laat hij soms een **Raven-onderdeel** vallen. Dat heb je nodig voor
+- Versla je er een, dan laat hij soms een **Raven-onderdeel** vallen (en soms zijn wapen). Dat heb je nodig voor
   de nieuwste tech: het raketpakket (zie Het harnas) en de torentjes (zie Torentjes).
+- In een **Biebia's Industries Tower** uit kamers staan **bewakers** (in de lobby en voor de generatorkamer) met
+  een **staff-keycard** van die toren op zak: die valt als je ze verslaat, en opent de poort van de
+  generatorkamer (zie "Torens en bunkers uit kamers"). Op de beveiligingsverdieping staat een gewone soldaat.
 - Zelf oproepen om te oefenen: het **Raven Soldier Spawn Egg** in de I.M.T Technology-tab.
 
 ### Torentjes
@@ -520,9 +536,13 @@ Raven-soldaten) binnen zicht, dan draait hij erheen en blijft hij erop schieten 
 - **Hoe staat hij ervoor?** Klik rechts met een lege hand: aan/uit, stroom en raketten. Met
   shift haal je de raketten eruit.
 
-In de Biebia's Industries-bunker staan **Raven Turrets** (zwart met rood): die schieten op jou en je drones,
-en ook zij draaien op stroom (van de reactor). Ook die gaan uit met redstone. Sloop je er een,
-dan krijg je ijzer en soms een Raven-onderdeel.
+Er zijn twee soorten torentjes (6 november): de **Rocket Turret** hierboven, en de **Laser Turret** (wit met
+rood; heette eerst Security Turret). Een Laser Turret hoort via zijn **netwerkkabel** bij een
+**beveiligingskern** en schiet op wie die kern een indringer noemt: in de Biebia's Industries Tower en de
+Biebia's Industries-bunker is dat iedereen (de kern is van niemand; hack hem, dan bewaken ze de boel voor jou),
+bij jou wat je in de app Access instelt. De bunker heeft daarvoor een eigen kern bij de reactor. Het oude
+Raven-torentje van de bunker bestaat niet meer; staat er nog een in een oude wereld, dan gedraagt hij zich als
+een Laser Turret. Sloop je er een in de bunker, dan krijg je ijzer en soms een Raven-onderdeel.
 
 ### De stroomkast
 Een **Power Cabinet** (ijzer, twee hendels, een computerchip en twee stroomkabel) is een punt waar
@@ -620,6 +640,9 @@ sterretjes). Klopt het, dan opent de desktop met bovenaan **REMOTE SESSION**, en
 op de kern zelf kunt.
 - Ook de eigenaar typt het wachtwoord. Een kern **zonder wachtwoord** laat niemand van ver binnen:
   zet er eerst een in de app **Settings**. Een kern **zonder stroom** antwoordt niet.
+- **Apps installeren en verwijderen** (6 november): in **Settings** staat rechts "Apps on this desktop", een
+  vinkje per app. Haal je er een weg, dan staat hij niet meer op het bureaublad van de kern (ook niet via de
+  laptop); zet het vinkje terug en hij is er weer. Alleen de eigenaar, en Settings zelf blijft altijd.
 - Het werkt in **dezelfde dimensie**: je basis in de overworld bereik je overal in de overworld,
   niet vanuit de Nether.
 - De laptop onthoudt het **laatste IP** (ook in zijn tooltip), nooit het wachtwoord.
@@ -991,6 +1014,11 @@ er backups van, en het brein van I.M.T draait erop.
   vanaf 8 GPU's niets meer (warm: twee keer zo lang). Rechtsboven in **G > Systems > AI Brain** zie
   je op welk datacenter het draait en hoeveel het erbij zet. Terwijl ze nadenkt, werkt je
   datacenter hard (en wordt het warmer).
+- **Groot genoeg** (6 november): voor het brein tellen **zes CPU's** (of GPU's) samen als één rekenpunt
+  (`cpusPerPower` onder `[logic]`): de vertragingen hierboven gelden dus per zes. Met een handvol racks is
+  I.M.T traag; een echt datacenter (zo'n dertig racks) maakt haar vlot. Je redstone (Logic) rekent nog gewoon
+  per CPU. Racks hoeven ook niet meer tegen elkaar: alle racks die met een netwerkkabel (of PoE) aan je kern
+  hangen, zijn samen één server.
 
 Alle getallen staan in `config/imttech.toml` onder `[logic]` (de stroom van een kast onder `[power]`).
 
@@ -1200,16 +1228,18 @@ hij op slot gaat, de schok en hoeveel chips herstellen kost.
 Met **Handcuffs** (vier ijzer en een ketting) neem je een speler, een Raven-soldaat of een guard robot
 gevangen:
 
-- **Rechtsklik vasthouden** op hem, ongeveer twee seconden (onderaan telt het af). Is hij **weerloos**, dan
+- **Alleen via zijn rug** (6 november): sta je voor hem, dan lukt het niet ("You can only cuff someone from
+  behind"). **Rechtsklik vasthouden** op hem, ongeveer twee seconden (onderaan telt het af). Is hij **weerloos**, dan
   gaan de boeien meteen om: verblind door een flashbang, in slaap, bijna dood (minder dan een kwart van
   zijn leven), of een robot die neerligt (Ion Blaster of EMP). Eén paar boeien per persoon.
 - **Geboeid** kan hij niets met zijn handen: geen items gebruiken, niet hakken of bouwen, geen kisten (die
   gaan meteen weer dicht), niet slaan, niet eten, niets weggooien. Hij loopt op halve snelheid en kan
   niet sprinten. Een robot stopt zijn programma en staat stil (in de app Robots: **Handcuffed**); een
-  soldaat doet niets meer. Je ziet een donker bandje om zijn polsen.
-- **Meenemen**: wie hem boeit, houdt hem meteen vast: een touw loopt van je hand naar zijn polsen, en hij
-  staat vlak achter je (ruim een blok) en komt precies mee als je loopt of draait, geen lijn met speling.
-  Raakt hij toch ver weg (een klap, een val), dan staat hij meteen weer achter je; verder dan 10 blokken ben
+  soldaat doet niets meer. Zijn handen zitten met de boeien **op zijn rug** (6 november).
+- **Meenemen**: wie hem boeit, houdt hem meteen vast: jij houdt de boeien met twee handen vooruit, een korte
+  ketting loopt naar zijn polsen, en hij staat **recht vóór je** (ruim een blok, `holdDistance`) met zijn gezicht
+  naar voren en zijn rug naar jou, en komt precies mee als je loopt of draait, geen lijn met speling.
+  Raakt hij toch ver weg (een klap, een val), dan staat hij meteen weer voor je; verder dan 10 blokken ben
   je hem kwijt (hij blijft wel geboeid). **Rechtsklik** op hem met de boeien in je hand: loslaten, of weer
   vastpakken.
 - **Los**: met een **Handcuff Key** (een ijzeren nugget op een ijzeren staaf) op hem; jij krijgt de boeien
@@ -1637,9 +1667,22 @@ Sinds 4 november is elke Biebia's Industries Tower in de wereld anders: de mod s
 **kamers**. De lobby (met het plein) ligt altijd onderaan; de lasergang, de kluis, het penthouse en het dak
 altijd bovenaan. Daartussen komen **5 tot 8 verdiepingen** in een willekeurige keuze en volgorde: het lab,
 het archief, de hangar, de woonverdieping, en zes nieuwe (de sportzaal, de kas, de bioscoop, het zwembad,
-het museum en de serverzaal). De beveiligingsverdieping met de kern en de krachtcentrale zit er **altijd**
-bij (anders valt er niets te hacken). De liftkoker loopt door alle verdiepingen, en in zijn koperen zuil
-zit een kabel die alles aan de krachtcentrale hangt, in welke volgorde de verdiepingen ook liggen.
+het museum en de serverzaal). De beveiligingsverdieping met de kern zit er **altijd** bij (anders valt er
+niets te hacken), en sinds 6 november ook de **generatorkamer**. De liftkoker loopt door alle verdiepingen, en
+in zijn koperen zuil zit een kabel die alles aan de generatorkamer hangt, in welke volgorde de verdiepingen
+ook liggen.
+
+**De generatorkamer** voedt de hele toren: achter obsidiaan staan vier reactorcellen (een warmtegenerator in een
+ring van lava, achter glas), de **stroomkast** (trek je die eruit of knip je zijn kabels door, dan valt alles
+uit: de torentjes, de lasergang, de kluis) en een echte serverkast waarop het diagram van Biebia draait. De
+enige doorgang is een **poort van rayshields** met ernaast de keycardlezer "Power door". Erin kom je op drie
+manieren: hack de kern (dan is de poort van jou: zet hem uit in Devices), of versla een **bewaker** (de soldaat
+in de lobby of die voor de poort) en houd zijn **staff-keycard** tegen de lezer (het diagram "Generator room"
+zet de poort acht seconden uit; een andere kaart geeft alarm), of zoek de **zwakke plek**: het luik "VENT 3B"
+van gebarsten tegels in de oostmuur hak je in seconden weg, obsidiaan niet. Elke zender van de poort slopen
+kan ook. De bordjes in de kamer en het briefje `/home/biebia/power.txt` op de kern vertellen het je zonder
+het letterlijk uit te leggen; na het hacken zie je het diagram in de app Logic en heten de zenders "Power
+gate" in Devices: zo werken lezers, groepen en diagrammen ook bij jou.
 
 De bunker net zo: de ingang vooraan en de kluis achteraan liggen vast; daartussen **3 tot 6 zalen** (de
 reactorkamer met de stroomkast altijd; verder de grote hal met de slaapzaal, de wapenkamer, het lab, de

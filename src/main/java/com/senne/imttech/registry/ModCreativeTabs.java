@@ -164,7 +164,6 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.CAMERA_MONITOR.get());
                 output.accept(ModItems.SECURITY_TURRET.get());
                 output.accept(ModItems.ROCKET_TURRET.get());
-                output.accept(ModItems.RAVEN_TURRET.get());
                 output.accept(ModItems.ROCKET_AMMO.get());
                 output.accept(ModItems.BYPASS_KIT.get());
                 output.accept(ModItems.HACKING_LAPTOP.get());

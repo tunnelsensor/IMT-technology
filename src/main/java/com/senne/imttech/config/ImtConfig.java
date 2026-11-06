@@ -1125,8 +1125,8 @@ public final class ImtConfig {
 
     // =============================================================================================== Turrets
 
-    @Section("Turrets: the rocket turret you build, the Raven turret (bunker) and the security turret (Biebia's Industries Tower). "
-            + "The rocket turret's power use is under [power]")
+    @Section("Turrets: the rocket turret and the laser turret (security turret; in the Biebia's Industries Tower, the bunker, "
+            + "and yours). The rocket turret's power use is under [power]")
     public static final class Turrets {
         private Turrets() {}
 
@@ -1150,20 +1150,12 @@ public final class ImtConfig {
         @Tunable(value = "How many rockets fit in a rocket turret", min = 1, max = 64)
         public static float MAX_AMMO = 64.0f;
 
-        // ------------------------------------------------------------------------- Raven-torentje (geen stroom nodig)
-        @Tunable("Damage of one Raven turret laser shot")
-        public static float RAVEN_LASER_DAMAGE = 3.0f;
-        @Tunable("Ticks between two Raven turret laser shots")
-        public static float RAVEN_LASER_INTERVAL = 25.0f;
-        @Tunable("How far a Raven turret reaches (blocks)")
-        public static double RAVEN_RANGE = 14.0;
-
-        // ------------------------------------------------------------------------- Beveiligingstorentje (Biebia's Industries Tower)
-        @Tunable("Damage of one Biebia's Industries Tower security turret shot")
+        // ------------------------------------------------------------------------- Laserturret (de beveiliging: toren, bunker, jij)
+        @Tunable("Damage of one laser turret shot")
         public static float SECURITY_LASER_DAMAGE = 3.0f;
-        @Tunable("Ticks between two security turret shots")
+        @Tunable("Ticks between two laser turret shots")
         public static float SECURITY_LASER_INTERVAL = 20.0f;
-        @Tunable("How far a security turret reaches (blocks)")
+        @Tunable("How far a laser turret reaches (blocks)")
         public static double SECURITY_RANGE = 16.0;
 
         // ------------------------------------------------------------------------- Draaien en zoeken (alle torentjes)
@@ -1310,6 +1302,14 @@ public final class ImtConfig {
         @Tunable("How long a server with Logic power 1 (one CPU) waits before it reacts to a trigger (ticks); "
                 + "twice the power = half the time, never below 1 tick")
         public static float REACTION_TICKS = 10.0f;
+        /**
+         * Zoveel CPU's samen zijn één "breinkracht" voor I.M.T (hoofdstuk 54, jouw notitie: "een data center moet veel groter
+         * zijn om goed te werken, minstens 30 racks in plaats van 5"): 6 CPU's = 1, dus 30 racks vol CPU's = 30 kracht (geen
+         * vertraging meer), 5 racks = 5 kracht (32 ticks). De snelheid van je diagrammen (Logic) blijft 1 CPU = 1.
+         */
+        @Tunable(value = "How many CPUs together count as one brain power for I.M.T; 6 = a datacenter needs six times as"
+                + " many racks as before 6 November to think without delay (Logic itself stays 1 CPU = 1)", min = 0.1, max = 100)
+        public static double CPUS_PER_POWER = 6.0;
         /** Hoeveel één GPU telt voor Logic (een CPU telt 1). */
         @Tunable("How much one GPU counts for Logic (a CPU counts 1)")
         public static double GPU_LOGIC_POWER = 0.5;
@@ -1472,9 +1472,9 @@ public final class ImtConfig {
         @Tunable(value = "How fast a handcuffed player still walks (0.5 = half speed)", min = 0.05, max = 1)
         public static float SLOW = 0.5f;
         /** Zo ver achter je staat wie je vasthoudt (jouw wens van 4 november: geen lijn, maar echt vast). */
-        @Tunable(value = "How far behind you a handcuffed person is held (blocks); they stay there while you walk and turn",
+        @Tunable(value = "How far in front of you a handcuffed person is held (blocks); they stay there, facing forward, while you walk and turn",
                 min = 0.5, max = 8)
-        public static float HOLD_DISTANCE = 1.2f;
+        public static float HOLD_DISTANCE = 1.4f;
         /** Verder weg dan dit, en je bent hem kwijt (hij blijft geboeid). */
         @Tunable(value = "Further away than this and you lose your hold on them; they stay handcuffed (blocks)", min = 2, max = 64)
         public static float LET_GO = 10.0f;
@@ -1787,8 +1787,17 @@ public final class ImtConfig {
         private Raven() {}
 
         /** Schade van één laserschot (4 = 2 hartjes). */
-        @Tunable("Damage of one Raven soldier rifle shot")
+        @Tunable("Damage of one Raven soldier shot (a bullet from his Glock 19, or a laser)")
         public static float LASER_DAMAGE = 4.0f;
+        /** Hoofdstuk 54: hoe ver een soldaat ernaast schiet (graden), welke kans op granaten, en of zijn wapen valt. */
+        @Tunable(value = "Extra spread of a Raven soldier's shots (degrees)", max = 45)
+        public static float SPREAD = 4.0f;
+        @Tunable(value = "Chance that a Raven soldier carries grenades (frag or EMP)", max = 1)
+        public static float GRENADE_CHANCE = 0.35f;
+        @Tunable(value = "Ticks between two grenades of one soldier", min = 20)
+        public static float GRENADE_INTERVAL = 200.0f;
+        @Tunable(value = "Chance that a dead Raven soldier drops his weapon (Glock 19 or laser gun)", max = 1)
+        public static float WEAPON_DROP_CHANCE = 0.08f;
         /** Ticks tussen twee schoten (35 = bijna 2 seconden). */
         @Tunable("Ticks between two Raven soldier shots")
         public static float FIRE_INTERVAL = 35.0f;
@@ -1873,6 +1882,22 @@ public final class ImtConfig {
         /** Hoe ver vooruit hij blokken weghaalt. */
         @Tunable("How far ahead a raid drone breaks blocks (blocks)")
         public static double BREAK_REACH = 6.0;
+
+        // ------------------------------------------------------------------------- Een basis (hoofdstuk 54)
+        /** Een blok van een zone breekt hij niet: daar gooit hij een sticky frag op, hooguit om de zoveel ticks. */
+        @Tunable(value = "Ticks between two sticky frags a raid drone throws at a protected zone", min = 20)
+        public static float BREACH_INTERVAL = 120.0f;
+        /** Zit zijn doelwit in een zone, dan gooit hij EMP's op de torentjes en laserzenders van die kern. */
+        @Tunable(value = "Ticks between two EMP grenades a raid drone throws at a base's turrets and laser emitters", min = 20)
+        public static float EMP_INTERVAL = 240.0f;
+        @Tunable("How far a raid drone looks for a turret or laser emitter to EMP (blocks)")
+        public static double DEVICE_REACH = 24.0;
+        /** Een raid begint buiten een basis: zoveel blokken buiten de zone (of het stuk rondom de kern). */
+        @Tunable(value = "How far outside a base (a security core with its zone) a raid starts (blocks)", min = 1)
+        public static double BASE_MARGIN = 12.0;
+        /** Een kern zonder zone telt zoveel blokken rondom als basis. */
+        @Tunable(value = "Blocks around a security core without a zone that count as its base", min = 1)
+        public static double BASE_SIZE = 16.0;
 
         // ------------------------------------------------------------------------- Aankomst
         /** Hoe hoog boven je ze verschijnen. */

@@ -48,7 +48,8 @@ public class DomeRenderer implements BlockEntityRenderer<DomeGeneratorBlockEntit
     private static final float DROP_TICKS = 28;
     private static final float COLLAPSE_TICKS = 16;
 
-    private static final float HALF_PI = (float) (Math.PI / 2);
+    /** De koepel is sinds hoofdstuk 54 een hele bol: hij zakt door tot onder de generator (in een berg zie je hem in de grotten). */
+    private static final float FULL = (float) Math.PI;
     /** Hoe breed het kapje is als het helemaal open is (deel van de straal), en tot welke hoek dat reikt. */
     private static final float CAP_WIDTH = 0.45f;
     private static final float CAP_THETA = (float) Math.asin(CAP_WIDTH);
@@ -90,14 +91,14 @@ public class DomeRenderer implements BlockEntityRenderer<DomeGeneratorBlockEntit
 
         float beam;       // hoe hoog de straal is (0..1 van de straal van de koepel)
         float beamAlpha;  // hoe fel de straal is
-        float theta;      // tot waar de koepel reikt, als hoek vanaf de top (0 = niets, pi/2 = tot de grond)
+        float theta;      // tot waar de koepel reikt, als hoek vanaf de top (0 = niets, pi = een hele bol, hoofdstuk 54)
         float field;      // hoe fel het veld is: fel tijdens het openvouwen, daarna rustiger
         float bright;     // alles samen: flakkeren en uitgaan
         if (dome.isUp()) {
             beam = Mth.clamp(age / BEAM_TICKS, 0, 1);
             float open = ease(Mth.clamp((age - OPEN_START) / OPEN_TICKS, 0, 1));
             float drop = ease(Mth.clamp((age - DROP_START) / DROP_TICKS, 0, 1));
-            theta = drop > 0 ? CAP_THETA + (HALF_PI - CAP_THETA) * drop : (float) Math.asin(CAP_WIDTH * open);
+            theta = drop > 0 ? CAP_THETA + (FULL - CAP_THETA) * drop : (float) Math.asin(CAP_WIDTH * open);
             field = Mth.lerp(drop, 0.9f, 0.42f);
             // Tijdens het opstarten fel; daarna blijft hij staan, rustiger en zacht kloppend.
             beamAlpha = Mth.lerp(drop, 1.0f, 0.75f + 0.1f * Mth.sin(time * 0.15f));
@@ -109,7 +110,7 @@ public class DomeRenderer implements BlockEntityRenderer<DomeGeneratorBlockEntit
             }
             beam = 1 - ease(collapse);
             beamAlpha = 0.75f;
-            theta = HALF_PI * (1 - ease(collapse));
+            theta = FULL * (1 - ease(collapse));
             field = 0.42f;
             bright = 1 - collapse;
         }
@@ -136,7 +137,7 @@ public class DomeRenderer implements BlockEntityRenderer<DomeGeneratorBlockEntit
         if (beam > 0) {
             beam(matrix, glow, radius * beam, rgb, beamAlpha * bright);
         }
-        if (dome.isUp() && theta > 0.001f && theta < HALF_PI - 0.001f) {
+        if (dome.isUp() && theta > 0.001f && theta < FULL - 0.001f) {
             // De onderrand van de groeiende koepel is feller: daar "bouwt" hij.
             edge(matrix, glow, radius, theta, rgb, bright);
         }

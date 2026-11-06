@@ -60,7 +60,8 @@ public class SecurityOsScreen extends Screen {
         FILES("Files", "F", 300, 190),
         NOTES("Notes", "N", 320, 196),
         LOGS("Logs", "L", 330, 200),
-        SETTINGS("Settings", "S", 270, 200);
+        /** Hoofdstuk 54: rechts de apps op het bureaublad (aan/uit, in twee kolommen), dus breder. */
+        SETTINGS("Settings", "S", 400, 200);
 
         final String label;
         final String glyph;
@@ -185,6 +186,11 @@ public class SecurityOsScreen extends Screen {
                 editingPassword = true;
             }
         }
+        // Hoofdstuk 54: de apps die de eigenaar van het bureaublad haalde (Settings).
+        hidden.clear();
+        for (Tag app : snapshot.getList("hidden", Tag.TAG_STRING)) {
+            hidden.add(app.getAsString());
+        }
         // Hoofdstuk 40: op een Computer alleen de apps die de kern toestaat (dat kan ook veranderen terwijl je zit te kijken).
         boolean closedAny = false;
         for (Win win : List.copyOf(windows)) {
@@ -291,9 +297,12 @@ public class SecurityOsScreen extends Screen {
                 : com.senne.imttech.security.os.DesktopRights.FULL;
     }
 
-    /** Staat deze app op deze desktop? */
+    /** Hoofdstuk 54: de apps die de eigenaar van dit bureaublad haalde (leeg op een Computer of de telefoon). */
+    private final java.util.Set<String> hidden = new java.util.HashSet<>();
+
+    /** Staat deze app op deze desktop? (Niet op een Computer die hem niet toestaat, en niet als de eigenaar hem weghaalde.) */
     boolean shows(App app) {
-        return rights().shows(app.name());
+        return rights().shows(app.name()) && (app == App.SETTINGS || !hidden.contains(app.name()));
     }
 
     /** Mag je deze app hier ook bedienen (niet alleen bekijken)? */
@@ -757,7 +766,7 @@ public class SecurityOsScreen extends Screen {
                     submitPassword();
                     return;
                 }
-                if (clickAuth(cx, win.y + TITLE_H + 3, mx, my)) {
+                if (clickAuth(cx, win.y + TITLE_H + 3, mx, my) || clickApps(cx, win.y + TITLE_H + 3, mx, my)) {
                     return;
                 }
                 editingPassword = false;
@@ -1179,6 +1188,57 @@ public class SecurityOsScreen extends Screen {
         OsDraw.button(g, font, b[4], row2, old ? "ON" : "OFF", true, old ? HudStyle.GREEN : HudStyle.RED);
         line(g, b[4] + OsDraw.buttonWidth(font, "OFF") + 6, row2 + 2, old ? "the previous code still works (it is logged)"
                 : "only the current code works", 0x8A9BA0);
+        // Hoofdstuk 54 (jouw notitie): rechts de apps op dit bureaublad, met een vinkje: aan = geïnstalleerd. Alleen op de
+        // kern zelf (en de laptop), en alleen de eigenaar.
+        if (data.contains("hidden") && isOwner()) {
+            int x0 = cx + APPS_X;
+            line(g, x0, cy, "Apps on this desktop", HudStyle.CYAN);
+            int appRow = 0;
+            for (App app : App.values()) {
+                if (app == App.SETTINGS) {
+                    continue;
+                }
+                int x = x0 + (appRow / APPS_PER_COLUMN) * APPS_COLUMN;
+                int y = cy + APPS_Y + (appRow % APPS_PER_COLUMN) * APPS_ROW;
+                boolean on = !hidden.contains(app.name());
+                g.fill(x, y, x + 7, y + 7, HudStyle.argb(255, on ? HudStyle.CYAN : OsDraw.FIELD));
+                HudStyle.brackets(g, x, y, x + 7, y + 7, 2, HudStyle.argb(255, on ? HudStyle.CYAN : OsDraw.DIM));
+                line(g, x + 11, y, app.label, on ? HudStyle.WHITE : OsDraw.GREY);
+                appRow++;
+            }
+        }
+    }
+
+    /** Waar de lijst met apps in Settings staat (vanaf de linkerkant en de bovenkant van de inhoud): twee kolommen van negen. */
+    private static final int APPS_X = 236;
+    private static final int APPS_Y = 12;
+    private static final int APPS_ROW = 11;
+    private static final int APPS_PER_COLUMN = 9;
+    private static final int APPS_COLUMN = 78;
+
+    /** Een klik op een app in de lijst van Settings (hoofdstuk 54): weghalen of terugzetten. Geeft true als het er een was. */
+    private boolean clickApps(int cx, int cy, int mx, int my) {
+        if (!data.contains("hidden") || !isOwner()) {
+            return false;
+        }
+        int x0 = cx + APPS_X;
+        int row = 0;
+        for (App app : App.values()) {
+            if (app == App.SETTINGS) {
+                continue;
+            }
+            int x = x0 + (row / APPS_PER_COLUMN) * APPS_COLUMN;
+            int y = cy + APPS_Y + (row % APPS_PER_COLUMN) * APPS_ROW;
+            if (OsDraw.inside(mx, my, x, y - 1, 11 + font.width(app.label), APPS_ROW)) {
+                CompoundTag args = new CompoundTag();
+                args.putString("app", app.name());
+                args.putBoolean("on", !hidden.contains(app.name())); // "on" = weghalen
+                send("app_hide", args);
+                return true;
+            }
+            row++;
+        }
+        return false;
     }
 
     /** Waar de regels van de autorisatiecodes in Settings staan (vanaf de bovenkant van de inhoud). */

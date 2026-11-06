@@ -151,8 +151,54 @@ public final class LaserGuns {
         return Result.FIRED;
     }
 
+    /**
+     * Een schot van een wezen dat geen speler is (hoofdstuk 54: de Raven-soldaten): dezelfde stralen, treffers, koepels en
+     * effecten als bij jou, maar zonder cel en zonder de controle op je kijkrichting. {@code extraSpread} (radialen) komt
+     * bij de spreiding van het geweer.
+     */
+    public static void fireFrom(ServerLevel level, LivingEntity shooter, GunType type, Vec3 from, Vec3 look, float damage,
+                                double extraSpread) {
+        RandomSource random = shooter.getRandom();
+        double spread = Math.toRadians(type.spread(false)) + extraSpread;
+        List<Vec3> ends = new ArrayList<>();
+        int hits = 0;
+        Map<LivingEntity, Float> damages = new LinkedHashMap<>();
+        for (int ray = 0; ray < type.rays(); ray++) {
+            Vec3 dir = scatter(look, spread, random);
+            Vec3 end = from.add(dir.scale(type.range()));
+            HitResult wall = level.clip(new ClipContext(from, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, shooter));
+            if (wall.getType() != HitResult.Type.MISS) {
+                end = wall.getLocation();
+            }
+            EntityHitResult hit = ProjectileUtil.getEntityHitResult(level, shooter, from, end, new AABB(from, end).inflate(1.0),
+                    entity -> entity.isAlive() && entity.isPickable() && !entity.isSpectator() && entity != shooter, 0.1f);
+            LivingEntity target = null;
+            if (hit != null) {
+                Entity entity = hit.getEntity();
+                end = entity.getBoundingBox().inflate(0.1).clip(from, end).orElse(entity.getBoundingBox().getCenter());
+                target = entity instanceof LivingEntity living ? living : null;
+            }
+            Vec3 shield = ImtDomes.blockedAt(level, end, from, null, Math.round(ImtConfig.Dome.COST_LASER));
+            if (shield != null) {
+                end = shield;
+                target = null;
+            }
+            if (target != null) {
+                damages.merge(target, damage, Float::sum);
+                hits |= 1 << ray;
+            }
+            ends.add(end);
+        }
+        for (Map.Entry<LivingEntity, Float> entry : damages.entrySet()) {
+            entry.getKey().hurt(ModDamageTypes.laserGun(level, shooter), entry.getValue());
+        }
+        level.playSound(null, shooter.getX(), shooter.getEyeY(), shooter.getZ(), type.fireSound(), SoundSource.HOSTILE,
+                1.0f, 0.95f + random.nextFloat() * 0.1f);
+        ModNetwork.sendNear(level, from, VISIBLE, new GunShotPayload(shooter.getId(), type.ordinal(), ends, hits));
+    }
+
     /** Een richting een stukje willekeurig opzij (hooguit {@code spread} radialen), in een kegel rond {@code look}. */
-    private static Vec3 scatter(Vec3 look, double spread, RandomSource random) {
+    public static Vec3 scatter(Vec3 look, double spread, RandomSource random) {
         if (spread <= 0) {
             return look;
         }

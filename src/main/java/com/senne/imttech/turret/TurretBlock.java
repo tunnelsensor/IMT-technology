@@ -51,8 +51,8 @@ import org.jetbrains.annotations.Nullable;
  * redstone doet niets meer): het staat in je I.M.T-lijst ("Turret 3"), dus met je bril, je stem, een diagram
  * ({@code off("Turret 3")}) of de knop in Devices op de desktop.
  *
- * Het RAVEN-torentje staat in de Biebia's Industries-bunker. Het heeft geen eigenaar en geen stroom nodig,
- * en schiet op spelers en I.M.T-drones. Uitzetten kan niet: sloop het, of leg het even plat met een EMP-granaat.
+ * De LASERTURRET (SECURITY) staat in de Biebia's Industries Tower en de bunker (van niemand: hij schiet op iedereen tot
+ * je de kern hackt), of bij jou: hij hoort via zijn netwerkkabel bij een beveiligingskern en volgt haar regels.
  *
  * Het blok zelf is alleen de voet; de draaiende kop tekent TurretRenderer.
  */
@@ -82,10 +82,6 @@ public class TurretBlock extends BaseEntityBlock implements ImtSwitchable, Power
 
     public TurretKind kind() {
         return kind;
-    }
-
-    public boolean isRaven() {
-        return kind == TurretKind.RAVEN;
     }
 
     @Override
@@ -157,9 +153,7 @@ public class TurretBlock extends BaseEntityBlock implements ImtSwitchable, Power
         if (kind == TurretKind.ROCKET) {
             turret.setOwner(player);
         }
-        if (kind != TurretKind.RAVEN) {
-            ImtRedstone.register(player, pos, "imt.imttech.turret.default_name");
-        }
+        ImtRedstone.register(player, pos, "imt.imttech.turret.default_name");
     }
 
     /** Rechtsklik met raketten: laad ze in het torentje. */
@@ -203,10 +197,6 @@ public class TurretBlock extends BaseEntityBlock implements ImtSwitchable, Power
                 ? Component.translatable("turret.imttech.status.online").withStyle(ChatFormatting.GREEN)
                 : Component.translatable(!state.getValue(ENABLED) ? "turret.imttech.status.off_imt"
                         : "turret.imttech.status.off_power").withStyle(ChatFormatting.RED);
-        if (kind == TurretKind.RAVEN) {
-            player.displayClientMessage(Component.translatable("turret.imttech.status.raven", onOff), true);
-            return;
-        }
         if (kind == TurretKind.SECURITY) {
             // Bij welke kern hij hoort: die aan het andere eind van zijn netwerkkabel (hoofdstuk 38).
             var core = com.senne.imttech.security.SecurityCores.deviceCore(player.level(), turret.getBlockPos());

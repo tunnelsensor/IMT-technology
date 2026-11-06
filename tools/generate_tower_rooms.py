@@ -11,13 +11,14 @@ De stukken:
 - <kamer>.nbt (41 x 12 x 41): een tussenverdieping: onderaan haar vloerplaat (0), de kamer (1-10), en bovenop de
                vloerplaat van de volgende (11). Alle tussenverdiepingen hebben dezelfde gevel (inset 6), zodat ze in
                elke volgorde passen. De klassieke: lab, archive, hangar, living en security (de kern: altijd één
-               keer); nieuw: gym, greenhouse, cinema, pool, museum en server_farm.
+               keer); nieuw: gym, greenhouse, cinema, pool, museum en server_farm; en sinds hoofdstuk 54 power
+               (de generatorkamer: altijd één keer, zie build_power_room).
 - top.nbt     (41 x 44 x 41): de lasergang, de kluis, het penthouse, het dak en de antennes. Ligt altijd bovenaan.
 
 Elke tussenverdieping heeft dezelfde liftkoker (ladder, glas, koperen zuil) op dezelfde plek, en in de koperen zuil
-een kabel (stroom en netwerk) over de volle hoogte: de "stijgleiding". De beveiligingsverdieping voedt die vanuit
-haar krachtcentrale; de lobby (torentjes, camera) en de top (lasergang, kluis) hangen eraan. Zo werkt alles, in
-welke volgorde de verdiepingen ook liggen.
+een kabel (stroom en netwerk) over de volle hoogte: de "stijgleiding". De generatorkamer (power, hoofdstuk 54) voedt
+die vanuit haar stroomkast; de beveiliging (kern, torentjes), de lobby (torentjes, camera) en de top (lasergang,
+kluis) hangen eraan. Zo werkt alles, in welke volgorde de verdiepingen ook liggen.
 
 Het bouwen zelf doet generate_structure.py (de klassieke toren in één stuk): dit script zet zijn getallen per stuk
 anders (de vloer op 1, de volgende op 12, de inset op 6) en laat het zijn verdiepingen bouwen. De klassieke toren
@@ -122,28 +123,147 @@ def classic(this, nxt, build, furnish=None, plants=True):
     return go
 
 
+def marker(x, y, z, name):
+    """Een markering (een structure block in de stand DATA): de mod zet er bij het bouwen iets neer (zie TowerPiece)."""
+    gs.put(x, y, z, "minecraft:structure_block", {"mode": "data"},
+           {"id": "minecraft:structure_block", "mode": "DATA", "metadata": name})
+
+
+def soldier(x, y, z):
+    """Hier komt bij het bouwen van de wereld een Raven-soldaat (zoals in de bunker)."""
+    marker(x, y, z, "raven_soldier")
+
+
+def guard(x, y, z):
+    """Hoofdstuk 54: een Raven-soldaat met een geconfigureerde keycard van de toren (groep "staff") op zak: die valt."""
+    marker(x, y, z, "raven_guard")
+
+
 def security_floor():
-    """De beveiligingsverdieping met haar krachtcentrale, en de stroomkast die alles aan de stijgleiding hangt."""
+    """
+    De beveiligingsverdieping. Sinds hoofdstuk 54 zit de krachtcentrale niet meer hier maar in de generatorkamer
+    (build_power_room): de stroom en het netwerk komen via de stijgleiding de vloer in, naar de kern en de vier
+    torentjes. (Vroeger hing het torentje in de noordoosthoek nergens aan: dat was "het power probleem".)
+    """
     classic("SECURITY", "LASERS", gs.build_security, plants=False)()
-    gs.build_power_plant()
-    cx, cy, cz = gs.POWER_X, gs.LASERS_Y - 4, gs.POWER_Z
-    gs.cables.discard((cx, cy, cz))
-    gs.put(cx, cy, cz, "imttech:power_cabinet", {"facing": "west"})
-    gs.net_cable(cx, cy + 1, cz - 1)
-    # Generator A (onderaan) via de oostmantel naar de rechterkant van de kast.
-    gs.route((cx + 1, cy, cz), (cx + 2, cy, cz), (cx + 2, gs.SECURITY_Y + 3, cz), (cx, gs.SECURITY_Y + 3, cz))
-    # De beveiliging: via de noordmantel omlaag de vloer in, naar het torentje in de hoek en de kern.
     floor = gs.SECURITY_Y
-    gs.route((cx, cy, cz - 1), (cx, cy, cz - 2), (cx, floor, cz - 2))
-    gs.route((cx, floor, Z0 + 2), (X0 + 2, floor, Z0 + 2), (X0 + 2, floor, MID))
-    guard_power = (cx - 4, gs.SECURITY_Y + 1, MID - 3)
-    guard_lift = (MID + 4, gs.SECURITY_Y + 1, MID + 6)
+    guard_power = (gs.POWER_X - 4, floor + 1, MID - 3)
+    guard_lift = (MID + 4, floor + 1, MID + 6)
     gs.security_turret(*guard_power)
     gs.security_turret(*guard_lift)
-    gs.route((cx, floor, Z0 + 2), (cx, floor, guard_lift[2]), (guard_lift[0], floor, guard_lift[2]))
-    gs.route((cx, floor, guard_power[2]), (guard_power[0], floor, guard_power[2]))
-    # En van daar naar de stijgleiding: zo krijgen alle andere verdiepingen hun stroom en netwerk.
-    gs.route((guard_lift[0], floor, guard_lift[2]), (guard_lift[0], floor, RISER[1]), (RISER[0], floor, RISER[1]))
+    # Van de stijgleiding de vloer in naar het torentje bij de lift, dan naar de lijn langs de noordgevel (de twee
+    # hoektorentjes), en van die lijn naar de kern; het vierde torentje aan de lijn naar het noorden.
+    gs.route((RISER[0], floor, RISER[1]), (guard_lift[0], floor, RISER[1]), (guard_lift[0], floor, guard_lift[2]))
+    gs.route((guard_lift[0], floor, guard_lift[2]), (guard_lift[0], floor, Z0 + 2))
+    gs.route((X0 + 2, floor, Z0 + 2), (X1 - 2, floor, Z0 + 2))
+    gs.route((X0 + 2, floor, Z0 + 2), (X0 + 2, floor, MID))
+    gs.route((guard_power[0], floor, guard_power[2]), (guard_lift[0], floor, guard_power[2]))
+    # Een soldaat op wacht bij de schermenwand (hoofdstuk 54).
+    soldier(MID + 3, floor + 1, MID - 2)
+
+
+# --------------------------------------------------------------------- De generatorkamer (hoofdstuk 54)
+
+# De kluis van de generatoren: obsidiaan van (13, 8) tot (27, 20), binnenin de vier cellen, de kast en het rek.
+VAULT_X0, VAULT_Z0, VAULT_X1, VAULT_Z1 = MID - 7, Z0 + 2, MID + 7, Z0 + 14
+GATE_Z = VAULT_Z1                      # de zuidmuur, met de doorgang en de rayshield erin
+CELLS = [(MID - 4, Z0 + 5), (MID - 4, Z0 + 10), (MID + 4, Z0 + 5), (MID + 4, Z0 + 10)]
+HATCH_Z = VAULT_Z1 - 1                 # de zwakke plek: in de oostmuur, net binnen de zuidmuur
+
+
+def generator_cell(cx, cz):
+    """
+    Een reactorcel: een glazen hokje van 5 x 5 met binnenin een warmtegenerator in een ring van lava (lava is hitte,
+    hitte is stroom; zie HeatGeneratorBlockEntity). De lava zit achter glas, dus je kunt erlangs lopen. De kabel
+    zit in de vloerplaat onder de generator.
+    """
+    for x in range(cx - 2, cx + 3):
+        for z in range(cz - 2, cz + 3):
+            edge = x in (cx - 2, cx + 2) or z in (cz - 2, cz + 2)
+            if edge:
+                gs.put(x, 1, z, gs.GLASS)
+                gs.put(x, 2, z, gs.GLASS)
+            else:
+                gs.put(x, 1, z, "minecraft:lava", {"level": "0"})
+                gs.put(x, 2, z, "minecraft:air")
+            gs.put(x, 3, z, gs.GLASS)
+    gs.put(cx, 1, cz, "imttech:heat_generator", {"facing": "south"})
+    gs.cable(cx, 0, cz)
+
+
+def build_power_room():
+    """
+    De generatorkamer (hoofdstuk 54, jouw notitie: "zorg dat er altijd 1 generator room sowieso is en die geeft power
+    aan alles, deze room is beveiligd met rayshields"). Een donkere zaal met in het noorden de kluis van de
+    generatoren: obsidiaan, met als enige doorgang een poort van rayshields (zes laserzenders, drie rijen hoog). In
+    de kluis vier reactorcellen, de stroomkast (de hoofdschakelaar van de hele toren: hij voedt de stijgleiding) en
+    een echte serverkast met CPU, RAM, SSD en fan: daarop draait het diagram "Generator room" van Biebia's kern.
+
+    Erin komen kan op drie manieren:
+    - de kern hacken: dan is de poort van jou (de app Devices, of het diagram);
+    - de keycard van een bewaker (de soldaat voor de poort, of die in de lobby): die zit in de groep "staff", en het
+      diagram zet de poort acht seconden uit;
+    - de zwakke plek: in de oostmuur zit een luik van gebarsten deepslate-tegels (bordje "VENT 3B"), dat hak je zo
+      weg, waar je bij obsidiaan minuten bezig bent. Of je sloopt elke zender van de poort.
+    Zonder stroomkast (of met de kabels doorgeknipt) valt de hele toren uit: de torentjes, de lasergang, de kluis.
+    """
+    room_shell(dark=True)
+    gs.fill(X0 + 1, 0, Z0 + 1, X1 - 1, 0, Z1 - 1, gs.DARK_FLOOR)
+    # De kluis: obsidiaan rondom (y 1-4) met een dak (y 5), en binnenin lucht.
+    gs.fill(VAULT_X0, 1, VAULT_Z0, VAULT_X1, 5, VAULT_Z1, "minecraft:obsidian")
+    gs.fill(VAULT_X0 + 1, 1, VAULT_Z0 + 1, VAULT_X1 - 1, 4, VAULT_Z1 - 1, "minecraft:air")
+    for x in range(VAULT_X0 + 2, VAULT_X1 - 1, 3):
+        gs.put(x, 5, MID - 1, gs.LIGHT)
+    for (cx, cz) in CELLS:
+        generator_cell(cx, cz)
+    # De stroomkast en de serverkast tegen de noordmuur, met hun kabels in de vloerplaat.
+    gs.put(MID + 1, 1, VAULT_Z0 + 1, "imttech:power_cabinet", {"facing": "south"})
+    gs.put(MID - 1, 1, VAULT_Z0 + 1, "imttech:server_rack", {"facing": "south"}, {
+        "id": "imttech:server_rack", "Status": "ONLINE", "Items": [
+            {"Slot": gs.Int(0), "id": "imttech:server_cpu", "count": gs.Int(1)},
+            {"Slot": gs.Int(1), "id": "imttech:server_ram", "count": gs.Int(1)},
+            {"Slot": gs.Int(2), "id": "imttech:server_ssd", "count": gs.Int(1)},
+            {"Slot": gs.Int(3), "id": "imttech:server_fan", "count": gs.Int(1)},
+        ]})
+    gs.route((MID - 4, 0, VAULT_Z0 + 1), (MID + 4, 0, VAULT_Z0 + 1))
+    for (cx, cz) in CELLS:
+        gs.route((cx, 0, cz), (cx, 0, VAULT_Z0 + 1))
+    # De poort: een doorgang van drie breed en drie hoog in de zuidmuur, met aan weerskanten drie zenders die elkaar
+    # aankijken (rood), en hun kabels in de muur ernaast, omlaag de vloerplaat in.
+    for y in (1, 2, 3):
+        for x in range(MID - 1, MID + 2):
+            gs.put(x, y, GATE_Z, "minecraft:air")
+        gs.put(MID - 2, y, GATE_Z, "imttech:laser_emitter",
+               {"facing": "east", "powered": "false", "color": "red", "switched_on": "true"})
+        gs.put(MID + 2, y, GATE_Z, "imttech:laser_emitter",
+               {"facing": "west", "powered": "false", "color": "red", "switched_on": "true"})
+    for side in (MID - 3, MID + 3):
+        gs.route((side, 3, GATE_Z), (side, 0, GATE_Z), (side, 0, VAULT_Z0 + 1))
+    # De keycardlezer "Power door" rechts van de poort (aan de buitenkant), aan de kabel in de muur erachter.
+    gs.put(MID + 3, 2, GATE_Z + 1, "imttech:keycard_reader", {"facing": "south", "light": "off"},
+           {"id": "imttech:keycard_reader", "Name": "Power door"})
+    # Van de kast naar de stijgleiding: zo krijgt de hele toren zijn stroom en netwerk.
+    gs.route((MID + 1, 0, VAULT_Z0 + 1), (MID + 1, 0, RISER[1]))
+    # De zwakke plek: twee gebarsten tegels in de oostmuur, met het bordje ernaast.
+    gs.put(VAULT_X1, 1, HATCH_Z, "minecraft:cracked_deepslate_tiles")
+    gs.put(VAULT_X1, 2, HATCH_Z, "minecraft:cracked_deepslate_tiles")
+    gs.sign(VAULT_X1 + 1, 3, HATCH_Z, "east", "VENT 3B - DO NOT BLOCK")
+    # Bordjes: wat je ziet, legt zichzelf uit (jouw wens: uitleg door leuke voorbeelden).
+    gs.sign(MID, 4, GATE_Z + 1, "south", "GENERATOR ROOM - STAFF CARD")
+    gs.sign(MID + 1, 3, VAULT_Z0 + 1, "south", "MAIN CABINET - ALL FLOORS")
+    gs.sign(MID - 1, 3, VAULT_Z0 + 1, "south", "LOGIC SERVER - RUNS THE GATE")
+    gs.sign(MID - 4, 2, Z0 + 8, "south", "GEN 1 - LAVA = HEAT = POWER")
+    gs.sign(MID + 4, 2, Z0 + 8, "south", "GEN 2 - DO NOT OPEN")
+    gs.chest(VAULT_X0 + 1, 1, VAULT_Z1 - 1, "east")
+    # Buiten de kluis: de controledesk met schermen, een bewaker voor de poort, en een camera die de poort bekijkt.
+    gs.desk(MID - 4, 1, Z1 - 9, 9, chairs=(2, 6))
+    gs.screen(MID - 4, 2, Z1 - 8, 9, 3)
+    guard(MID + 3, 1, GATE_Z + 4)
+    gs.security_camera(X0 + 1, 9, GATE_Z + 3, "ceiling", "east", "Generator room", pan=-30)
+    for z in range(Z0 + 2, Z1 - 2, 4):
+        gs.put(X0 + 1, 3, z, "minecraft:end_rod", {"facing": "east"})
+        gs.put(X1 - 1, 3, z, "minecraft:end_rod", {"facing": "west"})
+    gs.chest(X1 - 2, 1, Z1 - 2, "north")
 
 
 # --------------------------------------------------------------------- Nieuwe verdiepingen
@@ -433,6 +553,8 @@ def build_lobby_piece():
     gs.build_canopy()
     gs.furnish_lobby()
     gs.window_plants(1, 2, skip={(MID + dx, 37) for dx in range(-4, 5)})
+    # Een bewaker met een keycard van de toren bij de receptie (hoofdstuk 54).
+    guard(MID - 8, 1, MID + 2)
     # Het terras naar de eerste tussenverdieping, met zijn reling (de rij erboven).
     TERRACE(11, 2, MIDDLE_IN)
     shaft(1, 12, openings=(1, 2))
@@ -493,6 +615,7 @@ MIDDLE_ROOMS = {
     "hangar": classic("HANGAR", "LIVING", gs.build_hangar, plants=False),
     "living": classic("LIVING", "SECURITY", gs.build_living, gs.furnish_living),
     "security": security_floor,
+    "power": build_power_room,
     "gym": build_gym,
     "greenhouse": build_greenhouse,
     "cinema": build_cinema,

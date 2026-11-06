@@ -14,7 +14,16 @@ public final class LogicStats {
         return ImtConfig.Logic.WARM_TEMPERATURE - 5.0;
     }
 
-    /** Hoeveel één onderdeel telt voor Logic (je redstone-diagrammen): een CPU 1, een GPU minder. */
+    /** Zoveel CPU's samen zijn één kracht voor het brein (hoofdstuk 54: 6, zodat een datacenter echt groot moet zijn). */
+    private static double perPower() {
+        return Math.max(0.1, ImtConfig.Logic.CPUS_PER_POWER);
+    }
+
+    /**
+     * Hoeveel één onderdeel telt voor Logic (je redstone-diagrammen): een CPU 1, een GPU minder. (Hier geen deling door
+     * CPUS_PER_POWER: anders reageerde een kleine server pas na seconden op een knop; het grote datacenter is voor het
+     * brein van I.M.T.)
+     */
     public static double logicPower(ServerPartItem.Kind kind) {
         return switch (kind) {
             case CPU -> 1.0;
@@ -23,11 +32,11 @@ public final class LogicStats {
         };
     }
 
-    /** Hoeveel één onderdeel telt voor het brein van I.M.T: een CPU 1, een GPU meer. */
+    /** Hoeveel één onderdeel telt voor het brein van I.M.T: een CPU 1/6, een GPU meer. */
     public static double brainPower(ServerPartItem.Kind kind) {
         return switch (kind) {
-            case CPU -> 1.0;
-            case GPU -> ImtConfig.Logic.GPU_BRAIN_POWER;
+            case CPU -> 1.0 / perPower();
+            case GPU -> ImtConfig.Logic.GPU_BRAIN_POWER / perPower();
             default -> 0.0;
         };
     }

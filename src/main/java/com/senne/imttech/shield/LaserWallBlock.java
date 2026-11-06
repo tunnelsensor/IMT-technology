@@ -117,10 +117,15 @@ public class LaserWallBlock extends Block {
      * doorheen. Een toren van niemand, of een wand buiten een toren: dan brand je.
      */
     private static boolean friendOfTheTower(ServerLevel level, BlockPos pos, LivingEntity entity) {
+        var core = com.senne.imttech.security.SecurityCores.coreAt(level, pos);
+        if (entity instanceof com.senne.imttech.raven.RavenSoldierEntity) {
+            // Hoofdstuk 54: de bewakers van Biebia's lopen door de wanden van hun eigen toren of bunker (van niemand); in
+            // een gehackte toren (van jou) branden ze net als ieder ander.
+            return core == null || core.ownerId() == null;
+        }
         if (!(entity instanceof net.minecraft.world.entity.player.Player player)) {
             return false;
         }
-        var core = com.senne.imttech.security.SecurityCores.coreAt(level, pos);
         return core != null && com.senne.imttech.security.SecurityCores.isFriend(level, core, player);
     }
 

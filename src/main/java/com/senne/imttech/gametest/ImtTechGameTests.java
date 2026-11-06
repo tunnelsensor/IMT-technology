@@ -426,6 +426,98 @@ public final class ImtTechGameTests {
         });
     }
 
+    /**
+     * Hoofdstuk 54 (jouw notitie): de eigenaar haalt apps van het bureaublad van de kern (Settings) en zet ze terug;
+     * Settings zelf kan niet weg, en wie niet de eigenaar is (ingelogd via SSH) kan er niets aan doen.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "os_apps")
+    public static void owner_removes_apps_from_the_core_desktop(GameTestHelper helper) {
+        ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(4, 3, 4));
+        BlockPos corePos = new BlockPos(2, 3, 2);
+        var core = placeCore(helper, corePos, owner);
+        BlockPos coreAbs = helper.absolutePos(corePos);
+        com.senne.imttech.security.os.SecurityOs.open(owner, coreAbs);
+        osAction(owner, coreAbs, "app_hide", "app", "KEYCARDS", "on", "true");
+        if (!core.hiddenApps().contains("KEYCARDS")) {
+            throw new GameTestAssertException("Keycards staat nog op het bureaublad");
+        }
+        osAction(owner, coreAbs, "app_hide", "app", "SETTINGS", "on", "true");
+        if (core.hiddenApps().contains("SETTINGS")) {
+            throw new GameTestAssertException("Settings kun je weghalen (dan kom je er nooit meer bij)");
+        }
+        osAction(owner, coreAbs, "app_hide", "app", "KEYCARDS", "on", "false");
+        if (core.hiddenApps().contains("KEYCARDS")) {
+            throw new GameTestAssertException("Keycards staat niet terug op het bureaublad");
+        }
+        osAction(owner, coreAbs, "close");
+        ServerPlayer stranger = makeSurvivalOwner(helper, new BlockPos(6, 3, 4), "test-app-stranger");
+        com.senne.imttech.security.os.SecurityOs.openFor(stranger, core, true); // alsof hij via SSH binnen is
+        osAction(stranger, coreAbs, "app_hide", "app", "LOGS", "on", "true");
+        if (core.hiddenApps().contains("LOGS")) {
+            throw new GameTestAssertException("Een vreemde haalde een app van het bureaublad");
+        }
+        osAction(stranger, coreAbs, "close");
+        helper.succeed();
+    }
+
+    // ================================================================ De bewakers van de toren (hoofdstuk 54)
+
+    /**
+     * Een bewaker van de toren (TowerGuards) laat bij zijn dood een keycard vallen die op de kern van de toren is
+     * geschreven, in de groep "staff": daarmee opent het diagram van Biebia de generatorkamer.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "tower_guards")
+    public static void tower_guard_drops_a_staff_keycard(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        // De kern in het midden en de bewaker er pal naast: in de testwereld staan overal kernen van andere tests, en de
+        // kaart hoort bij de dichtstbijzijnde.
+        var core = placeCore(helper, new BlockPos(12, 3, 12), null);
+        core.ensureSystem(level);
+        var guard = helper.spawn(com.senne.imttech.registry.ModEntities.RAVEN_SOLDIER.get(), new BlockPos(12, 3, 13));
+        guard.setKeycardGuard(true);
+        // Een kern meldt zich pas een tick na het neerzetten aan (SecurityCores.loaded): dus even wachten met doodgaan.
+        helper.runAfterDelay(5, guard::kill);
+        helper.succeedWhen(() -> {
+            for (net.minecraft.world.entity.item.ItemEntity drop : level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+                    helper.getBounds().inflate(2))) {
+                com.senne.imttech.logic.KeycardData data = com.senne.imttech.logic.KeycardItem.data(drop.getItem());
+                if (data == null) {
+                    continue;
+                }
+                if (!data.ip().equals(core.ip())) {
+                    throw new GameTestAssertException("De kaart is voor een ander netwerk: " + data.ip() + " in plaats van " + core.ip());
+                }
+                if (!core.logic().inGroup(data.number(), com.senne.imttech.structures.TowerGuards.STAFF)) {
+                    throw new GameTestAssertException("De kaart zit niet in de groep staff");
+                }
+                return;
+            }
+            throw new GameTestAssertException("De bewaker liet geen keycard vallen");
+        });
+    }
+
+    /** Biebia's kern (van niemand) krijgt bij zijn eerste tick het diagram "Generator room" en de groep "staff". */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "tower_guards")
+    public static void biebia_core_installs_the_generator_room_logic(GameTestHelper helper) {
+        var core = placeCore(helper, new BlockPos(12, 3, 12), null);
+        core.ensureSystem(helper.getLevel());
+        var program = core.logic().program(com.senne.imttech.structures.TowerGuards.PROGRAM);
+        if (program == null || !program.enabled()) {
+            throw new GameTestAssertException("Biebia's kern heeft het diagram Generator room niet (of het staat uit)");
+        }
+        if (!core.logic().hasGroup(com.senne.imttech.structures.TowerGuards.STAFF)) {
+            throw new GameTestAssertException("Biebia's kern heeft de groep staff niet");
+        }
+        // Een kern van jou krijgt dat niet: dat zijn jouw diagrammen.
+        ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(4, 3, 4));
+        var own = placeCore(helper, new BlockPos(2, 3, 2), owner);
+        own.ensureSystem(helper.getLevel());
+        if (own.logic().program(com.senne.imttech.structures.TowerGuards.PROGRAM) != null) {
+            throw new GameTestAssertException("Jouw eigen kern kreeg het diagram van Biebia");
+        }
+        helper.succeed();
+    }
+
     // ================================================================ De beveiliging van de Biebia's Industries Tower
 
     /** Zet een beveiligingskern neer (zonder eigenaar, of met de gegeven eigenaar). */
@@ -1244,7 +1336,7 @@ public final class ImtTechGameTests {
             if (stats.racks() != 2 || stats.cpus() != 2 || stats.ram() != 1 || stats.ssd() != 1 || !stats.online()) {
                 throw new GameTestAssertException("De server telt verkeerd: " + stats);
             }
-            int expected = LogicStats.reactionTicks(2.0); // twee CPU's: kracht 2
+            int expected = LogicStats.reactionTicks(2.0 * LogicStats.logicPower(com.senne.imttech.logic.ServerPartItem.Kind.CPU)); // twee CPU's
             if (stats.reactionTicks() != expected || stats.maxRuns() != Math.round(ImtConfig.Logic.RUNS_PER_RAM)) {
                 throw new GameTestAssertException("Reageren of tegelijk klopt niet: " + stats.reactionTicks() + " ticks, " + stats.maxRuns() + " tegelijk");
             }
@@ -2074,9 +2166,13 @@ public final class ImtTechGameTests {
                 throw new GameTestAssertException("Een kluiskist heeft niet de goede buit: " + chest.getLootTable());
             }
         }
-        int turrets = countInBunker(helper, pos -> helper.getBlockState(pos).is(ModBlocks.RAVEN_TURRET.get()));
+        int turrets = countInBunker(helper, pos -> helper.getBlockState(pos).is(ModBlocks.SECURITY_TURRET.get()));
         if (turrets != 6) {
-            throw new GameTestAssertException("Er staan " + turrets + " Raven-torentjes in plaats van 6");
+            throw new GameTestAssertException("Er staan " + turrets + " laserturrets in plaats van 6");
+        }
+        int cores = countInBunker(helper, pos -> helper.getBlockState(pos).is(ModBlocks.SECURITY_CORE.get()));
+        if (cores != 1) {
+            throw new GameTestAssertException("Er staan " + cores + " beveiligingskernen in de bunker in plaats van 1 (hoofdstuk 54)");
         }
         int soldiers = countInBunker(helper, pos -> helper.getLevel().getBlockEntity(helper.absolutePos(pos))
                 instanceof net.minecraft.world.level.block.entity.StructureBlockEntity marker
@@ -2088,7 +2184,7 @@ public final class ImtTechGameTests {
     }
 
     /**
-     * Alle Raven-torentjes hangen via verborgen kabels aan de stroomkast in de reactorkamer, en
+     * Alle laserturrets hangen via verborgen kabels aan de stroomkast in de reactorkamer, en
      * hebben dus stroom.
      */
     @GameTest(template = "biebia_bunker", timeoutTicks = 100, batch = "bunker")
@@ -2100,7 +2196,7 @@ public final class ImtTechGameTests {
             }
             List<BlockPos> dark = new java.util.ArrayList<>();
             countInBunker(helper, pos -> {
-                if (helper.getBlockState(pos).is(ModBlocks.RAVEN_TURRET.get())
+                if (helper.getBlockState(pos).is(ModBlocks.SECURITY_TURRET.get())
                         && com.senne.imttech.energy.PowerGrid.available(helper.getLevel(), helper.absolutePos(pos))
                         < ImtConfig.Power.TURRET_LASER_SHOT) {
                     dark.add(pos.immutable());
@@ -2108,7 +2204,7 @@ public final class ImtTechGameTests {
                 return false;
             });
             if (!dark.isEmpty()) {
-                throw new GameTestAssertException("Deze Raven-torentjes hebben geen stroom: " + dark);
+                throw new GameTestAssertException("Deze laserturrets hebben geen stroom: " + dark);
             }
             helper.succeed();
         });
@@ -2680,6 +2776,92 @@ public final class ImtTechGameTests {
 
     // ================================================================ Fase 15: raids
 
+    /** De raiddrones die voor deze speler kwamen (hoofdstuk 54: elke drone weet wie hij kwam halen). */
+    private static List<RaidDroneEntity> raidDronesFor(GameTestHelper helper, ServerPlayer owner) {
+        return helper.getLevel().getEntitiesOfClass(RaidDroneEntity.class, owner.getBoundingBox().inflate(600),
+                drone -> owner.getUUID().equals(drone.raidTargetId()));
+    }
+
+    /**
+     * Hoofdstuk 54 (jouw notitie: "laat deze drones ook enkel spawnen buiten een base op een afstand"): staat de speler in
+     * zijn zone, dan komt de raiddrone niet naast hem aan, maar buiten de zone plus de rand (BASE_MARGIN). En hij komt
+     * toch voor hem: hij onthoudt wie hij kwam halen.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 400, batch = "raids")
+    public static void raid_starts_outside_a_base(GameTestHelper helper) {
+        ImtRaids.clear();
+        ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(3, 3, 12));
+        var core = placeCore(helper, new BlockPos(2, 3, 2), owner);
+        com.senne.imttech.security.zone.ZoneBox base = com.senne.imttech.security.zone.ZoneBox.of(
+                helper.absolutePos(new BlockPos(1, 2, 10)), helper.absolutePos(new BlockPos(5, 6, 14)));
+        core.setZoneBoxes(List.of(base));
+        int spawned = ImtRaids.startRaid(owner, 1); // één drone: die komt uit het oosten (hoek 0 = +x)
+        if (spawned != 1) {
+            throw new GameTestAssertException("Er kwam " + spawned + " drone in plaats van 1");
+        }
+        RaidDroneEntity drone = raidDronesFor(helper, owner).stream().findFirst()
+                .orElseThrow(() -> new GameTestAssertException("De raiddrone voor deze speler is nergens te vinden"));
+        double edge = base.max().getX() + 1 + ImtConfig.Raids.BASE_MARGIN;
+        if (drone.getX() < edge) {
+            throw new GameTestAssertException("De raiddrone begon in of vlak bij de basis: x " + Math.round(drone.getX())
+                    + " in plaats van minstens " + Math.round(edge));
+        }
+        helper.succeedWhen(() -> {
+            if (drone.getTarget() != owner) {
+                throw new GameTestAssertException("De raiddrone komt niet voor jou (hij begon buiten de basis)");
+            }
+            core.setZoneBoxes(List.of());
+            drone.discard();
+        });
+    }
+
+    /**
+     * Hoofdstuk 54 (jouw notitie: "als je een protected zone hebt moeten ze die eerst opblazen"): zit je achter de muur
+     * van je zone, dan breekt een raiddrone die niet zomaar weg (dat kan niet in een zone), maar gooit hij er een sticky
+     * frag op. De muur staat er nog als de granaat vertrekt.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 400, batch = "raids")
+    public static void raid_drone_blasts_a_zone_wall(GameTestHelper helper) {
+        ImtRaids.clear();
+        ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(16, 3, 12));
+        var core = placeCore(helper, new BlockPos(2, 3, 2), owner);
+        // Een kamertje van steen om de speler heen (x 13-19, z 9-15, met een dak), helemaal in de zone.
+        for (BlockPos pos : BlockPos.betweenClosed(new BlockPos(13, 3, 9), new BlockPos(19, 6, 15))) {
+            boolean wall = pos.getX() == 13 || pos.getX() == 19 || pos.getZ() == 9 || pos.getZ() == 15 || pos.getY() == 6;
+            if (wall) {
+                helper.setBlock(pos, Blocks.STONE);
+            }
+        }
+        core.setZoneBoxes(List.of(com.senne.imttech.security.zone.ZoneBox.of(
+                helper.absolutePos(new BlockPos(13, 2, 9)), helper.absolutePos(new BlockPos(19, 6, 15)))));
+        helper.runAfterDelay(20, () -> {
+            if (com.senne.imttech.security.zone.Zones.activeAt(helper.getLevel(), helper.absolutePos(new BlockPos(13, 4, 12))) == null) {
+                throw new GameTestAssertException("De zone beschermt de muur niet");
+            }
+            Vec3 where = Vec3.atBottomCenterOf(helper.absolutePos(new BlockPos(8, 4, 12)));
+            RaidDroneEntity drone = RaidDroneEntity.spawn(helper.getLevel(), where, where);
+            if (drone == null) {
+                throw new GameTestAssertException("Er kwam geen raiddrone");
+            }
+            drone.setRaidTarget(owner);
+        });
+        helper.succeedWhen(() -> {
+            List<com.senne.imttech.weapons.StickyGrenade> grenades = helper.getLevel().getEntitiesOfClass(
+                    com.senne.imttech.weapons.StickyGrenade.class, helper.getBounds().inflate(2));
+            if (grenades.isEmpty()) {
+                throw new GameTestAssertException("De raiddrone heeft nog geen sticky frag op de muur gegooid");
+            }
+            for (BlockPos pos : BlockPos.betweenClosed(new BlockPos(13, 3, 9), new BlockPos(13, 5, 15))) {
+                if (!helper.getBlockState(pos).is(Blocks.STONE)) {
+                    throw new GameTestAssertException("De raiddrone schoot een blok van de zone weg op " + pos);
+                }
+            }
+            core.setZoneBoxes(List.of());
+            grenades.forEach(net.minecraft.world.entity.Entity::discard);
+            helper.getLevel().getEntitiesOfClass(RaidDroneEntity.class, helper.getBounds().inflate(2)).forEach(net.minecraft.world.entity.Entity::discard);
+        });
+    }
+
     /** Een golf raiddrones komt uit de lucht op je af en kiest jou als doelwit. */
     @GameTest(template = ARENA, timeoutTicks = 400, batch = "raids")
     public static void raid_drones_come_for_you(GameTestHelper helper) {
@@ -2692,8 +2874,9 @@ public final class ImtTechGameTests {
         if (spawned != 3) {
             throw new GameTestAssertException("Er kwamen " + spawned + " drones in plaats van 3");
         }
-        List<RaidDroneEntity> drones = helper.getLevel().getEntitiesOfClass(RaidDroneEntity.class,
-                owner.getBoundingBox().inflate(Math.round(ImtConfig.Raids.ARRIVAL_HEIGHT) + 32));
+        // Alleen de drones van deze raid (hoofdstuk 54: de raidtests draaien naast elkaar, en een drone van de buren kan
+        // hier ook rondhangen).
+        List<RaidDroneEntity> drones = raidDronesFor(helper, owner);
         if (drones.size() != 3) {
             throw new GameTestAssertException("Niet alle drones zijn te vinden: " + drones.size());
         }
@@ -2713,8 +2896,7 @@ public final class ImtTechGameTests {
 
         // Even laten vallen; daarna horen ze jou op de korrel te hebben.
         helper.succeedWhen(() -> {
-            for (RaidDroneEntity drone : helper.getLevel().getEntitiesOfClass(RaidDroneEntity.class,
-                    owner.getBoundingBox().inflate(Math.round(ImtConfig.Raids.ARRIVAL_HEIGHT) + 32))) {
+            for (RaidDroneEntity drone : raidDronesFor(helper, owner)) {
                 if (drone.isDiving()) {
                     throw new GameTestAssertException("Er duikt er nog een");
                 }
@@ -3200,10 +3382,10 @@ public final class ImtTechGameTests {
 
     // ================================================================ Torentjes
 
-    /** Zet een torentje neer, met (voor een Biebia's Industries-torentje) een eigenaar. */
-    private static TurretBlockEntity placeTurret(GameTestHelper helper, BlockPos pos, boolean raven,
+    /** Zet een torentje neer (een laserturret, of een raketturret met een eigenaar). */
+    private static TurretBlockEntity placeTurret(GameTestHelper helper, BlockPos pos, boolean laser,
                                                  @Nullable ServerPlayer owner) {
-        helper.setBlock(pos, (raven ? ModBlocks.RAVEN_TURRET : ModBlocks.ROCKET_TURRET).get());
+        helper.setBlock(pos, (laser ? ModBlocks.SECURITY_TURRET : ModBlocks.ROCKET_TURRET).get());
         TurretBlockEntity turret = (TurretBlockEntity) helper.getBlockEntity(pos);
         if (owner != null) {
             turret.setOwner(owner);
@@ -3294,16 +3476,24 @@ public final class ImtTechGameTests {
         });
     }
 
-    /** Het Raven-torentje (uit de bunker) heeft geen stroom nodig en schiet op spelers. */
+    /**
+     * Een laserturret aan een kern van niemand (zoals in de bunker, hoofdstuk 54: het oude Raven-torentje is ook een
+     * laserturret) schiet op elke speler; het oude blok raven_turret doet precies hetzelfde.
+     */
     @GameTest(template = ARENA, timeoutTicks = 200, batch = "turret")
-    public static void raven_turret_shoots_players(GameTestHelper helper) {
+    public static void laser_turret_of_nobody_shoots_players(GameTestHelper helper) {
         BlockPos pos = new BlockPos(12, 3, 12);
-        placeTurret(helper, pos, true, null);
+        placeCore(helper, new BlockPos(2, 3, 2), null);
+        helper.setBlock(pos, ModBlocks.RAVEN_TURRET.get());
+        if (!(helper.getBlockState(pos).getBlock() instanceof com.senne.imttech.turret.TurretBlock turret)
+                || turret.kind() != com.senne.imttech.turret.TurretKind.SECURITY) {
+            throw new GameTestAssertException("Het oude Raven-torentje is geen laserturret meer");
+        }
         powerTurret(helper, pos.east());
         ServerPlayer player = makeSurvivalOwner(helper, new BlockPos(12, 3, 18));
         helper.succeedWhen(() -> {
             if (player.getHealth() >= player.getMaxHealth()) {
-                throw new GameTestAssertException("Het Raven-torentje heeft de speler nog niet geraakt");
+                throw new GameTestAssertException("De laserturret heeft de speler nog niet geraakt");
             }
         });
     }
@@ -4364,8 +4554,8 @@ public final class ImtTechGameTests {
     }
 
     /**
-     * Een Raven-soldaat met zijn lasergeweer: hij legt aan op een speler in survival en raakt
-     * hem. Zijn geweer laat hij nooit vallen.
+     * Een Raven-soldaat met een wapen van de mod (hoofdstuk 54: een Glock 19, een laser rifle of een laser pistol): hij
+     * legt aan op een speler in survival en raakt hem.
      */
     @GameTest(template = ARENA, timeoutTicks = 200, batch = "raven")
     public static void raven_soldier_shoots(GameTestHelper helper) {
@@ -4373,8 +4563,9 @@ public final class ImtTechGameTests {
         RavenSoldierEntity soldier = helper.spawn(ModEntities.RAVEN_SOLDIER.get(), new BlockPos(14, 3, 12));
         soldier.finalizeSpawn(helper.getLevel(), helper.getLevel().getCurrentDifficultyAt(soldier.blockPosition()),
                 net.minecraft.world.entity.MobSpawnType.SPAWN_EGG, null);
-        if (!soldier.getMainHandItem().is(ModItems.RAVEN_RIFLE.get())) {
-            throw new GameTestAssertException("De soldaat heeft geen lasergeweer");
+        ItemStack weapon = soldier.getMainHandItem();
+        if (com.senne.imttech.guns.FirearmItem.typeOf(weapon) == null && com.senne.imttech.weapons.LaserGunItem.typeOf(weapon) == null) {
+            throw new GameTestAssertException("De soldaat heeft geen Glock of lasergeweer: " + weapon);
         }
         soldier.setTarget(player);
         float start = player.getHealth();

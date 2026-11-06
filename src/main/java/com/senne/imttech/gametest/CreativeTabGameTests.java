@@ -58,7 +58,8 @@ public final class CreativeTabGameTests {
             }
         }
 
-        Set<Item> nowhere = Set.of(ModItems.CRACKED_BLOCK.get(), ModItems.BLOCK_POWDER.get(), ModItems.RAVEN_RIFLE.get());
+        // De oude Raven Turret (hoofdstuk 54: nu een laserturret) blijft bestaan voor oude werelden, maar staat nergens meer.
+        Set<Item> nowhere = Set.of(ModItems.CRACKED_BLOCK.get(), ModItems.BLOCK_POWDER.get(), ModItems.RAVEN_TURRET.get());
         for (DeferredHolder<Item, ? extends Item> holder : ModItems.ITEMS.getEntries()) {
             Item item = holder.get();
             Set<String> tabs = tabsOf.getOrDefault(item, Set.of());

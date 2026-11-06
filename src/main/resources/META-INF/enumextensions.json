@@ -8,6 +8,24 @@
         "class": "com/senne/imttech/client/suit/LaserCannonArmPose",
         "field": "POSE"
       }
+    },
+    {
+      "enum": "net/minecraft/client/model/HumanoidModel$ArmPose",
+      "name": "IMTTECH_CUFFED",
+      "constructor": "(ZLnet/neoforged/neoforge/client/IArmPoseTransformer;)V",
+      "parameters": {
+        "class": "com/senne/imttech/client/cuffs/CuffArmPoses",
+        "field": "CUFFED"
+      }
+    },
+    {
+      "enum": "net/minecraft/client/model/HumanoidModel$ArmPose",
+      "name": "IMTTECH_HOLDING_CUFFS",
+      "constructor": "(ZLnet/neoforged/neoforge/client/IArmPoseTransformer;)V",
+      "parameters": {
+        "class": "com/senne/imttech/client/cuffs/CuffArmPoses",
+        "field": "HOLDING"
+      }
     }
   ]
 }

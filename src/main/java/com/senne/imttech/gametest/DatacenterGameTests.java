@@ -79,12 +79,12 @@ public final class DatacenterGameTests {
             if (!gpu.online() || gpu.cpus() != 0 || gpu.gpus() != 1 || gpu.fans() != 1) {
                 throw new GameTestAssertException("De server met een GPU telt verkeerd: " + gpu + " (" + gpu.problem() + ")");
             }
-            int oneCpu = LogicStats.reactionTicks(1.0);
+            int oneCpu = LogicStats.reactionTicks(LogicStats.logicPower(com.senne.imttech.logic.ServerPartItem.Kind.CPU));
             if (gpu.reactionTicks() != oneCpu * 2) {
                 throw new GameTestAssertException("Een GPU zou twee keer zo traag moeten reageren als een CPU ("
                         + oneCpu * 2 + " ticks), niet " + gpu.reactionTicks());
             }
-            int cpuDelay = LogicStats.brainDelayTicks(1.0);
+            int cpuDelay = LogicStats.brainDelayTicks(LogicStats.brainPower(com.senne.imttech.logic.ServerPartItem.Kind.CPU));
             if (gpu.brainDelayTicks() != Math.round(cpuDelay / 2.0f)) {
                 throw new GameTestAssertException("Met een GPU zou het brein half zo lang moeten wachten als met een CPU ("
                         + cpuDelay / 2 + " ticks), niet " + gpu.brainDelayTicks());
@@ -92,8 +92,10 @@ public final class DatacenterGameTests {
             // Een CPU erbij: samen 1,5 voor Logic en 3 voor het brein.
             rack.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
             LogicServer.Stats both = LogicServer.stats(level, setup.core());
-            if (both.logicPower() != 1.5 || both.brainPower() != 3.0) {
-                throw new GameTestAssertException("CPU + GPU zou 1.5 Logic en 3 brein moeten zijn: " + both.logicPower()
+            double cpu = LogicStats.logicPower(com.senne.imttech.logic.ServerPartItem.Kind.CPU);
+            double cpuBrain = LogicStats.brainPower(com.senne.imttech.logic.ServerPartItem.Kind.CPU);
+            if (Math.abs(both.logicPower() - 1.5 * cpu) > 1.0e-9 || Math.abs(both.brainPower() - 3.0 * cpuBrain) > 1.0e-9) {
+                throw new GameTestAssertException("CPU + GPU zou 1.5 Logic en 3 brein moeten zijn (in CPU's): " + both.logicPower()
                         + " / " + both.brainPower());
             }
             // Een groot datacenter (8 GPU's = kracht 16): geen vertraging meer. Niets: kan niet denken.
@@ -478,8 +480,9 @@ public final class DatacenterGameTests {
         helper.runAfterDelay(3, () -> {
             ImtTechGameTests.startServer(helper, setup.rack(), core);
             settle(level, core, 1);
-            if (DatacenterBrain.delayFor(owner) != LogicStats.brainDelayTicks(1.0)) {
-                throw new GameTestAssertException("Met 1 CPU zou het brein " + LogicStats.brainDelayTicks(1.0)
+            double cpu = LogicStats.brainPower(com.senne.imttech.logic.ServerPartItem.Kind.CPU);
+            if (DatacenterBrain.delayFor(owner) != LogicStats.brainDelayTicks(cpu)) {
+                throw new GameTestAssertException("Met 1 CPU zou het brein " + LogicStats.brainDelayTicks(cpu)
                         + " ticks moeten wachten, niet " + DatacenterBrain.delayFor(owner));
             }
             if (!DatacenterBrain.sourceFor(owner).equals(core.hostname())) {
@@ -492,8 +495,8 @@ public final class DatacenterGameTests {
             // Een GPU erbij: kracht 1 + 2 = 3.
             setup.rackEntity(helper).parts().setItem(3, new ItemStack(ModItems.SERVER_GPU.get()));
             settle(level, core, 1);
-            if (DatacenterBrain.delayFor(owner) != LogicStats.brainDelayTicks(3.0)) {
-                throw new GameTestAssertException("Met een CPU en een GPU zou het " + LogicStats.brainDelayTicks(3.0)
+            if (DatacenterBrain.delayFor(owner) != LogicStats.brainDelayTicks(3.0 * cpu)) {
+                throw new GameTestAssertException("Met een CPU en een GPU zou het " + LogicStats.brainDelayTicks(3.0 * cpu)
                         + " ticks moeten zijn, niet " + DatacenterBrain.delayFor(owner));
             }
             // Warm: half zo snel.
@@ -503,7 +506,7 @@ public final class DatacenterGameTests {
             setup.rackEntity(helper).setTemperature(ImtConfig.Logic.WARM_TEMPERATURE + 5);
             LogicServer.forgetAll();
             core.datacenter().update(level, core);
-            if (DatacenterBrain.delayFor(owner) != LogicStats.brainDelayTicks(3.0 / ImtConfig.Logic.WARM_SLOWDOWN)) {
+            if (DatacenterBrain.delayFor(owner) != LogicStats.brainDelayTicks(3.0 * cpu / ImtConfig.Logic.WARM_SLOWDOWN)) {
                 throw new GameTestAssertException("Warm zou het brein half zo snel moeten zijn: " + DatacenterBrain.delayFor(owner));
             }
             // Nadenken: het datacenter werkt hard, en de Monitor zegt voor wie.

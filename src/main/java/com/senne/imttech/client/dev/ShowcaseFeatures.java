@@ -533,9 +533,10 @@ final class ShowcaseFeatures {
                 .stand(0, RELAY_YARD.getX() + 3.5, RELAY_YARD.getY(), RELAY_YARD.getZ() + 2.5, 180, 65)
                 .pause(60));
 
-        add("Rayshield: personal shield", "Een energieschild om je heen (van buitenaf bekeken). Dan komen er "
-                + "drie pijlen van opzij op je af: het schild vangt ze op (blauwe flits en een tik) en elke "
-                + "treffer kost wat energie van de bril (kijk links boven).", GameType.SURVIVAL,
+        add("Rayshield: personal shield", "Een energieschild om je heen (van buitenaf bekeken): sinds hoofdstuk 54 zie je "
+                + "het als een blauwe bol om je lijf, die zacht klopt (jouw notitie). Dan komen er drie pijlen van opzij op je "
+                + "af: het schild vangt ze op (blauwe flits en een tik) en elke treffer kost wat energie van de bril (kijk "
+                + "links boven).", GameType.SURVIVAL,
                 start, 180, 0, s -> s
                 .action(10, ImtAction.TOGGLE_SHIELD)
                 .camera(10, CameraType.THIRD_PERSON_FRONT)
@@ -591,7 +592,8 @@ final class ShowcaseFeatures {
                     laser(player, LaserActionPayload.Op.COLOR, ShieldColor.BLUE.ordinal());
                 }));
 
-        add("Rayshield: dome", "De schildkoepel gaat aan: eerst een straal omhoog, dan vouwt hij bovenin open "
+        add("Rayshield: dome", "De schildkoepel gaat aan (sinds hoofdstuk 54 een hele bol, die ook onder de generator doorloopt: "
+                + "op een berg beschermt hij de hele berg): eerst een straal omhoog, dan vouwt hij bovenin open "
                 + "en zakt hij in één vloeiende beweging als koepel naar beneden (zonder hapering). De straal uit "
                 + "de generator blijft daarna staan, rustiger. Een pijl van buiten stuit op de rand (flits, en de "
                 + "schildkracht zakt). Daarna het scherm: kleur, bereik, sterkte en wat het aan stroom kost. "
@@ -1025,17 +1027,22 @@ final class ShowcaseFeatures {
 
         // ---------------------------------------------------------------- Vijanden en wereld
         add("Raid drones", "Vijandige drones (donker, oranje lampjes) duiken uit de lucht, cirkelen "
-                + "om je heen en schieten. Ze komen vanzelf als je de bril draagt.", GameType.SURVIVAL,
+                + "om je heen en schieten. Ze komen vanzelf als je de bril draagt. Hoofdstuk 54: een raid begint altijd "
+                + "buiten een basis (een beveiligingskern met haar zone), en in een beschermde zone breken ze niet zomaar "
+                + "in: ze gooien sticky frags op je muren (het alarm gaat af) en EMP's op je torentjes en laserzenders.",
+                GameType.SURVIVAL,
                 start, 180, -20, s -> s
                 .onServer(10, player -> ImtRaids.startRaid(player, 3))
                 .pause(120)
                 .look(0, 0, -10)
                 .pause(160));
 
-        add("Raven soldiers", "Nieuwe vijanden: Raven-soldaten, die straks de Biebia's Industries-bunker bewaken. Zwart tactisch "
-                + "pak, rode bril, het rode embleem op borst en helm. Zien ze je, dan leggen ze hun lasergeweer aan "
-                + "(twee handen) en schieten ze rode laserstralen. Ze schieten ook op je drones, en raak je er "
-                + "één, dan komen de anderen ook. Soms laten ze een Raven-onderdeel vallen.",
+        add("Raven soldiers", "Nieuwe vijanden: Raven-soldaten, die de Biebia's Industries-bunker bewaken. Zwart tactisch "
+                + "pak met vest, magazijntasjes, een radio op de rug en een vizier op de helm. Sinds hoofdstuk 54 dragen ze de "
+                + "wapens van de mod: de helft een Glock 19 (echte kogels), de rest een laser rifle of laser pistol, en sommigen "
+                + "gooien frag- of EMP-granaten als je je verstopt. Zien ze je, dan leggen ze aan (twee handen) en schieten ze. "
+                + "Ze schieten ook op je drones, en raak je er één, dan komen de anderen ook. Soms laten ze een Raven-onderdeel "
+                + "of hun wapen vallen.",
                 GameType.SURVIVAL, start, 180, 0, s -> s
                 .onServer(10, ShowcaseFeatures::spawnRavenSquad)
                 .pause(80)
@@ -1050,7 +1057,9 @@ final class ShowcaseFeatures {
                 + "laser (60 stroom per schot). Er zitten 16 raketten in (Rocket Ammo, met "
                 + "rechtsklik of een trechter), dus om de paar seconden gaat er ook een raket in een boogje op "
                 + "af. Jou raakt hij nooit. Dan zet I.M.T hem uit op zijn naam (hoofdstuk 39: redstone doet niets "
-                + "meer; hij staat in je I.M.T-lijst): de loop hangt omlaag. Rechts een Raven-torentje uit de bunker: dat schiet rode lasers op jou.",
+                + "meer; hij staat in je I.M.T-lijst): de loop hangt omlaag. Rechts een laserturret van Biebia's aan een kern van "
+                + "niemand (hoofdstuk 54: er zijn nog maar twee soorten, de raketturret en de laserturret, allebei via een "
+                + "security OS): die schiet op jou.",
                 GameType.SURVIVAL, at(ShowcaseScene.TURRET.offset(-4, 0, 3)), 200, 10, s -> s
                 .onServer(0, ShowcaseScene::buildTurrets)
                 .pause(40)
@@ -1171,7 +1180,9 @@ final class ShowcaseFeatures {
                 + "verplaatsen en hernoemen mag, weggooien niet), Biebia's map met het rechtsklik-menu (Open, "
                 + "Rename, Delete, Mark as trap), zijn notitie in Notes, dan Devices (de torentjes, drones, "
                 + "laserpoorten en camera's van de toren, met hun status en schakelaars), Access (monsters en "
-                + "spelers aanvallen, vertrouwde spelers) en Logs (wat er op het systeem gebeurde).",
+                + "spelers aanvallen, vertrouwde spelers) en Logs (wat er op het systeem gebeurde). In Settings kies je sinds "
+                + "hoofdstuk 54 welke apps op het bureaublad staan (een vinkje per app: installeren en verwijderen); alleen "
+                + "Settings zelf blijft altijd.",
                 towerPoint(12.5, 57, 20.5), 90, 12, s -> {
             BlockPos core = BIEBIA_TOWER.offset(10, 57, 20);
             s.onServer(0, player -> {
@@ -2752,11 +2763,13 @@ final class ShowcaseFeatures {
         BlockPos b = CUFF_YARD;
         Vec3 bram = Vec3.atBottomCenterOf(b.offset(2, 0, 4)).add(0, 1.2, 0);
         Vec3 soldier = Vec3.atBottomCenterOf(b.offset(4, 0, 4)).add(0, 1.2, 0);
-        add("Handcuffs", "Hoofdstuk 48: handboeien (in survival). Voor je staat Bram, rechts van hem een Raven-soldaat die bijna "
-                + "dood is, links naast je een guard robot die neerligt; achter je een cel van tralies. Je houdt rechtsklik op "
-                + "Bram vast: onderaan telt 'Handcuffing Bram... 2.0 s' af, dan 'You handcuffed Bram', een donker bandje om "
-                + "zijn polsen en een touw van jouw hand naar hem. Dan de soldaat: één klik, want hij is weerloos. Je loopt "
-                + "achteruit de cel in en de soldaat staat elke stap vlak achter je (echt vast, geen lijn met speling). Dan de Handcuff Key op de "
+        add("Handcuffs", "Hoofdstuk 48 (en 54): handboeien (in survival). Voor je staat Bram met zijn rug naar je toe, rechts "
+                + "van hem een Raven-soldaat die bijna dood is, links naast je een guard robot die neerligt; achter je een cel van "
+                + "tralies. Boeien kan alleen via de rug. Je houdt rechtsklik op Bram vast: onderaan telt 'Handcuffing Bram... "
+                + "2.0 s' af, dan 'You handcuffed Bram': zijn handen gaan op zijn rug met het bandje ertussen, jouw handen gaan "
+                + "vooruit aan die boeien, en hij staat vlak voor je met zijn gezicht naar voren. Dan de soldaat: één klik, want "
+                + "hij is weerloos. Je loopt achteruit de cel in en de soldaat staat elke stap vlak voor je, met zijn rug naar "
+                + "je toe (echt vast, geen lijn met speling). Dan de Handcuff Key op de "
                 + "soldaat (je krijgt de boeien terug), terug naar Bram en ook hem los. Tot slot de robot: hij ligt neer, dus "
                 + "één klik (in de app Robots staat hij dan op Handcuffed), en de sleutel maakt hem weer vrij.",
                 GameType.SURVIVAL, at(b.offset(2, 0, 6)), 180, 5, s -> s
@@ -2897,10 +2910,13 @@ final class ShowcaseFeatures {
         BlockPos y = ROOMS_YARD;
         add("Towers and bunkers built from rooms", "Hoofdstuk 51. In de wereld wordt elke Biebia's Industries Tower nu uit kamers "
                 + "gestapeld: de lobby onderaan en de lasergang, de kluis en het dak bovenaan liggen vast; daartussen 5 tot 8 "
-                + "verdiepingen in een willekeurige keuze en volgorde (de beveiliging met de kern zit er altijd bij), uit het lab, "
-                + "het archief, de hangar, de woonverdieping en zes nieuwe: de sportzaal, de kas, de bioscoop, het zwembad, het "
-                + "museum en de serverzaal. Hier staan twee van zulke torens naast elkaar: kijk hoe ze verschillen (en dat de "
-                + "liftkoker overal doorloopt). Daarna een bunker uit zalen, hier op vlak land: de ingang, 3 tot 6 zalen "
+                + "verdiepingen in een willekeurige keuze en volgorde (de beveiliging met de kern zit er altijd bij, en sinds "
+                + "hoofdstuk 54 ook de generatorkamer), uit het lab, het archief, de hangar, de woonverdieping en zes nieuwe: de "
+                + "sportzaal, de kas, de bioscoop, het zwembad, het museum en de serverzaal. De generatorkamer voedt de hele toren: "
+                + "vier reactorcellen en de stroomkast achter obsidiaan, met als enige doorgang een poort van rayshields. Erin kom "
+                + "je door de kern te hacken, met de staff-keycard van een bewaker (de soldaten in de lobby en voor de poort), of "
+                + "via de zwakke plek (het luik VENT 3B van gebarsten tegels in de oostmuur). Hier staan twee van zulke torens "
+                + "naast elkaar: kijk hoe ze verschillen (en dat de liftkoker overal doorloopt). Daarna een bunker uit zalen, hier op vlak land: de ingang, 3 tot 6 zalen "
                 + "(de reactor altijd; verder de grote hal, de wapenkamer, het lab, de cellen, de garage, de kantine, de "
                 + "radiokamer) en de kluis. In een echte wereld zit hij in een berg, zo lang als de berg toelaat.",
                 new Vec3(y.getX() + 55.5, y.getY() + 60, y.getZ() + 150.5), 0, 0, s -> s

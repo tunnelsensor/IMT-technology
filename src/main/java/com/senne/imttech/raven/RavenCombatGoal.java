@@ -115,10 +115,19 @@ public class RavenCombatGoal extends Goal {
         boolean inRange = distance <= ImtConfig.Raven.ATTACK_RANGE;
 
         if (sees && inRange) {
+            // Een drone in de lucht: liever een EMP (hoofdstuk 54), dan valt hij uit de lucht.
+            if (target instanceof com.senne.imttech.drone.DroneEntity && soldier.hasEmpGrenades() && soldier.hasGrenades()
+                    && distance < 14) {
+                soldier.throwGrenade(target.position());
+            }
             holdAndShoot(target, distance);
         } else {
             if (lastSeen != null) {
                 soldier.getLookControl().setLookAt(lastSeen.x, lastSeen.y + 1.4, lastSeen.z);
+                // Verstopt achter een muur, vlakbij: een granaat eroverheen (hoofdstuk 54).
+                if (soldier.hasGrenades() && !sees && lastSeen.distanceTo(soldier.position()) < 14) {
+                    soldier.throwGrenade(lastSeen);
+                }
             }
             if (--replanCooldown <= 0 || soldier.getNavigation().isDone()) {
                 replanCooldown = REPLAN_TICKS;

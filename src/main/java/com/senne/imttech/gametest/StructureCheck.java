@@ -111,7 +111,7 @@ public final class StructureCheck {
         int markers = 0;
         for (BlockPos pos : BlockPos.betweenClosed(box.minX(), box.minY(), box.minZ(), box.maxX(), box.maxY(), box.maxZ())) {
             var state = level.getBlockState(pos);
-            if (state.is(com.senne.imttech.registry.ModBlocks.RAVEN_TURRET.get())) {
+            if (state.is(com.senne.imttech.registry.ModBlocks.SECURITY_TURRET.get())) {
                 turrets++;
             } else if (state.is(com.senne.imttech.registry.ModBlocks.LASER_EMITTER.get())) {
                 emitters++;
@@ -119,7 +119,7 @@ public final class StructureCheck {
                 markers++;
             }
         }
-        ImtTech.LOGGER.info("[structures] biebia_bunker:   {} soldaten, {} Raven-torentjes, {} laserzenders, "
+        ImtTech.LOGGER.info("[structures] biebia_bunker:   {} soldaten, {} laserturrets, {} laserzenders, "
                 + "{} overgebleven structuurblokken", soldiers, turrets, emitters, markers);
     }
 }

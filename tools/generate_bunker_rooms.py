@@ -158,6 +158,9 @@ def build_reactor_piece():
     gb.route((MID + 7, 6, 6), (CEILING_SPINE_X, 6, 6))
     gb.route((33, 0, 11), (FLOOR_SPINE_X, 0, 11))
     gb.turret(30, 1, 11)
+    # De beveiligingskern bij de deur (hoofdstuk 54), aan de vloerlijn: de torentjes van de hele bunker hangen eraan.
+    gb.security_core(MID + 10, 1, 10)
+    gb.route((MID + 10, 0, 10), (MID + 10, 0, 11))
     # De wachtpost aan de westkant: een bureau, een soldaat en een torentje.
     side_room(True, 4, 9)
     gb.put(3, 1, 6, TRIM)

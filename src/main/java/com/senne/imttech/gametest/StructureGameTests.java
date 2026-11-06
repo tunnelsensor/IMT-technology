@@ -73,9 +73,11 @@ public final class StructureGameTests {
         check(seenRooms.containsAll(TowerLayout.ROOMS) && seenCounts.size() == TowerLayout.MAX_FLOORS - TowerLayout.MIN_FLOORS + 1,
                 "Over 200 torens zouden alle kamers en alle aantallen voorbij moeten komen: " + seenRooms + " " + seenCounts);
         check(!TowerLayout.valid(List.of("lobby", "lab", "top")), "Een toren met één kamer zou niet mogen");
-        check(!TowerLayout.valid(List.of("lobby", "lab", "archive", "hangar", "living", "gym", "top")), "Zonder security zou niet mogen");
+        check(!TowerLayout.valid(List.of("lobby", "lab", "archive", "hangar", "living", "power", "top")), "Zonder security zou niet mogen");
+        check(!TowerLayout.valid(List.of("lobby", "lab", "archive", "hangar", "living", "security", "top")), "Zonder generatorkamer zou niet mogen (hoofdstuk 54)");
         List<String> all = new ArrayList<>(TowerLayout.ROOMS);
         all.add(TowerLayout.SECURITY);
+        all.add(TowerLayout.POWER);
         BlockPos ladder = new BlockPos(20, 5, 30);
         for (String room : all) {
             StructureTemplate piece = template(helper, TowerPiece.template(room));
@@ -90,8 +92,14 @@ public final class StructureGameTests {
         check(contains(top, Blocks.CHEST) && contains(top, com.senne.imttech.registry.ModBlocks.LANDING_PAD.get())
                 && contains(top, com.senne.imttech.registry.ModBlocks.LASER_EMITTER.get()), "De top mist de kluis, het platform of de lasers");
         StructureTemplate security = template(helper, TowerPiece.template(TowerLayout.SECURITY));
-        check(contains(security, com.senne.imttech.registry.ModBlocks.SECURITY_CORE.get())
-                && contains(security, com.senne.imttech.registry.ModBlocks.POWER_CABINET.get()), "Security mist de kern of de stroomkast");
+        check(contains(security, com.senne.imttech.registry.ModBlocks.SECURITY_CORE.get()), "Security mist de kern");
+        // Hoofdstuk 54: de generatorkamer heeft de stroomkast, de generatoren, de poort van rayshields, de lezer en de serverkast.
+        StructureTemplate power = template(helper, TowerPiece.template(TowerLayout.POWER));
+        check(contains(power, com.senne.imttech.registry.ModBlocks.POWER_CABINET.get())
+                && contains(power, com.senne.imttech.registry.ModBlocks.HEAT_GENERATOR.get())
+                && contains(power, com.senne.imttech.registry.ModBlocks.LASER_EMITTER.get())
+                && contains(power, com.senne.imttech.registry.ModBlocks.KEYCARD_READER.get())
+                && contains(power, com.senne.imttech.registry.ModBlocks.SERVER_RACK.get()), "De generatorkamer mist de kast, de generatoren, de poort, de lezer of het rek");
         check(contains(template(helper, TowerPiece.template("hangar")), com.senne.imttech.registry.ModBlocks.DRONE_DOCK.get()),
                 "De hangar mist zijn drone-docks");
         check(TowerLayout.height(List.of("lobby", "a", "b", "c", "d", "e", "top")) == 110, "Vijf verdiepingen zouden de klassieke 110 hoog geven");

@@ -61,6 +61,7 @@ public class ImtTechClient {
         modEventBus.addListener(com.senne.imttech.client.guns.FirearmModels::registerExtensions);
         // De holster en de pouches op je heup (hoofdstuk 52, stap 2).
         modEventBus.addListener(com.senne.imttech.client.guns.GearLayer::addLayers);
+        modEventBus.addListener(com.senne.imttech.client.shield.PersonalShieldLayer::addLayers);
         // De gloeiende handpalm en reactor op spelers, en het 3D-model van het harnas.
         modEventBus.addListener(LaserCannonHand::addLayers);
         modEventBus.addListener(TechSuitModel::registerExtensions);
@@ -79,6 +80,7 @@ public class ImtTechClient {
         // Hoofdstuk 44: het randje om verstevigde blokken (met de bril op en de Block Reinforcer in je hand).
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.repair.ReinforcedRenderer::onRenderLevel);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.cuffs.CuffRenderer::onRenderLevel);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.cuffs.CuffRenderer::onRenderPlayer);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.zone.ZoneMarkerControl::onClientTick);
         // Een trigger in je hand: bordjes boven je Remote EMP's of Remote Frags.
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.weapons.TriggerMarkers::onRenderLevel);

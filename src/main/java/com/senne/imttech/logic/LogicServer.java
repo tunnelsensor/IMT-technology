@@ -141,7 +141,10 @@ public final class LogicServer {
                 racks.add(pos);
             }
         }
-        Set<BlockPos> cluster = mainCluster(core.getBlockPos(), racks);
+        // Hoofdstuk 54 (jouw notitie: "meerdere racks aan elkaar zonder dat ze fysiek aan elkaar hangen, via een stroom- en
+        // netwerkkabel of PoE"): met de netwerk-eis aan hoort elk rack aan zijn kabel bij de kern, dus dan tellen ze
+        // allemaal mee, waar ze ook staan. Zonder die eis (een oude wereld) de oude regel: de grootste groep die elkaar raakt.
+        Set<BlockPos> cluster = com.senne.imttech.lan.LanGrid.required() ? Set.copyOf(racks) : mainCluster(core.getBlockPos(), racks);
         int[] counts = new int[ServerPartItem.Kind.values().length];
         for (BlockPos pos : cluster) {
             BlockState state = level.getBlockState(pos);

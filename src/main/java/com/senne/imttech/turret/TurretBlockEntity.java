@@ -90,10 +90,6 @@ public class TurretBlockEntity extends BlockEntity {
         return getBlockState().getBlock() instanceof TurretBlock turret ? turret.kind() : TurretKind.ROCKET;
     }
 
-    public boolean isRaven() {
-        return kind() == TurretKind.RAVEN;
-    }
-
     public ItemStackHandler ammo() {
         return ammo;
     }

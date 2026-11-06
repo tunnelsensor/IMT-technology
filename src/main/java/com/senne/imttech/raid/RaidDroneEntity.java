@@ -19,9 +19,16 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import com.senne.imttech.drone.SkyDive;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,6 +42,12 @@ import org.jetbrains.annotations.Nullable;
  *
  * Hij wordt wél opgeslagen (in tegenstelling tot je eigen drones): een raid die begint moet je
  * ook afmaken, ook als je even uitlogt.
+ *
+ * Hoofdstuk 54 (jouw notitie: "als je een protected zone hebt moeten ze die eerst opblazen of emps gebruiken om je
+ * defences weg te doen"): een blok van een zone breekt hij niet, daar gooit hij een <b>sticky frag</b> op (en het alarm
+ * van de zone gaat af). Zit zijn doelwit in een zone, dan gooit hij ook <b>EMP-granaten</b> op de torentjes en
+ * laserzenders van die kern, zodra hij er vrij zicht op heeft. En hij onthoudt wie hij kwam halen: de raid begint
+ * buiten de basis (zie ImtRaids), verder weg dan hij gewoon kijkt.
  */
 public class RaidDroneEntity extends Monster implements com.senne.imttech.weapons.EmpTarget {
     /** De duik uit de lucht (in een boog naar zijn plek), of null als hij niet (meer) duikt. */
@@ -42,6 +55,13 @@ public class RaidDroneEntity extends Monster implements com.senne.imttech.weapon
     private int fireCooldown;
     /** Wanneer hij weer een blok mag stukmaken. */
     private int breakCooldown;
+    /** Hoofdstuk 54: wie hij kwam halen (null als hij zomaar ergens kwam). */
+    private @Nullable UUID raidTarget;
+    /** Wanneer hij weer een sticky frag op een zone mag gooien, en wanneer weer een EMP op de verdediging. */
+    private int breachCooldown;
+    private int empCooldown;
+    /** Tot zo ver blijft hij zoeken naar wie hij kwam halen (een basis kan groot zijn). */
+    private static final double RAID_FOLLOW_RANGE = 600.0;
 
     public RaidDroneEntity(EntityType<? extends RaidDroneEntity> type, Level level) {
         super(type, level);
@@ -67,6 +87,28 @@ public class RaidDroneEntity extends Monster implements com.senne.imttech.weapon
 
     public boolean isDiving() {
         return dive != null;
+    }
+
+    /** Hoofdstuk 54: voor wie deze raid is. Die blijft hij zoeken, ook als hij buiten de basis begint. */
+    public void setRaidTarget(ServerPlayer player) {
+        this.raidTarget = player.getUUID();
+    }
+
+    public @Nullable UUID raidTargetId() {
+        return raidTarget;
+    }
+
+    /** Wie hij kwam halen, als die nog in deze wereld is, niet in creative, en niet te ver weg; anders null. */
+    private @Nullable Player raidTarget(ServerLevel level) {
+        if (raidTarget == null) {
+            return null;
+        }
+        Player wanted = level.getServer().getPlayerList().getPlayer(raidTarget);
+        if (wanted == null || wanted.level() != level || wanted.isCreative() || wanted.isSpectator()
+                || distanceToSqr(wanted) > RAID_FOLLOW_RANGE * RAID_FOLLOW_RANGE) {
+            return null;
+        }
+        return wanted;
     }
 
     @Override
@@ -96,6 +138,12 @@ public class RaidDroneEntity extends Monster implements com.senne.imttech.weapon
         if (breakCooldown > 0) {
             breakCooldown--;
         }
+        if (breachCooldown > 0) {
+            breachCooldown--;
+        }
+        if (empCooldown > 0) {
+            empCooldown--;
+        }
         // Uitgeschakeld door een EMP-granaat (hoofdstuk 35): naar de grond zakken en daar stil blijven liggen.
         if (com.senne.imttech.weapons.Emp.isJammed(this)) {
             setTarget(null);
@@ -110,8 +158,9 @@ public class RaidDroneEntity extends Monster implements com.senne.imttech.weapon
 
         LivingEntity target = getTarget();
         if (target == null || !target.isAlive() || distanceToSqr(target) > ImtConfig.Raids.GIVE_UP_RANGE * ImtConfig.Raids.GIVE_UP_RANGE) {
-            target = level.getNearestPlayer(this, ImtConfig.Raids.FIND_RANGE);
-            setTarget(target instanceof Player player && !player.isCreative() && !player.isSpectator() ? target : null);
+            Player nearest = level.getNearestPlayer(this, ImtConfig.Raids.FIND_RANGE);
+            target = nearest != null && !nearest.isCreative() && !nearest.isSpectator() ? nearest : raidTarget(level);
+            setTarget(target);
         }
         if (target == null) {
             // Niemand in de buurt: rustig blijven hangen op ooghoogte.
@@ -147,6 +196,12 @@ public class RaidDroneEntity extends Monster implements com.senne.imttech.weapon
                     eye.z + Math.sin(angle) * ImtConfig.Raids.CIRCLE_RADIUS, 0.8);
         }
         lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, eye);
+
+        // Hoofdstuk 54: zit zijn doelwit in een beschermde zone, dan eerst de verdediging weg: een EMP op het
+        // dichtstbijzijnde torentje of de dichtstbijzijnde laserzender van die kern, om de EMP_INTERVAL ticks.
+        if (empCooldown <= 0) {
+            empCooldown = empDefences(level, target) ? Math.round(ImtConfig.Raids.EMP_INTERVAL) : 40;
+        }
 
         if (canSee && distance <= ImtConfig.Raids.ATTACK_RANGE && fireCooldown <= 0) {
             fireLaser(level, target);
@@ -196,7 +251,13 @@ public class RaidDroneEntity extends Monster implements com.senne.imttech.weapon
                 return; // onverwoestbaar (bedrock): hier houdt het op
             }
             if (com.senne.imttech.security.zone.Zones.activeAt(level, pos) != null) {
-                return; // een blok van een zone: daar komt alleen een frag door (hoofdstuk 10 en 35)
+                // Een blok van een zone: daar komt alleen een frag door (hoofdstuk 10 en 35). Dus gooit hij er een
+                // sticky frag op (hoofdstuk 54), om de BREACH_INTERVAL ticks; het alarm van de zone gaat af.
+                if (breachCooldown <= 0) {
+                    throwStickyFrag(level, pos);
+                    breachCooldown = Math.round(ImtConfig.Raids.BREACH_INTERVAL);
+                }
+                return;
             }
             level.destroyBlock(pos, true, this);
             level.sendParticles(ParticleTypes.ELECTRIC_SPARK, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
@@ -205,6 +266,66 @@ public class RaidDroneEntity extends Monster implements com.senne.imttech.weapon
                     new BeamEffectPayload(from, Vec3.atCenterOf(pos), BeamEffectPayload.Kind.DRONE_LASER));
             return;
         }
+    }
+
+    /** Een sticky frag tegen het zoneblok op {@code at} (hoofdstuk 54): die plakt en gaat dan af (zie StickyGrenade). */
+    private void throwStickyFrag(ServerLevel level, BlockPos at) {
+        com.senne.imttech.weapons.StickyGrenade grenade = new com.senne.imttech.weapons.StickyGrenade(level, this, true);
+        grenade.setPos(getX(), getY() + getBbHeight() * 0.3, getZ());
+        Vec3 d = Vec3.atCenterOf(at).subtract(grenade.position());
+        grenade.shoot(d.x, d.y, d.z, 0.9f, 0.5f);
+        level.addFreshEntity(grenade);
+        playSound(net.minecraft.sounds.SoundEvents.SNOWBALL_THROW, 0.7f, 0.8f);
+    }
+
+    /**
+     * Een EMP op de verdediging (hoofdstuk 54): het dichtstbijzijnde torentje of de dichtstbijzijnde laserzender van de
+     * kern van de zone waar zijn doelwit in zit (of waar hij zelf bij staat), binnen DEVICE_REACH blokken, nog aan, in
+     * het zicht, en niet zo dichtbij dat zijn eigen EMP hem raakt. Geeft true als hij er een gooide.
+     */
+    private boolean empDefences(ServerLevel level, LivingEntity target) {
+        com.senne.imttech.security.zone.ZoneData.Zone zone =
+                com.senne.imttech.security.zone.Zones.activeAt(level, target.blockPosition());
+        if (zone == null) {
+            zone = com.senne.imttech.security.zone.Zones.activeNear(level, blockPosition(), ImtConfig.Raids.DEVICE_REACH);
+        }
+        if (zone == null || !(level.getBlockEntity(zone.core().pos())
+                instanceof com.senne.imttech.security.SecurityCoreBlockEntity core)) {
+            return false;
+        }
+        com.senne.imttech.security.SecurityDevices.Found found = com.senne.imttech.security.SecurityDevices.scan(level, core);
+        List<BlockPos> devices = new ArrayList<>(found.turrets());
+        devices.addAll(found.emitters());
+        Vec3 from = position().add(0, getBbHeight() * 0.3, 0);
+        double reach = ImtConfig.Raids.DEVICE_REACH * ImtConfig.Raids.DEVICE_REACH;
+        double safe = ImtConfig.Weapons.EMP_RADIUS + 2;
+        BlockPos best = null;
+        double bestDistance = Double.MAX_VALUE;
+        for (BlockPos pos : devices) {
+            double distance = pos.distToCenterSqr(from);
+            if (distance > reach || distance < safe * safe || distance >= bestDistance
+                    || com.senne.imttech.weapons.Emp.isOut(level, pos)) {
+                continue;
+            }
+            Vec3 centre = Vec3.atCenterOf(pos);
+            HitResult wall = level.clip(new ClipContext(from, centre, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this));
+            if (wall.getType() != HitResult.Type.MISS && wall.getLocation().distanceToSqr(centre) > 2.25) {
+                continue; // er zit iets tussen
+            }
+            best = pos;
+            bestDistance = distance;
+        }
+        if (best == null) {
+            return false;
+        }
+        com.senne.imttech.weapons.RollingGrenade grenade = com.senne.imttech.weapons.RollingGrenade.thrown(
+                com.senne.imttech.weapons.RollingGrenade.Kind.EMP, level, this);
+        Vec3 d = Vec3.atCenterOf(best).subtract(grenade.position());
+        double flat = Math.sqrt(d.x * d.x + d.z * d.z);
+        grenade.shoot(d.x, d.y + flat * 0.15, d.z, (float) Mth.clamp(0.5 + flat * 0.04, 0.5, 1.2), 0.5f);
+        level.addFreshEntity(grenade);
+        playSound(net.minecraft.sounds.SoundEvents.SNOWBALL_THROW, 0.7f, 0.8f);
+        return true;
     }
 
     /** Eén tick van de duik: naar de volgende plek op de boog, met een rookspoor erachter. */
@@ -254,12 +375,16 @@ public class RaidDroneEntity extends Monster implements com.senne.imttech.weapon
     public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
         tag.putInt("Fire", fireCooldown);
+        if (raidTarget != null) {
+            tag.putUUID("RaidTarget", raidTarget);
+        }
     }
 
     @Override
     public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
         fireCooldown = tag.getInt("Fire");
+        raidTarget = tag.hasUUID("RaidTarget") ? tag.getUUID("RaidTarget") : null;
     }
 
     /**

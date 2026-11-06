@@ -43,6 +43,11 @@ public final class RoomPlacer {
         return layout;
     }
 
+    /** Eén kamer van de toren neerzetten (voor de screenshots van hoofdstuk 54: de generatorkamer alleen). */
+    public static void placeRoom(ServerLevel level, String room, BlockPos at, Rotation rotation) {
+        place(level, TowerPiece.template(room), at, rotation);
+    }
+
     /** Eén stuk neerzetten, en de soldaten uit zijn markeringen erbij (zoals BiebiaBunkerPiece dat bij het bouwen doet). */
     private static void place(ServerLevel level, ResourceLocation template, BlockPos at, Rotation rotation) {
         StructureTemplate structure = level.getStructureManager().getOrCreate(template);
@@ -50,9 +55,15 @@ public final class RoomPlacer {
         structure.placeInWorld(level, at, at, settings, level.random, Block.UPDATE_CLIENTS);
         for (StructureTemplate.StructureBlockInfo info : structure.filterBlocks(at, settings, Blocks.STRUCTURE_BLOCK, true)) {
             CompoundTag nbt = info.nbt();
-            if (nbt != null && BiebiaBunkerPiece.SOLDIER.equals(nbt.getString("metadata"))) {
+            if (nbt == null) {
+                continue;
+            }
+            if (BiebiaBunkerPiece.SOLDIER.equals(nbt.getString("metadata"))) {
                 level.setBlock(info.pos(), Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
                 BiebiaBunkerPiece.spawnSoldier(level, info.pos(), level.random);
+            } else if (TowerGuards.GUARD.equals(nbt.getString("metadata"))) {
+                level.setBlock(info.pos(), Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
+                TowerGuards.spawnGuard(level, info.pos(), level.random);
             }
         }
     }

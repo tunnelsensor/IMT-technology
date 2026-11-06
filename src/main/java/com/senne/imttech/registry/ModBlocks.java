@@ -265,8 +265,9 @@ public final class ModBlocks {
                     .noOcclusion());
 
     /** Het vijandige torentje uit de Biebia's Industries-bunker. */
+    /** Het oude Raven-torentje van de bunker: sinds hoofdstuk 54 gewoon een laserturret (voor oude werelden). */
     public static final DeferredBlock<com.senne.imttech.turret.TurretBlock> RAVEN_TURRET = BLOCKS.registerBlock(
-            "raven_turret", properties -> new com.senne.imttech.turret.TurretBlock(com.senne.imttech.turret.TurretKind.RAVEN, properties),
+            "raven_turret", properties -> new com.senne.imttech.turret.TurretBlock(com.senne.imttech.turret.TurretKind.SECURITY, properties),
             BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_BLACK)
                     .strength(5.0f, 9.0f)

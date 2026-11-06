@@ -434,8 +434,8 @@ final class ShowcaseScene {
     }
 
     /**
-     * De torentjes-demo: een Biebia's Industries-torentje met een volle warmtegenerator ernaast en 16 raketten
-     * erin (van jou), en rechts daarvan een Raven-torentje.
+     * De torentjes-demo: een raketturret met een volle warmtegenerator ernaast en 16 raketten erin (van jou), en
+     * rechts daarvan een laserturret van Biebia's aan een kern van niemand.
      */
     static void buildTurrets(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
@@ -448,7 +448,15 @@ final class ShowcaseScene {
         if (level.getBlockEntity(TURRET.east()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
             generator.fill(100_000);
         }
-        level.setBlockAndUpdate(TURRET.offset(7, 0, -2), ModBlocks.RAVEN_TURRET.get().defaultBlockState());
+        // Rechts een laserturret van Biebia's (hoofdstuk 54: het Raven-torentje is er niet meer), aan een kern van
+        // niemand met een generator eronder: die schiet op iedereen, ook op jou.
+        BlockPos laser = TURRET.offset(7, 0, -2);
+        level.setBlockAndUpdate(laser, ModBlocks.SECURITY_TURRET.get().defaultBlockState());
+        level.setBlockAndUpdate(laser.east(), ModBlocks.SECURITY_CORE.get().defaultBlockState());
+        level.setBlockAndUpdate(laser.east().below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+        if (level.getBlockEntity(laser.east().below()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
+            generator.fill(100_000);
+        }
     }
 
     /** Twee husks ver voor het torentje, die op je af komen. */

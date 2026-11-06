@@ -50,6 +50,17 @@ public final class SystemDefaults {
         fs.write("/home/biebia/notes.txt", "TODO: rename the security daemon (again).\n"
                 + "Jens keeps killing it by name. New name is in /etc/security.conf.\n"
                 + "Also: stop leaving the maintenance port open. - T");
+        // Hoofdstuk 54: een briefje over de generatorkamer. Niet de uitleg, wel alle aanwijzingen (de zwakke plek, de
+        // staff-kaarten van de bewakers, het diagram dat de poort opent).
+        fs.write("/home/biebia/power.txt", "Generator room, for whoever has night shift:\n"
+                + "- The gate is a rayshield. Staff card on the reader = 8 seconds open. Don't\n"
+                + "  lose your card: the guards carry spares.\n"
+                + "- The diagram that opens it is called 'Generator room' (Logic app). Do not\n"
+                + "  'improve' it, Seppe.\n"
+                + "- VENT 3B in the east wall is still cracked tiles instead of obsidian. Yes, I\n"
+                + "  know. It's on the list.\n"
+                + "- Pull the main cabinet and EVERYTHING goes dark: turrets, lasers, the vault.\n"
+                + "  So don't. - T");
         fs.putSystemFile("/etc/security.conf", securityConf(daemon));
         fs.write("/etc/hostname", BIEBIA_HOST);
         fs.mkdirs("/var/log");

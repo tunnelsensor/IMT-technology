@@ -60,6 +60,8 @@ public final class LaserCannonHand {
     private static final float ARM_SCALE = 0.85f;
     /** Waar de pols zit, gemeten langs de arm vanaf de schouder (in blokken; de arm is 10/16 lang). */
     private static final float WRIST = 9.5f / 16f;
+    /** Het eind van de arm (de hand): 12 pixels vanaf de schouder. */
+    private static final float HAND = 12f / 16f;
 
     private static final ResourceLocation SUIT_TEXTURE =
             ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "textures/models/armor/tech_layer_1.png");
@@ -208,13 +210,14 @@ public final class LaserCannonHand {
         raise = raise * raise * (3 - 2 * raise); // zacht beginnen en zacht stoppen
         float recoil = recoil(player, partialTick);
 
-        // Waar je onderarm naar wijst (x rechts, y omhoog, -z vooruit): vooruit, iets naar binnen
-        // en omhoog. Bij de terugslag wipt hij verder omhoog.
-        Vector3f dir = new Vector3f(-0.2f * side, 0.16f + 0.3f * recoil, -1).normalize();
-        // De pols rechtsonder in beeld; de schouder zit daar een onderarm achter.
-        Vector3f wrist = new Vector3f(0.36f * side, -0.34f - (1 - raise) * 0.8f, -1.0f);
+        // Waar je arm naar wijst (x rechts, y omhoog, -z vooruit): vooruit, naar het midden van je beeld toe en iets
+        // omhoog. Bij de terugslag wipt hij verder omhoog. (Hoofdstuk 54, jouw notitie: de arm is nu één recht stuk
+        // met de gloeiende handpalm op het eind, zonder de geknikte "hand" die er raar uitzag.)
+        Vector3f dir = new Vector3f(-0.42f * side, 0.2f + 0.3f * recoil, -1).normalize();
+        // De pols rechtsonder in beeld; de schouder zit daar een arm achter.
+        Vector3f wrist = new Vector3f(0.42f * side, -0.36f - (1 - raise) * 0.8f, -0.9f);
         wrist.add(0, 0.004f * Mth.sin(time * 0.12f), 0); // een beetje ademen
-        Vector3f shoulder = new Vector3f(dir).mul(-(WRIST * ARM_SCALE + 0.08f * recoil)).add(wrist);
+        Vector3f shoulder = new Vector3f(dir).mul(-(HAND * ARM_SCALE + 0.08f * recoil)).add(wrist);
 
         // De stand van de arm: zijn lengte (y) langs "dir", zijn voorkant (-z) naar boven, net
         // als een echte arm die je naar voren optilt. Dan wijst de buitenkant (-x) vanzelf naar buiten.
@@ -230,24 +233,17 @@ public final class LaserCannonHand {
         pose.pushPose();
         pose.translate(shoulder.x, shoulder.y, shoulder.z);
         pose.mulPose(turn);
+        // Iets om zijn as gedraaid, zodat je de buitenkant en de bovenkant van je arm ziet (zoals je eigen arm als je
+        // hem vooruit steekt), niet alleen de onderkant.
+        pose.mulPose(Axis.YP.rotationDegrees(-28 * side));
         pose.scale(ARM_SCALE, ARM_SCALE, ARM_SCALE);
-        // De onderarm: gewoon je arm (met de onderarmbeschermer van het harnas).
+        // Je arm (met de schouderplaat en de onderarmbeschermer van het harnas), recht vooruit; de hand is het eind.
         drawArm(mc, player, arm, suit, false, pose, buffers, light);
-        // De hand: nog eens je arm, maar half zo lang, bij de pols omhoog geknikt (een kwartslag),
-        // zodat de handpalm naar voren wijst. Bij een schot knikt hij nog wat verder door.
-        pose.pushPose();
-        pose.translate(0, WRIST, -1 / 16f);
-        pose.mulPose(Axis.XP.rotationDegrees(-90 - 20 * recoil));
-        pose.scale(1, 0.5f, 1);
-        drawArm(mc, player, arm, suit, true, pose, buffers, light);
-        pose.popPose();
         pose.popPose();
 
-        // De gloed van de handpalm: je kijkt tegen de rug van je hand, dus tekenen we het licht
-        // bovenop, naar je toe gedraaid, alsof het om je hand heen straalt.
-        boolean slim = player.getSkin().model() == PlayerSkin.Model.SLIM;
-        float face = WRIST + (suit ? 3f : 2f) / 16f + 0.01f;
-        Vector3f palm = new Vector3f(palmX(arm, slim), face, -3 / 16f).mul(ARM_SCALE);
+        // De gloed van de handpalm op het eind van je arm, naar je toe gedraaid, alsof het licht om je hand heen straalt.
+        float face = HAND + (suit ? 1f : 0f) / 16f + 0.02f;
+        Vector3f palm = new Vector3f(0, face, 0).mul(ARM_SCALE);
         Vector3f centre = turn.transform(palm).add(shoulder);
         halo(pose, buffers.getBuffer(SuitEffects.GLOW_ON_TOP), centre, glow(player, partialTick, time));
     }

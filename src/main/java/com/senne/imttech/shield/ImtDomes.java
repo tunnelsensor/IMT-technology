@@ -184,8 +184,7 @@ public final class ImtDomes {
             Vec3 motion = projectile.getDeltaMovement();
             boolean inward = motion.dot(center.subtract(projectile.position())) > 0;
             boolean atShell = distance <= radius + 2.5 && distance + motion.length() >= radius - 1.0;
-            if (!inward || !atShell || projectile.getY() < center.y - 1.5
-                    || friendly(level, dome, responsible(projectile))) {
+            if (!inward || !atShell || friendly(level, dome, responsible(projectile))) {
                 continue;
             }
             impact(level, dome, projectile.position().subtract(motion), projectile.position());

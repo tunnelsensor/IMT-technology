@@ -292,10 +292,6 @@ public final class ModItems {
     public static final DeferredItem<Item> RAVEN_CIRCUIT = ITEMS.registerSimpleItem("raven_circuit",
             new Item.Properties().rarity(Rarity.RARE));
 
-    /** Het geweer van de Raven-soldaten. Alleen zij hebben het; het valt nooit. */
-    public static final DeferredItem<Item> RAVEN_RIFLE = ITEMS.registerSimpleItem("raven_rifle",
-            new Item.Properties().stacksTo(1));
-
     /** Om een Raven-soldaat neer te zetten (creative). */
     public static final DeferredItem<DeferredSpawnEggItem> RAVEN_SOLDIER_SPAWN_EGG = ITEMS.register(
             "raven_soldier_spawn_egg", () -> new DeferredSpawnEggItem(ModEntities.RAVEN_SOLDIER, 0x18191C, 0xCD2020,

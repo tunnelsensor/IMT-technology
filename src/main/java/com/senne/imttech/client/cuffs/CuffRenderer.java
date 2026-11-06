@@ -16,12 +16,35 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import org.joml.Matrix4f;
 
 /**
- * Het touw van de handboeien (hoofdstuk 48): van de hand van wie iemand vasthoudt naar de geboeide, een beetje
- * doorhangend, zoals een lijn aan een dier. En om de polsen van wie geboeid is een klein donker bandje, zodat je ook
- * zonder touw ziet dat hij geboeid is. Wie geboeid is en door wie, komt mee met het wezen (de attachment CUFFS).
+ * De handboeien in beeld (hoofdstuk 48; sinds hoofdstuk 54 zonder lange lijn): om de polsen van wie geboeid is, achter
+ * zijn rug, een donker bandje (zijn handen zitten daar, zie CuffArmPoses), en van de handen van wie hem vasthoudt (vlak
+ * achter hem, de handen vooruit) een kort stukje ketting naar die boeien. Wie geboeid is en door wie, komt mee met het
+ * wezen (de attachment CUFFS). Wie iemand vasthoudt, onthouden we hier per frame: zo weet de tekenaar van spelers dat
+ * zijn handen vooruit moeten.
  */
 public final class CuffRenderer {
     private CuffRenderer() {}
+
+    /** De spelers die op dit moment iemand vasthouden (het vorige frame; genoeg voor de armen). */
+    private static final java.util.Set<UUID> HOLDERS = new java.util.HashSet<>();
+
+    /** Houdt deze speler iemand aan de boeien vast? */
+    public static boolean isHolding(UUID player) {
+        return HOLDERS.contains(player);
+    }
+
+    /** De armen van spelers (hoofdstuk 54): geboeid = handen op de rug; iemand vasthouden = handen vooruit aan de boeien. */
+    public static void onRenderPlayer(net.neoforged.neoforge.client.event.RenderPlayerEvent.Pre event) {
+        Player player = event.getEntity();
+        net.minecraft.client.model.PlayerModel<?> model = event.getRenderer().getModel();
+        if (Handcuffs.isCuffed(player)) {
+            model.rightArmPose = CuffArmPoses.CUFFED.getValue();
+            model.leftArmPose = CuffArmPoses.CUFFED.getValue();
+        } else if (isHolding(player.getUUID())) {
+            model.rightArmPose = CuffArmPoses.HOLDING.getValue();
+            model.leftArmPose = CuffArmPoses.HOLDING.getValue();
+        }
+    }
 
     /** Touwkleur (beige) en de boeien zelf (donker staal). */
     private static final int ROPE = 0xD2BC8E;
@@ -44,6 +67,7 @@ public final class CuffRenderer {
         boolean any = false;
         VertexConsumer out = null;
         Matrix4f m = null;
+        HOLDERS.clear();
         for (Entity entity : mc.level.entitiesForRendering()) {
             if (!(entity instanceof LivingEntity living) || !Handcuffs.isCuffed(living) || living.distanceToSqr(cam) > 64 * 64) {
                 continue;
@@ -68,12 +92,12 @@ public final class CuffRenderer {
             if (holder == null || holder == living) {
                 continue;
             }
-            // Het touw: van de hand van wie hem vasthoudt naar zijn polsen, met een buik erin.
+            HOLDERS.add(holderId);
+            // Het stukje ketting: van de handen van wie hem vasthoudt (vooruit, op borsthoogte) naar zijn polsen.
             Vec3 look = holder.getViewVector(partial);
-            Vec3 right = new Vec3(-look.z, 0, look.x).normalize();
-            Vec3 hand = holder.getEyePosition(partial).add(look.scale(0.35)).add(right.scale(0.3)).subtract(0, 0.45, 0);
+            Vec3 hand = holder.getEyePosition(partial).add(new Vec3(look.x, 0, look.z).normalize().scale(0.55)).subtract(0, 0.6, 0);
             double distance = hand.distanceTo(wrists);
-            double sag = Math.min(0.7, 0.12 * distance);
+            double sag = Math.min(0.25, 0.1 * distance);
             Vec3 previous = hand;
             for (int i = 1; i <= SEGMENTS; i++) {
                 double t = (double) i / SEGMENTS;

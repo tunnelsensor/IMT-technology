@@ -97,6 +97,8 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     private boolean lasersEnabled = true;
     /** Staan de camera's in dit gebied aan? */
     private boolean camerasEnabled = true;
+    /** Hoofdstuk 54 (jouw notitie): de apps die de eigenaar van het bureaublad haalde (Settings > Apps on this desktop). */
+    private final java.util.LinkedHashSet<String> hiddenApps = new java.util.LinkedHashSet<>();
 
     // ---------------------------------------------------------------- Autorisatiecodes (hoofdstuk 49)
     /** Hoeveel cijfers (0 = de config), om de hoeveel minuten (0 = de config), en of de vorige code nog mag. */
@@ -211,6 +213,8 @@ public class SecurityCoreBlockEntity extends BlockEntity {
             // Van niemand: dit is de kern van een Biebia's Industries Tower (het systeem van Biebia).
             hostname = SystemDefaults.BIEBIA_HOST;
             SystemDefaults.biebiaFiles(fs, daemon);
+            // Hoofdstuk 54: het diagram "Generator room" en de groep "staff" (zie structures/TowerGuards).
+            com.senne.imttech.structures.TowerGuards.installBiebiaLogic(logic);
         } else {
             hostname = SystemDefaults.hostFor(ownerName);
             SystemDefaults.playerFiles(fs, ownerName, daemon);
@@ -314,6 +318,21 @@ public class SecurityCoreBlockEntity extends BlockEntity {
 
     public void setAttackMobs(boolean on) {
         attackMobs = on;
+        setChanged();
+    }
+
+    /** Hoofdstuk 54: de apps (hun namen, zoals KEYCARDS) die niet op het bureaublad van deze kern staan. */
+    public java.util.Set<String> hiddenApps() {
+        return java.util.Collections.unmodifiableSet(hiddenApps);
+    }
+
+    /** Een app van het bureaublad halen ({@code hidden}) of terugzetten. */
+    public void setAppHidden(String app, boolean hidden) {
+        if (hidden) {
+            hiddenApps.add(app);
+        } else {
+            hiddenApps.remove(app);
+        }
         setChanged();
     }
 
@@ -888,6 +907,11 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         tag.putBoolean("DronesOn", dronesEnabled);
         tag.putBoolean("LasersOn", lasersEnabled);
         tag.putBoolean("CamerasOn", camerasEnabled);
+        net.minecraft.nbt.ListTag hidden = new net.minecraft.nbt.ListTag();
+        for (String app : hiddenApps) {
+            hidden.add(net.minecraft.nbt.StringTag.valueOf(app));
+        }
+        tag.put("HiddenApps", hidden);
         // Autorisatiecodes (hoofdstuk 49)
         tag.putInt("AuthLength", authLength);
         tag.putInt("AuthMinutes", authMinutes);
@@ -952,6 +976,10 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         // beveiliging op monsters aan, op spelers uit, alle apparaten aan.
         attackMobs = !tag.contains("AttackMobs") || tag.getBoolean("AttackMobs");
         attackPlayers = tag.getBoolean("AttackPlayers");
+        hiddenApps.clear();
+        for (Tag app : tag.getList("HiddenApps", Tag.TAG_STRING)) {
+            hiddenApps.add(app.getAsString());
+        }
         // Autorisatiecodes (hoofdstuk 49); een oude kern krijgt zijn eerste code bij de volgende tick.
         authLength = tag.getInt("AuthLength");
         authMinutes = tag.getInt("AuthMinutes");

@@ -129,10 +129,12 @@ public class DomeGeneratorBlockEntity extends BlockEntity {
         return Vec3.atCenterOf(getBlockPos());
     }
 
-    /** Ligt dit punt binnen de koepel (de bovenste helft van een bol om de generator)? */
+    /**
+     * Ligt dit punt binnen de koepel? Sinds hoofdstuk 54 (jouw notitie: "de dome moet ook lager kunnen gaan, een
+     * generator op een berg beschermt de hele berg") is dat een hele bol om de generator, niet alleen de bovenste helft.
+     */
     public boolean contains(Vec3 point) {
-        Vec3 center = center();
-        return point.y >= center.y - 1.5 && point.distanceToSqr(center) <= (double) radius() * radius();
+        return point.distanceToSqr(center()) <= (double) radius() * radius();
     }
 
     // ---------------------------------------------------------------- Instellen (vanaf het scherm)

@@ -3152,6 +3152,20 @@ def raven_soldier():
     d.rectangle([4, 23, 7, 24], fill=RAVEN_GREY)                    # kniestuk voor
     d.rectangle([0, 27, 15, 31], fill=dark)                          # laars
     d.line([0, 31, 15, 31], fill=(58, 50, 44, 255))                  # zool
+    # Hoofdstuk 54 (jouw notitie: "maak de models leuker"): een vizier op de helm, drie magazijntasjes en een
+    # borstband op het vest, een radio met antenne op de rug, een mes op het rechterbeen en een naamplaatje.
+    d.line([40, 10, 47, 10], fill=(120, 150, 170, 255))              # het vizier (de hoedlaag, voorkant)
+    px(im, [(42, 10), (45, 10)], (180, 210, 230, 255))
+    for x0 in (20, 23, 26):                                          # tasjes onder het vest
+        d.rectangle([x0, 25, x0 + 1, 27], fill=(62, 64, 70, 255))
+        px(im, [(x0, 25), (x0 + 1, 25)], (104, 108, 116, 255))
+    d.line([20, 23, 27, 23], fill=(70, 72, 78, 255))                  # borstband
+    d.rectangle([33, 21, 35, 25], fill=(54, 54, 58, 255))             # radio op de rug
+    px(im, [(34, 20)], METAL_3)                                        # antenne
+    px(im, [(34, 22)], (200, 60, 50, 255))                             # lampje
+    d.rectangle([4, 19, 4, 23], fill=(150, 156, 166, 255))            # mes op het been (voorkant)
+    px(im, [(4, 19)], (58, 44, 30, 255))
+    px(im, [(26, 21), (27, 21)], (170, 170, 176, 255))                 # naamplaatje op de borst
     save(im, "entity/raven_soldier.png")
 
 
