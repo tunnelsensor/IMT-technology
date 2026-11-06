@@ -4549,6 +4549,25 @@ tabblad Weapons; de staven, blends en polymeer in Resources.
       inventaris, het wiel, trekken, de magazijnpouch, herladen, op je heup van voren en van achteren); showcase 115
       **"Gun skills"**, screenshots `-Ponly=skills` (`sk01` de boom met punten, `sk02` met niveaus geleerd).
 
+### 53. Uit je showcase-notities van 4 november, en de showcase-inhoud (6 november)
+
+Jouw vraag: "de showcase toont niet juist de nieuwe dingen, kun je dat oplossen; ook wil ik dat je de notities van de showcase
+leest, uitvoert en dan leegmaakt".
+
+- [x] **1. Showcase 108, "het glass is niet see-through"** — het blokmodel van Battery Glass stond op `cutout`: dan tekent
+      Minecraft elke pixel met een beetje alpha gewoon dicht. Nu `translucent`: het glas mengt echt met wat erachter staat
+      (de cellen zijn te zien).
+- [x] **2. Showcase 109, "zorg dat de handboeien niet echt een lead zijn maar dat je de speler precies vast hebt"** — geen
+      lijn met 3 blokken speling meer: wie je vasthoudt staat elke tick ruim een blok achter je (`[handcuffs] holdDistance`,
+      in plaats van `leash`) en draait mee; een klein verschil wordt weggeduwd, raakt hij ver weg dan staat hij in één keer
+      weer achter je (`Handcuffs.hold`). Test `handcuffs_catch_block_drag_and_key` aangepast.
+- [x] **3. De inhoud van de showcase** — `tools/showcase.py` leest de titels uit `ShowcaseFeatures.java` in de volgorde van
+      het bestand, maar de methodes van hoofdstuk 47-52 stonden in een andere volgorde dan het spel ze speelt. Daardoor zei
+      het script "de inhoud klopt niet helemaal met het spel" en liet het alles onder "Alles" zien, zonder delen. De methodes
+      staan nu in de volgorde van het spel, elk met een eigen kopje (De Power Battery, Handboeien, Autorisatiecodes, De
+      I.M.T Phone, Torens en bunkers uit kamers, Vuurwapens: de Glock 19).
+- [x] **4. De notities zijn leeg.**
+
 ---
 
 ## Nog nooit in het spel bekeken

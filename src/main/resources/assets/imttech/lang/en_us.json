@@ -1626,7 +1626,7 @@
   "cuffs.imttech.escaped": "%s struggled free of the handcuffs.",
   "cuffs.imttech.released": "%s took your handcuffs off.",
   "cuffs.imttech.released_by_you": "You freed %s and got the Handcuffs back.",
-  "cuffs.imttech.hold": "You take hold of %s: they are pulled along once they fall more than %s blocks behind.",
+  "cuffs.imttech.hold": "You hold %s: they stay right behind you. Right-click them again to let go.",
   "cuffs.imttech.let_go": "You let go of %s.",
   "cuffs.imttech.lost": "You lost your hold on %s: too far away.",
   "cuffs.imttech.blocked": "You are handcuffed.",

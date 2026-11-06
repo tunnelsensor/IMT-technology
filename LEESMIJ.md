@@ -1201,10 +1201,11 @@ gevangen:
   gaan meteen weer dicht), niet slaan, niet eten, niets weggooien. Hij loopt op halve snelheid en kan
   niet sprinten. Een robot stopt zijn programma en staat stil (in de app Robots: **Handcuffed**); een
   soldaat doet niets meer. Je ziet een donker bandje om zijn polsen.
-- **Meenemen**: wie hem boeit, houdt hem meteen vast: een touw loopt van je hand naar zijn polsen. Loop weg
-  en hij wordt achter je aan getrokken zodra hij meer dan 3 blokken achterblijft; verder dan 10 blokken
-  ben je hem kwijt (hij blijft wel geboeid). **Rechtsklik** op hem met de boeien in je hand: loslaten, of
-  weer vastpakken.
+- **Meenemen**: wie hem boeit, houdt hem meteen vast: een touw loopt van je hand naar zijn polsen, en hij
+  staat vlak achter je (ruim een blok) en komt precies mee als je loopt of draait, geen lijn met speling.
+  Raakt hij toch ver weg (een klap, een val), dan staat hij meteen weer achter je; verder dan 10 blokken ben
+  je hem kwijt (hij blijft wel geboeid). **Rechtsklik** op hem met de boeien in je hand: loslaten, of weer
+  vastpakken.
 - **Los**: met een **Handcuff Key** (een ijzeren nugget op een ijzeren staaf) op hem; jij krijgt de boeien
   terug. Of hij worstelt zich los: **30 seconden sluipen** (onderaan zie je het aftellen; stop je, dan loopt
   het terug). Dan zijn de boeien kapot. Een soldaat die niemand vasthoudt, wurmt zich na die 30 seconden
@@ -1212,7 +1213,7 @@ gevangen:
 - Na opnieuw inloggen ben je nog geboeid; ga je dood, dan vallen de boeien op de grond. Wie in creative is,
   kun je niet boeien.
 
-De getallen staan in `config/imttech.toml` onder `[handcuffs]` (`holdSeconds`, `struggleSeconds`, `leash`,
+De getallen staan in `config/imttech.toml` onder `[handcuffs]` (`holdSeconds`, `struggleSeconds`, `holdDistance`,
 `letGo`, `slow`, `weakHealth`, `reach`).
 
 ### Guard robots: bouwen, laden, aan en uit

@@ -2666,152 +2666,228 @@ final class ShowcaseFeatures {
     }
 
     /** Hoofdstuk 52, stap 3: de skilltree. */
-    private static void addSkills() {
-        BlockPos w = ShowcaseScene.WEAPONS;
-        Vec3 stand = new Vec3(w.getX() + 0.5, w.getY() + 1, w.getZ() + 0.5);
-        add("Gun skills", "Hoofdstuk 52, stap 3. Alles wat je met een pistool doet geeft ervaring (een schot, een treffer, "
-                + "herladen, een tap-rack, een patroon in een magazijn, trekken); elke keer dat de balk vol is krijg je een "
-                + "skillpunt, en elk volgend punt kost meer. Je begint hier met 7 punten. G > Combat > Gun skills: links de "
-                + "globale skills (voor elk vuurwapen, 5% per niveau, een niveau kost het dubbele), rechts die van de Glock 19 "
-                + "zelf (8% per niveau); ze tellen op. Ik leer Reload op de Glock (1 punt), nog eens (2 punten), en Reload "
-                + "globaal (2 punten): onderaan staat wat dat samen oplevert. Daarna een magazijnwissel die merkbaar sneller "
-                + "gaat dan in de vorige showcase.",
-                stand, 90, 4, s -> s
-                .onServer(0, ShowcaseScene::buildWeapons)
-                .onServer(0, ShowcaseFeatures::giveGear)
-                .onServer(0, player -> player.setData(com.senne.imttech.registry.ModAttachments.GUN_SKILLS,
-                        new com.senne.imttech.guns.GunSkills(20, 7, 7, java.util.Map.of())))
-                .stand(0, stand.x, stand.y, stand.z, 90, 3)
-                .pause(20)
-                .open(0, com.senne.imttech.client.guns.SkillTreeScreen::new)
+    private static void addBattery() {
+        // ---------------------------------------------------------------- De Power Battery (hoofdstuk 47)
+        BlockPos b = BATTERY_YARD;
+        BlockPos port = b.offset(0, 0, 2);
+        BlockPos lid = b.offset(2, 3, 2);
+        add("Power Battery", "Hoofdstuk 47: de Power Battery, zoals bij Mekanism. Een doos van 5 x 4 x 5 Battery Casing met "
+                + "een raam van Battery Glass (daarachter de 18 Battery Cells) en een Battery Port links en rechts onderaan. "
+                + "Links komt een kabel van een warmtegenerator en een zonnepaneel; rechts gaat een kabel naar een holotafel "
+                + "en een camera. Rechtsklik op de poort: het scherm van de batterij, vanaf nu de enige plek waar je het "
+                + "hele net ziet: STORED met de balk, wat het net maakt, gebruikt en tekortkomt per tick, de grafiek van de "
+                + "laatste vijf minuten (hier alvast gevuld) en de lijsten GENERATORS en DEVICES. Dan haal ik een casing uit "
+                + "het dak: het scherm zegt 'The wall is not closed' en waar; het blok terug en de stroom is er nog. Tot "
+                + "slot het scherm van de generator: alleen hijzelf, het netoverzicht ernaast is weg.",
+                at(b.offset(2, 0, 9)), 180, 8, s -> s
+                .onServer(0, player -> VisualCheck.buildBatteryYard(player, BATTERY_YARD))
+                .pause(50)
+                .lookAt(10, Vec3.atCenterOf(port))
+                .pause(30)
+                .onServer(0, player -> {
+                    if (player.serverLevel().getBlockEntity(port) instanceof com.senne.imttech.battery.BatteryPortBlockEntity entity) {
+                        entity.tourHistory();
+                    }
+                    com.senne.imttech.battery.Batteries.open(player.serverLevel(), port, player);
+                })
+                .pause(160)
+                .close(0)
+                .lookAt(10, Vec3.atCenterOf(lid))
+                .onServer(10, player -> player.serverLevel().setBlockAndUpdate(lid, Blocks.AIR.defaultBlockState()))
+                .pause(40)
+                .onServer(0, player -> com.senne.imttech.battery.Batteries.open(player.serverLevel(), port, player))
+                .pause(80)
+                .close(0)
+                .onServer(10, player -> player.serverLevel().setBlockAndUpdate(lid, ModBlocks.BATTERY_CASING.get().defaultBlockState()))
+                .pause(30)
+                .onServer(0, player -> com.senne.imttech.battery.Batteries.open(player.serverLevel(), port, player))
+                .pause(80)
+                .close(0)
+                .stand(0, b.getX() - 2.5, b.getY(), b.getZ() + 5.5, 180, 25)
+                .lookAt(10, Vec3.atCenterOf(port.west(3)))
+                .step(20, () -> rightClick(port.west(3)))
+                .close(90));
+    }
+
+    private static void addHandcuffs() {
+        // ---------------------------------------------------------------- Handboeien (hoofdstuk 48)
+        BlockPos b = CUFF_YARD;
+        Vec3 bram = Vec3.atBottomCenterOf(b.offset(2, 0, 4)).add(0, 1.2, 0);
+        Vec3 soldier = Vec3.atBottomCenterOf(b.offset(4, 0, 4)).add(0, 1.2, 0);
+        add("Handcuffs", "Hoofdstuk 48: handboeien (in survival). Voor je staat Bram, rechts van hem een Raven-soldaat die bijna "
+                + "dood is, links naast je een guard robot die neerligt; achter je een cel van tralies. Je houdt rechtsklik op "
+                + "Bram vast: onderaan telt 'Handcuffing Bram... 2.0 s' af, dan 'You handcuffed Bram', een donker bandje om "
+                + "zijn polsen en een touw van jouw hand naar hem. Dan de soldaat: één klik, want hij is weerloos. Je loopt "
+                + "achteruit de cel in en de soldaat staat elke stap vlak achter je (echt vast, geen lijn met speling). Dan de Handcuff Key op de "
+                + "soldaat (je krijgt de boeien terug), terug naar Bram en ook hem los. Tot slot de robot: hij ligt neer, dus "
+                + "één klik (in de app Robots staat hij dan op Handcuffed), en de sleutel maakt hem weer vrij.",
+                GameType.SURVIVAL, at(b.offset(2, 0, 6)), 180, 5, s -> s
+                .onServer(0, player -> VisualCheck.buildCuffYard(player, CUFF_YARD))
+                .pause(40)
+                .lookAt(10, bram)
+                .key(10, () -> Minecraft.getInstance().options.keyUse, true)
+                .key(55, () -> Minecraft.getInstance().options.keyUse, false)
+                .pause(50)
+                .lookAt(0, soldier)
+                .tap(15, () -> Minecraft.getInstance().options.keyUse)
+                .pause(40)
+                // Achteruit de cel in: de soldaat komt aan het touw mee.
+                .key(0, () -> Minecraft.getInstance().options.keyDown, true)
+                .key(25, () -> Minecraft.getInstance().options.keyDown, false)
+                .pause(60)
+                .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.HANDCUFF_KEY.get())))
+                .step(10, () -> lookAtNearest(RavenSoldierEntity.class))
+                .tap(15, () -> Minecraft.getInstance().options.keyUse)
+                .pause(40)
+                // Terug naar Bram.
+                .key(0, () -> Minecraft.getInstance().options.keyUp, true)
+                .key(25, () -> Minecraft.getInstance().options.keyUp, false)
+                .step(10, () -> lookAtNearest(net.minecraft.world.entity.player.Player.class))
+                .tap(10, () -> Minecraft.getInstance().options.keyUse)
+                .pause(40)
+                // De robot: hij ligt neer, dus meteen.
+                .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.HANDCUFFS.get())))
+                .step(10, () -> lookAtNearest(com.senne.imttech.robot.GuardRobotEntity.class))
+                .tap(10, () -> Minecraft.getInstance().options.keyUse)
+                .pause(50)
+                .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.HANDCUFF_KEY.get())))
+                .tap(15, () -> Minecraft.getInstance().options.keyUse)
+                .pause(50));
+    }
+
+    private static void addAuth() {
+        // ---------------------------------------------------------------- Autorisatiecodes en de Auth Console (hoofdstuk 49)
+        BlockPos y = AUTH_YARD;
+        BlockPos panel = y.offset(1, 0, 4);
+        BlockPos console = y.offset(3, 0, 4);
+        add("Authorization codes and the Auth Console", "Hoofdstuk 49. Achter je een kern met een server; voor je een muurtje "
+                + "met een codepaneel 'Vault' en een Auth Console 'Gate', en Bram ernaast. Eerst de desktop: in Status staat de "
+                + "autorisatiecode van dit moment (en wanneer de volgende komt); in Settings stel je in hoe lang hij is, om de "
+                + "hoeveel minuten, en of de vorige nog mag. Dan typ ik die code op het paneel: groen, en I.M.T zegt 'Vault open "
+                + "for Dev' (het diagram kijkt naar auth.valid, er staat geen code in). Dan drukt Bram op de console: oranje, jij "
+                + "krijgt een bericht, en in de app Requests staat 'Bram at Gate' met Accept en Deny. Accept: de console groen "
+                + "en I.M.T zegt 'Bram may come in' (request.accepted). Bram nog eens, nu Deny: rood, 'Bram stays outside'.",
+                at(y.offset(2, 0, 2)), 0, 12, s -> s
+                .onServer(0, player -> VisualCheck.buildAuthYard(player, AUTH_YARD))
+                .onServer(30, player -> VisualCheck.wakeAuthServer(player, AUTH_YARD))
+                .pause(40)
+                .onServer(0, player -> com.senne.imttech.security.os.SecurityOs.open(player, AUTH_YARD))
+                .step(20, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.STATUS)))
+                .pause(90)
+                .step(0, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.SETTINGS)))
+                .pause(100)
+                .close(0)
+                .lookAt(10, Vec3.atCenterOf(panel))
+                .onServer(20, player -> {
+                    if (player.serverLevel().getBlockEntity(AUTH_YARD) instanceof com.senne.imttech.security.SecurityCoreBlockEntity core) {
+                        com.senne.imttech.logic.LogicEvents.codePanel(player.serverLevel(), panel, player, core.authCode());
+                    }
+                })
                 .pause(70)
-                .onServer(0, player -> com.senne.imttech.guns.GunSkillsServer.learn(player, "glock_19", com.senne.imttech.guns.GunSkill.RELOAD))
-                .pause(40)
-                .onServer(0, player -> com.senne.imttech.guns.GunSkillsServer.learn(player, "glock_19", com.senne.imttech.guns.GunSkill.RELOAD))
-                .pause(40)
-                .onServer(0, player -> com.senne.imttech.guns.GunSkillsServer.learn(player, com.senne.imttech.guns.GunSkills.GLOBAL, com.senne.imttech.guns.GunSkill.RELOAD))
+                .lookAt(0, Vec3.atCenterOf(console))
+                .onServer(10, player -> VisualCheck.bramAsks(player, console))
+                .pause(60)
+                .onServer(0, player -> com.senne.imttech.security.os.SecurityOs.open(player, AUTH_YARD))
+                .step(20, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.REQUESTS)))
                 .pause(80)
+                .step(0, () -> desktop(os -> os.tourRequestAnswer(true)))
+                .pause(40)
                 .close(0)
-                // Trekken en herladen, nu sneller.
-                .key(10, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true)
-                .pause(30)
-                .step(0, () -> wheelChoose(0))
-                .key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false)
-                .pause(30)
-                .step(0, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()))
-                .pause(25)
-                .step(0, () -> magPick(1))
                 .pause(60)
-                .onServer(0, player -> player.setData(com.senne.imttech.registry.ModAttachments.GUN_SKILLS, com.senne.imttech.guns.GunSkills.EMPTY))
-                .onServer(0, player -> player.getInventory().clearContent()));
+                .onServer(0, player -> VisualCheck.bramAsks(player, console))
+                .pause(40)
+                .onServer(0, player -> com.senne.imttech.security.os.SecurityOs.open(player, AUTH_YARD))
+                .step(20, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.REQUESTS)))
+                .pause(60)
+                .step(0, () -> desktop(os -> os.tourRequestAnswer(false)))
+                .pause(40)
+                .close(0)
+                .pause(60));
     }
 
-    /** Hoofdstuk 52, stap 2: de holster, de pouches en het wiel, op het wapenveld. */
-    private static void addGear() {
-        BlockPos w = ShowcaseScene.WEAPONS;
-        Vec3 stand = new Vec3(w.getX() + 0.5, w.getY() + 1, w.getZ() + 0.5);
-        add("Holster, pouches and the quickdraw wheel", "Hoofdstuk 52, stap 2. Je draagt een Holster (met je Glock 19 erin), een "
-                + "Grenade Pouch (twee EMP-granaten en een flashbang) en een Magazine Pouch (twee magazijnen): eerst zie je ze in "
-                + "je inventaris in de drie eigen vakjes rechts van je poppetje (zonder Curios; met Curios zitten ze in "
-                + "Curios-slots). Je houdt een steen vast. Dan het wiel (linker Alt): je pistool, je granaten per soort met "
-                + "hoeveel, en 'Put away'. Het pistool: de steen valt op de grond en het pistool komt uit je holster omhoog in je "
-                + "hand (trekken duurt even). Twee schoten, dan R: de magazijnpouch gaat open en je kiest het volle magazijn; "
-                + "het oude komt op zijn plek in de pouch. Dan het wiel: 'Put away', het pistool gaat terug in de holster. Dan "
-                + "een EMP-granaat uit het wiel, gooien, en de tweede komt vanzelf in je hand. Tot slot in derde persoon: de "
-                + "holster met het pistool op je rechterheup, de granaatpouch links en de magazijnpouch achter.",
-                GameType.SURVIVAL, stand, 90, 4, s -> s
-                .onServer(0, ShowcaseScene::buildWeapons)
-                .onServer(0, ShowcaseFeatures::giveGear)
-                .stand(0, stand.x, stand.y, stand.z, 90, 3)
-                .step(0, () -> hotbar(0))
-                .pause(20)
-                .open(0, () -> new net.minecraft.client.gui.screens.inventory.InventoryScreen(Minecraft.getInstance().player))
+    private static void addPhone() {
+        // ---------------------------------------------------------------- De I.M.T Phone (hoofdstuk 50)
+        BlockPos y = AUTH_YARD;
+        BlockPos console = y.offset(3, 0, 4);
+        add("I.M.T Phone", "Hoofdstuk 50. Dezelfde kern als hiervoor, en een I.M.T Phone in je hand. Rechtsklik: het scherm "
+                + "'connect to a system' met het IP en het wachtwoord van je kern (zoals de laptop). Dan kies je een PIN van vier "
+                + "cijfers, en de desktop van de telefoon gaat open: bovenaan I.M.T PHONE, en alleen Status (met de "
+                + "autorisatiecode), Logs, Cameras, Devices, Requests en Messages. Bram drukt op de console: zijn verzoek staat in "
+                + "Requests, en je accepteert het vanaf de telefoon. In Messages staat wat I.M.T je zei ('Bram asks for access', "
+                + "'Bram may come in'); onderaan kun je zelf een bericht sturen. De telefoon dicht en weer open: hij vraagt je "
+                + "PIN. Tot slot de desktop op de kern zelf: in Access staat je telefoon, met de knop Block.",
+                at(y.offset(2, 0, 2)), 0, 12, s -> s
+                .onServer(0, player -> VisualCheck.buildAuthYard(player, AUTH_YARD))
+                .onServer(30, player -> VisualCheck.wakeAuthServer(player, AUTH_YARD))
+                .onServer(0, player -> VisualCheck.givePhone(player, AUTH_YARD))
+                .pause(40)
+                .onServer(0, player -> com.senne.imttech.security.os.Phones.use(player, player.getMainHandItem()))
+                .step(20, () -> login(screen -> screen.tourType(VisualCheck.authYardIp, "bitech1")))
+                .pause(50)
+                .step(0, () -> login(com.senne.imttech.client.os.OsLoginScreen::tourConnect))
+                .pause(40)
+                .step(0, () -> login(screen -> screen.tourType("", "1234")))
+                .pause(50)
+                .step(0, () -> login(com.senne.imttech.client.os.OsLoginScreen::tourConnect))
+                .pause(40)
+                .step(0, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.STATUS)))
                 .pause(80)
+                .onServer(0, player -> VisualCheck.bramAsks(player, console))
+                .step(20, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.REQUESTS)))
+                .pause(80)
+                .step(0, () -> desktop(os -> os.tourRequestAnswer(true)))
+                .pause(40)
+                .step(0, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.MESSAGES)))
+                .pause(100)
                 .close(0)
-                .pause(20)
-                // Het wiel: het pistool trekken.
-                .key(0, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true)
-                .pause(50)
-                .step(0, () -> wheelChoose(0))
-                .key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false)
-                .pause(40)
-                .key(0, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
-                .key(10, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
-                .pause(20)
-                // R: de magazijnpouch.
-                .step(0, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()))
-                .pause(50)
-                .step(0, () -> magPick(0))
-                .pause(60)
-                // Wegsteken.
-                .key(0, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true)
-                .pause(40)
-                .step(0, () -> wheelChooseLast())
-                .key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false)
-                .pause(40)
-                // Een granaat, en de volgende komt vanzelf.
-                .key(0, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true)
-                .pause(40)
-                .step(0, () -> wheelChoose(1))
-                .key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false)
                 .pause(30)
-                .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                .onServer(0, player -> com.senne.imttech.security.os.Phones.use(player, player.getMainHandItem()))
                 .pause(60)
-                .camera(0, net.minecraft.client.CameraType.THIRD_PERSON_FRONT)
+                .step(0, () -> login(screen -> screen.tourType("", "1234")))
+                .pause(30)
+                .step(0, () -> login(com.senne.imttech.client.os.OsLoginScreen::tourConnect))
                 .pause(60)
-                .camera(0, net.minecraft.client.CameraType.THIRD_PERSON_BACK)
-                .pause(50)
-                .camera(0, net.minecraft.client.CameraType.FIRST_PERSON)
-                .onServer(0, player -> player.getInventory().clearContent()));
+                .close(0)
+                .onServer(10, player -> com.senne.imttech.security.os.SecurityOs.open(player, AUTH_YARD))
+                .step(20, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.ACCESS)))
+                .pause(100)
+                .close(0));
     }
 
-    /** Een holster met een Glock, een granaatpouch (twee EMP, een flashbang) en een magazijnpouch (twee magazijnen); een steen in je hand. */
-    static void giveGear(ServerPlayer player) {
-        var inventory = player.getInventory();
-        inventory.clearContent();
-        inventory.setItem(0, new ItemStack(net.minecraft.world.item.Items.STONE, 5));
-        ItemStack holster = new ItemStack(ModItems.HOLSTER.get());
-        com.senne.imttech.guns.GearItem.setContents(holster, java.util.List.of(
-                com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.GLOCK_19, com.senne.imttech.guns.GunMaterial.STEEL)));
-        ItemStack grenades = new ItemStack(ModItems.GRENADE_POUCH.get());
-        com.senne.imttech.guns.GearItem.setContents(grenades, java.util.List.of(new ItemStack(ModItems.EMP_GRENADE.get()),
-                new ItemStack(ModItems.EMP_GRENADE.get()), new ItemStack(ModItems.FLASHBANG.get())));
-        ItemStack magazines = new ItemStack(ModItems.MAG_POUCH.get());
-        com.senne.imttech.guns.GearItem.setContents(magazines, java.util.List.of(
-                com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.GLOCK_19, 15),
-                com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.GLOCK_19, 9)));
-        com.senne.imttech.guns.Gear.set(player, com.senne.imttech.guns.GearItem.Kind.HOLSTER, holster);
-        com.senne.imttech.guns.Gear.set(player, com.senne.imttech.guns.GearItem.Kind.GRENADE_POUCH, grenades);
-        com.senne.imttech.guns.Gear.set(player, com.senne.imttech.guns.GearItem.Kind.MAG_POUCH, magazines);
-    }
-
-    /** In het wiel (als het open is) deze optie kiezen. */
-    static void wheelChoose(int index) {
-        com.senne.imttech.client.guns.GearWheelScreen wheel = com.senne.imttech.client.guns.GearWheelScreen.current();
-        if (wheel != null) {
-            wheel.chooseIndex(index);
-        }
-    }
-
-    /** De laatste optie van het wiel: wegsteken. */
-    static void wheelChooseLast() {
-        com.senne.imttech.client.guns.GearWheelScreen wheel = com.senne.imttech.client.guns.GearWheelScreen.current();
-        if (wheel != null) {
-            wheel.chooseIndex(Integer.MAX_VALUE);
-        }
-    }
-
-    /** In het keuzescherm van de magazijnpouch dit vakje kiezen. */
-    static void magPick(int index) {
-        if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.guns.MagPickerScreen picker) {
-            picker.pickIndex(index);
-        }
+    private static void addRooms() {
+        // ---------------------------------------------------------------- Torens en bunkers uit kamers (hoofdstuk 51)
+        BlockPos y = ROOMS_YARD;
+        add("Towers and bunkers built from rooms", "Hoofdstuk 51. In de wereld wordt elke Biebia's Industries Tower nu uit kamers "
+                + "gestapeld: de lobby onderaan en de lasergang, de kluis en het dak bovenaan liggen vast; daartussen 5 tot 8 "
+                + "verdiepingen in een willekeurige keuze en volgorde (de beveiliging met de kern zit er altijd bij), uit het lab, "
+                + "het archief, de hangar, de woonverdieping en zes nieuwe: de sportzaal, de kas, de bioscoop, het zwembad, het "
+                + "museum en de serverzaal. Hier staan twee van zulke torens naast elkaar: kijk hoe ze verschillen (en dat de "
+                + "liftkoker overal doorloopt). Daarna een bunker uit zalen, hier op vlak land: de ingang, 3 tot 6 zalen "
+                + "(de reactor altijd; verder de grote hal, de wapenkamer, het lab, de cellen, de garage, de kantine, de "
+                + "radiokamer) en de kluis. In een echte wereld zit hij in een berg, zo lang als de berg toelaat.",
+                new Vec3(y.getX() + 55.5, y.getY() + 60, y.getZ() + 150.5), 0, 0, s -> s
+                .onServer(0, player -> VisualCheck.buildRoomsYard(player, ROOMS_YARD))
+                .lookAt(40, new Vec3(y.getX() + 50.5, y.getY() + 45, y.getZ() + 20.5))
+                .pause(120)
+                .view(0, y.getX() + 20.5, y.getY() + 20, y.getZ() + 75.5, 0, 0)
+                .lookAt(5, new Vec3(y.getX() + 20.5, y.getY() + 30, y.getZ() + 20.5))
+                .pause(100)
+                .view(0, y.getX() + 80.5, y.getY() + 20, y.getZ() + 75.5, 0, 0)
+                .lookAt(5, new Vec3(y.getX() + 80.5, y.getY() + 30, y.getZ() + 20.5))
+                .pause(100)
+                .view(0, y.getX() + 17.5, y.getY() + 12, y.getZ() + 230, 0, 0)
+                .lookAt(5, new Vec3(y.getX() + 17.5, y.getY() + 3, y.getZ() + 250.5))
+                .pause(100)
+                .view(0, y.getX() + 70.5, y.getY() + 40, y.getZ() + 290.5, 0, 0)
+                .lookAt(5, new Vec3(y.getX() + 17.5, y.getY() + 4, y.getZ() + 290.5))
+                .pause(120));
     }
 
     /**
      * Hoofdstuk 52: de Glock 19. Op het wapenveld, met de Gunsmith Table en de Reloading Bench naast je.
      */
     private static void addGuns() {
+        // ---------------------------------------------------------------- Vuurwapens: de Glock 19 (hoofdstuk 52)
         BlockPos w = ShowcaseScene.WEAPONS;
         Vec3 stand = new Vec3(w.getX() + 0.5, w.getY() + 1, w.getZ() + 0.5);
         add("Glock 19: parts, magazines and casings", "Hoofdstuk 52. Een Glock 19 (uit zes onderdelen, hier van staal). Je richt "
@@ -2881,6 +2957,152 @@ final class ShowcaseFeatures {
                 .onServer(0, player -> player.getInventory().clearContent()));
     }
 
+    private static void addGear() {
+        // ---------------------------------------------------------------- Vuurwapens: de Glock 19 (hoofdstuk 52)
+        BlockPos w = ShowcaseScene.WEAPONS;
+        Vec3 stand = new Vec3(w.getX() + 0.5, w.getY() + 1, w.getZ() + 0.5);
+        add("Holster, pouches and the quickdraw wheel", "Hoofdstuk 52, stap 2. Je draagt een Holster (met je Glock 19 erin), een "
+                + "Grenade Pouch (twee EMP-granaten en een flashbang) en een Magazine Pouch (twee magazijnen): eerst zie je ze in "
+                + "je inventaris in de drie eigen vakjes rechts van je poppetje (zonder Curios; met Curios zitten ze in "
+                + "Curios-slots). Je houdt een steen vast. Dan het wiel (linker Alt): je pistool, je granaten per soort met "
+                + "hoeveel, en 'Put away'. Het pistool: de steen valt op de grond en het pistool komt uit je holster omhoog in je "
+                + "hand (trekken duurt even). Twee schoten, dan R: de magazijnpouch gaat open en je kiest het volle magazijn; "
+                + "het oude komt op zijn plek in de pouch. Dan het wiel: 'Put away', het pistool gaat terug in de holster. Dan "
+                + "een EMP-granaat uit het wiel, gooien, en de tweede komt vanzelf in je hand. Tot slot in derde persoon: de "
+                + "holster met het pistool op je rechterheup, de granaatpouch links en de magazijnpouch achter.",
+                GameType.SURVIVAL, stand, 90, 4, s -> s
+                .onServer(0, ShowcaseScene::buildWeapons)
+                .onServer(0, ShowcaseFeatures::giveGear)
+                .stand(0, stand.x, stand.y, stand.z, 90, 3)
+                .step(0, () -> hotbar(0))
+                .pause(20)
+                .open(0, () -> new net.minecraft.client.gui.screens.inventory.InventoryScreen(Minecraft.getInstance().player))
+                .pause(80)
+                .close(0)
+                .pause(20)
+                // Het wiel: het pistool trekken.
+                .key(0, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true)
+                .pause(50)
+                .step(0, () -> wheelChoose(0))
+                .key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false)
+                .pause(40)
+                .key(0, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
+                .key(10, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
+                .pause(20)
+                // R: de magazijnpouch.
+                .step(0, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()))
+                .pause(50)
+                .step(0, () -> magPick(0))
+                .pause(60)
+                // Wegsteken.
+                .key(0, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true)
+                .pause(40)
+                .step(0, () -> wheelChooseLast())
+                .key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false)
+                .pause(40)
+                // Een granaat, en de volgende komt vanzelf.
+                .key(0, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true)
+                .pause(40)
+                .step(0, () -> wheelChoose(1))
+                .key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false)
+                .pause(30)
+                .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                .pause(60)
+                .camera(0, net.minecraft.client.CameraType.THIRD_PERSON_FRONT)
+                .pause(60)
+                .camera(0, net.minecraft.client.CameraType.THIRD_PERSON_BACK)
+                .pause(50)
+                .camera(0, net.minecraft.client.CameraType.FIRST_PERSON)
+                .onServer(0, player -> player.getInventory().clearContent()));
+    }
+
+    private static void addSkills() {
+        // ---------------------------------------------------------------- Vuurwapens: de Glock 19 (hoofdstuk 52)
+        BlockPos w = ShowcaseScene.WEAPONS;
+        Vec3 stand = new Vec3(w.getX() + 0.5, w.getY() + 1, w.getZ() + 0.5);
+        add("Gun skills", "Hoofdstuk 52, stap 3. Alles wat je met een pistool doet geeft ervaring (een schot, een treffer, "
+                + "herladen, een tap-rack, een patroon in een magazijn, trekken); elke keer dat de balk vol is krijg je een "
+                + "skillpunt, en elk volgend punt kost meer. Je begint hier met 7 punten. G > Combat > Gun skills: links de "
+                + "globale skills (voor elk vuurwapen, 5% per niveau, een niveau kost het dubbele), rechts die van de Glock 19 "
+                + "zelf (8% per niveau); ze tellen op. Ik leer Reload op de Glock (1 punt), nog eens (2 punten), en Reload "
+                + "globaal (2 punten): onderaan staat wat dat samen oplevert. Daarna een magazijnwissel die merkbaar sneller "
+                + "gaat dan in de vorige showcase.",
+                stand, 90, 4, s -> s
+                .onServer(0, ShowcaseScene::buildWeapons)
+                .onServer(0, ShowcaseFeatures::giveGear)
+                .onServer(0, player -> player.setData(com.senne.imttech.registry.ModAttachments.GUN_SKILLS,
+                        new com.senne.imttech.guns.GunSkills(20, 7, 7, java.util.Map.of())))
+                .stand(0, stand.x, stand.y, stand.z, 90, 3)
+                .pause(20)
+                .open(0, com.senne.imttech.client.guns.SkillTreeScreen::new)
+                .pause(70)
+                .onServer(0, player -> com.senne.imttech.guns.GunSkillsServer.learn(player, "glock_19", com.senne.imttech.guns.GunSkill.RELOAD))
+                .pause(40)
+                .onServer(0, player -> com.senne.imttech.guns.GunSkillsServer.learn(player, "glock_19", com.senne.imttech.guns.GunSkill.RELOAD))
+                .pause(40)
+                .onServer(0, player -> com.senne.imttech.guns.GunSkillsServer.learn(player, com.senne.imttech.guns.GunSkills.GLOBAL, com.senne.imttech.guns.GunSkill.RELOAD))
+                .pause(80)
+                .close(0)
+                // Trekken en herladen, nu sneller.
+                .key(10, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true)
+                .pause(30)
+                .step(0, () -> wheelChoose(0))
+                .key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false)
+                .pause(30)
+                .step(0, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()))
+                .pause(25)
+                .step(0, () -> magPick(1))
+                .pause(60)
+                .onServer(0, player -> player.setData(com.senne.imttech.registry.ModAttachments.GUN_SKILLS, com.senne.imttech.guns.GunSkills.EMPTY))
+                .onServer(0, player -> player.getInventory().clearContent()));
+    }
+
+
+    /** Hoofdstuk 52, stap 2: de holster, de pouches en het wiel, op het wapenveld. */
+
+    /** Een holster met een Glock, een granaatpouch (twee EMP, een flashbang) en een magazijnpouch (twee magazijnen); een steen in je hand. */
+    static void giveGear(ServerPlayer player) {
+        var inventory = player.getInventory();
+        inventory.clearContent();
+        inventory.setItem(0, new ItemStack(net.minecraft.world.item.Items.STONE, 5));
+        ItemStack holster = new ItemStack(ModItems.HOLSTER.get());
+        com.senne.imttech.guns.GearItem.setContents(holster, java.util.List.of(
+                com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.GLOCK_19, com.senne.imttech.guns.GunMaterial.STEEL)));
+        ItemStack grenades = new ItemStack(ModItems.GRENADE_POUCH.get());
+        com.senne.imttech.guns.GearItem.setContents(grenades, java.util.List.of(new ItemStack(ModItems.EMP_GRENADE.get()),
+                new ItemStack(ModItems.EMP_GRENADE.get()), new ItemStack(ModItems.FLASHBANG.get())));
+        ItemStack magazines = new ItemStack(ModItems.MAG_POUCH.get());
+        com.senne.imttech.guns.GearItem.setContents(magazines, java.util.List.of(
+                com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.GLOCK_19, 15),
+                com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.GLOCK_19, 9)));
+        com.senne.imttech.guns.Gear.set(player, com.senne.imttech.guns.GearItem.Kind.HOLSTER, holster);
+        com.senne.imttech.guns.Gear.set(player, com.senne.imttech.guns.GearItem.Kind.GRENADE_POUCH, grenades);
+        com.senne.imttech.guns.Gear.set(player, com.senne.imttech.guns.GearItem.Kind.MAG_POUCH, magazines);
+    }
+
+    /** In het wiel (als het open is) deze optie kiezen. */
+    static void wheelChoose(int index) {
+        com.senne.imttech.client.guns.GearWheelScreen wheel = com.senne.imttech.client.guns.GearWheelScreen.current();
+        if (wheel != null) {
+            wheel.chooseIndex(index);
+        }
+    }
+
+    /** De laatste optie van het wiel: wegsteken. */
+    static void wheelChooseLast() {
+        com.senne.imttech.client.guns.GearWheelScreen wheel = com.senne.imttech.client.guns.GearWheelScreen.current();
+        if (wheel != null) {
+            wheel.chooseIndex(Integer.MAX_VALUE);
+        }
+    }
+
+    /** In het keuzescherm van de magazijnpouch dit vakje kiezen. */
+    static void magPick(int index) {
+        if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.guns.MagPickerScreen picker) {
+            picker.pickIndex(index);
+        }
+    }
+
     /** De Gunsmith Table (met een half pistool erop) en de Reloading Bench (met ingrediënten) naast {@code stand}. */
     static void buildGunBenches(ServerPlayer player, BlockPos stand) {
         net.minecraft.server.level.ServerLevel level = player.serverLevel();
@@ -2941,135 +3163,13 @@ final class ShowcaseFeatures {
     static final BlockPos AUTH_YARD = new BlockPos(-130, -60, 270);
 
     /** Hoofdstuk 49: de autorisatiecodes en de Auth Console. */
-    private static void addAuth() {
-        BlockPos y = AUTH_YARD;
-        BlockPos panel = y.offset(1, 0, 4);
-        BlockPos console = y.offset(3, 0, 4);
-        add("Authorization codes and the Auth Console", "Hoofdstuk 49. Achter je een kern met een server; voor je een muurtje "
-                + "met een codepaneel 'Vault' en een Auth Console 'Gate', en Bram ernaast. Eerst de desktop: in Status staat de "
-                + "autorisatiecode van dit moment (en wanneer de volgende komt); in Settings stel je in hoe lang hij is, om de "
-                + "hoeveel minuten, en of de vorige nog mag. Dan typ ik die code op het paneel: groen, en I.M.T zegt 'Vault open "
-                + "for Dev' (het diagram kijkt naar auth.valid, er staat geen code in). Dan drukt Bram op de console: oranje, jij "
-                + "krijgt een bericht, en in de app Requests staat 'Bram at Gate' met Accept en Deny. Accept: de console groen "
-                + "en I.M.T zegt 'Bram may come in' (request.accepted). Bram nog eens, nu Deny: rood, 'Bram stays outside'.",
-                at(y.offset(2, 0, 2)), 0, 12, s -> s
-                .onServer(0, player -> VisualCheck.buildAuthYard(player, AUTH_YARD))
-                .onServer(30, player -> VisualCheck.wakeAuthServer(player, AUTH_YARD))
-                .pause(40)
-                .onServer(0, player -> com.senne.imttech.security.os.SecurityOs.open(player, AUTH_YARD))
-                .step(20, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.STATUS)))
-                .pause(90)
-                .step(0, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.SETTINGS)))
-                .pause(100)
-                .close(0)
-                .lookAt(10, Vec3.atCenterOf(panel))
-                .onServer(20, player -> {
-                    if (player.serverLevel().getBlockEntity(AUTH_YARD) instanceof com.senne.imttech.security.SecurityCoreBlockEntity core) {
-                        com.senne.imttech.logic.LogicEvents.codePanel(player.serverLevel(), panel, player, core.authCode());
-                    }
-                })
-                .pause(70)
-                .lookAt(0, Vec3.atCenterOf(console))
-                .onServer(10, player -> VisualCheck.bramAsks(player, console))
-                .pause(60)
-                .onServer(0, player -> com.senne.imttech.security.os.SecurityOs.open(player, AUTH_YARD))
-                .step(20, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.REQUESTS)))
-                .pause(80)
-                .step(0, () -> desktop(os -> os.tourRequestAnswer(true)))
-                .pause(40)
-                .close(0)
-                .pause(60)
-                .onServer(0, player -> VisualCheck.bramAsks(player, console))
-                .pause(40)
-                .onServer(0, player -> com.senne.imttech.security.os.SecurityOs.open(player, AUTH_YARD))
-                .step(20, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.REQUESTS)))
-                .pause(60)
-                .step(0, () -> desktop(os -> os.tourRequestAnswer(false)))
-                .pause(40)
-                .close(0)
-                .pause(60));
-    }
 
     /** Hoofdstuk 50: de I.M.T Phone, op het veldje van hoofdstuk 49 (dezelfde kern, Bram en de console). */
-    private static void addPhone() {
-        BlockPos y = AUTH_YARD;
-        BlockPos console = y.offset(3, 0, 4);
-        add("I.M.T Phone", "Hoofdstuk 50. Dezelfde kern als hiervoor, en een I.M.T Phone in je hand. Rechtsklik: het scherm "
-                + "'connect to a system' met het IP en het wachtwoord van je kern (zoals de laptop). Dan kies je een PIN van vier "
-                + "cijfers, en de desktop van de telefoon gaat open: bovenaan I.M.T PHONE, en alleen Status (met de "
-                + "autorisatiecode), Logs, Cameras, Devices, Requests en Messages. Bram drukt op de console: zijn verzoek staat in "
-                + "Requests, en je accepteert het vanaf de telefoon. In Messages staat wat I.M.T je zei ('Bram asks for access', "
-                + "'Bram may come in'); onderaan kun je zelf een bericht sturen. De telefoon dicht en weer open: hij vraagt je "
-                + "PIN. Tot slot de desktop op de kern zelf: in Access staat je telefoon, met de knop Block.",
-                at(y.offset(2, 0, 2)), 0, 12, s -> s
-                .onServer(0, player -> VisualCheck.buildAuthYard(player, AUTH_YARD))
-                .onServer(30, player -> VisualCheck.wakeAuthServer(player, AUTH_YARD))
-                .onServer(0, player -> VisualCheck.givePhone(player, AUTH_YARD))
-                .pause(40)
-                .onServer(0, player -> com.senne.imttech.security.os.Phones.use(player, player.getMainHandItem()))
-                .step(20, () -> login(screen -> screen.tourType(VisualCheck.authYardIp, "bitech1")))
-                .pause(50)
-                .step(0, () -> login(com.senne.imttech.client.os.OsLoginScreen::tourConnect))
-                .pause(40)
-                .step(0, () -> login(screen -> screen.tourType("", "1234")))
-                .pause(50)
-                .step(0, () -> login(com.senne.imttech.client.os.OsLoginScreen::tourConnect))
-                .pause(40)
-                .step(0, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.STATUS)))
-                .pause(80)
-                .onServer(0, player -> VisualCheck.bramAsks(player, console))
-                .step(20, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.REQUESTS)))
-                .pause(80)
-                .step(0, () -> desktop(os -> os.tourRequestAnswer(true)))
-                .pause(40)
-                .step(0, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.MESSAGES)))
-                .pause(100)
-                .close(0)
-                .pause(30)
-                .onServer(0, player -> com.senne.imttech.security.os.Phones.use(player, player.getMainHandItem()))
-                .pause(60)
-                .step(0, () -> login(screen -> screen.tourType("", "1234")))
-                .pause(30)
-                .step(0, () -> login(com.senne.imttech.client.os.OsLoginScreen::tourConnect))
-                .pause(60)
-                .close(0)
-                .onServer(10, player -> com.senne.imttech.security.os.SecurityOs.open(player, AUTH_YARD))
-                .step(20, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.ACCESS)))
-                .pause(100)
-                .close(0));
-    }
 
     /** Waar de torens en de bunker uit kamers staan (hoofdstuk 51, zie VisualCheck.buildRoomsYard): ver weg, ze zijn groot. */
     static final BlockPos ROOMS_YARD = new BlockPos(-700, -60, -700);
 
     /** Hoofdstuk 51: torens en bunkers uit kamers. */
-    private static void addRooms() {
-        BlockPos y = ROOMS_YARD;
-        add("Towers and bunkers built from rooms", "Hoofdstuk 51. In de wereld wordt elke Biebia's Industries Tower nu uit kamers "
-                + "gestapeld: de lobby onderaan en de lasergang, de kluis en het dak bovenaan liggen vast; daartussen 5 tot 8 "
-                + "verdiepingen in een willekeurige keuze en volgorde (de beveiliging met de kern zit er altijd bij), uit het lab, "
-                + "het archief, de hangar, de woonverdieping en zes nieuwe: de sportzaal, de kas, de bioscoop, het zwembad, het "
-                + "museum en de serverzaal. Hier staan twee van zulke torens naast elkaar: kijk hoe ze verschillen (en dat de "
-                + "liftkoker overal doorloopt). Daarna een bunker uit zalen, hier op vlak land: de ingang, 3 tot 6 zalen "
-                + "(de reactor altijd; verder de grote hal, de wapenkamer, het lab, de cellen, de garage, de kantine, de "
-                + "radiokamer) en de kluis. In een echte wereld zit hij in een berg, zo lang als de berg toelaat.",
-                new Vec3(y.getX() + 55.5, y.getY() + 60, y.getZ() + 150.5), 0, 0, s -> s
-                .onServer(0, player -> VisualCheck.buildRoomsYard(player, ROOMS_YARD))
-                .lookAt(40, new Vec3(y.getX() + 50.5, y.getY() + 45, y.getZ() + 20.5))
-                .pause(120)
-                .view(0, y.getX() + 20.5, y.getY() + 20, y.getZ() + 75.5, 0, 0)
-                .lookAt(5, new Vec3(y.getX() + 20.5, y.getY() + 30, y.getZ() + 20.5))
-                .pause(100)
-                .view(0, y.getX() + 80.5, y.getY() + 20, y.getZ() + 75.5, 0, 0)
-                .lookAt(5, new Vec3(y.getX() + 80.5, y.getY() + 30, y.getZ() + 20.5))
-                .pause(100)
-                .view(0, y.getX() + 17.5, y.getY() + 12, y.getZ() + 230, 0, 0)
-                .lookAt(5, new Vec3(y.getX() + 17.5, y.getY() + 3, y.getZ() + 250.5))
-                .pause(100)
-                .view(0, y.getX() + 70.5, y.getY() + 40, y.getZ() + 290.5, 0, 0)
-                .lookAt(5, new Vec3(y.getX() + 17.5, y.getY() + 4, y.getZ() + 290.5))
-                .pause(120));
-    }
 
     /** Waar het veldje van de handboeien (hoofdstuk 48) ligt (zie VisualCheck.buildCuffYard). */
     static final BlockPos CUFF_YARD = new BlockPos(-130, -60, 240);
@@ -3097,96 +3197,11 @@ final class ShowcaseFeatures {
     }
 
     /** Hoofdstuk 48: de handboeien. */
-    private static void addHandcuffs() {
-        BlockPos b = CUFF_YARD;
-        Vec3 bram = Vec3.atBottomCenterOf(b.offset(2, 0, 4)).add(0, 1.2, 0);
-        Vec3 soldier = Vec3.atBottomCenterOf(b.offset(4, 0, 4)).add(0, 1.2, 0);
-        add("Handcuffs", "Hoofdstuk 48: handboeien (in survival). Voor je staat Bram, rechts van hem een Raven-soldaat die bijna "
-                + "dood is, links naast je een guard robot die neerligt; achter je een cel van tralies. Je houdt rechtsklik op "
-                + "Bram vast: onderaan telt 'Handcuffing Bram... 2.0 s' af, dan 'You handcuffed Bram', een donker bandje om "
-                + "zijn polsen en een touw van jouw hand naar hem. Dan de soldaat: één klik, want hij is weerloos. Je loopt "
-                + "achteruit de cel in en de soldaat wordt aan het touw achter je aan getrokken. Dan de Handcuff Key op de "
-                + "soldaat (je krijgt de boeien terug), terug naar Bram en ook hem los. Tot slot de robot: hij ligt neer, dus "
-                + "één klik (in de app Robots staat hij dan op Handcuffed), en de sleutel maakt hem weer vrij.",
-                GameType.SURVIVAL, at(b.offset(2, 0, 6)), 180, 5, s -> s
-                .onServer(0, player -> VisualCheck.buildCuffYard(player, CUFF_YARD))
-                .pause(40)
-                .lookAt(10, bram)
-                .key(10, () -> Minecraft.getInstance().options.keyUse, true)
-                .key(55, () -> Minecraft.getInstance().options.keyUse, false)
-                .pause(50)
-                .lookAt(0, soldier)
-                .tap(15, () -> Minecraft.getInstance().options.keyUse)
-                .pause(40)
-                // Achteruit de cel in: de soldaat komt aan het touw mee.
-                .key(0, () -> Minecraft.getInstance().options.keyDown, true)
-                .key(25, () -> Minecraft.getInstance().options.keyDown, false)
-                .pause(60)
-                .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.HANDCUFF_KEY.get())))
-                .step(10, () -> lookAtNearest(RavenSoldierEntity.class))
-                .tap(15, () -> Minecraft.getInstance().options.keyUse)
-                .pause(40)
-                // Terug naar Bram.
-                .key(0, () -> Minecraft.getInstance().options.keyUp, true)
-                .key(25, () -> Minecraft.getInstance().options.keyUp, false)
-                .step(10, () -> lookAtNearest(net.minecraft.world.entity.player.Player.class))
-                .tap(10, () -> Minecraft.getInstance().options.keyUse)
-                .pause(40)
-                // De robot: hij ligt neer, dus meteen.
-                .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.HANDCUFFS.get())))
-                .step(10, () -> lookAtNearest(com.senne.imttech.robot.GuardRobotEntity.class))
-                .tap(10, () -> Minecraft.getInstance().options.keyUse)
-                .pause(50)
-                .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.HANDCUFF_KEY.get())))
-                .tap(15, () -> Minecraft.getInstance().options.keyUse)
-                .pause(50));
-    }
 
     /** Waar de Power Battery van hoofdstuk 47 staat (zie VisualCheck.buildBatteryYard). */
     static final BlockPos BATTERY_YARD = new BlockPos(-130, -60, 200);
 
     /** Hoofdstuk 47: de Power Battery. Apart, zodat de lijst hierboven leesbaar blijft. */
-    private static void addBattery() {
-        BlockPos b = BATTERY_YARD;
-        BlockPos port = b.offset(0, 0, 2);
-        BlockPos lid = b.offset(2, 3, 2);
-        add("Power Battery", "Hoofdstuk 47: de Power Battery, zoals bij Mekanism. Een doos van 5 x 4 x 5 Battery Casing met "
-                + "een raam van Battery Glass (daarachter de 18 Battery Cells) en een Battery Port links en rechts onderaan. "
-                + "Links komt een kabel van een warmtegenerator en een zonnepaneel; rechts gaat een kabel naar een holotafel "
-                + "en een camera. Rechtsklik op de poort: het scherm van de batterij, vanaf nu de enige plek waar je het "
-                + "hele net ziet: STORED met de balk, wat het net maakt, gebruikt en tekortkomt per tick, de grafiek van de "
-                + "laatste vijf minuten (hier alvast gevuld) en de lijsten GENERATORS en DEVICES. Dan haal ik een casing uit "
-                + "het dak: het scherm zegt 'The wall is not closed' en waar; het blok terug en de stroom is er nog. Tot "
-                + "slot het scherm van de generator: alleen hijzelf, het netoverzicht ernaast is weg.",
-                at(b.offset(2, 0, 9)), 180, 8, s -> s
-                .onServer(0, player -> VisualCheck.buildBatteryYard(player, BATTERY_YARD))
-                .pause(50)
-                .lookAt(10, Vec3.atCenterOf(port))
-                .pause(30)
-                .onServer(0, player -> {
-                    if (player.serverLevel().getBlockEntity(port) instanceof com.senne.imttech.battery.BatteryPortBlockEntity entity) {
-                        entity.tourHistory();
-                    }
-                    com.senne.imttech.battery.Batteries.open(player.serverLevel(), port, player);
-                })
-                .pause(160)
-                .close(0)
-                .lookAt(10, Vec3.atCenterOf(lid))
-                .onServer(10, player -> player.serverLevel().setBlockAndUpdate(lid, Blocks.AIR.defaultBlockState()))
-                .pause(40)
-                .onServer(0, player -> com.senne.imttech.battery.Batteries.open(player.serverLevel(), port, player))
-                .pause(80)
-                .close(0)
-                .onServer(10, player -> player.serverLevel().setBlockAndUpdate(lid, ModBlocks.BATTERY_CASING.get().defaultBlockState()))
-                .pause(30)
-                .onServer(0, player -> com.senne.imttech.battery.Batteries.open(player.serverLevel(), port, player))
-                .pause(80)
-                .close(0)
-                .stand(0, b.getX() - 2.5, b.getY(), b.getZ() + 5.5, 180, 25)
-                .lookAt(10, Vec3.atCenterOf(port.west(3)))
-                .step(20, () -> rightClick(port.west(3)))
-                .close(90));
-    }
 
     /** Waar de kamer met de schermmuur staat (zie VisualCheck.buildCameraWall). */
     static final BlockPos WALL_ROOM = new BlockPos(-130, -60, 160);

@@ -1479,10 +1479,10 @@ public final class ImtConfig {
         /** Hoe snel een geboeide nog loopt (0.5 = half zo snel). */
         @Tunable(value = "How fast a handcuffed player still walks (0.5 = half speed)", min = 0.05, max = 1)
         public static float SLOW = 0.5f;
-        /** Vanaf deze afstand wordt wie je vasthoudt naar je toe getrokken. */
-        @Tunable(value = "When you hold someone, they are pulled along once they are further behind you than this (blocks)",
-                min = 1, max = 16)
-        public static float LEASH = 3.0f;
+        /** Zo ver achter je staat wie je vasthoudt (jouw wens van 4 november: geen lijn, maar echt vast). */
+        @Tunable(value = "How far behind you a handcuffed person is held (blocks); they stay there while you walk and turn",
+                min = 0.5, max = 8)
+        public static float HOLD_DISTANCE = 1.2f;
         /** Verder weg dan dit, en je bent hem kwijt (hij blijft geboeid). */
         @Tunable(value = "Further away than this and you lose your hold on them; they stay handcuffed (blocks)", min = 2, max = 64)
         public static float LET_GO = 10.0f;

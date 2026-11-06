@@ -120,13 +120,13 @@ public final class HandcuffGameTests {
         victim.getInventory().setItem(0, ItemStack.EMPTY);
         victim.attack(pig);
         check(pig.getLastHurtByMob() == null && pig.getHealth() == pig.getMaxHealth(), "Geboeid zou hij het varken niet mogen slaan");
-        // De vanger loopt weg: het slachtoffer krijgt een zet zijn kant op (verder dan leash).
+        // De vanger loopt weg: het slachtoffer staat meteen weer vlak achter hem (echt vast, geen lijn).
         teleport(helper, captor, 5.5, 3, 13.5);
         helper.runAfterDelay(3, () -> {
-            check(victim.getDeltaMovement().z > 0.05, "Aan de lijn zou hij naar de vanger getrokken moeten worden: " + victim.getDeltaMovement());
+            check(victim.distanceTo(captor) < 2.0, "Echt vast: hij zou vlak achter de vanger moeten staan, niet op " + victim.distanceTo(captor));
             check(captor.getUUID().equals(Handcuffs.holderOf(victim)), "Op 6 blokken zou de vanger hem nog vast moeten hebben");
-            // Te ver: de lijn breekt, maar de boeien blijven om.
-            teleport(helper, captor, 5.5, 3, 20.5);
+            // Ineens heel ver weg (het slachtoffer staat nu vlak achter hem, op 13.5): dan is hij hem kwijt, maar de boeien blijven om.
+            teleport(helper, captor, 5.5, 3, 30.5);
         });
         // (Pas na een halve seconde: een klik vlak na het boeien telt als de knop die nog ingedrukt is.)
         helper.runAfterDelay(15, () -> {

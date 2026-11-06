@@ -37,6 +37,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
@@ -189,8 +190,8 @@ public final class Handcuffs {
             captor.displayClientMessage(Component.translatable("cuffs.imttech.let_go", target.getDisplayName()).withStyle(ChatFormatting.GRAY), true);
         } else {
             set(target, new State(true, Optional.of(captor.getUUID())));
-            captor.displayClientMessage(Component.translatable("cuffs.imttech.hold", target.getDisplayName(),
-                    Math.round(ImtConfig.Handcuffs.LEASH)).withStyle(ChatFormatting.AQUA), true);
+            captor.displayClientMessage(Component.translatable("cuffs.imttech.hold", target.getDisplayName())
+                    .withStyle(ChatFormatting.AQUA), true);
         }
     }
 
@@ -355,19 +356,30 @@ public final class Handcuffs {
             holder.displayClientMessage(Component.translatable("cuffs.imttech.lost", living.getDisplayName()).withStyle(ChatFormatting.RED), true);
             return;
         }
-        if (distance > ImtConfig.Handcuffs.LEASH) {
-            pull(living, holder, distance);
-        }
+        hold(living, holder);
     }
 
-    /** Aan de lijn: hij wordt naar wie hem vasthoudt getrokken, harder naarmate hij verder achterblijft. */
-    private static void pull(LivingEntity living, ServerPlayer holder, double distance) {
-        Vec3 to = holder.position().subtract(living.position());
-        double strength = Math.min(0.6, 0.08 * (distance - ImtConfig.Handcuffs.LEASH + 1));
-        Vec3 v = living.getDeltaMovement();
-        double up = living.onGround() && to.y > 0.3 ? 0.42 : v.y;
-        living.setDeltaMovement(v.x * 0.5 + to.x / distance * strength, up, v.z * 0.5 + to.z / distance * strength);
-        living.hurtMarked = true; // ook een speler krijgt de zet (zijn spel hoort het zo)
+    /**
+     * Echt vast (jouw notitie van 4 november: "niet echt een lead, maar dat je de speler precies vast hebt"): hij staat
+     * elke tick vlak achter je ({@code [handcuffs] holdDistance}) en draait mee als jij draait. Een klein verschil duwen we
+     * weg met een zetje; is hij toch ver weg geraakt (een klap, een val), dan staat hij in één keer weer achter je.
+     */
+    private static void hold(LivingEntity living, ServerPlayer holder) {
+        float yaw = holder.getYRot() * Mth.DEG_TO_RAD;
+        Vec3 behind = new Vec3(Mth.sin(yaw), 0, -Mth.cos(yaw)).scale(ImtConfig.Handcuffs.HOLD_DISTANCE);
+        Vec3 target = holder.position().add(behind);
+        Vec3 to = target.subtract(living.position());
+        double flat = Math.sqrt(to.x * to.x + to.z * to.z);
+        if (flat > 2.5 || Math.abs(to.y) > 2.5) {
+            living.teleportTo(target.x, target.y, target.z);
+            living.setDeltaMovement(Vec3.ZERO);
+        } else if (flat > 0.15) {
+            double strength = Math.min(0.5, 0.35 * flat);
+            Vec3 v = living.getDeltaMovement();
+            double up = living.onGround() && to.y > 0.3 ? 0.42 : v.y;
+            living.setDeltaMovement(to.x / flat * strength, up, to.z / flat * strength);
+            living.hurtMarked = true; // ook een speler krijgt de zet (zijn spel hoort het zo)
+        }
         if (living instanceof Mob mob) {
             mob.getNavigation().stop();
         }
