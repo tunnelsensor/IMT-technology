@@ -105,7 +105,11 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob {
             weapon = com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.GLOCK_19,
                     com.senne.imttech.guns.GunMaterial.STEEL);
         } else {
-            weapon = new ItemStack(roll < 0.8f ? ModItems.LASER_RIFLE.get() : ModItems.LASER_PISTOL.get());
+            // Hoofdstuk 55: een compleet titanium geweer, maar zonder Nether Star (die haal je niet bij een soldaat): wie het
+            // opraapt moet er zelf een insteken op de Laser Workbench. De soldaat zelf schiet ook zonder (fireFrom).
+            com.senne.imttech.weapons.GunType kind = roll < 0.8f ? com.senne.imttech.weapons.GunType.RIFLE : com.senne.imttech.weapons.GunType.PISTOL;
+            weapon = com.senne.imttech.weapons.LaserGunItem.withParts(kind, com.senne.imttech.weapons.LaserParts
+                    .complete(com.senne.imttech.guns.GunMaterial.TITANIUM).without(com.senne.imttech.weapons.LaserPart.CORE));
             com.senne.imttech.weapons.LaserGunItem.setCell(weapon, com.senne.imttech.weapons.EnergyCellItem.FULL);
         }
         setItemSlot(EquipmentSlot.MAINHAND, weapon);

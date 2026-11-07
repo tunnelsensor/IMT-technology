@@ -21,7 +21,7 @@ Spotify-koppeling, spraakcommando's en instellingen verhuizen bij de eerste star
 (de map `starktech` wordt `imttech`). Oude werelden niet: blokken en items van de mod verdwijnen
 daaruit, want ze heetten nog `starktech:...`.
 
-Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (375 automatische tests).
+Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (419 automatische tests).
 
 ---
 
@@ -1876,6 +1876,74 @@ kamer), Recoil control (de terugslag), Steady aim (de spreiding), Quickdraw (tre
 Magazine handling (patronen in een magazijn); elk tot niveau 5, en elk volgend niveau kost een punt meer. Jouw keuze:
 punten verdelen, zodat je kiest waar je goed in wordt. Wat je leert blijft na je dood. Alle getallen onder `[guns]`.
 
+### Lasergeweren uit onderdelen: de Laser Workbench, de Nether Star, de slings
+Jouw wens (hoofdstuk 55): de lasergeweren horen in hetzelfde systeem als de Glock: uit onderdelen gebouwd op een nieuwe
+tafel, heel duur (endgame), met slijtage maar zonder storingen; het laserpistool in de holster, de andere geweren aan een
+sling op je rug of voor je borst, te trekken met het wiel, en de skills voor alle vijf de wapens. De getallen staan onder
+`[guns]` (de slijtage en het trekken) en `[weapons]` (de geweren zelf).
+
+**Zes onderdelen, twee kwaliteiten.** Elk lasergeweer bestaat uit een **frame** (de onderkant van de romp, de kolf en de
+greep: hoe snel je trekt), een **receiver** (het bovenstuk met de slede, de spanhendel, de grendel of de pomp: de terugslag
+en het herladen), een **emitter** (de loop met de lens: de schade en het bereik), de **optics** (het vizier of de kijker: de
+spreiding), een **capacitor** (het gloeiende blokje rechts opzij: hoeveel lading een schot kost) en een **trigger module**
+(hoe snel je schiet). Een onderdeel hoort bij één geweer (een emitter van een rifle past niet op een sniper) en bestaat in
+**titanium** (de getallen uit de config gelden voor titanium) of **netherite** (donker paarsbruin metaal; iets meer schade,
+minder terugslag, en het slijt het minst). Titanium onderdelen maak je aan de werkbank van titaniumstaven met diamanten,
+Computer Chips, een Laser Module (de emitter) of een Laser Cannon Capacitor met een redstoneblok (de capacitor), en voor
+de kijker van de sniper een verrekijker; een netherite onderdeel is datzelfde onderdeel plus **twee Netherite Ingots** in het
+craftraster (ook een gebruikt onderdeel mag: het wordt weer nieuw). De oude recepten van de geweren zelf zijn weg: die
+bouw je nu op de tafel.
+
+**De kern en de sling.** In elk geweer hoort een **Nether Star** (de kern): zonder kern schiet het niet ("NO NETHER STAR -
+LASER WORKBENCH"). Je steekt hem op de werkbank in het vak "core" (achter in de romp zie je hem gloeien) en haalt hem er
+ook weer uit, bijvoorbeeld om hem in een ander geweer te zetten. Een **Gun Sling** (3 leer en 2 touw) hang je op de
+werkbank aan een rifle, sniper of shotgun (een pistool heeft er geen vak voor); met een sling past het geweer in een
+sling-vakje (hieronder) en zie je de leren band langs de rechterkant van het geweer.
+
+**De Laser Workbench** (titanium, een Laser Module, staal en een Gunsmith Table). Werkt precies zoals de Gunsmith Table:
+links de laseronderdelen, Nether Stars, slings en lasergeweren uit je inventaris, in het midden het geweer groot op de tafel
+(scrollen draait, rechts slepen kantelt; een sniper staat kleiner, hij is lang). Begin met een **frame** (dat zegt welk
+geweer het wordt), sleep de rest naar zijn plek: wat ontbreekt staat gestippeld ernaast. Rechts zie je per onderdeel zijn
+kwaliteit en conditie, en "in" bij de kern en de sling. Een onderdeel eraf slepen (of [x]) geeft het terug met zijn
+conditie; de kern komt terug als Nether Star, de sling als Gun Sling; het frame kan er pas als laatste uit, en dan is het
+geweer weg en krijg je de cel terug. "Take the gun" neemt het mee. Een geweer uit een oude wereld (van voor dit hoofdstuk)
+krijgt vanzelf complete titanium onderdelen en een kern zodra het in je inventaris ligt; de geweren van Raven-soldaten
+hebben wel onderdelen maar **geen** Nether Star (die haal je niet bij een soldaat).
+
+**Slijtage, zonder storingen.** Elk schot heeft per onderdeel een kans om een punt te slijten: de helft van de Glock
+(`laserWearFactor` 0,5), dus titanium 0,4% en netherite 0,15% per schot. Een laser heeft geen hulzen, dus geen storingen:
+onder 40% maakt een versleten onderdeel zijn eigen cijfer slechter (tot 50% vlak voor het kapot is, `laserWornPenalty`): de
+emitter doet minder schade en reikt minder ver, de optics strooien meer, de capacitor kost meer lading per schot, de
+trigger schiet trager, de receiver geeft meer terugslag en herlaadt trager, het frame trekt trager. Op 0% is het kapot en
+doet het geweer niets ("EMITTER BROKEN - LASER WORKBENCH") tot je het vervangt. In de tooltip van het geweer, in je
+eigen beeld (je ziet alleen wat erin zit) en op de tafel zie je elk onderdeel.
+
+**Het laserpistool in de holster, de andere geweren aan je sling.** De **Holster** neemt nu ook het Laser Pistol (één pistool
+tegelijk: de Glock óf het laserpistool). Naast je harnas heb je twee **sling-vakjes**: in je inventaris staan ze onder het
+2x2-craftraster, rechts van het vakje van je andere hand (met Curios: het slot "Sling", twee vakjes); daar gaat een rifle,
+sniper of shotgun **met een sling** in, het geweer zelf (zonder sling past het niet). Het eerste vakje hangt het geweer
+schuin over je **rug**, het tweede voor je **borst**, allebei met een leren band over je schouder; anderen zien het,
+jijzelf met F5. In het **wiel** (linker Alt) staan ze naast je pistool: "Laser Rifle: on your back, 23 shots". Trekken van je
+sling duurt langer dan uit de holster (`slingDrawTicks` 18 tegen `drawTicks` 12), en de skill Quickdraw helpt ook hier.
+**Wisselen** (jouw keuze): wat je vasthoudt als je trekt gaat in zijn eigen plek in plaats van op de grond, als dat kan:
+een pistool in de holster, een geweer met sling in een vrij sling-vakje (dat van het geweer dat je net trekt is net
+vrijgekomen), een granaat in de pouch, een magazijn of cel in de magazijnpouch; past het nergens, dan valt het. Heb je
+dus je Glock vast en pak je je laser rifle, dan holster je de Glock; pak je daarna de Glock weer, dan gaat de rifle terug
+op je rug. "Put away" hangt een geweer met sling op je rug. Er zijn eigen toetsen voor (Opties > Besturing: "Quickdraw:
+gun on your back" en "... on your chest", standaard geen toets).
+
+**Cellen in de magazijnpouch.** De **Magazine Pouch** neemt ook energiecellen (ze staan rechtop in de vakjes, naast de
+magazijnen). R met een lasergeweer en een vollere cel in je pouch toont de cellen (met hoe vol): klik er een (of 1-3, of
+nog eens R voor de volste), en de oude cel komt op zijn plek in de pouch. Zonder pouch pakt R de volste cel uit je
+inventaris, zoals altijd. Rechtsonder telt "Cells" de cellen in je inventaris én in je pouch.
+
+**De skills voor alle vijf.** In de skilltree (wiel > Gun skills) kies je rechts bovenaan het wapen: Glock 19, Pistol,
+Rifle, Sniper of Shotgun (het begint op wat je vasthoudt); elk lasergeweer heeft zijn eigen rij naast de globale skills, en
+ze tellen op. Reload maakt het wisselen van een cel korter, Recoil control de terugslag kleiner, Steady aim de spreiding
+(ook het kruisje), Quickdraw het trekken uit de holster of van je sling. Clearing en Magazine handling zijn er alleen voor
+de Glock (een laser heeft geen storingen en geen magazijn). Schieten, raken, iemand doodschieten met een laser, een cel
+wisselen en trekken geven ervaring, net als bij de Glock.
+
 ### Prestaties (advancements)
 De mod heeft een eigen prestatieboom die je door het spel leidt, van je eerste computerchip tot
 vliegen met het harnas. Open je prestaties (standaard **L**) en kijk bij **Biebia's Industries**.
@@ -2190,7 +2258,8 @@ showcase en staat hij bij NIEUW.
   -Ponly=satellite` (of `boot`, `holo`, `screens`, `hud`, `suit`, `flight`, `drones`,
   `laser`, `bridge`, `commands`, `illusion`, `power`, `dome`, `models`, `tower`, `crash`, `raven`,
   `rockets`, `turrets`, `menu`, `bunker`, `missile`, `padscreen`, `cabinet`, `security`, `hack`, `os`, `cameras`, `towercams`,
-  `racks`, `keycards`, `logic`, `lab`, `bypass`, `light`, `network`, `camerawall`; meerdere met komma's). Op een ander
+  `racks`, `keycards`, `logic`, `lab`, `bypass`, `light`, `network`, `camerawall`, `glock`, `gear`, `skills`,
+  `laserparts`, `sling`; meerdere met komma's). Op een ander
   schermformaat: `-Psize=1600x900`.
 - **Logo**: `python tools/generate_logo.py` maakt het logo in de modlijst
   (`src/main/resources/imttech_logo.png`) en het projectplaatje voor CurseForge

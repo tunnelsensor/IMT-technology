@@ -2712,6 +2712,7 @@ final class ShowcaseFeatures {
         addGuns();
         addGear();
         addSkills();
+        addLaserParts();
     }
 
     /** Hoofdstuk 52, stap 3: de skilltree. */
@@ -3124,6 +3125,199 @@ final class ShowcaseFeatures {
     }
 
 
+    private static void addLaserParts() {
+        // ---------------------------------------------------------------- Lasergeweren uit onderdelen (hoofdstuk 55)
+        BlockPos w = ShowcaseScene.WEAPONS;
+        Vec3 stand = new Vec3(w.getX() + 0.5, w.getY() + 1, w.getZ() + 0.5);
+        add("Laser guns from parts: the Laser Workbench, the Nether Star and the sling", "Hoofdstuk 55. De lasergeweren bouw je nu "
+                + "net als de Glock uit zes onderdelen (frame, receiver, emitter, optics, capacitor, trigger) in titanium of "
+                + "netherite, plus een Nether Star als kern en (bij de rifle, sniper en shotgun) een sling. Je houdt een titanium "
+                + "rifle vast: je ziet hem uit zijn onderdelen (rechts de gloeiende capacitor, achteraan de Nether Star) en "
+                + "schiet drie keer. Dan een netherite sniper: het metaal is donker paarsbruin; je richt en schiet. Dan een rifle "
+                + "zonder Nether Star: klik, 'NO NETHER STAR - LASER WORKBENCH'. Dan een rifle met een kapotte emitter: 'EMITTER "
+                + "BROKEN'. Tot slot de Laser Workbench met een half gebouwd geweer erop: links je losse onderdelen, de Nether Star "
+                + "en de Gun Sling; wat ontbreekt staat gestippeld (optics, capacitor, trigger, core, sling); slepen zoals bij de "
+                + "Gunsmith Table. Elk onderdeel slijt een beetje per schot (de helft van de Glock, geen storingen); versleten maakt "
+                + "zijn eigen cijfer slechter, kapot = het geweer doet niets tot je het vervangt.",
+                stand, 90, 4, s -> s
+                .onServer(0, ShowcaseScene::buildWeapons)
+                .onServer(0, player -> buildLaserBench(player, w.above()))
+                .onServer(0, ShowcaseFeatures::giveLaserParts)
+                .stand(0, stand.x, stand.y, stand.z, 90, 3)
+                .step(0, () -> hotbar(0))
+                .pause(40)
+                .key(0, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
+                .key(10, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
+                .key(10, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
+                .pause(25)
+                .step(0, () -> hotbar(1))
+                .pause(30)
+                .key(0, () -> Minecraft.getInstance().options.keyUse, true)
+                .pause(25)
+                .key(0, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
+                .key(25, () -> Minecraft.getInstance().options.keyUse, false)
+                .pause(15)
+                .step(0, () -> hotbar(2))
+                .pause(25)
+                .key(0, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
+                .pause(45)
+                .step(0, () -> hotbar(3))
+                .pause(25)
+                .key(0, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
+                .pause(45)
+                // De werkbank.
+                .lookAt(0, new Vec3(stand.x - 1.5, stand.y + 0.5, stand.z + 0.5))
+                .onServer(15, player -> openBench(player, w.above().offset(-2, 0, 0)))
+                .pause(130)
+                .close(0)
+                .onServer(0, player -> player.getInventory().clearContent()));
+
+        add("Laser pistol in the holster, guns on your slings, cells in the pouch", "Hoofdstuk 55. Een geweer met een sling past in "
+                + "een van de twee sling-vakjes (op je rug en voor je borst; in je inventaris staan ze onder het craftraster, met "
+                + "Curios in het slot 'Sling'), en het laserpistool past in de holster. Je draagt een lege holster, een rifle op je "
+                + "rug, een sniper voor je borst en een magazijnpouch met twee energiecellen en een Glock-magazijn; je houdt je "
+                + "Glock vast. Het wiel (linker Alt): het geweer op je rug; de Glock valt NIET op de grond maar gaat in de "
+                + "holster (jouw keuze), en de rifle komt van je rug (dat duurt langer dan uit de holster). Twee schoten, dan R: "
+                + "de pouch toont de cellen, je kiest de volle; de oude cel komt op zijn plek. Dan het wiel: de Glock uit de holster; "
+                + "de rifle gaat terug op je rug. In derde persoon: de rifle schuin over je rug, de sniper voor je borst, de banden "
+                + "over je schouders, de cellen in de pouch. Tot slot de skilltree met het tabblad Rifle: elk lasergeweer heeft "
+                + "zijn eigen rij (Clearing en Magazine handling zijn er alleen voor de Glock).",
+                GameType.SURVIVAL, stand, 90, 4, s -> s
+                .onServer(0, ShowcaseScene::buildWeapons)
+                .onServer(0, ShowcaseFeatures::giveSlingGear)
+                .stand(0, stand.x, stand.y, stand.z, 90, 3)
+                .step(0, () -> hotbar(0))
+                .pause(20)
+                .open(0, () -> new net.minecraft.client.gui.screens.inventory.InventoryScreen(Minecraft.getInstance().player))
+                .pause(80)
+                .close(0)
+                .pause(15)
+                // Het wiel: de rifle van je rug; de Glock gaat in de holster.
+                .key(0, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true)
+                .pause(50)
+                .step(0, () -> wheelChooseAction(com.senne.imttech.guns.Gear.ACTION_DRAW_SLING, 0))
+                .key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false)
+                .pause(50)
+                .key(0, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
+                .key(10, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
+                .pause(20)
+                // R: de cellen in de pouch.
+                .step(0, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()))
+                .pause(50)
+                .step(0, () -> magPick(0))
+                .pause(70)
+                // Het wiel: de Glock; de rifle gaat terug op je rug.
+                .key(0, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true)
+                .pause(40)
+                .step(0, () -> wheelChooseAction(com.senne.imttech.guns.Gear.ACTION_DRAW_GUN, -1))
+                .key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false)
+                .pause(50)
+                .camera(0, net.minecraft.client.CameraType.THIRD_PERSON_BACK)
+                .pause(60)
+                .camera(0, net.minecraft.client.CameraType.THIRD_PERSON_FRONT)
+                .pause(60)
+                .camera(0, net.minecraft.client.CameraType.FIRST_PERSON)
+                // De skilltree: het tabblad van de rifle.
+                .open(10, com.senne.imttech.client.guns.SkillTreeScreen::new)
+                .step(2, () -> skillTab("laser_rifle"))
+                .pause(80)
+                .close(0)
+                .onServer(0, player -> player.getInventory().clearContent()));
+    }
+
+    /** Hoofdstuk 55: een Laser Workbench met een half gebouwde rifle erop, naast {@code stand} (tussen de twee banken van de Glock). */
+    static void buildLaserBench(ServerPlayer player, BlockPos stand) {
+        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+        BlockPos bench = stand.offset(-2, 0, 0);
+        level.setBlockAndUpdate(bench, ModBlocks.LASER_WORKBENCH.get().defaultBlockState()
+                .setValue(net.minecraft.world.level.block.HorizontalDirectionalBlock.FACING, net.minecraft.core.Direction.EAST));
+        if (level.getBlockEntity(bench) instanceof com.senne.imttech.weapons.LaserWorkbenchBlockEntity laser) {
+            com.senne.imttech.weapons.LaserParts parts = com.senne.imttech.weapons.LaserParts.EMPTY
+                    .with(com.senne.imttech.weapons.LaserPart.FRAME, com.senne.imttech.guns.PartState.fresh(com.senne.imttech.guns.GunMaterial.TITANIUM))
+                    .with(com.senne.imttech.weapons.LaserPart.RECEIVER, new com.senne.imttech.guns.PartState(com.senne.imttech.guns.GunMaterial.NETHERITE, 64))
+                    .with(com.senne.imttech.weapons.LaserPart.EMITTER, com.senne.imttech.guns.PartState.fresh(com.senne.imttech.guns.GunMaterial.TITANIUM));
+            laser.items().setItem(0, com.senne.imttech.weapons.LaserGunItem.withParts(com.senne.imttech.weapons.GunType.RIFLE, parts));
+        }
+    }
+
+    /**
+     * Hoofdstuk 55: een titanium rifle, een netherite sniper, een rifle zonder Nether Star, een rifle met een kapotte
+     * emitter, een laserpistool, en losse onderdelen, een Nether Star en een Gun Sling voor de werkbank.
+     */
+    static void giveLaserParts(ServerPlayer player) {
+        var inventory = player.getInventory();
+        inventory.clearContent();
+        inventory.setItem(0, com.senne.imttech.weapons.LaserGunItem.loaded(com.senne.imttech.weapons.GunType.RIFLE));
+        ItemStack sniper = com.senne.imttech.weapons.LaserGunItem.complete(com.senne.imttech.weapons.GunType.SNIPER,
+                com.senne.imttech.guns.GunMaterial.NETHERITE);
+        com.senne.imttech.weapons.LaserGunItem.setCell(sniper, com.senne.imttech.weapons.EnergyCellItem.FULL);
+        inventory.setItem(1, sniper);
+        ItemStack noCore = com.senne.imttech.weapons.LaserGunItem.loaded(com.senne.imttech.weapons.GunType.RIFLE);
+        com.senne.imttech.weapons.LaserGunItem.setParts(noCore, com.senne.imttech.weapons.LaserGunItem.parts(noCore)
+                .without(com.senne.imttech.weapons.LaserPart.CORE));
+        inventory.setItem(2, noCore);
+        ItemStack broken = com.senne.imttech.weapons.LaserGunItem.loaded(com.senne.imttech.weapons.GunType.RIFLE);
+        com.senne.imttech.weapons.LaserGunItem.setParts(broken, com.senne.imttech.weapons.LaserGunItem.parts(broken)
+                .with(com.senne.imttech.weapons.LaserPart.EMITTER, new com.senne.imttech.guns.PartState(com.senne.imttech.guns.GunMaterial.TITANIUM, 0)));
+        inventory.setItem(3, broken);
+        inventory.setItem(4, com.senne.imttech.weapons.LaserGunItem.loaded(com.senne.imttech.weapons.GunType.PISTOL));
+        inventory.setItem(5, com.senne.imttech.weapons.EnergyCellItem.withCharge(100));
+        inventory.setItem(9, com.senne.imttech.weapons.LaserPartItem.of(com.senne.imttech.weapons.GunType.RIFLE,
+                com.senne.imttech.weapons.LaserPart.OPTICS, com.senne.imttech.guns.GunMaterial.TITANIUM));
+        inventory.setItem(10, com.senne.imttech.weapons.LaserPartItem.of(com.senne.imttech.weapons.GunType.RIFLE,
+                com.senne.imttech.weapons.LaserPart.CAPACITOR, com.senne.imttech.guns.GunMaterial.NETHERITE));
+        inventory.setItem(11, com.senne.imttech.weapons.LaserPartItem.of(com.senne.imttech.weapons.GunType.RIFLE,
+                com.senne.imttech.weapons.LaserPart.TRIGGER, com.senne.imttech.guns.GunMaterial.TITANIUM, 37));
+        inventory.setItem(12, new ItemStack(net.minecraft.world.item.Items.NETHER_STAR));
+        inventory.setItem(13, new ItemStack(ModItems.GUN_SLING.get()));
+        inventory.setItem(14, com.senne.imttech.weapons.LaserPartItem.of(com.senne.imttech.weapons.GunType.SNIPER,
+                com.senne.imttech.weapons.LaserPart.EMITTER, com.senne.imttech.guns.GunMaterial.NETHERITE));
+    }
+
+    /**
+     * Hoofdstuk 55: een lege holster, een rifle met sling op je rug, een sniper met sling voor je borst, een magazijnpouch
+     * met twee cellen en een Glock-magazijn, en je Glock in je hand.
+     */
+    static void giveSlingGear(ServerPlayer player) {
+        var inventory = player.getInventory();
+        inventory.clearContent();
+        inventory.setItem(0, com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.GLOCK_19,
+                com.senne.imttech.guns.GunMaterial.STEEL));
+        com.senne.imttech.guns.Gear.set(player, com.senne.imttech.guns.GearItem.Kind.HOLSTER, new ItemStack(ModItems.HOLSTER.get()));
+        ItemStack magazines = new ItemStack(ModItems.MAG_POUCH.get());
+        com.senne.imttech.guns.GearItem.setContents(magazines, java.util.List.of(
+                com.senne.imttech.weapons.EnergyCellItem.withCharge(100),
+                com.senne.imttech.weapons.EnergyCellItem.withCharge(45),
+                com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.GLOCK_19, 15)));
+        com.senne.imttech.guns.Gear.set(player, com.senne.imttech.guns.GearItem.Kind.MAG_POUCH, magazines);
+        com.senne.imttech.guns.Gear.setSling(player, 0, slungGun(com.senne.imttech.weapons.GunType.RIFLE, 30));
+        com.senne.imttech.guns.Gear.setSling(player, 1, slungGun(com.senne.imttech.weapons.GunType.SNIPER, 100));
+    }
+
+    /** Een compleet titanium geweer met een sling eraan en zoveel procent in zijn cel. */
+    static ItemStack slungGun(com.senne.imttech.weapons.GunType type, float cell) {
+        ItemStack gun = com.senne.imttech.weapons.LaserGunItem.complete(type, com.senne.imttech.guns.GunMaterial.TITANIUM);
+        com.senne.imttech.weapons.LaserGunItem.setParts(gun, com.senne.imttech.weapons.LaserGunItem.parts(gun)
+                .with(com.senne.imttech.weapons.LaserPart.SLING, com.senne.imttech.weapons.LaserParts.extra()));
+        com.senne.imttech.weapons.LaserGunItem.setCell(gun, cell);
+        return gun;
+    }
+
+    /** In het wiel (als het open is) de optie met deze actie (en dit extra getal, -1 = de eerste) kiezen. */
+    static void wheelChooseAction(int action, int arg) {
+        com.senne.imttech.client.guns.GearWheelScreen wheel = com.senne.imttech.client.guns.GearWheelScreen.current();
+        if (wheel != null) {
+            wheel.chooseAction(action, arg);
+        }
+    }
+
+    /** In de skilltree (als die open is) het tabblad van dit wapen tonen. */
+    static void skillTab(String scope) {
+        if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.guns.SkillTreeScreen tree) {
+            tree.showWeapon(scope);
+        }
+    }
+
     /** Hoofdstuk 52, stap 2: de holster, de pouches en het wiel, op het wapenveld. */
 
     /** Een holster met een Glock, een granaatpouch (twee EMP, een flashbang) en een magazijnpouch (twee magazijnen); een steen in je hand. */
@@ -3428,7 +3622,7 @@ final class ShowcaseFeatures {
         inventory.clearContent();
         com.senne.imttech.weapons.GunType[] types = com.senne.imttech.weapons.GunType.values();
         for (int i = 0; i < types.length; i++) {
-            ItemStack gun = new ItemStack(ModItems.laserGun(types[i]));
+            ItemStack gun = com.senne.imttech.weapons.LaserGunItem.complete(types[i], com.senne.imttech.guns.GunMaterial.TITANIUM);
             com.senne.imttech.weapons.LaserGunItem.setCell(gun, i == 1 ? 30 : 100);
             inventory.setItem(i, gun);
         }

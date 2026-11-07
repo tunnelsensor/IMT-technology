@@ -1,0 +1,8 @@
+{
+ "parent": "minecraft:block/orientable",
+ "textures": {
+  "front": "imttech:block/laser_workbench_front",
+  "side": "imttech:block/laser_workbench_side",
+  "top": "imttech:block/laser_workbench_top"
+ }
+}

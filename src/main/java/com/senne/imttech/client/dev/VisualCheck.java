@@ -2151,14 +2151,15 @@ public final class VisualCheck {
                 inventory.clearContent();
                 com.senne.imttech.weapons.GunType[] types = com.senne.imttech.weapons.GunType.values();
                 for (int i = 0; i < types.length; i++) {
-                    ItemStack gun = new ItemStack(ModItems.laserGun(types[i]));
+                    ItemStack gun = com.senne.imttech.weapons.LaserGunItem.complete(types[i], com.senne.imttech.guns.GunMaterial.TITANIUM);
                     com.senne.imttech.weapons.LaserGunItem.setCell(gun, i == 1 ? 45 : 100);
                     inventory.setItem(i, gun);
                 }
                 inventory.setItem(4, com.senne.imttech.weapons.EnergyCellItem.withCharge(100));
                 inventory.setItem(5, com.senne.imttech.weapons.EnergyCellItem.withCharge(60));
                 inventory.setItem(6, new ItemStack(ModItems.ENERGY_CELL.get()));
-                inventory.setItem(8, new ItemStack(ModItems.LASER_PISTOL.get()));
+                inventory.setItem(8, com.senne.imttech.weapons.LaserGunItem.complete(com.senne.imttech.weapons.GunType.PISTOL,
+                        com.senne.imttech.guns.GunMaterial.TITANIUM));
             });
             t.stand(20, GUN_RANGE.getX() + 0.5, GUN_RANGE.getY() + 1, GUN_RANGE.getZ() + 0.5, 0, 2);
             t.step(0, () -> selectSlot(0));
@@ -3403,6 +3404,101 @@ public final class VisualCheck {
             // De magazijnpouch open (hoofdstuk 54): zijn vakjes boven je inventaris.
             t.onServer(5, player -> com.senne.imttech.guns.Gear.openPouch(player, com.senne.imttech.guns.GearItem.Kind.MAG_POUCH.ordinal()));
             t.shot(15, "ge09_magazine_pouch_open");
+            t.close(0);
+            t.command(0, "gamemode creative @a");
+        }
+
+        // --- Lasergeweren uit onderdelen (hoofdstuk 55): een titanium rifle en een netherite sniper uit hun onderdelen, zonder
+        // Nether Star, met een kapotte emitter, het pistool, de Laser Workbench met een half gebouwd geweer, en de losse onderdelen.
+        if (want("laserparts")) {
+            BlockPos g = GUN_RANGE.above();
+            Vec3 stand = new Vec3(g.getX() + 0.5, g.getY(), g.getZ() + 0.5);
+            t.onServer(0, VisualCheck::buildGunRange);
+            t.onServer(0, player -> ShowcaseFeatures.buildLaserBench(player, g));
+            t.onServer(0, ShowcaseFeatures::giveLaserParts);
+            t.stand(20, stand.x, stand.y, stand.z, 0, 2);
+            t.step(0, () -> selectSlot(0));
+            t.shot(25, "lp01_rifle_from_parts_hip");
+            t.key(0, () -> Minecraft.getInstance().options.keyAttack, true);
+            t.key(1, () -> Minecraft.getInstance().options.keyAttack, false);
+            t.shot(0, "lp02_rifle_fire");
+            t.step(10, () -> selectSlot(1));
+            t.shot(20, "lp03_netherite_sniper");
+            t.key(0, () -> Minecraft.getInstance().options.keyUse, true);
+            t.shot(14, "lp04_netherite_sniper_aim");
+            t.key(0, () -> Minecraft.getInstance().options.keyUse, false);
+            t.step(10, () -> selectSlot(2));
+            t.shot(20, "lp05_no_nether_star");
+            t.step(0, () -> selectSlot(3));
+            t.shot(20, "lp06_emitter_broken");
+            t.step(0, () -> selectSlot(4));
+            t.shot(20, "lp07_laser_pistol_from_parts");
+            t.step(0, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_INSPECT.getKey()));
+            t.shot(14, "lp08_laser_pistol_inspect");
+            t.onServer(30, player -> ShowcaseFeatures.openBench(player, g.offset(-2, 0, 0)));
+            t.shot(25, "lp09_laser_workbench");
+            t.close(5);
+            t.step(0, () -> selectSlot(5));
+            t.command(0, "gamemode survival @a");
+            t.open(10, () -> new net.minecraft.client.gui.screens.inventory.InventoryScreen(Minecraft.getInstance().player));
+            t.shot(20, "lp10_parts_in_inventory");
+            t.close(0);
+            t.command(0, "gamemode creative @a");
+            t.camera(5, CameraType.THIRD_PERSON_FRONT);
+            t.step(0, () -> selectSlot(1));
+            t.shot(20, "lp11_third_person_sniper");
+            t.camera(0, CameraType.FIRST_PERSON);
+        }
+
+        // --- Holster, slings en cellen (hoofdstuk 55): de sling-vakjes in je inventaris, het wiel met je geweren, trekken van je
+        // rug (de Glock gaat in de holster), de cellen in de pouch kiezen, en in derde persoon de geweren op je rug en borst.
+        if (want("sling")) {
+            BlockPos g = GUN_RANGE.above();
+            Vec3 stand = new Vec3(g.getX() + 0.5, g.getY(), g.getZ() + 0.5);
+            t.onServer(0, VisualCheck::buildGunRange);
+            t.onServer(0, ShowcaseFeatures::giveSlingGear);
+            t.command(0, "gamemode survival @a");
+            t.stand(20, stand.x, stand.y, stand.z, 0, 2);
+            t.step(0, () -> selectSlot(0));
+            t.open(10, () -> new net.minecraft.client.gui.screens.inventory.InventoryScreen(Minecraft.getInstance().player));
+            t.shot(20, "sl01_sling_slots_in_inventory");
+            t.close(0);
+            t.key(10, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true);
+            t.shot(15, "sl02_wheel_with_slings");
+            t.step(0, () -> ShowcaseFeatures.wheelChooseAction(com.senne.imttech.guns.Gear.ACTION_DRAW_SLING, 0));
+            t.key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false);
+            t.shot(6, "sl03_drawing_from_the_back");
+            t.shot(22, "sl04_rifle_drawn_glock_holstered");
+            t.step(5, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
+            t.shot(10, "sl05_cell_picker");
+            t.step(0, () -> ShowcaseFeatures.magPick(0));
+            t.shot(16, "sl06_cell_reload");
+            t.key(40, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true);
+            t.step(10, () -> ShowcaseFeatures.wheelChooseAction(com.senne.imttech.guns.Gear.ACTION_DRAW_GUN, -1));
+            t.key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false);
+            t.shot(25, "sl07_glock_drawn_rifle_slung");
+            t.camera(5, CameraType.THIRD_PERSON_BACK);
+            t.shot(15, "sl08_rifle_on_the_back");
+            t.camera(0, CameraType.THIRD_PERSON_FRONT);
+            t.shot(15, "sl09_sniper_on_the_chest");
+            // Van dichtbij (ingezoomd, zonder HUD).
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(30));
+            t.stand(0, stand.x, stand.y, stand.z, 90, 0);
+            t.camera(0, CameraType.THIRD_PERSON_BACK);
+            t.shot(12, "sl10_back_close");
+            t.camera(0, CameraType.THIRD_PERSON_FRONT);
+            t.shot(12, "sl11_chest_close");
+            t.stand(0, stand.x, stand.y, stand.z, 0, 0);
+            t.camera(0, CameraType.THIRD_PERSON_BACK);
+            t.shot(12, "sl12_side_close");
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(70));
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.stand(0, stand.x, stand.y, stand.z, 0, 2);
+            t.camera(0, CameraType.FIRST_PERSON);
+            t.open(10, com.senne.imttech.client.guns.SkillTreeScreen::new);
+            t.step(2, () -> ShowcaseFeatures.skillTab("laser_rifle"));
+            t.shot(15, "sl13_skill_tree_rifle_tab");
             t.close(0);
             t.command(0, "gamemode creative @a");
         }

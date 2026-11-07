@@ -88,4 +88,44 @@ public final class SkillGameTests {
         player.setData(ModAttachments.GUN_SKILLS, GunSkills.EMPTY);
         helper.succeed();
     }
+
+    /**
+     * Hoofdstuk 55: elk lasergeweer heeft zijn eigen rij (scope "laser_rifle"...), naast de globale; Reload maakt het
+     * wisselen van de cel korter, globaal en per geweer tellen op; Clearing en Magazine handling bestaan niet voor een
+     * laser; een laserschot geeft ervaring.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "guns")
+    public static void laser_guns_have_their_own_skill_scope(GameTestHelper helper) {
+        ServerPlayer player = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(4, 2, 4), "laser-learner");
+        player.getInventory().selected = 0;
+        ItemStack gun = com.senne.imttech.weapons.LaserGunItem.loaded(com.senne.imttech.weapons.GunType.RIFLE);
+        player.setItemInHand(InteractionHand.MAIN_HAND, gun);
+        check(com.senne.imttech.guns.GunSkillHooks.scopeOf(gun).equals("laser_rifle"), "De scope van een laser rifle is niet laser_rifle");
+        check(!GunSkill.CLEARING.appliesTo("laser_rifle") && !GunSkill.MAG_HANDLING.appliesTo("laser_rifle")
+                && GunSkill.RELOAD.appliesTo("laser_rifle") && GunSkill.CLEARING.appliesTo("glock_19"),
+                "Clearing en Magazine handling horen alleen bij de Glock");
+        int plain = com.senne.imttech.weapons.LaserGuns.reloadTicks(player, gun);
+        GunSkillsServer.award(player, 10_000);
+        check(!GunSkillsServer.learn(player, "laser_rifle", GunSkill.CLEARING), "Clearing was te leren voor een laser rifle");
+        check(GunSkillsServer.learn(player, "laser_rifle", GunSkill.RELOAD), "Reload (laser rifle) was niet te leren");
+        int faster = com.senne.imttech.weapons.LaserGuns.reloadTicks(player, gun);
+        check(faster < plain, "Reload op de laser rifle maakte de celwissel niet korter: " + faster + " van " + plain);
+        check(GunSkillsServer.learn(player, GunSkills.GLOBAL, GunSkill.RELOAD), "Reload (globaal) was niet te leren");
+        int fastest = com.senne.imttech.weapons.LaserGuns.reloadTicks(player, gun);
+        check(fastest < faster, "Globaal en per geweer tellen niet op: " + fastest + " van " + faster);
+        // De Glock merkt niets van de rij van de rifle.
+        ItemStack glock = FirearmItem.loaded(FirearmType.GLOCK_19, GunMaterial.STEEL);
+        check(GunSkillsServer.of(player).level("glock_19", GunSkill.RELOAD) == 0, "De Glock kreeg het niveau van de rifle");
+        check(GunSkillsServer.of(player).factor(GunSkill.RELOAD, "laser_pistol") == GunSkillsServer.of(player).factor(GunSkill.RELOAD, (String) null),
+                "Het laserpistool kreeg het niveau van de rifle");
+        // Een laserschot geeft ervaring.
+        GunSkills before = GunSkillsServer.of(player);
+        com.senne.imttech.weapons.LaserGuns.forgetCooldown(player);
+        check(com.senne.imttech.weapons.LaserGuns.fire(player, player.getYRot(), player.getXRot(), false) == com.senne.imttech.weapons.LaserGuns.Result.FIRED,
+                "Het schot ging niet af");
+        GunSkills shot = GunSkillsServer.of(player);
+        check(shot.xp() > before.xp() || shot.earned() > before.earned(), "Een laserschot gaf geen ervaring");
+        player.setData(ModAttachments.GUN_SKILLS, GunSkills.EMPTY);
+        helper.succeed();
+    }
 }

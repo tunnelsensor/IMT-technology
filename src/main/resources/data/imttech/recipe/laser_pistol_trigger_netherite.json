@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": [
+    {
+      "type": "neoforge:components",
+      "items": "imttech:laser_pistol_trigger",
+      "components": {
+        "imttech:gun_material": "titanium"
+      },
+      "strict": false
+    },
+    {
+      "tag": "c:ingots/netherite"
+    },
+    {
+      "tag": "c:ingots/netherite"
+    }
+  ],
+  "result": {
+    "id": "imttech:laser_pistol_trigger",
+    "count": 1,
+    "components": {
+      "imttech:gun_material": "netherite"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "C": {
+      "item": "imttech:computer_chip"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    },
+    "T": {
+      "item": "imttech:titanium_ingot"
+    }
+  },
+  "pattern": [
+    "TC",
+    "TR"
+  ],
+  "result": {
+    "id": "imttech:laser_rifle_trigger",
+    "count": 1,
+    "components": {
+      "imttech:gun_material": "titanium"
+    }
+  }
+}

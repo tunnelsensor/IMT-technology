@@ -58,6 +58,7 @@ public class ImtTechClient {
         // De vuurwapens (hoofdstuk 52): de losse onderdelen van de Glock 19, het plaatje per materiaal, twee handen.
         modEventBus.addListener(com.senne.imttech.client.guns.FirearmModels::register);
         modEventBus.addListener(com.senne.imttech.client.guns.FirearmModels::registerProperties);
+        modEventBus.addListener(com.senne.imttech.client.weapons.WeaponModels::registerProperties);
         modEventBus.addListener(com.senne.imttech.client.guns.FirearmModels::registerExtensions);
         // De holster en de pouches op je heup (hoofdstuk 52, stap 2).
         modEventBus.addListener(com.senne.imttech.client.guns.GearLayer::addLayers);
@@ -181,6 +182,7 @@ public class ImtTechClient {
         event.register(ModMenus.CRACK_MACHINE.get(), com.senne.imttech.client.repair.CrackMachineScreen::new);
         event.register(ModMenus.ROBOT_ASSEMBLER.get(), com.senne.imttech.client.robot.RobotAssemblerScreen::new);
         event.register(ModMenus.GUNSMITH_TABLE.get(), com.senne.imttech.client.guns.GunsmithScreen::new);
+        event.register(ModMenus.LASER_WORKBENCH.get(), com.senne.imttech.client.weapons.LaserWorkbenchScreen::new);
         event.register(ModMenus.RELOADING_BENCH.get(), com.senne.imttech.client.guns.ReloadingBenchScreen::new);
         event.register(ModMenus.GEAR_POUCH.get(), com.senne.imttech.client.guns.GearPouchScreen::new);
     }

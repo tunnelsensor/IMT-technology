@@ -1,10 +1,14 @@
 package com.senne.imttech.weapons;
 
+import com.senne.imttech.guns.GunMaterial;
+import com.senne.imttech.guns.PartState;
 import com.senne.imttech.registry.ModDataComponents;
 import java.util.List;
+import java.util.Map;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -21,6 +25,12 @@ import org.jetbrains.annotations.Nullable;
  *
  * In het geweer zit een energiecel (of niet): het data component GUN_CELL is hoe vol die cel is (0 tot 100), en
  * zonder component zit er geen cel in. Een nieuw geweer is leeg: druk R en hij pakt de volste cel uit je inventaris.
+ *
+ * Sinds hoofdstuk 55 (jouw keuze: "al de bestaande laserguns wil ik ook dat ze gecraft worden in een nieuwe soort
+ * tafel op dezelfde manier als de Glock") bestaat een geweer uit <b>onderdelen</b> (het data component LASER_PARTS, zie
+ * {@link LaserParts}): zes onderdelen die slijten, een Nether Star als kern, en bij de lange geweren een sling. Je zet
+ * ze in elkaar op de Laser Workbench. Een geweer uit een oude wereld (van voor hoofdstuk 55) heeft nog geen onderdelen:
+ * zodra het in iemands inventaris zit, krijgt het complete titanium onderdelen en een kern (het was al van jou).
  */
 public class LaserGunItem extends Item {
     private final GunType type;
@@ -39,6 +49,8 @@ public class LaserGunItem extends Item {
         return stack.getItem() instanceof LaserGunItem gun ? gun.type : null;
     }
 
+    // ================================================================ De cel
+
     /** Hoe vol de cel in dit geweer is (0 tot 100), of -1 als er geen cel in zit. */
     public static float cell(ItemStack stack) {
         Float charge = stack.get(ModDataComponents.GUN_CELL.get());
@@ -54,11 +66,67 @@ public class LaserGunItem extends Item {
         }
     }
 
-    /** Zoveel schoten zitten er nog in. */
+    /** Zoveel schoten zitten er nog in (met de capacitor zoals hij nu is). */
     public static int shotsLeft(ItemStack stack) {
         GunType type = typeOf(stack);
         float charge = cell(stack);
-        return type == null || charge <= 0 ? 0 : (int) Math.floor(charge / Math.max(0.01f, type.cost()) + 1.0E-4);
+        return type == null || charge <= 0 ? 0 : (int) Math.floor(charge / Math.max(0.01f, LaserGuns.shotCost(stack)) + 1.0E-4);
+    }
+
+    // ================================================================ De onderdelen (hoofdstuk 55)
+
+    public static LaserParts parts(ItemStack stack) {
+        LaserParts parts = stack.get(ModDataComponents.LASER_PARTS.get());
+        return parts == null ? LaserParts.EMPTY : parts;
+    }
+
+    public static void setParts(ItemStack stack, LaserParts parts) {
+        if (parts.parts().isEmpty()) {
+            stack.remove(ModDataComponents.LASER_PARTS.get());
+        } else {
+            stack.set(ModDataComponents.LASER_PARTS.get(), parts);
+        }
+    }
+
+    /** Zitten de zes onderdelen en de kern erin, en is er geen kapot? */
+    public static boolean works(ItemStack stack) {
+        LaserParts parts = parts(stack);
+        return parts.complete() && parts.broken().isEmpty();
+    }
+
+    /** Hangt er een sling aan (dan past het in een sling-vakje)? */
+    public static boolean hasSling(ItemStack stack) {
+        return parts(stack).hasSling();
+    }
+
+    /** Een compleet geweer (zes onderdelen van dit materiaal en een kern), zonder cel: zo komt het van de tafel. */
+    public static ItemStack complete(GunType type, GunMaterial material) {
+        return withParts(type, LaserParts.complete(material));
+    }
+
+    /** Een compleet titanium geweer met een volle cel (voor creative, de showcase en de tests). */
+    public static ItemStack loaded(GunType type) {
+        ItemStack stack = complete(type, GunMaterial.TITANIUM);
+        setCell(stack, EnergyCellItem.FULL);
+        return stack;
+    }
+
+    /** Een geweer met alleen deze onderdelen, zonder cel (zo ontstaat het op de Laser Workbench). */
+    public static ItemStack withParts(GunType type, LaserParts parts) {
+        ItemStack stack = new ItemStack(com.senne.imttech.registry.ModItems.laserGun(type));
+        setParts(stack, parts);
+        return stack;
+    }
+
+    /**
+     * Een geweer uit een oude wereld (van voor hoofdstuk 55) heeft nog geen onderdelen: zodra het in een inventaris zit,
+     * krijgt het complete titanium onderdelen en een kern, zodat het blijft werken.
+     */
+    @Override
+    public void inventoryTick(ItemStack stack, Level level, Entity entity, int slot, boolean selected) {
+        if (!level.isClientSide && !stack.has(ModDataComponents.LASER_PARTS.get())) {
+            setParts(stack, LaserParts.complete(GunMaterial.TITANIUM));
+        }
     }
 
     // ================================================================ Geen gewoon gereedschap
@@ -75,7 +143,7 @@ public class LaserGunItem extends Item {
         return true;
     }
 
-    /** Een schot (de cel wordt leger) laat het geweer niet opnieuw in je hand komen. */
+    /** Een schot (de cel wordt leger, een onderdeel slijt) laat het geweer niet opnieuw in je hand komen. */
     @Override
     public boolean shouldCauseReequipAnimation(ItemStack oldStack, ItemStack newStack, boolean slotChanged) {
         return slotChanged || oldStack.getItem() != newStack.getItem();
@@ -101,6 +169,29 @@ public class LaserGunItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         tooltip.add(Component.translatable("tooltip.imttech." + type.id).withStyle(ChatFormatting.GRAY));
+        LaserParts parts = parts(stack);
+        if (!parts.complete()) {
+            List<LaserPart> missing = parts.missing();
+            tooltip.add((missing.size() == 1 && missing.getFirst() == LaserPart.CORE
+                    ? Component.translatable("tooltip.imttech.laser_gun.no_core")
+                    : Component.translatable("tooltip.imttech.laser_gun.incomplete", missing.size())).withStyle(ChatFormatting.RED));
+        }
+        for (Map.Entry<LaserPart, PartState> entry : parts.parts().entrySet()) {
+            LaserPart part = entry.getKey();
+            PartState state = entry.getValue();
+            if (!part.wears()) {
+                continue;
+            }
+            ChatFormatting colour = state.broken() ? ChatFormatting.RED : state.worn() ? ChatFormatting.GOLD : ChatFormatting.DARK_AQUA;
+            tooltip.add(Component.literal("  ").append(Component.translatable("tooltip.imttech.firearm.part",
+                    state.material().text(), part.text(), state.condition())).withStyle(colour));
+        }
+        if (parts.hasCore()) {
+            tooltip.add(Component.literal("  ").append(Component.translatable("tooltip.imttech.laser_gun.core")).withStyle(ChatFormatting.YELLOW));
+        }
+        if (parts.hasSling()) {
+            tooltip.add(Component.literal("  ").append(Component.translatable("tooltip.imttech.laser_gun.sling")).withStyle(ChatFormatting.GOLD));
+        }
         String damage = type.rays() > 1 ? type.rays() + " x " + fmt(type.damage()) : fmt(type.damage());
         tooltip.add(Component.translatable("tooltip.imttech.laser_gun.stats", damage,
                 fmt(20f / type.interval()), type.shotsPerCell()).withStyle(ChatFormatting.DARK_AQUA));

@@ -83,6 +83,10 @@ public final class Firearms {
         UNLOAD_CHAMBER
     }
 
+    /** Het extra getal bij DRAW (hoofdstuk 55): uit de holster, of van je sling (dat duurt langer). */
+    public static final int DRAW_FROM_HOLSTER = 0;
+    public static final int DRAW_FROM_SLING = 1;
+
     /** Een handeling die bezig is: wat, in welk vakje het item zit waarmee je bezig bent, iets extra, en wanneer klaar. */
     private record Action(ActionKind kind, int slot, int arg, long done) {}
 
@@ -237,6 +241,14 @@ public final class Firearms {
 
     /** Zo lang (ticks) duurt deze handeling voor deze speler met dit pistool (het materiaal van het frame telt mee). */
     public static int ticksFor(ServerPlayer player, ActionKind kind, @Nullable ItemStack gun) {
+        return ticksFor(player, kind, 0, gun);
+    }
+
+    /**
+     * Hetzelfde, met het extra getal van de handeling ({@code arg}: bij DRAW of je uit de holster of van je sling trekt).
+     * Sinds hoofdstuk 55 kan het "pistool" ook een lasergeweer zijn (trekken): dan telt zijn frame mee.
+     */
+    public static int ticksFor(ServerPlayer player, ActionKind kind, int arg, @Nullable ItemStack gun) {
         float base = switch (kind) {
             case EJECT_MAG -> ImtConfig.Guns.EJECT_TICKS;
             case INSERT_MAG -> ImtConfig.Guns.INSERT_TICKS;
@@ -245,13 +257,16 @@ public final class Firearms {
             case CHAMBER_ROUND -> ImtConfig.Guns.CHAMBER_TICKS;
             case LOAD_ROUND -> ImtConfig.Guns.LOAD_ROUND_TICKS;
             case RELOAD_POUCH -> ImtConfig.Guns.POUCH_RELOAD_TICKS;
-            case DRAW -> ImtConfig.Guns.DRAW_TICKS;
+            case DRAW -> arg == DRAW_FROM_SLING ? ImtConfig.Guns.SLING_DRAW_TICKS : ImtConfig.Guns.DRAW_TICKS;
             case UNLOAD_ROUND -> ImtConfig.Guns.UNLOAD_ROUND_TICKS;
             case UNLOAD_CHAMBER -> ImtConfig.Guns.UNLOAD_CHAMBER_TICKS;
         };
         float factor = 1;
         if (gun != null && FirearmItem.typeOf(gun) != null && kind != ActionKind.LOAD_ROUND && kind != ActionKind.UNLOAD_ROUND) {
             factor *= FirearmItem.parts(gun).materialOf(GunPart.FRAME).handlingFactor();
+        }
+        if (gun != null && com.senne.imttech.weapons.LaserGunItem.typeOf(gun) != null) {
+            factor *= com.senne.imttech.weapons.LaserGuns.handlingFactor(gun);
         }
         factor *= GunSkillHooks.timeFactor(player, kind, gun);
         return Math.max(1, Math.round(base * factor));
@@ -284,7 +299,7 @@ public final class Firearms {
         if (ACTIONS.containsKey(player.getUUID())) {
             return false;
         }
-        int ticks = ticksFor(player, kind, gun);
+        int ticks = ticksFor(player, kind, arg, gun);
         ACTIONS.put(player.getUUID(), new Action(kind, slot, arg, player.serverLevel().getGameTime() + ticks));
         ModNetwork.sendTo(player, new FirearmActionPayload(kind.ordinal(), arg, ticks));
         return true;
@@ -499,7 +514,9 @@ public final class Firearms {
         boolean stillValid = sameSlot && switch (action.kind()) {
             case LOAD_ROUND, UNLOAD_ROUND -> MagazineItem.typeOf(held) != null;
             case INSERT_MAG -> MagazineItem.typeOf(held) != null && FirearmItem.typeOf(inventory.getItem(action.arg())) != null;
-            default -> FirearmItem.typeOf(held) != null;
+            // Trekken (DRAW) kan sinds hoofdstuk 55 ook met een lasergeweer zijn.
+            default -> FirearmItem.typeOf(held) != null
+                    || (action.kind() == ActionKind.DRAW && com.senne.imttech.weapons.LaserGunItem.typeOf(held) != null);
         };
         if (!stillValid) {
             ACTIONS.remove(player.getUUID());

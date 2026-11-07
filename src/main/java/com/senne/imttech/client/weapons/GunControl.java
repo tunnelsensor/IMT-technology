@@ -56,6 +56,8 @@ public final class GunControl {
     private static float sprint;
     private static float sprintO;
     private static float drawnAt = -100;
+    /** Zo lang (ticks) duurt het pakken nu: gewoon DRAW_TICKS, of wat de server zegt als je trekt (hoofdstuk 55). */
+    private static float drawTicks = DRAW_TICKS;
     private static float reloadAt = -1;
     private static int reloadTicks = 1;
     private static boolean cellInPlayed;
@@ -94,7 +96,7 @@ public final class GunControl {
 
     /** Hoe ver het geweer al omhoog is na het pakken (0 tot 1). */
     public static float draw(float partialTick) {
-        return Mth.clamp((time(partialTick) - drawnAt) / DRAW_TICKS, 0, 1);
+        return Mth.clamp((time(partialTick) - drawnAt) / drawTicks, 0, 1);
     }
 
     /** Hoe ver het herladen is (0 tot 1), of -1 als je niet herlaadt. */
@@ -138,6 +140,7 @@ public final class GunControl {
             held = type;
             heldSlot = player.getInventory().selected;
             drawnAt = now;
+            drawTicks = DRAW_TICKS;
             reloadAt = -1;
             inspectAt = -1;
             aim = aimO = 0;
@@ -216,9 +219,10 @@ public final class GunControl {
         if (reloading() || draw(0) < 1 || now < nextShot) {
             return;
         }
-        nextShot = now + type.interval();
+        nextShot = now + com.senne.imttech.weapons.LaserGuns.interval(gun);
         inspectAt = -1;
-        if (LaserGunItem.shotsLeft(gun) <= 0) {
+        // Niet compleet, geen kern, of iets kapot (hoofdstuk 55): een klik; de server zegt waarom.
+        if (!LaserGunItem.works(gun) || LaserGunItem.shotsLeft(gun) <= 0) {
             emptyAt = now;
             play(player, ModSounds.LASER_GUN_EMPTY.get(), 0.7f);
             send(new GunFirePayload(player.getYRot(), player.getXRot(), aim > 0.5f));
@@ -232,7 +236,9 @@ public final class GunControl {
         send(new GunFirePayload(player.getYRot(), player.getXRot(), aim > 0.5f));
         play(player, type.fireSound(), 1.0f);
         // De terugslag: je kijkt een stukje omhoog (minder als je richt), en een heel klein beetje opzij.
-        float kick = GunRig.of(type).cameraKick * (aim > 0.5f ? 0.6f : 1.0f);
+        float kick = GunRig.of(type).cameraKick * (aim > 0.5f ? 0.6f : 1.0f)
+                * com.senne.imttech.weapons.LaserGuns.recoilFactor(gun)
+                * com.senne.imttech.client.guns.GunSkillsClient.recoilFactor(type.id);
         player.setXRot(Mth.clamp(player.getXRot() - kick, -90, 90));
         player.setYRot(player.getYRot() + (player.getRandom().nextFloat() - 0.5f) * kick * 0.4f);
     }
@@ -240,6 +246,10 @@ public final class GunControl {
     /** R: herladen, als er een cel is die voller is dan die in je geweer. De server doet het echte wisselen. */
     private static void startReload(LocalPlayer player, ItemStack gun, GunType type) {
         if (reloading() || draw(0) < 1) {
+            return;
+        }
+        // Een magazijnpouch met een vollere cel erin (hoofdstuk 55): kiezen, zoals de magazijnen van de Glock.
+        if (com.senne.imttech.client.guns.GunGearClient.openCellPicker(player, gun)) {
             return;
         }
         float current = LaserGunItem.cell(gun);
@@ -261,13 +271,44 @@ public final class GunControl {
         cellInPlayed = false;
         inspectAt = -1;
         aim = 0;
-        send(new GunReloadPayload(true));
+        send(new GunReloadPayload(true, -1));
         play(player, ModSounds.LASER_GUN_CELL_OUT.get(), 0.8f);
     }
 
-    /** De server zegt dat herladen niet kan: de animatie stoppen. */
-    public static void reloadRefused() {
-        reloadAt = -1;
+    /** Herladen met de cel uit dit vakje van je magazijnpouch (hoofdstuk 55; zie CellPickerScreen). */
+    public static void startReloadFromPouch(LocalPlayer player, int pouch) {
+        GunType type = held;
+        if (type == null || reloading() || draw(0) < 1) {
+            return;
+        }
+        reloadAt = player.level().getGameTime();
+        reloadTicks = type.reloadTicks();
+        cellInPlayed = false;
+        inspectAt = -1;
+        aim = 0;
+        send(new GunReloadPayload(true, pouch));
+        play(player, ModSounds.LASER_GUN_CELL_OUT.get(), 0.8f);
+    }
+
+    /**
+     * De server zegt hoe lang herladen duurt (de receiver en je skills tellen mee: zo loopt de animatie even lang), of
+     * dat het niet kan: dan stopt de animatie.
+     */
+    public static void onReload(boolean start, int ticks) {
+        if (!start) {
+            reloadAt = -1;
+        } else if (reloadAt >= 0 && ticks > 0) {
+            reloadTicks = ticks;
+        }
+    }
+
+    /** Je trekt dit geweer uit je holster of van je sling (hoofdstuk 55): zo lang komt het omhoog, tot dan schiet je niet. */
+    public static void onDraw(int ticks) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level != null) {
+            drawnAt = mc.level.getGameTime();
+            drawTicks = Math.max(1, ticks);
+        }
     }
 
     // ================================================================ Wat Minecraft zelf zou doen

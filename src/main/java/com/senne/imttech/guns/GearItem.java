@@ -45,9 +45,12 @@ public class GearItem extends Item {
         /** Past dit item erin? */
         public boolean accepts(ItemStack stack) {
             return switch (this) {
-                case HOLSTER -> FirearmItem.typeOf(stack) != null;
+                // Sinds hoofdstuk 55 ook het laserpistool (een pistool tegelijk, jouw keuze).
+                case HOLSTER -> FirearmItem.typeOf(stack) != null
+                        || com.senne.imttech.weapons.LaserGunItem.typeOf(stack) == com.senne.imttech.weapons.GunType.PISTOL;
                 case GRENADE_POUCH -> stack.getItem() instanceof GrenadeItem;
-                case MAG_POUCH -> MagazineItem.typeOf(stack) != null;
+                // Sinds hoofdstuk 55 ook energiecellen (het magazijn van een lasergeweer).
+                case MAG_POUCH -> MagazineItem.typeOf(stack) != null || stack.getItem() instanceof com.senne.imttech.weapons.EnergyCellItem;
             };
         }
 
@@ -129,6 +132,10 @@ public class GearItem extends Item {
                     line = line.copy().append(" (" + FirearmItem.roundsInMagazine(inside) + (FirearmItem.chambered(inside) ? "+1" : "") + ")");
                 } else if (MagazineItem.typeOf(inside) != null) {
                     line = line.copy().append(" (" + MagazineItem.rounds(inside) + ")");
+                } else if (com.senne.imttech.weapons.LaserGunItem.typeOf(inside) != null) {
+                    line = line.copy().append(" (" + com.senne.imttech.weapons.LaserGunItem.shotsLeft(inside) + ")");
+                } else if (inside.getItem() instanceof com.senne.imttech.weapons.EnergyCellItem) {
+                    line = line.copy().append(" (" + Math.round(com.senne.imttech.weapons.EnergyCellItem.charge(inside)) + "%)");
                 }
                 tooltip.add(Component.literal("  ").append(line).withStyle(ChatFormatting.GOLD));
             }

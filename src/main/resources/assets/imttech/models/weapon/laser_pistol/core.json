@@ -1,0 +1,107 @@
+{
+ "textures": {
+  "0": "imttech:item/weapons",
+  "particle": "imttech:item/weapons"
+ },
+ "elements": [
+  {
+   "from": [
+    6.63,
+    8.35,
+    8.4
+   ],
+   "to": [
+    9.37,
+    9.25,
+    9.7
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      14.08,
+      2.08,
+      15.92,
+      3.92
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    },
+    "south": {
+     "uv": [
+      14.08,
+      2.08,
+      15.92,
+      3.92
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    },
+    "east": {
+     "uv": [
+      14.08,
+      2.08,
+      15.92,
+      3.92
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    },
+    "west": {
+     "uv": [
+      14.08,
+      2.08,
+      15.92,
+      3.92
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    },
+    "up": {
+     "uv": [
+      14.08,
+      2.08,
+      15.92,
+      3.92
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    },
+    "down": {
+     "uv": [
+      14.08,
+      2.08,
+      15.92,
+      3.92
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    }
+   },
+   "shade": false
+  }
+ ]
+}

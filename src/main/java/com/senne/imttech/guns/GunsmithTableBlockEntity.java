@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
  * </ul>
  * Alles gebeurt op de server, via de knoppen van het menu (zie GunsmithMenu).
  */
-public class GunsmithTableBlockEntity extends BlockEntity implements MenuProvider {
+public class GunsmithTableBlockEntity extends BlockEntity implements MenuProvider, PartsTable {
     public static final int SIZE = 1;
 
     private final SimpleContainer items = new SimpleContainer(SIZE) {
@@ -109,6 +109,12 @@ public class GunsmithTableBlockEntity extends BlockEntity implements MenuProvide
      */
     public static boolean underSlide(GunPart part, GunParts parts) {
         return (part == GunPart.BARREL || part == GunPart.SPRINGS || part == GunPart.STRIKER) && parts.has(GunPart.SLIDE);
+    }
+
+    /** Het menu zegt een nummer (zie PartsTable): het onderdeel in de volgorde van GunPart. */
+    @Override
+    public boolean remove(ServerPlayer player, int partIndex) {
+        return partIndex >= 0 && partIndex < GunPart.values().length && remove(player, GunPart.values()[partIndex]);
     }
 
     /** Dit onderdeel uit het pistool, terug in je inventaris. */
@@ -197,7 +203,7 @@ public class GunsmithTableBlockEntity extends BlockEntity implements MenuProvide
 
     @Override
     public @Nullable AbstractContainerMenu createMenu(int containerId, Inventory inventory, Player player) {
-        return new GunsmithMenu(containerId, inventory, items, this);
+        return new GunsmithMenu(containerId, inventory, items, this, com.senne.imttech.registry.ModMenus.GUNSMITH_TABLE.get());
     }
 
     // ================================================================ Opslaan

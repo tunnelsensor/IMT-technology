@@ -79,9 +79,14 @@ public record GunSkills(int xp, int points, int earned, Map<String, Integer> lev
      * {@code skillMinFactor}.
      */
     public float factor(GunSkill skill, @Nullable FirearmType type) {
+        return factor(skill, type == null ? null : type.id);
+    }
+
+    /** Hetzelfde, met de scope als naam ("glock_19", "laser_rifle"...; hoofdstuk 55). Null = alleen de globale skills. */
+    public float factor(GunSkill skill, @Nullable String scope) {
         float less = level(GLOBAL, skill) * ImtConfig.Guns.SKILL_GLOBAL_STEP;
-        if (type != null) {
-            less += level(type.id, skill) * ImtConfig.Guns.SKILL_WEAPON_STEP;
+        if (scope != null && !GLOBAL.equals(scope)) {
+            less += level(scope, skill) * ImtConfig.Guns.SKILL_WEAPON_STEP;
         }
         return Mth.clamp(1 - less, Math.max(0.05f, ImtConfig.Guns.SKILL_MIN_FACTOR), 1);
     }

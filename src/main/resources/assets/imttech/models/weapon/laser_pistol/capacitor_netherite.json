@@ -1,0 +1,274 @@
+{
+ "textures": {
+  "0": "imttech:item/weapons",
+  "particle": "imttech:item/weapons"
+ },
+ "elements": [
+  {
+   "from": [
+    7.0,
+    8.15,
+    10.4
+   ],
+   "to": [
+    9.0,
+    9.45,
+    12.7
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      6.08,
+      0.08,
+      7.92,
+      1.92
+     ],
+     "texture": "#0"
+    },
+    "south": {
+     "uv": [
+      6.08,
+      0.08,
+      7.92,
+      1.92
+     ],
+     "texture": "#0"
+    },
+    "east": {
+     "uv": [
+      6.08,
+      0.08,
+      7.92,
+      1.92
+     ],
+     "texture": "#0"
+    },
+    "west": {
+     "uv": [
+      6.08,
+      0.08,
+      7.92,
+      1.92
+     ],
+     "texture": "#0"
+    },
+    "up": {
+     "uv": [
+      6.08,
+      0.08,
+      7.92,
+      1.92
+     ],
+     "texture": "#0"
+    },
+    "down": {
+     "uv": [
+      6.08,
+      0.08,
+      7.92,
+      1.92
+     ],
+     "texture": "#0"
+    }
+   }
+  },
+  {
+   "from": [
+    6.63,
+    8.4,
+    10.7
+   ],
+   "to": [
+    6.75,
+    9.2,
+    12.4
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0.08,
+      4.08,
+      1.92,
+      5.92
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    },
+    "south": {
+     "uv": [
+      0.08,
+      4.08,
+      1.92,
+      5.92
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    },
+    "east": {
+     "uv": [
+      0.08,
+      4.08,
+      1.92,
+      5.92
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    },
+    "west": {
+     "uv": [
+      0.08,
+      4.08,
+      1.92,
+      5.92
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    },
+    "up": {
+     "uv": [
+      0.08,
+      4.08,
+      1.92,
+      5.92
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    },
+    "down": {
+     "uv": [
+      0.08,
+      4.08,
+      1.92,
+      5.92
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    }
+   },
+   "shade": false
+  },
+  {
+   "from": [
+    9.25,
+    8.4,
+    10.7
+   ],
+   "to": [
+    9.37,
+    9.2,
+    12.4
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0.08,
+      4.08,
+      1.92,
+      5.92
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    },
+    "south": {
+     "uv": [
+      0.08,
+      4.08,
+      1.92,
+      5.92
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    },
+    "east": {
+     "uv": [
+      0.08,
+      4.08,
+      1.92,
+      5.92
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    },
+    "west": {
+     "uv": [
+      0.08,
+      4.08,
+      1.92,
+      5.92
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    },
+    "up": {
+     "uv": [
+      0.08,
+      4.08,
+      1.92,
+      5.92
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    },
+    "down": {
+     "uv": [
+      0.08,
+      4.08,
+      1.92,
+      5.92
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    }
+   },
+   "shade": false
+  }
+ ]
+}

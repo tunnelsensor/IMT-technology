@@ -745,6 +745,70 @@ def slot_icons():
     path = ASSETS / "textures" / "slot" / "pouch.png"
     pouch.save(path)
     print("geschreven:", path.relative_to(ROOT))
+    # Hoofdstuk 55: het slot "sling" (een geweer met een sling op je rug of voor je borst): een schuine band met een gesp.
+    sling = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sling)
+    d.line([3, 13, 12, 2], fill=grey, width=2)
+    d.line([2, 12, 11, 1], fill=grey, width=1)
+    d.rectangle([6, 6, 9, 9], outline=grey)
+    path = ASSETS / "textures" / "slot" / "sling.png"
+    sling.save(path)
+    print("geschreven:", path.relative_to(ROOT))
+
+
+# ---------------------------------------------------------------- De Laser Workbench (hoofdstuk 55)
+
+def laser_workbench():
+    """
+    De Laser Workbench (hoofdstuk 55, jouw keuze: "een nieuwe soort tafel", zoals de Gunsmith Table): een donkere
+    werkbank in de I.M.T-kleuren, met gouden randen, een cyaan lichtstrip, een laatje met een lampje, en op het blad het
+    silhouet van een lasergeweer met de gloeiende lens en een Nether Star ernaast.
+    """
+    body = (34, 36, 44, 255)
+    body_dark = (20, 22, 28, 255)
+    gold = (214, 172, 88, 255)
+    gold_dark = (150, 112, 44, 255)
+    red = (176, 40, 44, 255)
+    cyan = (63, 216, 255, 255)
+    side = Image.new("RGBA", (16, 16), body)
+    d = ImageDraw.Draw(side)
+    d.rectangle([0, 0, 15, 15], outline=body_dark)
+    d.line([1, 1, 14, 1], fill=gold)
+    d.line([1, 2, 14, 2], fill=gold_dark)
+    d.rectangle([2, 4, 13, 12], outline=(52, 56, 66, 255))
+    d.rectangle([3, 5, 12, 11], fill=(28, 30, 36, 255))
+    d.line([4, 8, 11, 8], fill=red)
+    for x in range(3, 13, 3):
+        side.putpixel((x, 14), cyan)
+    save_block_texture(side, "laser_workbench_side")
+    front = side.copy()
+    d = ImageDraw.Draw(front)
+    d.rectangle([3, 5, 12, 11], fill=(28, 30, 36, 255))
+    # Een laatje met een gouden handvat, en een cyaan lampje rechtsboven.
+    d.rectangle([3, 6, 12, 10], outline=gold_dark)
+    d.line([6, 8, 9, 8], fill=gold)
+    front.putpixel((12, 4), cyan)
+    front.putpixel((11, 4), (20, 120, 150, 255))
+    save_block_texture(front, "laser_workbench_front")
+    top = Image.new("RGBA", (16, 16), (26, 28, 34, 255))
+    d = ImageDraw.Draw(top)
+    d.rectangle([0, 0, 15, 15], outline=body_dark)
+    d.rectangle([1, 1, 14, 14], outline=gold_dark)
+    # Een lasergeweer van opzij in rood (romp, loop, kolf, greep), met een cyaan lens vooraan.
+    for x, y in [(4, 6), (5, 6), (6, 6), (7, 6), (8, 6), (9, 6), (10, 6), (11, 6),
+                 (4, 7), (5, 7), (6, 7), (7, 7), (8, 7), (9, 7), (10, 7), (11, 7), (12, 7), (13, 7),
+                 (12, 8), (13, 8), (7, 8), (8, 8), (7, 9), (6, 5), (7, 5)]:
+        top.putpixel((x, y), red)
+    for x in (2, 3):
+        top.putpixel((x, 6), (150, 156, 166, 255))
+    top.putpixel((2, 6), cyan)
+    # Een Nether Star (wit-geel kruisje) en losse onderdelen (goud) onderaan.
+    for x, y in [(12, 11), (11, 12), (12, 12), (13, 12), (12, 13)]:
+        top.putpixel((x, y), (255, 240, 170, 255))
+    d.line([3, 12, 6, 12], fill=gold)
+    d.line([3, 13, 4, 13], fill=gold_dark)
+    save_block_texture(top, "laser_workbench_top")
+    orientable_block("laser_workbench")
 
 
 # ---------------------------------------------------------------- Alles
@@ -757,6 +821,7 @@ def main():
     resources()
     gunsmith_table()
     reloading_bench()
+    laser_workbench()
     slot_icons()
 
 

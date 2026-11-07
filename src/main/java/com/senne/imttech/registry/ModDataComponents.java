@@ -222,6 +222,12 @@ public final class ModDataComponents {
                     .persistent(com.senne.imttech.guns.GunParts.CODEC)
                     .networkSynchronized(com.senne.imttech.guns.GunParts.STREAM_CODEC));
 
+    /** Hoofdstuk 55: welke onderdelen er in een lasergeweer zitten, en hoe heel (zie weapons/LaserParts): ook de kern en de sling. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.imttech.weapons.LaserParts>> LASER_PARTS =
+            COMPONENTS.registerComponentType("laser_parts", builder -> builder
+                    .persistent(com.senne.imttech.weapons.LaserParts.CODEC)
+                    .networkSynchronized(com.senne.imttech.weapons.LaserParts.STREAM_CODEC));
+
     /** Het magazijn dat in een pistool zit (hoeveel patronen, zie GunMagazine); geen = geen magazijn. */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.imttech.guns.GunMagazine>> GUN_MAGAZINE =
             COMPONENTS.registerComponentType("gun_magazine", builder -> builder

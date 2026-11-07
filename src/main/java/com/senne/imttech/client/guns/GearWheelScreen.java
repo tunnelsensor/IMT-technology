@@ -10,6 +10,7 @@ import com.senne.imttech.registry.ModAttachments;
 import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.registry.ModSounds;
 import com.senne.imttech.weapons.GrenadeItem;
+import com.senne.imttech.weapons.LaserGunItem;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -27,16 +28,18 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Het wiel om snel te trekken (hoofdstuk 52, stap 2, jouw wens: "één groot wiel zoals het G menu of een emote wheel").
- * Houd <b>linker Alt</b> ingedrukt: het wiel komt in het midden van je scherm, met je pistool uit de holster, elke soort
- * granaat uit je pouch (met hoeveel), en "Put away" (wat je vasthoudt wegsteken). Wijs er een aan en laat Alt los (of
- * klik). Wat je in je hand had, valt op de grond (jouw keuze); het pistool of de granaat komt in dat vakje.
+ * Houd <b>linker Alt</b> ingedrukt: het wiel komt in het midden van je scherm, met je pistool uit de holster (de Glock
+ * of, sinds hoofdstuk 55, het laserpistool), het geweer op je rug en dat voor je borst (met hoeveel schoten erin), elke
+ * soort granaat uit je pouch (met hoeveel), en "Put away" (wat je vasthoudt wegsteken). Wijs er een aan en laat Alt los
+ * (of klik). Wat je in je hand had, valt op de grond (jouw keuze), tenzij het zelf in je holster, een sling-vakje of een
+ * pouch past: dan gaat het daarheen (hoofdstuk 55); het pistool, het geweer of de granaat komt in dat vakje.
  *
  * Sinds hoofdstuk 54 (jouw notities van 6 november) staan er ook op: elke pouch die je draagt openen (om er magazijnen of
  * granaten in te stoppen of uit te halen, zie GearPouchMenu) en de skilltree van je vuurwapens (die stond in het G-menu en
  * hoort daar niet).
  */
 public class GearWheelScreen extends Screen {
-    /** De ring is een ovaal dat meegroeit met het aantal opties (hoofdstuk 54: er staan er nu tot acht op). */
+    /** De ring is een ovaal dat meegroeit met het aantal opties (hoofdstuk 55: er staan er nu tot tien op). */
     private static final int MIN_RX = 72;
     private static final int MIN_RY = 72;
     private static final int BOX_W = 92;
@@ -71,7 +74,20 @@ public class GearWheelScreen extends Screen {
         }
     }
 
-    /** De opties: het pistool, elke granaatsoort, en wegsteken. */
+    /** Wat er in een wapen zit, kort: "13 rounds" (de Glock) of "23 shots" (een lasergeweer). */
+    private static Component ammo(ItemStack gun) {
+        if (FirearmItem.typeOf(gun) != null) {
+            return Component.translatable("screen.imttech.wheel.rounds",
+                    FirearmItem.roundsInMagazine(gun) + (FirearmItem.chambered(gun) ? "+1" : ""));
+        }
+        if (LaserGunItem.typeOf(gun) != null) {
+            return LaserGunItem.cell(gun) < 0 ? Component.translatable("screen.imttech.wheel.no_cell")
+                    : Component.translatable("screen.imttech.wheel.shots", LaserGunItem.shotsLeft(gun));
+        }
+        return Component.empty();
+    }
+
+    /** De opties: het pistool, de geweren op je slings, elke granaatsoort, wegsteken, de pouches openen, de skills. */
     private void rebuild() {
         options.clear();
         LocalPlayer player = Minecraft.getInstance().player;
@@ -81,12 +97,25 @@ public class GearWheelScreen extends Screen {
         List<ItemStack> holster = Gear.contents(player, GearItem.Kind.HOLSTER);
         ItemStack gun = holster.isEmpty() ? ItemStack.EMPTY : holster.getFirst();
         boolean hasHolster = !Gear.get(player, GearItem.Kind.HOLSTER).isEmpty();
-        options.add(new Option(gun.isEmpty() ? new ItemStack(com.senne.imttech.registry.ModItems.HOLSTER.get()) : gun,
+        options.add(new Option(gun.isEmpty() ? new ItemStack(ModItems.HOLSTER.get()) : gun,
                 gun.isEmpty() ? Component.translatable(hasHolster ? "screen.imttech.wheel.holster_empty" : "screen.imttech.wheel.no_holster")
                         : gun.getHoverName(),
-                gun.isEmpty() ? Component.empty() : Component.translatable("screen.imttech.wheel.rounds",
-                        FirearmItem.roundsInMagazine(gun) + (FirearmItem.chambered(gun) ? "+1" : "")),
+                gun.isEmpty() ? Component.empty() : ammo(gun),
                 !gun.isEmpty(), Gear.ACTION_DRAW_GUN, 0));
+        // De slings (hoofdstuk 55): het geweer op je rug en dat voor je borst.
+        boolean anySling = false;
+        for (int i = 0; i < Gear.SLINGS; i++) {
+            ItemStack slung = Gear.sling(player, i);
+            if (!slung.isEmpty()) {
+                anySling = true;
+                options.add(new Option(slung, slung.getHoverName(), Component.translatable(i == 0
+                        ? "screen.imttech.wheel.on_back" : "screen.imttech.wheel.on_chest", ammo(slung)), true, Gear.ACTION_DRAW_SLING, i));
+            }
+        }
+        if (!anySling) {
+            options.add(new Option(new ItemStack(ModItems.LASER_RIFLE.get()), Component.translatable("screen.imttech.wheel.sling_empty"),
+                    Component.translatable("screen.imttech.wheel.sling_hint"), false, Gear.ACTION_DRAW_SLING, 0));
+        }
         Map<GrenadeItem.Kind, Integer> counts = new EnumMap<>(GrenadeItem.Kind.class);
         Map<GrenadeItem.Kind, ItemStack> icons = new EnumMap<>(GrenadeItem.Kind.class);
         for (ItemStack stack : Gear.contents(player, GearItem.Kind.GRENADE_POUCH)) {
@@ -102,16 +131,16 @@ public class GearWheelScreen extends Screen {
         }
         if (counts.isEmpty()) {
             boolean hasPouch = !Gear.get(player, GearItem.Kind.GRENADE_POUCH).isEmpty();
-            options.add(new Option(new ItemStack(com.senne.imttech.registry.ModItems.GRENADE_POUCH.get()),
+            options.add(new Option(new ItemStack(ModItems.GRENADE_POUCH.get()),
                     Component.translatable(hasPouch ? "screen.imttech.wheel.pouch_empty" : "screen.imttech.wheel.no_pouch"),
                     Component.empty(), false, Gear.ACTION_DRAW_GRENADE, 0));
         }
         ItemStack held = player.getMainHandItem();
-        GearItem.Kind room = Gear.roomFor(player, held);
-        options.add(new Option(held.isEmpty() ? new ItemStack(com.senne.imttech.registry.ModItems.MAG_POUCH.get()) : held,
+        Component target = Gear.stowTarget(player, held);
+        options.add(new Option(held.isEmpty() ? new ItemStack(ModItems.MAG_POUCH.get()) : held,
                 Component.translatable("screen.imttech.wheel.put_away"),
-                room == null ? Component.translatable("screen.imttech.wheel.nothing") : Component.translatable("screen.imttech.wheel.into", room.text()),
-                room != null, Gear.ACTION_HOLSTER, 0));
+                target == null ? Component.translatable("screen.imttech.wheel.nothing") : target,
+                target != null, Gear.ACTION_HOLSTER, 0));
         // Elke pouch die je draagt openen: magazijnen of granaten erin stoppen of eruit halen (hoofdstuk 54).
         for (GearItem.Kind kind : new GearItem.Kind[] {GearItem.Kind.MAG_POUCH, GearItem.Kind.GRENADE_POUCH}) {
             ItemStack worn = Gear.get(player, kind);
@@ -293,8 +322,13 @@ public class GearWheelScreen extends Screen {
 
     /** Voor de showcase en de screenshots: de optie met deze actie (Gear.ACTION_...) kiezen. */
     public void chooseAction(int action) {
+        chooseAction(action, -1);
+    }
+
+    /** Hetzelfde, met het extra getal erbij (welk sling-vakje, welke granaatsoort); -1 = het eerste dat past. */
+    public void chooseAction(int action, int arg) {
         for (int i = 0; i < options.size(); i++) {
-            if (options.get(i).action == action) {
+            if (options.get(i).action == action && (arg < 0 || options.get(i).arg == arg)) {
                 chooseIndex(i);
                 return;
             }

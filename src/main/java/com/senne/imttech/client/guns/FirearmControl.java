@@ -324,6 +324,16 @@ public final class FirearmControl {
             return;
         }
         Firearms.ActionKind kind = kinds[payload.kind()];
+        LocalPlayer me = Minecraft.getInstance().player;
+        if (kind == Firearms.ActionKind.DRAW && me != null
+                && com.senne.imttech.weapons.LaserGunItem.typeOf(me.getMainHandItem()) != null) {
+            // Een lasergeweer trekken (hoofdstuk 55): dat tekent GunControl.
+            waiting = false;
+            if (payload.ticks() > 0) {
+                com.senne.imttech.client.weapons.GunControl.onDraw(payload.ticks());
+            }
+            return;
+        }
         waiting = false;
         if (payload.ticks() <= 0) {
             if (action == kind) {

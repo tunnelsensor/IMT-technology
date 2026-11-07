@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "B": {
+      "tag": "c:storage_blocks/redstone"
+    },
+    "D": {
+      "tag": "c:gems/diamond"
+    },
+    "K": {
+      "item": "imttech:laser_cannon_capacitor"
+    },
+    "T": {
+      "item": "imttech:titanium_ingot"
+    }
+  },
+  "pattern": [
+    "TK",
+    "DB"
+  ],
+  "result": {
+    "id": "imttech:laser_pistol_capacitor",
+    "count": 1,
+    "components": {
+      "imttech:gun_material": "titanium"
+    }
+  }
+}

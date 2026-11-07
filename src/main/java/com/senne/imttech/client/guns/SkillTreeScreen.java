@@ -2,8 +2,8 @@ package com.senne.imttech.client.guns;
 
 import com.senne.imttech.client.hud.HudStyle;
 import com.senne.imttech.config.ImtConfig;
-import com.senne.imttech.guns.FirearmType;
 import com.senne.imttech.guns.GunSkill;
+import com.senne.imttech.guns.GunSkillHooks;
 import com.senne.imttech.guns.GunSkills;
 import com.senne.imttech.network.SkillLearnPayload;
 import com.senne.imttech.registry.ModAttachments;
@@ -19,21 +19,29 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
  * De skilltree van de vuurwapens (hoofdstuk 52, stap 3, jouw wens: "dit kun je dan ook zien in een soort GUI
- * skilltree"). Links de globale skills (voor elk vuurwapen), rechts die van het pistool zelf (de Glock 19); ze tellen
- * bij elkaar op. Bovenaan je punten en de balk naar het volgende punt. Elke skill: wat hij doet, zijn niveau (vijf
- * bolletjes), wat hij je nu oplevert, en de knop om een niveau te leren met de punten die het kost (jouw keuze: punten
- * verdelen, globaal is het dubbele want het geldt voor alles).
+ * skilltree"). Links de globale skills (voor elk vuurwapen), rechts die van één wapen: sinds hoofdstuk 55 kies je
+ * bovenaan rechts welk wapen (de Glock 19, of het laserpistool, het geweer, de sniper of de shotgun; het begint op wat
+ * je vasthoudt). Ze tellen bij elkaar op. Bovenaan je punten en de balk naar het volgende punt. Elke skill: wat hij
+ * doet, zijn niveau (vijf bolletjes), wat hij je nu oplevert, en de knop om een niveau te leren met de punten die het
+ * kost (jouw keuze: punten verdelen, globaal is het dubbele want het geldt voor alles). Clearing (de tap-rack) en
+ * Magazine handling bestaan alleen voor de Glock: een laser heeft geen storingen en geen magazijn.
  */
 public class SkillTreeScreen extends Screen {
     private static final int COL_W = 190;
     private static final int ROW_H = 24;
-    private static final int TOP = 40;
+    private static final int TOP = 52;
+    private static final int TAB_H = 12;
 
     private final List<Button> buttons = new ArrayList<>();
-    private final FirearmType weapon = FirearmType.GLOCK_19;
+    private final List<Button> tabs = new ArrayList<>();
+    private final List<String> weapons = GunSkillHooks.weaponScopes();
+    private String weapon;
 
     public SkillTreeScreen() {
         super(Component.translatable("screen.imttech.skills"));
+        LocalPlayer player = Minecraft.getInstance().player;
+        String held = player == null ? null : GunSkillHooks.scopeOf(player.getMainHandItem());
+        weapon = held != null && weapons.contains(held) ? held : weapons.getFirst();
     }
 
     private GunSkills skills() {
@@ -49,15 +57,24 @@ public class SkillTreeScreen extends Screen {
     protected void init() {
         super.init();
         buttons.clear();
+        tabs.clear();
         for (int column = 0; column < 2; column++) {
-            String scope = column == 0 ? GunSkills.GLOBAL : weapon.id;
             for (GunSkill skill : GunSkill.values()) {
                 int y = TOP + 18 + skill.ordinal() * ROW_H;
+                int which = column;
                 Button button = addRenderableWidget(Button.builder(Component.literal("+"),
-                                b -> PacketDistributor.sendToServer(new SkillLearnPayload(scope, skill.ordinal())))
+                                b -> PacketDistributor.sendToServer(new SkillLearnPayload(which == 0 ? GunSkills.GLOBAL : weapon, skill.ordinal())))
                         .bounds(left(column) + COL_W - 24, y + 1, 22, 16).build());
                 buttons.add(button);
             }
+        }
+        // De tabbladen van de wapens (hoofdstuk 55), over de hele breedte boven de twee kolommen.
+        int tabW = (2 * COL_W + 16) / Math.max(1, weapons.size());
+        for (int i = 0; i < weapons.size(); i++) {
+            String scope = weapons.get(i);
+            Button tab = addRenderableWidget(Button.builder(GunSkillHooks.shortName(scope), b -> weapon = scope)
+                    .bounds(left(0) + i * tabW, TOP - TAB_H - 4, tabW - 2, TAB_H).build());
+            tabs.add(tab);
         }
         int bottom = TOP + 18 + GunSkill.values().length * ROW_H + 22;
         addRenderableWidget(Button.builder(Component.translatable("gui.back"), b -> onClose())
@@ -70,13 +87,18 @@ public class SkillTreeScreen extends Screen {
         GunSkills skills = skills();
         int index = 0;
         for (int column = 0; column < 2; column++) {
-            String scope = column == 0 ? GunSkills.GLOBAL : weapon.id;
+            String scope = column == 0 ? GunSkills.GLOBAL : weapon;
             for (GunSkill skill : GunSkill.values()) {
                 Button button = buttons.get(index++);
+                boolean applies = skill.appliesTo(scope);
                 boolean maxed = skills.level(scope, skill) >= GunSkills.maxLevel();
-                button.active = skills.canLearn(scope, skill);
+                button.visible = applies;
+                button.active = applies && skills.canLearn(scope, skill);
                 button.setMessage(Component.literal(maxed ? "MAX" : "+" + skills.cost(scope, skill)));
             }
+        }
+        for (int i = 0; i < tabs.size(); i++) {
+            tabs.get(i).active = !weapons.get(i).equals(weapon);
         }
     }
 
@@ -113,9 +135,9 @@ public class SkillTreeScreen extends Screen {
         g.drawString(font, skills.xp() + " / " + skills.nextPointXp() + " xp", 0, 0, HudStyle.argb(200, HudStyle.WHITE), false);
         g.pose().popPose();
         for (int column = 0; column < 2; column++) {
-            String scope = column == 0 ? GunSkills.GLOBAL : weapon.id;
+            String scope = column == 0 ? GunSkills.GLOBAL : weapon;
             int x = left(column);
-            Component head = column == 0 ? Component.translatable("screen.imttech.skills.global") : weapon.text();
+            Component head = column == 0 ? Component.translatable("screen.imttech.skills.global") : GunSkillHooks.scopeText(weapon);
             g.drawString(font, head, x, TOP + 2, HudStyle.argb(255, HudStyle.CYAN), false);
             g.pose().pushPose();
             g.pose().translate(x + font.width(head) + 6, TOP + 3, 0);
@@ -130,8 +152,18 @@ public class SkillTreeScreen extends Screen {
             for (GunSkill skill : GunSkill.values()) {
                 int y = TOP + 18 + skill.ordinal() * ROW_H;
                 int level = skills.level(scope, skill);
+                boolean applies = skill.appliesTo(scope);
                 g.fill(x + 3, y + 8, x + 12, y + 9, HudStyle.argb(120, HudStyle.ORANGE));
-                g.drawString(font, skill.text(), x + 14, y + 1, HudStyle.argb(255, level > 0 ? HudStyle.GREEN : HudStyle.WHITE), false);
+                g.drawString(font, skill.text(), x + 14, y + 1, HudStyle.argb(applies ? 255 : 90, level > 0 ? HudStyle.GREEN : HudStyle.WHITE), false);
+                if (!applies) {
+                    // Niet voor dit wapen (een laser heeft geen storingen en geen magazijn).
+                    g.pose().pushPose();
+                    g.pose().translate(x + 14, y + 12, 0);
+                    g.pose().scale(0.7f, 0.7f, 1);
+                    g.drawString(font, Component.translatable("screen.imttech.skills.not_for"), 0, 0, HudStyle.argb(110, HudStyle.WHITE), false);
+                    g.pose().popPose();
+                    continue;
+                }
                 // De bolletjes, en ernaast wat de skill nu oplevert en waar hij voor is (afgekapt als het niet past).
                 for (int i = 0; i < GunSkills.maxLevel(); i++) {
                     int px = x + 14 + i * 9;
@@ -150,18 +182,29 @@ public class SkillTreeScreen extends Screen {
         int y = TOP + 18 + GunSkill.values().length * ROW_H + 4;
         List<String> parts = new ArrayList<>();
         for (GunSkill skill : GunSkill.values()) {
+            if (!skill.appliesTo(weapon)) {
+                continue;
+            }
             int percent = Math.round((1 - skills.factor(skill, weapon)) * 100);
             if (percent > 0) {
                 parts.add(skill.text().getString() + " -" + percent + "%");
             }
         }
         String total = parts.isEmpty() ? Component.translatable("screen.imttech.skills.nothing_yet").getString()
-                : Component.translatable("screen.imttech.skills.total", weapon.text().getString()).getString() + " " + String.join(", ", parts);
+                : Component.translatable("screen.imttech.skills.total", GunSkillHooks.scopeText(weapon).getString()).getString()
+                + " " + String.join(", ", parts);
         g.pose().pushPose();
         g.pose().translate(left(0), y, 0);
         g.pose().scale(0.75f, 0.75f, 1);
         g.drawString(font, total, 0, 0, HudStyle.argb(200, HudStyle.GREEN), false);
         g.pose().popPose();
         super.render(g, mouseX, mouseY, partialTick);
+    }
+
+    /** Voor de showcase en de screenshots: dit wapen tonen. */
+    public void showWeapon(String scope) {
+        if (weapons.contains(scope)) {
+            weapon = scope;
+        }
     }
 }

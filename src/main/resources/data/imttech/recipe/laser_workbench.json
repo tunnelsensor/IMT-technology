@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "T": {
+      "item": "imttech:titanium_ingot"
+    },
+    "M": {
+      "item": "imttech:laser_module"
+    },
+    "S": {
+      "item": "imttech:steel_ingot"
+    },
+    "G": {
+      "item": "imttech:gunsmith_table"
+    }
+  },
+  "pattern": [
+    "TMT",
+    "SGS",
+    "S S"
+  ],
+  "result": {
+    "id": "imttech:laser_workbench",
+    "count": 1
+  }
+}

@@ -45,6 +45,9 @@ public final class ModMenus {
     /** Hoofdstuk 54: een open holster of pouch (magazijnen en granaten erin en eruit; zie GearPouchMenu). */
     public static final DeferredHolder<MenuType<?>, MenuType<com.senne.imttech.guns.GearPouchMenu>> GEAR_POUCH =
             MENUS.register("gear_pouch", () -> IMenuTypeExtension.create(com.senne.imttech.guns.GearPouchMenu::new));
+    /** Hoofdstuk 55: de Laser Workbench: hetzelfde menu als de Gunsmith Table, met de onderdelen van een lasergeweer. */
+    public static final DeferredHolder<MenuType<?>, MenuType<com.senne.imttech.guns.GunsmithMenu>> LASER_WORKBENCH =
+            MENUS.register("laser_workbench", () -> IMenuTypeExtension.create(com.senne.imttech.guns.GunsmithMenu::laser));
     /** Hoofdstuk 52: de Reloading Bench (zie ReloadingBenchMenu). */
     public static final DeferredHolder<MenuType<?>, MenuType<com.senne.imttech.guns.ReloadingBenchMenu>> RELOADING_BENCH =
             MENUS.register("reloading_bench", () -> IMenuTypeExtension.create(com.senne.imttech.guns.ReloadingBenchMenu::new));

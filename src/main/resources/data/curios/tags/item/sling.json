@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "imttech:laser_rifle",
+    "imttech:laser_sniper",
+    "imttech:laser_shotgun"
+  ]
+}

@@ -540,4 +540,36 @@ public final class ModItems {
             properties -> new com.senne.imttech.guns.GearItem(properties, com.senne.imttech.guns.GearItem.Kind.GRENADE_POUCH), new Item.Properties());
     public static final DeferredItem<com.senne.imttech.guns.GearItem> MAG_POUCH = ITEMS.registerItem("mag_pouch",
             properties -> new com.senne.imttech.guns.GearItem(properties, com.senne.imttech.guns.GearItem.Kind.MAG_POUCH), new Item.Properties());
+
+    // ================================================================ Lasergeweren uit onderdelen (hoofdstuk 55)
+
+    /** Hoofdstuk 55: de zes onderdelen van elk lasergeweer (elk in titanium of netherite, zie LaserPartItem): 24 items. */
+    private static final Map<com.senne.imttech.weapons.GunType, Map<com.senne.imttech.weapons.LaserPart, DeferredItem<com.senne.imttech.weapons.LaserPartItem>>> LASER_PARTS =
+            new EnumMap<>(com.senne.imttech.weapons.GunType.class);
+
+    static {
+        for (com.senne.imttech.weapons.GunType type : com.senne.imttech.weapons.GunType.values()) {
+            Map<com.senne.imttech.weapons.LaserPart, DeferredItem<com.senne.imttech.weapons.LaserPartItem>> parts =
+                    new EnumMap<>(com.senne.imttech.weapons.LaserPart.class);
+            for (com.senne.imttech.weapons.LaserPart part : com.senne.imttech.weapons.LaserPart.wearing()) {
+                parts.put(part, ITEMS.registerItem(part.itemId(type),
+                        properties -> new com.senne.imttech.weapons.LaserPartItem(properties, type, part),
+                        new Item.Properties().rarity(Rarity.RARE)));
+            }
+            LASER_PARTS.put(type, parts);
+        }
+    }
+
+    public static com.senne.imttech.weapons.LaserPartItem laserPart(com.senne.imttech.weapons.GunType type,
+                                                                   com.senne.imttech.weapons.LaserPart part) {
+        return LASER_PARTS.get(type).get(part).get();
+    }
+
+    /** Hoofdstuk 55: de Gun Sling, die je op de Laser Workbench aan een rifle, sniper of shotgun hangt. */
+    public static final DeferredItem<com.senne.imttech.weapons.GunSlingItem> GUN_SLING = ITEMS.registerItem("gun_sling",
+            com.senne.imttech.weapons.GunSlingItem::new, new Item.Properties());
+
+    /** Hoofdstuk 55: de Laser Workbench (een lasergeweer in elkaar slepen, de Nether Star en de sling erin). */
+    public static final DeferredItem<BlockItem> LASER_WORKBENCH = ITEMS.registerSimpleBlockItem("laser_workbench",
+            ModBlocks.LASER_WORKBENCH, new Item.Properties().rarity(Rarity.RARE));
 }

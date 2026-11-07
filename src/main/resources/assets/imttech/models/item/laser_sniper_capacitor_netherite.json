@@ -1,0 +1,314 @@
+{
+ "gui_light": "front",
+ "textures": {
+  "0": "imttech:item/weapons",
+  "particle": "imttech:item/weapons"
+ },
+ "elements": [
+  {
+   "from": [
+    9.5,
+    9.9,
+    6.0
+   ],
+   "to": [
+    9.85,
+    11.3,
+    9.4
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      6.08,
+      0.08,
+      7.92,
+      1.92
+     ],
+     "texture": "#0"
+    },
+    "south": {
+     "uv": [
+      6.08,
+      0.08,
+      7.92,
+      1.92
+     ],
+     "texture": "#0"
+    },
+    "east": {
+     "uv": [
+      6.08,
+      0.08,
+      7.92,
+      1.92
+     ],
+     "texture": "#0"
+    },
+    "west": {
+     "uv": [
+      6.08,
+      0.08,
+      7.92,
+      1.92
+     ],
+     "texture": "#0"
+    },
+    "up": {
+     "uv": [
+      6.08,
+      0.08,
+      7.92,
+      1.92
+     ],
+     "texture": "#0"
+    },
+    "down": {
+     "uv": [
+      6.08,
+      0.08,
+      7.92,
+      1.92
+     ],
+     "texture": "#0"
+    }
+   }
+  },
+  {
+   "from": [
+    9.85,
+    10.2,
+    6.3
+   ],
+   "to": [
+    9.97,
+    11.0,
+    9.1
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0.08,
+      4.08,
+      1.92,
+      5.92
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    },
+    "south": {
+     "uv": [
+      0.08,
+      4.08,
+      1.92,
+      5.92
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    },
+    "east": {
+     "uv": [
+      0.08,
+      4.08,
+      1.92,
+      5.92
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    },
+    "west": {
+     "uv": [
+      0.08,
+      4.08,
+      1.92,
+      5.92
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    },
+    "up": {
+     "uv": [
+      0.08,
+      4.08,
+      1.92,
+      5.92
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    },
+    "down": {
+     "uv": [
+      0.08,
+      4.08,
+      1.92,
+      5.92
+     ],
+     "texture": "#0",
+     "neoforge_data": {
+      "block_light": 15,
+      "sky_light": 15,
+      "ambient_occlusion": false
+     }
+    }
+   },
+   "shade": false
+  }
+ ],
+ "display": {
+  "gui": {
+   "rotation": [
+    0,
+    90,
+    0
+   ],
+   "translation": [
+    -6.63,
+    -9.94,
+    1.15
+   ],
+   "scale": [
+    3.824,
+    3.824,
+    3.824
+   ]
+  },
+  "ground": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    0,
+    0.6999999999999993,
+    0
+   ],
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "fixed": {
+   "rotation": [
+    0,
+    90,
+    0
+   ],
+   "translation": [
+    0,
+    0,
+    0
+   ],
+   "scale": [
+    3.824,
+    3.824,
+    3.824
+   ]
+  },
+  "head": {
+   "rotation": [
+    0,
+    180,
+    0
+   ],
+   "translation": [
+    0,
+    13,
+    7
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ]
+  },
+  "thirdperson_righthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    -1.04,
+    -1.56,
+    0.18
+   ],
+   "scale": [
+    0.6,
+    0.6,
+    0.6
+   ]
+  },
+  "thirdperson_lefthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    -1.04,
+    -1.56,
+    0.18
+   ],
+   "scale": [
+    0.6,
+    0.6,
+    0.6
+   ]
+  },
+  "firstperson_righthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    -1.04,
+    -1.56,
+    0.18
+   ],
+   "scale": [
+    0.6,
+    0.6,
+    0.6
+   ]
+  },
+  "firstperson_lefthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    -1.04,
+    -1.56,
+    0.18
+   ],
+   "scale": [
+    0.6,
+    0.6,
+    0.6
+   ]
+  }
+ }
+}

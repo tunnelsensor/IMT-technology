@@ -41,11 +41,8 @@ public final class GunSkillsServer {
 
     /** Een punt (of meer) uitgeven op deze skill, globaal of voor dit pistool. Geeft true als het lukte. */
     public static boolean learn(ServerPlayer player, String scope, GunSkill skill) {
-        boolean valid = GunSkills.GLOBAL.equals(scope);
-        for (FirearmType type : FirearmType.values()) {
-            valid |= type.id.equals(scope);
-        }
-        if (!valid) {
+        // Hoofdstuk 55: ook de lasergeweren hebben een rij, maar niet elke skill geldt voor elk wapen.
+        if (!GunSkillHooks.validScope(scope) || !skill.appliesTo(scope)) {
             return false;
         }
         GunSkills before = of(player);
@@ -60,10 +57,11 @@ public final class GunSkillsServer {
         return true;
     }
 
-    /** Iemand doodgeschoten met een pistool: ervaring voor de schutter. */
+    /** Iemand doodgeschoten met een pistool (of sinds hoofdstuk 55 een lasergeweer): ervaring voor de schutter. */
     public static void onDeath(LivingDeathEvent event) {
         Entity killer = event.getSource().getEntity();
-        if (event.getSource().is(ModDamageTypes.BULLET) && killer instanceof ServerPlayer player && event.getEntity() != player) {
+        boolean gun = event.getSource().is(ModDamageTypes.BULLET) || event.getSource().is(ModDamageTypes.LASER_GUN);
+        if (gun && killer instanceof ServerPlayer player && event.getEntity() != player) {
             award(player, ImtConfig.Guns.XP_KILL);
         }
     }

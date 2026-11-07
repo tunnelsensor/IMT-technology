@@ -4779,10 +4779,107 @@ De notities zijn leeg (alleen de kop staat er nog).
 
 ---
 
+### 55. De lasergeweren in het Glock-systeem: onderdelen, de Laser Workbench, slings en skills (7 november)
+
+Jouw wens: "Kun je zorgen dat de laser weapons ook in het glock wapen systeem zitten. Ik wil dat je de pistol kunt
+holsteren en dat de ander soort guns een sling hebben die je kunt rondhangen, elke gun moet zijn eigen sling hebben. Je
+kun deze guns met sling dan ook weer in een gun met sling slot steken of als er curios is in een curios slot. Deze guns
+met sling kun je dan weer quickdrawen, als je quickdrawt drop je ook weer wat je vast hebt tenzij het een ander gun is
+dat je kunt holsteren of wegdraaien met de sling dan doe je dat dus bijvoorbeeld een glock en een holster en dan een
+laser rifle. Heb je de glock vast en pak je je laserrifle dan holster je de glock en neem je je laserrifle. Zorg dat die
+guns ook aan de weapons skilltree worden gekoppeld." Ik stelde twee keer vier vragen, jij koos.
+
+**Jouw antwoorden** (7 november):
+- **De sling hangt aan de gun**: "bij het bouwen van je gun heb je ook de optie om er een sling aan te hangen, als deze
+  er aanhangt kun je die in de slingslot doen anders niet. Al de bestaande laserguns wil ik ook dat ze gecraft worden in
+  een nieuwe soort tafel op dezelfde manier als de glock. Deze onderdelen moeten wel heel duur zijn, ze moeten endgame
+  zijn."
+- **Twee sling-vakjes**: een op je rug, een voor je borst.
+- **Alles van het Glock-systeem**: "alles maar iets minder slijtage en ook geen jam want een laser gun heeft geen
+  hulzen. Dit zijn endgame items en zijn ook heel durable" (dus ook de cellen in de magazijnpouch, uit mijn voorstel).
+- **Dezelfde Holster** voor het laserpistool, één pistool tegelijk.
+- **Zes onderdelen plus de sling** (frame, receiver, emitter, optics, capacitor, trigger module; het sling-vak alleen bij
+  rifle, sniper en shotgun).
+- **Twee kwaliteiten: titanium en netherite.**
+- **Nog duurder**: ook een Nether Star bij het frame, en netherite onderdelen twee netherite ingots.
+- **Slijtage**: "Alles kan verslijten zoals bij de Glock. De netherstar kun je er dan uit halen via de GUI, de netherstar
+  is ook een item dat je er visueel moet insteken via de GUI."
+
+**Mijn invulling** (zeg het als je het anders wil): de Nether Star is dus geen ingrediënt maar een eigen vak op de tafel
+(`core`): zichtbaar erin, eruit te halen, slijt niet; zonder kern schiet het geweer niet. Wat elk onderdeel doet (het frame
+trekken, de receiver terugslag en herladen, de emitter schade en bereik, de optics spreiding, de capacitor lading per
+schot, de trigger vuursnelheid) en wat versleten doet: geen storingen maar zijn eigen cijfer tot 50% slechter
+(`laserWornPenalty`); slijtage de helft van de Glock (`laserWearFactor` 0,5; netherite 0,3% in `wearChance`, dus 0,15%).
+Titanium is de maat: de getallen onder `[weapons]` gelden voor een titanium geweer, netherite doet het iets beter (de
+vierde waarden in de materiaalrijtjes onder `[guns]`). De prijs: titanium onderdelen van titaniumstaven met diamanten,
+chips, een Laser Module of een Laser Cannon Capacitor (een pistool iets minder); netherite = het titanium onderdeel plus
+twee Netherite Ingots (een gebruikt onderdeel wordt daarmee nieuw); een complete netherite rifle kost zo 12 netherite
+ingots, zo'n 20 titanium, 10 diamanten, chips, een Laser Module, een capacitor en een Nether Star. De oude recepten van
+de vier geweren zijn weg. Een geweer uit een oude wereld krijgt complete titanium onderdelen en een kern zodra het in een
+inventaris ligt (het was al van jou); de geweren van Raven-soldaten hebben onderdelen maar geen kern (die zou een te
+mooie buit zijn; de soldaat schiet er wel mee). Trekken van je sling duurt 18 ticks (`slingDrawTicks`), uit de holster 12.
+Wat je vasthoudt bij het trekken gaat in zijn eigen plek als dat kan (jouw keuze voor guns; ik doe het ook voor een
+granaat, magazijn of cel: terug in zijn pouch), anders valt het. De sling-vakjes staan in je inventaris onder het
+2x2-craftraster naast het vakje van je andere hand (naast het harnas was geen plek meer); met Curios het slot "sling"
+(twee vakjes; de tag laat de drie lange geweren toe, of er een sling aan hangt controleert de mod zelf bij het trekken
+en wegsteken; Curios zelf blijft ongetest, het zit niet in je modpack). Het eerste vakje = je rug, het tweede = je borst,
+met een leren band over je schouder. Voor de lasergeweren gelden de skills Reload (de cel wisselen), Recoil control,
+Steady aim en Quickdraw; Clearing en Magazine handling zijn alleen voor de Glock. In de skilltree kies je het wapen
+met tabbladen (het begint op wat je vasthoudt).
+
+- [x] **1. De onderdelen, de Laser Workbench, de kern, de sling en de slijtage** — `weapons/LaserPart` (de acht vakken:
+      zes onderdelen die slijten, de kern en de sling), `LaserParts` (het data component `laser_parts`, zoals GunParts),
+      `LaserPartItem` (24 items `laser_<geweer>_<onderdeel>`, kwaliteit in `gun_material`, conditie in `part_condition`),
+      `GunSlingItem`, `LaserWorkbenchBlock`/`BlockEntity` (de regels; `guns/PartsTable` is wat de Gunsmith Table en de
+      werkbank delen, `GunsmithMenu` werkt voor allebei), `GunMaterial.NETHERITE`, `LaserGunItem` (onderdelen, `complete`,
+      `loaded`, `works`, de oude geweren), `LaserGuns` (compleet en heel of niet schieten, de onderdelen in de sommen,
+      slijtage, `BUSY` tijdens het trekken, herladen uit de pouch met `GunReloadPayload(start, value)`), `Firearms`
+      (DRAW ook voor een lasergeweer, `DRAW_FROM_SLING`), config `[guns]` (`laserWearFactor`, `laserWornPenalty`,
+      `slingDrawTicks`, een vierde waarde in de vijf materiaalrijtjes), de recepten (48 onderdelen, de werkbank, de sling;
+      de vier geweren weg), de creative tab, de Raven-soldaten; client: `client/guns/PartsTableScreen` (het slepen, uit
+      GunsmithScreen gehaald), `GunsmithScreen` en `client/weapons/LaserWorkbenchScreen` erop, `LaserRig` (de vakken uit
+      het model zelf gemeten, de exploded view), `LaserGunModels` (een geweer uit zijn onderdelen tekenen), `WeaponModels`
+      (per onderdeel per kwaliteit, `..._moving`, de kern, de sling, de band), `GunRenderer` (alleen wat erin zit),
+      `GunHud` (incompleet, geen kern, kapot), `tools/generate_weapon_models.py` (elk geweer in zes onderdelen, twee
+      kwaliteiten, de kern, de sling, de losse onderdelen als item met een override per kwaliteit; vier nieuwe tegels:
+      netherite, netherite_dark, leather, star), `tools/generate_gun_models.py` (de werkbank, het slot-plaatje van de
+      sling). Tests in `LaserWorkbenchGameTests`: `laser_workbench_builds_a_rifle_from_parts_core_and_sling`,
+      `laser_parts_wear_and_a_broken_part_stops_the_gun`, `netherite_upgrade_recipe_and_old_guns_get_parts`;
+      `laser_gun_hits_and_headshots` klopte weer zodra titanium de maat werd.
+- [x] **2. De holster, de slings, het wiel en de cellen** — `guns/Gear` (de sling-vakjes in de attachment `gear`, `sling`,
+      `setSling`, `slingAccepts`, `drawSling`, `stow`: wisselen in plaats van laten vallen, `click` voor vijf vakjes),
+      `CuriosGear` (het slot "sling"), `GearItem` (de holster neemt het laserpistool, de magazijnpouch cellen),
+      `GearActionPayload` actie `ACTION_DRAW_SLING`, twee toetsen (`draw_sling_back`, `draw_sling_chest`),
+      `data/imttech/curios/slots/sling.json` en `data/curios/tags/item/sling.json`; client: `GearSlotsOverlay` (de twee
+      vakjes onder het craftraster), `GearWheelScreen` (je geweren op je slings, "Put away" ook naar je sling),
+      `GearControl`, `GearLayer` (het laserpistool in de holster, de cellen in de pouch, de geweren op je rug en borst met
+      hun band), `MagPickerScreen` (ook voor cellen), `GunGearClient.openCellPicker`, `GunControl` (R met een cel in je
+      pouch kiest). Tests in `GearGameTests`: `laser_pistol_holsters_and_slung_guns_swap_on_quickdraw`,
+      `energy_cells_fit_the_magazine_pouch_and_reload_from_it`.
+- [x] **3. De skills voor alle vijf** — `GunSkill.appliesTo`, `GunSkillHooks` (`scopeOf`, `weaponScopes`, de namen),
+      `GunSkills.factor` met een scope als naam, `GunSkillsServer` (leren voor elk wapen, een laserkill telt), `LaserGuns`
+      (Reload en Steady aim), `GunControl` en `GunHud` (Recoil control en het kruisje), `SkillTreeScreen` (tabbladen).
+      Test `laser_guns_have_their_own_skill_scope`. 419 tests, allemaal groen.
+- [x] **4. Showcase en screenshots** — showcase 116 **"Laser guns from parts: the Laser Workbench, the Nether Star and the
+      sling"** en 117 **"Laser pistol in the holster, guns on your slings, cells in the pouch"**; screenshots
+      `-Ponly=laserparts` (`lp01`-`lp11`: de rifle en de netherite sniper uit hun onderdelen, zonder kern, kapot, het
+      pistool, de werkbank, de onderdelen in je inventaris, derde persoon) en `-Ponly=sling` (`sl01`-`sl13`: de
+      sling-vakjes, het wiel, trekken van je rug, de cellen kiezen, de Glock terug met de rifle op je rug, van achteren en
+      van voren, van dichtbij, de skilltree met het tabblad Rifle). LEESMIJ.md "Lasergeweren uit onderdelen: de Laser
+      Workbench, de Nether Star, de slings".
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
+
+- [ ] **De lasergeweren uit onderdelen en de slings (hoofdstuk 55)**: gezien op screenshots (`-Ponly=laserparts,sling`) en
+      met tests, maar niet met de muis gespeeld. Probeer: de Laser Workbench (sleep een frame, de rest, de Nether Star en de
+      sling; haal de kern er weer uit), een netherite onderdeel maken (een titanium onderdeel plus twee netherite ingots),
+      schieten tot een onderdeel versleten is (zet `laserWearFactor` hoog om het snel te zien), een rifle met sling in het
+      sling-vakje onder het craftraster, het wiel met je Glock in je hand (de Glock moet in de holster gaan), R met cellen in
+      je pouch, en in F5 de geweren op je rug en voor je borst (hangen ze goed, zitten de banden mooi?). Met Curios erbij: het
+      slot "Sling" (ongetest).
 
 - [ ] **De generatorkamer van de toren, de bewakers en het diagram (hoofdstuk 54)**: gezien op screenshots (`-Ponly=powerroom`)
       als los stuk, en met tests, maar niet in een echte toren gespeeld. Probeer: een nieuwe wereld, `/locate structure

@@ -678,7 +678,7 @@ public final class WeaponGameTests {
         ServerPlayer player = ImtTechGameTests.makeSurvivalOwner(helper, at, name);
         player.getAbilities().instabuild = false;
         player.getInventory().selected = 0;
-        ItemStack gun = new ItemStack(ModItems.laserGun(type));
+        ItemStack gun = com.senne.imttech.weapons.LaserGunItem.complete(type, com.senne.imttech.guns.GunMaterial.TITANIUM);
         if (cell >= 0) {
             com.senne.imttech.weapons.LaserGunItem.setCell(gun, cell);
         }

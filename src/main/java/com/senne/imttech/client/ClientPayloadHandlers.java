@@ -306,11 +306,9 @@ public final class ClientPayloadHandlers {
         com.senne.imttech.client.weapons.GunEffects.shot(payload);
     }
 
-    /** De server zegt dat herladen niet kan (hoofdstuk 35): de animatie stoppen. */
+    /** De server zegt hoe lang herladen duurt, of dat het niet kan (hoofdstuk 35): de animatie loopt mee of stopt. */
     public static void onGunReload(com.senne.imttech.network.GunReloadPayload payload, IPayloadContext context) {
-        if (!payload.start()) {
-            com.senne.imttech.client.weapons.GunControl.reloadRefused();
-        }
+        com.senne.imttech.client.weapons.GunControl.onReload(payload.start(), payload.value());
     }
 
     /** Een handeling met een pistool of magazijn begint, of gaat niet (hoofdstuk 52). */

@@ -37,6 +37,7 @@
     "imttech:training_start",
     "imttech:training_goal",
     "imttech:training_end",
-    "imttech:gunsmith_table"
+    "imttech:gunsmith_table",
+    "imttech:laser_workbench"
   ]
 }

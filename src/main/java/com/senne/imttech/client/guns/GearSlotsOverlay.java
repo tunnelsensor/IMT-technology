@@ -4,6 +4,8 @@ import com.senne.imttech.client.hud.HudStyle;
 import com.senne.imttech.guns.Gear;
 import com.senne.imttech.guns.GearItem;
 import com.senne.imttech.network.GearClickPayload;
+import com.senne.imttech.registry.ModItems;
+import com.senne.imttech.weapons.LaserGunItem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -15,11 +17,12 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
- * De drie eigen vakjes in je inventaris (hoofdstuk 52, stap 2, jouw wens: "als je die mod (Curios) niet hebt, in een
- * slot dat mijn mod toevoegt"): rechts van je poppetje, onder elkaar: de holster, de granaatpouch en de magazijnpouch.
- * Ze zijn geen echte vakjes van het inventarisscherm (dat is van Minecraft), maar we tekenen ze erbij en vangen de
- * klik: wat je aan je muis hebt gaat erin, wat erin zat komt aan je muis (zie Gear.click). Met Curios erbij zie je ze
- * niet: dan zitten ze in de Curios-slots.
+ * De eigen vakjes in je inventaris (hoofdstuk 52, stap 2, jouw wens: "als je die mod (Curios) niet hebt, in een slot
+ * dat mijn mod toevoegt"): rechts van je poppetje, onder elkaar: de holster, de granaatpouch en de magazijnpouch; en
+ * sinds hoofdstuk 55 de twee <b>sling-vakjes</b> (een geweer met sling op je rug, een voor je borst) in een rij onder
+ * het craftraster, naast het vakje van je andere hand. Ze zijn geen echte vakjes van het inventarisscherm (dat is van
+ * Minecraft), maar we tekenen ze erbij en vangen de klik: wat je aan je muis hebt gaat erin, wat erin zat komt aan je
+ * muis (zie Gear.click). Met Curios erbij zie je ze niet: dan zitten ze in de Curios-slots.
  */
 public final class GearSlotsOverlay {
     private GearSlotsOverlay() {}
@@ -27,9 +30,51 @@ public final class GearSlotsOverlay {
     private static final int X = 77;
     private static final int Y = 8;
     private static final int STEP = 18;
+    /** De sling-vakjes: onder het 2x2-craftraster, rechts van het vakje van je andere hand. */
+    private static final int SLING_X = 98;
+    private static final int SLING_Y = 62;
 
     private static boolean shown(Screen screen) {
         return screen instanceof InventoryScreen && !Gear.curios();
+    }
+
+    /** De linkerbovenhoek van vakje {@code index} (0-2 naast je harnas, 3-4 de slings), op het scherm. */
+    private static int[] at(InventoryScreen screen, int index) {
+        if (index < GearItem.Kind.values().length) {
+            return new int[]{screen.getGuiLeft() + X, screen.getGuiTop() + Y + index * STEP};
+        }
+        int sling = index - GearItem.Kind.values().length;
+        return new int[]{screen.getGuiLeft() + SLING_X + sling * STEP, screen.getGuiTop() + SLING_Y};
+    }
+
+    private static boolean over(int[] at, double mouseX, double mouseY) {
+        return mouseX >= at[0] && mouseX < at[0] + 18 && mouseY >= at[1] && mouseY < at[1] + 18;
+    }
+
+    /** Wat er in dit vakje hoort, als vaag plaatje in een leeg vakje. */
+    private static ItemStack ghost(int index) {
+        if (index >= GearItem.Kind.values().length) {
+            return new ItemStack(ModItems.LASER_RIFLE.get());
+        }
+        return new ItemStack(switch (GearItem.Kind.values()[index]) {
+            case HOLSTER -> ModItems.HOLSTER.get();
+            case GRENADE_POUCH -> ModItems.GRENADE_POUCH.get();
+            case MAG_POUCH -> ModItems.MAG_POUCH.get();
+        });
+    }
+
+    private static ItemStack worn(LocalPlayer player, int index) {
+        if (index >= GearItem.Kind.values().length) {
+            return Gear.sling(player, index - GearItem.Kind.values().length);
+        }
+        return Gear.get(player, GearItem.Kind.values()[index]);
+    }
+
+    private static Component slotName(int index) {
+        if (index >= GearItem.Kind.values().length) {
+            return Component.translatable("screen.imttech.gear_slot." + (index == GearItem.Kind.values().length ? "sling_back" : "sling_chest"));
+        }
+        return Component.translatable("screen.imttech.gear_slot." + GearItem.Kind.values()[index].id);
     }
 
     public static void onRender(ScreenEvent.Render.Post event) {
@@ -41,47 +86,44 @@ public final class GearSlotsOverlay {
             return;
         }
         GuiGraphics g = event.getGuiGraphics();
-        int x0 = screen.getGuiLeft() + X;
-        int y0 = screen.getGuiTop() + Y;
         ItemStack hoveredStack = ItemStack.EMPTY;
-        GearItem.Kind hoveredKind = null;
-        for (GearItem.Kind kind : GearItem.Kind.values()) {
-            int y = y0 + kind.ordinal() * STEP;
-            ItemStack worn = Gear.get(player, kind);
-            boolean hover = event.getMouseX() >= x0 && event.getMouseX() < x0 + 18 && event.getMouseY() >= y && event.getMouseY() < y + 18;
+        int hoveredIndex = -1;
+        for (int index = 0; index < Gear.SLOTS; index++) {
+            int[] at = at(screen, index);
+            int x0 = at[0];
+            int y = at[1];
+            ItemStack worn = worn(player, index);
+            boolean hover = over(at, event.getMouseX(), event.getMouseY());
             g.fill(x0, y, x0 + 18, y + 18, HudStyle.argb(255, 0x1E2128));
             g.renderOutline(x0, y, 18, 18, HudStyle.argb(255, hover ? HudStyle.CYAN : 0x465460));
             if (worn.isEmpty()) {
                 // Een vaag plaatje van wat erin hoort.
                 g.pose().pushPose();
                 g.pose().translate(x0 + 1, y + 1, 0);
-                g.renderItem(new ItemStack(switch (kind) {
-                    case HOLSTER -> com.senne.imttech.registry.ModItems.HOLSTER.get();
-                    case GRENADE_POUCH -> com.senne.imttech.registry.ModItems.GRENADE_POUCH.get();
-                    case MAG_POUCH -> com.senne.imttech.registry.ModItems.MAG_POUCH.get();
-                }), 0, 0);
+                g.renderItem(ghost(index), 0, 0);
                 g.fill(0, 0, 16, 16, HudStyle.argb(170, 0x1E2128));
                 g.pose().popPose();
             } else {
                 g.renderItem(worn, x0 + 1, y + 1);
-                int filled = GearItem.filled(worn);
+                int filled = GearItem.kindOf(worn) == null ? 0 : GearItem.filled(worn);
                 if (filled > 0) {
                     g.pose().pushPose();
                     g.pose().translate(x0 + 12, y + 11, 200);
                     g.pose().scale(0.6f, 0.6f, 1);
                     g.drawString(Minecraft.getInstance().font, String.valueOf(filled), 0, 0, HudStyle.argb(255, 0xD6AC58), true);
                     g.pose().popPose();
+                } else if (LaserGunItem.typeOf(worn) != null) {
+                    g.renderItemDecorations(Minecraft.getInstance().font, worn, x0 + 1, y + 1);
                 }
             }
             if (hover) {
                 hoveredStack = worn;
-                hoveredKind = kind;
+                hoveredIndex = index;
             }
         }
-        if (hoveredKind != null && screen.getMenu().getCarried().isEmpty()) {
+        if (hoveredIndex >= 0 && screen.getMenu().getCarried().isEmpty()) {
             if (hoveredStack.isEmpty()) {
-                g.renderTooltip(Minecraft.getInstance().font, Component.translatable("screen.imttech.gear_slot." + hoveredKind.id),
-                        event.getMouseX(), event.getMouseY());
+                g.renderTooltip(Minecraft.getInstance().font, slotName(hoveredIndex), event.getMouseX(), event.getMouseY());
             } else {
                 g.renderTooltip(Minecraft.getInstance().font, Screen.getTooltipFromItem(Minecraft.getInstance(), hoveredStack),
                         hoveredStack.getTooltipImage(), event.getMouseX(), event.getMouseY());
@@ -93,12 +135,9 @@ public final class GearSlotsOverlay {
         if (!(event.getScreen() instanceof InventoryScreen screen) || !shown(screen) || event.getButton() != 0) {
             return;
         }
-        int x0 = screen.getGuiLeft() + X;
-        int y0 = screen.getGuiTop() + Y;
-        for (GearItem.Kind kind : GearItem.Kind.values()) {
-            int y = y0 + kind.ordinal() * STEP;
-            if (event.getMouseX() >= x0 && event.getMouseX() < x0 + 18 && event.getMouseY() >= y && event.getMouseY() < y + 18) {
-                PacketDistributor.sendToServer(new GearClickPayload(kind.ordinal()));
+        for (int index = 0; index < Gear.SLOTS; index++) {
+            if (over(at(screen, index), event.getMouseX(), event.getMouseY())) {
+                PacketDistributor.sendToServer(new GearClickPayload(index));
                 event.setCanceled(true);
                 return;
             }

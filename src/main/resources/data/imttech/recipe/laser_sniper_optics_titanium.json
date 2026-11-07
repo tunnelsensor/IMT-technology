@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "D": {
+      "tag": "c:gems/diamond"
+    },
+    "P": {
+      "tag": "c:glass_panes"
+    },
+    "T": {
+      "item": "imttech:titanium_ingot"
+    },
+    "X": {
+      "item": "minecraft:spyglass"
+    }
+  },
+  "pattern": [
+    "DPD",
+    "TXT"
+  ],
+  "result": {
+    "id": "imttech:laser_sniper_optics",
+    "count": 1,
+    "components": {
+      "imttech:gun_material": "titanium"
+    }
+  }
+}

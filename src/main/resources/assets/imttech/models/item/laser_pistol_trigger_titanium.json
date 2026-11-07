@@ -1,0 +1,215 @@
+{
+ "gui_light": "front",
+ "textures": {
+  "0": "imttech:item/weapons",
+  "particle": "imttech:item/weapons"
+ },
+ "elements": [
+  {
+   "from": [
+    7.6,
+    6.3,
+    7.9
+   ],
+   "to": [
+    8.4,
+    8,
+    8.5
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      4.08,
+      2.08,
+      5.92,
+      3.92
+     ],
+     "texture": "#0"
+    },
+    "south": {
+     "uv": [
+      4.08,
+      2.08,
+      5.92,
+      3.92
+     ],
+     "texture": "#0"
+    },
+    "east": {
+     "uv": [
+      4.08,
+      2.08,
+      5.92,
+      3.92
+     ],
+     "texture": "#0"
+    },
+    "west": {
+     "uv": [
+      4.08,
+      2.08,
+      5.92,
+      3.92
+     ],
+     "texture": "#0"
+    },
+    "up": {
+     "uv": [
+      4.08,
+      2.08,
+      5.92,
+      3.92
+     ],
+     "texture": "#0"
+    },
+    "down": {
+     "uv": [
+      4.08,
+      2.08,
+      5.92,
+      3.92
+     ],
+     "texture": "#0"
+    }
+   }
+  }
+ ],
+ "display": {
+  "gui": {
+   "rotation": [
+    0,
+    90,
+    0
+   ],
+   "translation": [
+    -0.0,
+    3.82,
+    -0.9
+   ],
+   "scale": [
+    4.5,
+    4.5,
+    4.5
+   ]
+  },
+  "ground": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    0,
+    2.425,
+    0
+   ],
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "fixed": {
+   "rotation": [
+    0,
+    90,
+    0
+   ],
+   "translation": [
+    0,
+    0,
+    0
+   ],
+   "scale": [
+    4.5,
+    4.5,
+    4.5
+   ]
+  },
+  "head": {
+   "rotation": [
+    0,
+    180,
+    0
+   ],
+   "translation": [
+    0,
+    13,
+    7
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ]
+  },
+  "thirdperson_righthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    -0.0,
+    0.51,
+    -0.12
+   ],
+   "scale": [
+    0.6,
+    0.6,
+    0.6
+   ]
+  },
+  "thirdperson_lefthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    -0.0,
+    0.51,
+    -0.12
+   ],
+   "scale": [
+    0.6,
+    0.6,
+    0.6
+   ]
+  },
+  "firstperson_righthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    -0.0,
+    0.51,
+    -0.12
+   ],
+   "scale": [
+    0.6,
+    0.6,
+    0.6
+   ]
+  },
+  "firstperson_lefthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    -0.0,
+    0.51,
+    -0.12
+   ],
+   "scale": [
+    0.6,
+    0.6,
+    0.6
+   ]
+  }
+ }
+}

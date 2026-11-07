@@ -24,8 +24,17 @@ public final class GunSkillsClient {
         return skills().factor(GunSkill.RECOIL, type);
     }
 
+    /** Hetzelfde voor een lasergeweer (hoofdstuk 55): de scope is zijn naam ("laser_rifle"). */
+    public static float recoilFactor(String scope) {
+        return skills().factor(GunSkill.RECOIL, scope);
+    }
+
     /** De spreiding van het kruisje, maal dit. */
     public static float spreadFactor(FirearmType type) {
         return skills().factor(GunSkill.AIM, type);
+    }
+
+    public static float spreadFactor(String scope) {
+        return skills().factor(GunSkill.AIM, scope);
     }
 }

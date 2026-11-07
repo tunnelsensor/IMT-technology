@@ -111,6 +111,9 @@ public final class ImtKeys {
      */
     public static final KeyMapping DRAW_GUN = key("draw_gun", InputConstants.UNKNOWN.getValue());
     public static final KeyMapping DRAW_GRENADE = key("draw_grenade", InputConstants.UNKNOWN.getValue());
+    /** Hoofdstuk 55: het geweer op je rug of voor je borst trekken (ook via het wiel). */
+    public static final KeyMapping DRAW_SLING_BACK = key("draw_sling_back", InputConstants.UNKNOWN.getValue());
+    public static final KeyMapping DRAW_SLING_CHEST = key("draw_sling_chest", InputConstants.UNKNOWN.getValue());
     public static final KeyMapping OPEN_HOLSTER = key("open_holster", InputConstants.UNKNOWN.getValue());
     public static final KeyMapping OPEN_GRENADE_POUCH = key("open_grenade_pouch", InputConstants.UNKNOWN.getValue());
     public static final KeyMapping OPEN_MAG_POUCH = key("open_mag_pouch", InputConstants.UNKNOWN.getValue());
@@ -169,6 +172,8 @@ public final class ImtKeys {
         event.register(GUN_UNLOAD);
         event.register(DRAW_GUN);
         event.register(DRAW_GRENADE);
+        event.register(DRAW_SLING_BACK);
+        event.register(DRAW_SLING_CHEST);
         event.register(OPEN_HOLSTER);
         event.register(OPEN_GRENADE_POUCH);
         event.register(OPEN_MAG_POUCH);

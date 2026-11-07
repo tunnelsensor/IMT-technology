@@ -63,7 +63,8 @@ public final class GunHud implements LayeredDraw.Layer {
     private static void crosshair(GuiGraphics g, int w, int h, GunType type, float pt, float alpha) {
         float since = GunControl.sinceShot(pt);
         float bloom = since < 0 ? 0 : (float) Math.exp(-Math.max(0, since) * 0.35) * 6;
-        int gap = Math.round(3 + type.spread(false) * 1.6f + bloom + 4 * GunControl.sprint(pt));
+        int gap = Math.round(3 + type.spread(false) * 1.6f * com.senne.imttech.client.guns.GunSkillsClient.spreadFactor(type.id)
+                + bloom + 4 * GunControl.sprint(pt));
         int len = type == GunType.SHOTGUN ? 3 : 4;
         int cx = w / 2;
         int cy = h / 2;
@@ -123,6 +124,12 @@ public final class GunHud implements LayeredDraw.Layer {
                 cells++;
             }
         }
+        // En de cellen in je magazijnpouch (hoofdstuk 55).
+        for (ItemStack stack : com.senne.imttech.guns.Gear.contents(player, com.senne.imttech.guns.GearItem.Kind.MAG_POUCH)) {
+            if (stack.is(ModItems.ENERGY_CELL.get()) && EnergyCellItem.charge(stack) > 0.5f) {
+                cells++;
+            }
+        }
         int right = w - 10;
         int bottom = h - 12;
         boolean low = shots <= Math.max(1, max / 5);
@@ -150,6 +157,19 @@ public final class GunHud implements LayeredDraw.Layer {
             g.fill(x0, y0, x0 + Math.round(barW * reload), y0 + 3, argb(0.95f, CYAN));
             Component text = Component.translatable("hud.imttech.gun.reloading");
             g.drawString(font, text, right - font.width(text), y0 - 10, argb(0.9f, WHITE), true);
+        } else if (!LaserGunItem.works(gun)) {
+            // Hoofdstuk 55: niet compleet, geen Nether Star, of een onderdeel kapot.
+            com.senne.imttech.weapons.LaserParts parts = LaserGunItem.parts(gun);
+            Component text;
+            if (!parts.broken().isEmpty()) {
+                text = Component.translatable("hud.imttech.gun.broken",
+                        parts.broken().getFirst().text().getString().toUpperCase(java.util.Locale.ROOT));
+            } else if (parts.missing().size() == 1 && parts.missing().getFirst() == com.senne.imttech.weapons.LaserPart.CORE) {
+                text = Component.translatable("hud.imttech.gun.no_core");
+            } else {
+                text = Component.translatable("hud.imttech.gun.incomplete");
+            }
+            g.drawString(font, text, right - font.width(text), bottom - 48, argb(blink ? 1 : 0.6f, RED), true);
         } else if (noCell || shots == 0) {
             Component text = Component.translatable(noCell ? "hud.imttech.gun.no_cell" : "hud.imttech.gun.empty");
             g.drawString(font, text, right - font.width(text), bottom - 48, argb(blink ? 1 : 0.6f, RED), true);

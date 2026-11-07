@@ -14,12 +14,15 @@ import net.minecraft.util.StringRepresentable;
  * <b>titanium</b>. Hoe beter het materiaal, hoe kleiner de kans per schot dat het onderdeel slijt (jouw wens: "in code
  * moet het percentage om kapot te gaan lager zijn bij het beter materiaal"), en een beetje betere cijfers: minder
  * storingen, iets meer schade (de loop), minder terugslag (de slede) en sneller trekken (het frame). Alle getallen
- * staan in de config onder [guns], in de volgorde polymeer, staal, titanium.
+ * staan in de config onder [guns], in de volgorde polymeer, staal, titanium, netherite. <b>Netherite</b> (hoofdstuk 55)
+ * is er alleen voor de onderdelen van de lasergeweren (zie weapons/LaserPart): de duurste kwaliteit.
  */
 public enum GunMaterial implements StringRepresentable {
     POLYMER("polymer", 0xB8B8B8),
     STEEL("steel", 0xC8D0DA),
-    TITANIUM("titanium", 0x9FC4E8);
+    TITANIUM("titanium", 0x9FC4E8),
+    /** Hoofdstuk 55: alleen voor de onderdelen van de lasergeweren (de duurste kwaliteit; slijt het minst). */
+    NETHERITE("netherite", 0xC9A9B8);
 
     public static final Codec<GunMaterial> CODEC = StringRepresentable.fromEnum(GunMaterial::values);
     public static final StreamCodec<ByteBuf, GunMaterial> STREAM_CODEC = ByteBufCodecs.idMapper(i -> values()[i], Enum::ordinal);
@@ -43,7 +46,7 @@ public enum GunMaterial implements StringRepresentable {
         return Component.translatable("material.imttech." + id);
     }
 
-    /** Hoe sterk het materiaal is: 1 (polymeer), 2 (staal) of 3 (titanium). */
+    /** Hoe sterk het materiaal is: 1 (polymeer), 2 (staal), 3 (titanium) of 4 (netherite). */
     public int tier() {
         return ordinal() + 1;
     }

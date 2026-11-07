@@ -556,4 +556,13 @@ public final class ModBlocks {
                     .mapColor(MapColor.WOOD)
                     .strength(2.5f)
                     .sound(SoundType.WOOD));
+
+    /** Hoofdstuk 55: de Laser Workbench, de werkbank waarop je een lasergeweer uit zijn onderdelen in elkaar sleept. */
+    public static final DeferredBlock<com.senne.imttech.weapons.LaserWorkbenchBlock> LASER_WORKBENCH = BLOCKS.registerBlock(
+            "laser_workbench", com.senne.imttech.weapons.LaserWorkbenchBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLACK)
+                    .strength(4.0f, 6.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL));
 }

@@ -10,7 +10,13 @@ import com.senne.imttech.guns.GearItem;
 import com.senne.imttech.guns.GunMaterial;
 import com.senne.imttech.guns.MagazineItem;
 import com.senne.imttech.registry.ModItems;
+import com.senne.imttech.weapons.EnergyCellItem;
 import com.senne.imttech.weapons.GrenadeItem;
+import com.senne.imttech.weapons.GunType;
+import com.senne.imttech.weapons.LaserGunItem;
+import com.senne.imttech.weapons.LaserGuns;
+import com.senne.imttech.weapons.LaserPart;
+import com.senne.imttech.weapons.LaserParts;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
@@ -201,6 +207,93 @@ public final class GearGameTests {
         held.quickMoveStack(player, grenadeSlots + 27 + 3);
         check(GearItem.contents(player.getMainHandItem()).get(0).getCount() == 2, "De granaten kwamen niet in de pouch in je hand");
         player.closeContainer();
+        helper.succeed();
+    }
+
+    /**
+     * Hoofdstuk 55: het laserpistool past in de holster; een geweer met sling past in een sling-vakje (zonder sling niet,
+     * en een pistool nooit); trekken wisselt (jouw keuze: wat je vasthield gaat in zijn eigen plek in plaats van op de
+     * grond, "heb je de glock vast en pak je je laserrifle, dan holster je de glock"); van je sling trekken duurt langer
+     * dan uit de holster; en "Put away" hangt een geweer met sling op je rug.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "guns")
+    public static void laser_pistol_holsters_and_slung_guns_swap_on_quickdraw(GameTestHelper helper) {
+        check(!Gear.curios(), "Deze test is voor zonder Curios");
+        ServerPlayer player = player(helper, "sling-drawer");
+        ItemStack pistol = LaserGunItem.loaded(GunType.PISTOL);
+        check(GearItem.Kind.HOLSTER.accepts(pistol), "Het laserpistool past niet in de holster");
+        check(Gear.set(player, GearItem.Kind.HOLSTER, gear(GearItem.Kind.HOLSTER, pistol)), "De holster ging niet om");
+        ItemStack rifle = LaserGunItem.loaded(GunType.RIFLE);
+        check(!Gear.slingAccepts(rifle), "Een rifle zonder sling past in een sling-vakje");
+        LaserGunItem.setParts(rifle, LaserGunItem.parts(rifle).with(LaserPart.SLING, LaserParts.extra()));
+        check(Gear.slingAccepts(rifle), "Een rifle met sling past niet in een sling-vakje");
+        check(!Gear.slingAccepts(pistol), "Een pistool past in een sling-vakje");
+        check(Gear.setSling(player, 0, rifle), "De rifle ging niet op je rug");
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.STONE, 3));
+        // Van je rug trekken: de steen valt op de grond, en het duurt langer dan uit de holster.
+        check(Gear.drawSling(player, 0), "Van je sling trekken lukte niet");
+        check(LaserGunItem.typeOf(player.getMainHandItem()) == GunType.RIFLE, "De rifle kwam niet in je hand");
+        check(Gear.sling(player, 0).isEmpty(), "De rifle hangt nog op je rug");
+        check(!helper.getLevel().getEntitiesOfClass(ItemEntity.class, helper.getBounds().inflate(3),
+                item -> item.getItem().is(Items.STONE)).isEmpty(), "De steen viel niet op de grond");
+        check(Firearms.currentAction(player) == Firearms.ActionKind.DRAW, "Trekken duurt niet even");
+        int fromSling = Firearms.ticksFor(player, Firearms.ActionKind.DRAW, Firearms.DRAW_FROM_SLING, rifle);
+        int fromHolster = Firearms.ticksFor(player, Firearms.ActionKind.DRAW, Firearms.DRAW_FROM_HOLSTER, pistol);
+        check(fromSling > fromHolster, "Van je sling trekken duurt niet langer dan uit de holster: " + fromSling + " / " + fromHolster);
+        check(LaserGuns.fire(player, player.getYRot(), player.getXRot(), false) == LaserGuns.Result.BUSY, "Tijdens het trekken kon je schieten");
+        Firearms.finishNow(player);
+        // Het pistool trekken: de rifle gaat terug op je rug (niet op de grond).
+        check(Gear.drawGun(player), "Het pistool trekken lukte niet");
+        check(LaserGunItem.typeOf(player.getMainHandItem()) == GunType.PISTOL, "Het pistool kwam niet in je hand");
+        check(LaserGunItem.typeOf(Gear.sling(player, 0)) == GunType.RIFLE, "De rifle ging niet terug op je rug");
+        Firearms.finishNow(player);
+        // En andersom: de rifle trekken, het pistool gaat in de holster.
+        check(Gear.drawSling(player, 0), "De rifle trekken lukte niet (2)");
+        check(LaserGunItem.typeOf(Gear.contents(player, GearItem.Kind.HOLSTER).getFirst()) == GunType.PISTOL,
+                "Het pistool ging niet terug in de holster");
+        Firearms.finishNow(player);
+        // Wegsteken: de rifle hangt weer op je rug.
+        check(Gear.holsterHand(player), "Wegsteken lukte niet");
+        check(player.getMainHandItem().isEmpty() && LaserGunItem.typeOf(Gear.sling(player, 0)) == GunType.RIFLE,
+                "De rifle ging niet in het sling-vakje");
+        // De eigen vakjes in je inventaris: een sniper zonder sling past niet, met sling wel (voor je borst).
+        player.containerMenu = player.inventoryMenu;
+        player.inventoryMenu.setCarried(LaserGunItem.loaded(GunType.SNIPER));
+        Gear.click(player, GearItem.Kind.values().length + 1);
+        check(LaserGunItem.typeOf(player.inventoryMenu.getCarried()) == GunType.SNIPER, "Een sniper zonder sling ging in een sling-vakje");
+        ItemStack sniper = player.inventoryMenu.getCarried();
+        LaserGunItem.setParts(sniper, LaserGunItem.parts(sniper).with(LaserPart.SLING, LaserParts.extra()));
+        Gear.click(player, GearItem.Kind.values().length + 1);
+        check(player.inventoryMenu.getCarried().isEmpty() && LaserGunItem.typeOf(Gear.sling(player, 1)) == GunType.SNIPER,
+                "De sniper met sling ging niet voor je borst");
+        player.inventoryMenu.setCarried(ItemStack.EMPTY);
+        helper.succeed();
+    }
+
+    /**
+     * Hoofdstuk 55: energiecellen passen in de magazijnpouch, en R met een lasergeweer kiest er een (zoals de magazijnen
+     * van de Glock); de oude cel komt op de plek van de nieuwe. Een leeg vakje of een legere cel: niet.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "guns")
+    public static void energy_cells_fit_the_magazine_pouch_and_reload_from_it(GameTestHelper helper) {
+        check(!Gear.curios(), "Deze test is voor zonder Curios");
+        ServerPlayer player = player(helper, "cell-reloader");
+        ItemStack gun = LaserGunItem.complete(GunType.RIFLE, GunMaterial.TITANIUM);
+        LaserGunItem.setCell(gun, 20);
+        player.setItemInHand(InteractionHand.MAIN_HAND, gun);
+        check(GearItem.Kind.MAG_POUCH.accepts(EnergyCellItem.withCharge(50)), "Een cel past niet in de magazijnpouch");
+        check(Gear.set(player, GearItem.Kind.MAG_POUCH, gear(GearItem.Kind.MAG_POUCH,
+                EnergyCellItem.withCharge(60), ItemStack.EMPTY, EnergyCellItem.withCharge(90))), "De pouch ging niet om");
+        check(!LaserGuns.startReload(player, 1), "Een leeg vakje gaf een cel");
+        check(LaserGuns.startReload(player, 2), "Herladen uit vakje 3 begon niet");
+        check(LaserGuns.isReloading(player), "Het herladen loopt niet");
+        LaserGuns.finishReloadNow(player);
+        check(Math.abs(LaserGunItem.cell(player.getMainHandItem()) - 90) < 1e-3,
+                "Het geweer kreeg niet de cel van 90: " + LaserGunItem.cell(player.getMainHandItem()));
+        List<ItemStack> pouch = Gear.contents(player, GearItem.Kind.MAG_POUCH);
+        check(Math.abs(EnergyCellItem.charge(pouch.get(2)) - 20) < 1e-3, "De oude cel (20) kwam niet in vakje 3");
+        check(Math.abs(EnergyCellItem.charge(pouch.get(0)) - 60) < 1e-3 && pouch.get(1).isEmpty(), "De andere vakjes veranderden");
+        check(!LaserGuns.startReload(player, 0), "Een legere cel (60) ging in een geweer met 90");
         helper.succeed();
     }
 }

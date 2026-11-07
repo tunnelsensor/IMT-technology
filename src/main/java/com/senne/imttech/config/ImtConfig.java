@@ -2077,22 +2077,22 @@ public final class ImtConfig {
         @Tunable(value = "How far from where you right-click casings are picked up (blocks)", min = 0.5, max = 8)
         public static float CASING_PICKUP_RADIUS = 1.5f;
 
-        // ------------------------------------------------------------------------- De materialen (volgorde: polymeer, staal, titanium)
-        /** Zoveel procent kans per schot dat een onderdeel van dit materiaal één punt slijt (van de 100). */
-        @Tunable(value = "Percent chance per shot that a part wears one point (of 100), per material: polymer, steel, titanium", max = 100)
-        public static float[] WEAR_CHANCE = {4.0f, 2.0f, 0.8f};
+        // ------------------------------------------------------------------------- De materialen (volgorde: polymeer, staal, titanium, netherite)
+        /** Zoveel procent kans per schot dat een onderdeel van dit materiaal één punt slijt (van de 100). Netherite: alleen laseronderdelen (hoofdstuk 55). */
+        @Tunable(value = "Percent chance per shot that a part wears one point (of 100), per material: polymer, steel, titanium, netherite (laser parts only)", max = 100)
+        public static float[] WEAR_CHANCE = {4.0f, 2.0f, 0.8f, 0.3f};
         /** Hoeveel vaker een onderdeel van dit materiaal een storing geeft (1 = gewoon, 0,6 = veel minder). */
         @Tunable(value = "How much more often a part of this material jams or misfires (1 = normal), per material", max = 10)
-        public static float[] MATERIAL_RELIABILITY = {1.5f, 1.0f, 0.6f};
-        /** De schade, maal dit, naar het materiaal van de loop. */
-        @Tunable(value = "Damage multiplier by the material of the barrel, per material", min = 0.1, max = 5)
-        public static float[] MATERIAL_DAMAGE = {1.0f, 1.0f, 1.1f};
-        /** De terugslag, maal dit, naar het materiaal van de slede. */
-        @Tunable(value = "Recoil multiplier by the material of the slide, per material", min = 0.1, max = 5)
-        public static float[] MATERIAL_RECOIL = {1.1f, 1.0f, 0.85f};
+        public static float[] MATERIAL_RELIABILITY = {1.5f, 1.0f, 0.6f, 0.5f};
+        /** De schade, maal dit, naar het materiaal van de loop (of de emitter van een lasergeweer). */
+        @Tunable(value = "Damage multiplier by the material of the barrel (or a laser gun's emitter), per material", min = 0.1, max = 5)
+        public static float[] MATERIAL_DAMAGE = {1.0f, 1.0f, 1.1f, 1.15f};
+        /** De terugslag, maal dit, naar het materiaal van de slede (of de receiver van een lasergeweer). */
+        @Tunable(value = "Recoil multiplier by the material of the slide (or a laser gun's receiver), per material", min = 0.1, max = 5)
+        public static float[] MATERIAL_RECOIL = {1.1f, 1.0f, 0.85f, 0.8f};
         /** Hoe lang trekken, richten en herladen duren, maal dit, naar het materiaal van het frame (kleiner = sneller). */
         @Tunable(value = "Handling time multiplier (drawing, reloading) by the material of the frame, per material", min = 0.1, max = 5)
-        public static float[] MATERIAL_HANDLING = {0.9f, 1.0f, 1.05f};
+        public static float[] MATERIAL_HANDLING = {0.9f, 1.0f, 1.05f, 1.0f};
 
         // ------------------------------------------------------------------------- Slijtage en storingen
         /** Onder deze conditie is een onderdeel versleten en geeft het steeds meer storingen. */
@@ -2162,6 +2162,17 @@ public final class ImtConfig {
         /** Zo kort of klein wordt iets hoogstens (0,3 = 70% eraf). */
         @Tunable(value = "The lowest the skills can bring a time or spread (0.3 = 70% off at most)", min = 0.05, max = 1)
         public static float SKILL_MIN_FACTOR = 0.3f;
+
+        // ------------------------------------------------------------------------- De lasergeweren uit onderdelen (hoofdstuk 55)
+        /** Laseronderdelen slijten zoveel keer zo snel als Glock-onderdelen van hetzelfde materiaal (jouw keuze: iets minder). */
+        @Tunable(value = "Laser gun parts wear this many times as fast as Glock parts of the same material (0.5 = half the chance per shot)", max = 10)
+        public static float LASER_WEAR_FACTOR = 0.5f;
+        /** Hoeveel slechter een bijna kapot laseronderdeel zijn eigen cijfer maakt (0,5 = tot 50% minder schade, meer spreiding, trager...). */
+        @Tunable(value = "How much worse a nearly broken laser part makes its own number (0.5 = up to 50% less damage, more spread, slower)", max = 5)
+        public static float LASER_WORN_PENALTY = 0.5f;
+        /** Zo lang duurt het om een geweer van je sling (rug of borst) te trekken. */
+        @Tunable(value = "Ticks to pull a laser gun off your sling (back or chest)", min = 1, max = 200)
+        public static float SLING_DRAW_TICKS = 18.0f;
 
         // ------------------------------------------------------------------------- Holster en pouches (stap 2)
         @Tunable(value = "Grenades that fit in a Grenade Pouch", min = 1, max = 27)

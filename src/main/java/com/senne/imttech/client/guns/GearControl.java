@@ -15,7 +15,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
  * Linker Alt (hoofdstuk 52, stap 2): het wiel openen. En sinds hoofdstuk 54 (jouw notitie) de eigen toetsen voor elke
- * quickdraw (het pistool, een granaat) en om elke pouch te openen; standaard zitten die op geen toets.
+ * quickdraw (het pistool, een granaat, en sinds hoofdstuk 55 het geweer op je rug of voor je borst) en om elke pouch
+ * te openen; standaard zitten die op geen toets.
  */
 public final class GearControl {
     private GearControl() {}
@@ -41,6 +42,12 @@ public final class GearControl {
         while (ImtKeys.DRAW_GUN.consumeClick()) {
             send(Gear.ACTION_DRAW_GUN, 0);
         }
+        while (ImtKeys.DRAW_SLING_BACK.consumeClick()) {
+            drawSling(player, 0);
+        }
+        while (ImtKeys.DRAW_SLING_CHEST.consumeClick()) {
+            drawSling(player, 1);
+        }
         while (ImtKeys.DRAW_GRENADE.consumeClick()) {
             int kind = firstGrenadeKind(player);
             if (kind < 0) {
@@ -57,6 +64,15 @@ public final class GearControl {
         }
         while (ImtKeys.OPEN_MAG_POUCH.consumeClick()) {
             send(Gear.ACTION_OPEN, GearItem.Kind.MAG_POUCH.ordinal());
+        }
+    }
+
+    /** Het geweer uit dit sling-vakje trekken (hoofdstuk 55); leeg = een melding, zonder de server lastig te vallen. */
+    private static void drawSling(LocalPlayer player, int index) {
+        if (Gear.sling(player, index).isEmpty()) {
+            player.displayClientMessage(Component.translatable("gear.imttech.no_sling_gun").withStyle(ChatFormatting.RED), true);
+        } else {
+            send(Gear.ACTION_DRAW_SLING, index);
         }
     }
 

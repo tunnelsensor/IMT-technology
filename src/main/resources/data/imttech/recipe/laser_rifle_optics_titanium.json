@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "C": {
+      "item": "imttech:computer_chip"
+    },
+    "D": {
+      "tag": "c:gems/diamond"
+    },
+    "P": {
+      "tag": "c:glass_panes"
+    },
+    "T": {
+      "item": "imttech:titanium_ingot"
+    }
+  },
+  "pattern": [
+    "DPD",
+    "TCT"
+  ],
+  "result": {
+    "id": "imttech:laser_rifle_optics",
+    "count": 1,
+    "components": {
+      "imttech:gun_material": "titanium"
+    }
+  }
+}

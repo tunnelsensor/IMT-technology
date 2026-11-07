@@ -8,19 +8,21 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Het menu van de Gunsmith Table (hoofdstuk 52). Geen vakjes om in te klikken (jouw wens: slepen op een echte tafel):
- * alle vakjes zijn er wel, maar onzichtbaar, alleen om de inhoud met de server te delen (het pistool op de tafel en je
- * inventaris). Wat je sleept, gaat als "knop van een menu" naar de server:
+ * Het menu van de Gunsmith Table (hoofdstuk 52) en van de Laser Workbench (hoofdstuk 55; dezelfde tafel, andere
+ * onderdelen, zie {@link PartsTable}). Geen vakjes om in te klikken (jouw wens: slepen op een echte tafel): alle vakjes
+ * zijn er wel, maar onzichtbaar, alleen om de inhoud met de server te delen (het wapen op de tafel en je inventaris).
+ * Wat je sleept, gaat als "knop van een menu" naar de server:
  * <ul>
- *   <li>{@link #TAKE_GUN}: het pistool meenemen;</li>
- *   <li>{@link #INSTALL} + vakje: dat onderdeel uit je inventaris in het pistool;</li>
- *   <li>{@link #REMOVE} + onderdeel: dat onderdeel uit het pistool;</li>
- *   <li>{@link #PUT_GUN} + vakje: dat pistool uit je inventaris op de tafel.</li>
+ *   <li>{@link #TAKE_GUN}: het wapen meenemen;</li>
+ *   <li>{@link #INSTALL} + vakje: dat onderdeel uit je inventaris in het wapen;</li>
+ *   <li>{@link #REMOVE} + onderdeel: dat onderdeel uit het wapen;</li>
+ *   <li>{@link #PUT_GUN} + vakje: dat wapen uit je inventaris op de tafel.</li>
  * </ul>
  */
 public class GunsmithMenu extends AbstractContainerMenu {
@@ -30,14 +32,21 @@ public class GunsmithMenu extends AbstractContainerMenu {
     public static final int PUT_GUN = 300;
 
     private final Container items;
-    private final @Nullable GunsmithTableBlockEntity table;
+    private final @Nullable PartsTable table;
 
+    /** Op de client (de Gunsmith Table): de tafel zelf is er niet, alleen zijn vakje. */
     public GunsmithMenu(int containerId, Inventory inventory, RegistryFriendlyByteBuf extra) {
-        this(containerId, inventory, new SimpleContainer(GunsmithTableBlockEntity.SIZE), null);
+        this(containerId, inventory, new SimpleContainer(GunsmithTableBlockEntity.SIZE), null, ModMenus.GUNSMITH_TABLE.get());
     }
 
-    public GunsmithMenu(int containerId, Inventory inventory, Container items, @Nullable GunsmithTableBlockEntity table) {
-        super(ModMenus.GUNSMITH_TABLE.get(), containerId);
+    /** Op de client: hetzelfde menu voor de Laser Workbench (hoofdstuk 55). */
+    public static GunsmithMenu laser(int containerId, Inventory inventory, RegistryFriendlyByteBuf extra) {
+        return new GunsmithMenu(containerId, inventory, new SimpleContainer(GunsmithTableBlockEntity.SIZE), null,
+                ModMenus.LASER_WORKBENCH.get());
+    }
+
+    public GunsmithMenu(int containerId, Inventory inventory, Container items, @Nullable PartsTable table, MenuType<?> type) {
+        super(type, containerId);
         checkContainerSize(items, GunsmithTableBlockEntity.SIZE);
         this.items = items;
         this.table = table;
@@ -71,7 +80,7 @@ public class GunsmithMenu extends AbstractContainerMenu {
         }
     }
 
-    /** Het pistool op de tafel (in jouw spel een kopie). */
+    /** Het wapen op de tafel (in jouw spel een kopie). */
     public ItemStack gun() {
         return items.getItem(0);
     }
@@ -88,8 +97,7 @@ public class GunsmithMenu extends AbstractContainerMenu {
             return table.putGun(serverPlayer, id - PUT_GUN);
         }
         if (id >= REMOVE) {
-            int part = id - REMOVE;
-            return part < GunPart.values().length && table.remove(serverPlayer, GunPart.values()[part]);
+            return table.remove(serverPlayer, id - REMOVE);
         }
         if (id >= INSTALL) {
             return table.install(serverPlayer, id - INSTALL);

@@ -6,8 +6,11 @@ import com.senne.imttech.client.suit.LaserCannonHand;
 import com.senne.imttech.client.suit.SuitEffects;
 import com.senne.imttech.suit.TechSuitItem;
 import com.senne.imttech.weapons.EnergyCellItem;
+import com.senne.imttech.guns.PartState;
 import com.senne.imttech.weapons.GunType;
 import com.senne.imttech.weapons.LaserGunItem;
+import com.senne.imttech.weapons.LaserPart;
+import com.senne.imttech.weapons.LaserParts;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -153,25 +156,42 @@ public final class GunRenderer {
                 .translate(-pivot.x, -pivot.y, -pivot.z);
         pose.mulPose(gun);
 
-        // ---- De onderdelen.
+        // ---- De onderdelen (hoofdstuk 55): wat erin zit, elk in zijn kwaliteit; wat ontbreekt zie je niet.
         String name = type.id;
-        part(pose, buffers, name, "body", light);
+        LaserParts parts = LaserGunItem.parts(stack);
+        for (LaserPart p : LaserPart.wearing()) {
+            PartState state = parts.get(p);
+            if (state != null && p != LaserPart.TRIGGER) {
+                model(pose, buffers, WeaponModels.part(type, p, state.material()), light);
+            }
+        }
+        if (parts.hasCore()) {
+            part(pose, buffers, name, "core", light);
+        }
         // De trekker: twee ticks ingedrukt na een schot (of een lege klik).
         float trigger = Math.max(since < 2 ? 1 : 0, GunControl.sinceEmpty(pt) < 2 ? 1 : 0);
-        pose.pushPose();
-        pose.translate(0, 0, 0.45f * trigger);
-        part(pose, buffers, name, "trigger", light);
-        pose.popPose();
-        // Het bewegende deel.
+        PartState triggerState = parts.get(LaserPart.TRIGGER);
+        if (triggerState != null) {
+            pose.pushPose();
+            pose.translate(0, 0, 0.45f * trigger);
+            model(pose, buffers, WeaponModels.part(type, LaserPart.TRIGGER, triggerState.material()), light);
+            pose.popPose();
+        }
+        // Het bewegende deel (de slede, de spanhendel, de grendel, de pomp): van elk onderdeel dat er een heeft.
         float moving = movingOffset(type, rig, since, reload);
         pose.pushPose();
         if (type == GunType.SNIPER) {
             // De grendel gaat eerst omhoog en dan naar achteren.
             pose.translate(0, 0.6f * Math.min(1, moving * 2), moving * rig.cycle);
         } else {
-            pose.translate(0, 0, moving * rig.cycle * (type == GunType.SHOTGUN ? 1 : 1));
+            pose.translate(0, 0, moving * rig.cycle);
         }
-        part(pose, buffers, name, "moving", light);
+        for (LaserPart p : LaserPart.wearing()) {
+            PartState state = parts.get(p);
+            if (state != null && LaserRig.moves(type, p)) {
+                model(pose, buffers, WeaponModels.moving(type, p, state.material()), light);
+            }
+        }
         if (rig.displayMoves) {
             display(pose, buffers, rig, stack, reload);
         }
@@ -363,6 +383,15 @@ public final class GunRenderer {
         pose.pushPose();
         pose.scale(16, 16, 16);
         WeaponModels.render(pose, buffers, name, part, light, OverlayTexture.NO_OVERLAY);
+        pose.popPose();
+    }
+
+    /** Hetzelfde voor een model op zijn volledige naam (een onderdeel in zijn kwaliteit, hoofdstuk 55). */
+    private static void model(PoseStack pose, MultiBufferSource buffers,
+                              net.minecraft.client.resources.model.ModelResourceLocation location, int light) {
+        pose.pushPose();
+        pose.scale(16, 16, 16);
+        WeaponModels.render(pose, buffers, location, light, OverlayTexture.NO_OVERLAY);
         pose.popPose();
     }
 

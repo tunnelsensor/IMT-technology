@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "M": {
+      "item": "imttech:laser_module"
+    },
+    "P": {
+      "tag": "c:glass_panes"
+    },
+    "T": {
+      "item": "imttech:titanium_ingot"
+    }
+  },
+  "pattern": [
+    "TT",
+    "MP"
+  ],
+  "result": {
+    "id": "imttech:laser_pistol_emitter",
+    "count": 1,
+    "components": {
+      "imttech:gun_material": "titanium"
+    }
+  }
+}

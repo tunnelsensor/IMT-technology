@@ -9,16 +9,21 @@ import top.theillusivec4.curios.api.type.inventory.ICurioStacksHandler;
 
 /**
  * De brug naar Curios (hoofdstuk 52, stap 2, jouw keuze: "zet dat in een curios slot of als je die mod niet hebt in
- * een slot dat mijn mod toevoegt"). Zit Curios in het modpack, dan draag je de holster in het slot "holster" en de
- * pouches in de twee slots "pouch" (zie data/imttech/curios/). Deze klasse wordt ALLEEN aangeraakt als Curios geladen
- * is (zie Gear.curios()); zonder Curios bestaan de klassen hierboven niet.
+ * een slot dat mijn mod toevoegt"). Zit Curios in het modpack, dan draag je de holster in het slot "holster", de
+ * pouches in de twee slots "pouch", en (hoofdstuk 55) je geweren met een sling in de twee slots "sling" (zie
+ * data/imttech/curios/). Deze klasse wordt ALLEEN aangeraakt als Curios geladen is (zie Gear.curios()); zonder Curios
+ * bestaan de klassen hierboven niet.
  */
 final class CuriosGear {
     private CuriosGear() {}
 
-    private static Optional<ICurioStacksHandler> handler(Player player, GearItem.Kind kind) {
+    private static Optional<ICurioStacksHandler> handler(Player player, String slot) {
         Optional<ICuriosItemHandler> inventory = CuriosApi.getCuriosInventory(player);
-        return inventory.flatMap(inv -> inv.getStacksHandler(kind == GearItem.Kind.HOLSTER ? "holster" : "pouch"));
+        return inventory.flatMap(inv -> inv.getStacksHandler(slot));
+    }
+
+    private static Optional<ICurioStacksHandler> handler(Player player, GearItem.Kind kind) {
+        return handler(player, kind == GearItem.Kind.HOLSTER ? "holster" : "pouch");
     }
 
     /** In welk vakje van het slot dit ding zit, of -1. */
@@ -50,6 +55,29 @@ final class CuriosGear {
                 }
             }
             if (index < 0) {
+                return false;
+            }
+            handler.getStacks().setStackInSlot(index, stack);
+            return true;
+        }).orElse(false);
+    }
+
+    // ================================================================ De slings (hoofdstuk 55)
+
+    /** Het geweer in dit vakje van het slot "sling" (een kopie), of leeg. */
+    static ItemStack sling(Player player, int index) {
+        return handler(player, "sling").map(handler -> index < handler.getStacks().getSlots()
+                ? handler.getStacks().getStackInSlot(index).copy() : ItemStack.EMPTY).orElse(ItemStack.EMPTY);
+    }
+
+    /** Heeft deze speler zo'n vakje? */
+    static boolean hasSlingSlot(Player player, int index) {
+        return handler(player, "sling").map(handler -> index < handler.getStacks().getSlots()).orElse(false);
+    }
+
+    static boolean setSling(Player player, int index, ItemStack stack) {
+        return handler(player, "sling").map(handler -> {
+            if (index >= handler.getStacks().getSlots()) {
                 return false;
             }
             handler.getStacks().setStackInSlot(index, stack);

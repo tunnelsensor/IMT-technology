@@ -11,12 +11,15 @@ Hoe het werkt
 
     Een doosje met glow=True gloeit: het krijgt altijd vol licht (ook in het donker) en geen schaduw.
 
-    Een geweer bestaat uit ONDERDELEN: "body" (staat stil), "cell" (de energiecel, die eruit gaat bij herladen),
-    "trigger" (de trekker) en "moving" (wat bij een schot beweegt: de slede van het pistool, de grendel van de sniper,
-    de pomp van de shotgun, de spanhendel van het geweer). Elk onderdeel komt in een eigen bestand
-    (models/weapon/<geweer>/<onderdeel>.json); in je eigen beeld tekent de mod ze los, zodat ze kunnen bewegen (zie
-    client/weapons/GunRenderer). Voor je inventaris, je hand in derde persoon en op de grond is er ook het hele geweer
-    in één bestand (models/item/<geweer>.json).
+    Een geweer bestaat uit ONDERDELEN (hoofdstuk 55, jouw keuze: lasergeweren bouw je net als de Glock uit onderdelen
+    op een tafel): het frame, de receiver, de emitter, de optics, de capacitor en de trigger, elk in twee kwaliteiten
+    (titanium en netherite), plus de cel (de energiecel, die eruit gaat bij herladen), de kern (een Nether Star) en bij
+    de lange geweren de sling. Elk onderdeel komt in een eigen bestand (models/weapon/<geweer>/<onderdeel>_<kwaliteit>.json);
+    wat bij een schot beweegt (de slede van het pistool, de spanhendel van het geweer, de grendel van de sniper, de pomp
+    van de shotgun) staat apart in ..._moving.json. In je eigen beeld en op de Laser Workbench tekent de mod ze los,
+    zodat ze kunnen bewegen en ontbreken (zie client/weapons/GunRenderer en LaserWorkbenchScreen). Voor je inventaris,
+    je hand in derde persoon en op de grond is er ook het hele geweer in één bestand (models/item/<geweer>.json), en
+    elk los onderdeel is een item (models/item/<geweer>_<onderdeel>.json, met een override per kwaliteit).
 
     De granaten hebben ook twee delen: "body" en "light" (het lampje, dat knippert als hij gaat afgaan).
 
@@ -45,6 +48,8 @@ MATERIALS = {
     "cell": (0, 3), "screen": (1, 3), "pad": (2, 3), "paint": (3, 3),
     # De frag-granaten: legergroen, oranje (gevaar) en een rood lampje.
     "olive": (4, 0), "orange": (5, 0), "glow_red": (6, 0),
+    # Hoofdstuk 55: netherite (de tweede kwaliteit van de laseronderdelen), leer (de sling) en de Nether Star (de kern).
+    "netherite": (4, 1), "netherite_dark": (5, 1), "leather": (6, 1), "star": (7, 1),
 }
 
 # Het plaatje is 128 pixels breed en hoog: een vakje van 16 pixels is in de 0-16-eenheden van een model 2 breed.
@@ -144,6 +149,26 @@ def materials():
     tile(im, "olive", (92, 104, 70), (56, 64, 42), 5, highlight, 17)
     tile(im, "orange", (255, 150, 40), (200, 96, 20), 4, highlight, 18)
     tile(im, "glow_red", (0, 0, 0), (0, 0, 0), 0, red_glow, 19)
+
+    def flecks(x, y, c):
+        # Netherite: donker paarsbruin met lichtere vlekjes, zoals een netherite ingot.
+        return [v + 26 for v in c] if (x * 7 + y * 11) % 13 == 0 else c
+
+    def grain(x, y, c):
+        # Leer: een fijne nerf.
+        return [v + (7 if (x + y * 3) % 5 == 0 else -5 if (x * 3 + y) % 7 == 0 else 0) for v in c]
+
+    def star(x, y, c):
+        # De Nether Star: wit-geel in het midden, warm goud naar de rand.
+        d = max(abs(x - 7.5), abs(y - 7.5)) / 7.5
+        centre = (255, 252, 220)
+        edge = (255, 196, 80)
+        return [centre[i] + (edge[i] - centre[i]) * d for i in range(3)]
+
+    tile(im, "netherite", (82, 72, 78), (54, 46, 50), 4, flecks, 20)
+    tile(im, "netherite_dark", (58, 50, 56), (36, 30, 34), 3, flecks, 21)
+    tile(im, "leather", (124, 84, 50), (88, 58, 32), 5, grain, 22)
+    tile(im, "star", (0, 0, 0), (0, 0, 0), 0, star, 23)
     path = ASSETS / "textures" / "item" / "weapons.png"
     path.parent.mkdir(parents=True, exist_ok=True)
     im.save(path)
@@ -210,10 +235,13 @@ def part_model(elements):
     return {"textures": {"0": TEXTURE, "particle": TEXTURE}, "elements": elements}
 
 
-def item_model(elements, display):
+def item_model(elements, display, overrides=None):
     """Het hele ding als item: doosjes plus hoe het in je hand, je inventaris en op de grond ligt."""
-    return {"gui_light": "front", "textures": {"0": TEXTURE, "particle": TEXTURE}, "elements": elements,
-            "display": display}
+    model = {"gui_light": "front", "textures": {"0": TEXTURE, "particle": TEXTURE}, "elements": elements,
+             "display": display}
+    if overrides:
+        model["overrides"] = overrides
+    return model
 
 
 def gun_display(gui_scale, gui_translation, ground_scale, grip):
@@ -540,9 +568,27 @@ def energy_cell():
     write("item/energy_cell.json", item_model(elements, disp))
 
 
-# ---------------------------------------------------------------- De geweren
+# ---------------------------------------------------------------- De geweren (hoofdstuk 55: uit onderdelen)
 
 GRIP = 22.5  # zo schuin staat elke handgreep (graden)
+
+# De twee kwaliteiten van een laseronderdeel (hoofdstuk 55, jouw keuze: titanium en netherite). Titanium ziet eruit
+# zoals de geweren altijd al waren (donker metaal en staal); bij netherite is al het metaal donker paarsbruin, zoals een
+# netherite ingot. Het rood en het goud (de I.M.T-kleuren) blijven.
+GRADES = ("titanium", "netherite")
+# De zes onderdelen van elk lasergeweer, in deze volgorde (zie weapons/LaserPart.java): het frame (romp onderaan, kolf,
+# greep), de receiver (het bovenstuk, met wat bij een schot beweegt), de emitter (loop en lens), de optics (vizier of
+# kijker), de capacitor (het gloeiende blokje opzij) en de trigger.
+PARTS = ("frame", "receiver", "emitter", "optics", "capacitor", "trigger")
+# De "material"-override van een los onderdeel als item (zie GunMaterial: polymeer 0, staal 1, titanium 2, netherite 3).
+GRADE_INDEX = {"titanium": 2, "netherite": 3}
+
+
+def metal(material, grade):
+    """Het metaal van een doosje in deze kwaliteit: bij netherite worden donker metaal en staal netherite."""
+    if grade == "netherite":
+        return {"graphite": "netherite_dark", "steel": "netherite", "steel_dark": "netherite_dark"}.get(material, material)
+    return material
 
 
 def grip(z0, z1, y0, y1, pivot):
@@ -555,10 +601,10 @@ def grip(z0, z1, y0, y1, pivot):
     ]
 
 
-def trigger_guard(z0, z1, y_bottom, y_top):
+def trigger_guard(z0, z1, y_bottom, y_top, material="graphite"):
     return [
-        box((7.55, y_bottom, z0), (8.45, y_bottom + 0.5, z1), "graphite"),
-        box((7.55, y_bottom, z0), (8.45, y_top, z0 + 0.5), "graphite"),
+        box((7.55, y_bottom, z0), (8.45, y_bottom + 0.5, z1), material),
+        box((7.55, y_bottom, z0), (8.45, y_top, z0 + 0.5), material),
     ]
 
 
@@ -571,183 +617,322 @@ def emitter(z_front, y_center, size, ring_material="gold"):
     ]
 
 
-def laser_pistol():
+def strap(z_front, z_back, y, x=9.55):
     """
-    Het laserpistool: een rode slede met een gouden rib en cyaan strepen, een donker frame, een schuine greep, en de
-    cel onderin de greep. Ongeveer 13 pixels lang.
+    De sling (hoofdstuk 55, jouw keuze: een los onderdeel dat je op de tafel aan de gun hangt): een leren band langs de
+    rechterkant van het geweer, van de voorkant naar de kolf, met een gesp in het midden. Alleen rifle, sniper en shotgun.
     """
-    body = [
-        # Frame onder de slede, met een rail vooraan.
-        box((6.75, 8, 3.5), (9.25, 9.5, 13), "graphite"),
-        box((7, 7.5, 3.5), (9, 8, 7), "graphite"),
-        # De loop vooraan: een gouden ring om de lens.
-        *emitter(1, 11, 2.6),
-        box((6.6, 9.4, 1.9), (9.4, 12.6, 2.2), "graphite"),
-        # De achterkant: een gouden staartstuk.
-        box((7.25, 7.6, 12.8), (8.75, 9.2, 13.4), "gold"),
-        *grip(9.6, 12.8, 2.6, 8.2, (8, 8, 11)),
-        *trigger_guard(6, 9.6, 5.6, 8),
+    mid = (z_front + z_back) / 2
+    return [
+        box((x, y, z_front), (x + 0.4, y + 0.4, z_back), "leather"),
+        box((x, y, z_front), (x + 0.4, y + 3.4, z_front + 0.4), "leather"),
+        box((x, y, z_back - 0.4), (x + 0.4, y + 2.8, z_back), "leather"),
+        box((x - 0.05, y - 0.15, mid - 0.7), (x + 0.5, y + 0.6, mid + 0.7), "gold_dark"),
     ]
-    moving = [
-        # De slede: schuift bij elk schot even naar achteren.
-        box((6.5, 9.5, 2.2), (9.5, 12.5, 13.2), "red"),
-        box((7.25, 12.5, 3), (8.75, 13, 12.4), "gold"),
-        # Vizier voor en achter.
-        box((7.7, 13, 3.2), (8.3, 13.6, 3.9), "graphite"),
-        box((7.0, 13, 11.6), (7.6, 13.8, 12.4), "graphite"),
-        box((8.4, 13, 11.6), (9.0, 13.8, 12.4), "graphite"),
-        # Gleufjes achteraan om de slede vast te pakken.
-        *[box((6.4, 10, z), (9.6, 12.2, z + 0.3), "red_dark") for z in (10.6, 11.3, 12.0)],
-        # De cyaan strepen opzij.
-        *both(box((6.38, 10.6, 3.6), (6.5, 11.0, 9.8), "glow", glow=True)),
-        # Een donker raampje opzij (de lens van de laserkamer).
-        *both(box((6.4, 11.3, 4.5), (6.5, 12.1, 7.5), "lens")),
-    ]
-    trigger = [box((7.6, 6.3, 7.9), (8.4, 8, 8.5), "steel")]
+
+
+def core(x0, y0, z0, x1, y1, z1):
+    """
+    De kern: de Nether Star (hoofdstuk 55, jouw keuze: een los item dat je zichtbaar insteekt en er weer uit kunt halen).
+    Een gloeiend blokje achter in de romp dat aan beide kanten net uit het metaal steekt; zonder kern schiet het geweer niet.
+    """
+    return [box((x0, y0, z0), (x1, y1, z1), "star", glow=True)]
+
+
+def laser_pistol(grade):
+    """
+    Het laserpistool: een rode slede (de receiver, die bij elk schot terugschuift, met het vizier erop) op een donker
+    frame met een schuine greep, de lens vooraan (de emitter), de capacitor als gloeiend blokje boven de greep, en de cel
+    onderin de greep. Ongeveer 13 pixels lang.
+    """
+    G = metal("graphite", grade)
+    S = metal("steel", grade)
+    pivot = (8, 8, 11)
+    parts = {
+        "frame": [
+            box((6.75, 8, 3.5), (9.25, 9.5, 13), G),
+            box((7, 7.5, 3.5), (9, 8, 7), G),
+            box((7.25, 7.6, 12.8), (8.75, 9.2, 13.4), "gold"),
+            *grip(9.6, 12.8, 2.6, 8.2, pivot),
+            *trigger_guard(6, 9.6, 5.6, 8, G),
+        ],
+        "receiver": [],
+        "emitter": [*emitter(1, 11, 2.6), box((6.6, 9.4, 1.9), (9.4, 12.6, 2.2), G)],
+        "optics": [],
+        "capacitor": [
+            box((7.0, 8.15, 10.4), (9.0, 9.45, 12.7), "gold_dark"),
+            *both(box((6.63, 8.4, 10.7), (6.75, 9.2, 12.4), "glow", glow=True)),
+        ],
+        "trigger": [box((7.6, 6.3, 7.9), (8.4, 8, 8.5), S)],
+    }
+    moving = {
+        # De slede: schuift bij elk schot even naar achteren; het vizier zit erop en gaat mee.
+        "receiver": [
+            box((6.5, 9.5, 2.2), (9.5, 12.5, 13.2), "red"),
+            box((7.25, 12.5, 3), (8.75, 13, 12.4), "gold"),
+            *[box((6.4, 10, z), (9.6, 12.2, z + 0.3), "red_dark") for z in (10.6, 11.3, 12.0)],
+            *both(box((6.38, 10.6, 3.6), (6.5, 11.0, 9.8), "glow", glow=True)),
+            *both(box((6.4, 11.3, 4.5), (6.5, 12.1, 7.5), "lens")),
+        ],
+        "optics": [
+            box((7.7, 13, 3.2), (8.3, 13.6, 3.9), G),
+            box((7.0, 13, 11.6), (7.6, 13.8, 12.4), G),
+            box((8.4, 13, 11.6), (9.0, 13.8, 12.4), G),
+        ],
+    }
     cell = [
-        box((7.15, 1.4, 9.9), (8.85, 3.2, 12.5), "cell", rot=("x", GRIP, (8, 8, 11))),
-        box((7.45, 1.25, 10.3), (8.55, 1.4, 12.1), "glow", glow=True, rot=("x", GRIP, (8, 8, 11))),
+        box((7.15, 1.4, 9.9), (8.85, 3.2, 12.5), "cell", rot=("x", GRIP, pivot)),
+        box((7.45, 1.25, 10.3), (8.55, 1.4, 12.1), "glow", glow=True, rot=("x", GRIP, pivot)),
     ]
-    disp = gun_display(1.0, (0, 0, 0), 0.6, (8, 6.5, 11.4))
-    save_parts("laser_pistol", {"body": body, "moving": moving, "trigger": trigger, "cell": cell}, disp)
+    return parts, moving, cell, core(6.63, 8.35, 8.4, 9.37, 9.25, 9.7), None
 
 
-def laser_rifle():
+def laser_rifle(grade):
     """
-    Het lasergeweer: een rode romp met een kolf, een donkere handbescherming met sleuven en cyaan strepen, een stalen
-    loop met gouden ringen, een holografisch vizier bovenop, en de cel als magazijn voor de trekker.
+    Het lasergeweer: het frame (de onderkant van de romp, de kolf, de greep en de celhouder), de receiver (de rode romp
+    met de spanhendel), de emitter (de handbescherming met sleuven, de stalen loop met gouden ringen en de lens), het
+    holografische vizier, de capacitor rechts opzij, de trekker, en de cel als magazijn voor de trekker.
     """
-    body = [
-        # Romp.
-        box((6.5, 9, 2), (9.5, 12.5, 13), "red"),
-        box((6.4, 10.2, 3), (9.6, 10.5, 12), "red_dark"),
-        box((7, 12.5, 2.5), (9, 13, 12.5), "graphite"),
-        # Spanhendel-gleuf opzij (de hendel zelf beweegt, zie moving).
-        box((9.5, 11, 6.5), (9.6, 11.75, 11), "red_dark"),
-        # Handbescherming met sleuven, en cyaan strepen.
-        box((6.75, 9.25, -4), (9.25, 12, 2), "graphite"),
-        *both(box((6.65, 9.9, -3.2), (6.75, 11.3, 1.2), "vent")),
-        *both(box((6.55, 11.45, -3.6), (6.7, 11.75, 1.6), "glow", glow=True)),
-        box((7.25, 8.75, -3.5), (8.75, 9.25, 1.5), "graphite"),
-        # Loop met gouden ringen en de lens.
-        box((7.25, 10, -8.5), (8.75, 11.75, -4), "steel"),
-        box((7, 9.75, -6), (9, 12, -5.4), "gold"),
-        *emitter(-9.5, 10.875, 2.2),
-        # Holografisch vizier: een voetje en een gouden raampje, met een gloeiend puntje in het midden.
-        box((7, 13, 6), (9, 13.5, 10), "graphite"),
-        box((6.75, 13.5, 6.5), (7.25, 15.75, 7.1), "gold"),
-        box((8.75, 13.5, 6.5), (9.25, 15.75, 7.1), "gold"),
-        box((6.75, 15.75, 6.5), (9.25, 16.2, 7.1), "gold"),
-        box((7, 13.5, 7.1), (9, 13.8, 9.5), "graphite"),
-        box((7.9, 14.55, 6.75), (8.1, 14.75, 6.85), "glow", glow=True),
-        # Kolf met een gouden wangsteun en een rubber kolfplaat.
-        box((7, 8.5, 13), (9, 12, 19), "red"),
-        box((7.25, 12, 13.5), (8.75, 12.5, 18), "gold"),
-        box((6.9, 7.5, 19), (9.1, 12.25, 20), "black"),
-        box((7.1, 9.2, 14.2), (8.9, 10.6, 17.6), "red_dark"),
-        *grip(10, 12.6, 4, 9.2, (8, 9, 11)),
-        *trigger_guard(7.5, 10, 6.5, 9),
-        # De houder van de cel.
-        box((6.85, 8.6, 3.6), (9.15, 9.1, 7.4), "gold_dark"),
-    ]
-    moving = [box((9.5, 11, 10), (10.3, 11.75, 11), "steel"), box((10.3, 10.9, 10.1), (10.6, 11.85, 10.9), "gold")]
-    trigger = [box((7.6, 7, 8.6), (8.4, 9, 9.2), "steel")]
+    G = metal("graphite", grade)
+    S = metal("steel", grade)
+    parts = {
+        "frame": [
+            box((6.6, 9, 2), (9.4, 9.7, 13), "red"),
+            box((7, 8.5, 13), (9, 12, 19), "red"),
+            box((7.25, 12, 13.5), (8.75, 12.5, 18), "gold"),
+            box((6.9, 7.5, 19), (9.1, 12.25, 20), "black"),
+            box((7.1, 9.2, 14.2), (8.9, 10.6, 17.6), "red_dark"),
+            *grip(10, 12.6, 4, 9.2, (8, 9, 11)),
+            *trigger_guard(7.5, 10, 6.5, 9, G),
+            box((6.85, 8.6, 3.6), (9.15, 9.1, 7.4), "gold_dark"),
+        ],
+        "receiver": [
+            box((6.5, 9.7, 2), (9.5, 12.5, 13), "red"),
+            box((6.4, 10.2, 3), (9.6, 10.5, 12), "red_dark"),
+            box((7, 12.5, 2.5), (9, 13, 12.5), G),
+            box((9.5, 11, 6.5), (9.6, 11.75, 11), "red_dark"),
+        ],
+        "emitter": [
+            box((6.75, 9.25, -4), (9.25, 12, 2), G),
+            *both(box((6.65, 9.9, -3.2), (6.75, 11.3, 1.2), "vent")),
+            *both(box((6.55, 11.45, -3.6), (6.7, 11.75, 1.6), "glow", glow=True)),
+            box((7.25, 8.75, -3.5), (8.75, 9.25, 1.5), G),
+            box((7.25, 10, -8.5), (8.75, 11.75, -4), S),
+            box((7, 9.75, -6), (9, 12, -5.4), "gold"),
+            *emitter(-9.5, 10.875, 2.2),
+        ],
+        "optics": [
+            box((7, 13, 6), (9, 13.5, 10), G),
+            box((6.75, 13.5, 6.5), (7.25, 15.75, 7.1), "gold"),
+            box((8.75, 13.5, 6.5), (9.25, 15.75, 7.1), "gold"),
+            box((6.75, 15.75, 6.5), (9.25, 16.2, 7.1), "gold"),
+            box((7, 13.5, 7.1), (9, 13.8, 9.5), G),
+            box((7.9, 14.55, 6.75), (8.1, 14.75, 6.85), "glow", glow=True),
+        ],
+        "capacitor": [
+            box((9.5, 9.9, 2.8), (9.85, 11.2, 6.2), "gold_dark"),
+            box((9.85, 10.2, 3.1), (9.97, 10.9, 5.9), "glow", glow=True),
+        ],
+        "trigger": [box((7.6, 7, 8.6), (8.4, 9, 9.2), S)],
+    }
+    moving = {"receiver": [box((9.5, 11, 10), (10.3, 11.75, 11), S), box((10.3, 10.9, 10.1), (10.6, 11.85, 10.9), "gold")]}
     cell = [
         box((7, 4.2, 4), (9, 8.6, 7), "cell"),
         *both(box((6.9, 5, 4.9), (7.0, 7.8, 6.1), "glow", glow=True)),
         box((6.95, 4, 3.9), (9.05, 4.5, 7.1), "gold"),
     ]
-    disp = gun_display(0.55, (0, 0, -1.5), 0.5, (8, 7.2, 11.3))
-    save_parts("laser_rifle", {"body": body, "moving": moving, "trigger": trigger, "cell": cell}, disp)
+    return parts, moving, cell, core(6.38, 10.7, 11.3, 9.62, 11.9, 12.5), strap(-3.0, 19.0, 5.6)
 
 
-def laser_sniper():
+def laser_sniper(grade):
     """
-    De lasersniper: lang en zwaar, met een lange loop met sleuven, een grote gouden mondingsrem, een kijker met
-    lenzen, een grendel opzij en een kolf met een rubber plaat.
+    De lasersniper: het frame (de onderkant van de romp en de lange kolf met het duimgat), de receiver (de romp met de
+    grendel), de emitter (de lange loop met sleuven en de gouden mondingsrem), de kijker, de capacitor, de trekker.
     """
-    body = [
-        # Romp.
-        box((6.5, 9, 4), (9.5, 12.5, 14), "red"),
-        box((6.4, 10.4, 5), (9.6, 10.7, 13), "red_dark"),
-        # Lange loop met sleuven, cyaan strepen en een gouden rem.
-        box((6.85, 9.6, -10), (9.15, 12, 4), "graphite"),
-        *both(box((6.75, 10.2, -9), (6.85, 11.4, 2.5), "vent")),
-        *both(box((6.65, 11.55, -9.5), (6.8, 11.8, 3), "glow", glow=True)),
-        box((7.25, 9.1, -8), (8.75, 9.6, -2), "graphite"),
-        box((6.5, 9.3, -13), (9.5, 12.3, -10), "gold"),
-        *both(box((6.4, 10.3, -12.4), (6.5, 11.3, -10.6), "graphite")),
-        *emitter(-14, 10.8, 2.0, "gold_dark"),
-        # Kijker op twee gouden pootjes.
-        box((7.25, 12.5, 2), (8.75, 13.5, 3), "gold"),
-        box((7.25, 12.5, 9), (8.75, 13.5, 10), "gold"),
-        box((7, 13.5, 0), (9, 15.5, 12), "black"),
-        box((6.5, 13, -1.5), (9.5, 16, 0.5), "graphite"),
-        box((6.75, 13.25, 11), (9.25, 15.75, 13), "graphite"),
-        box((7, 13.25, -1.6), (9, 15.75, -1.5), "lens"),
-        box((9, 14, 4), (9.6, 15, 5.5), "gold"),
-        # Kolf met een gat voor je duim, een wangsteun en een rubber plaat.
-        box((7, 11, 14), (9, 12.5, 24), "red"),
-        box((7, 7.5, 18), (9, 11, 24), "red"),
-        box((7.25, 12.5, 15), (8.75, 13, 22), "gold"),
-        box((6.9, 7, 24), (9.1, 12.75, 25), "black"),
-        *grip(13, 15.6, 5, 10.2, (8, 10, 14)),
-        *trigger_guard(10, 13, 7.2, 9),
-    ]
-    moving = [
-        # De grendel: een hendel met een knop, die na elk schot omhoog en naar achteren gaat.
-        box((9.5, 11, 11), (10.8, 11.6, 11.8), "steel"),
-        box((10.6, 10.6, 10.9), (11.4, 11.6, 11.9), "gold"),
-    ]
-    trigger = [box((7.6, 7.6, 11.4), (8.4, 9, 12), "steel")]
+    G = metal("graphite", grade)
+    S = metal("steel", grade)
+    parts = {
+        "frame": [
+            box((6.6, 9, 4), (9.4, 9.7, 14), "red"),
+            box((7, 11, 14), (9, 12.5, 24), "red"),
+            box((7, 7.5, 18), (9, 11, 24), "red"),
+            box((7.25, 12.5, 15), (8.75, 13, 22), "gold"),
+            box((6.9, 7, 24), (9.1, 12.75, 25), "black"),
+            *grip(13, 15.6, 5, 10.2, (8, 10, 14)),
+            *trigger_guard(10, 13, 7.2, 9, G),
+        ],
+        "receiver": [box((6.5, 9.7, 4), (9.5, 12.5, 14), "red"), box((6.4, 10.4, 5), (9.6, 10.7, 13), "red_dark")],
+        "emitter": [
+            box((6.85, 9.6, -10), (9.15, 12, 4), G),
+            *both(box((6.75, 10.2, -9), (6.85, 11.4, 2.5), "vent")),
+            *both(box((6.65, 11.55, -9.5), (6.8, 11.8, 3), "glow", glow=True)),
+            box((7.25, 9.1, -8), (8.75, 9.6, -2), G),
+            box((6.5, 9.3, -13), (9.5, 12.3, -10), "gold"),
+            *both(box((6.4, 10.3, -12.4), (6.5, 11.3, -10.6), G)),
+            *emitter(-14, 10.8, 2.0, "gold_dark"),
+        ],
+        "optics": [
+            box((7.25, 12.5, 2), (8.75, 13.5, 3), "gold"),
+            box((7.25, 12.5, 9), (8.75, 13.5, 10), "gold"),
+            box((7, 13.5, 0), (9, 15.5, 12), "black"),
+            box((6.5, 13, -1.5), (9.5, 16, 0.5), G),
+            box((6.75, 13.25, 11), (9.25, 15.75, 13), G),
+            box((7, 13.25, -1.6), (9, 15.75, -1.5), "lens"),
+            box((9, 14, 4), (9.6, 15, 5.5), "gold"),
+        ],
+        "capacitor": [
+            box((9.5, 9.9, 6.0), (9.85, 11.3, 9.4), "gold_dark"),
+            box((9.85, 10.2, 6.3), (9.97, 11.0, 9.1), "glow", glow=True),
+        ],
+        "trigger": [box((7.6, 7.6, 11.4), (8.4, 9, 12), S)],
+    }
+    moving = {"receiver": [box((9.5, 11, 11), (10.8, 11.6, 11.8), S), box((10.6, 10.6, 10.9), (11.4, 11.6, 11.9), "gold")]}
     cell = [
         box((7, 6, 6), (9, 9, 9.5), "cell"),
         *both(box((6.9, 6.6, 6.8), (7.0, 8.4, 8.7), "glow", glow=True)),
         box((6.95, 5.8, 5.9), (9.05, 6.3, 9.6), "gold"),
     ]
-    disp = gun_display(0.42, (0, 0, -1), 0.45, (8, 8.2, 14.4))
-    save_parts("laser_sniper", {"body": body, "moving": moving, "trigger": trigger, "cell": cell}, disp)
+    return parts, moving, cell, core(6.38, 10.9, 12.3, 9.62, 12.1, 13.5), strap(-7.0, 24.0, 5.8)
 
 
-def laser_shotgun():
+def laser_shotgun(grade):
     """
-    De laser-shotgun: breed en kort, met twee lopen naast elkaar, een rubber pomp eronder (die na elk schot naar
-    achteren en weer naar voren gaat), een brede romp met gouden rib, een kolf en de cel onder de romp.
+    De laser-shotgun: het frame (de onderkant van de brede romp en de kolf), de receiver (de romp met de gouden rib), de
+    emitter (twee lopen naast elkaar met de buis en de rubber pomp eronder, die na elk schot heen en weer gaat), een
+    korrel en een keep op de rib, de capacitor, de trekker, en de cel onder de romp.
     """
-    body = [
-        # Romp.
-        box((6.25, 8.5, 2), (9.75, 12.75, 13), "red"),
-        box((7.25, 12.75, 2.5), (8.75, 13.25, 12.5), "gold"),
-        *both(box((6.15, 9.5, 3), (6.25, 12, 11), "red_dark")),
-        *both(box((6.1, 11.2, 3.5), (6.2, 11.5, 10.5), "glow", glow=True)),
-        # Twee lopen met gouden ringen en lenzen.
-        box((6.5, 10, -6), (7.9, 11.6, 2), "steel"),
-        box((8.1, 10, -6), (9.5, 11.6, 2), "steel"),
-        box((6.3, 9.8, -6.6), (9.7, 11.8, -5.6), "gold"),
-        box((6.75, 10.25, -6.7), (7.65, 11.35, -6.6), "glow", glow=True),
-        box((8.35, 10.25, -6.7), (9.25, 11.35, -6.6), "glow", glow=True),
-        box((6.3, 9.8, -2.2), (9.7, 11.8, -1.6), "gold"),
-        # De buis onder de lopen (de pomp schuift eroverheen).
-        box((7.1, 8.4, -5), (8.9, 9.8, 2), "graphite"),
-        # Kolf.
-        box((7, 8, 13), (9, 12, 19), "red"),
-        box((6.9, 7.25, 19), (9.1, 12.25, 20), "black"),
-        box((7.2, 9.3, 14), (8.8, 10.8, 18), "red_dark"),
-        *grip(10, 12.6, 3.8, 9, (8, 8.5, 11)),
-        *trigger_guard(7.2, 10, 6.4, 8.5),
-    ]
-    moving = [
+    G = metal("graphite", grade)
+    S = metal("steel", grade)
+    parts = {
+        "frame": [
+            box((6.35, 8.5, 2), (9.65, 9.3, 13), "red"),
+            box((7, 8, 13), (9, 12, 19), "red"),
+            box((6.9, 7.25, 19), (9.1, 12.25, 20), "black"),
+            box((7.2, 9.3, 14), (8.8, 10.8, 18), "red_dark"),
+            *grip(10, 12.6, 3.8, 9, (8, 8.5, 11)),
+            *trigger_guard(7.2, 10, 6.4, 8.5, G),
+        ],
+        "receiver": [
+            box((6.25, 9.3, 2), (9.75, 12.75, 13), "red"),
+            box((7.25, 12.75, 2.5), (8.75, 13.25, 12.5), "gold"),
+            *both(box((6.15, 9.5, 3), (6.25, 12, 11), "red_dark")),
+            *both(box((6.1, 11.2, 3.5), (6.2, 11.5, 10.5), "glow", glow=True)),
+        ],
+        "emitter": [
+            box((6.5, 10, -6), (7.9, 11.6, 2), S),
+            box((8.1, 10, -6), (9.5, 11.6, 2), S),
+            box((6.3, 9.8, -6.6), (9.7, 11.8, -5.6), "gold"),
+            box((6.75, 10.25, -6.7), (7.65, 11.35, -6.6), "glow", glow=True),
+            box((8.35, 10.25, -6.7), (9.25, 11.35, -6.6), "glow", glow=True),
+            box((6.3, 9.8, -2.2), (9.7, 11.8, -1.6), "gold"),
+            box((7.1, 8.4, -5), (8.9, 9.8, 2), G),
+        ],
+        "optics": [
+            box((7.75, 13.25, 2.6), (8.25, 13.8, 3.1), "glow_white", glow=True),
+            box((7.2, 13.25, 11.6), (7.7, 13.75, 12.2), G),
+            box((8.3, 13.25, 11.6), (8.8, 13.75, 12.2), G),
+        ],
+        "capacitor": [
+            box((9.75, 9.8, 3.4), (10.1, 11.1, 6.6), "gold_dark"),
+            box((10.1, 10.1, 3.7), (10.22, 10.8, 6.3), "glow", glow=True),
+        ],
+        "trigger": [box((7.6, 6.9, 8.3), (8.4, 8.5, 8.9), S)],
+    }
+    moving = {"emitter": [
         box((6.6, 7.8, -4.4), (9.4, 10.1, -0.2), "black"),
         *[box((6.5, 8.2, z), (9.5, 9.9, z + 0.4), "red_dark") for z in (-3.6, -2.6, -1.6)],
-    ]
-    trigger = [box((7.6, 6.9, 8.3), (8.4, 8.5, 8.9), "steel")]
+    ]}
     cell = [
         box((7, 6.2, 4), (9, 8.5, 7.5), "cell"),
         *both(box((6.9, 6.6, 4.8), (7.0, 8.1, 6.7), "glow", glow=True)),
         box((6.95, 6.0, 3.9), (9.05, 6.5, 7.6), "gold"),
     ]
-    disp = gun_display(0.6, (0, 0, -1), 0.55, (8, 7.0, 11.3))
-    save_parts("laser_shotgun", {"body": body, "moving": moving, "trigger": trigger, "cell": cell}, disp)
+    return parts, moving, cell, core(6.13, 10.3, 11.2, 9.87, 11.5, 12.4), strap(-5.0, 19.0, 5.6, x=9.8)
+
+
+GUNS = {
+    "laser_pistol": (laser_pistol, gun_display(1.0, (0, 0, 0), 0.6, (8, 6.5, 11.4))),
+    "laser_rifle": (laser_rifle, gun_display(0.55, (0, 0, -1.5), 0.5, (8, 7.2, 11.3))),
+    "laser_sniper": (laser_sniper, gun_display(0.42, (0, 0, -1), 0.45, (8, 8.2, 14.4))),
+    "laser_shotgun": (laser_shotgun, gun_display(0.6, (0, 0, -1), 0.55, (8, 7.0, 11.3))),
+}
+
+
+def centre_of(elements):
+    """Het midden en de maten van een lijst doosjes (zonder hun draaiing)."""
+    xs = [v for e in elements for v in (e["from"][0], e["to"][0])]
+    ys = [v for e in elements for v in (e["from"][1], e["to"][1])]
+    zs = [v for e in elements for v in (e["from"][2], e["to"][2])]
+    return ((min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2, (min(zs) + max(zs)) / 2), \
+        (max(xs) - min(xs), max(ys) - min(ys), max(zs) - min(zs))
+
+
+def centred_display(elements):
+    """
+    Een houding die een los onderdeel van opzij in het midden van zijn vakje zet, zo groot als er past (een frame is
+    lang, een trekker klein). Zoals generate_gun_models.centred_display voor de Glock.
+    """
+    (cx, cy, cz), (dx, dy, dz) = centre_of(elements)
+    gui_scale = round(min(4.5, 13.0 / max(1.0, dy, dz, dx * 0.4)), 3)
+    hand_scale = 0.6
+    shift = [round(-(cx - 8) * gui_scale, 2), round(-(cy - 8) * gui_scale, 2), round(-(cz - 8) * gui_scale, 2)]
+    hand_shift = [round(-(cx - 8) * hand_scale, 2), round(-(cy - 8) * hand_scale, 2), round(-(cz - 8) * hand_scale, 2)]
+    disp = display(gui_scale, shift, hand_scale, 0.5, gui_rotation=(0, 90, 0),
+                   third=((0, 0, 0), hand_shift), first=((0, 0, 0), hand_shift))
+    disp["ground"]["translation"] = [0, 2 - (cy - 8) * 0.5, 0]
+    return disp
+
+
+def save_gun(name):
+    """
+    Eén lasergeweer: elk onderdeel in elke kwaliteit apart (models/weapon/<geweer>/<onderdeel>_<kwaliteit>.json, en
+    ..._moving.json voor wat bij een schot beweegt), de cel, de kern en de sling, het hele geweer als item (titanium, met
+    cel en kern; voor je inventaris, je hand in derde persoon en op de grond), en elk los onderdeel als item
+    (models/item/<geweer>_<onderdeel>.json, met een override per kwaliteit, zoals de onderdelen van de Glock).
+    """
+    make, disp = GUNS[name]
+    whole = []
+    for grade in GRADES:
+        parts, moving, cell, core_el, sling = make(grade)
+        for part in PARTS:
+            write(f"weapon/{name}/{part}_{grade}.json", part_model(parts[part]))
+            if moving.get(part):
+                write(f"weapon/{name}/{part}_{grade}_moving.json", part_model(moving[part]))
+        if grade == "titanium":
+            for part in PARTS:
+                whole += parts[part] + moving.get(part, [])
+            whole += cell + core_el
+            write(f"weapon/{name}/cell.json", part_model(cell))
+            write(f"weapon/{name}/core.json", part_model(core_el))
+            if sling:
+                write(f"weapon/{name}/sling.json", part_model(sling))
+    write(f"item/{name}.json", item_model(whole, disp))
+    for part in PARTS:
+        overrides = []
+        base = None
+        for grade in GRADES:
+            parts, moving, _, _, _ = make(grade)
+            elements = parts[part] + moving.get(part, [])
+            write(f"item/{name}_{part}_{grade}.json", item_model(elements, centred_display(elements)))
+            overrides.append({"predicate": {"imttech:material": GRADE_INDEX[grade]}, "model": f"imttech:item/{name}_{part}_{grade}"})
+            if grade == "titanium":
+                base = elements
+        write(f"item/{name}_{part}.json", item_model(base, centred_display(base), overrides))
+
+
+def gun_sling():
+    """De Gun Sling als los item: een opgerolde leren band met een gesp (leer en touw aan de werkbank)."""
+    el = [
+        box((4, 7.2, 4.5), (12, 8.0, 5.3), "leather"),
+        box((4, 7.2, 10.7), (12, 8.0, 11.5), "leather"),
+        box((4, 7.2, 4.5), (4.8, 8.0, 11.5), "leather"),
+        box((11.2, 7.2, 4.5), (12, 8.0, 11.5), "leather"),
+        box((7.3, 7.0, 4.0), (8.7, 8.3, 5.8), "gold_dark"),
+    ]
+    write("item/gun_sling.json", item_model(el, display(1.0, (0, 0, 0), 0.6, 0.6, gui_rotation=(30, 45, 0))))
+    # De band over je lijf (zie client/guns/GearLayer): een rechte band van 13 pixels, die de mod schuin over je borst
+    # of rug legt als er een geweer met een sling op je rug of voor je borst hangt.
+    write("weapon/sling_strap.json", part_model([box((7.3, 0, 0), (8.7, 13, 0.5), "leather")]))
 
 
 def main():
@@ -763,10 +948,9 @@ def main():
     remote_frag()
     frag_trigger()
     energy_cell()
-    laser_pistol()
-    laser_rifle()
-    laser_sniper()
-    laser_shotgun()
+    for name in GUNS:
+        save_gun(name)
+    gun_sling()
 
 
 if __name__ == "__main__":

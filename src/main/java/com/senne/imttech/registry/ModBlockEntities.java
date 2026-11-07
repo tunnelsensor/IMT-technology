@@ -218,4 +218,10 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("reloading_bench",
                     () -> new BlockEntityType<>(com.senne.imttech.guns.ReloadingBenchBlockEntity::new,
                             java.util.Set.of(ModBlocks.RELOADING_BENCH.get()), null));
+
+    /** Hoofdstuk 55: de Laser Workbench (het lasergeweer dat erop ligt). */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.weapons.LaserWorkbenchBlockEntity>> LASER_WORKBENCH =
+            BLOCK_ENTITIES.register("laser_workbench",
+                    () -> new BlockEntityType<>(com.senne.imttech.weapons.LaserWorkbenchBlockEntity::new,
+                            java.util.Set.of(ModBlocks.LASER_WORKBENCH.get()), null));
 }

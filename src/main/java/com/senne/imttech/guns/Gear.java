@@ -3,6 +3,8 @@ package com.senne.imttech.guns;
 import com.senne.imttech.registry.ModAttachments;
 import com.senne.imttech.registry.ModSounds;
 import com.senne.imttech.weapons.GrenadeItem;
+import com.senne.imttech.weapons.GunType;
+import com.senne.imttech.weapons.LaserGunItem;
 import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -23,19 +25,26 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Wat je draagt om snel bij je wapens te kunnen (hoofdstuk 52, stap 2): de holster, de granaatpouch en de
- * magazijnpouch, en alles wat je ermee doet.
+ * magazijnpouch, en sinds hoofdstuk 55 de twee <b>sling-vakjes</b> (een lasergeweer met een sling op je rug en een
+ * voor je borst), en alles wat je ermee doet.
  * <ul>
  *   <li><b>Waar ze zitten</b>: in Curios-slots als die mod geladen is ({@link #curios()}), anders in de attachment GEAR
- *       van de speler: drie vakjes die je in je inventaris naast je harnas ziet (zie client/guns/GearSlotsOverlay en
- *       {@link #click}). Die attachment wordt opgeslagen en naar iedereen gestuurd die je ziet (voor je heup).</li>
- *   <li><b>Trekken</b> ({@link #drawGun}, {@link #drawGrenade}): uit het wiel (linker Alt). Jouw keuze: wat je in je hand
- *       had valt op de grond, het pistool (of de granaat) komt in dat vakje. Trekken duurt even (DRAW).</li>
- *   <li><b>Wegsteken</b> ({@link #holsterHand}): het pistool in de holster, een granaat in de pouch, een magazijn in de
- *       magazijnpouch.</li>
+ *       van de speler: de drie vakjes die je in je inventaris naast je harnas ziet, plus de twee sling-vakjes onder het
+ *       craftraster (zie client/guns/GearSlotsOverlay en {@link #click}). Die attachment wordt opgeslagen en naar
+ *       iedereen gestuurd die je ziet (voor je heup en je rug). In een sling-vakje zit het geweer zelf (met zijn sling
+ *       eraan), niet een holster: jouw keuze, "als de sling eraan hangt kun je die in de slingslot doen, anders
+ *       niet".</li>
+ *   <li><b>Trekken</b> ({@link #drawGun}, {@link #drawSling}, {@link #drawGrenade}): uit het wiel (linker Alt). Jouw keuze:
+ *       wat je in je hand had valt op de grond, <i>tenzij</i> het zelf in je holster, een sling-vakje of een pouch past:
+ *       dan gaat het daarheen ("heb je de glock vast en pak je je laserrifle, dan holster je de glock"). Het pistool
+ *       (of het geweer, of de granaat) komt in dat vakje. Trekken duurt even (DRAW; van je sling langer).</li>
+ *   <li><b>Wegsteken</b> ({@link #holsterHand}): een pistool in de holster, een geweer met sling in een sling-vakje,
+ *       een granaat in de pouch, een magazijn of een cel in de magazijnpouch.</li>
  *   <li><b>De granaatpouch voert aan</b> ({@link #refillGrenade}): gooi je de laatste granaat van een soort, dan komt
  *       de volgende uit de pouch in je hand.</li>
  *   <li><b>Herladen uit de magazijnpouch</b> ({@link #reloadFromPouch}, {@link #finishPouchReload}): R toont de
- *       magazijnen in je pouch, je klikt er een; het oude magazijn komt op zijn plek in de pouch.</li>
+ *       magazijnen in je pouch, je klikt er een; het oude magazijn komt op zijn plek in de pouch. (Voor de cellen van
+ *       een lasergeweer: zie weapons/LaserGuns.startReload.)</li>
  *   <li><b>Doodgaan</b>: zonder keepInventory vallen ze op de grond, net als de rest.</li>
  * </ul>
  */
@@ -48,6 +57,13 @@ public final class Gear {
     public static final int ACTION_HOLSTER = 2;
     /** Hoofdstuk 54: een pouch (of de holster) die je draagt openen, om er dingen in te stoppen of uit te halen. */
     public static final int ACTION_OPEN = 3;
+    /** Hoofdstuk 55: het geweer uit dit sling-vakje (0 = je rug, 1 = je borst) trekken. */
+    public static final int ACTION_DRAW_SLING = 4;
+
+    /** Zoveel sling-vakjes draag je (jouw keuze: twee, een op je rug en een voor je borst). */
+    public static final int SLINGS = 2;
+    /** Zoveel vakjes heeft de attachment: de drie van GearItem.Kind, en dan de slings. */
+    public static final int SLOTS = GearItem.Kind.values().length + SLINGS;
 
     private static Boolean curiosLoaded;
 
@@ -74,9 +90,52 @@ public final class Gear {
         if (curios()) {
             return CuriosGear.set(player, kind, stack);
         }
-        GearContents slots = GearContents.sized(player.getData(ModAttachments.GEAR).stacks(), GearItem.Kind.values().length);
-        player.setData(ModAttachments.GEAR, slots.with(kind.ordinal(), stack));
+        setSlot(player, kind.ordinal(), stack);
         return true;
+    }
+
+    private static void setSlot(Player player, int index, ItemStack stack) {
+        GearContents slots = GearContents.sized(player.getData(ModAttachments.GEAR).stacks(), SLOTS);
+        player.setData(ModAttachments.GEAR, slots.with(index, stack));
+    }
+
+    /** Het geweer in dit sling-vakje (0 = je rug, 1 = je borst; een kopie), of leeg. */
+    public static ItemStack sling(Player player, int index) {
+        if (index < 0 || index >= SLINGS) {
+            return ItemStack.EMPTY;
+        }
+        if (curios()) {
+            return CuriosGear.sling(player, index);
+        }
+        return player.getData(ModAttachments.GEAR).get(GearItem.Kind.values().length + index);
+    }
+
+    /** Dit geweer (of leeg) in dit sling-vakje. Geeft false als dat niet kan (Curios zonder zo'n slot). */
+    public static boolean setSling(Player player, int index, ItemStack stack) {
+        if (index < 0 || index >= SLINGS) {
+            return false;
+        }
+        if (curios()) {
+            return CuriosGear.setSling(player, index, stack);
+        }
+        setSlot(player, GearItem.Kind.values().length + index, stack);
+        return true;
+    }
+
+    /** Past dit in een sling-vakje: een laser rifle, sniper of shotgun met een sling eraan? */
+    public static boolean slingAccepts(ItemStack stack) {
+        GunType type = LaserGunItem.typeOf(stack);
+        return type != null && type != GunType.PISTOL && LaserGunItem.hasSling(stack);
+    }
+
+    /** Het eerste lege sling-vakje, of -1. */
+    public static int freeSling(Player player) {
+        for (int i = 0; i < SLINGS; i++) {
+            if (sling(player, i).isEmpty() && (!curios() || CuriosGear.hasSlingSlot(player, i))) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     /** De inhoud van wat je draagt (kopieën), of een lege lijst als je dat niet draagt. */
@@ -84,7 +143,7 @@ public final class Gear {
         return GearItem.contents(get(player, kind));
     }
 
-    static void setContents(Player player, GearItem.Kind kind, List<ItemStack> contents) {
+    public static void setContents(Player player, GearItem.Kind kind, List<ItemStack> contents) {
         ItemStack gear = get(player, kind);
         if (gear.isEmpty()) {
             return;
@@ -93,7 +152,7 @@ public final class Gear {
         set(player, kind, gear);
     }
 
-    /** Past dit item nog ergens in wat je draagt? Geeft de soort, of null. */
+    /** Past dit item nog ergens in wat je draagt (een holster of pouch)? Geeft de soort, of null. */
     public static @Nullable GearItem.Kind roomFor(Player player, ItemStack stack) {
         for (GearItem.Kind kind : GearItem.Kind.values()) {
             if (kind.accepts(stack) && freeIndex(player, kind, stack) >= 0) {
@@ -101,6 +160,20 @@ public final class Gear {
             }
         }
         return null;
+    }
+
+    /** Kun je dit wegsteken: in een sling-vakje, of in een holster of pouch? */
+    public static boolean canStow(Player player, ItemStack stack) {
+        return (slingAccepts(stack) && freeSling(player) >= 0) || roomFor(player, stack) != null;
+    }
+
+    /** Waar het heen zou gaan, voor op het wiel ("into the Holster", "onto your sling"), of null. */
+    public static @Nullable Component stowTarget(Player player, ItemStack stack) {
+        if (slingAccepts(stack) && freeSling(player) >= 0) {
+            return Component.translatable("screen.imttech.wheel.onto_sling");
+        }
+        GearItem.Kind kind = roomFor(player, stack);
+        return kind == null ? null : Component.translatable("screen.imttech.wheel.into", kind.text());
     }
 
     /** Het vakje waar dit item in kan (eerst bij dezelfde soort erbij, dan een leeg vakje), of -1. */
@@ -128,7 +201,7 @@ public final class Gear {
 
     // ================================================================ Trekken en wegsteken
 
-    /** Het pistool uit je holster in je hand; wat je vasthield valt op de grond (jouw keuze). */
+    /** Het pistool uit je holster in je hand; wat je vasthield gaat weg (in zijn eigen plek, of op de grond). */
     public static boolean drawGun(ServerPlayer player) {
         List<ItemStack> holster = contents(player, GearItem.Kind.HOLSTER);
         ItemStack gun = holster.isEmpty() ? ItemStack.EMPTY : holster.getFirst();
@@ -143,7 +216,27 @@ public final class Gear {
         setContents(player, GearItem.Kind.HOLSTER, holster);
         intoHand(player, gun);
         sound(player, ModSounds.HOLSTER_DRAW.get(), 0.8f);
-        Firearms.start(player, Firearms.ActionKind.DRAW, player.getInventory().selected, 0, gun);
+        Firearms.start(player, Firearms.ActionKind.DRAW, player.getInventory().selected, Firearms.DRAW_FROM_HOLSTER, gun);
+        return true;
+    }
+
+    /**
+     * Het geweer uit dit sling-vakje (hoofdstuk 55) in je hand; wat je vasthield gaat weg (het pistool in de holster, een
+     * ander geweer met sling in dit vakje, dat net leegkwam). Van je sling trekken duurt langer dan uit de holster.
+     */
+    public static boolean drawSling(ServerPlayer player, int index) {
+        ItemStack gun = sling(player, index);
+        if (gun.isEmpty()) {
+            tell(player, Component.translatable("gear.imttech.no_sling_gun"));
+            return false;
+        }
+        if (Firearms.isBusy(player)) {
+            return false;
+        }
+        setSling(player, index, ItemStack.EMPTY);
+        intoHand(player, gun);
+        sound(player, ModSounds.HOLSTER_DRAW.get(), 0.8f);
+        Firearms.start(player, Firearms.ActionKind.DRAW, player.getInventory().selected, Firearms.DRAW_FROM_SLING, gun);
         return true;
     }
 
@@ -168,23 +261,73 @@ public final class Gear {
         return false;
     }
 
-    /** Dit item in je gekozen vakje; wat daar lag, valt op de grond. */
+    /**
+     * Dit item in je gekozen vakje. Wat daar lag gaat in zijn eigen plek als dat kan (jouw keuze: "tenzij het een ander
+     * gun is dat je kunt holsteren of wegdraaien met de sling"; mijn invulling: ook een granaat, magazijn of cel gaat
+     * terug in zijn pouch), anders valt het op de grond.
+     */
     private static void intoHand(ServerPlayer player, ItemStack stack) {
         Inventory inventory = player.getInventory();
         ItemStack held = inventory.getItem(inventory.selected);
-        if (!held.isEmpty()) {
+        if (!held.isEmpty() && !stow(player, held.copy())) {
             player.drop(held, false);
         }
         inventory.setItem(inventory.selected, stack);
     }
 
-    /** Wat je vasthoudt wegsteken: een pistool in de holster, een granaat in de pouch, een magazijn in de magazijnpouch. */
+    /**
+     * Dit item wegsteken in wat je draagt: een geweer met sling in een leeg sling-vakje, een pistool in de holster, een
+     * granaat in de pouch, een magazijn of cel in de magazijnpouch. Geeft true als het (helemaal) weg is.
+     */
+    private static boolean stow(ServerPlayer player, ItemStack stack) {
+        if (slingAccepts(stack)) {
+            int free = freeSling(player);
+            return free >= 0 && setSling(player, free, stack);
+        }
+        GearItem.Kind kind = roomFor(player, stack);
+        if (kind == null) {
+            return false;
+        }
+        int index = freeIndex(player, kind, stack);
+        List<ItemStack> contents = contents(player, kind);
+        ItemStack inside = contents.get(index);
+        if (inside.isEmpty()) {
+            contents.set(index, stack);
+        } else {
+            int room = inside.getMaxStackSize() - inside.getCount();
+            if (room < stack.getCount()) {
+                return false; // past niet helemaal: dan liever op de grond dan half kwijt
+            }
+            inside.grow(stack.getCount());
+            contents.set(index, inside);
+        }
+        setContents(player, kind, contents);
+        return true;
+    }
+
+    /**
+     * Wat je vasthoudt wegsteken: een pistool in de holster, een geweer met sling in een sling-vakje, een granaat in de
+     * pouch, een magazijn of een cel in de magazijnpouch.
+     */
     public static boolean holsterHand(ServerPlayer player) {
         Inventory inventory = player.getInventory();
         ItemStack held = inventory.getItem(inventory.selected);
         if (held.isEmpty()) {
             tell(player, Component.translatable("gear.imttech.nothing_to_holster"));
             return false;
+        }
+        if (slingAccepts(held)) {
+            int free = freeSling(player);
+            if (free < 0) {
+                tell(player, Component.translatable("gear.imttech.sling_full"));
+                return false;
+            }
+            if (!setSling(player, free, held.copy())) {
+                return false;
+            }
+            inventory.setItem(inventory.selected, ItemStack.EMPTY);
+            sound(player, ModSounds.HOLSTER_DRAW.get(), 0.6f);
+            return true;
         }
         GearItem.Kind kind = null;
         for (GearItem.Kind candidate : GearItem.Kind.values()) {
@@ -193,7 +336,8 @@ public final class Gear {
             }
         }
         if (kind == null) {
-            tell(player, Component.translatable("gear.imttech.does_not_fit"));
+            tell(player, Component.translatable(LaserGunItem.typeOf(held) != null && LaserGunItem.typeOf(held) != GunType.PISTOL
+                    ? "gear.imttech.needs_sling" : "gear.imttech.does_not_fit"));
             return false;
         }
         if (get(player, kind).isEmpty()) {
@@ -327,30 +471,35 @@ public final class Gear {
     // ================================================================ De eigen vakjes in je inventaris (zonder Curios)
 
     /**
-     * Een klik op een van de drie vakjes naast je harnas (zie GearClickPayload): wat je aan je muis hebt gaat erin, wat
-     * erin zat komt aan je muis (of ze wisselen).
+     * Een klik op een van de eigen vakjes (zie GearClickPayload): de drie naast je harnas (holster, granaatpouch,
+     * magazijnpouch; {@code index} 0-2) of de twee sling-vakjes onder het craftraster (3 en 4). Wat je aan je muis hebt
+     * gaat erin, wat erin zat komt aan je muis (of ze wisselen). In een sling-vakje past alleen een geweer met een sling.
      */
     public static void click(ServerPlayer player, int index) {
-        if (curios() || index < 0 || index >= GearItem.Kind.values().length) {
+        if (curios() || index < 0 || index >= SLOTS) {
             return;
         }
         AbstractContainerMenu menu = player.containerMenu;
         if (!(menu instanceof InventoryMenu)) {
             return;
         }
-        GearItem.Kind kind = GearItem.Kind.values()[index];
         ItemStack carried = menu.getCarried();
-        ItemStack worn = get(player, kind);
+        boolean sling = index >= GearItem.Kind.values().length;
+        ItemStack worn = sling ? sling(player, index - GearItem.Kind.values().length) : get(player, GearItem.Kind.values()[index]);
+        boolean fits = sling ? slingAccepts(carried) : GearItem.kindOf(carried) == GearItem.Kind.values()[index];
         if (carried.isEmpty()) {
             if (worn.isEmpty()) {
                 return;
             }
-            set(player, kind, ItemStack.EMPTY);
+            setSlot(player, index, ItemStack.EMPTY);
             menu.setCarried(worn);
-        } else if (GearItem.kindOf(carried) == kind && carried.getCount() == 1) {
-            set(player, kind, carried.copy());
+        } else if (fits && carried.getCount() == 1) {
+            setSlot(player, index, carried.copy());
             menu.setCarried(worn);
         } else {
+            if (sling && LaserGunItem.typeOf(carried) != null) {
+                tell(player, Component.translatable("gear.imttech.needs_sling"));
+            }
             return;
         }
         menu.broadcastChanges();

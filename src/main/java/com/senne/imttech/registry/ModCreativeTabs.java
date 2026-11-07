@@ -67,10 +67,10 @@ public final class ModCreativeTabs {
     /** Alle geweren, dan de granaten en de ladingen die je op afstand laat afgaan. */
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> WEAPONS = tab("weapons", EQUIPMENT.getKey(),
             () -> new ItemStack(ModItems.LASER_RIFLE.get()), (parameters, output) -> {
-                output.accept(ModItems.LASER_PISTOL.get());
-                output.accept(ModItems.LASER_RIFLE.get());
-                output.accept(ModItems.LASER_SNIPER.get());
-                output.accept(ModItems.LASER_SHOTGUN.get());
+                // De lasergeweren (hoofdstuk 55: compleet, titanium, met een kern en een volle cel).
+                for (com.senne.imttech.weapons.GunType type : com.senne.imttech.weapons.GunType.values()) {
+                    output.accept(com.senne.imttech.weapons.LaserGunItem.loaded(type));
+                }
                 output.accept(ModItems.ION_BLASTER.get());
                 output.accept(ModItems.ENERGY_CELL.get());
                 output.accept(com.senne.imttech.weapons.EnergyCellItem.withCharge(com.senne.imttech.weapons.EnergyCellItem.FULL));
@@ -105,6 +105,16 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.MAG_POUCH.get());
                 output.accept(ModItems.GUNSMITH_TABLE.get());
                 output.accept(ModItems.RELOADING_BENCH.get());
+                // De onderdelen van de lasergeweren (hoofdstuk 55), per geweer in titanium en netherite, de sling en de werkbank.
+                for (com.senne.imttech.weapons.GunType type : com.senne.imttech.weapons.GunType.values()) {
+                    for (com.senne.imttech.weapons.LaserPart part : com.senne.imttech.weapons.LaserPart.wearing()) {
+                        for (com.senne.imttech.guns.GunMaterial material : com.senne.imttech.weapons.LaserPart.MATERIALS) {
+                            output.accept(com.senne.imttech.weapons.LaserPartItem.of(type, part, material));
+                        }
+                    }
+                }
+                output.accept(ModItems.GUN_SLING.get());
+                output.accept(ModItems.LASER_WORKBENCH.get());
             });
 
     /** De kabels (stroom, netwerk, PoE) en wat stroom maakt of opslaat. */
