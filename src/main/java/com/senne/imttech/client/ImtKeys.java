@@ -91,8 +91,11 @@ public final class ImtKeys {
      * klikken). Alt doet in Minecraft zelf niets.
      */
     public static final KeyMapping GEAR_WHEEL = key("gear_wheel", InputConstants.KEY_LALT);
-    /** Hoofdstuk 52 (stap 3): de skilltree van je vuurwapens. Standaard op geen toets (ook via het wiel, linker Alt). */
-    public static final KeyMapping SKILL_TREE = key("skill_tree", InputConstants.UNKNOWN.getValue());
+    /**
+     * Hoofdstuk 52 (stap 3): de skilltree van je vuurwapens. Sinds hoofdstuk 56 alleen zo te openen (jouw keuze: niet in
+     * het wiel en niet in het G-menu); standaard F6, want elke letter is al bezet.
+     */
+    public static final KeyMapping SKILL_TREE = key("skill_tree", InputConstants.KEY_F6);
 
     public static final KeyMapping GUN_RELOAD = new KeyMapping("key.imttech.gun_reload", GunKeys.CONTEXT, Type.KEYSYM,
             InputConstants.KEY_R, CATEGORY);

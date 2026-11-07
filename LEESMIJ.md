@@ -1845,7 +1845,7 @@ draagt ze in de drie vakjes rechts van je poppetje in je inventaris (klik erin m
 **Curios** in je modpack, dan zie je die vakjes niet en zitten ze in de Curios-slots "Holster" en "Pouch". Houd
 **linker Alt** in: het wiel, een ring van tegels rond je muis (die in het midden begint). Elke soort heeft zijn vaste
 plek: bovenaan je pistool, rechts je geweren op je slings, links elke granaatsoort, onderaan "wegsteken" (een pijltje
-omlaag op wat je vasthoudt); rechts ernaast knoppen om een pouch te openen en voor "Gun skills". Op een tegel staat alleen het
+omlaag op wat je vasthoudt); rechts ernaast twee knoppen om een pouch te openen. Op een tegel staat alleen het
 item, twee keer zo groot, met een getal (schoten, hoeveel granaten); wat het is en wat er gebeurt lees je in het midden
 zodra je hem aanwijst. Schuif je muis naar een tegel en laat Alt los: gekozen. Tik je Alt kort, dan blijft het wiel
 staan en klik of sleep je naar een tegel (Esc, rechtsklik of een klik in het midden sluit het). Trekken: wat je
@@ -1873,8 +1873,8 @@ gaat erin.
 
 **De skills.** Alles wat je met een pistool doet geeft ervaring (een schot 1, een treffer 2, iemand doodschieten 10,
 herladen 3, een tap-rack 2, een patroon in een magazijn 1, trekken 1); elke keer dat de balk vol is krijg je een
-**skillpunt** (het eerste bij 60, elk volgende 20% meer). Open de boom via het **wiel (linker Alt) > Gun skills** (of een
-eigen toets): links de **globale** skills (voor elk vuurwapen, 5% per niveau, een niveau kost het dubbele), rechts die van
+**skillpunt** (het eerste bij 60, elk volgende 20% meer). Open de boom met **F6** (de toets "Gun skills" in Opties >
+Besturing; niet via het wiel of het G-menu): links de **globale** skills (voor elk vuurwapen, 5% per niveau, een niveau kost het dubbele), rechts die van
 de **Glock 19** zelf (8% per niveau); ze tellen bij elkaar op (tot 70% eraf). Reload (magazijnen, de slede, de
 kamer), Recoil control (de terugslag), Steady aim (de spreiding), Quickdraw (trekken), Clearing (de tap-rack) en
 Magazine handling (patronen in een magazijn); elk tot niveau 5, en elk volgend niveau kost een punt meer. Jouw keuze:
@@ -1942,7 +1942,7 @@ magazijnen). R met een lasergeweer en een vollere cel in je pouch toont de celle
 nog eens R voor de volste), en de oude cel komt op zijn plek in de pouch. Zonder pouch pakt R de volste cel uit je
 inventaris, zoals altijd. Rechtsonder telt "Cells" de cellen in je inventaris én in je pouch.
 
-**De skills voor alle vijf.** In de skilltree (wiel > Gun skills) kies je rechts bovenaan het wapen: Glock 19, Pistol,
+**De skills voor alle vijf.** In de skilltree (F6) kies je rechts bovenaan het wapen: Glock 19, Pistol,
 Rifle, Sniper of Shotgun (het begint op wat je vasthoudt); elk lasergeweer heeft zijn eigen rij naast de globale skills, en
 ze tellen op. Reload maakt het wisselen van een cel korter, Recoil control de terugslag kleiner, Steady aim de spreiding
 (ook het kruisje), Quickdraw het trekken uit de holster of van je sling. Clearing en Magazine handling zijn er alleen voor

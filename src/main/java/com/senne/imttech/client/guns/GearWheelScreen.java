@@ -7,7 +7,6 @@ import com.senne.imttech.guns.FirearmItem;
 import com.senne.imttech.guns.Gear;
 import com.senne.imttech.guns.GearItem;
 import com.senne.imttech.network.GearActionPayload;
-import com.senne.imttech.registry.ModAttachments;
 import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.registry.ModSounds;
 import com.senne.imttech.weapons.GrenadeItem;
@@ -37,9 +36,9 @@ import org.lwjgl.glfw.GLFW;
  * plek: bovenaan je pistool uit de holster, rechts je geweren op je slings (rug, borst), links elke soort granaat uit je
  * pouch, onderaan "wegsteken" (een pijltje omlaag op wat je vasthoudt). Op een tegel staat alleen het item, twee keer zo
  * groot, met een getal (schoten, hoeveel granaten). Wat de tegel is en wat er gebeurt lees je in het midden zodra je hem
- * aanwijst. Rechts naast de ring staan knoppen voor wat geen quickdraw is: een pouch openen en de skilltree. Schuif je
- * muis naar een tegel en laat Alt los: gekozen. Tik je Alt kort, dan blijft het wiel staan en klik (of sleep) je naar een
- * tegel; Alt, Esc, rechtsklik of een klik in het midden sluit het.
+ * aanwijst. Rechts naast de ring staan twee knoppen voor wat geen quickdraw is: een pouch openen (de skilltree staat er
+ * niet, die open je alleen met zijn toets, F6). Schuif je muis naar een tegel en laat Alt los: gekozen. Tik je Alt kort,
+ * dan blijft het wiel staan en klik (of sleep) je naar een tegel; Alt, Esc, rechtsklik of een klik in het midden sluit het.
  *
  * Waarom loslaten vroeger niet werkte: {@code KeyMapping.isDown()} zegt altijd "nee" zolang er een scherm open is (de
  * toets telt alleen in het spel zelf), dus het wiel dacht altijd dat je Alt al losgelaten had en wachtte op een klik. Nu
@@ -58,9 +57,6 @@ public class GearWheelScreen extends Screen {
     private static final long TAP_MS = 200;
     private static final int PANEL = 0x0E1116;
     private static final int GREY = 0x8A9BA0;
-
-    /** Een keuze die het wiel zelf afhandelt (niet de server): de skilltree openen. */
-    private static final int LOCAL_SKILLS = 100;
 
     /** Eén keuze: een tegel op de ring (met een hoek) of een knop naast de ring (hoek -1). */
     private static final class Option {
@@ -111,8 +107,6 @@ public class GearWheelScreen extends Screen {
     private double lastMouseY;
     /** Waarop je de linkermuisknop indrukte: een keuze, -1 het midden of niets, -2 niet ingedrukt. */
     private int pressedOn = -2;
-    /** Wat er moet gebeuren zodra het wiel dicht is (een ander scherm openen). */
-    private @Nullable Runnable after;
 
     public GearWheelScreen() {
         super(Component.translatable("screen.imttech.wheel"));
@@ -297,7 +291,7 @@ public class GearWheelScreen extends Screen {
         place(grenades, 270, 30, 90);
         options.addAll(grenades);
 
-        // Eronder: elke pouch die je draagt openen (hoofdstuk 54) en de skilltree (jouw keuze: niet in het G-menu).
+        // Ernaast: elke pouch die je draagt openen (hoofdstuk 54). De skilltree staat hier niet: alleen op zijn toets (F6).
         for (GearItem.Kind kind : new GearItem.Kind[] {GearItem.Kind.MAG_POUCH, GearItem.Kind.GRENADE_POUCH}) {
             ItemStack worn = Gear.get(player, kind);
             if (!worn.isEmpty()) {
@@ -310,12 +304,6 @@ public class GearWheelScreen extends Screen {
                         filled + "/" + kind.size(), HudStyle.argb(255, HudStyle.WHITE), true, Gear.ACTION_OPEN, kind.ordinal(), -1));
             }
         }
-        int points = player.getData(ModAttachments.GUN_SKILLS).points();
-        options.add(new Option(new ItemStack(ModItems.GLOCK_19.get()), Component.translatable("screen.imttech.wheel.skills"),
-                lines(Component.translatable("screen.imttech.wheel.skill_tree"),
-                        points > 0 ? Component.translatable("screen.imttech.wheel.skills_sub", points)
-                        : Component.translatable("screen.imttech.wheel.no_points")),
-                points > 0 ? "+" + points : null, HudStyle.argb(255, HudStyle.ORANGE), true, LOCAL_SKILLS, 0, -1));
         layout();
     }
 
@@ -553,10 +541,6 @@ public class GearWheelScreen extends Screen {
         if (!option.enabled) {
             return;
         }
-        if (option.action == LOCAL_SKILLS) {
-            after = () -> Minecraft.getInstance().setScreen(new SkillTreeScreen());
-            return;
-        }
         PacketDistributor.sendToServer(new GearActionPayload(option.action, option.arg));
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) {
@@ -668,17 +652,6 @@ public class GearWheelScreen extends Screen {
             return true;
         }
         return super.mouseReleased(mouseX, mouseY, button);
-    }
-
-    /** Dicht, en dan wat er nog moest gebeuren (de skilltree openen). */
-    @Override
-    public void onClose() {
-        super.onClose();
-        if (after != null) {
-            Runnable run = after;
-            after = null;
-            run.run();
-        }
     }
 
     // ================================================================ Voor de showcase en de screenshots

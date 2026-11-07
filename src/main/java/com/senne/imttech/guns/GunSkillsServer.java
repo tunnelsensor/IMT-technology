@@ -32,7 +32,9 @@ public final class GunSkillsServer {
         GunSkills after = before.withXp(xp);
         player.setData(ModAttachments.GUN_SKILLS, after);
         if (after.points() > before.points()) {
-            player.displayClientMessage(Component.translatable("skill.imttech.point_earned", after.points())
+            // De toets staat erbij als Component.keybind: jouw spel vult je echte toets in (standaard F6).
+            player.displayClientMessage(Component.translatable("skill.imttech.point_earned", after.points(),
+                            Component.keybind("key.imttech.skill_tree"))
                     .withStyle(ChatFormatting.GOLD), true);
             player.serverLevel().playSound(null, player.getX(), player.getEyeY(), player.getZ(), ModSounds.IMT_CONFIRM.get(),
                     SoundSource.PLAYERS, 0.6f, 1.3f);

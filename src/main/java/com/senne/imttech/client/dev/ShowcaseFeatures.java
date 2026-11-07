@@ -3032,7 +3032,7 @@ final class ShowcaseFeatures {
                 + "holster met het pistool op je rechterheup, de granaatpouch links en de magazijnpouch achter, en je ziet wat "
                 + "erin zit (de granaten en de magazijnen steken eruit). Tot slot (hoofdstuk 54) de magazijnpouch open uit het "
                 + "wiel: een scherm met zijn vakjes boven je inventaris, om magazijnen erin te stoppen of eruit te halen (er "
-                + "zijn ook eigen toetsen voor, in Opties > Besturing). In het wiel staat sinds hoofdstuk 54 ook 'Gun skills'.",
+                + "zijn ook eigen toetsen voor, in Opties > Besturing).",
                 GameType.SURVIVAL, stand, 90, 4, s -> s
                 .onServer(0, ShowcaseScene::buildWeapons)
                 .onServer(0, ShowcaseFeatures::giveGear)
@@ -3089,7 +3089,7 @@ final class ShowcaseFeatures {
         Vec3 stand = new Vec3(w.getX() + 0.5, w.getY() + 1, w.getZ() + 0.5);
         add("Gun skills", "Hoofdstuk 52, stap 3. Alles wat je met een pistool doet geeft ervaring (een schot, een treffer, "
                 + "herladen, een tap-rack, een patroon in een magazijn, trekken); elke keer dat de balk vol is krijg je een "
-                + "skillpunt, en elk volgend punt kost meer. Je begint hier met 7 punten. Het wiel (linker Alt) > Gun skills: links de "
+                + "skillpunt, en elk volgend punt kost meer. Je begint hier met 7 punten. De toets Gun skills (F6): links de "
                 + "globale skills (voor elk vuurwapen, 5% per niveau, een niveau kost het dubbele), rechts die van de Glock 19 "
                 + "zelf (8% per niveau); ze tellen op. Ik leer Reload op de Glock (1 punt), nog eens (2 punten), en Reload "
                 + "globaal (2 punten): onderaan staat wat dat samen oplevert. Daarna een magazijnwissel die merkbaar sneller "

@@ -4890,12 +4890,17 @@ een knop moet indrukken."
       "wegsteken" (wat je vasthoudt met een pijltje omlaag erop; een groot grijs pijltje als je hand leeg is). Wat je
       aanwijst lees je in het midden: de naam, de munitie of het aantal, en wat er met je hand gebeurt ("Stone drops",
       "Glock 19 into the Holster"; ook als het past in het vakje dat net leegkomt, zoals de server het doet). Een
-      stippellijn wijst van het midden naar de tegel. De pouches openen en Gun skills (geen quickdraws) staan als kleine
-      knoppen rechts naast de ring, met "2/3" gevuld en "+1" skillpunt erbij. De ring groeit mee met het scherm (64-96 px) en
+      stippellijn wijst van het midden naar de tegel. De pouches openen (geen quickdraw) staat als twee kleine
+      knoppen rechts naast de ring, met "2/3" gevuld. De ring groeit mee met het scherm (64-96 px) en
       wordt groter als tegels elkaar anders raken; de hint ("Slide to a tile and let go of Left Alt", met je echte toets)
       staat erboven. Lege plekken blijven grijs staan ("Holster: empty", "Slings: empty"), zodat je ziet wat er kan.
 - [x] **3. Showcase 115** koos een granaat op volgnummer 1, maar sinds hoofdstuk 55 stond daar de lege sling-tegel. Nu op
       zijn actie (`wheelChooseAction(ACTION_DRAW_GRENADE)`). LEESMIJ.md "De holster, de pouches en het wiel" aangepast.
+- [x] **4. De skilltree alleen op zijn toets** (jouw opmerking daarna: "de skill points menu moet niet in de quickdraw
+      zitten, dit moet enkel met een shortcut, ook niet in het G-menu") — de knop Skills is uit het wiel; het G-menu had
+      hem al niet meer sinds hoofdstuk 54. De toets "Gun skills" staat nu standaard op **F6** (elke letter is al bezet;
+      verzetten kan in Opties > Besturing), en het bericht "Skill point earned" noemt die toets (`Component.keybind`,
+      dus altijd je echte toets). De lang-sleutels van de wielknop zijn weg; LEESMIJ.md en de showcase-teksten aangepast.
 
 ## Nog nooit in het spel bekeken
 
@@ -4904,7 +4909,7 @@ eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er
 
 - [ ] **Het nieuwe wiel (hoofdstuk 56)**: gezien op screenshots (`-Ponly=gear,sling`), maar niet met de muis gespeeld.
       Probeer: Alt vasthouden, naar een tegel schuiven en loslaten (kiest hij meteen, zonder klik?); Alt kort tikken en dan
-      vanuit het midden naar een tegel slepen; de knoppen eronder; en of het midden leesbaar is op jouw GUI-schaal.
+      vanuit het midden naar een tegel slepen; de twee pouch-knoppen ernaast; en of het midden leesbaar is op jouw GUI-schaal.
 - [ ] **De lasergeweren uit onderdelen en de slings (hoofdstuk 55)**: gezien op screenshots (`-Ponly=laserparts,sling`) en
       met tests, maar niet met de muis gespeeld. Probeer: de Laser Workbench (sleep een frame, de rest, de Nether Star en de
       sling; haal de kern er weer uit), een netherite onderdeel maken (een titanium onderdeel plus twee netherite ingots),
