@@ -7,6 +7,11 @@ import com.senne.imttech.raven.Bodies;
 import com.senne.imttech.raven.Noises;
 import com.senne.imttech.raven.RavenBodyEntity;
 import com.senne.imttech.robot.GuardRobotEntity;
+import com.senne.imttech.robot.RobotStyle;
+import com.senne.imttech.bot.BotBoard;
+import com.senne.imttech.logic.program.LogicException;
+import com.senne.imttech.logic.program.ProgramKind;
+import com.senne.imttech.logic.program.ScriptParser;
 import com.senne.imttech.raven.RavenAlert;
 import com.senne.imttech.raven.RavenRoutes;
 import com.senne.imttech.raven.RavenSites;
@@ -422,5 +427,122 @@ public final class GuardGameTests {
             check(guard.senses().state() == RavenAlert.CALLING, "De bewaker meldt zijn geboeide maat niet (" + guard.senses().state() + ")");
             check(guard.getTarget() == null && guard.senses().suspect() == null, "De bewaker ziet de vanger in creative");
         });
+    }
+
+    // ================================================================ De taal (stap 6): je eigen robots en drones
+
+    private static final String HEARD_PROGRAM = """
+            heard_count = 0
+            kind = ""
+            sx = 0
+            when heard:
+                heard_count = heard_count + 1
+                kind = sound.kind
+                sx = sound.x
+            """;
+
+    private static final String SPOT_PROGRAM = """
+            facePin = pin(2)
+            spotted_count = 0
+            who = ""
+            when started:
+                write(facePin, "everyone")
+            when spotted:
+                spotted_count = spotted_count + 1
+                who = target.name
+            """;
+
+    private static final String BODY_PROGRAM = """
+            bodies = 0
+            bx = 0
+            when body_seen:
+                bodies = bodies + 1
+                bx = body.x
+            """;
+
+    /** Een robot hoort lawaai binnen zijn bereik: when heard begint, met de plek en de soort; te ver (of door een muur) niet. */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "guards_robot_hears")
+    public static void robot_hears_noises(GameTestHelper helper) {
+        GuardRobotEntity robot = BotSenseGameTests.robot(helper, new BlockPos(6, 2, 10), RobotStyle.COMMANDO,
+                BotBoard.EMPTY.with(1, "scan"), HEARD_PROGRAM);
+        Vec3 near = helper.absoluteVec(new Vec3(10.5, 2.5, 10.5));
+        Vec3 far = helper.absoluteVec(new Vec3(18.5, 2.5, 10.5));
+        helper.runAfterDelay(5, () -> Noises.make(helper.getLevel(), near, 16, Noises.Kind.SHOT, null));
+        helper.runAfterDelay(15, () -> {
+            check(Double.valueOf(1).equals(robot.brain().global("heard_count")), "De robot hoorde het schot niet: " + robot.brain().global("heard_count"));
+            check("shot".equals(robot.brain().global("kind")), "sound.kind klopt niet: " + robot.brain().global("kind"));
+            check(Double.valueOf(Math.floor(near.x)).equals(robot.brain().global("sx")), "sound.x klopt niet: " + robot.brain().global("sx"));
+            Noises.make(helper.getLevel(), far, 8, Noises.Kind.BLOCK, null); // 12 blokken ver, 8 te horen: niet
+        });
+        helper.runAfterDelay(25, () -> {
+            check(Double.valueOf(1).equals(robot.brain().global("heard_count")), "De robot hoorde lawaai dat te ver weg was");
+            helper.succeed();
+        });
+    }
+
+    /** Een robot heeft je pas na een tijdje (robot.alert loopt vol); when spotted begint dan één keer; read(scanPin) blijft meteen waar. */
+    @GameTest(template = ARENA, timeoutTicks = 300, batch = "guards_robot_spots")
+    public static void robot_spots_a_player_after_a_while(GameTestHelper helper) {
+        GuardRobotEntity robot = BotSenseGameTests.robot(helper, new BlockPos(6, 2, 12), RobotStyle.COMMANDO,
+                BotBoard.EMPTY.with(1, "scan").with(2, "face_recognition"), SPOT_PROGRAM);
+        ServerPlayer player = player(helper, new BlockPos(6, 2, 6), "robot-spot");
+        helper.runAfterDelay(5, () -> {
+            check(Double.valueOf(0).equals(robot.brain().global("spotted_count")), "when spotted begon meteen");
+            check(robot.alert().level() > 0, "De meter van de robot loopt niet vol");
+            check(Boolean.TRUE.equals(robot.brain().pins().read(1)), "read(scanPin) is niet meer meteen waar");
+        });
+        helper.startSequence()
+                .thenWaitUntil(() -> check(Double.valueOf(1).equals(robot.brain().global("spotted_count")), "when spotted begon nog niet (meter " + robot.alert().level() + ")"))
+                .thenExecute(() -> {
+                    check(player.getName().getString().equals(robot.brain().global("who")), "target.name klopt niet: " + robot.brain().global("who"));
+                    check(robot.alertState() == RavenAlert.COMBAT, "Je spel krijgt de toestand van de robot niet mee");
+                })
+                .thenExecuteAfter(30, () -> check(Double.valueOf(1).equals(robot.brain().global("spotted_count")), "when spotted begon een tweede keer terwijl de speler in beeld bleef"))
+                .thenSucceed();
+    }
+
+    /** Een robot meldt een lichaam dat hij ziet één keer (when body_seen), en een tweede lichaam apart. */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "guards_robot_body")
+    public static void robot_reports_a_body_once(GameTestHelper helper) {
+        GuardRobotEntity robot = BotSenseGameTests.robot(helper, new BlockPos(6, 2, 12), RobotStyle.COMMANDO,
+                BotBoard.EMPTY.with(1, "scan"), BODY_PROGRAM);
+        RavenBodyEntity first = ModEntities.RAVEN_BODY.get().create(helper.getLevel());
+        check(first != null, "Geen lichaam");
+        Vec3 at = helper.absoluteVec(new Vec3(6.5, 2, 7.5));
+        first.moveTo(at.x, at.y, at.z, 0, 0);
+        helper.getLevel().addFreshEntity(first);
+        helper.runAfterDelay(40, () -> {
+            check(Double.valueOf(1).equals(robot.brain().global("bodies")), "De robot zag het lichaam niet: " + robot.brain().global("bodies"));
+            check(Double.valueOf(Math.floor(at.x)).equals(robot.brain().global("bx")), "body.x klopt niet: " + robot.brain().global("bx"));
+        });
+        helper.runAfterDelay(80, () -> {
+            check(Double.valueOf(1).equals(robot.brain().global("bodies")), "De robot meldde hetzelfde lichaam nog eens");
+            RavenBodyEntity second = ModEntities.RAVEN_BODY.get().create(helper.getLevel());
+            Vec3 at2 = helper.absoluteVec(new Vec3(8.5, 2, 6.5));
+            second.moveTo(at2.x, at2.y, at2.z, 0, 0);
+            helper.getLevel().addFreshEntity(second);
+        });
+        helper.runAfterDelay(130, () -> {
+            check(Double.valueOf(2).equals(robot.brain().global("bodies")), "De robot zag het tweede lichaam niet: " + robot.brain().global("bodies"));
+            helper.succeed();
+        });
+    }
+
+    /** De nieuwe woorden werken in een robot- of droneprogramma, niet in een serverdiagram. */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "guards")
+    public static void guard_words_only_work_in_robot_programs(GameTestHelper helper) {
+        ScriptParser.parse("when heard:\n    goto(sound.x, sound.y, sound.z)\n", ProgramKind.ROBOT);
+        ScriptParser.parse("when spotted:\n    aim(target.x, target.y, target.z)\n    send(\"contact \" + target.name)\n", ProgramKind.DRONE);
+        ScriptParser.parse("when body_seen:\n    send(\"man down\")\n", ProgramKind.ROBOT);
+        ScriptParser.parse("when every(5):\n    if robot.alert > 50:\n        turn_left()\n", ProgramKind.ROBOT);
+        for (String bad : new String[] {"when heard:\n    pass\n", "when spotted:\n    pass\n", "when body_seen:\n    pass\n"}) {
+            try {
+                ScriptParser.parse(bad, ProgramKind.SERVER);
+                throw new GameTestAssertException("Dit hoort niet in een serverdiagram te mogen: " + bad.split(":")[0]);
+            } catch (LogicException expected) {
+                // Goed: de parser zegt waar het wel werkt.
+            }
+        }
+        helper.succeed();
     }
 }

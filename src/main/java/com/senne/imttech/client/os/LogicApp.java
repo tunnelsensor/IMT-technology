@@ -793,6 +793,10 @@ final class LogicApp {
                     ? "when started:\n    up(2)\n    while true:\n        forward(3)\n        turn_right()\n"
                     : "when started:\n    while true:\n        forward(3)\n        turn_right()\n", Op.STARTED));
             lines.add(item("ordered(...)", "when ordered(\"attack\"):\n    goto(order.x, order.y, order.z)\n", Op.ORDERED));
+            // Hoofdstuk 60: de zintuigen van een bewaker.
+            lines.add(item("heard", "when heard:\n    goto(sound.x, sound.y, sound.z)\n", Op.HEARD));
+            lines.add(item("spotted", "when spotted:\n    send(\"contact\")\n    aim(target.x, target.y, target.z)\n    write(laserPin, true)\n", Op.SPOTTED));
+            lines.add(item("body_seen", "when body_seen:\n    send(\"man down\")\n", Op.BODY_SEEN));
         }
         lines.add(item("every(10)", "when every(10):\n    pass\n", Op.EVERY));
         lines.add(header("DO (actions)"));
@@ -846,8 +850,8 @@ final class LogicApp {
             lines.add(item("send(...)", "send(\"intruder\")", Op.SEND));
             lines.add(new HelpLine("if " + self + ".battery < 10:", "if " + self + ".battery < 10:\n    charge()",
                     kind == ProgramKind.DRONE
-                            ? "also: drone.x, drone.y, drone.z, drone.height, drone.facing, drone.name, drone.blocked, drone.connected"
-                            : "also: robot.x, robot.y, robot.z, robot.facing, robot.name, robot.blocked, robot.connected",
+                            ? "also: drone.x, drone.y, drone.z, drone.height, drone.facing, drone.name, drone.blocked, drone.connected, drone.alert (0-100)"
+                            : "also: robot.x, robot.y, robot.z, robot.facing, robot.name, robot.blocked, robot.connected, robot.alert (0-100)",
                     HudStyle.WHITE, null));
             // Wat elke module zegt (read) en doet (write) (hoofdstuk 24).
             lines.add(header("MODULES (read / write)"));

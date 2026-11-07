@@ -61,4 +61,11 @@ public class GuardRobotRenderer extends MobRenderer<GuardRobotEntity, RobotModel
             pose.mulPose(Axis.XP.rotationDegrees(-90.0f));
         }
     }
+
+    /** Hoofdstuk 60: het "?" of "!" van een robot die iemand in de gaten krijgt (zie BotAlert), zoals bij een soldaat. */
+    @Override
+    public void render(GuardRobotEntity robot, float yaw, float partialTick, PoseStack pose, MultiBufferSource buffers, int light) {
+        super.render(robot, yaw, partialTick, pose, buffers, light);
+        com.senne.imttech.client.raven.AlertMarks.render(entityRenderDispatcher, getFont(), robot, robot.alertState(), pose, buffers, light);
+    }
 }

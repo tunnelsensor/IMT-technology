@@ -47,7 +47,12 @@ import org.jetbrains.annotations.Nullable;
  * Wie hem neerzette is zijn eigenaar; samen met wie in die basis vertrouwd is mag die hem instellen (dezelfde
  * regel als bij de laserzender, zie BaseTrust).
  */
-public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.Placed, com.senne.imttech.weapons.EmpTarget {
+public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.Placed, com.senne.imttech.weapons.EmpTarget,
+        com.senne.imttech.raven.Watcher {
+    /** Hoofdstuk 60: hoe alert hij is, zijn meter en wie hem vult (BotAlert), voor het "?"/"!" en het oogje op je bril. */
+    private static final EntityDataAccessor<Byte> ALERT = SynchedEntityData.defineId(BotEntity.class, EntityDataSerializers.BYTE);
+    private static final EntityDataAccessor<Byte> SUSPICION = SynchedEntityData.defineId(BotEntity.class, EntityDataSerializers.BYTE);
+    private static final EntityDataAccessor<Integer> SUSPECT = SynchedEntityData.defineId(BotEntity.class, EntityDataSerializers.INT);
     /** Hoe het met hem gaat (RobotState): je spel doet zijn lichtjes uit als hij niet aan staat. */
     private static final EntityDataAccessor<Byte> STATE =
             SynchedEntityData.defineId(BotEntity.class, EntityDataSerializers.BYTE);
@@ -80,6 +85,8 @@ public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.
     protected @Nullable BlockPos home;
     /** Zijn brein (hoofdstuk 23): hier draait zijn programma, alleen op de server. */
     protected final BotBrain brain;
+    /** Zijn meter en wat hij hoort en ziet liggen (hoofdstuk 60). */
+    private final BotAlert alert;
     /** Tot wanneer (speltijd) hij neerligt na een treffer van de Ion Blaster (hoofdstuk 24); 0 = hij staat. */
     protected long downUntil;
     /** Zijn squad (hoofdstuk 26), "" = geen. */
@@ -89,6 +96,7 @@ public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.
         super(type, level);
         setPersistenceRequired();
         brain = new BotBrain(this, createBody());
+        alert = new BotAlert(this);
     }
 
     /** Zijn lijf: hoe zijn programma hem laat bewegen (lopen of vliegen). */
@@ -103,6 +111,9 @@ public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.
         builder.define(CHARGING, false);
         builder.define(BOARD, new CompoundTag());
         builder.define(AMMO, 0);
+        builder.define(ALERT, (byte) 0);
+        builder.define(SUSPICION, (byte) 0);
+        builder.define(SUSPECT, -1);
     }
 
     // ================================================================ Wat hij is
@@ -388,6 +399,41 @@ public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.
         return brain.program();
     }
 
+    @Override
+    public BotAlert alert() {
+        return alert;
+    }
+
+    /** Van zijn meter naar je spel (alleen als er iets veranderde), zie Watcher. */
+    void syncAlert(com.senne.imttech.raven.RavenAlert state, int suspicion, int suspectId) {
+        byte alertByte = (byte) state.ordinal();
+        if (entityData.get(ALERT) != alertByte) {
+            entityData.set(ALERT, alertByte);
+        }
+        byte meter = (byte) net.minecraft.util.Mth.clamp(suspicion, 0, 100);
+        if (entityData.get(SUSPICION) != meter) {
+            entityData.set(SUSPICION, meter);
+        }
+        if (entityData.get(SUSPECT) != suspectId) {
+            entityData.set(SUSPECT, suspectId);
+        }
+    }
+
+    @Override
+    public com.senne.imttech.raven.RavenAlert alertState() {
+        return com.senne.imttech.raven.RavenAlert.byOrdinal(entityData.get(ALERT));
+    }
+
+    @Override
+    public int suspicion() {
+        return entityData.get(SUSPICION);
+    }
+
+    @Override
+    public int suspectId() {
+        return entityData.get(SUSPECT);
+    }
+
     /** Een ander programma (of geen). Staat hij aan, dan begint het meteen bij when started. */
     @Override
     public void setProgram(@Nullable LogicProgram program) {
@@ -550,8 +596,10 @@ public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.
         // de volgende keer begint het weer bij when started.
         if (active && battery > 0 && downUntil == 0 && !isCuffed() && brain.hasProgram()) {
             brain.tick(level);
+            alert.tick(level); // hoofdstuk 60: zijn meter, en wat hij ziet liggen
         } else {
             brain.stop();
+            alert.idle();
         }
         updateState();
         // Om de seconde melden bij BotNetwork (de app Robots leest daaruit). Nog geen naam? Dan krijgt hij er een.

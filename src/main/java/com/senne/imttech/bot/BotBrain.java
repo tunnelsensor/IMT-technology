@@ -72,8 +72,12 @@ public final class BotBrain {
     /** Een opdracht die net binnenkwam en de volgende tick begint (na when started, als hij net opstart). */
     private @Nullable Order incoming;
 
-    /** Een opdracht van de server: wat ({@code order.name}), en eventueel een plek ({@code order.x/y/z}). */
-    public record Order(String name, @Nullable BlockPos place) {}
+    /**
+     * Een opdracht van de server: wat ({@code order.name}), en eventueel een plek ({@code order.x/y/z}). Sinds hoofdstuk 60
+     * ook een gebeurtenis van zijn zintuigen ({@code trigger} HEARD, SPOTTED of BODY_SEEN, zie BotAlert) met haar gegevens
+     * ({@code facts}: sound.x, target.name...): die onderbreekt wat hij deed, net als een opdracht.
+     */
+    public record Order(Op trigger, String name, @Nullable BlockPos place, Map<String, Object> facts) {}
     /** Meldingen die al in het logboek staan (niet elke tick dezelfde fout), en wanneer we dat vergeten. */
     private final Set<String> reported = new HashSet<>();
     private long reportedReset;
@@ -237,7 +241,27 @@ public final class BotBrain {
             report("it has no when ordered(\"" + name + "\"), so it ignored that order");
             return;
         }
-        incoming = new Order(name, place == null ? null : place.immutable());
+        incoming = new Order(Op.ORDERED, name, place == null ? null : place.immutable(), Map.of());
+    }
+
+    /**
+     * Een gebeurtenis van zijn zintuigen (hoofdstuk 60): lawaai, iemand gezien, een lichaam. Elke {@code when heard:},
+     * {@code when spotted:} of {@code when body_seen:} begint, zoals een opdracht (wat hij deed wacht even). Heeft zijn
+     * programma die when niet, dan gebeurt er stil niets; een echte opdracht die nog moet beginnen gaat voor.
+     */
+    public void event(Op trigger, @Nullable BlockPos place, Map<String, Object> facts) {
+        if (program == null || !bot.isActive() || bot.battery() <= 0 || !hasTrigger(trigger)) {
+            return;
+        }
+        if (incoming != null && incoming.trigger() == Op.ORDERED) {
+            return;
+        }
+        incoming = new Order(trigger, trigger.code(), place == null ? null : place.immutable(), facts);
+    }
+
+    /** Heeft zijn programma een when van deze soort? */
+    public boolean hasTrigger(Op trigger) {
+        return program != null && program.graph().nodes().stream().anyMatch(node -> node.op == trigger);
     }
 
     /**
@@ -260,8 +284,8 @@ public final class BotBrain {
             moving = null;
         }
         for (LogicGraph.Node node : program.graph().nodes()) {
-            if (node.op == Op.ORDERED && node.text.equalsIgnoreCase(order.name())) {
-                runs.add(new Run(program, Op.ORDERED, node.next, order));
+            if (node.op == order.trigger() && (order.trigger() != Op.ORDERED || node.text.equalsIgnoreCase(order.name()))) {
+                runs.add(new Run(program, order.trigger(), node.next, order));
             }
         }
     }
@@ -475,8 +499,16 @@ public final class BotBrain {
                         case "name" -> bot.getName().getString();
                         case "blocked" -> body.blocked();
                         case "connected" -> BotLink.connected(bot);
+                        case "alert" -> Math.floor(bot.alert().level()); // hoofdstuk 60: zijn meter (BotAlert)
                         default -> false;
                     };
+                }
+                // Na when heard / spotted / body_seen (hoofdstuk 60): de gegevens van die gebeurtenis.
+                if (run != null && run.order != null) {
+                    Object fact = run.order.facts().get(variable);
+                    if (fact != null) {
+                        return fact;
+                    }
                 }
                 return switch (variable) {
                     case "is_night" -> bot.level().isNight();

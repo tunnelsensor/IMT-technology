@@ -70,13 +70,18 @@ public final class Bodies {
      * ({@code halfAngle} graden naar links en rechts van waar zijn hoofd heen kijkt) en met niets ertussen.
      */
     public static @Nullable Entity visible(LivingEntity watcher, double range, double halfAngle) {
+        return visible(watcher, range, halfAngle, Bodies::reported);
+    }
+
+    /** Hetzelfde, maar {@code known} zegt welke lichamen de kijker al kent (een robot houdt zijn eigen lijst bij). */
+    public static @Nullable Entity visible(LivingEntity watcher, double range, double halfAngle, java.util.function.Predicate<Entity> known) {
         Vec3 eye = watcher.getEyePosition();
         Vec3 facing = Vec3.directionFromRotation(0, watcher.getYHeadRot());
         AABB box = watcher.getBoundingBox().inflate(range);
         List<Entity> candidates = new ArrayList<>(watcher.level().getEntities(watcher, box, Bodies::isBody));
         candidates.sort(java.util.Comparator.comparingDouble(watcher::distanceToSqr));
         for (Entity body : candidates) {
-            if (reported(body) || watcher.distanceTo(body) > range) {
+            if (known.test(body) || watcher.distanceTo(body) > range) {
                 continue;
             }
             if (RavenSenses.flatAngle(facing, body.position().add(0, 0.3, 0).subtract(eye)) > halfAngle) {

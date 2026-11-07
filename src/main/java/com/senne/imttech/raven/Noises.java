@@ -49,17 +49,6 @@ public final class Noises {
         }
     }
 
-    /** Wie er nog meer wil horen (stap 6: de robots en drones). */
-    public interface Listener {
-        void hear(ServerLevel level, Vec3 at, double radius, Kind kind, @Nullable Entity source);
-    }
-
-    private static final java.util.List<Listener> LISTENERS = new java.util.concurrent.CopyOnWriteArrayList<>();
-
-    public static void listen(Listener listener) {
-        LISTENERS.add(listener);
-    }
-
     /**
      * Lawaai op {@code at}, tot {@code radius} blokken te horen, gemaakt door {@code source} (een speler, een granaat...
      * of null). Door een muur heen telt {@code noiseWallFactor} van de afstand.
@@ -74,8 +63,12 @@ public final class Noises {
                 soldier.senses().heard(at, kind);
             }
         }
-        for (Listener listener : LISTENERS) {
-            listener.hear(level, at, radius, kind, source);
+        // Stap 6: robots en drones die aan staan horen het ook (when heard:), behalve hun eigen schot.
+        for (com.senne.imttech.bot.BotEntity bot : level.getEntitiesOfClass(com.senne.imttech.bot.BotEntity.class, box,
+                b -> b.isAlive() && b != source && b.isActive() && !b.isDown())) {
+            if (hears(level, bot.getEyePosition(), at, radius)) {
+                bot.alert().hear(at, kind);
+            }
         }
     }
 

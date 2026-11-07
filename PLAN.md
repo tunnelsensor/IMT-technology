@@ -5152,9 +5152,20 @@ Erbij: **geen** minimap en **geen** tekst "ze zoeken je" zoals in Hitman. Alleen
       tests (een lichaam met zijn wapen erin dat later alsnog op de grond valt; een bewaker die een lichaam meldt zodat
       zijn maat gaat zoeken; een geboeide soldaat en een gevloerde robot tellen mee). De test van de staff-keycard zoekt de
       kaart nu ook in het lichaam. 435 tests, groen (`raven_soldier_shoots` blijft af en toe rood door de spreiding).
-- [ ] **6. De taal** — `Op.HEARD/SPOTTED/BODY_SEEN`, `Expr.Variable` sound.*/target.*/body.*/robot.alert/drone.alert,
-      `bot/BotAlert` (de meter van een robot), de whens als onderbreking in `BotBrain`, de Help, "?"/"!" boven robots en
-      drones. Tests: `when heard` telt, `when spotted` komt na een tijdje, de woorden mogen niet op de server.
+- [x] **6. De taal** — drie nieuwe whens zonder haakjes voor robots en drones: `when heard:` (sound.x/y/z als blok, zoals
+      robot.x, en sound.kind: "shot", "explosion", "block", "steps", "door" of "fall"), `when spotted:` (target.name,
+      target.x/y/z) en `when body_seen:` (body.x/y/z), en de waarde `robot.alert` / `drone.alert` (0-100). Ze beginnen
+      zoals een opdracht: wat hij deed wacht even (`BotBrain.event`; een echte opdracht die nog moet beginnen gaat voor;
+      heeft zijn programma de when niet, dan gebeurt er stil niets). `bot/BotAlert` is zijn meter: dezelfde getallen als
+      een soldaat (`[guards]`), met zijn Scan-bereik als afstand en het filter van zijn Face Recognition (wie daar niet
+      door komt, vult hem niet); vol = `when spotted:` één keer, tot de meter weer leeg was; lichamen om de tien ticks
+      (`Bodies.visible`, per robot zijn eigen lijst); lawaai via `Noises` (elke robot of drone die aan staat, behalve
+      zijn eigen schot). `read(scanPin)` blijft meteen waar. Een robot of drone is nu ook een `Watcher`: "?"/"!" boven
+      zijn hoofd (`GuardRobotRenderer`, `GuardDroneRenderer`) en het oogje op je bril. De Help van een robot- en
+      droneprogramma toont de drie whens en `robot.alert`. `heard` en `spotted` zijn nu woorden van de taal (een eigen
+      naam zo heten mag niet meer, de controle zegt het). Vier tests (lawaai met plek en soort, niet te ver; de meter en
+      `when spotted` één keer; een lichaam één keer en een tweede apart; de woorden mogen niet op de server). 439 tests,
+      groen.
 - [ ] **7. De toren** — docks in de lobby en op de beveiligingsverdieping, `robot/TowerRobots` (zoals TowerDrones), het
       programma "Tower guard", "Tower patrol" uitgebreid, Biebia's diagram "Security", `BotLink` voor robots van niemand,
       de hack geeft ook de robots. Tests: de toren heeft bewakersrobots die "contact" melden en de drones komen.

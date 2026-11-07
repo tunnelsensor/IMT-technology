@@ -121,6 +121,23 @@ public sealed interface Expr {
         ORDER_X("order.x", Type.NUMBER, "the place the server gave with the order: x", Op.ORDERED),
         ORDER_Y("order.y", Type.NUMBER, "the place the server gave with the order: y", Op.ORDERED),
         ORDER_Z("order.z", Type.NUMBER, "the place the server gave with the order: z", Op.ORDERED),
+        // Hoofdstuk 60: de zintuigen van een bewaker (bot/BotAlert). Na when heard: het lawaai...
+        SOUND_X("sound.x", Type.NUMBER, "where the noise came from: x", Op.HEARD),
+        SOUND_Y("sound.y", Type.NUMBER, "where the noise came from: y", Op.HEARD),
+        SOUND_Z("sound.z", Type.NUMBER, "where the noise came from: z", Op.HEARD),
+        SOUND_KIND("sound.kind", Type.TEXT, "what it was: \"shot\", \"explosion\", \"block\", \"steps\", \"door\" or \"fall\"", Op.HEARD),
+        // ...na when spotted: wie, en waar...
+        TARGET_NAME("target.name", Type.TEXT, "the player the robot spotted", Op.SPOTTED),
+        TARGET_X("target.x", Type.NUMBER, "where that player stood: x", Op.SPOTTED),
+        TARGET_Y("target.y", Type.NUMBER, "where that player stood: y", Op.SPOTTED),
+        TARGET_Z("target.z", Type.NUMBER, "where that player stood: z", Op.SPOTTED),
+        // ...na when body_seen: waar het lichaam ligt...
+        BODY_X("body.x", Type.NUMBER, "where the body lies: x", Op.BODY_SEEN),
+        BODY_Y("body.y", Type.NUMBER, "where the body lies: y", Op.BODY_SEEN),
+        BODY_Z("body.z", Type.NUMBER, "where the body lies: z", Op.BODY_SEEN),
+        // ...en altijd: hoe ver zijn meter is.
+        ROBOT_ALERT("robot.alert", Type.NUMBER, "how far the robot is with noticing a player (0-100; at 100 when spotted: starts)", null),
+        DRONE_ALERT("drone.alert", Type.NUMBER, "how far the drone is with noticing a player (0-100; at 100 when spotted: starts)", null),
         // Na when message(...) in een serverdiagram: de robot die het bericht stuurde.
         SENDER_NAME("sender.name", Type.TEXT, "the robot that sent the message", Op.MESSAGE),
         SENDER_X("sender.x", Type.NUMBER, "where that robot stood: x", Op.MESSAGE),
@@ -164,7 +181,7 @@ public sealed interface Expr {
             if (name.startsWith("drone.")) {
                 return kind == ProgramKind.DRONE;
             }
-            if (name.startsWith("order.")) {
+            if (name.startsWith("order.") || name.startsWith("sound.") || name.startsWith("target.") || name.startsWith("body.")) {
                 return kind.onBot();
             }
             if (this == TRAINEE || this == LIVES || this == HITS) {

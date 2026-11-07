@@ -135,6 +135,9 @@ public interface Bot {
     /** Hoe ver en hoe breed hij kijkt (zijn Scan), en hoeveel ticks tussen twee schoten. */
     double scanRange();
 
+    /** Zijn meter (hoofdstuk 60): hoe ver hij is met iemand in de gaten krijgen, en wat hij hoort en ziet liggen. */
+    BotAlert alert();
+
     double scanAngle();
 
     double fireInterval();

@@ -37,6 +37,10 @@ public enum Op {
     STARTED(Kind.TRIGGER, "started", Arg.NONE, Arg.NONE, "The robot (or drone) is switched on (or gets this program)"),
     /** {@code when ordered("attack"):} (hoofdstuk 23): de server geeft deze robot een opdracht met order(...). */
     ORDERED(Kind.TRIGGER, "ordered", Arg.TEXT, Arg.NONE, "The server gives this robot (or drone) an order with order(...)"),
+    /** Hoofdstuk 60: de zintuigen van een bewaker, voor je eigen robots en drones (zie bot/BotAlert). */
+    HEARD(Kind.TRIGGER, "heard", Arg.NONE, Arg.NONE, "The robot (or drone) hears a noise: a shot, an explosion, a block, running, a door or a fall (sound.x/y/z, sound.kind)"),
+    SPOTTED(Kind.TRIGGER, "spotted", Arg.NONE, Arg.NONE, "The robot (or drone) watched a player long enough to be sure: its meter is full (target.name, target.x/y/z)"),
+    BODY_SEEN(Kind.TRIGGER, "body_seen", Arg.NONE, Arg.NONE, "The robot (or drone) sees a body: a fallen soldier, a handcuffed one or a downed robot (body.x/y/z)"),
     /** {@code when message("intruder"):} (hoofdstuk 23): een robot stuurt de server een bericht met send(...). */
     MESSAGE(Kind.TRIGGER, "message", Arg.TEXT, Arg.NONE, "One of your robots or drones sends this message with send(...)"),
     /** {@code when training_started("Bootcamp"):} (hoofdstuk 26): een training begint (na het aftellen). */
@@ -366,7 +370,7 @@ public enum Op {
             case HIT -> kind == ProgramKind.TRAINING_END;
             // Een Training End-blok doet alleen iets bij een treffer.
             case EVERY -> kind != ProgramKind.TRAINING_END;
-            case STARTED, ORDERED, FORWARD, BACK, TURN_LEFT, TURN_RIGHT, GOTO, CHARGE, STOP, WRITE, AIM, SEND -> kind.onBot();
+            case STARTED, ORDERED, HEARD, SPOTTED, BODY_SEEN, FORWARD, BACK, TURN_LEFT, TURN_RIGHT, GOTO, CHARGE, STOP, WRITE, AIM, SEND -> kind.onBot();
             case UP, DOWN -> kind == ProgramKind.DRONE;
             default -> true;
         };
