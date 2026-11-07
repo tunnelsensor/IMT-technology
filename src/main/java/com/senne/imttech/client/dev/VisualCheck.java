@@ -2231,13 +2231,25 @@ public final class VisualCheck {
             t.shot(15, "g21_no_cell");
         }
 
-        // --- De acht creative-tabbladen van I.M.T (26 oktober), elk een plaatje
+        // --- De acht creative-tabbladen van I.M.T (26 oktober), elk een plaatje; de muis in de hoek, anders ligt er
+        // een tooltip over het midden. Het wapentabblad is langer dan het scherm (hoofdstuk 59): twee keer drie rijen
+        // verder gescrold, zodat ook de onderdelen van de Glock en de lasergeweren op een plaatje staan.
         if (want("creative")) {
             t.command(0, "gamemode creative @a");
             int number = 1;
             for (var tab : com.senne.imttech.registry.ModCreativeTabs.TABS.getEntries()) {
+                String name = String.format(java.util.Locale.ROOT, "ct%02d_%s", number++, tab.getId().getPath());
                 t.step(5, () -> ShowcaseFeatures.openModTab(tab.get()));
-                t.shot(15, String.format(java.util.Locale.ROOT, "ct%02d_%s", number++, tab.getId().getPath()));
+                t.step(2, VisualCheck::parkMouse);
+                t.shot(13, name);
+                // Op de id vergelijken: de rondleiding wordt opgebouwd voor de tabbladen geregistreerd zijn (get() zou
+                // dan "unbound value" geven).
+                if (tab.getId().equals(com.senne.imttech.registry.ModCreativeTabs.WEAPONS.getId())) {
+                    t.step(0, () -> scrollScreen(-3));
+                    t.shot(10, name + "_b_glock_parts");
+                    t.step(0, () -> scrollScreen(-3));
+                    t.shot(10, name + "_c_laser_parts");
+                }
             }
             t.close(0);
         }
@@ -4805,6 +4817,24 @@ public final class VisualCheck {
         busy.phrases.add("lockdown");
         busy.phrases.add("we are under attack");
         VoiceCommandStore.dictionary().commands.addFirst(busy);
+    }
+
+    /**
+     * De muis in de hoek linksboven, weg van de vakjes (anders staat er een tooltip over het plaatje). Via GLFW
+     * (glfwSetCursorPos) komt er geen muisbeweging door, dus rechtstreeks in de MouseHandler, zoals
+     * ShowcaseFeatures.openModTab het tabblad kiest.
+     */
+    private static void parkMouse() {
+        Minecraft mc = Minecraft.getInstance();
+        try {
+            for (String name : new String[] {"xpos", "ypos"}) {
+                java.lang.reflect.Field field = net.minecraft.client.MouseHandler.class.getDeclaredField(name);
+                field.setAccessible(true);
+                field.setDouble(mc.mouseHandler, 2);
+            }
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            ImtTech.LOGGER.warn("[dev] kan de muis niet in de hoek zetten", e);
+        }
     }
 
     /** Het wieltje van de muis, midden rechts in het open scherm (negatief = naar beneden). */

@@ -19,7 +19,8 @@ Hoe het werkt
     van de shotgun) staat apart in ..._moving.json. In je eigen beeld en op de Laser Workbench tekent de mod ze los,
     zodat ze kunnen bewegen en ontbreken (zie client/weapons/GunRenderer en LaserWorkbenchScreen). Voor je inventaris,
     je hand in derde persoon en op de grond is er ook het hele geweer in één bestand (models/item/<geweer>.json), en
-    elk los onderdeel is een item (models/item/<geweer>_<onderdeel>.json, met een override per kwaliteit).
+    elk los onderdeel is een item (models/item/<geweer>_<onderdeel>.json, met een override per kwaliteit; hoe dat in
+    zijn vakje staat rekent tools/model_display.py uit, en tools/preview_item_models.py laat het zien zonder het spel).
 
     De granaten hebben ook twee delen: "body" en "light" (het lampje, dat knippert als hij gaat afgaan).
 
@@ -33,6 +34,8 @@ import random
 from pathlib import Path
 
 from PIL import Image
+
+import model_display as md
 
 ASSETS = Path(__file__).resolve().parent.parent / "src" / "main" / "resources" / "assets" / "imttech"
 TEXTURE = "imttech:item/weapons"
@@ -867,20 +870,48 @@ def centre_of(elements):
         (max(xs) - min(xs), max(ys) - min(ys), max(zs) - min(zs))
 
 
-def centred_display(elements):
+def centred_display(elements, gui_rotation=md.PART_VIEW, scale=None, size=14.0, max_scale=4.5, hand_scale=0.6,
+                    ground_scale=0.5):
     """
-    Een houding die een los onderdeel van opzij in het midden van zijn vakje zet, zo groot als er past (een frame is
-    lang, een trekker klein). Zoals generate_gun_models.centred_display voor de Glock.
+    Een houding die een los onderdeel precies in het midden van zijn vakje zet, zo groot als er past (een frame is
+    lang, een trekker klein), schuin van rechtsboven (model_display.PART_VIEW). Zoals generate_gun_models.centred_display
+    voor de Glock: de verschuiving wordt NA de draaiing uitgerekend (model_display.fit); vroeger schoven we langs de
+    assen van het model, en zo stond een capacitor of een emitter naast of buiten zijn vakje (hoofdstuk 59).
     """
-    (cx, cy, cz), (dx, dy, dz) = centre_of(elements)
-    gui_scale = round(min(4.5, 13.0 / max(1.0, dy, dz, dx * 0.4)), 3)
-    hand_scale = 0.6
-    shift = [round(-(cx - 8) * gui_scale, 2), round(-(cy - 8) * gui_scale, 2), round(-(cz - 8) * gui_scale, 2)]
-    hand_shift = [round(-(cx - 8) * hand_scale, 2), round(-(cy - 8) * hand_scale, 2), round(-(cz - 8) * hand_scale, 2)]
-    disp = display(gui_scale, shift, hand_scale, 0.5, gui_rotation=(0, 90, 0),
+    gui_scale, shift = md.fit(elements, gui_rotation, size=size, max_scale=max_scale, scale=scale)
+    _, hand_shift = md.fit(elements, (0, 0, 0), scale=hand_scale)
+    _, ground_shift = md.fit(elements, (0, 0, 0), scale=ground_scale)
+    disp = display(gui_scale, shift, hand_scale, ground_scale, gui_rotation=gui_rotation,
                    third=((0, 0, 0), hand_shift), first=((0, 0, 0), hand_shift))
-    disp["ground"]["translation"] = [0, 2 - (cy - 8) * 0.5, 0]
+    disp["fixed"] = dict(disp["gui"])
+    disp["ground"]["translation"] = [ground_shift[0], round(2 + ground_shift[1], 3), ground_shift[2]]
     return disp
+
+
+# De lasergeweren met gewone iron sights: als los item staan die anders als twee stipjes ver uit elkaar in je vakje.
+IRON_SIGHTS = ("laser_pistol", "laser_shotgun")
+
+
+def as_item(name, part, elements, grade):
+    """
+    De doosjes van een onderdeel zoals ze als los item getekend worden. Meestal gewoon dezelfde; de iron sights van het
+    pistool en de shotgun (hoofdstuk 59) komen dicht bij elkaar (2,5 pixel tussen korrel en keep) op een stukje rail.
+    """
+    if part != "optics" or name not in IRON_SIGHTS:
+        return elements
+    front = [e for e in elements if (e["from"][2] + e["to"][2]) / 2 < 8]
+    rear = [e for e in elements if (e["from"][2] + e["to"][2]) / 2 >= 8]
+    gap = min(e["from"][2] for e in rear) - max(e["to"][2] for e in front) - 2.5
+    moved = []
+    for e in front:
+        e = json.loads(json.dumps(e))
+        e["from"][2] = round(e["from"][2] + gap, 3)
+        e["to"][2] = round(e["to"][2] + gap, 3)
+        moved.append(e)
+    sights = moved + rear
+    y0 = min(e["from"][1] for e in sights)
+    z0, z1 = min(e["from"][2] for e in sights) - 0.4, max(e["to"][2] for e in sights) + 0.4
+    return sights + [box((7.1, y0 - 0.6, z0), (8.9, y0, z1), metal("graphite", grade))]
 
 
 def save_gun(name):
@@ -912,7 +943,7 @@ def save_gun(name):
         base = None
         for grade in GRADES:
             parts, moving, _, _, _ = make(grade)
-            elements = parts[part] + moving.get(part, [])
+            elements = as_item(name, part, parts[part] + moving.get(part, []), grade)
             write(f"item/{name}_{part}_{grade}.json", item_model(elements, centred_display(elements)))
             overrides.append({"predicate": {"imttech:material": GRADE_INDEX[grade]}, "model": f"imttech:item/{name}_{part}_{grade}"})
             if grade == "titanium":

@@ -18,7 +18,8 @@ Een onderdeel bestaat per materiaal (polymeer, staal, titanium): models/firearm/
 In je eigen beeld en op de Gunsmith Table tekent de mod ze los (zie client/guns/FirearmRenderer en GunsmithScreen);
 voor je inventaris, je hand in derde persoon en op de grond is er het hele pistool in één bestand (stalen onderdelen,
 models/item/glock_19.json). De losse onderdelen als item (models/item/gun_slide.json enz.) kiezen hun materiaal met
-een "override" (zie client/guns/FirearmModels.registerProperties).
+een "override" (zie client/guns/FirearmModels.registerProperties). Hoe zo een onderdeel in zijn vakje staat rekent
+tools/model_display.py uit (hoofdstuk 59); met tools/preview_item_models.py bekijk je dat zonder het spel te starten.
 
 Draaien (vanuit de hoofdmap):  python tools/generate_gun_models.py
 Het script is eigenaar van alles wat het schrijft; een volledige run is veilig.
@@ -29,6 +30,8 @@ import random
 from pathlib import Path
 
 from PIL import Image, ImageDraw
+
+import model_display as md
 
 ROOT = Path(__file__).resolve().parent.parent / "src" / "main" / "resources"
 ASSETS = ROOT / "assets" / "imttech"
@@ -270,24 +273,22 @@ def gun_display(gui_scale, gui_translation, ground_scale, grip):
     return display(gui_scale, gui_translation, hand, ground_scale, gui_rotation=(0, 90, 0), third=third)
 
 
-def centre_of(elements):
-    """Het midden van een lijst doosjes (zonder hun draaiing)."""
-    xs = [v for e in elements for v in (e["from"][0], e["to"][0])]
-    ys = [v for e in elements for v in (e["from"][1], e["to"][1])]
-    zs = [v for e in elements for v in (e["from"][2], e["to"][2])]
-    return ((min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2, (min(zs) + max(zs)) / 2)
-
-
-def centred_display(elements, gui_scale, gui_rotation=(30, 45, 0), hand_scale=0.6, ground_scale=0.5):
-    """Een houding die een los onderdeel in het midden van zijn vakje zet (het onderdeel ligt waar het in het pistool zit)."""
-    cx, cy, cz = centre_of(elements)
-    shift = [round(-(cx - 8) * gui_scale, 2), round(-(cy - 8) * gui_scale, 2), round(-(cz - 8) * gui_scale, 2)]
-    # De verschuiving is in de ruimte NA de draaiing; voor een rechte draaiing om y van 45 graden is dat ongeveer goed
-    # genoeg (de onderdelen zijn klein). Voor de zijaanzichten (0, 90, 0) klopt het precies.
-    hand_shift = [round(-(cx - 8) * hand_scale, 2), round(-(cy - 8) * hand_scale, 2), round(-(cz - 8) * hand_scale, 2)]
+def centred_display(elements, gui_rotation=md.PART_VIEW, scale=None, size=14.0, max_scale=4.5, hand_scale=0.6,
+                    ground_scale=0.5):
+    """
+    Een houding die een los onderdeel precies in het midden van zijn vakje zet, zo groot als er past (of op {scale}).
+    De verschuiving wordt NA de draaiing uitgerekend (zie model_display.fit): vroeger schoven we het onderdeel terug
+    langs de assen van het model, en zo stond alles wat in het pistool niet rond z = 8 zit (de loop, de veer, de
+    slagpin) naast of buiten zijn vakje (hoofdstuk 59). In je hand (derde persoon) en op de grond ligt het onderdeel
+    recht, in het midden; in een itemlijst ("fixed") zoals in je inventaris.
+    """
+    gui_scale, shift = md.fit(elements, gui_rotation, size=size, max_scale=max_scale, scale=scale)
+    _, hand_shift = md.fit(elements, (0, 0, 0), scale=hand_scale)
+    _, ground_shift = md.fit(elements, (0, 0, 0), scale=ground_scale)
     disp = display(gui_scale, shift, hand_scale, ground_scale, gui_rotation=gui_rotation,
                    third=((0, 0, 0), hand_shift), first=((0, 0, 0), hand_shift))
-    disp["ground"]["translation"] = [0, 2 - (cy - 8) * ground_scale, 0]
+    disp["fixed"] = dict(disp["gui"])
+    disp["ground"]["translation"] = [ground_shift[0], round(2 + ground_shift[1], 3), ground_shift[2]]
     return disp
 
 
@@ -446,24 +447,20 @@ def glock_19():
     whole += magazine()
     write("models/item/glock_19.json", item_model(whole, gun_display(1.0, (0, 0.5, 0), 0.6, GLOCK_GRIP)))
     # Het magazijn als item: op zijn kant in je inventaris.
-    disp = centred_display(magazine(), 1.6, gui_rotation=(0, 90, 0), hand_scale=0.6)
+    disp = centred_display(magazine(), gui_rotation=(0, 90, 0), scale=1.6)
     write("models/item/glock_19_magazine.json", item_model(magazine(), disp))
-    # De losse onderdelen als item, met een override per materiaal (0 = polymeer, 1 = staal, 2 = titanium).
-    gui_rot = {"frame": (0, 90, 0), "slide": (0, 90, 0), "barrel": (0, 90, 0), "springs": (0, 90, 0),
-               "striker": (0, 90, 0), "trigger": (0, 90, 0)}
-    scale = {"frame": 1.1, "slide": 1.0, "barrel": 1.5, "springs": 1.6, "striker": 2.2, "trigger": 4.0}
+    # De losse onderdelen als item, met een override per materiaal (0 = polymeer, 1 = staal, 2 = titanium): schuin
+    # van rechtsboven (model_display.PART_VIEW) en zo groot als er in het vakje past (hoofdstuk 59).
     for part, materials_of in PART_MATERIALS.items():
         overrides = []
         for index, material_name in enumerate(("polymer", "steel", "titanium")):
             if material_name not in materials_of:
                 continue
             elements = part_elements(part, material_name)
-            disp = centred_display(elements, scale[part], gui_rotation=gui_rot[part])
-            write(f"models/item/gun_{part}_{material_name}.json", item_model(elements, disp))
+            write(f"models/item/gun_{part}_{material_name}.json", item_model(elements, centred_display(elements)))
             overrides.append({"predicate": {"imttech:material": index}, "model": f"imttech:item/gun_{part}_{material_name}"})
         base = part_elements(part, "steel")
-        write(f"models/item/gun_{part}.json",
-              item_model(base, centred_display(base, scale[part], gui_rotation=gui_rot[part]), overrides))
+        write(f"models/item/gun_{part}.json", item_model(base, centred_display(base), overrides))
 
 
 # ---------------------------------------------------------------- Munitie
@@ -496,9 +493,9 @@ def bullet_9mm():
 
 def ammo():
     small = dict(gui_rotation=(20, -35, 0), hand_scale=0.45, ground_scale=0.5)
-    write("models/item/round_9mm.json", item_model(round_9mm(), centred_display(round_9mm(), 2.6, **small)))
-    write("models/item/casing_9mm.json", item_model(casing_9mm(), centred_display(casing_9mm(), 2.6, **small)))
-    write("models/item/bullet_9mm.json", item_model(bullet_9mm(), centred_display(bullet_9mm(), 3.2, **small)))
+    write("models/item/round_9mm.json", item_model(round_9mm(), centred_display(round_9mm(), scale=2.6, **small)))
+    write("models/item/casing_9mm.json", item_model(casing_9mm(), centred_display(casing_9mm(), scale=2.6, **small)))
+    write("models/item/bullet_9mm.json", item_model(bullet_9mm(), centred_display(bullet_9mm(), scale=3.2, **small)))
     # De huls op de grond (zie client/guns/CasingRenderer) gebruikt het losse model.
     write("models/firearm/casing.json", part_model(casing_9mm()))
     write("models/firearm/round.json", part_model(round_9mm()))
@@ -572,7 +569,7 @@ def mag_pouch():
 def gear():
     for name, make in (("holster", holster), ("grenade_pouch", grenade_pouch), ("mag_pouch", mag_pouch)):
         write(f"models/firearm/{name}.json", part_model(make()))
-        write(f"models/item/{name}.json", item_model(make(), centred_display(make(), 1.0, gui_rotation=(25, -40, 0))))
+        write(f"models/item/{name}.json", item_model(make(), centred_display(make(), gui_rotation=(25, -40, 0), scale=1.0)))
 
 
 # ---------------------------------------------------------------- Staven, poeders en korrels
@@ -586,7 +583,7 @@ def ingot(material):
 
 def resources():
     for name, material in (("steel_ingot", "ingot_steel"), ("titanium_ingot", "ingot_titanium")):
-        write(f"models/item/{name}.json", item_model(ingot(material), centred_display(ingot(material), 1.0, gui_rotation=(30, 45, 0))))
+        write(f"models/item/{name}.json", item_model(ingot(material), centred_display(ingot(material), gui_rotation=(30, 45, 0), scale=1.0)))
     # Poeder (de blend die je smelt) en korrels (polymeer): platte plaatjes van 16 x 16.
     for name, colour, shade in (("steel_blend", (120, 118, 112), (70, 68, 64)), ("titanium_blend", (132, 140, 150), (74, 82, 94))):
         im = Image.new("RGBA", (16, 16), (0, 0, 0, 0))

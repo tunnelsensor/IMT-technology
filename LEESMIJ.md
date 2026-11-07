@@ -2247,6 +2247,10 @@ showcase en staat hij bij NIEUW.
   zelf? Teken dan over het bestand heen en draai het script niet meer.
 - **Blokmodellen**: `python tools/generate_block_models.py` maakt de 3D-modellen van het
   zonnepaneel en de warmtegenerator (een lijstje doosjes per model).
+- **Wapenmodellen**: `python tools/generate_weapon_models.py` (granaten, lasergeweren en hun onderdelen) en
+  `python tools/generate_gun_models.py` (de Glock, munitie, holster, pouches, de banken). Hoe een los onderdeel in zijn
+  vakje staat rekent `tools/model_display.py` uit; `python tools/preview_item_models.py --out preview.png "gun_*"`
+  laat de iconen zien zonder het spel te starten.
 - **De toren verbouwen**: `python tools/generate_structure.py`, of bouw hem in het spel met een
   structuurblok en sla hem op als `imttech:biebia_tower`.
 - **Het satellietwrak verbouwen**: `python tools/generate_crash_site.py` (of in het spel opslaan

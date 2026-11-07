@@ -4955,11 +4955,48 @@ Jouw vraag: "zorg dat een magpouch ook groter is (6 mags)".
       drie en zegt "press 1-6"; het pouchscherm en het wiel ("2/6") rekenden al met de maat. Test
       `laser_gun_unloads_its_cell_into_the_pouch` vult de pouch helemaal (hoeveel vakjes er ook zijn). LEESMIJ.md aangepast.
 
+### 59. De onderdelen in je inventaris (7 november)
+
+Jouw vraag: "de items voor de guns te maken hebben een slechte inventory 3D model, in de game weet ik niet of het goed
+is. Kun je ingame controleren en dan alles oplossen."
+
+- [x] **Wat er mis was** — in het spel (`ct03_weapons`, `lp10`) stonden de losse onderdelen plat van opzij, en veel
+      ervan naast of buiten hun vakje: de loop, de veer en de slagpin van de Glock als een streepje links in het vakje,
+      het magazijn naar rechts, de capacitors van de lasergeweren als een bruin vlak half buiten beeld, de emitter van het
+      laserpistool onzichtbaar (een ring van opzij is 1 pixel dik), de iron sights van het pistool en de shotgun als twee
+      stipjes ver uit elkaar. De oorzaak: Minecraft past de verschuiving ("translation") van een display-houding toe NA
+      de draaiing, in de richtingen van je scherm (`ItemTransform.apply`); de generatoren schoven langs de assen van het
+      model, dus een onderdeel dat in het geweer vooraan zit (z = 2) ging de diepte in in plaats van opzij.
+- [x] **De wiskunde op één plek** — `tools/model_display.py`: dezelfde draaiing als het spel (JOML `rotationXYZ`, met de
+      eigen draaiing van een doosje zoals de schuine greep erbij) en `fit()`, dat de acht hoeken van elk doosje
+      projecteert en de schaal en de verschuiving uitrekent die het onderdeel precies in het midden van zijn vakje zetten,
+      zo groot als er past (14 van de 16 pixels, hooguit 4,5 keer, zodat een trekker een trekker blijft). Beide
+      generatoren gebruiken het (`centred_display` in `generate_gun_models.py` en `generate_weapon_models.py`). Het
+      magazijn, de munitie, de holster, de pouches en de ingots houden hun oude hoek en grootte, maar staan nu exact in
+      het midden; op de grond en in je hand (derde persoon) liggen alle onderdelen recht en in het midden.
+- [x] **De kijkhoek** — de onderdelen staan schuin van rechtsboven, zoals Minecraft zelf een blok laat zien
+      (`model_display.PART_VIEW` = (30, 225, 0), de loop naar rechts): zo zie je de dikte van een loop of een veer, de
+      uitwerpopening van de slede, het gloeiende venster van een capacitor en de lens van een emitter. Het hele geweer
+      blijft plat van opzij (de loop naar links); dat was goed.
+- [x] **De iron sights** van het laserpistool en de shotgun staan als los item dicht bij elkaar (2,5 pixel tussen korrel
+      en keep) op een stukje rail (`as_item` in `generate_weapon_models.py`); in het geweer zelf staan ze gewoon voor en
+      achter op de slede.
+- [x] **Bekijken zonder het spel te starten** — `tools/preview_item_models.py` tekent itemmodellen zoals ze in een vakje
+      staan (platte kleuren, Minecrafts schaduw per kant, achterkanten weg): `python tools/preview_item_models.py --out
+      preview.png "gun_*" "laser_pistol_*"`; met `--rotation 30,135,0` reken je een andere hoek uit voordat je die in een
+      generator zet. Het klopte met de echte screenshots (dezelfde verschuivingen), dus zo zijn de hoeken gekozen. De
+      rondleiding (`-Ponly=creative`) zet de muis in de hoek (geen tooltip meer over het plaatje) en scrolt het
+      wapentabblad twee keer drie rijen verder: `ct03_weapons_b_glock_parts` en `ct03_weapons_c_laser_parts`.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **De onderdelen in je inventaris (hoofdstuk 59)**: gezien op screenshots (`-Ponly=creative`: `ct03_weapons`,
+      `ct03_weapons_b_glock_parts`, `ct03_weapons_c_laser_parts`; en `lp10`), niet gespeeld. Kijk of je op jouw
+      GUI-schaal de onderdelen uit elkaar houdt (frame, slede, loop, veer, slagpin, trekker; de zes laseronderdelen per
+      geweer, titanium en netherite) en of een onderdeel op de grond en in je hand (F5) goed ligt.
 - [ ] **Het nieuwe wiel (hoofdstuk 56)**: gezien op screenshots (`-Ponly=gear,sling`), maar niet met de muis gespeeld.
       Probeer: Alt vasthouden, naar een tegel schuiven en loslaten (kiest hij meteen, zonder klik?); Alt kort tikken (gaat
       hij meteen weer dicht?); met Alt vast W, Shift, Ctrl en de spatiebalk (loop, sluip, sprint en spring je door, ook als
