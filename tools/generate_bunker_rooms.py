@@ -204,7 +204,7 @@ def build_armory():
         gb.barrel(MID - 10, 2, z)
     gb.chest(4, 1, 10, "north", gb.LOOT_SUPPLIES)
     gb.put(4, 5, 6, LIGHT)
-    gb.soldier(5, 1, 5)
+    gb.soldier(5, 1, 5, route=[(3, 3), (3, 9), (6, 8), (6, 4)])
     # Oost: de schietbaan. Drie doelen achterin, een balie vooraan, en kratten.
     side_room(False, 2, 11, 4)
     for x in (MID + 12, MID + 14, MID + 16):
@@ -217,7 +217,7 @@ def build_armory():
     gb.barrel(33, 1, 3)
     gb.barrel(33, 1, 10)
     gb.put(MID + 14, 5, 7, LIGHT)
-    gb.soldier(MID + 15, 1, 5)
+    gb.soldier(MID + 15, 1, 5, route=[(MID + 11, 5), (MID + 15, 5), (MID + 15, 9), (MID + 11, 9)])
     floor_turret(MID - 7, 2)
     write("armory")
 
@@ -237,7 +237,7 @@ def build_lab():
         gb.put(5, 2, z, "minecraft:end_rod", {"facing": "up"})
     gb.chest(MID - 10, 1, 3, "west", gb.LOOT_SUPPLIES)
     gb.put(4, 5, 6, LIGHT)
-    gb.soldier(6, 1, 9)
+    gb.soldier(6, 1, 9, route=[(6, 10), (6, 3), (4, 3), (4, 10)])
     # Oost: specimens in tanks (glas met water en een lamp), en de cryo-cel.
     side_room(False, 2, 11, 5)
     for z in (3, 7):
@@ -256,7 +256,7 @@ def build_lab():
     gb.put(32, 1, 9, "minecraft:light_blue_stained_glass")
     gb.put(32, 2, 9, "minecraft:light_blue_stained_glass")
     gb.put(MID + 12, 6, 6, LIGHT)
-    gb.soldier(MID + 11, 1, 4)
+    gb.soldier(MID + 11, 1, 4, route=[(MID + 11, 3), (MID + 11, 11), (33, 5)])
     floor_turret(MID + 7, 11)
     write("lab")
 
@@ -292,7 +292,7 @@ def build_cells():
             gb.put(bed_x + (1 if west else -1), 1, z + 1, "minecraft:gray_bed", {"facing": facing, "part": "foot", "occupied": "false"})
             gb.put(bed_x, 1, z, "minecraft:water_cauldron", {"level": "1"})
             gb.put(cell_x0 + 1, 4, z, LIGHT)
-        gb.soldier(corridor_x, 1, 2)
+        gb.soldier(corridor_x, 1, 2, route=[(corridor_x, 3), (corridor_x, 10)])  # langs de cellen heen en weer
         gb.put(corridor_x, 4, 6, LIGHT)
     gb.put(MID - 1, 1, 2, TRIM)
     gb.put(MID - 1, 2, 2, "minecraft:polished_blackstone_pressure_plate", {"powered": "false"})
@@ -322,7 +322,7 @@ def build_garage():
         gb.barrel(2, 1, z)
         gb.barrel(3, 1, z)
     gb.put(5, 6, 6, LIGHT)
-    gb.soldier(MID - 11, 1, 9)
+    gb.soldier(MID - 11, 1, 9, route=[(6, 9), (2, 8), (2, 4), (6, 4)])  # om de wagen heen
     # Oost: de werkplaats met de takel (kettingen) en de gereedschapswand.
     side_room(False, 2, 11, 5)
     for h in (6, 5, 4):
@@ -336,7 +336,7 @@ def build_garage():
         gb.put(33, 2, z, "minecraft:iron_trapdoor", {"facing": "west", "half": "bottom", "open": "true", "powered": "false", "waterlogged": "false"})
     gb.chest(32, 1, 10, "north", gb.LOOT_SUPPLIES)
     gb.put(MID + 14, 6, 9, LIGHT)
-    gb.soldier(MID + 12, 1, 10)
+    gb.soldier(MID + 12, 1, 10, route=[(MID + 12, 2), (MID + 15, 2), (MID + 15, 9)])
     floor_turret(MID - 7, 11)
     write("garage")
 
@@ -361,7 +361,7 @@ def build_mess():
     gb.put(4, 2, 6, "minecraft:polished_blackstone_slab", {"type": "bottom", "waterlogged": "false"})
     gb.put(5, 2, 6, "minecraft:polished_blackstone_slab", {"type": "bottom", "waterlogged": "false"})
     gb.put(4, 5, 6, LIGHT)
-    gb.soldier(5, 1, 9)
+    gb.soldier(5, 1, 9, route=[(5, 9), (2, 9), (2, 3), (5, 3)])
     # Oost: de eetzaal met drie tafels.
     side_room(False, 2, 11, 4)
     for z in (3, 6, 9):
@@ -371,8 +371,8 @@ def build_mess():
                 gb.put(x, 1, z - 1, "minecraft:dark_oak_stairs", {"facing": "north", "half": "bottom", "shape": "straight", "waterlogged": "false"})
                 gb.put(x, 1, z + 1, "minecraft:dark_oak_stairs", {"facing": "south", "half": "bottom", "shape": "straight", "waterlogged": "false"})
         gb.put(MID + 14, 5, z, LIGHT)
-    gb.soldier(MID + 11, 1, 5)
-    gb.soldier(MID + 16, 1, 8)
+    gb.soldier(MID + 11, 1, 5, route=[(MID + 11, 2), (MID + 11, 11)])
+    gb.soldier(MID + 16, 1, 8, route=[(MID + 16, 11), (MID + 16, 2)])
     floor_turret(MID + 7, 2)
     write("mess")
 
@@ -398,7 +398,7 @@ def build_comms():
     gb.put(5, 3, 10, "minecraft:iron_bars", {"north": "false", "south": "false", "east": "false", "west": "false", "waterlogged": "false"})
     gb.put(5, 4, 10, "minecraft:iron_bars", {"north": "false", "south": "false", "east": "false", "west": "false", "waterlogged": "false"})
     gb.put(4, 5, 6, LIGHT)
-    gb.soldier(6, 1, 4)
+    gb.soldier(6, 1, 4, route=[(6, 3), (6, 10), (2, 10), (2, 3)])
     # Oost: de kaartenkamer.
     side_room(False, 2, 11, 4)
     for z in (3, 6, 9):
@@ -408,7 +408,7 @@ def build_comms():
     gb.put(MID + 15, 1, 6, "minecraft:cartography_table")
     gb.chest(MID + 11, 1, 10, "east", gb.LOOT_SUPPLIES)
     gb.put(MID + 14, 5, 6, LIGHT)
-    gb.soldier(MID + 12, 1, 3)
+    gb.soldier(MID + 12, 1, 3, route=[(MID + 12, 3), (MID + 16, 3), (MID + 16, 10), (MID + 12, 10)])
     floor_turret(MID - 7, 11)
     write("comms")
 

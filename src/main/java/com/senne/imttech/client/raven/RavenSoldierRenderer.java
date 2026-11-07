@@ -1,5 +1,8 @@
 package com.senne.imttech.client.raven;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.renderer.MultiBufferSource;
+
 import com.senne.imttech.ImtTech;
 import com.senne.imttech.raven.RavenSoldierEntity;
 import net.minecraft.client.model.HumanoidModel;
@@ -28,6 +31,13 @@ public class RavenSoldierRenderer extends HumanoidMobRenderer<RavenSoldierEntity
     @Override
     public ResourceLocation getTextureLocation(RavenSoldierEntity soldier) {
         return TEXTURE;
+    }
+
+    /** Hoofdstuk 60: boven een bewaker die iets in de gaten heeft staat een "?" (achterdochtig, zoekend) of een "!" (hij heeft je). */
+    @Override
+    public void render(RavenSoldierEntity soldier, float yaw, float partialTick, PoseStack pose, MultiBufferSource buffers, int light) {
+        super.render(soldier, yaw, partialTick, pose, buffers, light);
+        AlertMarks.render(entityRenderDispatcher, getFont(), soldier, soldier.alertState(), pose, buffers, light);
     }
 
     /** Het gewone mensmodel (zoals een zombie), 64 x 64. */

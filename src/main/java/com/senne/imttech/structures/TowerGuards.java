@@ -64,6 +64,11 @@ public final class TowerGuards {
 
     /** Een bewaker met een keycard op zak, op deze plek (zoals BiebiaBunkerPiece.spawnSoldier, plus de kaart). */
     public static void spawnGuard(ServerLevelAccessor level, BlockPos pos, RandomSource random) {
+        spawnGuard(level, pos, random, List.of());
+    }
+
+    /** Hetzelfde, met zijn route (hoofdstuk 60; de bewakers van de toren staan op een post: leeg). */
+    public static void spawnGuard(ServerLevelAccessor level, BlockPos pos, RandomSource random, List<BlockPos> route) {
         ServerLevel serverLevel = level.getLevel();
         RavenSoldierEntity soldier = ModEntities.RAVEN_SOLDIER.get().create(serverLevel);
         if (soldier == null) {
@@ -73,6 +78,7 @@ public final class TowerGuards {
         soldier.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.STRUCTURE, null);
         soldier.setPersistenceRequired();
         soldier.setKeycardGuard(true);
+        soldier.setRoute(route);
         level.addFreshEntityWithPassengers(soldier);
     }
 

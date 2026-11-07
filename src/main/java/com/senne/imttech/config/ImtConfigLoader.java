@@ -70,6 +70,7 @@ public final class ImtConfigLoader {
             ImtConfig.Robots.class,
             ImtConfig.Training.class,
             ImtConfig.Raven.class,
+            ImtConfig.Guards.class,
             ImtConfig.Raids.class,
             ImtConfig.Weapons.class,
             ImtConfig.Guns.class);

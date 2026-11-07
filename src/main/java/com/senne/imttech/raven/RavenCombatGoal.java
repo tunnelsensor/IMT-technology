@@ -261,7 +261,7 @@ public class RavenCombatGoal extends Goal {
     }
 
     /** Een plek om te staan in de buurt van {@code around}: vaste grond, twee blokken lucht. */
-    private static @Nullable BlockPos standingSpot(Level level, BlockPos around) {
+    static @Nullable BlockPos standingSpot(Level level, BlockPos around) {
         for (int dy = 3; dy >= -4; dy--) {
             BlockPos feet = around.above(dy);
             if (level.getBlockState(feet.below()).isFaceSturdy(level, feet.below(), net.minecraft.core.Direction.UP)

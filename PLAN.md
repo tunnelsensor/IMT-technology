@@ -5000,6 +5000,128 @@ is. Kun je ingame controleren en dan alles oplossen."
       rondleiding (`-Ponly=creative`) zet de muis in de hoek (geen tooltip meer over het plaatje) en scrolt het
       wapentabblad twee keer drie rijen verder: `ct03_weapons_b_glock_parts` en `ct03_weapons_c_laser_parts`.
 
+### 60. Bewakers zoals in Hitman (7 november)
+
+Jouw vraag: "Ik wil guards zoals in hitman, de bewaking van de bunker die guards werken zoals hitman, ze lopen een
+bepaald pad, reageren om geluid en het duurt even voor ze je zien, als ze je zien roepen ze tactis versterking, zien
+ze een body roepen ze versterking. In de starktower is dit ook maar dan geprogrameert op robots en drones. Deze
+programatie neem je ook over."
+
+**Jouw antwoorden** (7 november) op mijn negen vragen:
+1. **Routes**: per kamer getekend in de kamerbestanden; een soldaat zonder route staat op een post en draait zijn hoofd;
+   je eigen robots schrijven hun route als een lus van goto's.
+2. **Zien duurt even**: een meter die volloopt (sneller dichtbij, recht voor hem of rennend; trager ver weg of sluipend),
+   halfvol = achterdochtig en komen kijken, vol = gezien. Op je bril een oogje met een pijl naar de bewaker dat volloopt,
+   boven zijn hoofd een "?" en dan een "!". "Ja ook volledig wat ik wil."
+3. **Geluid**: schoten, ontploffingen, blokken kapotslaan, rennen, deuren, vallen; sluipen is stil; de Glock luid, een
+   laserpistool zacht; ze gaan kijken en keren terug. Een demper als Glock-onderdeel: later.
+4. **Versterking roepen**, jouw eigen variant: de radio pakken duurt **één seconde**, het hele oproepen **drie**. Stop je
+   hem binnen die seconde, dan gebeurt er niets. Stop je hem daarna, dan worden de anderen achterdochtig, je hoort door
+   de coms "BB-2358, come in", en ze komen **langzaam** naar je toe. Roept hij het af, dan weet de hele bunker het en komt
+   na tien seconden een team van drie of vier man aan de ingang binnen; hooguit twee teams per alarm; na twee minuten
+   zonder contact zoeken ze nog even en gaan ze terug naar hun routes.
+5. **Lichamen**: een dode soldaat blijft liggen; zijn buit zit **in het lichaam** (doorzoeken met rechtsklik).
+6. **De toren**: alleen de twee bewakers met een staff-keycard blijven soldaat; de rest van de bewaking zijn guard robots
+   van Biebia op docks (lobby en beveiligingsverdieping) met het programma "Tower guard", plus de drones.
+7. **Nieuwe woorden**: `when heard:` (sound.x/y/z/kind), `when spotted:` (target.name/x/y/z), `when body_seen:`
+   (body.x/y/z) en `robot.alert`; versterking via `order(...)` en `send(...)`, die bestaan al.
+8. **Vermomming** (het pak van een soldaat aantrekken): in het plan, maar er nog niet aan beginnen.
+9. **Zoeken**: twee minuten rond je laatste plek (kamers, achter deuren), dan terug naar de route; ze onthouden het: de
+   volgende keer zien ze je dubbel zo snel.
+
+Erbij: **geen** minimap en **geen** tekst "ze zoeken je" zoals in Hitman. Alleen het bewakersgedeelte.
+
+**Mijn invulling** (alle getallen in de nieuwe config-sectie `[guards]`):
+- **Vier toestanden** per soldaat: *rustig* (route of post), *achterdochtig* (iets gehoord of een halfvolle meter: hij
+  gaat kijken), *zoekend* (hij is je kwijt) en *gevecht* (het bestaande RavenCombatGoal). Hij kijkt in een kegel
+  (`viewAngle` 140 graden, `viewRange` 28 blokken) en niet door muren of rook. De meter: van 0 naar 100 in
+  `spotSecondsNear` (1 s) als je vlak voor hem staat, tot `spotSecondsFar` (8 s) aan de rand; sluipen x0,5, rennen x1,6,
+  in zijn ooghoek x0,5; zoekend ziet hij x3; na een alarm `memoryMinutes` lang x2. Uit het zicht zakt hij in
+  `decaySeconds` (6). Bij `suspiciousAt` (50) wordt hij achterdochtig, bij 100 heeft hij je. Geraakt worden of een
+  maat die je al heeft = meteen gevecht (zoals nu).
+- **De radio**: wie je als eerste ziet terwijl zijn bunker nog geen alarm heeft, roept eerst (1 s pakken, dan 2 s
+  praten; hij schiet pas daarna). Dood, geboeid of gevloerd tijdens het praten = een half gesprek: zijn maten worden
+  achterdochtig en lopen langzaam naar hem toe, en spelers binnen 48 blokken horen "[Radio] BB-2358, come in" (elke
+  soldaat heeft een roepnaam BB-xxxx). Afgemaakt = alarm voor de hele **site** (de bunker of toren: alle soldaten binnen
+  `siteRange` 160 blokken van de ingangsmarkering), een "Contact!"-bericht, en na `backupDelaySeconds` (10) komt een
+  team van `backupSize` (4) soldaten door de ingang gerend naar je laatste plek; `backupWaves` (2) teams per alarm. De
+  ingang is een nieuwe markering `raven_entry` in de ingang van de bunker en de lobby van de toren (een nieuwe SavedData
+  `RavenSites` onthoudt ze, ook het alarm en de teams). Zonder ingang in de buurt (een spawn egg, een oude wereld) komt er
+  geen team, de rest werkt wel.
+- **Zoeken**: na `lostSeconds` (10) zonder zicht gaat hij naar je laatste plek en kijkt dan `searchSeconds` (120) lang op
+  willekeurige bereikbare plekken binnen 12 blokken (deuren doet hij open); daarna terug naar zijn route. Het alarm van de
+  site loopt `alarmSeconds` (120) na het laatste contact af.
+- **Geluid**: één plek (`raven/Noises`) waar alles wat lawaai maakt zich meldt met een straal: de Glock 48, een laser
+  rifle 16, een laserpistool 12, een ontploffing 56, een flashbang 24, een blok kapotslaan 14, rennen 8 (elke zes ticks),
+  een deur 8, een val van meer dan drie blokken 12. Door een muur heen telt de helft. Alleen lawaai van spelers (en
+  van hun robots) telt; soldaten horen hun eigen schoten niet als "lawaai", die weten het al. Een rustige soldaat die iets
+  hoort, loopt ernaartoe (gewoon tempo), kijkt vier seconden rond en gaat terug; een zoekende neemt de plek over als
+  laatste plek.
+- **Lichamen**: een nieuw wezen `RavenBodyEntity` met het model van de soldaat plat op de grond (zoals een gevloerde
+  robot). Alles wat de soldaat zou laten vallen (zijn Raven-onderdeel, soms zijn wapen, de staff-keycard) gaat erin;
+  rechtsklik opent "Search the body" (negen vakjes); sneak + rechtsklik pakt het lichaam vast en sleept het achter je
+  aan (nog eens = loslaten). Na `bodyMinutes` (5) verdwijnt het en valt wat erin zat op de grond. Een geboeide soldaat
+  en een gevloerde robot tellen ook als lichaam. Een bewaker die een lichaam ziet, gaat erheen en roept via de radio
+  ("Man down"): hetzelfde alarm, per lichaam één keer.
+- **Je eigen robots en drones**: dezelfde meter (`robot.alert` / `drone.alert`, 0-100, met de Scan en het filter van de
+  Face Recognition), `when spotted:` zodra hij vol is (één keer per keer dat hij je ziet), `when heard:` bij elk geluid
+  binnen zijn bereik en `when body_seen:` één keer per lichaam. Die drie whens onderbreken wat hij deed, zoals een
+  opdracht, en daarna gaat hij verder. Ook boven een robot staat "?" of "!", en ook een robot staat in het oogje op je
+  bril. `read(scanPin)` blijft meteen waar (oude programma's veranderen niet).
+- **De toren**: de gewone soldaat op de beveiligingsverdieping gaat weg; in de lobby en op de beveiligingsverdieping komen
+  Robot Docks aan de kabel, en Biebia's kern zet er (één keer, zoals bij de drones) guard robots op in de squad "Tower
+  guards" met het programma **Tower guard** (patrouille langs de punten van die verdieping, `when heard` gaat kijken,
+  `when spotted` meldt "contact" aan de kern en schiet, `when body_seen` meldt "man down", `when ordered("alarm")` komt
+  eraan). De drones ("Tower drones") krijgen dezelfde whens erbij in "Tower patrol". Biebia's kern krijgt het diagram
+  **"Security"**: `when message("contact")` en `when message("man down")` geven de squads de opdracht "alarm" met de plek.
+  Daarvoor hoort een robot van niemand voortaan bij een kern van niemand (BotLink): Biebia's robots zijn verbonden met
+  Biebia's kern, en na de hack met die van jou. Wie de toren hackt, krijgt de robots zoals de drones.
+- **Vermomming** en **demper**: staan onderaan als open stappen, nog niet begonnen.
+
+- [x] **1. De zintuigen van de soldaat** — `raven/RavenAlert` (rustig, achterdochtig, roepend, zoekend, gevecht),
+      `raven/RavenSenses` (de kegel van `viewAngle`/`viewRange`; de meter met `spotSecondsNear`/`Far`, sluipen, rennen,
+      de ooghoek, zoekend x3 en het geheugen na een alarm; achterdochtig bij `suspiciousAt`, kwijt na `lostSeconds`,
+      zoeken `searchSeconds` lang binnen `searchRadius`), `raven/RavenInvestigateGoal` (erheen, `lookSeconds` rondkijken,
+      nieuwe zoekplekken die hij echt kan bereiken), `raven/Watcher` (wat je spel ervan ziet: toestand, meter, wie), en
+      de sectie `[guards]` in de config. De soldaat heeft geen NearestAttackableTargetGoal voor spelers meer en geen
+      LookAtPlayerGoal (die draaide zijn hoofd naar jou, en dan zag hij je altijd); jouw drones schiet hij nog meteen neer,
+      en geraakt worden of een maat die je al heeft is nog steeds meteen gevecht. Zijn geweer ligt nu echt aangelegd
+      zodra hij een doelwit heeft (`setAggressive`, dat ontbrak). Boven zijn hoofd een geel "?" of een rood "!"
+      (`client/raven/AlertMarks`, via `RavenSoldierRenderer`), en op je bril het oog (`hud/DetectionWidget`): boven zijn
+      hoofd als hij in beeld is, anders op het ovaal van de dreigingspijlen; wit, oranje vanaf `suspiciousAt`, rood als
+      hij je heeft. Vier tests in de nieuwe `GuardGameTests` (hij heeft je pas na een tijdje, niet achter zijn rug,
+      sluipen half zo snel, zoeken waar hij je kwijtraakte).
+- [x] **2. Routes en posten** — `raven/RavenRoutes` (de markering `raven_soldier;dx,0,dz;...`: verschuivingen, zodat
+      ze meeschuiven met `shift()` en hier meedraaien met het stuk via `StructureTemplate.transform`),
+      `raven/RavenPatrolGoal` (`patrolSpeed` 0,75, bij elk punt `patrolWaitMin`-`patrolWaitMax` seconden rondkijken, na
+      een gevecht de draad oppakken bij het dichtstbijzijnde punt, een onbereikbaar punt na drie pogingen overslaan;
+      zonder route terug naar zijn post, dat is waar hij verscheen). De soldaat bewaart `Post` en `Route`;
+      `BiebiaBunkerPiece`, `TowerPiece`, `RoomPlacer` en `TowerGuards` lezen de route uit de markering. Routes getekend
+      in `generate_bunker.py` (de hal: twee rondes om de zuilen, west en oost; de slaapzaal langs de bedden; de reactor om
+      de bak lava) en `generate_bunker_rooms.py` (wapenkamer en schietbaan, lab en tanks, de cellen langs de tralies, de
+      garage om de wagen en door de werkplaats, keuken en eetzaal, radiokamer en kaartenkamer). Posten: de controlepost,
+      de wachtpost bij de reactor, de kluis, de achterwand van de hal, de tweede man van de slaapzaal en de twee bewakers
+      van de toren. De tien structuurbestanden opnieuw gemaakt (de toren veranderde niet). Drie tests (zijn route lopen,
+      terug naar zijn post, de route draait mee met het stuk). 427 tests; `raven_soldier_shoots` en
+      `glock_chamber_and_magazine_math` waren elk één keer rood door toeval (spreiding, een storing) en daarna weer groen.
+- [ ] **3. Geluid** — `raven/Noises` en de haakjes in de Glock, de lasergeweren, de granaten en ontploffingen, blokken,
+      rennen, deuren en vallen. Test: hij gaat kijken bij lawaai achter een muur en keert terug.
+- [ ] **4. De radio en de versterking** — `raven/RavenSites` (SavedData: ingangen, alarm, teams), de markering
+      `raven_entry`, het roepen in twee stappen, de berichten, een radiogeluid, het team aan de ingang. Tests: een half
+      gesprek maakt de maten achterdochtig, een heel gesprek brengt een team.
+- [ ] **5. Lichamen** — `raven/RavenBodyEntity` + renderer, de buit erin (LivingDropsEvent), doorzoeken, slepen,
+      verdwijnen; bewakers melden een lichaam, een geboeide soldaat en een gevloerde robot tellen mee. Tests.
+- [ ] **6. De taal** — `Op.HEARD/SPOTTED/BODY_SEEN`, `Expr.Variable` sound.*/target.*/body.*/robot.alert/drone.alert,
+      `bot/BotAlert` (de meter van een robot), de whens als onderbreking in `BotBrain`, de Help, "?"/"!" boven robots en
+      drones. Tests: `when heard` telt, `when spotted` komt na een tijdje, de woorden mogen niet op de server.
+- [ ] **7. De toren** — docks in de lobby en op de beveiligingsverdieping, `robot/TowerRobots` (zoals TowerDrones), het
+      programma "Tower guard", "Tower patrol" uitgebreid, Biebia's diagram "Security", `BotLink` voor robots van niemand,
+      de hack geeft ook de robots. Tests: de toren heeft bewakersrobots die "contact" melden en de drones komen.
+- [ ] **8. Afronding** — showcase "Guards like in Hitman", screenshots, LEESMIJ.md, de testtelling, het jar.
+- [ ] **9. Vermomming** (nog niet beginnen, jouw keuze) — het pak van een dode soldaat aantrekken: bewakers zien je dan
+      pas van dichtbij (of als je rent of iets vreemds doet).
+- [ ] **10. Een demper** (later) — een Glock-onderdeel dat het schot zachter maakt (lawaai 48 wordt 10).
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het

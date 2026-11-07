@@ -129,14 +129,19 @@ def marker(x, y, z, name):
            {"id": "minecraft:structure_block", "mode": "DATA", "metadata": name})
 
 
-def soldier(x, y, z):
-    """Hier komt bij het bouwen van de wereld een Raven-soldaat (zoals in de bunker)."""
-    marker(x, y, z, "raven_soldier")
+def soldier(x, y, z, route=None):
+    """Hier komt bij het bouwen van de wereld een Raven-soldaat (zoals in de bunker); met een route loopt hij die (hoofdstuk 60)."""
+    marker(x, y, z, route_text("raven_soldier", x, z, route))
 
 
-def guard(x, y, z):
+def guard(x, y, z, route=None):
     """Hoofdstuk 54: een Raven-soldaat met een geconfigureerde keycard van de toren (groep "staff") op zak: die valt."""
-    marker(x, y, z, "raven_guard")
+    marker(x, y, z, route_text("raven_guard", x, z, route))
+
+
+def route_text(kind, x, z, route=None):
+    """Hoofdstuk 60: de route als verschuivingen achter het woord ("raven_soldier;2,0,0;2,0,5"), zie RavenRoutes."""
+    return kind + "".join(f";{px - x},0,{pz - z}" for (px, pz) in (route or ()))
 
 
 def security_floor():

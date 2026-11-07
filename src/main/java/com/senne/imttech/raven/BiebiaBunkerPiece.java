@@ -68,13 +68,19 @@ public class BiebiaBunkerPiece extends TemplateStructurePiece {
     protected void handleDataMarker(String name, BlockPos pos, ServerLevelAccessor level, RandomSource random,
                                     BoundingBox box) {
         level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
-        if (SOLDIER.equals(name)) {
-            spawnSoldier(level, pos, random);
+        if (RavenRoutes.isSoldier(name)) {
+            // Hoofdstuk 60: achter het woord kan zijn route staan, gedraaid zoals dit stuk.
+            spawnSoldier(level, pos, random, RavenRoutes.route(name, pos, placeSettings.getRotation()));
         }
     }
 
     /** Een soldaat die hier op wacht staat: met geweer, en hij verdwijnt niet als je weggaat. */
     public static void spawnSoldier(ServerLevelAccessor level, BlockPos pos, RandomSource random) {
+        spawnSoldier(level, pos, random, java.util.List.of());
+    }
+
+    /** Hetzelfde, met zijn route (hoofdstuk 60): leeg = hij staat op zijn post. */
+    public static void spawnSoldier(ServerLevelAccessor level, BlockPos pos, RandomSource random, java.util.List<BlockPos> route) {
         ServerLevel serverLevel = level.getLevel();
         RavenSoldierEntity soldier = ModEntities.RAVEN_SOLDIER.get().create(serverLevel);
         if (soldier == null) {
@@ -83,6 +89,7 @@ public class BiebiaBunkerPiece extends TemplateStructurePiece {
         soldier.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, random.nextFloat() * 360, 0);
         soldier.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.STRUCTURE, null);
         soldier.setPersistenceRequired();
+        soldier.setRoute(route);
         level.addFreshEntityWithPassengers(soldier);
     }
 }

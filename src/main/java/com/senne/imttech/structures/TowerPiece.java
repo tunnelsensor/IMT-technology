@@ -49,10 +49,12 @@ public class TowerPiece extends TemplateStructurePiece {
         // Biebia's drones komen via de docks in de hangar (zie TowerDrones); sinds hoofdstuk 54 staan er wel soldaten:
         // gewone (zoals in de bunker) en bewakers met een keycard van de toren op zak (zie TowerGuards).
         level.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), net.minecraft.world.level.block.Block.UPDATE_CLIENTS);
-        if (com.senne.imttech.raven.BiebiaBunkerPiece.SOLDIER.equals(name)) {
-            com.senne.imttech.raven.BiebiaBunkerPiece.spawnSoldier(level, pos, random);
-        } else if (TowerGuards.GUARD.equals(name)) {
-            TowerGuards.spawnGuard(level, pos, random);
+        // Hoofdstuk 60: achter het woord kan een route staan (zie RavenRoutes), gedraaid zoals dit stuk.
+        java.util.List<BlockPos> route = com.senne.imttech.raven.RavenRoutes.route(name, pos, placeSettings.getRotation());
+        if (com.senne.imttech.raven.RavenRoutes.isSoldier(name)) {
+            com.senne.imttech.raven.BiebiaBunkerPiece.spawnSoldier(level, pos, random, route);
+        } else if (com.senne.imttech.raven.RavenRoutes.isGuard(name)) {
+            TowerGuards.spawnGuard(level, pos, random, route);
         }
     }
 }

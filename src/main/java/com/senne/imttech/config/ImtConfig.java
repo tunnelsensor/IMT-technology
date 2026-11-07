@@ -86,6 +86,7 @@ package com.senne.imttech.config;
  *   Lights ....... de Arc Lamp
  *   Robots ....... guard robots: wat elk onderdeel doet (hoofdstuk 21)
  *   Raven ........ Raven-soldaten
+ *   Guards ....... bewakers zoals in Hitman: zien, horen, de radio, zoeken, lichamen (hoofdstuk 60)
  *   Raids ........ vijandige raiddrones
  *   Weapons ...... granaten, de Remote EMP en Remote Frag, lasergeweren en energiecellen (hoofdstuk 35)
  *   Guns ......... vuurwapens: de Glock 19, onderdelen en materialen, magazijnen, kogels, hulzen, storingen (hoofdstuk 52)
@@ -1815,6 +1816,63 @@ public final class ImtConfig {
         public static final double SOLDIER_ARMOR = 4.0;
         /** Hoe snel hij loopt. */
         public static final double SOLDIER_SPEED = 0.27;
+    }
+
+
+    // =============================================================================================== Guards
+
+    @Section("Guards like in Hitman (chapter 60): how Raven soldiers (and your robots) notice you, hear you, search and call backup")
+    public static final class Guards {
+        private Guards() {}
+
+        // ------------------------------------------------------------------------- Zien
+        /** Zo ver kijkt een bewaker. */
+        @Tunable(value = "How far a guard sees (blocks)", min = 4)
+        public static float VIEW_RANGE = 28.0f;
+        /** Zo breed is zijn blik (de hele kegel). */
+        @Tunable(value = "How wide a guard sees (degrees, the whole cone)", min = 10, max = 360)
+        public static float VIEW_ANGLE = 140.0f;
+        /** Zo lang duurt het voor hij je heeft als je vlak voor hem staat... */
+        @Tunable(value = "Seconds in sight before a guard has you, right in front of him", min = 0.1)
+        public static float SPOT_SECONDS_NEAR = 1.0f;
+        /** ...en aan de rand van zijn bereik. */
+        @Tunable(value = "Seconds in sight before a guard has you, at the edge of his range", min = 0.1)
+        public static float SPOT_SECONDS_FAR = 8.0f;
+        @Tunable(value = "How much slower a guard notices you while you sneak (0.5 = half as fast)", min = 0.05, max = 1)
+        public static float SNEAK_FACTOR = 0.5f;
+        @Tunable(value = "How much faster a guard notices you while you sprint", min = 1)
+        public static float SPRINT_FACTOR = 1.6f;
+        @Tunable(value = "How much slower a guard notices you in the corner of his eye (the outer half of the cone)", min = 0.05, max = 1)
+        public static float PERIPHERAL_FACTOR = 0.5f;
+        @Tunable(value = "How much faster a searching guard notices you", min = 1)
+        public static float SEARCH_FACTOR = 3.0f;
+        @Tunable(value = "Seconds for a full meter to drop to nothing once you are out of sight", min = 0.5)
+        public static float DECAY_SECONDS = 6.0f;
+        /** Bij zoveel van de meter wordt hij achterdochtig en komt hij kijken. */
+        @Tunable(value = "At this much of the meter (0-100) a guard gets suspicious and comes to look", min = 1, max = 99)
+        public static float SUSPICIOUS_AT = 50.0f;
+        @Tunable(value = "Seconds a guard looks around at a spot before he goes back to his route", min = 1)
+        public static float LOOK_SECONDS = 4.0f;
+
+        // ------------------------------------------------------------------------- Zoeken en onthouden
+        @Tunable(value = "Seconds without sight before a fighting guard loses you and starts searching", min = 1)
+        public static float LOST_SECONDS = 10.0f;
+        @Tunable(value = "Seconds a guard searches around the spot where he lost you", min = 5)
+        public static float SEARCH_SECONDS = 120.0f;
+        @Tunable(value = "How far around that spot he searches (blocks)", min = 2)
+        public static float SEARCH_RADIUS = 12.0f;
+        @Tunable(value = "Minutes after an alarm during which the guards of that base notice you faster")
+        public static float MEMORY_MINUTES = 5.0f;
+        @Tunable(value = "How much faster they notice you then", min = 1)
+        public static float MEMORY_FACTOR = 2.0f;
+
+        // ------------------------------------------------------------------------- Routes en posten
+        @Tunable(value = "How fast a guard walks his route (1 = his normal walking speed)", min = 0.2, max = 2)
+        public static float PATROL_SPEED = 0.75f;
+        @Tunable(value = "Shortest time a guard stops to look around at a point of his route (seconds)")
+        public static float PATROL_WAIT_MIN = 2.0f;
+        @Tunable(value = "Longest time he stops there (seconds)")
+        public static float PATROL_WAIT_MAX = 5.0f;
     }
 
     // =============================================================================================== Raids

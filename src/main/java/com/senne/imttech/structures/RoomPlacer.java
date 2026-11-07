@@ -58,12 +58,15 @@ public final class RoomPlacer {
             if (nbt == null) {
                 continue;
             }
-            if (BiebiaBunkerPiece.SOLDIER.equals(nbt.getString("metadata"))) {
+            String metadata = nbt.getString("metadata");
+            if (com.senne.imttech.raven.RavenRoutes.isSoldier(metadata)) {
                 level.setBlock(info.pos(), Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
-                BiebiaBunkerPiece.spawnSoldier(level, info.pos(), level.random);
-            } else if (TowerGuards.GUARD.equals(nbt.getString("metadata"))) {
+                BiebiaBunkerPiece.spawnSoldier(level, info.pos(), level.random,
+                        com.senne.imttech.raven.RavenRoutes.route(metadata, info.pos(), rotation));
+            } else if (com.senne.imttech.raven.RavenRoutes.isGuard(metadata)) {
                 level.setBlock(info.pos(), Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
-                TowerGuards.spawnGuard(level, info.pos(), level.random);
+                TowerGuards.spawnGuard(level, info.pos(), level.random,
+                        com.senne.imttech.raven.RavenRoutes.route(metadata, info.pos(), rotation));
             }
         }
     }

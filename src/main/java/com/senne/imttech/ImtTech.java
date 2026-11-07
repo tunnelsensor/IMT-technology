@@ -132,6 +132,7 @@ public class ImtTech {
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.GunGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.GearGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.SkillGameTests.class));
+        modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.GuardGameTests.class));
         // Controle van de wereldgeneratie (alleen met "gradlew runStructureCheck").
         com.senne.imttech.gametest.StructureCheck.registerIfEnabled();
 

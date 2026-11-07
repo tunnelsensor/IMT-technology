@@ -4,6 +4,9 @@ import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.drone.DroneEntity;
 import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.registry.ModSounds;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
@@ -19,9 +22,7 @@ import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
-import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
-import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.monster.Monster;
@@ -47,8 +48,22 @@ import org.jetbrains.annotations.Nullable;
  * Staat zijn doelwit onder een schildkoepel, dan stuit het schot op de koepel, net als bij de
  * raiddrones. Soms laat hij een Raven-onderdeel vallen (zie de loot table
  * entities/raven_soldier), en soms (8%) zijn wapen.
+ *
+ * Sinds hoofdstuk 60 is hij een bewaker zoals in Hitman: hij kijkt in een kegel en het duurt even voor hij je heeft
+ * (RavenSenses: een meter die volloopt), hij komt kijken als hij iets ziet of hoort en zoekt waar hij je kwijtraakte
+ * (RavenInvestigateGoal). Wat je spel daarvan ziet, staat in {@link Watcher}.
  */
-public class RavenSoldierEntity extends Monster implements RangedAttackMob {
+public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watcher {
+    /** Hoofdstuk 60: hoe alert hij is, zijn meter en wie hem vult, voor het "?"/"!" en het oogje op je bril. */
+    private static final EntityDataAccessor<Byte> ALERT = SynchedEntityData.defineId(RavenSoldierEntity.class, EntityDataSerializers.BYTE);
+    private static final EntityDataAccessor<Byte> SUSPICION = SynchedEntityData.defineId(RavenSoldierEntity.class, EntityDataSerializers.BYTE);
+    private static final EntityDataAccessor<Integer> SUSPECT = SynchedEntityData.defineId(RavenSoldierEntity.class, EntityDataSerializers.INT);
+
+    /** Zijn zintuigen (hoofdstuk 60). */
+    private final RavenSenses senses = new RavenSenses(this);
+    /** Hoofdstuk 60: zijn post (waar hij verscheen) en zijn route (leeg = hij staat op zijn post), zie RavenPatrolGoal. */
+    private @Nullable net.minecraft.core.BlockPos post;
+    private java.util.List<net.minecraft.core.BlockPos> route = java.util.List.of();
     /** Hoofdstuk 54: een bewaker van de toren met een keycard van die toren op zak (zie structures/TowerGuards). */
     private boolean keycardGuard;
     /** Hoeveel granaten hij nog heeft, en of het EMP's zijn (anders frags). */
@@ -88,12 +103,77 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob {
         goalSelector.addGoal(2, new RavenCombatGoal(this));
         // Een deur op zijn route doet hij open (en weer dicht).
         goalSelector.addGoal(3, new net.minecraft.world.entity.ai.goal.OpenDoorGoal(this, true));
-        goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.8));
-        goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 12.0f));
+        // Hoofdstuk 60: achterdochtig gaan kijken, of zoeken waar hij je kwijtraakte.
+        goalSelector.addGoal(4, new RavenInvestigateGoal(this));
+        // Rustig: zijn route lopen, of op zijn post staan (hoofdstuk 60; vroeger slenterde hij rond).
+        goalSelector.addGoal(5, new RavenPatrolGoal(this));
         goalSelector.addGoal(7, new RandomLookAroundGoal(this));
         targetSelector.addGoal(1, new HurtByTargetGoal(this, RavenSoldierEntity.class).setAlertOthers());
-        targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, true));
+        // Spelers ziet hij sinds hoofdstuk 60 met zijn eigen zintuigen (RavenSenses: een kegel, en een meter die volloopt),
+        // niet meer meteen en rondom; jouw drones schiet hij nog wel meteen neer als hij ze ziet.
         targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, DroneEntity.class, true));
+    }
+
+    @Override
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(ALERT, (byte) 0);
+        builder.define(SUSPICION, (byte) 0);
+        builder.define(SUSPECT, -1);
+    }
+
+    // ================================================================ Zijn zintuigen (hoofdstuk 60)
+
+    public RavenSenses senses() {
+        return senses;
+    }
+
+    /** Zijn post: waar hij verscheen (daar staat hij als hij geen route heeft). */
+    public @Nullable net.minecraft.core.BlockPos post() {
+        return post;
+    }
+
+    public void setPost(@Nullable net.minecraft.core.BlockPos post) {
+        this.post = post == null ? null : post.immutable();
+    }
+
+    /** Zijn route (de plekken uit zijn markering, zie RavenRoutes), leeg als hij op zijn post staat. */
+    public java.util.List<net.minecraft.core.BlockPos> route() {
+        return route;
+    }
+
+    public void setRoute(java.util.List<net.minecraft.core.BlockPos> route) {
+        this.route = java.util.List.copyOf(route);
+    }
+
+    /** Van zijn zintuigen naar je spel (alleen als er iets veranderde). */
+    void syncAlert(RavenAlert alert, int suspicion, int suspectId) {
+        byte state = (byte) alert.ordinal();
+        if (entityData.get(ALERT) != state) {
+            entityData.set(ALERT, state);
+        }
+        byte meter = (byte) Mth.clamp(suspicion, 0, 100);
+        if (entityData.get(SUSPICION) != meter) {
+            entityData.set(SUSPICION, meter);
+        }
+        if (entityData.get(SUSPECT) != suspectId) {
+            entityData.set(SUSPECT, suspectId);
+        }
+    }
+
+    @Override
+    public RavenAlert alertState() {
+        return RavenAlert.byOrdinal(entityData.get(ALERT));
+    }
+
+    @Override
+    public int suspicion() {
+        return entityData.get(SUSPICION);
+    }
+
+    @Override
+    public int suspectId() {
+        return entityData.get(SUSPECT);
     }
 
     /** Zijn wapen (hoofdstuk 54): de helft een Glock 19, verder een laser rifle of laser pistol; soms granaten erbij. */
@@ -170,6 +250,11 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob {
         if (grenadeCooldown > 0) {
             grenadeCooldown--;
         }
+        if (level() instanceof ServerLevel level) {
+            // Hoofdstuk 60: kijken (en sinds stap 3 luisteren), en zijn houding: het geweer aangelegd zodra hij een doelwit heeft.
+            senses.tick(level);
+            setAggressive(getTarget() != null);
+        }
     }
 
     @Override
@@ -178,6 +263,13 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob {
         tag.putInt("Grenades", grenades);
         tag.putBoolean("EmpGrenades", empGrenades);
         tag.putBoolean("KeycardGuard", keycardGuard);
+        tag.putLong("MemoryUntil", senses.memoryUntil());
+        if (post != null) {
+            tag.putLong("Post", post.asLong());
+        }
+        if (!route.isEmpty()) {
+            tag.putLongArray("Route", route.stream().mapToLong(net.minecraft.core.BlockPos::asLong).toArray());
+        }
     }
 
     @Override
@@ -186,6 +278,11 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob {
         grenades = tag.getInt("Grenades");
         empGrenades = tag.getBoolean("EmpGrenades");
         keycardGuard = tag.getBoolean("KeycardGuard");
+        senses.setMemoryUntil(tag.getLong("MemoryUntil"));
+        post = tag.contains("Post") ? net.minecraft.core.BlockPos.of(tag.getLong("Post")) : null;
+        route = tag.contains("Route")
+                ? java.util.Arrays.stream(tag.getLongArray("Route")).mapToObj(net.minecraft.core.BlockPos::of).toList()
+                : java.util.List.of();
     }
 
     @Override
@@ -193,6 +290,9 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob {
                                                   MobSpawnType spawnType, @Nullable SpawnGroupData data) {
         SpawnGroupData result = super.finalizeSpawn(level, difficulty, spawnType, data);
         populateDefaultEquipmentSlots(level.getRandom(), difficulty);
+        if (post == null) {
+            post = blockPosition(); // hoofdstuk 60: waar hij verschijnt, is zijn post
+        }
         return result;
     }
 

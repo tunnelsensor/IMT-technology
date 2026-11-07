@@ -90,10 +90,21 @@ def air(x0, y0, z0, x1, y1, z1):
     fill(x0, y0, z0, x1, y1, z1, "minecraft:air")
 
 
-def soldier(x, y, z):
-    """Hier komt bij het bouwen van de wereld een Raven-soldaat (zie BiebiaBunkerPiece)."""
+def soldier(x, y, z, route=None):
+    """
+    Hier komt bij het bouwen van de wereld een Raven-soldaat (zie BiebiaBunkerPiece). Hoofdstuk 60 (bewakers zoals in
+    Hitman): met een route (plekken (x, z) op dezelfde hoogte) loopt hij die rond en kijkt hij bij elk punt even om zich
+    heen; zonder route staat hij op zijn post. De route staat als verschuivingen in de markering
+    ("raven_soldier;2,0,0;2,0,5"), zodat ze meeschuiven met shift() in generate_bunker_rooms.py en de mod ze mee kan
+    draaien met het stuk (RavenRoutes).
+    """
     put(x, y, z, "minecraft:structure_block", {"mode": "data"},
-        {"id": "minecraft:structure_block", "mode": "DATA", "metadata": SOLDIER})
+        {"id": "minecraft:structure_block", "mode": "DATA", "metadata": marker_text(SOLDIER, x, z, route)})
+
+
+def marker_text(kind, x, z, route=None):
+    """De tekst van een markering: het woord, en achter elke puntkomma een verschuiving dx,0,dz van de route."""
+    return kind + "".join(f";{px - x},0,{pz - z}" for (px, pz) in (route or ()))
 
 
 def turret(x, y, z):
@@ -222,8 +233,9 @@ def build_hall():
     put(x0 + 4, 1, 27, "minecraft:ladder", {"facing": "east", "waterlogged": "false"})
     put(x0 + 4, 2, 27, "minecraft:ladder", {"facing": "east", "waterlogged": "false"})
     # Soldaten.
-    soldier(MID - 5, 1, 20)
-    soldier(MID + 5, 1, 24)
+    # Hoofdstuk 60: twee rondes door de hal (west en oost, om de zuilen heen), en een post achterin bij de vaandels.
+    soldier(MID - 5, 1, 20, route=[(MID - 6, 17), (MID - 6, 24), (MID - 2, 24), (MID - 2, 17)])
+    soldier(MID + 5, 1, 24, route=[(MID + 6, 25), (MID + 6, 18), (MID + 2, 18), (MID + 2, 25)])
     soldier(MID, 1, 26)
 
 
@@ -238,7 +250,7 @@ def build_barracks():
     chest(x1, 1, 25, "west", LOOT_BARRACKS)
     for z in (19, 24):
         put(4, 5, z, LIGHT)
-    soldier(4, 1, 20)
+    soldier(4, 1, 20, route=[(4, 18), (4, 25)])  # hoofdstuk 60: langs de bedden heen en weer
     soldier(5, 1, 24)
 
 
@@ -261,7 +273,8 @@ def build_reactor():
     # Een waarschuwingsstreep op de vloer rond de bak.
     for x in range(28, 33):
         put(x, 0, 25, "minecraft:yellow_concrete")
-    soldier(28, 1, 25)
+    # Hoofdstuk 60: een ronde om de bak lava heen.
+    soldier(28, 1, 25, route=[(32, 25), (33, 18), (27, 18)])
 
 
 # --------------------------------------------------------------------- Kluisgang en kluis
