@@ -99,6 +99,7 @@ public final class TowerHack {
             }
             // Biebia's security drones (hoofdstuk 25) krijgen de opdracht "alarm": ze komen kijken.
             com.senne.imttech.robot.TowerDrones.alarm(level, core, player);
+            com.senne.imttech.robot.TowerRobots.alarm(level, core, player);
         }
         player.displayClientMessage(Component.translatable("security.imttech.msg.hack_started")
                 .withStyle(ChatFormatting.RED), true);
@@ -163,6 +164,7 @@ public final class TowerHack {
         core.setOwner(player);
         // Biebia's drones (hoofdstuk 25) zijn nu van jou.
         com.senne.imttech.robot.TowerDrones.handOver(level, core, player);
+        com.senne.imttech.robot.TowerRobots.handOver(level, core, player); // en zijn bewakersrobots (hoofdstuk 60)
         level.playSound(null, corePos, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 1.0f, 1.4f);
         player.displayClientMessage(Component.translatable("security.imttech.msg.hack_done")
                 .withStyle(ChatFormatting.GREEN), true);

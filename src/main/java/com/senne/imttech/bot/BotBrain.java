@@ -269,6 +269,12 @@ public final class BotBrain {
      * (wat er nog over is, doet hij daarna). Elke {@code when ordered(...)} met deze naam begint.
      */
     private void startOrder(Order order, long now) {
+        if (order.trigger() != Op.ORDERED
+                && runs.stream().anyMatch(run -> run.order != null && run.order.trigger() == Op.ORDERED)) {
+            // Een echte opdracht van de server is bezig: die gaat voor. De gebeurtenis (lawaai, iemand gezien, een
+            // lichaam) vervalt; zijn zintuigen melden het later gewoon opnieuw.
+            return;
+        }
         runs.removeIf(run -> run.order != null);
         queue.removeIf(run -> run.order != null);
         if (moving != null) {

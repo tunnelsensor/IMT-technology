@@ -28,11 +28,17 @@ public final class BotLink {
 
     /** De kern waarmee deze robot nu verbonden is, of null. */
     public static @Nullable SecurityCoreBlockEntity core(Bot bot) {
-        if (!(bot.level() instanceof ServerLevel level) || bot.owner() == null) {
+        if (!(bot.level() instanceof ServerLevel level)) {
             return null;
         }
         SecurityCoreBlockEntity core = SecurityCores.coreAt(level, bot.blockPosition());
-        if (core == null || !belongs(core, bot.owner())) {
+        if (core == null) {
+            return null;
+        }
+        // Hoofdstuk 60: een robot van niemand (Biebia's bewakers en drones) hoort bij een kern van niemand (Biebia's
+        // systeem): zo melden ze "contact" aan zijn diagram "Security", en geeft dat ze de opdracht "alarm".
+        boolean belongs = bot.owner() == null ? core.ownerId() == null : belongs(core, bot.owner());
+        if (!belongs) {
             return null;
         }
         return LogicServer.stats(level, core).online() ? core : null;

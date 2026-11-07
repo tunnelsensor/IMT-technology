@@ -193,6 +193,11 @@ def chest(x, y, z, facing, loot=LOOT):
         {"id": "minecraft:chest", "LootTable": loot})
 
 
+def robot_dock(x, y, z, facing):
+    """Een Robot Dock (hoofdstuk 60): hier zet Biebia's kern een bewakersrobot op (zie TowerRobots); op een kabel."""
+    put(x, y, z, "imttech:robot_dock", {"facing": facing})
+
+
 def security_turret(x, y, z):
     """Een beveiligingstorentje: schiet op indringers, tot iemand de toren hackt."""
     put(x, y, z, "imttech:security_turret", {"enabled": "true"})
@@ -629,6 +634,9 @@ def build_lobby():
     # Twee beveiligingstorentjes bij de lift: de enige weg naar boven.
     security_turret(MID - 5, y, MID + 6)
     security_turret(MID + 5, y, MID + 6)
+    # Hoofdstuk 60: twee Robot Docks ertussen, op de kabel van de torentjes, voor Biebia's bewakersrobots.
+    robot_dock(MID - 3, y, MID + 6, "south")
+    robot_dock(MID + 3, y, MID + 6, "south")
 
     floor_slab(LAB_Y - 1, LOBBY_IN)
 
@@ -962,6 +970,9 @@ def build_security():
     put(x0 + 2, y, MID, "imttech:security_core", {"facing": "east", "claimed": "false"})
     security_turret(x0 + 2, y, z0 + 2)
     security_turret(x1 - 2, y, z0 + 2)
+    # Hoofdstuk 60: twee Robot Docks voor de schermenwand, op de kabel langs de noordgevel, voor Biebia's bewakersrobots.
+    robot_dock(MID - 6, y, z0 + 2, "south")
+    robot_dock(MID + 6, y, z0 + 2, "south")
     floor_slab(LASERS_Y - 1, SECURITY_IN, DARK_FLOOR, light_step=9)
 
 
@@ -1726,7 +1737,7 @@ def build():
 # Blokken waar een stroomkabel op aansluit (zie PowerConnectable in de mod).
 POWER_BLOCKS = {"imttech:cable", "imttech:laser_emitter", "imttech:heat_generator", "imttech:solar_panel",
                 "imttech:charging_station", "imttech:dome_generator", "imttech:holo_table",
-                "imttech:suit_workbench", "imttech:drone_dock"}
+                "imttech:suit_workbench", "imttech:drone_dock", "imttech:robot_dock"}
 
 
 # De plekken met een stroomkabel (zie cable() en cable_markers()).

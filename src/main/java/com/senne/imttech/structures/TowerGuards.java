@@ -49,6 +49,22 @@ public final class TowerGuards {
     /** Zo ver van de lezer "Power door" staan de zenders van de poort (hooguit). */
     private static final double GATE_REACH = 6.5;
 
+    /** Hoofdstuk 60: Biebia's tweede diagram: een robot of drone meldt "contact" of "man down", en iedereen komt. */
+    public static final String SECURITY = "Security";
+    public static final String SECURITY_SOURCE = """
+            # Biebia's security: a guard robot or drone that has someone (or finds a body)
+            # sends a message; every guard and drone of the tower comes to its spot.
+            when message("contact"):
+                log("Contact reported by " + sender.name)
+                order("Tower guards", "alarm", sender.x, sender.y, sender.z)
+                order("Tower drones", "alarm", sender.x, sender.y, sender.z)
+
+            when message("man down"):
+                log("Man down reported by " + sender.name)
+                order("Tower guards", "alarm", sender.x, sender.y, sender.z)
+                order("Tower drones", "alarm", sender.x, sender.y, sender.z)
+            """;
+
     public static final String SOURCE = """
             when keycard("Power door"):
                 if card.in_group("staff"):
@@ -114,6 +130,10 @@ public final class TowerGuards {
         if (store.program(PROGRAM) == null) {
             var graph = GraphConverter.toGraph(ScriptParser.parse(SOURCE), null);
             store.put(null, new LogicProgram(PROGRAM, true, graph, SOURCE, ProgramKind.SERVER));
+        }
+        if (store.program(SECURITY) == null) {
+            var graph = GraphConverter.toGraph(ScriptParser.parse(SECURITY_SOURCE), null);
+            store.put(null, new LogicProgram(SECURITY, true, graph, SECURITY_SOURCE, ProgramKind.SERVER));
         }
     }
 

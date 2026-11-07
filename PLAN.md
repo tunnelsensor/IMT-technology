@@ -5166,9 +5166,24 @@ Erbij: **geen** minimap en **geen** tekst "ze zoeken je" zoals in Hitman. Alleen
       naam zo heten mag niet meer, de controle zegt het). Vier tests (lawaai met plek en soort, niet te ver; de meter en
       `when spotted` één keer; een lichaam één keer en een tweede apart; de woorden mogen niet op de server). 439 tests,
       groen.
-- [ ] **7. De toren** — docks in de lobby en op de beveiligingsverdieping, `robot/TowerRobots` (zoals TowerDrones), het
-      programma "Tower guard", "Tower patrol" uitgebreid, Biebia's diagram "Security", `BotLink` voor robots van niemand,
-      de hack geeft ook de robots. Tests: de toren heeft bewakersrobots die "contact" melden en de drones komen.
+- [x] **7. De toren** — twee **Robot Docks** in de lobby (tussen de torentjes bij de lift, op hun kabel) en twee op de
+      beveiligingsverdieping (voor de schermenwand, op de kabel langs de noordgevel), in `generate_structure.py`
+      (`robot_dock`, dus in de klassieke toren én de toren uit kamers); de gewone soldaat op de beveiligingsverdieping is
+      weg (`generate_tower_rooms.py`), de twee bewakers met een staff-keycard blijven. `robot/TowerRobots` (zoals
+      TowerDrones): Biebia's kern zet er één keer `towerRobots` (4, `[security]`) guard robots op (battle droids, Scan,
+      Face Recognition, Laser en Pathfinding, volle batterij, "Tower guard 1"...), in de squad **"Tower guards"**, met
+      het programma **Tower guard**: rondjes lopen (en omkeren als hij vastloopt), `when heard` gaat kijken, `when spotted`
+      meldt "contact", richt en schiet, `when body_seen` meldt "man down" en gaat kijken, `when ordered("alarm")` komt
+      eraan met zijn laser aan; zolang er geen dock geladen is, probeert de kern het nog tien keer. Biebia's drones zitten
+      nu in de squad "Tower drones" en hun "Tower patrol" heeft `when heard`, `when spotted` en `when body_seen` erbij.
+      Biebia's kern krijgt het diagram **"Security"** (`TowerGuards.SECURITY_SOURCE`, ook in een bestaande wereld):
+      `when message("contact")` en `when message("man down")` geven beide squads de opdracht "alarm" met de plek van de
+      melder. Daarvoor hoort een robot van niemand nu bij een kern van niemand (`BotLink.core`): Biebia's robots en
+      drones zijn verbonden met Biebia's kern (en na de hack met die van jou: `TowerHack` geeft ook de robots). Een
+      lopende opdracht van de server gaat voor: zolang `when ordered` bezig is, beginnen `when heard/spotted/body_seen`
+      niet (anders brak `when spotted` het alarm van een drone af). Twee tests (de klassieke toren heeft vier
+      bewakersrobots, twee onder en twee boven; "contact" van een robot van niemand geeft de squad de opdracht alarm via
+      Biebia's kern). 441 tests, groen.
 - [ ] **8. Afronding** — showcase "Guards like in Hitman", screenshots, LEESMIJ.md, de testtelling, het jar.
 - [ ] **9. Vermomming** (nog niet beginnen, jouw keuze) — het pak van een dode soldaat aantrekken: bewakers zien je dan
       pas van dichtbij (of als je rent of iets vreemds doet).

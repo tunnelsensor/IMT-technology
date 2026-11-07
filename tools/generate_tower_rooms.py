@@ -163,8 +163,8 @@ def security_floor():
     gs.route((X0 + 2, floor, Z0 + 2), (X1 - 2, floor, Z0 + 2))
     gs.route((X0 + 2, floor, Z0 + 2), (X0 + 2, floor, MID))
     gs.route((guard_power[0], floor, guard_power[2]), (guard_lift[0], floor, guard_power[2]))
-    # Een soldaat op wacht bij de schermenwand (hoofdstuk 54).
-    soldier(MID + 3, floor + 1, MID - 2)
+    # Hoofdstuk 54 zette hier een soldaat op wacht; sinds hoofdstuk 60 (jouw antwoord 6) bewaken Biebia's robots deze
+    # verdieping, vanaf de twee Robot Docks voor de schermenwand (zie gs.build_security en TowerRobots).
 
 
 # --------------------------------------------------------------------- De generatorkamer (hoofdstuk 54)

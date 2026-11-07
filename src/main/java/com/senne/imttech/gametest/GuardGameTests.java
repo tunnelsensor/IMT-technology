@@ -8,6 +8,9 @@ import com.senne.imttech.raven.Noises;
 import com.senne.imttech.raven.RavenBodyEntity;
 import com.senne.imttech.robot.GuardRobotEntity;
 import com.senne.imttech.robot.RobotStyle;
+import com.senne.imttech.robot.TowerRobots;
+import com.senne.imttech.registry.ModBlocks;
+import com.senne.imttech.security.SecurityCoreBlockEntity;
 import com.senne.imttech.bot.BotBoard;
 import com.senne.imttech.logic.program.LogicException;
 import com.senne.imttech.logic.program.ProgramKind;
@@ -544,5 +547,70 @@ public final class GuardGameTests {
             }
         }
         helper.succeed();
+    }
+
+    // ================================================================ De toren (stap 7)
+
+    /**
+     * Biebia's bewakersrobots (jouw antwoord 6): een Biebia's Industries Tower van niemand zet op de Robot Docks van de
+     * lobby en de beveiligingsverdieping guard robots, aan, van niemand, in de squad "Tower guards" met het programma
+     * "Tower guard".
+     */
+    @GameTest(template = "biebia_tower", timeoutTicks = 400, batch = "tower_robots")
+    public static void biebia_tower_has_guard_robots(GameTestHelper helper) {
+        int base = helper.absolutePos(BlockPos.ZERO).getY();
+        helper.runAfterDelay(100, () -> {
+            List<GuardRobotEntity> robots = helper.getLevel().getEntitiesOfClass(GuardRobotEntity.class, helper.getBounds());
+            check(robots.size() == Math.round(ImtConfig.Security.TOWER_ROBOTS),
+                    "In de toren staan " + robots.size() + " robots in plaats van " + Math.round(ImtConfig.Security.TOWER_ROBOTS));
+            int lobby = 0;
+            int security = 0;
+            for (GuardRobotEntity robot : robots) {
+                String name = robot.getName().getString();
+                check(robot.owner() == null && robot.isActive(), name + " is van iemand, of staat uit");
+                check(robot.program() != null && robot.program().name().equals(TowerRobots.PROGRAM_NAME), name + " heeft Biebia's programma niet");
+                check(TowerRobots.SQUAD.equals(robot.squad()), name + " zit niet in de squad Tower guards: " + robot.squad());
+                check(robot.board().has(com.senne.imttech.bot.BotModule.SCAN) && robot.board().has(com.senne.imttech.bot.BotModule.LASER),
+                        name + " mist modules: " + robot.board());
+                check(robot.home() != null && helper.getLevel().getBlockState(robot.home()).is(ModBlocks.ROBOT_DOCK.get()),
+                        name + " heeft geen Robot Dock als thuis");
+                if (robot.blockPosition().getY() - base < 20) {
+                    lobby++;
+                } else {
+                    security++;
+                }
+            }
+            check(lobby == 2 && security == 2, "Niet twee in de lobby en twee op de beveiligingsverdieping: " + lobby + " / " + security);
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Een bewakersrobot van Biebia die iemand heeft, meldt "contact" aan Biebia's kern; diens diagram "Security" geeft
+     * de hele squad "Tower guards" de opdracht "alarm" (een robot van niemand hoort bij een kern van niemand).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 400, batch = "tower_robots_contact")
+    public static void biebia_robot_contact_alarms_the_squad(GameTestHelper helper) {
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), null);
+        BlockPos rack = new BlockPos(16, 3, 16);
+        ImtTechGameTests.placeServer(helper, rack, core);
+        GuardRobotEntity spotter = BotSenseGameTests.robot(helper, new BlockPos(6, 2, 10), RobotStyle.COMMANDO, TowerRobots.board(),
+                "when started:\n    pass\n");
+        spotter.setProgram(TowerRobots.program());
+        spotter.setSquad(TowerRobots.SQUAD);
+        GuardRobotEntity mate = BotSenseGameTests.robot(helper, new BlockPos(12, 2, 12), RobotStyle.COMMANDO, TowerRobots.board(),
+                "got = 0\nwhen ordered(\"alarm\"):\n    got = got + 1\n");
+        mate.setSquad(TowerRobots.SQUAD);
+        ServerPlayer stranger = player(helper, new BlockPos(6, 2, 5), "tower-stranger");
+        helper.runAfterDelay(2, () -> {
+            ImtTechGameTests.startServer(helper, rack, core);
+            core.ensureSystem(helper.getLevel()); // Biebia's systeem, met het diagram "Security"
+            check(core.logic().program(com.senne.imttech.structures.TowerGuards.SECURITY) != null, "Biebia's kern heeft het diagram Security niet");
+        });
+        helper.succeedWhen(() -> {
+            check(spotter.alertState() == RavenAlert.COMBAT, "De robot heeft de vreemde nog niet (meter " + spotter.alert().level() + ")");
+            check(Double.valueOf(1).equals(mate.brain().global("got")), "De squad kreeg de opdracht alarm niet: " + mate.brain().global("got"));
+            check(stranger.isAlive(), "De vreemde is al dood");
+        });
     }
 }

@@ -61,9 +61,22 @@ public final class TowerDrones {
                     forward(3)
                     turn_right()
 
+            when heard:
+                goto(sound.x, sound.y + 2, sound.z)
+                wait(3)
+
+            when spotted:
+                send("contact")
+
+            when body_seen:
+                send("man down")
+
             when ordered("alarm"):
                 goto(order.x, order.y + 2, order.z)
             """;
+
+    /** De squad van Biebia's drones (hoofdstuk 60; de robots heten "Tower guards"). */
+    public static final String SQUAD = "Tower drones";
 
     /** Zo ver (blokken) van de kern zoeken we docks: de toren is 41 breed, en de hangar ligt 22 blokken lager. */
     private static final int REACH_SIDE = 40;
@@ -142,6 +155,7 @@ public final class TowerDrones {
             number++;
         }
         drone.setCustomName(Component.literal("Tower drone " + number));
+        drone.setSquad(SQUAD);
         drone.setHome(pos);
         dock.setBot(drone.getUUID());
         level.addFreshEntity(drone);

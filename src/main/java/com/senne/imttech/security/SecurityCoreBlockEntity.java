@@ -72,6 +72,9 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     private boolean online = true;
     /** Zette deze kern (van een Biebia's Industries Tower) Biebia's drones al op zijn docks (hoofdstuk 25)? Dat doet hij maar één keer. */
     private boolean towerDrones;
+    /** Hoofdstuk 60: idem voor Biebia's bewakersrobots (TowerRobots); zolang er geen dock geladen is, proberen we het nog even. */
+    private boolean towerRobots;
+    private int towerRobotTries;
     /** De rapporten van de laatste trainingen (hoofdstuk 26), de oudste eerst. */
     private final java.util.List<com.senne.imttech.training.TrainingReport> trainingReports = new java.util.ArrayList<>();
     /**
@@ -712,6 +715,14 @@ public class SecurityCoreBlockEntity extends BlockEntity {
             setChanged();
             com.senne.imttech.robot.TowerDrones.fill(level, this);
         }
+        // En één keer Biebia's bewakersrobots op de Robot Docks van de lobby en de beveiligingsverdieping (hoofdstuk 60).
+        if (ownerId == null && !towerRobots && SystemDefaults.BIEBIA_HOST.equals(hostname)) {
+            int placed = com.senne.imttech.robot.TowerRobots.fill(level, this);
+            if (placed > 0 || ++towerRobotTries >= 10) {
+                towerRobots = true;
+                setChanged();
+            }
+        }
         // Stroom voor de kern en zijn zone (zie powerTick).
         powerTick(level);
     }
@@ -874,6 +885,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         super.saveAdditional(tag, registries);
         saveConfig(tag);
         tag.putBoolean("TowerDrones", towerDrones);
+        tag.putBoolean("TowerRobots", towerRobots);
     }
 
     /** Alles wat de kern onthoudt: dit gaat ook mee als je hem weghakt (zie pack). */
@@ -954,6 +966,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         super.loadAdditional(tag, registries);
         loadConfig(tag);
         towerDrones = tag.getBoolean("TowerDrones");
+        towerRobots = tag.getBoolean("TowerRobots");
     }
 
     /** Terug uit {@link #saveConfig}. */

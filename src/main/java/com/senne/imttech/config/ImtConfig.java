@@ -1209,6 +1209,9 @@ public final class ImtConfig {
         /** Zoveel geprogrammeerde security drones zette Biebia in een Biebia's Industries Tower (op de docks in de hangar). */
         @Tunable(value = "How many programmed security drones Biebia left in a Biebia's Industries Tower (on the drone docks of its hangar)", max = 16)
         public static float TOWER_DRONES = 4.0f;
+        /** Hoofdstuk 60: zoveel bewakersrobots zette Biebia op de Robot Docks van de lobby en de beveiligingsverdieping. */
+        @Tunable(value = "How many programmed guard robots Biebia left in a Biebia's Industries Tower (on the robot docks of the lobby and the security floor)", max = 16)
+        public static float TOWER_ROBOTS = 4.0f;
 
         // ------------------------------------------------------------------------- De oude drones van de kern
         // Tot hoofdstuk 25 maakte een kern zelf drones; die maakt hij niet meer, maar oude drones uit een bestaande
