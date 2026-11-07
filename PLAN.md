@@ -4919,6 +4919,18 @@ een knop moet indrukken."
       elke tick als vangnet wat GLFW echt ingedrukt ziet, ook wat je al vasthield toen het openging; sluipen of sprinten op
       "toggle" laat het met rust). Het spel pauzeert niet (`isPauseScreen` was al nee). De camera draait niet mee: je muis
       kiest. Nieuw in LEESMIJ.md.
+- [x] **7. Je stond toch stil** (jouw opmerking daarna: "kun je zorgen dat je kunt wandelen terwijl je Alt drukt en je
+      wapens wil pakken") — stap 6 zette de toetsen wel "aan", maar NeoForge geeft de bewegingstoetsen van Minecraft zelf
+      (lopen, springen, sluipen, sprinten) in `Options` de context "alleen in het spel" (`KeyConflictContext.IN_GAME`), en
+      zijn `KeyMapping.isDown()` zegt dan nee zolang er een scherm open is, hoe de toets ook staat. Zolang het wiel open is
+      tellen die toetsen nu overal (`UNIVERSAL`, `GearWheelScreen.letMovementThrough`); bij het sluiten krijgen ze hun
+      eigen context terug (`removed`). Gemeten met echte toetsaanslagen: nieuw `client/dev/DevKeys` zet Windows-
+      toetsberichten (WM_KEYDOWN/WM_KEYUP) in de rij van het spelvenster via LWJGL's `User32.PostMessage`, zodat GLFW ze
+      verwerkt als van een toetsenbord (een nagedane `setDown` ziet GLFW niet, en het wiel vraagt het aan GLFW). De
+      rondleiding heeft het stuk `wheelwalk` (`gradlew runVisualCheck -Ponly=wheelwalk`, screenshot
+      `ge12_wheel_while_walking`): het drukt Alt en dan W in, en al lopend Alt, en logt de afstand ("[dev] wheelwalk
+      GOED/FOUT"): voor de fix 0,00 blokken, erna 4,27 (Alt eerst) en 4,96 (al lopend) in een seconde; na het loslaten
+      loop je door zolang je W vasthoudt.
 
 ### 57. Lasergeweren laden en lossen zoals de Glock (7 november)
 
@@ -4998,10 +5010,11 @@ eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er
       GUI-schaal de onderdelen uit elkaar houdt (frame, slede, loop, veer, slagpin, trekker; de zes laseronderdelen per
       geweer, titanium en netherite) en of een onderdeel op de grond en in je hand (F5) goed ligt.
 - [ ] **Het nieuwe wiel (hoofdstuk 56)**: gezien op screenshots (`-Ponly=gear,sling`), maar niet met de muis gespeeld.
-      Probeer: Alt vasthouden, naar een tegel schuiven en loslaten (kiest hij meteen, zonder klik?); Alt kort tikken (gaat
-      hij meteen weer dicht?); met Alt vast W, Shift, Ctrl en de spatiebalk (loop, sluip, sprint en spring je door, ook als
-      je al liep toen je Alt indrukte? en met "sluipen: toggle" aan?); na een klik op een tegel Alt vasthouden (blijft het
-      wiel dicht tot je loslaat?); de twee pouch-knoppen ernaast; en of het midden leesbaar is op jouw GUI-schaal.
+      Lopen met Alt vast is sinds stap 7 wel gemeten met echte toetsaanslagen (W, ook als je al liep). Probeer: Alt
+      vasthouden, naar een tegel schuiven en loslaten (kiest hij meteen, zonder klik?); Alt kort tikken (gaat hij meteen
+      weer dicht?); met Alt vast Shift, Ctrl en de spatiebalk (sluip, sprint en spring je door? en met "sluipen: toggle"
+      aan?); na een klik op een tegel Alt vasthouden (blijft het wiel dicht tot je loslaat?); de twee pouch-knoppen
+      ernaast; en of het midden leesbaar is op jouw GUI-schaal.
 - [ ] **Lasergeweren laden en lossen (hoofdstuk 57)**: getest en op screenshots (`-Ponly=guns`, `g08b`-`g08d`), niet
       gespeeld. Probeer: R zonder pouch (komt de cel eruit, met de korte animatie?), rechtsklik met een cel in je hand
       (gaat hij in het geweer in je werkbalk, hoor je de klik?), U met een pouch om (komt hij in de pouch?).

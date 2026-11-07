@@ -13,6 +13,7 @@ import com.senne.imttech.weapons.GrenadeItem;
 import com.senne.imttech.weapons.LaserGunItem;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.client.settings.IKeyConflictContext;
+import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
@@ -50,7 +53,8 @@ import org.lwjgl.glfw.GLFW;
  * loslaten komt nog door), en {@code KeyMapping.isDown()} van de wieltoets zegt altijd nee (die toets telt alleen in het
  * spel zelf). Daarom luistert dit scherm zelf naar de toetsen ({@link #keyPressed}, {@link #keyReleased}) en vraagt het
  * als vangnet elke tick rechtstreeks aan GLFW wat er echt ingedrukt is ({@link #physicallyDown}): voor de wieltoets
- * (loslaten = kiezen) en voor de bewegingstoetsen ({@link #syncMovement}).
+ * (loslaten = kiezen) en voor de bewegingstoetsen ({@link #syncMovement}). En NeoForge laat de bewegingstoetsen van
+ * Minecraft zelf ook alleen in het spel tellen, dus zolang het wiel open is gelden die overal ({@link #letMovementThrough}).
  */
 public class GearWheelScreen extends Screen {
     /** De tegels op de ring: 36 px, met het item er twee keer zo groot (32 px) in. */
@@ -111,6 +115,11 @@ public class GearWheelScreen extends Screen {
     private double lastMouseY;
     /** De bewegingstoetsen die wij "aan" zetten, zodat we alleen die ook weer loslaten (zie syncMovement). */
     private final Set<KeyMapping> pressedHere = new HashSet<>();
+    /**
+     * Waar elke bewegingstoets telde voor wij het wiel openden (zie letMovementThrough), om dat bij het sluiten terug te
+     * zetten.
+     */
+    private final Map<KeyMapping, IKeyConflictContext> contexts = new HashMap<>();
     /** De showcase en de screenshots houden het wiel open zonder echte toets (zie script). */
     private static boolean scriptHold;
 
@@ -130,6 +139,7 @@ public class GearWheelScreen extends Screen {
             if (mc.player != null) {
                 mc.player.playSound(ModSounds.IMT_MENU_OPEN.get(), 0.5f, 1.2f);
             }
+            letMovementThrough();
             // Minecraft zette bij het openen alle toetsen op "los": wat je nog vasthoudt (W, Shift, ...) weer aan.
             syncMovement();
         }
@@ -641,6 +651,30 @@ public class GearWheelScreen extends Screen {
                 key.setDown(false);
             }
         }
+    }
+
+    /**
+     * NeoForge geeft de bewegingstoetsen van Minecraft zelf (lopen, springen, sluipen, sprinten) de context "alleen in het
+     * spel" (Options: KeyConflictContext.IN_GAME), en zijn {@code KeyMapping.isDown()} zegt dan nee zolang er een scherm
+     * open is, hoe hard wij de toets ook "aan" zetten; daardoor stond je toch stil (gemeten met echte toetsaanslagen in de
+     * rondleiding, stuk "wheelwalk"). Zolang het wiel open is tellen die toetsen daarom overal (UNIVERSAL); bij het
+     * sluiten krijgen ze hun eigen context terug (removed).
+     */
+    private void letMovementThrough() {
+        for (KeyMapping key : movementKeys()) {
+            if (!contexts.containsKey(key)) {
+                contexts.put(key, key.getKeyConflictContext());
+                key.setKeyConflictContext(KeyConflictContext.UNIVERSAL);
+            }
+        }
+    }
+
+    /** Het wiel gaat dicht (ook als een ander scherm het vervangt): de bewegingstoetsen tellen weer waar ze telden. */
+    @Override
+    public void removed() {
+        super.removed();
+        contexts.forEach(KeyMapping::setKeyConflictContext);
+        contexts.clear();
     }
 
     @Override

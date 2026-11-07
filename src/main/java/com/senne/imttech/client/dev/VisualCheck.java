@@ -3475,6 +3475,41 @@ public final class VisualCheck {
             t.camera(0, CameraType.FIRST_PERSON);
         }
 
+        // --- Doorlopen met het wiel open (hoofdstuk 56, stap 6), met echte toetsen: Alt en W gaan als Windows-berichten
+        // naar het spelvenster (DevKeys), precies zoals van een toetsenbord, zodat ook het stuk vanaf GLFW meetelt. Twee
+        // keer: eerst Alt en dan W, en al lopend Alt indrukken. De afstanden staan in de log ("[dev] wheelwalk").
+        if (want("wheelwalk")) {
+            // [0], [1]: waar de speler bij de vorige meting stond; [2]: de laatste afstand; [3] en [4]: die van A en B.
+            double[] mark = new double[5];
+            t.onServer(0, ShowcaseFeatures::giveGear);
+            t.command(0, "gamemode survival @a");
+            t.stand(20, 80.5, -60, 80.5, 0, 10);
+            t.step(40, () -> wheelWalkMark(mark));
+            t.step(0, () -> DevKeys.press(org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_ALT, true));
+            t.waitUntil(40, com.senne.imttech.client.guns.GearWheelScreen::isOpen);
+            t.step(0, () -> wheelWalkReport("A: wiel open na Alt", mark));
+            t.step(2, () -> DevKeys.press(org.lwjgl.glfw.GLFW.GLFW_KEY_W, true));
+            t.step(20, () -> wheelWalkReport("A: 1 s W met Alt vast", mark));
+            t.step(0, () -> mark[3] = mark[2]);
+            t.shot(0, "ge12_wheel_while_walking");
+            t.step(0, () -> DevKeys.press(org.lwjgl.glfw.GLFW.GLFW_KEY_W, false));
+            t.step(5, () -> DevKeys.press(org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_ALT, false));
+            t.step(10, () -> wheelWalkReport("A: na loslaten", mark));
+            t.step(0, () -> DevKeys.press(org.lwjgl.glfw.GLFW.GLFW_KEY_W, true));
+            t.step(10, () -> wheelWalkReport("B: 0,5 s lopen zonder wiel", mark));
+            t.step(0, () -> DevKeys.press(org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_ALT, true));
+            t.waitUntil(40, com.senne.imttech.client.guns.GearWheelScreen::isOpen);
+            t.step(20, () -> wheelWalkReport("B: 1 s verder met het wiel open", mark));
+            t.step(0, () -> mark[4] = mark[2]);
+            t.step(0, () -> DevKeys.press(org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_ALT, false));
+            t.step(5, () -> DevKeys.press(org.lwjgl.glfw.GLFW.GLFW_KEY_W, false));
+            t.step(10, () -> wheelWalkReport("B: na loslaten", mark));
+            t.step(0, () -> ImtTech.LOGGER.info(String.format(java.util.Locale.ROOT,
+                    "[dev] wheelwalk %s: met het wiel open liep je in 1 s %.2f blokken (Alt eerst) en %.2f blokken (al lopend); minstens 2 verwacht",
+                    mark[3] >= 2 && mark[4] >= 2 ? "GOED" : "FOUT", mark[3], mark[4])));
+            t.command(0, "gamemode creative @a");
+        }
+
         // --- Holster, slings en cellen (hoofdstuk 55): de sling-vakjes in je inventaris, het wiel met je geweren, trekken van je
         // rug (de Glock gaat in de holster), de cellen in de pouch kiezen, en in derde persoon de geweren op je rug en borst.
         if (want("sling")) {
@@ -5440,6 +5475,34 @@ public final class VisualCheck {
             robot.setParts(parts);
             robot.setActive(true);
         }
+    }
+
+    /** Onthoudt waar de speler nu staat (voor wheelWalkReport). */
+    private static void wheelWalkMark(double[] mark) {
+        var player = Minecraft.getInstance().player;
+        if (player != null) {
+            mark[0] = player.getX();
+            mark[1] = player.getZ();
+        }
+    }
+
+    /** Schrijft in de log hoe ver de speler sinds de vorige meting liep, en of het wiel en de W-toets "aan" staan. */
+    private static void wheelWalkReport(String label, double[] mark) {
+        Minecraft mc = Minecraft.getInstance();
+        var player = mc.player;
+        if (player == null) {
+            return;
+        }
+        double moved = Math.hypot(player.getX() - mark[0], player.getZ() - mark[1]);
+        mark[2] = moved;
+        long window = mc.getWindow().getWindow();
+        ImtTech.LOGGER.info(String.format(java.util.Locale.ROOT,
+                "[dev] wheelwalk %-34s %.2f blokken, wiel open=%s, W aan=%s (GLFW: %s), Alt (GLFW): %s, v=%.2f",
+                label, moved, com.senne.imttech.client.guns.GearWheelScreen.isOpen(), mc.options.keyUp.isDown(),
+                com.mojang.blaze3d.platform.InputConstants.isKeyDown(window, org.lwjgl.glfw.GLFW.GLFW_KEY_W),
+                com.mojang.blaze3d.platform.InputConstants.isKeyDown(window, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_ALT),
+                player.getDeltaMovement().horizontalDistance()));
+        wheelWalkMark(mark);
     }
 
     /** Hoort dit stuk bij de rondleiding van vandaag (zie ONLY)? */
