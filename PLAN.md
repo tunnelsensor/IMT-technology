@@ -5104,8 +5104,18 @@ Erbij: **geen** minimap en **geen** tekst "ze zoeken je" zoals in Hitman. Alleen
       van de toren. De tien structuurbestanden opnieuw gemaakt (de toren veranderde niet). Drie tests (zijn route lopen,
       terug naar zijn post, de route draait mee met het stuk). 427 tests; `raven_soldier_shoots` en
       `glock_chamber_and_magazine_math` waren elk één keer rood door toeval (spreiding, een storing) en daarna weer groen.
-- [ ] **3. Geluid** — `raven/Noises` en de haakjes in de Glock, de lasergeweren, de granaten en ontploffingen, blokken,
-      rennen, deuren en vallen. Test: hij gaat kijken bij lawaai achter een muur en keert terug.
+- [x] **3. Geluid** — `raven/Noises`: één plek waar lawaai zich meldt met een straal (`make`), en wie er binnen die
+      straal staat hoort het; een muur ertussen (één raycast vanaf zijn oren) laat het maar `noiseWallFactor` (de helft)
+      zo ver dragen, en lawaai van een soldaat zelf telt niet. De haakjes: de Glock (`Firearms.fire`, `noiseGlock` 48),
+      de lasergeweren (`LaserGuns.fire`: pistool 12, de rest 16), de wapens van jouw robots (`BotShot`), elke ontploffing
+      (`ExplosionEvent.Detonate`: frags, de Remote Frag, TNT; 56), een flashbang (24) en een EMP (12, in
+      `RollingGrenade.explode`), een blok kapotslaan (`BlockEvent.BreakEvent`, 14), rennen (`PlayerTickEvent.Post`, om de
+      zes ticks, 8; gewoon lopen en sluipen zijn stil), een deur, luik of hek (`RightClickBlock`, 8) en een val van meer
+      dan drie blokken (`LivingFallEvent`, 12). Een soldaat die iets hoort kijkt er meteen heen (`RavenSenses.heard`),
+      wordt achterdochtig en gaat kijken (RavenInvestigateGoal), kijkt `lookSeconds` rond en loopt terug naar zijn route.
+      `Noises.Listener` is de haak voor stap 6 (robots en drones). Twee tests (hij gaat kijken en keert terug; een muur
+      halveert het bereik en zijn eigen schot telt niet). Het kijken-goal probeert een mislukt pad nu een paar keer
+      opnieuw (net na het verschijnen staat een soldaat nog niet "op de grond" en lukt een pad niet). 429 tests, groen.
 - [ ] **4. De radio en de versterking** — `raven/RavenSites` (SavedData: ingangen, alarm, teams), de markering
       `raven_entry`, het roepen in twee stappen, de berichten, een radiogeluid, het team aan de ingang. Tests: een half
       gesprek maakt de maten achterdochtig, een heel gesprek brengt een team.

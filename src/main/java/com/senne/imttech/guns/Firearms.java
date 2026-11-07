@@ -159,6 +159,9 @@ public final class Firearms {
         BulletEntity.shoot(level, player, type, damage, direction);
         level.playSound(player, player.getX(), player.getEyeY(), player.getZ(), ModSounds.GLOCK_FIRE.get(), SoundSource.PLAYERS,
                 1.0f, 0.95f + random.nextFloat() * 0.1f);
+        // Hoofdstuk 60: de bewakers horen het (door de hele bunker).
+        com.senne.imttech.raven.Noises.make(level, player.position(), com.senne.imttech.config.ImtConfig.Guards.NOISE_GLOCK,
+                com.senne.imttech.raven.Noises.Kind.SHOT, player);
         if (player.isSprinting()) {
             player.setSprinting(false);
         }

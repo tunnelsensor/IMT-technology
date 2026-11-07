@@ -273,6 +273,14 @@ public final class RavenSenses {
         }
     }
 
+    /** Lawaai (stap 3, zie Noises): hij hoorde iets op deze plek en kijkt er meteen heen; rustig gaat hij kijken. */
+    public void heard(Vec3 at, Noises.Kind kind) {
+        noticed(at, false);
+        if (state == RavenAlert.SUSPICIOUS || state == RavenAlert.SEARCHING) {
+            soldier.getLookControl().setLookAt(at.x, at.y + 1.0, at.z);
+        }
+    }
+
     /** Na een alarm (stap 4): hij is een tijd extra scherp. */
     public void remember(long until) {
         memoryUntil = Math.max(memoryUntil, until);

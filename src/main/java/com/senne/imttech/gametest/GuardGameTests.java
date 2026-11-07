@@ -2,6 +2,7 @@ package com.senne.imttech.gametest;
 
 import com.senne.imttech.ImtTech;
 import com.senne.imttech.config.ImtConfig;
+import com.senne.imttech.raven.Noises;
 import com.senne.imttech.raven.RavenAlert;
 import com.senne.imttech.raven.RavenRoutes;
 import com.senne.imttech.raven.RavenSoldierEntity;
@@ -198,6 +199,43 @@ public final class GuardGameTests {
         check(!RavenRoutes.isSoldier("raven_guard;1,0,0") && RavenRoutes.isGuard("raven_guard;1,0,0"), "Een bewaker van de toren wordt niet herkend");
         check(RavenRoutes.route("raven_soldier", at, Rotation.NONE).isEmpty(), "Zonder route hoort de lijst leeg te zijn");
         check(RavenRoutes.route("raven_soldier;a,b", at, Rotation.NONE).isEmpty(), "Een kapotte verschuiving hoort overgeslagen te worden");
+        helper.succeed();
+    }
+
+    // ================================================================ Geluid (stap 3)
+
+    /** Lawaai: een rustige bewaker gaat kijken op die plek, kijkt rond, wordt weer rustig en gaat terug naar zijn post. */
+    @GameTest(template = ARENA, timeoutTicks = 600, batch = "guards")
+    public static void guard_investigates_a_noise_and_returns(GameTestHelper helper) {
+        RavenSoldierEntity guard = soldier(helper, new BlockPos(4, 2, 4), 0, true);
+        Vec3 post = Vec3.atBottomCenterOf(helper.absolutePos(new BlockPos(4, 2, 4)));
+        Vec3 noise = helper.absoluteVec(new Vec3(13.5, 2.5, 13.5));
+        Noises.make(helper.getLevel(), noise, 20, Noises.Kind.BLOCK, null);
+        check(guard.senses().state() == RavenAlert.SUSPICIOUS, "De bewaker hoorde het lawaai niet (" + guard.senses().state() + ")");
+        check(guard.getTarget() == null, "Lawaai alleen mag geen doelwit geven");
+        helper.startSequence()
+                .thenWaitUntil(() -> check(guard.position().distanceTo(noise) < 2.5, "De bewaker ging niet kijken bij het lawaai (" + guard.position() + ")"))
+                .thenWaitUntil(() -> check(guard.senses().state() == RavenAlert.CALM, "De bewaker werd niet weer rustig"))
+                .thenWaitUntil(() -> check(guard.position().distanceTo(post) < 2.0, "De bewaker ging niet terug naar zijn post"))
+                .thenSucceed();
+    }
+
+    /** Door een muur draagt lawaai maar half zo ver, en lawaai van een soldaat zelf telt niet. */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "guards")
+    public static void walls_muffle_a_noise(GameTestHelper helper) {
+        for (int x = 11; x <= 18; x++) {
+            for (int y = 2; y <= 4; y++) {
+                helper.setBlock(new BlockPos(x, y, 10), Blocks.STONE_BRICKS);
+            }
+        }
+        RavenSoldierEntity open = soldier(helper, new BlockPos(3, 2, 6), 0, false);
+        RavenSoldierEntity walled = soldier(helper, new BlockPos(15, 2, 6), 0, false);
+        Vec3 noise = helper.absoluteVec(new Vec3(9.5, 2.5, 16.5));
+        Noises.make(helper.getLevel(), noise, 16, Noises.Kind.SHOT, null);
+        check(open.senses().state() == RavenAlert.SUSPICIOUS, "De bewaker in de open ruimte hoorde het schot niet");
+        check(walled.senses().state() == RavenAlert.CALM, "De bewaker achter de muur hoorde het schot toch (even ver weg)");
+        Noises.make(helper.getLevel(), noise, 40, Noises.Kind.SHOT, walled);
+        check(walled.senses().state() == RavenAlert.CALM, "Een soldaat hoort zijn eigen schot als lawaai");
         helper.succeed();
     }
 }

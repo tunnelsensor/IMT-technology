@@ -263,6 +263,10 @@ public final class LaserGuns {
         level.playSound(player, player.getX(), player.getEyeY(), player.getZ(), type.fireSound(), SoundSource.PLAYERS,
                 1.0f, 0.95f + random.nextFloat() * 0.1f);
         ModNetwork.sendNear(level, eye, VISIBLE, new GunShotPayload(player.getId(), type.ordinal(), ends, hits));
+        // Hoofdstuk 60: de bewakers horen het (een pistool zacht, de rest wat verder).
+        com.senne.imttech.raven.Noises.make(level, player.position(), type == GunType.PISTOL
+                ? com.senne.imttech.config.ImtConfig.Guards.NOISE_LASER_PISTOL : com.senne.imttech.config.ImtConfig.Guards.NOISE_LASER_RIFLE,
+                com.senne.imttech.raven.Noises.Kind.SHOT, player);
         wear(player, gun, parts, random);
         return Result.FIRED;
     }

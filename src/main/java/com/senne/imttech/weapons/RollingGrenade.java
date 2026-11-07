@@ -144,12 +144,19 @@ public class RollingGrenade extends GrenadeEntity {
     @Override
     protected void explode(ServerLevel level) {
         switch (kind()) {
-            case EMP -> empPulse(level);
+            case EMP -> {
+                // Hoofdstuk 60: een EMP is zacht te horen (de frag gaat via de ontploffing zelf, zie Noises.onExplosion).
+                com.senne.imttech.raven.Noises.make(level, blastCenter(), ImtConfig.Guards.NOISE_EMP,
+                        com.senne.imttech.raven.Noises.Kind.EXPLOSION, getOwner());
+                empPulse(level);
+            }
             case FRAG -> fragBlast(level);
             case FLASH -> {
                 Vec3 at = blastCenter();
                 discard();
                 Flashbang.bang(level, at, getOwner());
+                com.senne.imttech.raven.Noises.make(level, at, ImtConfig.Guards.NOISE_FLASHBANG,
+                        com.senne.imttech.raven.Noises.Kind.EXPLOSION, getOwner());
             }
             case SMOKE -> {
                 // Hij blijft liggen en rookt; als de rook op is, verdwijnt hij (zie tick).

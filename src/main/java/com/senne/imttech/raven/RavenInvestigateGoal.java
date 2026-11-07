@@ -25,8 +25,9 @@ import org.jetbrains.annotations.Nullable;
 public class RavenInvestigateGoal extends Goal {
     /** Om de zoveel ticks kijkt hij een andere kant op. */
     private static final int TURN_TICKS = 20;
-    /** Zo vaak probeert hij opnieuw een pad als hij nog niet aankwam. */
-    private static final int REPATH_TICKS = 30;
+    /** Zo snel (ticks) probeert hij opnieuw een pad als het niet lukte, en zo vaak hooguit. */
+    private static final int RETRY_TICKS = 10;
+    private static final int MAX_TRIES = 4;
     /** Zoveel plekken probeert hij voor een nieuwe zoekplek. */
     private static final int SEARCH_TRIES = 10;
 
@@ -35,6 +36,7 @@ public class RavenInvestigateGoal extends Goal {
     /** -1 = nog onderweg; anders hoe lang hij al rondkijkt (ticks). */
     private int looking = -1;
     private int repath;
+    private int tries;
 
     public RavenInvestigateGoal(RavenSoldierEntity soldier) {
         this.soldier = soldier;
@@ -84,16 +86,24 @@ public class RavenInvestigateGoal extends Goal {
         if (destination == null || (senses.state() == RavenAlert.SUSPICIOUS && want.distanceTo(destination) > 2.0)) {
             destination = want;
             looking = -1;
+            tries = 0;
+            repath = RETRY_TICKS;
             walkTo(destination);
         }
         if (looking < 0) {
-            boolean arrived = soldier.position().distanceTo(destination) < 1.6 || soldier.getNavigation().isDone();
-            if (arrived) {
+            if (soldier.position().distanceTo(destination) < 1.6) {
                 looking = 0;
                 soldier.getNavigation().stop();
-            } else if (--repath <= 0) {
-                repath = REPATH_TICKS;
-                walkTo(destination);
+            } else if (soldier.getNavigation().isDone() && --repath <= 0) {
+                // Geen pad (of het pad is op en hij is er nog niet): een paar keer opnieuw proberen. Net na het verschijnen
+                // staat hij bijvoorbeeld nog niet "op de grond", en dan lukt een pad nog niet. Lukt het echt niet, dan
+                // kijkt hij rond vanaf waar hij staat.
+                if (++tries >= MAX_TRIES) {
+                    looking = 0;
+                } else {
+                    repath = RETRY_TICKS;
+                    walkTo(destination);
+                }
             }
             return;
         }
@@ -111,6 +121,8 @@ public class RavenInvestigateGoal extends Goal {
             if (spot != null) {
                 destination = spot;
                 looking = -1;
+                tries = 0;
+                repath = RETRY_TICKS;
                 walkTo(spot);
             } else {
                 looking = 0;

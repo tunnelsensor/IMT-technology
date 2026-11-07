@@ -95,6 +95,10 @@ public final class BotShot {
             hit = null;
         }
         bot.playSound(laser ? ModSounds.ROBOT_LASER.get() : ModSounds.ROBOT_GUN.get(), 1.0f, 0.95f + bot.getRandom().nextFloat() * 0.1f);
+        // Hoofdstuk 60: de bewakers horen het schot van een robot (zijn laser zacht als een laserpistool, zijn geweer als de rest).
+        com.senne.imttech.raven.Noises.make(level, bot.position(), laser
+                ? ImtConfig.Guards.NOISE_LASER_PISTOL : ImtConfig.Guards.NOISE_LASER_RIFLE,
+                com.senne.imttech.raven.Noises.Kind.SHOT, bot.entity());
         ModNetwork.sendNear(level, bot.position(), 64, new BeamEffectPayload(from, to,
                 laser ? BeamEffectPayload.Kind.ROBOT_LASER : BeamEffectPayload.Kind.ROBOT_BULLET));
         if (hit == null || !mayHurt(level, bot, hit)) {

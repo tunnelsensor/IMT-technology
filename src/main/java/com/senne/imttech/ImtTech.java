@@ -279,6 +279,12 @@ public class ImtTech {
         // Alleen frags komen door een zone (TNT en de satelliet een beetje): geen andere explosies, zuigers, monsters of
         // lava (vuur: zie FireBlockMixin).
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.Zones::onExplosion);
+        // Hoofdstuk 60: lawaai dat de bewakers horen (rennen, blokken, deuren, vallen, ontploffingen).
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.raven.Noises::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.raven.Noises::onBlockBreak);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.raven.Noises::onRightClickBlock);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.raven.Noises::onFall);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.raven.Noises::onExplosion);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.Zones::onPiston);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.Zones::onMobGriefing);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.Zones::onFluidPlace);

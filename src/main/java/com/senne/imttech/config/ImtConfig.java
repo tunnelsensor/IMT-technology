@@ -1873,6 +1873,30 @@ public final class ImtConfig {
         public static float PATROL_WAIT_MIN = 2.0f;
         @Tunable(value = "Longest time he stops there (seconds)")
         public static float PATROL_WAIT_MAX = 5.0f;
+
+        // ------------------------------------------------------------------------- Horen (stap 3)
+        @Tunable(value = "How far a Glock shot is heard (blocks); sneaking and walking make no noise at all")
+        public static float NOISE_GLOCK = 48.0f;
+        @Tunable(value = "How far a laser pistol shot is heard (blocks)")
+        public static float NOISE_LASER_PISTOL = 12.0f;
+        @Tunable(value = "How far a laser rifle, shotgun or sniper shot is heard (blocks)")
+        public static float NOISE_LASER_RIFLE = 16.0f;
+        @Tunable(value = "How far an explosion is heard (blocks): frag grenades, the Remote Frag, TNT")
+        public static float NOISE_EXPLOSION = 56.0f;
+        @Tunable(value = "How far a flashbang is heard (blocks)")
+        public static float NOISE_FLASHBANG = 24.0f;
+        @Tunable(value = "How far an EMP is heard (blocks)")
+        public static float NOISE_EMP = 12.0f;
+        @Tunable(value = "How far breaking a block is heard (blocks)")
+        public static float NOISE_BLOCK = 14.0f;
+        @Tunable(value = "How far sprinting is heard (blocks)")
+        public static float NOISE_STEPS = 8.0f;
+        @Tunable(value = "How far a door, trapdoor or gate is heard (blocks)")
+        public static float NOISE_DOOR = 8.0f;
+        @Tunable(value = "How far a fall of more than three blocks is heard (blocks)")
+        public static float NOISE_FALL = 12.0f;
+        @Tunable(value = "Through a wall a noise carries this part of its distance (0.5 = half)", min = 0.05, max = 1)
+        public static float NOISE_WALL_FACTOR = 0.5f;
     }
 
     // =============================================================================================== Raids
