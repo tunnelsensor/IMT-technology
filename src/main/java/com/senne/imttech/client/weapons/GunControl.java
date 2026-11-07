@@ -3,9 +3,7 @@ package com.senne.imttech.client.weapons;
 import com.senne.imttech.client.ImtKeys;
 import com.senne.imttech.network.GunFirePayload;
 import com.senne.imttech.network.GunReloadPayload;
-import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.registry.ModSounds;
-import com.senne.imttech.weapons.EnergyCellItem;
 import com.senne.imttech.weapons.GunType;
 import com.senne.imttech.weapons.LaserGunItem;
 import net.minecraft.ChatFormatting;
@@ -29,8 +27,10 @@ import org.jetbrains.annotations.Nullable;
  * <ul>
  *   <li><b>linkerklik</b> schiet (het geweer: knop inhouden), en zwaait of breekt niets;</li>
  *   <li><b>rechterklik</b> (inhouden) richt door het vizier: je zoomt in, schiet nauwkeuriger en loopt langzamer;</li>
- *   <li><b>R</b> herlaadt en <b>H</b> bekijkt het geweer (alleen met een geweer in je hand; anders doen R en H wat ze
- *       altijd deden);</li>
+ *   <li><b>R</b> herlaadt: met een vollere cel in je magazijnpouch kies je die (hoofdstuk 55), anders komt de cel eruit
+ *       (hoofdstuk 57, zoals de Glock: een cel erin doe je met rechtsklik met de cel in je hand); <b>U</b> haalt de cel
+ *       eruit; <b>H</b> bekijkt het geweer (alleen met een geweer in je hand; anders doen R, U en H wat ze altijd
+ *       deden);</li>
  *   <li>sprinten laat het geweer zakken, en schieten stopt je sprint.</li>
  * </ul>
  * Alles wat je ziet, gebeurt meteen (geluid, terugslag, de bout), de server beslist of het schot telt (zie
@@ -61,6 +61,8 @@ public final class GunControl {
     private static float reloadAt = -1;
     private static int reloadTicks = 1;
     private static boolean cellInPlayed;
+    /** Alleen de cel eruit (R zonder pouch, of U; hoofdstuk 57): de animatie stopt na het eruit halen (zie GunRenderer). */
+    private static boolean ejectOnly;
     private static float inspectAt = -1;
     private static float shotAt = -100;
     private static float emptyAt = -100;
@@ -123,6 +125,11 @@ public final class GunControl {
         return reloadAt >= 0;
     }
 
+    /** Is het herladen dat loopt alleen de cel eruit halen (hoofdstuk 57)? */
+    public static boolean ejectOnly() {
+        return ejectOnly;
+    }
+
     // ================================================================ Elke tick
 
     public static void onClientTick(ClientTickEvent.Post event) {
@@ -173,6 +180,9 @@ public final class GunControl {
         while (ImtKeys.GUN_RELOAD.consumeClick()) {
             startReload(player, main, type);
         }
+        while (ImtKeys.GUN_UNLOAD.consumeClick()) {
+            unload(player, main, type);
+        }
         while (ImtKeys.GUN_INSPECT.consumeClick()) {
             if (!reloading() && aim < 0.1f) {
                 inspectAt = now;
@@ -180,7 +190,7 @@ public final class GunControl {
         }
         if (reloading()) {
             float done = (now - reloadAt) / reloadTicks;
-            if (!cellInPlayed && done >= 0.58f) {
+            if (!ejectOnly && !cellInPlayed && done >= 0.58f) {
                 cellInPlayed = true;
                 play(player, ModSounds.LASER_GUN_CELL_IN.get(), 0.8f);
             }
@@ -205,9 +215,12 @@ public final class GunControl {
         }
     }
 
-    /** R en H horen nu niet bij een geweer: hun klikken vergeten (anders herlaadt hij later ineens). */
+    /** R, U en H horen nu niet bij een geweer: hun klikken vergeten (anders herlaadt hij later ineens). */
     private static void drainKeys() {
         while (ImtKeys.GUN_RELOAD.consumeClick()) {
+            // niets
+        }
+        while (ImtKeys.GUN_UNLOAD.consumeClick()) {
             // niets
         }
         while (ImtKeys.GUN_INSPECT.consumeClick()) {
@@ -243,7 +256,10 @@ public final class GunControl {
         player.setYRot(player.getYRot() + (player.getRandom().nextFloat() - 0.5f) * kick * 0.4f);
     }
 
-    /** R: herladen, als er een cel is die voller is dan die in je geweer. De server doet het echte wisselen. */
+    /**
+     * R: met een vollere cel in je magazijnpouch kies je die (hoofdstuk 55); anders komt de cel eruit (hoofdstuk 57, zoals
+     * de Glock: vroeger pakte R de volste cel uit je inventaris, dat is weg). De server doet het echte werk.
+     */
     private static void startReload(LocalPlayer player, ItemStack gun, GunType type) {
         if (reloading() || draw(0) < 1) {
             return;
@@ -252,26 +268,36 @@ public final class GunControl {
         if (com.senne.imttech.client.guns.GunGearClient.openCellPicker(player, gun)) {
             return;
         }
-        float current = LaserGunItem.cell(gun);
-        boolean better = false;
-        for (ItemStack stack : player.getInventory().items) {
-            if (stack.is(ModItems.ENERGY_CELL.get()) && EnergyCellItem.charge(stack) >= Math.max(0.001f, current + 0.001f)) {
-                better = true;
-                break;
-            }
-        }
-        if (!better) {
+        if (LaserGunItem.cell(gun) < 0) {
             emptyAt = player.level().getGameTime();
             play(player, ModSounds.LASER_GUN_EMPTY.get(), 0.5f);
-            player.displayClientMessage(Component.translatable("weapon.imttech.gun.no_cell").withStyle(ChatFormatting.RED), true);
+            player.displayClientMessage(Component.translatable("weapon.imttech.gun.no_cell_hint").withStyle(ChatFormatting.RED), true);
             return;
         }
+        beginEject(player, type);
+    }
+
+    /** U (hoofdstuk 57): de cel eruit, in je pouch als daar plek is, anders in je inventaris. Zonder cel: een melding. */
+    private static void unload(LocalPlayer player, ItemStack gun, GunType type) {
+        if (reloading() || draw(0) < 1) {
+            return;
+        }
+        if (LaserGunItem.cell(gun) < 0) {
+            player.displayClientMessage(Component.translatable("weapon.imttech.gun.nothing_to_unload").withStyle(ChatFormatting.RED), true);
+            return;
+        }
+        beginEject(player, type);
+    }
+
+    /** Alleen de cel eruit: de korte animatie (de server zegt precies hoe lang), en de vraag aan de server. */
+    private static void beginEject(LocalPlayer player, GunType type) {
         reloadAt = player.level().getGameTime();
-        reloadTicks = type.reloadTicks();
-        cellInPlayed = false;
+        reloadTicks = Math.max(1, Math.round(type.reloadTicks() * com.senne.imttech.config.ImtConfig.Weapons.GUN_EJECT_PART));
+        ejectOnly = true;
+        cellInPlayed = true;
         inspectAt = -1;
         aim = 0;
-        send(new GunReloadPayload(true, -1));
+        send(new GunReloadPayload(true, com.senne.imttech.weapons.LaserGuns.EJECT));
         play(player, ModSounds.LASER_GUN_CELL_OUT.get(), 0.8f);
     }
 
@@ -283,6 +309,7 @@ public final class GunControl {
         }
         reloadAt = player.level().getGameTime();
         reloadTicks = type.reloadTicks();
+        ejectOnly = false;
         cellInPlayed = false;
         inspectAt = -1;
         aim = 0;

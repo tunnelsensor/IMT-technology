@@ -2005,6 +2005,12 @@ public final class ImtConfig {
         /** Zo lang duurt herladen (ticks): de animatie in je spel duurt even lang. */
         @Tunable(value = "How long reloading takes (ticks), per gun", min = 5, max = 200)
         public static float[] GUN_RELOAD = {30.0f, 44.0f, 60.0f, 52.0f};
+        /** Hoofdstuk 57: alleen de cel eruit (R zonder pouch, of U) duurt dit deel van de herlaadtijd. */
+        @Tunable(value = "Taking the cell out on its own (R without a pouch, or U), as a part of the reload time", min = 0.05, max = 2)
+        public static float GUN_EJECT_PART = 0.5f;
+        /** Een cel er met de hand in (rechtsklik met de cel) duurt dit deel van de herlaadtijd. */
+        @Tunable(value = "Putting a cell in by hand (right-click with the cell), as a part of the reload time", min = 0.05, max = 2)
+        public static float GUN_INSERT_PART = 0.75f;
         /** Hoe ver een schot van het midden af kan gaan als je niet richt (graden). */
         @Tunable(value = "How far a shot can stray when you shoot from the hip (degrees), per gun", max = 45)
         public static float[] GUN_SPREAD = {2.0f, 3.0f, 6.0f, 8.0f};
@@ -2177,7 +2183,8 @@ public final class ImtConfig {
         // ------------------------------------------------------------------------- Holster en pouches (stap 2)
         @Tunable(value = "Grenades that fit in a Grenade Pouch", min = 1, max = 27)
         public static float GRENADE_POUCH_SIZE = 4.0f;
-        @Tunable(value = "Magazines that fit in a Magazine Pouch", min = 1, max = 9)
-        public static float MAG_POUCH_SIZE = 3.0f;
+        /** Hoofdstuk 58 (jouw wens): zes (was drie). Let op: een bestaand configbestand houdt zijn eigen getal. */
+        @Tunable(value = "Magazines (or energy cells) that fit in a Magazine Pouch", min = 1, max = 9)
+        public static float MAG_POUCH_SIZE = 6.0f;
     }
 }

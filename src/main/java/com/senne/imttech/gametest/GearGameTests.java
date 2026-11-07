@@ -296,4 +296,48 @@ public final class GearGameTests {
         check(!LaserGuns.startReload(player, 0), "Een legere cel (60) ging in een geweer met 90");
         helper.succeed();
     }
+
+    /**
+     * Hoofdstuk 57: U (of R zonder vollere cel in je pouch) haalt de cel uit een lasergeweer: in je magazijnpouch als daar
+     * plek is, anders in je inventaris. Zoals het magazijn van de Glock.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "guns")
+    public static void laser_gun_unloads_its_cell_into_the_pouch(GameTestHelper helper) {
+        check(!Gear.curios(), "Deze test is voor zonder Curios");
+        ServerPlayer player = player(helper, "cell-unloader");
+        ItemStack gun = LaserGunItem.complete(GunType.RIFLE, GunMaterial.TITANIUM);
+        LaserGunItem.setCell(gun, 20);
+        player.setItemInHand(InteractionHand.MAIN_HAND, gun);
+        // De pouch vol (hoeveel vakjes hij ook heeft: zes sinds hoofdstuk 58), op het tweede vakje na.
+        int size = GearItem.Kind.MAG_POUCH.size();
+        check(size >= 3, "De magazijnpouch heeft minder dan drie vakjes");
+        ItemStack[] cells = new ItemStack[size];
+        for (int i = 0; i < size; i++) {
+            cells[i] = i == 1 ? ItemStack.EMPTY : EnergyCellItem.withCharge(60 + i);
+        }
+        check(Gear.set(player, GearItem.Kind.MAG_POUCH, gear(GearItem.Kind.MAG_POUCH, cells)), "De pouch ging niet om");
+        check(LaserGuns.startReload(player, LaserGuns.EJECT), "Lossen begon niet");
+        check(LaserGuns.isReloading(player), "Het lossen loopt niet");
+        LaserGuns.finishReloadNow(player);
+        check(LaserGunItem.cell(player.getMainHandItem()) < 0, "De cel bleef in het geweer");
+        List<ItemStack> pouch = Gear.contents(player, GearItem.Kind.MAG_POUCH);
+        check(Math.abs(EnergyCellItem.charge(pouch.get(1)) - 20) < 1e-3, "De cel (20) kwam niet in het lege vakje van de pouch");
+        check(Math.abs(EnergyCellItem.charge(pouch.get(0)) - 60) < 1e-3 && Math.abs(EnergyCellItem.charge(pouch.get(2)) - 62) < 1e-3,
+                "De andere vakjes veranderden");
+        // Zonder cel valt er niets te lossen.
+        check(!LaserGuns.startReload(player, LaserGuns.EJECT), "Lossen zonder cel begon");
+        // De pouch is vol: de volgende cel komt in je inventaris.
+        LaserGunItem.setCell(player.getMainHandItem(), 50);
+        check(LaserGuns.startReload(player, LaserGuns.EJECT), "Lossen met een volle pouch begon niet");
+        LaserGuns.finishReloadNow(player);
+        boolean inInventory = false;
+        for (ItemStack stack : player.getInventory().items) {
+            if (stack.is(com.senne.imttech.registry.ModItems.ENERGY_CELL.get()) && Math.abs(EnergyCellItem.charge(stack) - 50) < 1e-3) {
+                inInventory = true;
+            }
+        }
+        check(inInventory, "De cel (50) kwam niet in je inventaris toen de pouch vol was");
+        check(Gear.contents(player, GearItem.Kind.MAG_POUCH).stream().noneMatch(ItemStack::isEmpty), "De pouch veranderde");
+        helper.succeed();
+    }
 }

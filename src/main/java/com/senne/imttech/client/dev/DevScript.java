@@ -119,8 +119,18 @@ public final class DevScript {
         return step(waitTicks, () -> Minecraft.getInstance().setScreen(screen.get()));
     }
 
+    /**
+     * Het scherm sluiten zoals Esc dat doet. Niet met setScreen(null): een containerscherm (het pouchscherm, je inventaris)
+     * meldt het sluiten dan niet aan de server, die zijn menu open houdt en daarna werkbalkwijzigingen (een geweer van je
+     * rug trekken) niet meer naar jouw spel stuurt; de screenshots sl03/sl04 lieten daardoor de Glock zien.
+     */
     public DevScript close(int waitTicks) {
-        return step(waitTicks, () -> Minecraft.getInstance().setScreen(null));
+        return step(waitTicks, () -> {
+            Screen screen = Minecraft.getInstance().screen;
+            if (screen != null) {
+                screen.onClose();
+            }
+        });
     }
 
     public DevScript camera(int waitTicks, CameraType type) {
@@ -150,6 +160,14 @@ public final class DevScript {
     /** Een toets kort aantikken (een klik). */
     public DevScript tap(int waitTicks, Supplier<KeyMapping> key) {
         return key(waitTicks, key, true).key(2, key, false);
+    }
+
+    /**
+     * Het quickdraw-wiel (hoofdstuk 56, alleen open zolang je Alt vasthoudt): {@code true} opent het en houdt het vast
+     * alsof je Alt indrukt, {@code false} laat los. Een nagedane toets (key) werkt hier niet: het wiel kijkt naar GLFW.
+     */
+    public DevScript wheel(int waitTicks, boolean hold) {
+        return step(waitTicks, () -> com.senne.imttech.client.guns.GearWheelScreen.script(hold));
     }
 
     /** Kijkrichting van de speler zetten (yaw 0 = zuid, pitch + = omlaag). */

@@ -131,19 +131,41 @@ public class MagPickerScreen extends Screen {
         onClose();
     }
 
-    private int left(int count) {
-        return width / 2 - (count * (CARD_W + 8) - 8) / 2;
+    /** Zoveel kaarten naast elkaar: tot vier op één rij, met meer vakjes twee rijen (zes vakjes = twee rijen van drie). */
+    private static int columns(int count) {
+        return count <= 4 ? Math.max(1, count) : (count + 1) / 2;
+    }
+
+    private static int rows(int count) {
+        return (count + columns(count) - 1) / columns(count);
+    }
+
+    private int gridTop(int count) {
+        return height / 2 - (rows(count) * (CARD_H + 8) - 8) / 2;
+    }
+
+    private int gridBottom(int count) {
+        return gridTop(count) + rows(count) * (CARD_H + 8) - 8;
+    }
+
+    private int cardX(int index, int count) {
+        int columns = columns(count);
+        return width / 2 - (columns * (CARD_W + 8) - 8) / 2 + (index % columns) * (CARD_W + 8);
+    }
+
+    private int cardY(int index, int count) {
+        return gridTop(count) + (index / columns(count)) * (CARD_H + 8);
     }
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         HudStyle.dim(g, width, height);
         List<ItemStack> pouch = pouch();
-        int top = height / 2 - CARD_H / 2;
-        g.drawCenteredString(font, title, width / 2, top - 16, HudStyle.argb(255, HudStyle.ORANGE));
+        g.drawCenteredString(font, title, width / 2, gridTop(pouch.size()) - 16, HudStyle.argb(255, HudStyle.ORANGE));
         for (int i = 0; i < pouch.size(); i++) {
             ItemStack inside = pouch.get(i);
-            int x = left(pouch.size()) + i * (CARD_W + 8);
+            int x = cardX(i, pouch.size());
+            int top = cardY(i, pouch.size());
             boolean fits = fits(inside);
             boolean hot = fits && mouseX >= x && mouseX < x + CARD_W && mouseY >= top && mouseY < top + CARD_H;
             g.fill(x, top, x + CARD_W, top + CARD_H, HudStyle.argb(220, 0x0E1116));
@@ -164,17 +186,17 @@ public class MagPickerScreen extends Screen {
             g.drawCenteredString(font, Component.literal(String.valueOf(i + 1)), 0, 0, HudStyle.argb(150, HudStyle.WHITE));
             g.pose().popPose();
         }
-        g.drawCenteredString(font, Component.translatable(laser != null ? "screen.imttech.cell_picker.hint" : "screen.imttech.mag_picker.hint"),
-                width / 2, top + CARD_H + 10, HudStyle.argb(150, HudStyle.WHITE));
+        g.drawCenteredString(font, Component.translatable(laser != null ? "screen.imttech.cell_picker.hint" : "screen.imttech.mag_picker.hint",
+                pouch.size()), width / 2, gridBottom(pouch.size()) + 10, HudStyle.argb(150, HudStyle.WHITE));
         super.render(g, mouseX, mouseY, partialTick);
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         List<ItemStack> pouch = pouch();
-        int top = height / 2 - CARD_H / 2;
         for (int i = 0; i < pouch.size(); i++) {
-            int x = left(pouch.size()) + i * (CARD_W + 8);
+            int x = cardX(i, pouch.size());
+            int top = cardY(i, pouch.size());
             if (mouseX >= x && mouseX < x + CARD_W && mouseY >= top && mouseY < top + CARD_H && fits(pouch.get(i))) {
                 pick(i);
                 return true;

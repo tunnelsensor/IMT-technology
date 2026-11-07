@@ -155,7 +155,7 @@ public final class GunHud implements LayeredDraw.Layer {
             int y0 = bottom - 48;
             g.fill(x0, y0, right, y0 + 3, argb(0.5f, 0x0A2A33));
             g.fill(x0, y0, x0 + Math.round(barW * reload), y0 + 3, argb(0.95f, CYAN));
-            Component text = Component.translatable("hud.imttech.gun.reloading");
+            Component text = Component.translatable(GunControl.ejectOnly() ? "hud.imttech.gun.ejecting" : "hud.imttech.gun.reloading");
             g.drawString(font, text, right - font.width(text), y0 - 10, argb(0.9f, WHITE), true);
         } else if (!LaserGunItem.works(gun)) {
             // Hoofdstuk 55: niet compleet, geen Nether Star, of een onderdeel kapot.
@@ -171,7 +171,10 @@ public final class GunHud implements LayeredDraw.Layer {
             }
             g.drawString(font, text, right - font.width(text), bottom - 48, argb(blink ? 1 : 0.6f, RED), true);
         } else if (noCell || shots == 0) {
-            Component text = Component.translatable(noCell ? "hud.imttech.gun.no_cell" : "hud.imttech.gun.empty");
+            // Hoofdstuk 57: zonder cel rechtsklik je er een in (of R met een cel in je pouch), zoals bij de Glock.
+            boolean pouch = com.senne.imttech.client.guns.GunGearClient.cellsInPouch(player, -1) > 0;
+            Component text = Component.translatable(noCell ? (pouch ? "hud.imttech.gun.no_cell_pouch" : "hud.imttech.gun.no_cell")
+                    : "hud.imttech.gun.empty");
             g.drawString(font, text, right - font.width(text), bottom - 48, argb(blink ? 1 : 0.6f, RED), true);
         }
     }

@@ -14,7 +14,8 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
- * Linker Alt (hoofdstuk 52, stap 2): het wiel openen. En sinds hoofdstuk 54 (jouw notitie) de eigen toetsen voor elke
+ * Linker Alt (hoofdstuk 52, stap 2): het wiel openen; sinds hoofdstuk 56 staat het er alleen zolang je Alt vasthoudt (het
+ * scherm zelf sluit bij het loslaten, zie GearWheelScreen). En sinds hoofdstuk 54 (jouw notitie) de eigen toetsen voor elke
  * quickdraw (het pistool, een granaat, en sinds hoofdstuk 55 het geweer op je rug of voor je borst) en om elke pouch
  * te openen; standaard zitten die op geen toets.
  */
@@ -22,6 +23,12 @@ public final class GearControl {
     private GearControl() {}
 
     private static boolean wasDown;
+    /**
+     * Na het sluiten moet je Alt eerst echt loslaten voor het wiel opnieuw opent (hoofdstuk 56): Minecraft zet een
+     * ingehouden toets bij elke toetsherhaling weer "aan", en anders sprong het wiel meteen weer open na een klik op een
+     * tegel of Esc.
+     */
+    private static boolean waitForRelease;
 
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
@@ -34,7 +41,12 @@ public final class GearControl {
             // De klikken zelf hoeven we niet: we kijken of de toets net ingedrukt werd.
         }
         boolean down = ImtKeys.GEAR_WHEEL.isDown();
-        if (down && !wasDown && mc.screen == null) {
+        if (mc.screen instanceof GearWheelScreen) {
+            waitForRelease = true;
+        } else if (waitForRelease && !GearWheelScreen.keyHeld()) {
+            waitForRelease = false;
+        }
+        if (down && !wasDown && mc.screen == null && !waitForRelease) {
             mc.setScreen(new GearWheelScreen());
         }
         wasDown = down;

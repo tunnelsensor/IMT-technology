@@ -191,9 +191,10 @@ public final class ImtClientEvents {
             sendAction(ImtAction.DRONE_CAMERA);
         }
         while (ImtKeys.PING.consumeClick()) {
-            // Met een pistool of magazijn in je hand is U de unload (hoofdstuk 54), niet de ping.
+            // Met een pistool, magazijn of lasergeweer (hoofdstuk 57) in je hand is U de unload (hoofdstuk 54), niet de ping.
             boolean firearm = com.senne.imttech.client.guns.FirearmControl.held() != null
-                    || com.senne.imttech.client.guns.FirearmControl.heldMagazine();
+                    || com.senne.imttech.client.guns.FirearmControl.heldMagazine()
+                    || com.senne.imttech.client.weapons.GunControl.held() != null;
             if (!firearm || !ImtKeys.PING.same(ImtKeys.GUN_UNLOAD)) {
                 placePing();
             }

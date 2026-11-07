@@ -2505,8 +2505,10 @@ final class ShowcaseFeatures {
                 .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY)));
 
         add("Laser guns", "Hoofdstuk 35. De vier lasergeweren, zoals in TACZ: het pistool (vanuit de heup, dan door het "
-                + "vizier, een paar schoten), het geweer (inhouden: automatisch, met terugslag en laserbouten; dan R: "
-                + "herladen met de cel eruit en een nieuwe erin; dan H: bekijken), de sniper (de kijker over je scherm, één "
+                + "vizier, een paar schoten), het geweer (inhouden: automatisch, met terugslag en laserbouten; dan R: een "
+                + "cel uit je magazijnpouch kiezen en wisselen (hoofdstuk 57: zonder pouch haalt R de cel eruit en rechtsklik "
+                + "je een cel erin, zoals bij de Glock; U haalt de cel eruit); dan H: bekijken), de sniper (de kijker over je "
+                + "scherm, één "
                 + "zware straal, de grendel) en de shotgun (een waaier van stralen, de pomp). Rechtsonder je munitie en je "
                 + "cellen. Met je eigen armen aan het geweer.",
                 new Vec3(weapons.getX() + 0.5, weapons.getY() + 1, weapons.getZ() + 0.5), 90, 4, s -> s
@@ -2526,7 +2528,8 @@ final class ShowcaseFeatures {
                 .key(0, () -> Minecraft.getInstance().options.keyAttack, true)
                 .key(30, () -> Minecraft.getInstance().options.keyAttack, false)
                 .step(20, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()))
-                .pause(60)
+                .step(5, () -> magPick(0))
+                .pause(55)
                 .step(0, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_INSPECT.getKey()))
                 .pause(60)
                 .step(0, () -> hotbar(2))
@@ -3044,10 +3047,10 @@ final class ShowcaseFeatures {
                 .close(0)
                 .pause(20)
                 // Het wiel: het pistool trekken.
-                .key(0, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true)
+                .wheel(0, true)
                 .pause(50)
                 .step(0, () -> wheelChoose(0))
-                .key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false)
+                .wheel(2, false)
                 .pause(40)
                 .key(0, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
                 .key(10, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
@@ -3058,16 +3061,16 @@ final class ShowcaseFeatures {
                 .step(0, () -> magPick(0))
                 .pause(60)
                 // Wegsteken.
-                .key(0, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true)
+                .wheel(0, true)
                 .pause(40)
                 .step(0, () -> wheelChoosePutAway())
-                .key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false)
+                .wheel(2, false)
                 .pause(40)
                 // Een granaat, en de volgende komt vanzelf.
-                .key(0, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true)
+                .wheel(0, true)
                 .pause(40)
                 .step(0, () -> wheelChooseAction(com.senne.imttech.guns.Gear.ACTION_DRAW_GRENADE, -1))
-                .key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false)
+                .wheel(2, false)
                 .pause(30)
                 .tap(0, () -> Minecraft.getInstance().options.keyUse)
                 .pause(60)
@@ -3111,10 +3114,10 @@ final class ShowcaseFeatures {
                 .pause(80)
                 .close(0)
                 // Trekken en herladen, nu sneller.
-                .key(10, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true)
+                .wheel(10, true)
                 .pause(30)
                 .step(0, () -> wheelChoose(0))
-                .key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false)
+                .wheel(2, false)
                 .pause(30)
                 .step(0, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()))
                 .pause(25)
@@ -3193,10 +3196,10 @@ final class ShowcaseFeatures {
                 .close(0)
                 .pause(15)
                 // Het wiel: de rifle van je rug; de Glock gaat in de holster.
-                .key(0, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true)
+                .wheel(0, true)
                 .pause(50)
                 .step(0, () -> wheelChooseAction(com.senne.imttech.guns.Gear.ACTION_DRAW_SLING, 0))
-                .key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false)
+                .wheel(2, false)
                 .pause(50)
                 .key(0, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
                 .key(10, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
@@ -3207,10 +3210,10 @@ final class ShowcaseFeatures {
                 .step(0, () -> magPick(0))
                 .pause(70)
                 // Het wiel: de Glock; de rifle gaat terug op je rug.
-                .key(0, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true)
+                .wheel(0, true)
                 .pause(40)
                 .step(0, () -> wheelChooseAction(com.senne.imttech.guns.Gear.ACTION_DRAW_GUN, -1))
-                .key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false)
+                .wheel(2, false)
                 .pause(50)
                 .camera(0, net.minecraft.client.CameraType.THIRD_PERSON_BACK)
                 .pause(60)
@@ -3628,6 +3631,10 @@ final class ShowcaseFeatures {
         }
         inventory.setItem(4, com.senne.imttech.weapons.EnergyCellItem.withCharge(100));
         inventory.setItem(5, com.senne.imttech.weapons.EnergyCellItem.withCharge(100));
+        // Hoofdstuk 57: R wisselt alleen nog met een cel uit je magazijnpouch (zonder pouch haalt R de cel eruit).
+        ItemStack pouch = new ItemStack(ModItems.MAG_POUCH.get());
+        com.senne.imttech.guns.GearItem.setContents(pouch, java.util.List.of(com.senne.imttech.weapons.EnergyCellItem.withCharge(100)));
+        com.senne.imttech.guns.Gear.set(player, com.senne.imttech.guns.GearItem.Kind.MAG_POUCH, pouch);
     }
 
     /** Kies een vakje in je hotbar (in je eigen spel). */

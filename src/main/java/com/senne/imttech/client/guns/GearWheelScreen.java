@@ -13,10 +13,13 @@ import com.senne.imttech.weapons.GrenadeItem;
 import com.senne.imttech.weapons.LaserGunItem;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import net.minecraft.Util;
+import java.util.Set;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.Options;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
@@ -37,13 +40,17 @@ import org.lwjgl.glfw.GLFW;
  * pouch, onderaan "wegsteken" (een pijltje omlaag op wat je vasthoudt). Op een tegel staat alleen het item, twee keer zo
  * groot, met een getal (schoten, hoeveel granaten). Wat de tegel is en wat er gebeurt lees je in het midden zodra je hem
  * aanwijst. Rechts naast de ring staan twee knoppen voor wat geen quickdraw is: een pouch openen (de skilltree staat er
- * niet, die open je alleen met zijn toets, F6). Schuif je muis naar een tegel en laat Alt los: gekozen. Tik je Alt kort,
- * dan blijft het wiel staan en klik (of sleep) je naar een tegel; Alt, Esc, rechtsklik of een klik in het midden sluit het.
+ * niet, die open je alleen met zijn toets, F6). Schuif je muis naar een tegel en laat Alt los: gekozen (een tegel
+ * aanklikken kan ook; rechtsklik of Esc annuleert). Het wiel staat er <b>alleen zolang je Alt vasthoudt</b> (jouw keuze:
+ * niet aan en uit te zetten); laat je los zonder iets aan te wijzen, dan gaat het gewoon dicht.
  *
- * Waarom loslaten vroeger niet werkte: {@code KeyMapping.isDown()} zegt altijd "nee" zolang er een scherm open is (de
- * toets telt alleen in het spel zelf), dus het wiel dacht altijd dat je Alt al losgelaten had en wachtte op een klik. Nu
- * luistert het scherm zelf naar het loslaten ({@link #keyReleased}) en vraagt het als vangnet elke tick rechtstreeks aan
- * GLFW of de toets nog ingedrukt is ({@link #wheelKeyDown}).
+ * Ondertussen <b>loop je door</b> (jouw wens: dekking zoeken terwijl je je wapen pakt): lopen, springen, sluipen en
+ * sprinten werken met het wiel open; alleen de camera draait niet mee, want je muis kiest. Dat gaat niet vanzelf: zodra
+ * een scherm open is, zet Minecraft alle toetsen op "los" en zet het nieuw ingedrukte toetsen niet meer "aan" (alleen
+ * loslaten komt nog door), en {@code KeyMapping.isDown()} van de wieltoets zegt altijd nee (die toets telt alleen in het
+ * spel zelf). Daarom luistert dit scherm zelf naar de toetsen ({@link #keyPressed}, {@link #keyReleased}) en vraagt het
+ * als vangnet elke tick rechtstreeks aan GLFW wat er echt ingedrukt is ({@link #physicallyDown}): voor de wieltoets
+ * (loslaten = kiezen) en voor de bewegingstoetsen ({@link #syncMovement}).
  */
 public class GearWheelScreen extends Screen {
     /** De tegels op de ring: 36 px, met het item er twee keer zo groot (32 px) in. */
@@ -53,8 +60,6 @@ public class GearWheelScreen extends Screen {
     private static final int DEAD_ZONE = 20;
     /** Verder dan dit (graden) van de dichtstbijzijnde tegel wijs je niets aan. */
     private static final double MAX_OFF = 45;
-    /** Laat je Alt binnen deze tijd (ms) los zonder iets aan te wijzen, dan was het een tik: het wiel blijft staan. */
-    private static final long TAP_MS = 200;
     private static final int PANEL = 0x0E1116;
     private static final int GREY = 0x8A9BA0;
 
@@ -100,13 +105,14 @@ public class GearWheelScreen extends Screen {
     private int cx;
     private int cy;
     private int radius;
-    /** Houd je de toets vast (loslaten kiest), of was het een tik (klikken kiest)? */
-    private boolean holdMode;
-    private long openedAt;
+    /** Al geopend (init komt ook na een andere venstermaat)? */
+    private boolean opened;
     private double lastMouseX;
     private double lastMouseY;
-    /** Waarop je de linkermuisknop indrukte: een keuze, -1 het midden of niets, -2 niet ingedrukt. */
-    private int pressedOn = -2;
+    /** De bewegingstoetsen die wij "aan" zetten, zodat we alleen die ook weer loslaten (zie syncMovement). */
+    private final Set<KeyMapping> pressedHere = new HashSet<>();
+    /** De showcase en de screenshots houden het wiel open zonder echte toets (zie script). */
+    private static boolean scriptHold;
 
     public GearWheelScreen() {
         super(Component.translatable("screen.imttech.wheel"));
@@ -115,14 +121,17 @@ public class GearWheelScreen extends Screen {
     @Override
     protected void init() {
         super.init();
-        if (openedAt == 0) {
-            // Alleen de eerste keer (init komt ook na een andere venstermaat).
-            openedAt = Util.getMillis();
-            holdMode = wheelKeyDown();
+        // Je muis begint in het midden (Minecraft zet hem daar bij het openen); tot de eerste tekenbeurt rekenen we daarmee.
+        lastMouseX = width / 2.0;
+        lastMouseY = height / 2.0;
+        if (!opened) {
+            opened = true;
             Minecraft mc = Minecraft.getInstance();
             if (mc.player != null) {
                 mc.player.playSound(ModSounds.IMT_MENU_OPEN.get(), 0.5f, 1.2f);
             }
+            // Minecraft zette bij het openen alle toetsen op "los": wat je nog vasthoudt (W, Shift, ...) weer aan.
+            syncMovement();
         }
         rebuild();
     }
@@ -307,7 +316,7 @@ public class GearWheelScreen extends Screen {
         layout();
     }
 
-    /** Waar alles staat: de ring zo groot als het scherm toelaat (en groter als tegels elkaar anders raken), de knoppen eronder. */
+    /** Waar alles staat: de ring zo groot als het scherm toelaat (en groter als tegels elkaar anders raken), de knoppen ernaast. */
     private void layout() {
         cx = width / 2;
         cy = height / 2;
@@ -363,6 +372,7 @@ public class GearWheelScreen extends Screen {
     public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
     }
 
+    /** Het spel loopt door (ook in je eentje): je loopt immers verder met het wiel open. */
     @Override
     public boolean isPauseScreen() {
         return false;
@@ -406,9 +416,8 @@ public class GearWheelScreen extends Screen {
         } else {
             g.drawCenteredString(font, title, cx, cy - 4, HudStyle.argb(220, HudStyle.ORANGE));
         }
-        // De hint boven het wiel: loslaten, of klikken.
-        Component hint = Component.translatable(holdMode ? "screen.imttech.wheel.release" : "screen.imttech.wheel.click",
-                ImtKeys.GEAR_WHEEL.getTranslatedKeyMessage());
+        // De hint boven het wiel, met je echte toets.
+        Component hint = Component.translatable("screen.imttech.wheel.release", ImtKeys.GEAR_WHEEL.getTranslatedKeyMessage());
         fitText(g, hint, cx, Math.max(4, cy - radius - TILE / 2 - 14), width - 20, 0.75f, HudStyle.argb(170, HudStyle.WHITE));
         super.render(g, mouseX, mouseY, partialTick);
     }
@@ -533,6 +542,7 @@ public class GearWheelScreen extends Screen {
         return best;
     }
 
+    /** Deze keuze aan de server vragen (niets als het geen keuze is, of een grijze). */
     private void choose(int index) {
         if (index < 0 || index >= options.size()) {
             return;
@@ -549,12 +559,19 @@ public class GearWheelScreen extends Screen {
         }
     }
 
+    /** De wieltoets is losgelaten: wat je aanwijst is gekozen (of niets), en het wiel gaat dicht. */
+    private void wheelKeyUp() {
+        choose(hovered(lastMouseX, lastMouseY));
+        onClose();
+    }
+
+    // ================================================================ De toetsen
+
     /**
-     * Is de wieltoets nu echt ingedrukt? Rechtstreeks aan GLFW gevraagd, want {@code KeyMapping.isDown()} zegt altijd nee
-     * zolang een scherm open is. (In de showcase, die toetsen nadoet zonder GLFW, is dit altijd nee: dan kiest het script.)
+     * Is deze toets nu echt ingedrukt? Rechtstreeks aan GLFW gevraagd, want {@code KeyMapping.isDown()} zegt niets zinnigs
+     * zolang een scherm open is (zie de uitleg bovenaan).
      */
-    private static boolean wheelKeyDown() {
-        InputConstants.Key key = ImtKeys.GEAR_WHEEL.getKey();
+    private static boolean physicallyDown(InputConstants.Key key) {
         long window = Minecraft.getInstance().getWindow().getWindow();
         return switch (key.getType()) {
             case KEYSYM -> key.getValue() != InputConstants.UNKNOWN.getValue() && InputConstants.isKeyDown(window, key.getValue());
@@ -563,22 +580,66 @@ public class GearWheelScreen extends Screen {
         };
     }
 
+    /** Houd je de wieltoets nu vast (of houdt de showcase hem vast)? */
+    public static boolean keyHeld() {
+        return scriptHold || physicallyDown(ImtKeys.GEAR_WHEEL.getKey());
+    }
+
+    /** De toetsen waarmee je loopt, springt, sluipt en sprint: die geeft het wiel door aan het spel. */
+    private static List<KeyMapping> movementKeys() {
+        Options o = Minecraft.getInstance().options;
+        return List.of(o.keyUp, o.keyDown, o.keyLeft, o.keyRight, o.keyJump, o.keyShift, o.keySprint);
+    }
+
+    /** Sluipen of sprinten op "toggle" (Opties > Besturing) houdt het spel zelf bij; daar blijven we met het vangnet af. */
+    private static boolean toggles(KeyMapping key) {
+        Options o = Minecraft.getInstance().options;
+        return (key == o.keyShift && o.toggleCrouch().get()) || (key == o.keySprint && o.toggleSprint().get());
+    }
+
     /**
-     * De wieltoets is losgelaten: wat je aanwijst is gekozen. Wees je nog niets aan, dan was een korte druk een tik (het
-     * wiel blijft staan en je klikt), en een lange druk gewoon annuleren.
+     * Een bewegingstoets is ingedrukt: "aan" zetten, één keer (een vastgehouden toets geeft herhaalde drukken, en met
+     * sluipen of sprinten op "toggle" zou elke herhaling hem weer uitzetten). Geeft true als het een bewegingstoets was.
      */
-    private void wheelKeyUp() {
-        if (!holdMode) {
-            return;
+    private boolean pressMovement(int keyCode, int scanCode) {
+        boolean any = false;
+        for (KeyMapping key : movementKeys()) {
+            if (key.matches(keyCode, scanCode)) {
+                any = true;
+                if (pressedHere.add(key)) {
+                    key.setDown(true);
+                }
+            }
         }
-        int index = hovered(lastMouseX, lastMouseY);
-        if (index >= 0) {
-            choose(index);
-            onClose();
-        } else if (Util.getMillis() - openedAt < TAP_MS) {
-            holdMode = false;
-        } else {
-            onClose();
+        return any;
+    }
+
+    /** Een bewegingstoets is losgelaten: weer "uit" (Minecraft doet dat zelf ook nog, dat kan geen kwaad). */
+    private void releaseMovement(int keyCode, int scanCode) {
+        for (KeyMapping key : movementKeys()) {
+            if (key.matches(keyCode, scanCode) && pressedHere.remove(key)) {
+                key.setDown(false);
+            }
+        }
+    }
+
+    /**
+     * Elke tick, als vangnet: wat echt ingedrukt is "aan" (ook wat je al vasthield toen het wiel openging), en wat wij
+     * aanzetten en losgelaten is weer "uit". Wat een andere mod aanzette, laten we staan.
+     */
+    private void syncMovement() {
+        for (KeyMapping key : movementKeys()) {
+            if (toggles(key)) {
+                continue;
+            }
+            boolean down = physicallyDown(key.getKey());
+            if (down && !pressedHere.contains(key)) {
+                pressedHere.add(key);
+                key.setDown(true);
+            } else if (!down && pressedHere.contains(key)) {
+                pressedHere.remove(key);
+                key.setDown(false);
+            }
         }
     }
 
@@ -586,8 +647,9 @@ public class GearWheelScreen extends Screen {
     public void tick() {
         super.tick();
         rebuild();
-        // Vangnet als het loslaten niet als toetsgebeurtenis binnenkomt.
-        if (holdMode && !wheelKeyDown()) {
+        syncMovement();
+        // Vangnet als het loslaten niet als toetsgebeurtenis binnenkomt (bijvoorbeeld als het venster zijn focus verloor).
+        if (!keyHeld()) {
             wheelKeyUp();
         }
     }
@@ -598,35 +660,37 @@ public class GearWheelScreen extends Screen {
             wheelKeyUp();
             return true;
         }
+        releaseMovement(keyCode, scanCode);
         return super.keyReleased(keyCode, scanCode, modifiers);
     }
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (ImtKeys.GEAR_WHEEL.matches(keyCode, scanCode)) {
-            // Na een tik kiest de toets nog een keer wat je aanwijst, of sluit hij het wiel. Vasthouden geeft herhaalde
-            // drukken; die tellen niet.
-            if (!holdMode) {
-                int index = hovered(lastMouseX, lastMouseY);
-                if (index >= 0) {
-                    choose(index);
-                }
-                onClose();
-            }
+            return true; // vasthouden geeft herhaalde drukken; die doen niets
+        }
+        if (pressMovement(keyCode, scanCode)) {
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
-    /** Indrukken kiest nog niets: zo kun je vanuit het midden naar een tegel slepen en daar loslaten. */
+    /** Een tegel aanklikken kiest hem ook (je houdt Alt nog vast); rechtsklik annuleert. */
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (ImtKeys.GEAR_WHEEL.matchesMouse(button)) {
+            return true;
+        }
         if (button == 1) {
             onClose();
             return true;
         }
         if (button == 0) {
-            pressedOn = hovered(mouseX, mouseY);
+            int index = hovered(mouseX, mouseY);
+            if (index >= 0 && options.get(index).enabled) {
+                choose(index);
+                onClose();
+            }
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -638,23 +702,26 @@ public class GearWheelScreen extends Screen {
             wheelKeyUp();
             return true;
         }
-        if (button == 0) {
-            int index = hovered(mouseX, mouseY);
-            if (index >= 0) {
-                if (options.get(index).enabled) {
-                    choose(index);
-                    onClose();
-                }
-            } else if (pressedOn == -1) {
-                onClose(); // een klik in het midden (zonder te slepen): sluiten
-            }
-            pressedOn = -2;
-            return true;
-        }
         return super.mouseReleased(mouseX, mouseY, button);
     }
 
     // ================================================================ Voor de showcase en de screenshots
+
+    /**
+     * De showcase en de screenshots doen toetsen na zonder GLFW; voor hen houdt dit het wiel open: {@code true} opent
+     * het en houdt het vast alsof je Alt indrukt, {@code false} laat los (en sluit het, als het script nog niets koos).
+     */
+    public static void script(boolean hold) {
+        scriptHold = hold;
+        Minecraft mc = Minecraft.getInstance();
+        if (hold) {
+            if (mc.screen == null) {
+                mc.setScreen(new GearWheelScreen());
+            }
+        } else if (mc.screen instanceof GearWheelScreen wheel) {
+            wheel.wheelKeyUp();
+        }
+    }
 
     /** Deze keuze (op volgorde: pistool, slings, wegsteken, granaten, knoppen) kiezen alsof je hem aanwees. */
     public void chooseIndex(int index) {

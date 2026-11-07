@@ -9,12 +9,21 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.level.Level;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.player.Player;
 
 /**
  * De energiecel (hoofdstuk 35): het magazijn van de lasergeweren. Jouw keuze: cellen stapelen niet, want elke cel heeft
  * zijn eigen lading (het data component CELL_CHARGE, 0 tot 100%). Een nieuwe cel is leeg; je laadt hem op in het Charging
  * Station (in het vak van de bril), en een volle cel kost CELL_CHARGE_ENERGY stroom. Het streepje onder het item laat
  * zien hoe vol hij is.
+ *
+ * Sinds hoofdstuk 57 werkt hij als een magazijn van de Glock: <b>rechtsklik</b> met de cel in je hand steekt hem in het
+ * lasergeweer in je werkbalk dat er geen heeft (zie LaserGuns.insertCell); met het geweer in je hand haalt R (zonder
+ * vollere cel in je pouch) of U hem er weer uit.
  */
 public class EnergyCellItem extends Item {
     /** Een volle cel: 100 (procent). */
@@ -57,6 +66,15 @@ public class EnergyCellItem extends Item {
         }
         setCharge(stack, (float) (charge(stack) + used / ImtConfig.Weapons.CELL_CHARGE_ENERGY * FULL));
         return used;
+    }
+
+    /** Rechtsklik (hoofdstuk 57): in het lasergeweer in je werkbalk dat geen cel heeft; de server doet het, na even. */
+    @Override
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+        if (player instanceof ServerPlayer serverPlayer) {
+            LaserGuns.insertCell(serverPlayer, hand);
+        }
+        return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand), level.isClientSide);
     }
 
     @Override

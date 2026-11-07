@@ -30,6 +30,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Inventory;
@@ -47,6 +48,12 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
  * De server-kant van de lasergeweren (hoofdstuk 35): schieten, raken en herladen. Jouw spel tekent alles en stuurt alleen
  * "ik schiet" (met waar je keek) en "ik herlaad"; hier controleren we of dat mag (houd je een geweer vast, is het niet
  * te snel, zit er genoeg in de cel) en wat er geraakt wordt.
+ *
+ * <b>Laden en lossen zoals de Glock</b> (hoofdstuk 57, jouw wens: "niet meer herladen zoals vroeger, ze moeten werken
+ * zoals de Glock"): R met een magazijnpouch wisselt met een cel uit de pouch (de oude komt op zijn plek); zonder pouch
+ * haalt R de cel eruit (vroeger pakte R de volste cel uit je inventaris, dat is weg), en een cel erin doe je met
+ * <b>rechtsklik met de cel in je hand</b>: in het lasergeweer in je werkbalk dat er geen heeft ({@link #insertCell}).
+ * <b>U</b> haalt de cel eruit: in je magazijnpouch als daar plek is, anders in je inventaris ({@link #eject}).
  *
  * Een schot is meteen raak ("hitscan"): een rechte straal vanaf je ogen, met een beetje spreiding (minder als je
  * richt). Muren houden hem tegen, een schildkoepel ook (zoals andere lasers). Een schot in het hoofd doet 1,5 keer zoveel.
@@ -75,13 +82,21 @@ public final class LaserGuns {
     /** Wanneer (speltijd) elke speler weer mag schieten. */
     private static final Map<UUID, Long> NEXT_SHOT = new HashMap<>();
 
+    /** Het "vakje" dat zegt: niet wisselen maar alleen de cel eruit (R zonder pouch, of U; hoofdstuk 57). */
+    public static final int EJECT = -1;
+
     /**
      * Iemand die aan het herladen is: in welk vakje zijn geweer zit, uit welk vakje van zijn magazijnpouch de cel komt
-     * ({@code pouch}, of -1: de volste cel uit zijn inventaris), en wanneer het klaar is.
+     * ({@code pouch}, of {@link #EJECT}: alleen de cel eruit), en wanneer het klaar is.
      */
     private record Reload(int slot, GunType type, int pouch, long done) {}
 
     private static final Map<UUID, Reload> RELOADS = new HashMap<>();
+
+    /** Iemand die een cel in een geweer steekt (rechtsklik, hoofdstuk 57): de cel in zijn hand, het geweer in dit vakje. */
+    private record Insert(int slot, int gunSlot, long done) {}
+
+    private static final Map<UUID, Insert> INSERTS = new HashMap<>();
 
     // ================================================================ De onderdelen in de rekensommen (hoofdstuk 55)
 
@@ -330,77 +345,106 @@ public final class LaserGuns {
         return look.scale(Math.cos(off)).add(side.scale(Math.sin(off))).normalize();
     }
 
-    // ================================================================ Herladen
+    // ================================================================ Herladen, laden en lossen (zoals de Glock, hoofdstuk 57)
 
-    /** Is deze speler aan het herladen? */
+    /** Is deze speler met zijn cel bezig (wisselen, eruit halen, of er een in steken)? */
     public static boolean isReloading(ServerPlayer player) {
-        return RELOADS.containsKey(player.getUUID());
+        return RELOADS.containsKey(player.getUUID()) || INSERTS.containsKey(player.getUUID());
     }
 
-    /**
-     * R: begin met herladen met de volste cel uit je inventaris. Dat kan als je een geweer vasthoudt en er in je
-     * inventaris een cel is die voller is dan die in het geweer. Geeft false (en zegt waarom) als het niet kan.
-     */
+    /** R zonder vollere cel in je pouch, of U: de cel eruit (zie {@link #eject}). */
     public static boolean startReload(ServerPlayer player) {
-        return startReload(player, -1);
+        return startReload(player, EJECT);
     }
 
     /**
      * R met een magazijnpouch om (hoofdstuk 55: cellen passen in de magazijnpouch, zoals de magazijnen van de Glock): de
-     * cel uit dit vakje ({@code pouch}) van de pouch erin; de oude cel komt op zijn plek. {@code pouch} = -1: de volste
-     * cel uit je inventaris, zoals altijd.
+     * cel uit dit vakje ({@code pouch}) van de pouch erin; de oude cel komt op zijn plek. {@code pouch} = {@link #EJECT}:
+     * alleen de cel eruit (hoofdstuk 57; vroeger kwam dan de volste cel uit je inventaris, dat is weg).
      */
     public static boolean startReload(ServerPlayer player, int pouch) {
+        if (pouch < 0) {
+            return eject(player);
+        }
         ItemStack gun = player.getMainHandItem();
         GunType type = LaserGunItem.typeOf(gun);
-        if (type == null || RELOADS.containsKey(player.getUUID()) || Firearms.isBusy(player)) {
+        if (type == null || isReloading(player) || Firearms.isBusy(player)) {
             return false;
         }
         float current = LaserGunItem.cell(gun);
-        if (pouch >= 0) {
-            List<ItemStack> contents = Gear.contents(player, GearItem.Kind.MAG_POUCH);
-            if (pouch >= contents.size() || !contents.get(pouch).is(ModItems.ENERGY_CELL.get())
-                    || EnergyCellItem.charge(contents.get(pouch)) < Math.max(0.001f, current + 0.001f)) {
-                player.displayClientMessage(Component.translatable("gear.imttech.no_cell_there").withStyle(ChatFormatting.RED), true);
-                ModNetwork.sendTo(player, new GunReloadPayload(false, -1));
-                return false;
-            }
-        } else if (bestCell(player.getInventory(), current) < 0) {
-            player.displayClientMessage(Component.translatable("weapon.imttech.gun.no_cell").withStyle(ChatFormatting.RED), true);
+        List<ItemStack> contents = Gear.contents(player, GearItem.Kind.MAG_POUCH);
+        if (pouch >= contents.size() || !contents.get(pouch).is(ModItems.ENERGY_CELL.get())
+                || EnergyCellItem.charge(contents.get(pouch)) < Math.max(0.001f, current + 0.001f)) {
+            tell(player, Component.translatable("gear.imttech.no_cell_there"));
             ModNetwork.sendTo(player, new GunReloadPayload(false, -1));
             return false;
         }
-        ServerLevel level = player.serverLevel();
-        int ticks = reloadTicks(player, gun);
-        RELOADS.put(player.getUUID(), new Reload(player.getInventory().selected, type, pouch, level.getGameTime() + ticks));
-        level.playSound(player, player.getX(), player.getEyeY(), player.getZ(), ModSounds.LASER_GUN_CELL_OUT.get(),
-                SoundSource.PLAYERS, 0.8f, 1.0f);
-        ModNetwork.sendTo(player, new GunReloadPayload(true, ticks));
+        begin(player, type, pouch, reloadTicks(player, gun));
         return true;
     }
 
     /**
-     * Het vakje met de volste cel die voller is dan {@code current} (de cel in het geweer, -1 = geen), of -1 als die er
-     * niet is. Een lege cel telt nooit.
+     * De cel eruit (R zonder een vollere cel in je pouch, of U): na een deel van de herlaadtijd ({@code gunEjectPart})
+     * komt hij in je magazijnpouch als daar plek is, anders in je inventaris. Zonder cel in het geweer: een melding.
      */
-    private static int bestCell(Inventory inventory, float current) {
-        int best = -1;
-        float most = Math.max(0.001f, current + 0.001f);
-        for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
-            ItemStack stack = inventory.getItem(slot);
-            if (stack.is(ModItems.ENERGY_CELL.get()) && EnergyCellItem.charge(stack) >= most) {
-                most = EnergyCellItem.charge(stack);
-                best = slot;
-            }
+    public static boolean eject(ServerPlayer player) {
+        ItemStack gun = player.getMainHandItem();
+        GunType type = LaserGunItem.typeOf(gun);
+        if (type == null || isReloading(player) || Firearms.isBusy(player)) {
+            return false;
         }
-        return best;
+        if (LaserGunItem.cell(gun) < 0) {
+            tell(player, Component.translatable("weapon.imttech.gun.no_cell_hint"));
+            ModNetwork.sendTo(player, new GunReloadPayload(false, -1));
+            return false;
+        }
+        begin(player, type, EJECT, Math.max(1, Math.round(reloadTicks(player, gun) * ImtConfig.Weapons.GUN_EJECT_PART)));
+        return true;
     }
 
-    /** Elke tick: herladen afmaken (of afbreken als je iets anders vastpakte). */
-    public static void onServerTick(ServerTickEvent.Post event) {
-        if (RELOADS.isEmpty()) {
-            return;
+    /** Het wisselen of lossen begint: onthouden, het geluid van de cel eruit, en jouw spel hoort hoe lang het duurt. */
+    private static void begin(ServerPlayer player, GunType type, int pouch, int ticks) {
+        ServerLevel level = player.serverLevel();
+        RELOADS.put(player.getUUID(), new Reload(player.getInventory().selected, type, pouch, level.getGameTime() + ticks));
+        level.playSound(player, player.getX(), player.getEyeY(), player.getZ(), ModSounds.LASER_GUN_CELL_OUT.get(),
+                SoundSource.PLAYERS, 0.8f, 1.0f);
+        ModNetwork.sendTo(player, new GunReloadPayload(true, ticks));
+    }
+
+    /**
+     * Rechtsklik met een energiecel in je hand (hoofdstuk 57, zoals een magazijn in de Glock): in het lasergeweer in je
+     * werkbalk dat geen cel heeft (dan de rest van je inventaris). Na een deel van de herlaadtijd ({@code gunInsertPart})
+     * zit hij erin. Geeft false (met een melding) als er zo een geweer niet is.
+     */
+    public static boolean insertCell(ServerPlayer player, InteractionHand hand) {
+        ItemStack cell = player.getItemInHand(hand);
+        if (!cell.is(ModItems.ENERGY_CELL.get()) || hand != InteractionHand.MAIN_HAND || isReloading(player) || Firearms.isBusy(player)) {
+            return false;
         }
+        int gunSlot = gunWithoutCell(player.getInventory());
+        if (gunSlot < 0) {
+            tell(player, Component.translatable("weapon.imttech.gun.no_gun_for_cell"));
+            return false;
+        }
+        ItemStack gun = player.getInventory().getItem(gunSlot);
+        int ticks = Math.max(1, Math.round(reloadTicks(player, gun) * ImtConfig.Weapons.GUN_INSERT_PART));
+        INSERTS.put(player.getUUID(), new Insert(player.getInventory().selected, gunSlot, player.serverLevel().getGameTime() + ticks));
+        return true;
+    }
+
+    /** Het vakje met een lasergeweer zonder cel: eerst je werkbalk, dan de rest van je inventaris; of -1. */
+    private static int gunWithoutCell(Inventory inventory) {
+        for (int slot = 0; slot < inventory.items.size(); slot++) {
+            ItemStack stack = inventory.getItem(slot);
+            if (LaserGunItem.typeOf(stack) != null && LaserGunItem.cell(stack) < 0) {
+                return slot;
+            }
+        }
+        return -1;
+    }
+
+    /** Elke tick: wisselen, lossen en laden afmaken (of afbreken als je iets anders vastpakte). */
+    public static void onServerTick(ServerTickEvent.Post event) {
         for (Iterator<Map.Entry<UUID, Reload>> it = RELOADS.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<UUID, Reload> entry = it.next();
             ServerPlayer player = event.getServer().getPlayerList().getPlayer(entry.getKey());
@@ -419,37 +463,67 @@ public final class LaserGuns {
                 finishReload(player, reload.pouch());
             }
         }
+        for (Iterator<Map.Entry<UUID, Insert>> it = INSERTS.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<UUID, Insert> entry = it.next();
+            ServerPlayer player = event.getServer().getPlayerList().getPlayer(entry.getKey());
+            Insert insert = entry.getValue();
+            if (player == null || !insertStillValid(player, insert)) {
+                it.remove();
+                continue;
+            }
+            if (player.serverLevel().getGameTime() >= insert.done()) {
+                it.remove();
+                finishInsert(player, insert);
+            }
+        }
+    }
+
+    /** Houd je de cel nog vast, en wacht het geweer nog op een cel? */
+    private static boolean insertStillValid(ServerPlayer player, Insert insert) {
+        Inventory inventory = player.getInventory();
+        ItemStack gun = inventory.getItem(insert.gunSlot());
+        return inventory.selected == insert.slot() && player.getMainHandItem().is(ModItems.ENERGY_CELL.get())
+                && LaserGunItem.typeOf(gun) != null && LaserGunItem.cell(gun) < 0;
     }
 
     /**
-     * De cellen wisselen: de nieuwe cel gaat in het geweer, de oude komt op zijn plek (in je inventaris, of in het vakje
-     * van de pouch waar de nieuwe uit kwam).
+     * Wisselen of lossen is klaar. Wisselen: de nieuwe cel uit de pouch gaat in het geweer en de oude komt in dat vakje.
+     * Lossen: de cel gaat in je magazijnpouch als daar plek is, anders in je inventaris (of op de grond als die vol is).
      */
     private static void finishReload(ServerPlayer player, int pouch) {
         ItemStack gun = player.getMainHandItem();
         float old = LaserGunItem.cell(gun);
-        if (pouch >= 0) {
-            List<ItemStack> contents = Gear.contents(player, GearItem.Kind.MAG_POUCH);
-            if (pouch >= contents.size() || !contents.get(pouch).is(ModItems.ENERGY_CELL.get())) {
-                ModNetwork.sendTo(player, new GunReloadPayload(false, -1));
-                return;
+        if (pouch < 0) {
+            if (old >= 0) {
+                LaserGunItem.setCell(gun, -1);
+                ItemStack cell = EnergyCellItem.withCharge(old);
+                if (!Gear.storeMagazine(player, cell)) {
+                    Firearms.give(player, cell);
+                }
             }
-            float fresh = EnergyCellItem.charge(contents.get(pouch));
-            contents.set(pouch, old >= 0 ? EnergyCellItem.withCharge(old) : ItemStack.EMPTY);
-            Gear.setContents(player, GearItem.Kind.MAG_POUCH, contents);
-            LaserGunItem.setCell(gun, fresh);
-        } else {
-            Inventory inventory = player.getInventory();
-            int slot = bestCell(inventory, old);
-            if (slot < 0) {
-                ModNetwork.sendTo(player, new GunReloadPayload(false, -1));
-                return;
-            }
-            float fresh = EnergyCellItem.charge(inventory.getItem(slot));
-            inventory.setItem(slot, old >= 0 ? EnergyCellItem.withCharge(old) : ItemStack.EMPTY);
-            LaserGunItem.setCell(gun, fresh);
+            return;
         }
+        List<ItemStack> contents = Gear.contents(player, GearItem.Kind.MAG_POUCH);
+        if (pouch >= contents.size() || !contents.get(pouch).is(ModItems.ENERGY_CELL.get())) {
+            ModNetwork.sendTo(player, new GunReloadPayload(false, -1));
+            return;
+        }
+        float fresh = EnergyCellItem.charge(contents.get(pouch));
+        contents.set(pouch, old >= 0 ? EnergyCellItem.withCharge(old) : ItemStack.EMPTY);
+        Gear.setContents(player, GearItem.Kind.MAG_POUCH, contents);
+        LaserGunItem.setCell(gun, fresh);
         player.serverLevel().playSound(player, player.getX(), player.getEyeY(), player.getZ(),
+                ModSounds.LASER_GUN_CELL_IN.get(), SoundSource.PLAYERS, 0.8f, 1.0f);
+        GunSkillHooks.reloaded(player, gun);
+    }
+
+    /** De cel in je hand zit in het geweer: de klik (voor iedereen, jouw spel speelt hier niets zelf), en het telt als herladen. */
+    private static void finishInsert(ServerPlayer player, Insert insert) {
+        Inventory inventory = player.getInventory();
+        ItemStack gun = inventory.getItem(insert.gunSlot());
+        LaserGunItem.setCell(gun, EnergyCellItem.charge(player.getMainHandItem()));
+        inventory.setItem(insert.slot(), ItemStack.EMPTY);
+        player.serverLevel().playSound(null, player.getX(), player.getEyeY(), player.getZ(),
                 ModSounds.LASER_GUN_CELL_IN.get(), SoundSource.PLAYERS, 0.8f, 1.0f);
         GunSkillHooks.reloaded(player, gun);
     }
@@ -459,11 +533,13 @@ public final class LaserGuns {
     public static void onLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         NEXT_SHOT.remove(event.getEntity().getUUID());
         RELOADS.remove(event.getEntity().getUUID());
+        INSERTS.remove(event.getEntity().getUUID());
     }
 
     public static void clear() {
         NEXT_SHOT.clear();
         RELOADS.clear();
+        INSERTS.clear();
     }
 
     /** Voor de tests: alsof er al lang niet geschoten is. */
@@ -471,11 +547,19 @@ public final class LaserGuns {
         NEXT_SHOT.remove(player.getUUID());
     }
 
-    /** Voor de tests: het herladen meteen afmaken. */
+    /** Voor de tests: het herladen (of lossen) meteen afmaken. */
     public static void finishReloadNow(ServerPlayer player) {
         Reload reload = RELOADS.remove(player.getUUID());
         if (reload != null) {
             finishReload(player, reload.pouch());
+        }
+    }
+
+    /** Voor de tests: de cel in je hand meteen in het geweer. */
+    public static void finishInsertNow(ServerPlayer player) {
+        Insert insert = INSERTS.remove(player.getUUID());
+        if (insert != null && insertStillValid(player, insert)) {
+            finishInsert(player, insert);
         }
     }
 

@@ -1782,16 +1782,21 @@ Bediening zoals TACZ:
 |---|---|
 | linkerklik | schieten (de rifle: inhouden) |
 | rechterklik (inhouden) | richten door het vizier: inzoomen, nauwkeuriger, langzamer lopen |
-| R | herladen |
+| R | herladen: een cel uit je magazijnpouch kiezen, of zonder zo een cel de cel eruit |
+| U | de cel eruit (in je pouch als daar plek is, anders in je inventaris) |
+| rechtsklik met een cel in je hand | de cel in het lasergeweer in je werkbalk dat er geen heeft |
 | H | het geweer bekijken |
 
-R en H doen alleen dit met een geweer in je hand; anders doen ze wat ze altijd deden (markeren, dreigingsscan). Je kunt
+R, U en H doen alleen dit met een geweer in je hand; anders doen ze wat ze altijd deden (markeren, de ping, dreigingsscan). Je kunt
 ze veranderen in Opties > Besturing > I.M.T. Sprinten laat het geweer zakken, en schieten stopt je sprint. Een schot in
 het hoofd doet 1,5 keer zoveel; spelers raak je alleen met PvP aan.
 
 **Munitie: energiecellen.** Een geweer heeft een **Energy Cell** als magazijn. Cellen stapelen niet: elke cel heeft zijn
-eigen lading (het streepje onder het item). Een nieuw geweer is leeg: druk **R**, en hij pakt de volste cel uit je
-inventaris; de oude cel komt op zijn plek terug (ook een lege). Lege cellen laad je op in het **Charging Station**, in
+eigen lading (het streepje onder het item). Een nieuw geweer is leeg: **rechtsklik met een cel in je hand** en hij gaat
+in het lasergeweer in je werkbalk dat er geen heeft (sinds hoofdstuk 57 werkt een cel als een magazijn van de Glock; R
+pakte vroeger de volste cel uit je inventaris, dat is weg). Met het geweer in je hand kiest **R** een vollere cel uit je
+magazijnpouch (de oude komt op zijn plek), of haalt hij zonder zo een cel de cel eruit; **U** haalt hem er altijd uit (in
+je pouch als daar plek is, anders in je inventaris). Lege cellen laad je op in het **Charging Station**, in
 het vak van de bril. Rechtsonder op je scherm zie je hoeveel schoten er nog in zitten en hoeveel cellen je bij je hebt.
 Recepten: een cel = 4 goudklompjes, 2 glazen ruiten, 2 koper en een redstoneblok; de geweren maak je van ijzer, goud,
 glas, redstone en Computer Chips (de sniper ook met een diamant en een verrekijker).
@@ -1832,7 +1837,7 @@ herlaad je, dan heeft het magazijn er 4 en de kamer 1; een nieuw magazijn van 6 
 het pistool steekt met de hand één patroon in de kamer, ook zonder magazijn.
 
 **Herladen.** Met een **Magazine Pouch** om (zie hieronder) toont **R** de magazijnen in je pouch: klik er een (of druk
-1-3, of nog eens R voor het volste) en het gaat erin; het oude magazijn komt op zijn plek in de pouch. Zonder pouch:
+1-6, of nog eens R voor het volste) en het gaat erin; het oude magazijn komt op zijn plek in de pouch. Zonder pouch:
 **R** gooit het magazijn uit het pistool (het komt in je inventaris), je scrolt naar een ander magazijn, **rechtsklik**
 duwt het in het pistool, en als je het pistool weer pakt, laat je de slede los (de eerste patroon gaat in de kamer).
 Dat duurt langer, en zo hoort het: een pouch is echt beter. **U** met het pistool is de **unload**: het magazijn eruit
@@ -1840,15 +1845,18 @@ Dat duurt langer, en zo hoort het: een pouch is echt beter. **U** met het pistoo
 de kamer (die komt in je inventaris). Zit er nog een magazijn met patronen in, dan eerst dat eruit.
 
 **De holster, de pouches en het wiel.** Een **Holster** (leer en een ijzerklompje) houdt één pistool, een **Grenade
-Pouch** (leer en touw) vier stapels granaten, een **Magazine Pouch** (leer en een ijzerklompje) drie magazijnen. Je
+Pouch** (leer en touw) vier stapels granaten, een **Magazine Pouch** (leer en een ijzerklompje) zes magazijnen of
+cellen (`magPouchSize`, hoofdstuk 58; in twee rijen van drie). Je
 draagt ze in de drie vakjes rechts van je poppetje in je inventaris (klik erin met het item aan je muis); zit
 **Curios** in je modpack, dan zie je die vakjes niet en zitten ze in de Curios-slots "Holster" en "Pouch". Houd
 **linker Alt** in: het wiel, een ring van tegels rond je muis (die in het midden begint). Elke soort heeft zijn vaste
 plek: bovenaan je pistool, rechts je geweren op je slings, links elke granaatsoort, onderaan "wegsteken" (een pijltje
 omlaag op wat je vasthoudt); rechts ernaast twee knoppen om een pouch te openen. Op een tegel staat alleen het
 item, twee keer zo groot, met een getal (schoten, hoeveel granaten); wat het is en wat er gebeurt lees je in het midden
-zodra je hem aanwijst. Schuif je muis naar een tegel en laat Alt los: gekozen. Tik je Alt kort, dan blijft het wiel
-staan en klik of sleep je naar een tegel (Esc, rechtsklik of een klik in het midden sluit het). Trekken: wat je
+zodra je hem aanwijst. Schuif je muis naar een tegel en laat Alt los: gekozen (een tegel aanklikken kan ook; Esc of
+rechtsklik annuleert). Het wiel staat er alleen zolang je Alt vasthoudt; laat je los zonder iets aan te wijzen, dan
+gaat het dicht. Ondertussen **loop je gewoon door** (lopen, springen, sluipen, sprinten), zodat je dekking zoekt
+terwijl je je wapen pakt; alleen de camera draait niet mee, want je muis kiest. Trekken: wat je
 vasthield **valt op de grond** en het pistool (of de granaat) komt in dat vakje; het pistool trekken duurt even. Gooi je je laatste granaat van een soort, dan komt de volgende uit de pouch
 vanzelf in je hand. "Put away" steekt weg wat je vasthoudt (het pistool in de holster, een granaat in de pouch, een
 magazijn in de magazijnpouch). Een magazijn dat je met R uitwerpt, gaat in de magazijnpouch als daar plek is. Anderen
@@ -1938,9 +1946,11 @@ op je rug. "Put away" hangt een geweer met sling op je rug. Er zijn eigen toetse
 gun on your back" en "... on your chest", standaard geen toets).
 
 **Cellen in de magazijnpouch.** De **Magazine Pouch** neemt ook energiecellen (ze staan rechtop in de vakjes, naast de
-magazijnen). R met een lasergeweer en een vollere cel in je pouch toont de cellen (met hoe vol): klik er een (of 1-3, of
-nog eens R voor de volste), en de oude cel komt op zijn plek in de pouch. Zonder pouch pakt R de volste cel uit je
-inventaris, zoals altijd. Rechtsonder telt "Cells" de cellen in je inventaris én in je pouch.
+magazijnen). R met een lasergeweer en een vollere cel in je pouch toont de cellen (met hoe vol): klik er een (of 1-6, of
+nog eens R voor de volste), en de oude cel komt op zijn plek in de pouch. Zonder vollere cel in je pouch haalt R de cel
+eruit (hoofdstuk 57: zoals de Glock; een cel erin gaat met rechtsklik met de cel in je hand, en U haalt hem eruit; de
+tijden: `gunEjectPart` en `gunInsertPart` van de herlaadtijd). Rechtsonder telt "Cells" de cellen in je inventaris én in
+je pouch.
 
 **De skills voor alle vijf.** In de skilltree (F6) kies je rechts bovenaan het wapen: Glock 19, Pistol,
 Rifle, Sniper of Shotgun (het begint op wat je vasthoudt); elk lasergeweer heeft zijn eigen rij naast de globale skills, en

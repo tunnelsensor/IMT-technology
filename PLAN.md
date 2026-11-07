@@ -4901,6 +4901,59 @@ een knop moet indrukken."
       hem al niet meer sinds hoofdstuk 54. De toets "Gun skills" staat nu standaard op **F6** (elke letter is al bezet;
       verzetten kan in Opties > Besturing), en het bericht "Skill point earned" noemt die toets (`Component.keybind`,
       dus altijd je echte toets). De lang-sleutels van de wielknop zijn weg; LEESMIJ.md en de showcase-teksten aangepast.
+- [x] **5. Alleen zolang je Alt vasthoudt** (jouw opmerking: "zorg ook dat die menu niet toggle-baar is, maar om die te
+      openen moet je altijd de shortcut ingedrukt hebben") — de tik-stand uit stap 1 is weg: het wiel staat er zolang je
+      Alt vasthoudt, loslaten kiest wat je aanwijst (of sluit, als je niets aanwijst); een tegel aanklikken kan nog, Esc en
+      rechtsklik annuleren. Na het sluiten moet je Alt eerst echt loslaten voor het opnieuw opent (`GearControl`: Minecraft
+      zet een ingehouden toets bij elke toetsherhaling weer "aan", anders sprong het wiel na een klik meteen weer open). De
+      showcase en de screenshots houden het wiel open via `GearWheelScreen.script` (`DevScript.wheel`), want een nagedane
+      toets is voor GLFW niet ingedrukt.
+      Ook gevonden: `DevScript.close` sloot schermen met `setScreen(null)`; een containerscherm (het pouchscherm, `ge09`)
+      meldde dat niet aan de server, die zijn menu open hield en daarna werkbalkwijzigingen niet meer naar het spel
+      stuurde, zodat `sl03`/`sl04` sinds hoofdstuk 55 de Glock lieten zien in plaats van de rifle. Nu sluit het als Esc
+      (`onClose`).
+- [x] **6. Doorlopen met het wiel open** (jouw opmerking: "zorg dat je tijdens dat je quickdraw-menu open is nog steeds
+      kunt wandelen, dat maakt dat je beter cover kunt zoeken en je gun tegelijk pakken") — zodra een scherm open is, zet
+      Minecraft alle toetsen op "los" en zet het nieuw ingedrukte toetsen niet meer "aan" (alleen loslaten komt nog door),
+      dus stond je stil. Het wiel geeft nu lopen, springen, sluipen en sprinten zelf door (`keyPressed`/`keyReleased`, en
+      elke tick als vangnet wat GLFW echt ingedrukt ziet, ook wat je al vasthield toen het openging; sluipen of sprinten op
+      "toggle" laat het met rust). Het spel pauzeert niet (`isPauseScreen` was al nee). De camera draait niet mee: je muis
+      kiest. Nieuw in LEESMIJ.md.
+
+### 57. Lasergeweren laden en lossen zoals de Glock (7 november)
+
+Jouw vraag: "Zorg ook dat je de laser weapons kunt unloaden, zorg ook dat je de laserweapons niet meer kunt herladen
+zoals vroeger, ze moeten nu werken zoals de Glock werkt."
+
+- [x] **Wat weg is**: R pakte zonder pouch de volste cel uit je inventaris (hoofdstuk 35). Dat doet hij niet meer.
+- [x] **Zoals de Glock** (`LaserGuns`): R met een vollere cel in je magazijnpouch kiest die (hoofdstuk 55, ongewijzigd);
+      zonder zo een cel haalt R de **cel eruit** (`eject`, `GunReloadPayload` met `EJECT`); een cel erin doe je met
+      **rechtsklik met de cel in je hand** (`EnergyCellItem.use` → `insertCell`): in het lasergeweer in je werkbalk dat
+      er geen heeft, dan de rest van je inventaris; na `gunInsertPart` (0,75) van de herlaadtijd zit hij erin (de klik
+      hoor je), en het telt als herladen voor je skills. **U** haalt de cel eruit (`GunControl.unload`): na `gunEjectPart`
+      (0,5) van de herlaadtijd komt hij in je magazijnpouch als daar plek is (`Gear.storeMagazine`, die nam al cellen),
+      anders in je inventaris. Met een lasergeweer in je hand doet U niet ook de ping. Zonder cel zegt R "No cell in the
+      gun: scroll to a charged cell and right-click it" en U "Nothing to unload"; de HUD zegt "NO CELL - RIGHT-CLICK ONE"
+      (of "- PRESS R" met een cel in je pouch) en "CELL OUT" tijdens het lossen.
+- [x] **De animatie** (`GunRenderer`): alleen eruit is een eigen, korter verloop (kantelen, de cel schuift eruit en valt
+      weg, je linkerhand gaat mee en terug) zonder nieuwe cel en zonder de klik; `GunControl.ejectOnly` zegt welk.
+- [x] **Tests**: `laser_gun_reloads_with_the_fullest_cell` is nu `laser_gun_ejects_its_cell_and_takes_one_by_hand`
+      (R zonder pouch = eruit, rechtsklik = erin, geen tweede geweer zonder cel = niets, dan schieten); nieuw
+      `laser_gun_unloads_its_cell_into_the_pouch` (in het lege vakje, en in je inventaris als de pouch vol is). 420 tests,
+      allemaal groen. Showcase 100 en de screenshots `g07`/`g08` herladen nu uit een magazijnpouch; nieuw `g08b` (U),
+      `g08c` (rechtsklik met de cel) en `g08d` (het geweer weer geladen). LEESMIJ.md (de tabel, "Munitie: energiecellen",
+      "Cellen in de magazijnpouch") en de tooltips aangepast.
+
+### 58. De magazijnpouch: zes magazijnen (7 november)
+
+Jouw vraag: "zorg dat een magpouch ook groter is (6 mags)".
+
+- [x] `magPouchSize` staat nu standaard op **6** (was 3; `[guns]`). Let op: een bestaand configbestand houdt zijn eigen
+      getal, zet het daar zelf op 6 (of haal de regel weg). Een pouch uit een oude wereld krijgt vanzelf zes vakjes
+      (`GearContents.sized`). Het model van de pouch heeft nu twee rijen van drie vakjes (`tools/generate_gun_models.py`,
+      `MAG_POCKETS` ook in `GearLayer`), zo diep als de granaatpouch; het keuzescherm (R) zet zes kaarten in twee rijen van
+      drie en zegt "press 1-6"; het pouchscherm en het wiel ("2/6") rekenden al met de maat. Test
+      `laser_gun_unloads_its_cell_into_the_pouch` vult de pouch helemaal (hoeveel vakjes er ook zijn). LEESMIJ.md aangepast.
 
 ## Nog nooit in het spel bekeken
 
@@ -4908,8 +4961,15 @@ De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet 
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
 - [ ] **Het nieuwe wiel (hoofdstuk 56)**: gezien op screenshots (`-Ponly=gear,sling`), maar niet met de muis gespeeld.
-      Probeer: Alt vasthouden, naar een tegel schuiven en loslaten (kiest hij meteen, zonder klik?); Alt kort tikken en dan
-      vanuit het midden naar een tegel slepen; de twee pouch-knoppen ernaast; en of het midden leesbaar is op jouw GUI-schaal.
+      Probeer: Alt vasthouden, naar een tegel schuiven en loslaten (kiest hij meteen, zonder klik?); Alt kort tikken (gaat
+      hij meteen weer dicht?); met Alt vast W, Shift, Ctrl en de spatiebalk (loop, sluip, sprint en spring je door, ook als
+      je al liep toen je Alt indrukte? en met "sluipen: toggle" aan?); na een klik op een tegel Alt vasthouden (blijft het
+      wiel dicht tot je loslaat?); de twee pouch-knoppen ernaast; en of het midden leesbaar is op jouw GUI-schaal.
+- [ ] **Lasergeweren laden en lossen (hoofdstuk 57)**: getest en op screenshots (`-Ponly=guns`, `g08b`-`g08d`), niet
+      gespeeld. Probeer: R zonder pouch (komt de cel eruit, met de korte animatie?), rechtsklik met een cel in je hand
+      (gaat hij in het geweer in je werkbalk, hoor je de klik?), U met een pouch om (komt hij in de pouch?).
+- [ ] **De magazijnpouch met zes vakjes (hoofdstuk 58)**: op screenshots (ge05, ge08, sl05), niet gespeeld. Kijk of de
+      pouch op je heup (twee rijen diep) niet raar uitsteekt en of het keuzescherm met twee rijen van drie leesbaar is.
 - [ ] **De lasergeweren uit onderdelen en de slings (hoofdstuk 55)**: gezien op screenshots (`-Ponly=laserparts,sling`) en
       met tests, maar niet met de muis gespeeld. Probeer: de Laser Workbench (sleep een frame, de rest, de Nether Star en de
       sling; haal de kern er weer uit), een netherite onderdeel maken (een titanium onderdeel plus twee netherite ingots),

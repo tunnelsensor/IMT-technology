@@ -529,8 +529,9 @@ def holster():
 # Waar de granaten in de granaatpouch zitten (het midden van elk vakje, model-pixels; zie client/guns/GearLayer):
 # twee naast elkaar (x) en twee achter elkaar (z), met hun bovenkant boven de rand uit.
 GRENADE_POCKETS = [(6.4, 9.7, 6.7), (9.6, 9.7, 6.7), (6.4, 9.7, 9.3), (9.6, 9.7, 9.3)]
-# Waar de magazijnen in de magazijnpouch staan (het midden van de voet van elk vakje; ze steken erbovenuit).
-MAG_POCKETS = [(5.9, 6.6, 8.0), (8.0, 6.6, 8.0), (10.1, 6.6, 8.0)]
+# Waar de magazijnen in de magazijnpouch staan (het midden van de voet van elk vakje; ze steken erbovenuit): sinds
+# hoofdstuk 58 zes vakjes, drie naast elkaar (x) in twee rijen (z).
+MAG_POCKETS = [(x, 6.6, z) for z in (6.7, 9.5) for x in (5.9, 8.0, 10.1)]
 
 
 def grenade_pouch():
@@ -553,16 +554,18 @@ def grenade_pouch():
 
 def mag_pouch():
     """
-    Een magazijnpouch (hoofdstuk 54: mooier, en je ziet wat erin zit): drie open vakjes naast elkaar met een
-    elastische band om hun middel; de magazijnen steken erbovenuit (zie GearLayer). Een riemlus achter.
+    Een magazijnpouch (hoofdstuk 54: mooier, en je ziet wat erin zit; hoofdstuk 58: zes vakjes): twee rijen van drie
+    open vakjes met een elastische band om hun middel, zo diep als de granaatpouch; de magazijnen steken erbovenuit
+    (zie GearLayer). Een riemlus achter.
     """
-    el = [box((5.0, 6.0, 9.4), (11.0, 10.4, 10.0), "canvas_dark")]
-    for x0 in (4.9, 7.0, 9.1):
-        el += [
-            box((x0, 3.5, 6.6), (x0 + 2.0, 9.2, 9.4), "canvas"),
-            box((x0 - 0.08, 6.4, 6.52), (x0 + 2.08, 7.4, 9.48), "canvas_dark"),
-            box((x0 - 0.06, 8.7, 6.54), (x0 + 2.06, 9.3, 9.46), "canvas_dark"),
-        ]
+    el = [box((5.0, 6.0, 10.8), (11.0, 10.4, 11.4), "canvas_dark")]
+    for z0 in (5.4, 8.2):
+        for x0 in (4.9, 7.0, 9.1):
+            el += [
+                box((x0, 3.5, z0), (x0 + 2.0, 9.2, z0 + 2.6), "canvas"),
+                box((x0 - 0.08, 6.4, z0 - 0.08), (x0 + 2.08, 7.4, z0 + 2.68), "canvas_dark"),
+                box((x0 - 0.06, 8.7, z0 - 0.06), (x0 + 2.06, 9.3, z0 + 2.66), "canvas_dark"),
+            ]
     return el
 
 

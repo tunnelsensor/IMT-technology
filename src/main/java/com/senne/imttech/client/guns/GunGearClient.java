@@ -44,7 +44,7 @@ public final class GunGearClient {
 
     /**
      * R met een lasergeweer (hoofdstuk 55): het keuzescherm van de cellen in je pouch openen. Geeft false als er geen cel
-     * in je pouch zit die voller is dan de cel in het geweer (dan pakt R de volste uit je inventaris, zoals altijd).
+     * in je pouch zit die voller is dan de cel in het geweer (dan haalt R de cel eruit, hoofdstuk 57).
      */
     public static boolean openCellPicker(LocalPlayer player, ItemStack gun) {
         GunType type = LaserGunItem.typeOf(gun);

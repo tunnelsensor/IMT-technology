@@ -693,39 +693,54 @@ public final class WeaponGameTests {
     }
 
     /**
-     * Jouw keuze: energiecellen als magazijn, en ze stapelen niet. Een nieuw geweer is leeg (schieten = klik); herladen
-     * pakt de volste cel uit je inventaris en de oude cel komt op zijn plek terug; met alleen legere cellen herlaad je
-     * niet. Elk schot kost een stukje van de cel.
+     * Jouw keuze: energiecellen als magazijn, en ze stapelen niet. Sinds hoofdstuk 57 werkt een cel als een magazijn van
+     * de Glock: R zonder pouch haalt de cel eruit (niet meer de volste cel uit je inventaris pakken), en een cel erin doe
+     * je met rechtsklik met de cel in je hand (in het geweer in je werkbalk zonder cel). Elk schot kost een stukje van
+     * de cel.
      */
     @GameTest(template = ARENA, timeoutTicks = 200, batch = "weapons")
-    public static void laser_gun_reloads_with_the_fullest_cell(GameTestHelper helper) {
-        ServerPlayer player = shooter(helper, "gun-reloader", new BlockPos(4, 2, 4), com.senne.imttech.weapons.GunType.RIFLE, -1,
+    public static void laser_gun_ejects_its_cell_and_takes_one_by_hand(GameTestHelper helper) {
+        ServerPlayer player = shooter(helper, "gun-reloader", new BlockPos(4, 2, 4), com.senne.imttech.weapons.GunType.RIFLE, 60,
                 helper.absoluteVec(new Vec3(4.5, 2.5, 14.5)));
         check(new ItemStack(ModItems.ENERGY_CELL.get()).getMaxStackSize() == 1, "Energiecellen stapelen");
+        player.getInventory().setItem(5, com.senne.imttech.weapons.EnergyCellItem.withCharge(90));
+        // R zonder pouch: de cel eruit (en niet, zoals vroeger, de vollere cel uit je inventaris erin).
+        check(com.senne.imttech.weapons.LaserGuns.startReload(player), "De cel eruit halen begon niet");
+        check(fire(player, false) == com.senne.imttech.weapons.LaserGuns.Result.RELOADING, "Tijdens het lossen kon je schieten");
+        com.senne.imttech.weapons.LaserGuns.finishReloadNow(player);
+        ItemStack gun = player.getMainHandItem();
+        check(com.senne.imttech.weapons.LaserGunItem.cell(gun) < 0, "De cel bleef in het geweer");
+        check(Math.abs(com.senne.imttech.weapons.EnergyCellItem.charge(player.getInventory().getItem(5)) - 90) < 1e-3,
+                "De cel van 90 in je inventaris veranderde");
+        int ejected = -1;
+        for (int slot = 0; slot < player.getInventory().items.size(); slot++) {
+            ItemStack stack = player.getInventory().getItem(slot);
+            if (stack.is(ModItems.ENERGY_CELL.get()) && Math.abs(com.senne.imttech.weapons.EnergyCellItem.charge(stack) - 60) < 1e-3) {
+                ejected = slot;
+            }
+        }
+        check(ejected >= 0, "De cel van 60 kwam niet in je inventaris");
         check(fire(player, false) == com.senne.imttech.weapons.LaserGuns.Result.EMPTY, "Zonder cel schoot het geweer toch");
-        player.getInventory().setItem(5, com.senne.imttech.weapons.EnergyCellItem.withCharge(60));
-        player.getInventory().setItem(6, com.senne.imttech.weapons.EnergyCellItem.withCharge(90));
-        check(com.senne.imttech.weapons.LaserGuns.startReload(player), "Herladen begon niet");
-        check(fire(player, false) == com.senne.imttech.weapons.LaserGuns.Result.RELOADING, "Tijdens herladen kon je schieten");
-        helper.startSequence()
-                .thenWaitUntil(() -> check(!com.senne.imttech.weapons.LaserGuns.isReloading(player), "Herladen werd niet klaar"))
-                .thenExecute(() -> {
-                    ItemStack gun = player.getMainHandItem();
-                    check(Math.abs(com.senne.imttech.weapons.LaserGunItem.cell(gun) - 90) < 1e-3,
-                            "Het geweer kreeg niet de volste cel: " + com.senne.imttech.weapons.LaserGunItem.cell(gun));
-                    check(player.getInventory().getItem(6).isEmpty(), "De cel bleef ook in je inventaris");
-                    check(Math.abs(com.senne.imttech.weapons.EnergyCellItem.charge(player.getInventory().getItem(5)) - 60) < 1e-3,
-                            "De andere cel veranderde");
-                    // Alleen nog een legere cel: niet herladen.
-                    check(!com.senne.imttech.weapons.LaserGuns.startReload(player), "Herladen met een legere cel");
-                    com.senne.imttech.weapons.LaserGuns.forgetCooldown(player);
-                    check(fire(player, false) == com.senne.imttech.weapons.LaserGuns.Result.FIRED, "Het geweer schoot niet");
-                    float cost = com.senne.imttech.weapons.GunType.RIFLE.cost();
-                    check(Math.abs(com.senne.imttech.weapons.LaserGunItem.cell(gun) - (90 - cost)) < 1e-3,
-                            "Een schot kostte niet " + cost + "%");
-                    check(fire(player, false) == com.senne.imttech.weapons.LaserGuns.Result.TOO_SOON, "Twee schoten in één tick");
-                })
-                .thenSucceed();
+        check(!com.senne.imttech.weapons.LaserGuns.startReload(player), "R zonder cel in het geweer begon iets");
+        // Rechtsklik met de cel van 90 in je hand: in het geweer in je werkbalk zonder cel.
+        player.getInventory().selected = 5;
+        check(com.senne.imttech.weapons.LaserGuns.insertCell(player, InteractionHand.MAIN_HAND), "De cel ging er niet in");
+        check(com.senne.imttech.weapons.LaserGuns.isReloading(player), "Het insteken loopt niet");
+        com.senne.imttech.weapons.LaserGuns.finishInsertNow(player);
+        check(Math.abs(com.senne.imttech.weapons.LaserGunItem.cell(player.getInventory().getItem(0)) - 90) < 1e-3,
+                "Het geweer kreeg de cel van 90 niet: " + com.senne.imttech.weapons.LaserGunItem.cell(player.getInventory().getItem(0)));
+        check(player.getInventory().getItem(5).isEmpty(), "De cel bleef ook in je hand");
+        // Geen geweer zonder cel meer: de andere cel gaat nergens in.
+        player.getInventory().selected = ejected;
+        check(!com.senne.imttech.weapons.LaserGuns.insertCell(player, InteractionHand.MAIN_HAND), "Een cel ging in een geweer dat er al een had");
+        player.getInventory().selected = 0;
+        com.senne.imttech.weapons.LaserGuns.forgetCooldown(player);
+        check(fire(player, false) == com.senne.imttech.weapons.LaserGuns.Result.FIRED, "Het geweer schoot niet");
+        float cost = com.senne.imttech.weapons.GunType.RIFLE.cost();
+        check(Math.abs(com.senne.imttech.weapons.LaserGunItem.cell(player.getMainHandItem()) - (90 - cost)) < 1e-3,
+                "Een schot kostte niet " + cost + "%");
+        check(fire(player, false) == com.senne.imttech.weapons.LaserGuns.Result.TOO_SOON, "Twee schoten in één tick");
+        helper.succeed();
     }
 
     /**

@@ -46,8 +46,10 @@ import org.joml.Matrix4f;
 public final class GearLayer extends RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> {
     /** Het midden van elk vakje van de granaatpouch (model-pixels). */
     private static final float[][] GRENADE_POCKETS = {{6.4f, 9.7f, 6.7f}, {9.6f, 9.7f, 6.7f}, {6.4f, 9.7f, 9.3f}, {9.6f, 9.7f, 9.3f}};
-    /** Het midden van de voet van elk vakje van de magazijnpouch (model-pixels). */
-    private static final float[][] MAG_POCKETS = {{5.9f, 6.6f, 8.0f}, {8.0f, 6.6f, 8.0f}, {10.1f, 6.6f, 8.0f}};
+    /** Het midden van de voet van elk vakje van de magazijnpouch (model-pixels): twee rijen van drie (hoofdstuk 58). */
+    private static final float[][] MAG_POCKETS = {
+            {5.9f, 6.6f, 6.7f}, {8.0f, 6.6f, 6.7f}, {10.1f, 6.6f, 6.7f},
+            {5.9f, 6.6f, 9.5f}, {8.0f, 6.6f, 9.5f}, {10.1f, 6.6f, 9.5f}};
     /** Zo groot is een granaat in de pouch (de bol van 6 pixels wordt er een van ruim 2,5), een magazijn, en een cel. */
     private static final float GRENADE_SCALE = 0.44f;
     private static final float MAG_SCALE = 0.62f;

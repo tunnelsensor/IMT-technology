@@ -2160,6 +2160,10 @@ public final class VisualCheck {
                 inventory.setItem(6, new ItemStack(ModItems.ENERGY_CELL.get()));
                 inventory.setItem(8, com.senne.imttech.weapons.LaserGunItem.complete(com.senne.imttech.weapons.GunType.PISTOL,
                         com.senne.imttech.guns.GunMaterial.TITANIUM));
+                // Hoofdstuk 57: R kiest een cel uit je magazijnpouch; zonder pouch haalt R de cel eruit.
+                ItemStack pouch = new ItemStack(ModItems.MAG_POUCH.get());
+                com.senne.imttech.guns.GearItem.setContents(pouch, java.util.List.of(com.senne.imttech.weapons.EnergyCellItem.withCharge(100)));
+                com.senne.imttech.guns.Gear.set(player, com.senne.imttech.guns.GearItem.Kind.MAG_POUCH, pouch);
             });
             t.stand(20, GUN_RANGE.getX() + 0.5, GUN_RANGE.getY() + 1, GUN_RANGE.getZ() + 0.5, 0, 2);
             t.step(0, () -> selectSlot(0));
@@ -2179,9 +2183,18 @@ public final class VisualCheck {
             t.shot(7, "g06_rifle_firing");
             t.key(0, () -> Minecraft.getInstance().options.keyAttack, false);
             t.step(15, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
+            t.step(5, () -> ShowcaseFeatures.magPick(0));
             t.shot(10, "g07_rifle_reload_out");
             t.shot(14, "g08_rifle_reload_in");
-            t.step(40, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_INSPECT.getKey()));
+            // Hoofdstuk 57: U haalt de cel eruit (in je pouch, daar is nu plek); rechtsklik met een cel doet hem er weer in.
+            t.step(40, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_UNLOAD.getKey()));
+            t.shot(12, "g08b_rifle_unload_cell_out");
+            t.step(30, () -> selectSlot(4));
+            t.step(5, () -> KeyMapping.click(Minecraft.getInstance().options.keyUse.getKey()));
+            t.shot(10, "g08c_cell_in_hand_right_click");
+            t.step(30, () -> selectSlot(1));
+            t.shot(15, "g08d_rifle_loaded_by_hand");
+            t.step(20, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_INSPECT.getKey()));
             t.shot(12, "g09_rifle_inspect_side");
             t.shot(18, "g10_rifle_inspect_top");
             t.step(30, () -> selectSlot(2));
@@ -3369,19 +3382,19 @@ public final class VisualCheck {
             t.open(10, () -> new net.minecraft.client.gui.screens.inventory.InventoryScreen(Minecraft.getInstance().player));
             t.shot(20, "ge01_gear_slots_in_inventory");
             t.close(0);
-            t.key(10, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true);
+            t.wheel(10, true);
             t.shot(15, "ge02_quickdraw_wheel");
             t.step(0, () -> ShowcaseFeatures.wheelChoose(0));
-            t.key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false);
+            t.wheel(2, false);
             t.shot(5, "ge03_drawing_from_the_holster");
             t.shot(15, "ge04_drawn");
             t.step(5, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
             t.shot(10, "ge05_magazine_pouch_picker");
             t.step(0, () -> ShowcaseFeatures.magPick(0));
             t.shot(12, "ge06_pouch_reload");
-            t.key(30, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true);
+            t.wheel(30, true);
             t.step(10, () -> ShowcaseFeatures.wheelChoosePutAway());
-            t.key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false);
+            t.wheel(2, false);
             t.camera(20, CameraType.THIRD_PERSON_FRONT);
             t.shot(15, "ge07_holster_on_the_hip_front");
             t.camera(0, CameraType.THIRD_PERSON_BACK);
@@ -3463,19 +3476,19 @@ public final class VisualCheck {
             t.open(10, () -> new net.minecraft.client.gui.screens.inventory.InventoryScreen(Minecraft.getInstance().player));
             t.shot(20, "sl01_sling_slots_in_inventory");
             t.close(0);
-            t.key(10, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true);
+            t.wheel(10, true);
             t.shot(15, "sl02_wheel_with_slings");
             t.step(0, () -> ShowcaseFeatures.wheelChooseAction(com.senne.imttech.guns.Gear.ACTION_DRAW_SLING, 0));
-            t.key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false);
+            t.wheel(2, false);
             t.shot(6, "sl03_drawing_from_the_back");
             t.shot(22, "sl04_rifle_drawn_glock_holstered");
             t.step(5, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
             t.shot(10, "sl05_cell_picker");
             t.step(0, () -> ShowcaseFeatures.magPick(0));
             t.shot(16, "sl06_cell_reload");
-            t.key(40, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true);
+            t.wheel(40, true);
             t.step(10, () -> ShowcaseFeatures.wheelChooseAction(com.senne.imttech.guns.Gear.ACTION_DRAW_GUN, -1));
-            t.key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false);
+            t.wheel(2, false);
             t.shot(25, "sl07_glock_drawn_rifle_slung");
             t.camera(5, CameraType.THIRD_PERSON_BACK);
             t.shot(15, "sl08_rifle_on_the_back");

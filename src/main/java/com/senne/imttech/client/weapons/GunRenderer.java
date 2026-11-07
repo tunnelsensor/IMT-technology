@@ -94,6 +94,9 @@ public final class GunRenderer {
         int light = event.getPackedLight();
         float time = GunControl.time(pt);
         float reload = GunControl.reload(pt);
+        // Alleen de cel eruit (hoofdstuk 57): een eigen, korter verloop; "swap" is de hele wissel (eruit en een nieuwe erin).
+        boolean eject = reload >= 0 && GunControl.ejectOnly();
+        float swap = eject ? -1 : reload;
         float inspect = GunControl.inspect(pt);
         float since = GunControl.sinceShot(pt);
 
@@ -122,16 +125,17 @@ public final class GunRenderer {
         float kick = recoil(since);
         place.z += rig.kickBack * kick * (1 - 0.4f * aim);
         rotX += rig.kickUp * kick * (1 - 0.5f * aim);
-        // Herladen: kantelen (en weer terug).
+        // Herladen: kantelen (en weer terug). Bij alleen de cel eruit: kantelen, de cel valt weg, en terug.
         if (reload >= 0) {
-            float tilt = ease(Mth.clamp(reload / 0.12f, 0, 1)) * ease(Mth.clamp((1 - reload) / 0.14f, 0, 1));
+            float tilt = eject ? ease(Mth.clamp(reload / 0.15f, 0, 1)) * ease(Mth.clamp((1 - reload) / 0.2f, 0, 1))
+                    : ease(Mth.clamp(reload / 0.12f, 0, 1)) * ease(Mth.clamp((1 - reload) / 0.14f, 0, 1));
             // Met de klok mee kantelen: dan wijst de onderkant (de cel) naar het midden van je beeld.
             rotZ -= 32 * tilt;
             rotX += 14 * tilt;
             rotY += 8 * tilt;
             place.add(-0.07f * tilt, 0.08f * tilt, 0.03f * tilt);
             // De klik als de nieuwe cel erin gaat: een tikje.
-            float slap = bump(reload, 0.57f, 0.05f);
+            float slap = bump(swap, 0.57f, 0.05f);
             place.y -= 0.012f * slap;
         }
         // Bekijken: eerst de zijkant, dan de bovenkant, en terug.
@@ -178,7 +182,7 @@ public final class GunRenderer {
             pose.popPose();
         }
         // Het bewegende deel (de slede, de spanhendel, de grendel, de pomp): van elk onderdeel dat er een heeft.
-        float moving = movingOffset(type, rig, since, reload);
+        float moving = movingOffset(type, rig, since, swap);
         pose.pushPose();
         if (type == GunType.SNIPER) {
             // De grendel gaat eerst omhoog en dan naar achteren.
@@ -193,15 +197,15 @@ public final class GunRenderer {
             }
         }
         if (rig.displayMoves) {
-            display(pose, buffers, rig, stack, reload);
+            display(pose, buffers, rig, stack, swap);
         }
         pose.popPose();
         if (!rig.displayMoves) {
-            display(pose, buffers, rig, stack, reload);
+            display(pose, buffers, rig, stack, swap);
         }
-        // De cel (bij herladen: eruit, weg, en een nieuwe erin).
-        float cellOut = cellOffset(reload);
-        boolean hasCell = LaserGunItem.cell(stack) >= 0 || reload >= 0;
+        // De cel (bij herladen: eruit, weg, en een nieuwe erin; bij alleen eruit: eruit en weg).
+        float cellOut = eject ? ejectOffset(reload) : cellOffset(swap);
+        boolean hasCell = eject || LaserGunItem.cell(stack) >= 0 || swap >= 0;
         if (hasCell && cellOut < 30) {
             pose.pushPose();
             Vector3f down = cellAxis(type);
@@ -228,7 +232,8 @@ public final class GunRenderer {
         // ---- Je armen.
         boolean suit = player.getItemBySlot(EquipmentSlot.CHEST).getItem() instanceof TechSuitItem;
         Vector3f right = gun.transformPosition(new Vector3f(rig.grip));
-        Vector3f left = gun.transformPosition(leftHand(type, rig, reload, moving, cellOut));
+        Vector3f left = gun.transformPosition(eject ? ejectHand(type, rig, reload, moving, cellOut)
+                : leftHand(type, rig, swap, moving, cellOut));
         HumanoidArm main = player.getMainArm();
         arm(mc, player, main, suit, right, main == HumanoidArm.RIGHT ? RIGHT_SHOULDER : LEFT_SHOULDER, pose, buffers, light);
         if (left != null) {
@@ -325,6 +330,51 @@ public final class GunRenderer {
             return 3 - 3 * ease((reload - 0.54f) / 0.04f);
         }
         return 0;
+    }
+
+    /**
+     * Hetzelfde voor alleen de cel eruit (hoofdstuk 57): eruit schuiven en wegvallen, en er komt geen nieuwe. Meer dan
+     * 30 = uit beeld.
+     */
+    private static float ejectOffset(float eject) {
+        if (eject < 0.15f) {
+            return 0;
+        }
+        if (eject < 0.4f) {
+            return 4 * ease((eject - 0.15f) / 0.25f);
+        }
+        if (eject < 0.6f) {
+            float t = (eject - 0.4f) / 0.2f;
+            return 4 + 40 * t * t; // valt weg
+        }
+        return 99;
+    }
+
+    /** Je linkerhand bij alleen de cel eruit: naar de cel, hem eruit trekken en laten vallen, en terug. */
+    private static Vector3f ejectHand(GunType type, GunRig rig, float eject, float moving, float cellOut) {
+        Vector3f rest = new Vector3f(rig.support);
+        if (type == GunType.SHOTGUN) {
+            rest.z += moving * rig.cycle;
+        }
+        Vector3f axis = cellAxis(type);
+        Vector3f atCell = new Vector3f(rig.cell).add(new Vector3f(axis).mul(Math.min(cellOut, 18) + 1.5f));
+        Vector3f below = new Vector3f(rig.cell).add(new Vector3f(axis).mul(24)).add(-3, 0, 4);
+        if (eject < 0.1f) {
+            return rest;
+        }
+        if (eject < 0.2f) {
+            return lerp(rest, atCell, ease((eject - 0.1f) / 0.1f));
+        }
+        if (eject < 0.45f) {
+            return atCell;
+        }
+        if (eject < 0.6f) {
+            return lerp(atCell, below, ease((eject - 0.45f) / 0.15f));
+        }
+        if (eject < 0.85f) {
+            return lerp(below, rest, ease((eject - 0.6f) / 0.25f));
+        }
+        return rest;
     }
 
     /** De richting waarin de cel uit het geweer schuift (bij het pistool schuin, langs de greep). */

@@ -87,8 +87,9 @@ public final class ImtKeys {
      * staan ze in Opties > Besturing niet in het rood, ook al delen ze een toets.
      */
     /**
-     * Hoofdstuk 52 (stap 2): het wiel om snel te trekken. Linker Alt ingedrukt houden, aanwijzen, loslaten (of tikken en
-     * klikken). Alt doet in Minecraft zelf niets.
+     * Hoofdstuk 52 (stap 2): het wiel om snel te trekken. Linker Alt ingedrukt houden, aanwijzen, loslaten; sinds
+     * hoofdstuk 56 alleen zolang je hem vasthoudt (geen tik-stand), en je loopt ondertussen door. Alt doet in Minecraft
+     * zelf niets.
      */
     public static final KeyMapping GEAR_WHEEL = key("gear_wheel", InputConstants.KEY_LALT);
     /**
@@ -103,7 +104,8 @@ public final class ImtKeys {
             InputConstants.KEY_H, CATEGORY);
     /**
      * Hoofdstuk 54 (jouw wens): U = unload. Met een pistool: het magazijn eruit (zonder magazijn: de patroon uit de kamer);
-     * met een magazijn in je hand: één patroon eruit. Met een pistool of magazijn in je hand doet U dan niet ook de ping.
+     * met een magazijn in je hand: één patroon eruit; sinds hoofdstuk 57 met een lasergeweer: de cel eruit. Met zo een
+     * wapen in je hand doet U dan niet ook de ping.
      */
     public static final KeyMapping GUN_UNLOAD = new KeyMapping("key.imttech.gun_unload", GunKeys.CONTEXT, Type.KEYSYM,
             InputConstants.KEY_U, CATEGORY);
