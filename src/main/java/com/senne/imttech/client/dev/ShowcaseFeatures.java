@@ -3066,7 +3066,7 @@ final class ShowcaseFeatures {
                 // Een granaat, en de volgende komt vanzelf.
                 .key(0, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, true)
                 .pause(40)
-                .step(0, () -> wheelChoose(1))
+                .step(0, () -> wheelChooseAction(com.senne.imttech.guns.Gear.ACTION_DRAW_GRENADE, -1))
                 .key(2, () -> com.senne.imttech.client.ImtKeys.GEAR_WHEEL, false)
                 .pause(30)
                 .tap(0, () -> Minecraft.getInstance().options.keyUse)

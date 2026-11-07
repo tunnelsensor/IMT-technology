@@ -4868,11 +4868,43 @@ met tabbladen (het begint op wat je vasthoudt).
       van voren, van dichtbij, de skilltree met het tabblad Rifle). LEESMIJ.md "Lasergeweren uit onderdelen: de Laser
       Workbench, de Nether Star, de slings".
 
+### 56. Het wiel compacter, en slepen in plaats van klikken (7 november)
+
+Jouw vraag: "Ik vind de quick draw menu niet super handig, je moet te veel lezen voordat je weet wat je kunt doen, het
+moet compacter zijn en sneller te zien wat wat doet; ik wil ook dat je kunt slepen met je muis en zo selecteert en niet
+een knop moet indrukken."
+
+- [x] **1. Waarom je moest klikken** — het wiel keek bij het openen naar `KeyMapping.isDown()` van de wieltoets, maar die
+      zegt altijd "nee" zolang er een scherm open is (de toets telt alleen in het spel zelf, en Minecraft zet bij het openen
+      van een scherm bovendien alle toetsen op "los"). Daardoor stond het wiel altijd in de klikstand, al zei de hint soms
+      iets anders. Nu luistert het scherm zelf naar het loslaten (`keyReleased`, en `mouseReleased` als je een muisknop als
+      wieltoets kiest) en vraagt het als vangnet elke tick rechtstreeks aan GLFW of de toets nog ingedrukt is
+      (`wheelKeyDown`). Houd Alt vast, schuif naar een tegel, laat los: gekozen. Tik je Alt kort (korter dan 200 ms,
+      zonder iets aan te wijzen), dan blijft het wiel staan: dan klik je, of je sleept vanuit het midden naar een tegel en
+      laat daar de muisknop los (indrukken kiest niets meer; een klik in het midden, rechtsklik, Esc of Alt sluit). In de
+      showcase, die toetsen nadoet zonder GLFW, kiest het script zoals eerst.
+- [x] **2. Compacter** — `GearWheelScreen` opnieuw: geen tekstblokken meer maar tegels van 36 px met het item er twee keer
+      zo groot in en alleen een getal erop (schoten "15+1", "23", of "--" zonder cel, rood als het leeg is; hoeveel
+      granaten). Elke soort heeft zijn vaste plek, zodat je niet hoeft te zoeken: bovenaan je pistool, rechts je geweren op
+      je slings (één op 90°, twee op 60° en 120°), links elke granaatsoort (30° uit elkaar, gecentreerd), onderaan
+      "wegsteken" (wat je vasthoudt met een pijltje omlaag erop; een groot grijs pijltje als je hand leeg is). Wat je
+      aanwijst lees je in het midden: de naam, de munitie of het aantal, en wat er met je hand gebeurt ("Stone drops",
+      "Glock 19 into the Holster"; ook als het past in het vakje dat net leegkomt, zoals de server het doet). Een
+      stippellijn wijst van het midden naar de tegel. De pouches openen en Gun skills (geen quickdraws) staan als kleine
+      knoppen rechts naast de ring, met "2/3" gevuld en "+1" skillpunt erbij. De ring groeit mee met het scherm (64-96 px) en
+      wordt groter als tegels elkaar anders raken; de hint ("Slide to a tile and let go of Left Alt", met je echte toets)
+      staat erboven. Lege plekken blijven grijs staan ("Holster: empty", "Slings: empty"), zodat je ziet wat er kan.
+- [x] **3. Showcase 115** koos een granaat op volgnummer 1, maar sinds hoofdstuk 55 stond daar de lege sling-tegel. Nu op
+      zijn actie (`wheelChooseAction(ACTION_DRAW_GRENADE)`). LEESMIJ.md "De holster, de pouches en het wiel" aangepast.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **Het nieuwe wiel (hoofdstuk 56)**: gezien op screenshots (`-Ponly=gear,sling`), maar niet met de muis gespeeld.
+      Probeer: Alt vasthouden, naar een tegel schuiven en loslaten (kiest hij meteen, zonder klik?); Alt kort tikken en dan
+      vanuit het midden naar een tegel slepen; de knoppen eronder; en of het midden leesbaar is op jouw GUI-schaal.
 - [ ] **De lasergeweren uit onderdelen en de slings (hoofdstuk 55)**: gezien op screenshots (`-Ponly=laserparts,sling`) en
       met tests, maar niet met de muis gespeeld. Probeer: de Laser Workbench (sleep een frame, de rest, de Nether Star en de
       sling; haal de kern er weer uit), een netherite onderdeel maken (een titanium onderdeel plus twee netherite ingots),

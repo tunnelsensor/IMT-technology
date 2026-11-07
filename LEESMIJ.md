@@ -1843,9 +1843,13 @@ de kamer (die komt in je inventaris). Zit er nog een magazijn met patronen in, d
 Pouch** (leer en touw) vier stapels granaten, een **Magazine Pouch** (leer en een ijzerklompje) drie magazijnen. Je
 draagt ze in de drie vakjes rechts van je poppetje in je inventaris (klik erin met het item aan je muis); zit
 **Curios** in je modpack, dan zie je die vakjes niet en zitten ze in de Curios-slots "Holster" en "Pouch". Houd
-**linker Alt** in: het wiel. Wijs je pistool aan, een granaatsoort (met hoeveel je er hebt), "Put away", "Open ..." (een
-pouch die je draagt openen) of "Gun skills", en laat Alt los (of tik Alt en klik). Trekken: wat je vasthield **valt op de grond** en het pistool (of de granaat) komt in dat
-vakje; het pistool trekken duurt even. Gooi je je laatste granaat van een soort, dan komt de volgende uit de pouch
+**linker Alt** in: het wiel, een ring van tegels rond je muis (die in het midden begint). Elke soort heeft zijn vaste
+plek: bovenaan je pistool, rechts je geweren op je slings, links elke granaatsoort, onderaan "wegsteken" (een pijltje
+omlaag op wat je vasthoudt); rechts ernaast knoppen om een pouch te openen en voor "Gun skills". Op een tegel staat alleen het
+item, twee keer zo groot, met een getal (schoten, hoeveel granaten); wat het is en wat er gebeurt lees je in het midden
+zodra je hem aanwijst. Schuif je muis naar een tegel en laat Alt los: gekozen. Tik je Alt kort, dan blijft het wiel
+staan en klik of sleep je naar een tegel (Esc, rechtsklik of een klik in het midden sluit het). Trekken: wat je
+vasthield **valt op de grond** en het pistool (of de granaat) komt in dat vakje; het pistool trekken duurt even. Gooi je je laatste granaat van een soort, dan komt de volgende uit de pouch
 vanzelf in je hand. "Put away" steekt weg wat je vasthoudt (het pistool in de holster, een granaat in de pouch, een
 magazijn in de magazijnpouch). Een magazijn dat je met R uitwerpt, gaat in de magazijnpouch als daar plek is. Anderen
 zien de holster met het pistool op je rechterheup, de granaatpouch links en de magazijnpouch achter, mét wat erin zit:
@@ -1923,7 +1927,8 @@ tegelijk: de Glock óf het laserpistool). Naast je harnas heb je twee **sling-va
 2x2-craftraster, rechts van het vakje van je andere hand (met Curios: het slot "Sling", twee vakjes); daar gaat een rifle,
 sniper of shotgun **met een sling** in, het geweer zelf (zonder sling past het niet). Het eerste vakje hangt het geweer
 schuin over je **rug**, het tweede voor je **borst**, allebei met een leren band over je schouder; anderen zien het,
-jijzelf met F5. In het **wiel** (linker Alt) staan ze naast je pistool: "Laser Rifle: on your back, 23 shots". Trekken van je
+jijzelf met F5. In het **wiel** (linker Alt) staan ze rechts, met hun schoten erop; wijs je er een aan, dan zegt het midden
+"Laser Rifle, on your back, 23 shots". Trekken van je
 sling duurt langer dan uit de holster (`slingDrawTicks` 18 tegen `drawTicks` 12), en de skill Quickdraw helpt ook hier.
 **Wisselen** (jouw keuze): wat je vasthoudt als je trekt gaat in zijn eigen plek in plaats van op de grond, als dat kan:
 een pistool in de holster, een geweer met sling in een vrij sling-vakje (dat van het geweer dat je net trekt is net
