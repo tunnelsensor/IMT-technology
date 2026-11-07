@@ -1051,6 +1051,25 @@ final class ShowcaseFeatures {
                 .camera(0, CameraType.FIRST_PERSON)
                 .pause(60));
 
+        add("Guards like in Hitman", "Hoofdstuk 60: een Raven-soldaat is een bewaker zoals in Hitman. Hij loopt zijn route "
+                + "met zijn rug naar je toe en ziet je niet. Dan klinkt er lawaai vlak voor je: boven zijn hoofd verschijnt "
+                + "een geel ? en hij komt kijken. Zodra hij je ziet, loopt het oog op je bril vol (wit, oranje, rood): hij "
+                + "heeft je, een rood !, en hij grijpt eerst naar zijn radio (een seconde pakken, drie seconden praten: "
+                + "\"[Radio] BB-xxxx: Contact!\"). Pas daarna schiet hij. Na een tijdje valt hij: zijn lichaam blijft liggen "
+                + "met zijn buit erin (rechtsklik: doorzoeken, sneak + rechtsklik: meeslepen en verstoppen), want wie een "
+                + "lichaam ziet, roept ook versterking. Sluipen is stil en maakt zijn meter half zo snel vol.",
+                GameType.SURVIVAL, start, 180, 0, s -> s
+                .onServer(10, ShowcaseFeatures::spawnHitmanGuard)
+                .pause(90)
+                .onServer(0, player -> com.senne.imttech.raven.Noises.make(player.serverLevel(), player.position().add(0, 0.5, -4), 12,
+                        com.senne.imttech.raven.Noises.Kind.BLOCK, player))
+                .pause(220)
+                .onServer(0, ShowcaseFeatures::dropHitmanGuard)
+                .camera(0, CameraType.THIRD_PERSON_BACK)
+                .pause(100)
+                .camera(0, CameraType.FIRST_PERSON)
+                .pause(40));
+
         add("Automatic turrets", "Een Biebia's Industries-torentje (gemaakt met een Raven-onderdeel) met een warmtegenerator "
                 + "ernaast: de kop kijkt rustig rond tot er monsters komen (eerst misschien een slijmpje), "
                 + "draait dan naar het dichtstbijzijnde en blijft daarop schieten tot het neer is: een blauwe "
@@ -4972,6 +4991,35 @@ final class ShowcaseFeatures {
         for (double[] spot : spots) {
             Vec3 landing = centre.add(spot[0], 4, spot[1]);
             RaidDroneEntity.spawn(player.serverLevel(), landing.add(spot[0] * 0.5, 30, spot[1] * 0.5), landing);
+        }
+    }
+
+    /** Hoofdstuk 60: één bewaker twaalf blokken voor je, met zijn rug naar je toe, die een route van tien blokken breed loopt. */
+    private static void spawnHitmanGuard(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        RavenSoldierEntity soldier = com.senne.imttech.registry.ModEntities.RAVEN_SOLDIER.get().create(level);
+        if (soldier == null) {
+            return;
+        }
+        BlockPos post = BlockPos.containing(player.getX(), player.getY(), player.getZ() - 12);
+        soldier.moveTo(post.getX() + 0.5, post.getY(), post.getZ() + 0.5, 180, 0);
+        soldier.finalizeSpawn(level, level.getCurrentDifficultyAt(post), net.minecraft.world.entity.MobSpawnType.SPAWN_EGG, null);
+        soldier.setPersistenceRequired();
+        soldier.setRoute(List.of(post.west(5), post.east(5)));
+        level.addFreshEntity(soldier);
+    }
+
+    /** Hoofdstuk 60: de dichtstbijzijnde bewaker valt (zijn lichaam blijft liggen). */
+    private static void dropHitmanGuard(ServerPlayer player) {
+        RavenSoldierEntity nearest = null;
+        for (RavenSoldierEntity soldier : player.serverLevel().getEntitiesOfClass(RavenSoldierEntity.class,
+                player.getBoundingBox().inflate(40), RavenSoldierEntity::isAlive)) {
+            if (nearest == null || soldier.distanceToSqr(player) < nearest.distanceToSqr(player)) {
+                nearest = soldier;
+            }
+        }
+        if (nearest != null) {
+            nearest.kill();
         }
     }
 

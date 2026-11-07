@@ -5086,10 +5086,11 @@ Erbij: **geen** minimap en **geen** tekst "ze zoeken je" zoals in Hitman. Alleen
       de sectie `[guards]` in de config. De soldaat heeft geen NearestAttackableTargetGoal voor spelers meer en geen
       LookAtPlayerGoal (die draaide zijn hoofd naar jou, en dan zag hij je altijd); jouw drones schiet hij nog meteen neer,
       en geraakt worden of een maat die je al heeft is nog steeds meteen gevecht. Zijn geweer ligt nu echt aangelegd
-      zodra hij een doelwit heeft (`setAggressive`, dat ontbrak). Boven zijn hoofd een geel "?" of een rood "!"
-      (`client/raven/AlertMarks`, via `RavenSoldierRenderer`), en op je bril het oog (`hud/DetectionWidget`): boven zijn
-      hoofd als hij in beeld is, anders op het ovaal van de dreigingspijlen; wit, oranje vanaf `suspiciousAt`, rood als
-      hij je heeft. Vier tests in de nieuwe `GuardGameTests` (hij heeft je pas na een tijdje, niet achter zijn rug,
+      zodra hij een doelwit heeft (`setAggressive`, dat ontbrak). Op je bril (`hud/DetectionWidget`): boven zijn hoofd een
+      geel "?" of een rood "!" zodra hij op zijn hoede is, en het oog zodra hij JOU in de gaten krijgt, boven zijn hoofd
+      als hij in beeld is, anders op het ovaal van de dreigingspijlen; wit, oranje vanaf `suspiciousAt`, rood als hij je
+      heeft (eerst stond het "?"/"!" als tekst in de wereld, zie stap 8). Vier tests in de nieuwe `GuardGameTests` (hij
+      heeft je pas na een tijdje, niet achter zijn rug,
       sluipen half zo snel, zoeken waar hij je kwijtraakte).
 - [x] **2. Routes en posten** — `raven/RavenRoutes` (de markering `raven_soldier;dx,0,dz;...`: verschuivingen, zodat
       ze meeschuiven met `shift()` en hier meedraaien met het stuk via `StructureTemplate.transform`),
@@ -5160,8 +5161,8 @@ Erbij: **geen** minimap en **geen** tekst "ze zoeken je" zoals in Hitman. Alleen
       een soldaat (`[guards]`), met zijn Scan-bereik als afstand en het filter van zijn Face Recognition (wie daar niet
       door komt, vult hem niet); vol = `when spotted:` één keer, tot de meter weer leeg was; lichamen om de tien ticks
       (`Bodies.visible`, per robot zijn eigen lijst); lawaai via `Noises` (elke robot of drone die aan staat, behalve
-      zijn eigen schot). `read(scanPin)` blijft meteen waar. Een robot of drone is nu ook een `Watcher`: "?"/"!" boven
-      zijn hoofd (`GuardRobotRenderer`, `GuardDroneRenderer`) en het oogje op je bril. De Help van een robot- en
+      zijn eigen schot). `read(scanPin)` blijft meteen waar. Een robot of drone is nu ook een `Watcher`: hetzelfde
+      "?"/"!" boven zijn hoofd en het oogje op je bril (DetectionWidget). De Help van een robot- en
       droneprogramma toont de drie whens en `robot.alert`. `heard` en `spotted` zijn nu woorden van de taal (een eigen
       naam zo heten mag niet meer, de controle zegt het). Vier tests (lawaai met plek en soort, niet te ver; de meter en
       `when spotted` één keer; een lichaam één keer en een tweede apart; de woorden mogen niet op de server). 439 tests,
@@ -5184,7 +5185,18 @@ Erbij: **geen** minimap en **geen** tekst "ze zoeken je" zoals in Hitman. Alleen
       niet (anders brak `when spotted` het alarm van een drone af). Twee tests (de klassieke toren heeft vier
       bewakersrobots, twee onder en twee boven; "contact" van een robot van niemand geeft de squad de opdracht alarm via
       Biebia's kern). 441 tests, groen.
-- [ ] **8. Afronding** — showcase "Guards like in Hitman", screenshots, LEESMIJ.md, de testtelling, het jar.
+- [x] **8. Afronding** — showcase **66, "Guards like in Hitman"** (na "Raven soldiers"): een bewaker loopt zijn route
+      met zijn rug naar je toe, lawaai vlak voor je ("?", hij komt kijken), het oog loopt vol, "!", de radio, hij schiet,
+      en daarna ligt zijn lichaam er. Rondleiding `gradlew runVisualCheck -Ponly=guards`: `hg01_guard_patrol`,
+      `hg02_guard_suspicious` (het "?"), `hg03_guard_eye`, `hg04_guard_calling` (het "!" en het rode oog),
+      `hg05_guard_body`, `hg06_guard_body_search` (je bent daar even survival en onkwetsbaar: in creative ziet een
+      bewaker je niet). Daarbij bleek: tekst uit een entity-renderer (zelfs vanilla's `renderNameTag`) komt in dit spel
+      niet op het scherm, en tekst uit het level-render-event (zoals de labels van de Remote Frag) kwam precies achter het
+      oog terecht; het "?"/"!" staat nu in de HUD zelf (`DetectionWidget.mark`, twee keer zo groot als gewone tekst, met
+      een lichte pulse), boven het oog en in dezelfde projectie; `AlertMarks` is weg. LEESMIJ.md: "Bewakers zoals in
+      Hitman" en het lichaam onder Raven-soldaten, Biebia's robots en het diagram "Security" bij de toren, de drie whens
+      en `robot.alert` bij "Robots programmeren", `[guards]` in de tabel van de instellingen. 441 tests, allemaal groen.
+      Het jar gebouwd (2.1.24).
 - [ ] **9. Vermomming** (nog niet beginnen, jouw keuze) — het pak van een dode soldaat aantrekken: bewakers zien je dan
       pas van dichtbij (of als je rent of iets vreemds doet).
 - [ ] **10. Een demper** (later) — een Glock-onderdeel dat het schot zachter maakt (lawaai 48 wordt 10).

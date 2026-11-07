@@ -1185,6 +1185,40 @@ public final class VisualCheck {
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }
 
+        // --- Hoofdstuk 60: bewakers zoals in Hitman. Een soldaat loopt zijn route met zijn rug naar je toe; lawaai vlak
+        // voor je maakt hem achterdochtig ("?") en hij komt kijken; hij ziet je (het oog op je bril loopt vol), heeft je
+        // ("!") en grijpt naar zijn radio; daarna valt hij en ligt zijn lichaam er, met zijn buit erin (het scherm).
+        if (want("guards")) {
+            // Je staat 22 blokken achter hem: dichterbij ziet hij je al als hij bij een punt van zijn route rondkijkt.
+            t.view(0, 100.5, -60, 82.5, 180, 4);
+            t.onServer(0, player -> {
+                GUARD_MODE_BEFORE = player.gameMode.getGameModeForPlayer();
+                player.setGameMode(net.minecraft.world.level.GameType.SURVIVAL); // in creative ziet een bewaker je niet
+                player.getAbilities().invulnerable = true;
+                player.onUpdateAbilities();
+                spawnPatrollingGuard(player.serverLevel(), new BlockPos(100, -60, 60));
+            });
+            t.shot(40, "hg01_guard_patrol");
+            // Lawaai tien blokken voor je: hij kijkt ernaar ("?") en komt kijken, en dan ziet hij jou (het oog loopt vol).
+            t.onServer(0, player -> com.senne.imttech.raven.Noises.make(player.serverLevel(), new Vec3(100.5, -59.5, 72.5), 16,
+                    com.senne.imttech.raven.Noises.Kind.BLOCK, player));
+            t.shot(12, "hg02_guard_suspicious");
+            t.shot(55, "hg03_guard_eye");
+            t.waitUntil(300, () -> guardAlert() == com.senne.imttech.raven.RavenAlert.CALLING);
+            t.shot(10, "hg04_guard_calling");
+            t.onServer(60, VisualCheck::dropNearestGuard);
+            t.view(0, 100.5, -58.5, 75.5, 180, 38);
+            t.shot(20, "hg05_guard_body");
+            t.onServer(0, VisualCheck::searchNearestBody);
+            t.shot(15, "hg06_guard_body_search");
+            t.close(0);
+            t.onServer(0, player -> {
+                player.getAbilities().invulnerable = false;
+                player.setGameMode(GUARD_MODE_BEFORE);
+                player.onUpdateAbilities();
+            });
+        }
+
         // --- Hoofdstuk 21: guard robots. Vooraan de vier stijlen (Commando, Trainer, Battle, Super Battle),
         // daarachter twee gemengde; van voren, opzij, van achter en 's nachts (de lichtjes).
         if (want("robots")) {
@@ -5506,6 +5540,73 @@ public final class VisualCheck {
     }
 
     /** Hoort dit stuk bij de rondleiding van vandaag (zie ONLY)? */
+    /** De spelmodus voor het stuk "guards" (hoofdstuk 60): daar ben je even survival, want in creative ziet een bewaker je niet. */
+    private static net.minecraft.world.level.GameType GUARD_MODE_BEFORE = net.minecraft.world.level.GameType.CREATIVE;
+
+    /** Hoofdstuk 60: een bewaker met zijn rug naar het zuiden (naar jou), die een route van tien blokken breed loopt. */
+    static void spawnPatrollingGuard(ServerLevel level, BlockPos post) {
+        for (Entity old : level.getEntities((Entity) null, new net.minecraft.world.phys.AABB(post).inflate(16),
+                e -> e instanceof com.senne.imttech.raven.RavenSoldierEntity || e instanceof com.senne.imttech.raven.RavenBodyEntity)) {
+            old.discard();
+        }
+        com.senne.imttech.raven.RavenSoldierEntity soldier = com.senne.imttech.registry.ModEntities.RAVEN_SOLDIER.get().create(level);
+        if (soldier == null) {
+            return;
+        }
+        soldier.moveTo(post.getX() + 0.5, post.getY(), post.getZ() + 0.5, 180, 0);
+        soldier.finalizeSpawn(level, level.getCurrentDifficultyAt(post), net.minecraft.world.entity.MobSpawnType.SPAWN_EGG, null);
+        soldier.setPersistenceRequired();
+        soldier.setRoute(java.util.List.of(post.west(5), post.east(5)));
+        level.addFreshEntity(soldier);
+    }
+
+    /** Hoe alert de dichtstbijzijnde bewaker is, zoals je spel het ziet (voor waitUntil). */
+    private static com.senne.imttech.raven.RavenAlert guardAlert() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null || mc.player == null) {
+            return com.senne.imttech.raven.RavenAlert.CALM;
+        }
+        com.senne.imttech.raven.RavenSoldierEntity nearest = null;
+        for (Entity entity : mc.level.entitiesForRendering()) {
+            if (entity instanceof com.senne.imttech.raven.RavenSoldierEntity soldier
+                    && (nearest == null || soldier.distanceToSqr(mc.player) < nearest.distanceToSqr(mc.player))) {
+                nearest = soldier;
+            }
+        }
+        return nearest == null ? com.senne.imttech.raven.RavenAlert.CALM : nearest.alertState();
+    }
+
+    /** De dichtstbijzijnde bewaker valt: zijn lichaam blijft liggen (hoofdstuk 60, stap 5). */
+    static void dropNearestGuard(ServerPlayer player) {
+        com.senne.imttech.raven.RavenSoldierEntity nearest = null;
+        for (com.senne.imttech.raven.RavenSoldierEntity soldier : player.serverLevel().getEntitiesOfClass(
+                com.senne.imttech.raven.RavenSoldierEntity.class, player.getBoundingBox().inflate(40), Entity::isAlive)) {
+            if (nearest == null || soldier.distanceToSqr(player) < nearest.distanceToSqr(player)) {
+                nearest = soldier;
+            }
+        }
+        if (nearest != null) {
+            nearest.setDropChance(net.minecraft.world.entity.EquipmentSlot.MAINHAND, 2.0f); // zijn wapen zit dan zeker in het lichaam
+            nearest.kill();
+        }
+        // Het lichaam op een vaste plek voor de camera, dwars (het ligt waar hij viel, maar daar kijkt de rondleiding niet).
+        for (com.senne.imttech.raven.RavenBodyEntity body : player.serverLevel().getEntitiesOfClass(
+                com.senne.imttech.raven.RavenBodyEntity.class, player.getBoundingBox().inflate(40))) {
+            body.moveTo(100.5, -60, 70.5, 90, 0);
+            body.setYBodyRot(90);
+            body.setYHeadRot(90);
+        }
+    }
+
+    /** Het dichtstbijzijnde lichaam doorzoeken (het scherm "Search the body"). */
+    static void searchNearestBody(ServerPlayer player) {
+        for (com.senne.imttech.raven.RavenBodyEntity body : player.serverLevel().getEntitiesOfClass(
+                com.senne.imttech.raven.RavenBodyEntity.class, player.getBoundingBox().inflate(40))) {
+            body.interact(player, net.minecraft.world.InteractionHand.MAIN_HAND);
+            return;
+        }
+    }
+
     private static boolean want(String section) {
         return ONLY.isEmpty() || ONLY.contains(section);
     }

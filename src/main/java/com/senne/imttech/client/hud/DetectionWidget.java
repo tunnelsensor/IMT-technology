@@ -16,12 +16,17 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Het oogje op je bril (hoofdstuk 60, jouw antwoord 2: "een oogje met een pijl naar de bewaker dat volloopt", zoals de
- * witte pijl in Hitman). Voor elke bewaker (een Raven-soldaat, en sinds stap 6 een robot of drone) die JOU in de gaten
- * begint te krijgen, tekenen we een oog dat van links naar rechts volloopt met zijn meter: wit zolang hij alleen maar
- * kijkt, oranje als hij achterdochtig is, rood als hij je heeft. Staat hij op je scherm, dan zweeft het oog boven zijn
- * hoofd; staat hij erbuiten (achter je), dan staat het op het ovaal rond het midden van je scherm aan de kant waar hij
- * is, net als de kompaspijlen van de dreigingen (ThreatMarkerWidget).
+ * Het oogje op je bril (hoofdstuk 60, jouw antwoord 2: "een oogje met een pijl naar de bewaker dat volloopt, en boven
+ * zijn hoofd een ? en dan een !", zoals de witte pijl in Hitman). Voor elke bewaker (een Raven-soldaat, en sinds stap 6
+ * een robot of drone) die JOU in de gaten begint te krijgen, tekenen we een oog dat van links naar rechts volloopt met
+ * zijn meter: wit zolang hij alleen maar kijkt, oranje als hij achterdochtig is, rood als hij je heeft. Staat hij op je
+ * scherm, dan zweeft het oog boven zijn hoofd; staat hij erbuiten (achter je), dan staat het op het ovaal rond het
+ * midden van je scherm aan de kant waar hij is, net als de kompaspijlen van de dreigingen (ThreatMarkerWidget).
+ *
+ * Boven elke bewaker die op zijn hoede is (ook om iets anders dan jou: lawaai, een lichaam) staat zijn teken: een geel
+ * <b>?</b> (achterdochtig, zoekend) of een rood <b>!</b> (hij heeft iemand, of roept versterking), boven het oog als dat er
+ * ook is. Dat tekenen we hier, in dezelfde projectie als het oog, en niet als tekst in de wereld: die kwam precies
+ * achter het oog terecht.
  *
  * Meer niet: geen minimap en geen tekst "ze zoeken je" (jouw wens: alleen het bewakersgedeelte).
  */
@@ -47,17 +52,21 @@ public final class DetectionWidget implements HudWidget {
     public void render(HudContext c) {
         int me = c.player.getId();
         for (Entity entity : c.mc.level.entitiesForRendering()) {
-            if (!(entity instanceof Watcher watcher) || !entity.isAlive() || watcher.suspectId() != me || watcher.suspicion() <= 0) {
+            if (!(entity instanceof Watcher watcher) || !entity.isAlive()) {
+                continue;
+            }
+            boolean watchingMe = watcher.suspectId() == me && watcher.suspicion() > 0;
+            if (!watchingMe && !watcher.alertState().alerted()) {
                 continue;
             }
             if (entity.distanceToSqr(c.player) > MAX_DISTANCE * MAX_DISTANCE) {
                 continue;
             }
-            draw(c, entity, watcher);
+            draw(c, entity, watcher, watchingMe);
         }
     }
 
-    private void draw(HudContext c, Entity guard, Watcher watcher) {
+    private void draw(HudContext c, Entity guard, Watcher watcher, boolean watchingMe) {
         float fraction = Mth.clamp(watcher.suspicion() / 100.0f, 0.0f, 1.0f);
         RavenAlert alert = watcher.alertState();
         int colour = alert == RavenAlert.COMBAT || alert == RavenAlert.CALLING || fraction >= 1.0f ? RED
@@ -65,10 +74,20 @@ public final class DetectionWidget implements HudWidget {
         // Hoe voller, hoe duidelijker: een oog dat net begint is nog half doorzichtig.
         int alpha = 140 + Math.round(115 * fraction);
         Vec3 at = c.projection.drawnPosition(guard);
-        Vec3 top = new Vec3(at.x, at.y + guard.getBbHeight() + 1.15, at.z);
+        Vec3 top = new Vec3(at.x, at.y + guard.getBbHeight() + 0.9, at.z);
         WorldProjection.ScreenPoint point = c.projection.project(top);
         if (point != null && c.projection.isOnScreen(point, 0)) {
-            eye(c.g, Math.round(point.x()), Math.round(point.y()), fraction, argb(alpha, colour));
+            int x = Math.round(point.x());
+            int y = Math.round(point.y());
+            if (watchingMe) {
+                eye(c.g, x, y, fraction, argb(alpha, colour));
+            }
+            if (alert.alerted()) {
+                mark(c, x, watchingMe ? y - 8 : y + 4, alert);
+            }
+            return;
+        }
+        if (!watchingMe) {
             return;
         }
         Player player = c.player;
@@ -84,6 +103,23 @@ public final class DetectionWidget implements HudWidget {
         int x = c.width / 2 + (int) Math.round(Math.sin(relative) * rx);
         int y = c.height / 2 - (int) Math.round(Math.cos(relative) * ry);
         eye(c.g, x, y, fraction, argb(alpha, colour));
+    }
+
+    /** Het teken boven een bewaker: een geel "?" of een rood "!", twee keer zo groot als gewone tekst, met een schaduw. */
+    private static void mark(HudContext c, int cx, int bottom, RavenAlert alert) {
+        boolean danger = alert == RavenAlert.COMBAT || alert == RavenAlert.CALLING;
+        String text = danger ? "!" : "?";
+        int colour = danger ? RED : 0xF0C040;
+        // Een lichte pulse zodat het opvalt.
+        float bob = (float) Math.sin(c.now / 160.0) * 1.5f;
+        var pose = c.g.pose();
+        pose.pushPose();
+        pose.translate(cx, bottom - 18 + bob, 0);
+        pose.scale(2.0f, 2.0f, 1.0f);
+        int width = c.font.width(text);
+        c.g.drawString(c.font, text, -width / 2 + 1, 1, argb(200, 0x101418), false);
+        c.g.drawString(c.font, text, -width / 2, 0, argb(255, colour), false);
+        pose.popPose();
     }
 
     /**

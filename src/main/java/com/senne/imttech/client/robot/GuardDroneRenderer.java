@@ -61,11 +61,4 @@ public class GuardDroneRenderer extends MobRenderer<GuardDroneEntity, GuardDrone
             pose.mulPose(Axis.ZP.rotationDegrees(28.0f));
         }
     }
-
-    /** Hoofdstuk 60: het "?" of "!" van een drone die iemand in de gaten krijgt (zie BotAlert), zoals bij een soldaat. */
-    @Override
-    public void render(GuardDroneEntity drone, float yaw, float partialTick, PoseStack pose, MultiBufferSource buffers, int light) {
-        super.render(drone, yaw, partialTick, pose, buffers, light);
-        com.senne.imttech.client.raven.AlertMarks.render(entityRenderDispatcher, getFont(), drone, drone.alertState(), pose, buffers, light);
-    }
 }

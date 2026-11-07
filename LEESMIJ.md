@@ -506,11 +506,28 @@ je te dichtbij komt. Verstop je je achter een muur, dan zoeken ze een plek om de
 waaruit ze je wel zien; zit je binnen, dan zoeken ze een weg naar binnen, en **deuren doen ze
 gewoon open**.
 
-- Versla je er een, dan laat hij soms een **Raven-onderdeel** vallen (en soms zijn wapen). Dat heb je nodig voor
-  de nieuwste tech: het raketpakket (zie Het harnas) en de torentjes (zie Torentjes).
+**Bewakers zoals in Hitman** (7 november). Een soldaat ziet je niet meteen: hij kijkt in een kegel voor zich uit
+(140 graden, 28 blokken, niet door muren of rook) en een **meter** loopt vol zolang je in beeld staat: in een
+seconde vlak voor hem, in acht aan de rand; **sluipen** half zo snel, rennen sneller, in zijn ooghoek half. Op je
+bril zie je dat als een **oog** dat volloopt (wit, oranje, rood), boven zijn hoofd als een **?** of een **!**.
+Halfvol wordt hij achterdochtig en komt hij kijken; vol heeft hij je. Rustig loopt hij zijn **route** (per kamer
+getekend) of staat hij op zijn post, en hij **hoort** je: schoten (de Glock door de hele bunker, een laserpistool
+twaalf blokken), ontploffingen, blokken kapotslaan, rennen, deuren en vallen; door een muur maar half zo ver.
+Lopen en sluipen zijn stil. Wie je als eerste ziet, **roept via de radio**: een seconde om hem te pakken, drie
+om het gesprek af te maken. Stop je hem binnen die seconde, dan hoorde niemand iets; daarna worden zijn maten
+achterdochtig, komen ze langzaam kijken en hoor jij "[Radio] BB-2358, come in". Maakt hij het af ("Contact!"),
+dan weet de hele bunker het, komt na tien seconden een **team van vier** door de ingang (hooguit twee teams per
+alarm) en zijn ze vijf minuten extra scherp. Raakt hij je kwijt, dan zoekt hij twee minuten rond je laatste plek
+en gaat hij terug naar zijn route. Alle getallen staan in `config/imttech.toml` onder `[guards]`.
+
+- Versla je er een, dan blijft zijn **lichaam** liggen (vijf minuten), met zijn buit erin: soms een
+  **Raven-onderdeel**, soms zijn wapen, bij een bewaker zijn keycard. Rechtsklik: doorzoeken; sneak + rechtsklik:
+  meeslepen en verstoppen, want wie een lichaam ziet (ook een geboeide soldaat of een gevloerde robot) roept
+  versterking ("Man down!"). Dat onderdeel heb je nodig voor de nieuwste tech: het raketpakket (zie Het harnas)
+  en de torentjes (zie Torentjes).
 - In een **Biebia's Industries Tower** uit kamers staan **bewakers** (in de lobby en voor de generatorkamer) met
   een **staff-keycard** van die toren op zak: die valt als je ze verslaat, en opent de poort van de
-  generatorkamer (zie "Torens en bunkers uit kamers"). Op de beveiligingsverdieping staat een gewone soldaat.
+  generatorkamer (zie "Torens en bunkers uit kamers"). De rest van de toren bewaken Biebia's robots en drones.
 - Zelf oproepen om te oefenen: het **Raven Soldier Spawn Egg** in de I.M.T Technology-tab.
 
 ### Torentjes
@@ -1401,6 +1418,14 @@ onderbreekt wat de robot doet: zijn `when ordered("attack"):` loopt (met `order.
 verder waar hij was. Heeft hij geen `when ordered` met die naam, dan negeert hij hem (dat staat in het
 logboek). Een robot die ver weg is, krijgt zijn opdracht als hij terug is.
 
+**Zintuigen zoals een bewaker** (7 november, hoofdstuk 60). Drie whens zonder haakjes: `when heard:` bij lawaai
+binnen zijn bereik (met `sound.x/y/z` en `sound.kind`: "shot", "explosion", "block", "steps", "door" of "fall"),
+`when spotted:` zodra zijn meter vol is (met `target.name` en `target.x/y/z`; de meter, `robot.alert` 0-100, loopt vol
+zolang zijn Scan iemand ziet die door het filter van zijn Face Recognition komt, sneller dichtbij of rennend, trager
+ver weg of sluipend) en `when body_seen:` één keer per lichaam dat hij ziet (met `body.x/y/z`). Ze beginnen zoals een
+opdracht: wat hij deed wacht even en gaat daarna verder; een echte opdracht van de server gaat voor. `read(scanPin)`
+blijft meteen waar. Boven een robot staat hetzelfde **?** of **!** als boven een Raven-soldaat.
+
 Hoe snel hij loopt en hoeveel hij per tick doet, staat in `config/imttech.toml` onder `[robots]`
 (`stepsPerTick`, `maxRuns`, `walkFactor`, `stuckSeconds`, `turnSeconds`, `gotoSeconds`).
 
@@ -1683,6 +1708,13 @@ van gebarsten tegels in de oostmuur hak je in seconden weg, obsidiaan niet. Elke
 kan ook. De bordjes in de kamer en het briefje `/home/biebia/power.txt` op de kern vertellen het je zonder
 het letterlijk uit te leggen; na het hacken zie je het diagram in de app Logic en heten de zenders "Power
 gate" in Devices: zo werken lezers, groepen en diagrammen ook bij jou.
+
+Sinds 7 november bewaken **Biebia's robots** de lobby en de beveiligingsverdieping: op vier **Robot Docks** zet
+Biebia's kern guard robots in de squad "Tower guards" met het programma **"Tower guard"**, in dezelfde taal als
+jouw robots (rondjes lopen, `when heard` gaat kijken, `when spotted` meldt "contact" en schiet, `when body_seen`
+meldt "man down"). Biebia's tweede diagram **"Security"** geeft op zo'n melding alle robots ("Tower guards") en
+drones ("Tower drones") de opdracht "alarm" met de plek van de melder. Hack de toren en je leest het allemaal in
+de app Logic, en de robots en drones zijn dan van jou.
 
 De bunker net zo: de ingang vooraan en de kluis achteraan liggen vast; daartussen **3 tot 6 zalen** (de
 reactorkamer met de stroomkast altijd; verder de grote hal met de slaapzaal, de wapenkamer, het lab, de
@@ -2139,7 +2171,7 @@ beveiligingskern, zie "Het datacenter"); zonder luistert ze niet. In creative ho
 
 | Bestand | Wat |
 |---------|-----|
-| `config/imttech.toml` | **Alle getallen van de mod** (ruim 350), in hoofdstukken: wat mag er (`[rules]`: hacken, zakkenrollen, raids aan/uit), de bril, **alle stroom** (`[power]`: wat elk blok opwekt, opslaat en gebruikt), drones, de satelliet **per upgrade-niveau**, harnas, torentjes, beveiliging, datacenter, granaten en lasers, de Glock 19 (`[guns]`), guard robots, Raven, raids... |
+| `config/imttech.toml` | **Alle getallen van de mod** (ruim 390), in hoofdstukken: wat mag er (`[rules]`: hacken, zakkenrollen, raids aan/uit), de bril, **alle stroom** (`[power]`: wat elk blok opwekt, opslaat en gebruikt), drones, de satelliet **per upgrade-niveau**, harnas, torentjes, beveiliging, datacenter, granaten en lasers, de Glock 19 (`[guns]`), guard robots, Raven, de bewakers zoals in Hitman (`[guards]`: zien, horen, de radio, het team, lichamen), raids... |
 | `config/imttech-client.toml` | Stem, volume, spraaktekst, Spotify Client ID, GPU voor de AI, het zachte zoemen van de rayshields (`rayshieldHumVolume`: 1 = normaal, 2 = dubbel zo hard, 0 = uit), het laadzoemen van de guard robots (`robotHumVolume`, net zo), de rotors van de security drones (`droneRotorVolume`, net zo), de rand van zones (`zoneBorder`) |
 | `config/imttech-voice.json` | Alle spraakcommando's (zelf uit te breiden) |
 | `config/imttech-spotify.json` | Je Spotify-token (niet delen) |

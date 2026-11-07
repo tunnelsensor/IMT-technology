@@ -28,8 +28,8 @@ import org.jetbrains.annotations.Nullable;
  *   <li>{@code when heard:} bij elk geluid binnen zijn bereik (Noises; sound.x/y/z en sound.kind);</li>
  *   <li>{@code when body_seen:} één keer per lichaam dat hij ziet (Bodies; body.x/y/z).</li>
  * </ul>
- * {@code read(scanPin)} blijft meteen waar: oude programma's veranderen niet. Boven zijn hoofd staat hetzelfde "?" of
- * "!" als bij een soldaat, en ook een robot staat in het oogje op je bril (zie Watcher in BotEntity).
+ * {@code read(scanPin)} blijft meteen waar: oude programma's veranderen niet. Boven zijn hoofd staat op je bril hetzelfde
+ * "?" of "!" als bij een soldaat, en ook een robot staat in het oogje (zie Watcher in BotEntity en hud/DetectionWidget).
  */
 public final class BotAlert {
     private final BotEntity bot;
