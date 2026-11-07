@@ -67,6 +67,9 @@ public final class RoomPlacer {
                 level.setBlock(info.pos(), Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
                 TowerGuards.spawnGuard(level, info.pos(), level.random,
                         com.senne.imttech.raven.RavenRoutes.route(metadata, info.pos(), rotation));
+            } else if (com.senne.imttech.raven.RavenRoutes.isEntry(metadata)) {
+                level.setBlock(info.pos(), Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
+                com.senne.imttech.raven.RavenSites.placeEntry(level, info.pos());
             }
         }
     }

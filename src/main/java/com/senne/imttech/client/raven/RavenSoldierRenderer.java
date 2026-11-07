@@ -63,6 +63,13 @@ public class RavenSoldierRenderer extends HumanoidMobRenderer<RavenSoldierEntity
                 super.prepareMobModel(soldier, limbSwing, limbSwingAmount, partialTick);
                 return;
             }
+            if (soldier.alertState() == com.senne.imttech.raven.RavenAlert.CALLING) {
+                // Hoofdstuk 60: hij roept versterking, de radio aan zijn oor (linkerhand), het geweer losjes in zijn rechter.
+                rightArmPose = ArmPose.ITEM;
+                leftArmPose = ArmPose.SPYGLASS;
+                super.prepareMobModel(soldier, limbSwing, limbSwingAmount, partialTick);
+                return;
+            }
             rightArmPose = soldier.isAggressive() ? ArmPose.CROSSBOW_HOLD : ArmPose.ITEM;
             leftArmPose = ArmPose.EMPTY;
             super.prepareMobModel(soldier, limbSwing, limbSwingAmount, partialTick);

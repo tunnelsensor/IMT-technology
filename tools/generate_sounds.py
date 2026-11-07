@@ -499,6 +499,18 @@ def comms_message():
     return finish(total, peak=0.5)
 
 
+def raven_radio():
+    """
+    De radio van een Raven-soldaat (hoofdstuk 60): een klik, een korte squelch van ruis en een piepje: er begint een
+    gesprek. Je hoort hem bij de soldaat die roept, en zachtjes bij jezelf als de coms iets zeggen.
+    """
+    total = np.zeros(int(RATE * 0.7))
+    place(total, fade(crackle(0.3, 1.0, 1200, 5000) * 1.6, 0.003, 0.05), 0.0)
+    place(total, fade(bandpass(noise(0.12), 900, 3500) * 0.35, 0.005, 0.04), 0.3)
+    place(total, fade(short_beep(1760, 0.08) * 0.35, 0.003, 0.03), 0.47)
+    return finish(total, peak=0.45)
+
+
 def comms_ping():
     """Een ping op de kaart: een sonar-"ping" met een echo die wegsterft."""
     total = np.zeros(int(RATE * 1.0))
@@ -1086,6 +1098,7 @@ SOUNDS = {
     "satellite_impact": satellite_impact,
     "comms_message": comms_message,
     "comms_ping": comms_ping,
+    "raven_radio": raven_radio,
     "laser_cannon_arm": laser_cannon_arm,
     "laser_cannon_disarm": laser_cannon_disarm,
     "laser_cannon_fire": laser_cannon_fire,

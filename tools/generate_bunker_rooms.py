@@ -62,7 +62,7 @@ def shift(dz, z_min, z_max):
 def write(name):
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     gb.write_nbt(OUT_DIR / f"{name}.nbt", gb.to_nbt())
-    soldiers = sum(1 for b in gb.blocks.values() if b[0] == "minecraft:structure_block")
+    soldiers = sum(1 for b in gb.blocks.values() if b[0] == "minecraft:structure_block" and b[2]["metadata"].startswith(gb.SOLDIER))
     print(f"geschreven: bunker/{name}.nbt ({len(gb.blocks)} blokken, {len(gb.cables)} kabels, {soldiers} soldaten)")
 
 

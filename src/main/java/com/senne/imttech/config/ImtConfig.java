@@ -1897,6 +1897,24 @@ public final class ImtConfig {
         public static float NOISE_FALL = 12.0f;
         @Tunable(value = "Through a wall a noise carries this part of its distance (0.5 = half)", min = 0.05, max = 1)
         public static float NOISE_WALL_FACTOR = 0.5f;
+
+        // ------------------------------------------------------------------------- De radio en de versterking (stap 4)
+        @Tunable(value = "Seconds a guard needs to grab his radio once he has you: stop him before that and nobody heard a thing", min = 0.05)
+        public static float RADIO_GRAB_SECONDS = 1.0f;
+        @Tunable(value = "Seconds the whole radio call takes (grabbing included): stop him in between and his mates only get suspicious", min = 0.1)
+        public static float RADIO_CALL_SECONDS = 3.0f;
+        @Tunable(value = "How far players hear the radio chatter of the guards (blocks)", min = 8)
+        public static float RADIO_RANGE = 48.0f;
+        @Tunable(value = "How far from its entrance a Raven base reaches: the guards within it share one alarm (blocks)", min = 16)
+        public static float SITE_RANGE = 160.0f;
+        @Tunable(value = "Seconds an alarm lasts after the last contact; then the guards search a bit and go back to their routes", min = 10)
+        public static float ALARM_SECONDS = 120.0f;
+        @Tunable(value = "Seconds after a finished radio call before the backup team comes in at the entrance", min = 1)
+        public static float BACKUP_DELAY_SECONDS = 10.0f;
+        @Tunable(value = "How many soldiers come in one backup team", min = 1, max = 16)
+        public static float BACKUP_SIZE = 4.0f;
+        @Tunable(value = "How many backup teams come per alarm at most (0 = none)", max = 10)
+        public static float BACKUP_WAVES = 2.0f;
     }
 
     // =============================================================================================== Raids

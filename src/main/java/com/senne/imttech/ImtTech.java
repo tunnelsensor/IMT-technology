@@ -285,6 +285,7 @@ public class ImtTech {
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.raven.Noises::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.raven.Noises::onFall);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.raven.Noises::onExplosion);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.raven.RavenSites::onServerTick);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.Zones::onPiston);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.Zones::onMobGriefing);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.Zones::onFluidPlace);

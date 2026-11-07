@@ -159,6 +159,14 @@
       }
     ]
   },
+  "raven.radio": {
+    "subtitle": "subtitles.imttech.raven.radio",
+    "sounds": [
+      {
+        "name": "imttech:raven_radio"
+      }
+    ]
+  },
   "suit.laser_cannon_arm": {
     "subtitle": "subtitles.imttech.suit.laser_cannon_arm",
     "sounds": [

@@ -102,6 +102,12 @@ def soldier(x, y, z, route=None):
         {"id": "minecraft:structure_block", "mode": "DATA", "metadata": marker_text(SOLDIER, x, z, route)})
 
 
+def entry(x, y, z):
+    """De ingang van de bunker (hoofdstuk 60, stap 4): hier komt de versterking binnen (zie RavenSites)."""
+    put(x, y, z, "minecraft:structure_block", {"mode": "data"},
+        {"id": "minecraft:structure_block", "mode": "DATA", "metadata": "raven_entry"})
+
+
 def marker_text(kind, x, z, route=None):
     """De tekst van een markering: het woord, en achter elke puntkomma een verschuiving dx,0,dz van de route."""
     return kind + "".join(f";{px - x},0,{pz - z}" for (px, pz) in (route or ()))
@@ -197,6 +203,8 @@ def build_corridor():
     put(MID - 2, 1, 9, TRIM)
     put(MID - 2, 2, 8, "minecraft:polished_blackstone_pressure_plate", {"powered": "false"})
     soldier(MID + 1, 1, 9)
+    # Hoofdstuk 60: net binnen de deur komt de versterking binnen.
+    entry(MID, 1, 5)
 
 
 def build_hall():
@@ -430,5 +438,5 @@ def to_nbt():
 if __name__ == "__main__":
     build()
     write_nbt(OUT, to_nbt())
-    soldiers = sum(1 for b in blocks.values() if b[0] == "minecraft:structure_block")
+    soldiers = sum(1 for b in blocks.values() if b[0] == "minecraft:structure_block" and b[2]["metadata"].startswith(SOLDIER))
     print(f"geschreven: {OUT} ({len(blocks)} blokken, {soldiers} soldaten)")

@@ -560,6 +560,8 @@ def build_lobby_piece():
     gs.window_plants(1, 2, skip={(MID + dx, 37) for dx in range(-4, 5)})
     # Een bewaker met een keycard van de toren bij de receptie (hoofdstuk 54).
     guard(MID - 8, 1, MID + 2)
+    # Hoofdstuk 60: net binnen de ingang van de lobby komt de versterking binnen (zie RavenSites).
+    marker(MID, 1, gs.bounds(2)[3] - 3, "raven_entry")
     # Het terras naar de eerste tussenverdieping, met zijn reling (de rij erboven).
     TERRACE(11, 2, MIDDLE_IN)
     shaft(1, 12, openings=(1, 2))

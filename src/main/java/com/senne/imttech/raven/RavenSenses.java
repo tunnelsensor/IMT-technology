@@ -50,6 +50,11 @@ public final class RavenSenses {
     private long searchUntil;
     /** Tot deze speltijd is hij extra scherp (na een alarm). */
     private long memoryUntil;
+    /** Roepen via de radio (stap 4): hoe lang hij al bezig is (ticks). */
+    private int callTicks;
+    /** De ingang van zijn site (RavenSites), opgezocht als het nodig is. */
+    private @Nullable net.minecraft.core.BlockPos siteEntry;
+    private long siteCheckedAt = -1_000_000;
 
     public RavenSenses(RavenSoldierEntity soldier) {
         this.soldier = soldier;
@@ -62,7 +67,8 @@ public final class RavenSenses {
 
     public void tick(ServerLevel level) {
         if (Handcuffs.isCuffed(soldier)) {
-            // Geboeid (hoofdstuk 48): hij doet niets meer, en zijn meter zakt.
+            // Geboeid (hoofdstuk 48): hij doet niets meer, en zijn meter zakt. Was hij aan het roepen, dan was dat een half gesprek.
+            interrupted(level);
             decay();
             if (state != RavenAlert.CALM) {
                 state = RavenAlert.CALM;
@@ -72,6 +78,15 @@ public final class RavenSenses {
             return;
         }
         LivingEntity target = soldier.getTarget();
+        if (state == RavenAlert.CALLING) {
+            if (target != null && target.isAlive()) {
+                interrupted(level); // geraakt: hij vecht, en zijn maten hoorden een half gesprek
+            } else {
+                calling(level);
+                sync();
+                return;
+            }
+        }
         if (target != null && target.isAlive()) {
             combat(level, target);
             sync();
@@ -115,6 +130,9 @@ public final class RavenSenses {
         if (sees) {
             lostTicks = 0;
             lastSeen = target.position();
+            if (soldier.tickCount % 20 == 0) {
+                RavenSites.touch(level, soldier, lastSeen); // het alarm van zijn site loopt door zolang er contact is
+            }
         } else if (++lostTicks >= Math.round(ImtConfig.Guards.LOST_SECONDS * 20)) {
             soldier.setTarget(null);
             startSearching(level, lastSeen != null ? lastSeen : target.position());
@@ -204,13 +222,115 @@ public final class RavenSenses {
 
     // ================================================================ Van de ene toestand naar de andere
 
-    /** Zijn meter is vol: hij heeft je. (Stap 4 zet hier het roepen via de radio voor.) */
+    /**
+     * Zijn meter is vol: hij heeft je. Is er nog geen alarm en vecht er nog niemand, dan roept hij eerst via de radio
+     * (stap 4, jouw antwoord 4): één seconde de radio pakken, dan praten; pas daarna schiet hij. Anders doet hij meteen mee.
+     */
     private void spotted(ServerLevel level, Player player) {
         suspicion = 100.0f;
+        suspect = player;
         lastSeen = player.position();
         lostTicks = 0;
+        if (RavenSites.shouldCall(level, soldier)) {
+            state = RavenAlert.CALLING;
+            callTicks = 0;
+            soldier.getNavigation().stop();
+        } else {
+            engage(player);
+        }
+    }
+
+    /** Het gevecht (RavenCombatGoal). */
+    private void engage(LivingEntity target) {
         state = RavenAlert.COMBAT;
-        soldier.setTarget(player);
+        lostTicks = 0;
+        callTicks = 0;
+        soldier.setTarget(target);
+    }
+
+    /** Hij staat stil en roept: na {@code radioGrabSeconds} heeft hij zijn radio, na {@code radioCallSeconds} is het gesprek af. */
+    private void calling(ServerLevel level) {
+        soldier.getNavigation().stop();
+        if (suspect != null && suspect.isAlive()) {
+            soldier.getLookControl().setLookAt(suspect, 30.0f, 30.0f);
+            if (soldier.hasLineOfSight(suspect)) {
+                lastSeen = suspect.position();
+            }
+        }
+        callTicks++;
+        int grab = grabTicks();
+        if (callTicks == grab) {
+            RavenRadio.grab(level, soldier);
+        }
+        if (callTicks < Math.max(grab + 1, Math.round(ImtConfig.Guards.RADIO_CALL_SECONDS * 20))) {
+            return;
+        }
+        // Afgemaakt: alarm voor de hele site (of zijn maten in de buurt), en dan het gevecht.
+        Player target = suspect != null && suspect.isAlive() && !suspect.isCreative() && !suspect.isSpectator() ? suspect : null;
+        Vec3 where = lastSeen != null ? lastSeen : soldier.position();
+        RavenSites.raiseAlarm(level, soldier, target, where, false);
+        if (target != null) {
+            engage(target);
+        } else {
+            startSearching(level, where);
+        }
+    }
+
+    private static int grabTicks() {
+        return Math.max(1, Math.round(ImtConfig.Guards.RADIO_GRAB_SECONDS * 20));
+    }
+
+    /** Hoe ver hij is met roepen (ticks), voor de tests. */
+    public int callTicks() {
+        return callTicks;
+    }
+
+    /**
+     * Hij is gestopt met roepen voor hij klaar was (dood, geboeid, geraakt). Had hij zijn radio al vast, dan hoorden
+     * zijn maten een half gesprek (RavenSites.halfCall): ze worden achterdochtig en komen langzaam kijken.
+     */
+    public void interrupted(ServerLevel level) {
+        if (state != RavenAlert.CALLING) {
+            return;
+        }
+        boolean heard = callTicks >= grabTicks();
+        state = soldier.getTarget() != null ? RavenAlert.COMBAT : RavenAlert.SUSPICIOUS;
+        callTicks = 0;
+        if (state == RavenAlert.SUSPICIOUS) {
+            lookAt = lastSeen != null ? lastSeen : soldier.position();
+        }
+        if (heard) {
+            RavenSites.halfCall(level, soldier);
+        }
+    }
+
+    /**
+     * Alarm van een maat, of het team dat binnenkomt (RavenSites): dit doelwit en deze laatste plek, en hij is een tijd
+     * extra scherp. Zonder doelwit (de speler is weg) gaat hij zoeken op die plek.
+     */
+    public void alarmed(ServerLevel level, @Nullable LivingEntity target, Vec3 where, long memoryUntil) {
+        remember(memoryUntil);
+        if (Handcuffs.isCuffed(soldier)) {
+            return;
+        }
+        lastSeen = where;
+        if (target != null && target.isAlive() && !(target instanceof Player player && (player.isCreative() || player.isSpectator()))) {
+            suspect = target instanceof Player player ? player : null;
+            suspicion = 100.0f;
+            engage(target);
+        } else if (state == RavenAlert.CALM || state == RavenAlert.SUSPICIOUS) {
+            startSearching(level, where);
+        }
+    }
+
+    /** De ingang van zijn site (RavenSites), of null; zolang er geen is, zoekt hij om de tien seconden opnieuw. */
+    public @Nullable net.minecraft.core.BlockPos siteEntry(ServerLevel level) {
+        long now = level.getGameTime();
+        if (siteEntry == null && now - siteCheckedAt >= 200) {
+            siteCheckedAt = now;
+            siteEntry = RavenSites.findEntry(level, soldier.blockPosition());
+        }
+        return siteEntry;
     }
 
     /** Hij is je kwijt: zoeken rond {@code centre}, zo lang als {@code [guards] searchSeconds}. */

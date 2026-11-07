@@ -51,6 +51,8 @@ public final class ModSounds {
     /** De stuwraketten, als lus zolang je vliegt. */
     public static final DeferredHolder<SoundEvent, SoundEvent> SUIT_THRUSTER = register("suit.thruster");
     public static final DeferredHolder<SoundEvent, SoundEvent> COMMS_PING = register("comms.ping");
+    /** Hoofdstuk 60: de radio van een Raven-soldaat (een klik, geknetter, een piepje). */
+    public static final DeferredHolder<SoundEvent, SoundEvent> RAVEN_RADIO = register("raven.radio");
     // De rayshields, Star Wars-achtig (jouw wens, 7 oktober; zelf nagemaakt in tools/generate_sounds.py)
     /** Het zoemen van een laserwand of koepel, als lus (zie client/shield/RayshieldHum). */
     public static final DeferredHolder<SoundEvent, SoundEvent> RAYSHIELD_HUM = register("shield.rayshield_hum");

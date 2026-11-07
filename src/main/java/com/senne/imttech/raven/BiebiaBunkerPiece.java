@@ -71,6 +71,8 @@ public class BiebiaBunkerPiece extends TemplateStructurePiece {
         if (RavenRoutes.isSoldier(name)) {
             // Hoofdstuk 60: achter het woord kan zijn route staan, gedraaid zoals dit stuk.
             spawnSoldier(level, pos, random, RavenRoutes.route(name, pos, placeSettings.getRotation()));
+        } else if (RavenRoutes.isEntry(name)) {
+            RavenSites.placeEntry(level, pos); // de ingang: hier komt de versterking binnen
         }
     }
 

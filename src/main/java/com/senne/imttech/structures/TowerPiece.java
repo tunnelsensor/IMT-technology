@@ -55,6 +55,8 @@ public class TowerPiece extends TemplateStructurePiece {
             com.senne.imttech.raven.BiebiaBunkerPiece.spawnSoldier(level, pos, random, route);
         } else if (com.senne.imttech.raven.RavenRoutes.isGuard(name)) {
             TowerGuards.spawnGuard(level, pos, random, route);
+        } else if (com.senne.imttech.raven.RavenRoutes.isEntry(name)) {
+            com.senne.imttech.raven.RavenSites.placeEntry(level, pos);
         }
     }
 }

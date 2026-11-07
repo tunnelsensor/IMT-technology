@@ -5116,9 +5116,27 @@ Erbij: **geen** minimap en **geen** tekst "ze zoeken je" zoals in Hitman. Alleen
       `Noises.Listener` is de haak voor stap 6 (robots en drones). Twee tests (hij gaat kijken en keert terug; een muur
       halveert het bereik en zijn eigen schot telt niet). Het kijken-goal probeert een mislukt pad nu een paar keer
       opnieuw (net na het verschijnen staat een soldaat nog niet "op de grond" en lukt een pad niet). 429 tests, groen.
-- [ ] **4. De radio en de versterking** — `raven/RavenSites` (SavedData: ingangen, alarm, teams), de markering
-      `raven_entry`, het roepen in twee stappen, de berichten, een radiogeluid, het team aan de ingang. Tests: een half
-      gesprek maakt de maten achterdochtig, een heel gesprek brengt een team.
+- [x] **4. De radio en de versterking** — wie je als eerste ziet terwijl er nog niemand van zijn basis vecht, roept eerst
+      (`RavenAlert.CALLING`, in `RavenSenses.calling`): hij staat stil, kijkt naar je, en heeft na `radioGrabSeconds`
+      (1) zijn radio vast (een klik en geknetter, `raven.radio`, nieuw in `generate_sounds.py`), na `radioCallSeconds`
+      (3) is het gesprek af en schiet hij pas. Dood, geboeid of geraakt voor die eerste seconde: niets. Daarna: een half
+      gesprek (`RavenSites.halfCall`): zijn maten worden achterdochtig en komen langzaam naar zijn plek, en jij leest in
+      grijs cursief "[Radio] BB-2358, come in. BB-2358, do you copy?" (elke soldaat heeft een roepnaam `callsign`,
+      BB-xxxx, bewaard in zijn NBT; `RavenRadio` praat tegen spelers binnen `radioRange` 48 en laat hun kant knetteren).
+      Afgemaakt (`RavenSites.raiseAlarm`): "Contact! Intruder in the base, all units!", iedereen van de **site** krijgt je
+      als doelwit en je laatste plek (`RavenSenses.alarmed`; wie je niet ziet gaat na `lostSeconds` zoeken), is
+      `memoryMinutes` lang extra scherp, en "Copy, backup team on the way": na `backupDelaySeconds` (10) komen
+      `backupSize` (4) soldaten door de ingang ("Team at the entrance, moving in"), die naar je laatste plek gaan en
+      daarna bij de ingang post vatten; hooguit `backupWaves` (2) per alarm (een tweede komt als iemand je opnieuw
+      ziet terwijl niemand meer met je vecht). Het alarm loopt `alarmSeconds` (120) na het laatste contact af
+      ("All units, stand down"). Een site is de ingang: de nieuwe markering `raven_entry` (net binnen de deur van de
+      bunker, `generate_bunker.py`, en net binnen de lobby van de toren, `generate_tower_rooms.py`) wordt bij het bouwen
+      een onzichtbare vanilla Marker met de tag `raven_entry` (veilig vanuit de wereldgenerator; het alarm en de teams
+      staan per wereld in de SavedData `imttech_raven_sites`); alle soldaten binnen `siteRange` (160) horen erbij. Zonder
+      ingang in de buurt (spawn egg, oude wereld) gaat het met de maten binnen 48 blokken en komt er geen team. Zijn
+      houding tijdens het roepen: de radio aan zijn oor (linkerarm in de spyglass-houding). Drie tests, elk in een eigen
+      batch (een half gesprek, op tijd gestopt, een heel gesprek met team); de andere bewakerstests met een speler ook,
+      want een radiogesprek bereikte de soldaten van de test ernaast. 432 tests, groen.
 - [ ] **5. Lichamen** — `raven/RavenBodyEntity` + renderer, de buit erin (LivingDropsEvent), doorzoeken, slepen,
       verdwijnen; bewakers melden een lichaam, een geboeide soldaat en een gevloerde robot tellen mee. Tests.
 - [ ] **6. De taal** — `Op.HEARD/SPOTTED/BODY_SEEN`, `Expr.Variable` sound.*/target.*/body.*/robot.alert/drone.alert,

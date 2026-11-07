@@ -5,6 +5,7 @@ import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.raven.Noises;
 import com.senne.imttech.raven.RavenAlert;
 import com.senne.imttech.raven.RavenRoutes;
+import com.senne.imttech.raven.RavenSites;
 import com.senne.imttech.raven.RavenSoldierEntity;
 import com.senne.imttech.registry.ModEntities;
 import net.minecraft.core.BlockPos;
@@ -12,7 +13,10 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Marker;
 import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Rotation;
 import java.util.List;
@@ -22,7 +26,11 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 /**
  * Tests voor de bewakers zoals in Hitman (hoofdstuk 60): een Raven-soldaat kijkt in een kegel, het duurt even voor hij
- * je heeft, sluipen helpt, en raakt hij je kwijt dan zoekt hij waar hij je het laatst zag.
+ * je heeft, sluipen helpt, en raakt hij je kwijt dan zoekt hij waar hij je het laatst zag; hij loopt zijn route, hoort
+ * lawaai, roept via de radio en krijgt versterking.
+ *
+ * Elke test waarin een soldaat een speler kan zien of iets kan horen heeft zijn <b>eigen batch</b>: de arena's van één
+ * batch staan naast elkaar, en een radiogesprek (48 blokken) of lawaai bereikt anders de soldaten van de test ernaast.
  */
 @GameTestHolder(ImtTech.MODID)
 @PrefixGameTestTemplate(false)
@@ -67,7 +75,7 @@ public final class GuardGameTests {
     }
 
     /** Een bewaker ziet je niet meteen: zijn meter loopt eerst vol, en pas dan ben je zijn doelwit. */
-    @GameTest(template = ARENA, timeoutTicks = 200, batch = "guards")
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "guards_spot")
     public static void guard_needs_a_while_to_spot_you(GameTestHelper helper) {
         RavenSoldierEntity guard = soldier(helper, new BlockPos(5, 2, 5), 0, false);
         ServerPlayer player = player(helper, new BlockPos(5, 2, 13), "guard-spot");
@@ -84,7 +92,7 @@ public final class GuardGameTests {
     }
 
     /** Achter zijn rug ziet hij je niet: de meter blijft op nul. */
-    @GameTest(template = ARENA, timeoutTicks = 150, batch = "guards")
+    @GameTest(template = ARENA, timeoutTicks = 150, batch = "guards_behind")
     public static void guard_does_not_see_behind_his_back(GameTestHelper helper) {
         RavenSoldierEntity guard = soldier(helper, new BlockPos(5, 2, 5), 180, false);
         player(helper, new BlockPos(5, 2, 11), "guard-behind");
@@ -97,7 +105,7 @@ public final class GuardGameTests {
     }
 
     /** Sluipen helpt: de meter van een bewaker loopt dan half zo snel vol (een muur houdt de twee lanen uit elkaar). */
-    @GameTest(template = ARENA, timeoutTicks = 100, batch = "guards")
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "guards_sneak")
     public static void guard_notices_a_sneaking_player_slower(GameTestHelper helper) {
         for (int z = 1; z <= 17; z++) {
             for (int y = 2; y <= 4; y++) {
@@ -123,7 +131,7 @@ public final class GuardGameTests {
      * Raakt hij je kwijt (je verdwijnt in een dicht hokje), dan laat hij zijn doelwit na {@code lostSeconds} los en gaat
      * hij zoeken op de plek waar hij je het laatst zag.
      */
-    @GameTest(template = ARENA, timeoutTicks = 400, batch = "guards")
+    @GameTest(template = ARENA, timeoutTicks = 400, batch = "guards_search")
     public static void guard_searches_where_he_lost_you(GameTestHelper helper) {
         float lostBefore = ImtConfig.Guards.LOST_SECONDS;
         ImtConfig.Guards.LOST_SECONDS = 1.5f;
@@ -205,12 +213,12 @@ public final class GuardGameTests {
     // ================================================================ Geluid (stap 3)
 
     /** Lawaai: een rustige bewaker gaat kijken op die plek, kijkt rond, wordt weer rustig en gaat terug naar zijn post. */
-    @GameTest(template = ARENA, timeoutTicks = 600, batch = "guards")
+    @GameTest(template = ARENA, timeoutTicks = 600, batch = "guards_noise")
     public static void guard_investigates_a_noise_and_returns(GameTestHelper helper) {
         RavenSoldierEntity guard = soldier(helper, new BlockPos(4, 2, 4), 0, true);
         Vec3 post = Vec3.atBottomCenterOf(helper.absolutePos(new BlockPos(4, 2, 4)));
         Vec3 noise = helper.absoluteVec(new Vec3(13.5, 2.5, 13.5));
-        Noises.make(helper.getLevel(), noise, 20, Noises.Kind.BLOCK, null);
+        Noises.make(helper.getLevel(), noise, 14, Noises.Kind.BLOCK, null); // niet verder: de arena ernaast heeft ook bewakers
         check(guard.senses().state() == RavenAlert.SUSPICIOUS, "De bewaker hoorde het lawaai niet (" + guard.senses().state() + ")");
         check(guard.getTarget() == null, "Lawaai alleen mag geen doelwit geven");
         helper.startSequence()
@@ -221,7 +229,7 @@ public final class GuardGameTests {
     }
 
     /** Door een muur draagt lawaai maar half zo ver, en lawaai van een soldaat zelf telt niet. */
-    @GameTest(template = ARENA, timeoutTicks = 40, batch = "guards")
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "guards_noise_wall")
     public static void walls_muffle_a_noise(GameTestHelper helper) {
         for (int x = 11; x <= 18; x++) {
             for (int y = 2; y <= 4; y++) {
@@ -237,5 +245,102 @@ public final class GuardGameTests {
         Noises.make(helper.getLevel(), noise, 40, Noises.Kind.SHOT, walled);
         check(walled.senses().state() == RavenAlert.CALM, "Een soldaat hoort zijn eigen schot als lawaai");
         helper.succeed();
+    }
+
+    // ================================================================ De radio en de versterking (stap 4)
+
+    /** Hoeveel soldaten er in de arena staan. */
+    private static int soldiersIn(GameTestHelper helper) {
+        AABB box = new AABB(helper.absoluteVec(Vec3.ZERO), helper.absoluteVec(new Vec3(20, 8, 20)));
+        return helper.getLevel().getEntitiesOfClass(RavenSoldierEntity.class, box, RavenSoldierEntity::isAlive).size();
+    }
+
+    /**
+     * Wie je ziet, roept eerst via de radio. Stop je hem na de eerste seconde (hij heeft zijn radio al vast), dan hoorden
+     * zijn maten een half gesprek: ze worden achterdochtig en komen langzaam naar hem toe (jouw antwoord 4).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 300, batch = "guards_radio_half")
+    public static void interrupted_radio_call_makes_the_others_suspicious(GameTestHelper helper) {
+        RavenSoldierEntity caller = soldier(helper, new BlockPos(5, 2, 4), 0, false);
+        RavenSoldierEntity mate = soldier(helper, new BlockPos(16, 2, 4), 180, false); // kijkt van de speler weg
+        player(helper, new BlockPos(5, 2, 8), "radio-half");
+        Vec3 callerAt = caller.position();
+        helper.startSequence()
+                .thenWaitUntil(() -> check(caller.senses().state() == RavenAlert.CALLING, "De soldaat roept niet via de radio (" + caller.senses().state() + ")"))
+                .thenExecute(() -> {
+                    check(caller.getTarget() == null, "Hij schiet al terwijl hij nog roept");
+                    check(mate.senses().state() == RavenAlert.CALM, "De maat is al onrustig voor er iets gebeurde");
+                })
+                .thenExecuteAfter(30, () -> {
+                    check(caller.senses().callTicks() >= 20 && caller.senses().callTicks() < 60, "De test mikt naast het gesprek: " + caller.senses().callTicks());
+                    caller.kill();
+                })
+                .thenExecuteAfter(2, () -> {
+                    check(mate.senses().state() == RavenAlert.SUSPICIOUS, "De maat hoorde het halve gesprek niet (" + mate.senses().state() + ")");
+                    check(mate.senses().slow(), "De maat komt niet langzaam kijken");
+                    check(mate.senses().lookAt() != null && mate.senses().lookAt().distanceTo(callerAt) < 2.0, "De maat gaat niet naar de plek van de roeper");
+                    check(mate.getTarget() == null, "Een half gesprek mag geen doelwit geven");
+                })
+                .thenSucceed();
+    }
+
+    /** Stop je hem binnen de eerste seconde, dan heeft niemand iets gehoord. */
+    @GameTest(template = ARENA, timeoutTicks = 300, batch = "guards_radio_quiet")
+    public static void a_call_stopped_in_time_stays_silent(GameTestHelper helper) {
+        RavenSoldierEntity caller = soldier(helper, new BlockPos(5, 2, 4), 0, false);
+        RavenSoldierEntity mate = soldier(helper, new BlockPos(16, 2, 4), 180, false);
+        player(helper, new BlockPos(5, 2, 8), "radio-quiet");
+        helper.startSequence()
+                .thenWaitUntil(() -> check(caller.senses().state() == RavenAlert.CALLING, "De soldaat roept niet via de radio"))
+                .thenExecuteAfter(10, () -> {
+                    check(caller.senses().callTicks() < 20, "De test mikt naast de eerste seconde: " + caller.senses().callTicks());
+                    caller.kill();
+                })
+                .thenExecuteAfter(5, () -> check(mate.senses().state() == RavenAlert.CALM, "De maat hoorde iets terwijl het gesprek nog niet begonnen was"))
+                .thenSucceed();
+    }
+
+    /**
+     * Een heel gesprek: alarm voor de hele site (de maat krijgt je als doelwit) en na de wachttijd komt een team door de
+     * ingang (de markering raven_entry) dat op jou afkomt.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 500, batch = "guards_radio_team")
+    public static void a_finished_call_alarms_the_base_and_brings_a_team(GameTestHelper helper) {
+        float delayBefore = ImtConfig.Guards.BACKUP_DELAY_SECONDS;
+        float rangeBefore = ImtConfig.Guards.SITE_RANGE;
+        ImtConfig.Guards.BACKUP_DELAY_SECONDS = 1.0f;
+        ImtConfig.Guards.SITE_RANGE = 40.0f;
+        Marker entry = EntityType.MARKER.create(helper.getLevel());
+        check(entry != null, "Geen Marker");
+        BlockPos entryAt = helper.absolutePos(new BlockPos(10, 2, 17));
+        entry.moveTo(entryAt.getX() + 0.5, entryAt.getY(), entryAt.getZ() + 0.5, 0, 0);
+        entry.addTag(RavenSites.ENTRY_TAG);
+        helper.getLevel().addFreshEntity(entry);
+        RavenSoldierEntity caller = soldier(helper, new BlockPos(5, 2, 4), 0, false);
+        RavenSoldierEntity mate = soldier(helper, new BlockPos(16, 2, 4), 180, false);
+        ServerPlayer player = player(helper, new BlockPos(5, 2, 8), "radio-team");
+        int before = soldiersIn(helper);
+        helper.startSequence()
+                .thenWaitUntil(() -> check(caller.senses().state() == RavenAlert.CALLING, "De soldaat roept niet via de radio"))
+                .thenWaitUntil(() -> check(caller.getTarget() == player, "Het gesprek is nog niet af (" + caller.senses().callTicks() + ")"))
+                .thenExecute(() -> {
+                    check(caller.senses().state() == RavenAlert.COMBAT, "Na het gesprek vecht hij niet");
+                    check(mate.getTarget() == player, "Het alarm bereikte de maat niet");
+                    RavenSites.Site site = RavenSites.get(helper.getLevel()).site(entryAt);
+                    check(site.alarmed(helper.getLevel().getGameTime()), "De site heeft geen alarm");
+                    check(site.backupPending(), "Er is geen team onderweg");
+                })
+                .thenWaitUntil(() -> check(soldiersIn(helper) > before, "Er kwam geen team binnen"))
+                .thenExecute(() -> {
+                    check(soldiersIn(helper) >= before + Math.round(ImtConfig.Guards.BACKUP_SIZE), "Het team is niet compleet: " + soldiersIn(helper));
+                    AABB door = new AABB(entryAt).inflate(4, 2, 4);
+                    boolean atTheDoor = !helper.getLevel().getEntitiesOfClass(RavenSoldierEntity.class, door,
+                            s -> s != caller && s != mate && s.getTarget() == player).isEmpty();
+                    check(atTheDoor, "Het team staat niet bij de ingang, of komt niet op de speler af");
+                    check(RavenSites.get(helper.getLevel()).site(entryAt).waves() == 1, "Het aantal teams klopt niet");
+                    ImtConfig.Guards.BACKUP_DELAY_SECONDS = delayBefore;
+                    ImtConfig.Guards.SITE_RANGE = rangeBefore;
+                })
+                .thenSucceed();
     }
 }

@@ -61,6 +61,8 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
 
     /** Zijn zintuigen (hoofdstuk 60). */
     private final RavenSenses senses = new RavenSenses(this);
+    /** Zijn roepnaam op de radio (hoofdstuk 60, stap 4): "BB-2358". */
+    private String callsign = "";
     /** Hoofdstuk 60: zijn post (waar hij verscheen) en zijn route (leeg = hij staat op zijn post), zie RavenPatrolGoal. */
     private @Nullable net.minecraft.core.BlockPos post;
     private java.util.List<net.minecraft.core.BlockPos> route = java.util.List.of();
@@ -126,6 +128,20 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
 
     public RavenSenses senses() {
         return senses;
+    }
+
+    /** Zijn roepnaam op de radio ("BB-2358"), zie RavenRadio. */
+    public String callsign() {
+        return callsign.isEmpty() ? "BB-0000" : callsign;
+    }
+
+    /** Dood terwijl hij riep: zijn maten hoorden een half gesprek (zie RavenSenses.interrupted). */
+    @Override
+    public void die(DamageSource source) {
+        if (level() instanceof ServerLevel level) {
+            senses.interrupted(level);
+        }
+        super.die(source);
     }
 
     /** Zijn post: waar hij verscheen (daar staat hij als hij geen route heeft). */
@@ -264,6 +280,7 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
         tag.putBoolean("EmpGrenades", empGrenades);
         tag.putBoolean("KeycardGuard", keycardGuard);
         tag.putLong("MemoryUntil", senses.memoryUntil());
+        tag.putString("Callsign", callsign);
         if (post != null) {
             tag.putLong("Post", post.asLong());
         }
@@ -279,6 +296,7 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
         empGrenades = tag.getBoolean("EmpGrenades");
         keycardGuard = tag.getBoolean("KeycardGuard");
         senses.setMemoryUntil(tag.getLong("MemoryUntil"));
+        callsign = tag.getString("Callsign");
         post = tag.contains("Post") ? net.minecraft.core.BlockPos.of(tag.getLong("Post")) : null;
         route = tag.contains("Route")
                 ? java.util.Arrays.stream(tag.getLongArray("Route")).mapToObj(net.minecraft.core.BlockPos::of).toList()
@@ -292,6 +310,9 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
         populateDefaultEquipmentSlots(level.getRandom(), difficulty);
         if (post == null) {
             post = blockPosition(); // hoofdstuk 60: waar hij verschijnt, is zijn post
+        }
+        if (callsign.isEmpty()) {
+            callsign = "BB-" + (1000 + level.getRandom().nextInt(9000));
         }
         return result;
     }

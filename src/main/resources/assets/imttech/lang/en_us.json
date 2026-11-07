@@ -1934,5 +1934,12 @@
   "screen.imttech.skills.tab.laser_sniper": "Sniper",
   "screen.imttech.skills.tab.laser_shotgun": "Shotgun",
   "screen.imttech.cell_picker.hint": "Click a cell, press 1-%s, or R for the fullest. Esc: cancel",
-  "screen.imttech.laserbench.drag_off": "Drag it off the gun to take it out"
+  "screen.imttech.laserbench.drag_off": "Drag it off the gun to take it out",
+  "subtitles.imttech.raven.radio": "Raven radio crackles",
+  "raven.imttech.radio.contact": "[Radio] %s: Contact! Intruder in the base, all units!",
+  "raven.imttech.radio.man_down": "[Radio] %s: Man down! All units, we have an intruder!",
+  "raven.imttech.radio.backup": "[Radio] Copy, %s. Backup team on the way.",
+  "raven.imttech.radio.come_in": "[Radio] %s, come in. %s, do you copy?",
+  "raven.imttech.radio.team": "[Radio] Team at the entrance, moving in.",
+  "raven.imttech.radio.stand_down": "[Radio] All units, stand down. Back to your posts."
 }

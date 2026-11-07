@@ -22,6 +22,14 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 public final class RavenRoutes {
     private RavenRoutes() {}
 
+    /** De markering van de ingang van een bunker of toren (stap 4, zie RavenSites). */
+    public static final String ENTRY = "raven_entry";
+
+    /** De ingang van de site? */
+    public static boolean isEntry(String metadata) {
+        return ENTRY.equals(kindOf(metadata));
+    }
+
     /** Het woord voor de eerste puntkomma: "raven_soldier" of "raven_guard". */
     public static String kindOf(String metadata) {
         int cut = metadata.indexOf(';');
