@@ -41,6 +41,14 @@ public final class ModEntities {
                     .fireImmune()
                     .build("raid_drone"));
 
+    /** Hoofdstuk 60: het lichaam van een gevallen Raven-soldaat (plat op de grond, onkwetsbaar, met zijn buit erin). */
+    public static final DeferredHolder<EntityType<?>, EntityType<com.senne.imttech.raven.RavenBodyEntity>> RAVEN_BODY = ENTITIES.register(
+            "raven_body", () -> EntityType.Builder.of(com.senne.imttech.raven.RavenBodyEntity::new, MobCategory.MISC)
+                    .sized(0.9f, 0.45f)
+                    .eyeHeight(0.3f)
+                    .clientTrackingRange(8)
+                    .build("raven_body"));
+
     /** De soldaten van Raven, die de bunker bewaken. */
     public static final DeferredHolder<EntityType<?>, EntityType<RavenSoldierEntity>> RAVEN_SOLDIER = ENTITIES.register(
             "raven_soldier", () -> EntityType.Builder.of(RavenSoldierEntity::new, MobCategory.MONSTER)
@@ -180,6 +188,7 @@ public final class ModEntities {
         event.put(DRONE.get(), DroneEntity.createAttributes().build());
         event.put(RAID_DRONE.get(), RaidDroneEntity.createAttributes().build());
         event.put(RAVEN_SOLDIER.get(), RavenSoldierEntity.createAttributes().build());
+        event.put(RAVEN_BODY.get(), com.senne.imttech.raven.RavenBodyEntity.createAttributes().build());
         event.put(SECURITY_DRONE.get(), com.senne.imttech.security.SecurityDroneEntity.createAttributes().build());
         event.put(GUARD_ROBOT.get(), GuardRobotEntity.createAttributes().build());
         event.put(GUARD_DRONE.get(), com.senne.imttech.robot.GuardDroneEntity.createAttributes().build());

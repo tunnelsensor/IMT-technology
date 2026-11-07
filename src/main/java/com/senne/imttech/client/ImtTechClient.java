@@ -191,6 +191,7 @@ public class ImtTechClient {
         event.registerEntityRenderer(ModEntities.DRONE.get(), DroneRenderer::new);
         event.registerEntityRenderer(ModEntities.RAID_DRONE.get(), RaidDroneRenderer::new);
         event.registerEntityRenderer(ModEntities.RAVEN_SOLDIER.get(), com.senne.imttech.client.raven.RavenSoldierRenderer::new);
+        event.registerEntityRenderer(ModEntities.RAVEN_BODY.get(), com.senne.imttech.client.raven.RavenBodyRenderer::new);
         event.registerEntityRenderer(ModEntities.MINI_ROCKET.get(), com.senne.imttech.client.suit.MiniRocketRenderer::new);
         event.registerEntityRenderer(ModEntities.ORBITAL_MISSILE.get(), com.senne.imttech.client.satellite.OrbitalMissileRenderer::new);
         event.registerEntityRenderer(ModEntities.SECURITY_DRONE.get(), com.senne.imttech.client.drone.SecurityDroneRenderer::new);

@@ -1915,6 +1915,10 @@ public final class ImtConfig {
         public static float BACKUP_SIZE = 4.0f;
         @Tunable(value = "How many backup teams come per alarm at most (0 = none)", max = 10)
         public static float BACKUP_WAVES = 2.0f;
+
+        // ------------------------------------------------------------------------- Lichamen (stap 5)
+        @Tunable(value = "Minutes the body of a dead soldier stays (then it vanishes and what was in it drops)", min = 0.05)
+        public static float BODY_MINUTES = 5.0f;
     }
 
     // =============================================================================================== Raids

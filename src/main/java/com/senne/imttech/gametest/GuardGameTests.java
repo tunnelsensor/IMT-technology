@@ -2,7 +2,11 @@ package com.senne.imttech.gametest;
 
 import com.senne.imttech.ImtTech;
 import com.senne.imttech.config.ImtConfig;
+import com.senne.imttech.cuffs.Handcuffs;
+import com.senne.imttech.raven.Bodies;
 import com.senne.imttech.raven.Noises;
+import com.senne.imttech.raven.RavenBodyEntity;
+import com.senne.imttech.robot.GuardRobotEntity;
 import com.senne.imttech.raven.RavenAlert;
 import com.senne.imttech.raven.RavenRoutes;
 import com.senne.imttech.raven.RavenSites;
@@ -14,6 +18,9 @@ import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.entity.Marker;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.phys.AABB;
@@ -342,5 +349,78 @@ public final class GuardGameTests {
                     ImtConfig.Guards.SITE_RANGE = rangeBefore;
                 })
                 .thenSucceed();
+    }
+
+    // ================================================================ Lichamen (stap 5)
+
+    /** Een dode soldaat laat een lichaam liggen met zijn buit erin; na een tijd verdwijnt het en valt de buit op de grond. */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "guards_body")
+    public static void a_dead_guard_leaves_a_body_with_his_loot(GameTestHelper helper) {
+        float minutesBefore = ImtConfig.Guards.BODY_MINUTES;
+        ImtConfig.Guards.BODY_MINUTES = 0.05f; // 60 ticks
+        RavenSoldierEntity guard = soldier(helper, new BlockPos(5, 2, 5), 0, false);
+        guard.setDropChance(EquipmentSlot.MAINHAND, 2.0f); // altijd (ook zonder een speler die hem raakte)
+        Item weapon = guard.getMainHandItem().getItem();
+        AABB arena = new AABB(helper.absoluteVec(Vec3.ZERO), helper.absoluteVec(new Vec3(20, 8, 20)));
+        guard.kill();
+        helper.startSequence()
+                .thenExecuteAfter(2, () -> {
+                    List<RavenBodyEntity> bodies = helper.getLevel().getEntitiesOfClass(RavenBodyEntity.class, arena);
+                    check(bodies.size() == 1, "Er ligt geen lichaam (" + bodies.size() + ")");
+                    check(!guard.isAlive(), "De soldaat zelf ligt er nog");
+                    check(bodies.getFirst().loot().hasAnyMatching(stack -> stack.is(weapon)), "Zijn wapen zit niet in het lichaam");
+                    check(helper.getLevel().getEntitiesOfClass(ItemEntity.class, arena, drop -> drop.getItem().is(weapon)).isEmpty(),
+                            "Zijn wapen ligt op de grond in plaats van in het lichaam");
+                })
+                .thenWaitUntil(() -> check(helper.getLevel().getEntitiesOfClass(RavenBodyEntity.class, arena).isEmpty(), "Het lichaam verdwijnt niet"))
+                .thenExecute(() -> {
+                    check(!helper.getLevel().getEntitiesOfClass(ItemEntity.class, arena, drop -> drop.getItem().is(weapon)).isEmpty(),
+                            "Na het verdwijnen ligt zijn wapen niet op de grond");
+                    ImtConfig.Guards.BODY_MINUTES = minutesBefore;
+                })
+                .thenSucceed();
+    }
+
+    /** Een bewaker die een lichaam ziet, loopt erheen en meldt het via de radio: zijn maten gaan daar zoeken. */
+    @GameTest(template = ARENA, timeoutTicks = 400, batch = "guards_body_seen")
+    public static void a_guard_who_sees_a_body_calls_it_in(GameTestHelper helper) {
+        RavenSoldierEntity guard = soldier(helper, new BlockPos(5, 2, 4), 0, true);
+        RavenSoldierEntity mate = soldier(helper, new BlockPos(16, 2, 4), 180, false);
+        RavenBodyEntity body = ModEntities.RAVEN_BODY.get().create(helper.getLevel());
+        check(body != null, "Geen lichaam");
+        Vec3 at = helper.absoluteVec(new Vec3(5.5, 2, 11.5));
+        body.moveTo(at.x, at.y, at.z, 0, 0);
+        helper.getLevel().addFreshEntity(body);
+        helper.startSequence()
+                .thenWaitUntil(() -> check(guard.senses().state() == RavenAlert.CALLING, "De bewaker meldt het lichaam niet (" + guard.senses().state() + ")"))
+                .thenExecute(() -> {
+                    check(guard.getTarget() == null, "Een lichaam alleen mag geen doelwit geven");
+                    check(body.reported(), "Het lichaam staat niet als gemeld");
+                    check(guard.distanceTo(body) < 4.5, "Hij roept van te ver: " + guard.distanceTo(body));
+                })
+                .thenWaitUntil(() -> check(mate.senses().state() == RavenAlert.SEARCHING, "Het alarm om het lichaam bereikte de maat niet (" + mate.senses().state() + ")"))
+                .thenExecute(() -> check(mate.senses().lookAt() != null && mate.senses().lookAt().distanceTo(body.position()) < 2.0, "De maat zoekt niet rond het lichaam"))
+                .thenSucceed();
+    }
+
+    /** Een geboeide soldaat en een gevloerde robot tellen ook als lichaam (jouw antwoord 5). */
+    @GameTest(template = ARENA, timeoutTicks = 300, batch = "guards_body_cuffed")
+    public static void a_cuffed_guard_and_a_downed_robot_count_as_bodies(GameTestHelper helper) {
+        RavenSoldierEntity guard = soldier(helper, new BlockPos(5, 2, 4), 0, true);
+        RavenSoldierEntity cuffed = soldier(helper, new BlockPos(9, 2, 11), 0, false);
+        // De vanger staat in creative: die ziet de bewaker niet, alleen zijn geboeide maat voor hem.
+        ServerPlayer captor = ImtTechGameTests.makeSwitchablePlayer(helper, new BlockPos(12, 2, 12), "body-captor", () -> true);
+        captor.setYRot(90); // kijkt naar -x: de geboeide staat tussen hem en de bewaker in
+        Handcuffs.cuff(captor, cuffed);
+        check(Bodies.isBody(cuffed), "Een geboeide soldaat telt niet als lichaam");
+        check(!Bodies.isBody(guard), "Een gewone soldaat telt als lichaam");
+        GuardRobotEntity robot = helper.spawn(ModEntities.GUARD_ROBOT.get(), new BlockPos(5, 2, 1));
+        check(!Bodies.isBody(robot), "Een robot die gewoon staat telt als lichaam");
+        robot.knockDown(400);
+        check(Bodies.isBody(robot), "Een gevloerde robot telt niet als lichaam");
+        helper.succeedWhen(() -> {
+            check(guard.senses().state() == RavenAlert.CALLING, "De bewaker meldt zijn geboeide maat niet (" + guard.senses().state() + ")");
+            check(guard.getTarget() == null && guard.senses().suspect() == null, "De bewaker ziet de vanger in creative");
+        });
     }
 }

@@ -5137,8 +5137,21 @@ Erbij: **geen** minimap en **geen** tekst "ze zoeken je" zoals in Hitman. Alleen
       houding tijdens het roepen: de radio aan zijn oor (linkerarm in de spyglass-houding). Drie tests, elk in een eigen
       batch (een half gesprek, op tijd gestopt, een heel gesprek met team); de andere bewakerstests met een speler ook,
       want een radiogesprek bereikte de soldaten van de test ernaast. 432 tests, groen.
-- [ ] **5. Lichamen** — `raven/RavenBodyEntity` + renderer, de buit erin (LivingDropsEvent), doorzoeken, slepen,
-      verdwijnen; bewakers melden een lichaam, een geboeide soldaat en een gevloerde robot tellen mee. Tests.
+- [x] **5. Lichamen** — `raven/RavenBodyEntity` (een LivingEntity zonder AI, zoals een armor stand: onkwetsbaar behalve
+      voor /kill, duwt niets, niemand valt het aan) met het pak van de soldaat plat op zijn rug (`RavenBodyRenderer`:
+      het mensmodel een kwartslag achterover, het midden op de plek van het wezen). Een dode soldaat laat er een achter
+      (`Bodies.onLivingDrops`: alles wat hij zou laten vallen gaat in de negen vakjes van het lichaam, de soldaat zelf
+      verdwijnt meteen; zijn ervaring valt nog gewoon). Rechtsklik: "Search the body" (een gewone kistrij); sneak +
+      rechtsklik: vastpakken, het lichaam sleept achter je aan (zoals een geboeide voor je uit loopt; loslaten met nog
+      eens sneak + rechtsklik, of als je er meer dan zes blokken vandaan raakt). Na `bodyMinutes` (5) verdwijnt het en
+      valt de rest op de grond. **Wie een lichaam ziet** (`Bodies.visible`: in zijn kegel, met zicht; `Bodies.isBody`:
+      een lichaam, een geboeide soldaat of een gevloerde robot of drone) loopt erheen (`RavenSenses.lookForBodies`, om de
+      tien ticks) en roept op drie blokken via de radio ("Man down! All units, we have an intruder!"): hetzelfde alarm
+      als bij een indringer, maar zonder doelwit: iedereen gaat zoeken rond het lichaam en het team komt. Per lichaam
+      één keer (`reported`; een onderbroken gesprek geeft het vrij voor een ander), en niet als er al alarm is. Drie
+      tests (een lichaam met zijn wapen erin dat later alsnog op de grond valt; een bewaker die een lichaam meldt zodat
+      zijn maat gaat zoeken; een geboeide soldaat en een gevloerde robot tellen mee). De test van de staff-keycard zoekt de
+      kaart nu ook in het lichaam. 435 tests, groen (`raven_soldier_shoots` blijft af en toe rood door de spreiding).
 - [ ] **6. De taal** — `Op.HEARD/SPOTTED/BODY_SEEN`, `Expr.Variable` sound.*/target.*/body.*/robot.alert/drone.alert,
       `bot/BotAlert` (de meter van een robot), de whens als onderbreking in `BotBrain`, de Help, "?"/"!" boven robots en
       drones. Tests: `when heard` telt, `when spotted` komt na een tijdje, de woorden mogen niet op de server.

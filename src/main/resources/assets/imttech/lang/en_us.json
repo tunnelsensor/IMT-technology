@@ -1941,5 +1941,9 @@
   "raven.imttech.radio.backup": "[Radio] Copy, %s. Backup team on the way.",
   "raven.imttech.radio.come_in": "[Radio] %s, come in. %s, do you copy?",
   "raven.imttech.radio.team": "[Radio] Team at the entrance, moving in.",
-  "raven.imttech.radio.stand_down": "[Radio] All units, stand down. Back to your posts."
+  "raven.imttech.radio.stand_down": "[Radio] All units, stand down. Back to your posts.",
+  "entity.imttech.raven_body": "Fallen Raven soldier",
+  "raven.imttech.body.search": "Search the body",
+  "raven.imttech.body.drag": "You drag the body along. Sneak + right-click it to let go.",
+  "raven.imttech.body.let_go": "You let go of the body."
 }

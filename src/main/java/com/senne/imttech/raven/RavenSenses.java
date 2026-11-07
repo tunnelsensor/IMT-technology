@@ -50,8 +50,11 @@ public final class RavenSenses {
     private long searchUntil;
     /** Tot deze speltijd is hij extra scherp (na een alarm). */
     private long memoryUntil;
-    /** Roepen via de radio (stap 4): hoe lang hij al bezig is (ticks). */
+    /** Roepen via de radio (stap 4): hoe lang hij al bezig is (ticks), en of het om een lichaam gaat (stap 5). */
     private int callTicks;
+    private boolean callingBody;
+    /** Het lichaam dat hij gaat melden (stap 5, zie Bodies), of null. */
+    private @Nullable net.minecraft.world.entity.Entity bodyToReport;
     /** De ingang van zijn site (RavenSites), opgezocht als het nodig is. */
     private @Nullable net.minecraft.core.BlockPos siteEntry;
     private long siteCheckedAt = -1_000_000;
@@ -115,10 +118,43 @@ public final class RavenSenses {
         } else {
             decay();
         }
+        // Lichamen (stap 5): een gevallen maat, een geboeide, een gevloerde robot. Hij gaat erheen en meldt het.
+        if (state != RavenAlert.COMBAT && soldier.tickCount % 10 == 0) {
+            lookForBodies(level);
+        }
+        if (state == RavenAlert.SUSPICIOUS && bodyToReport != null) {
+            if (!Bodies.isBody(bodyToReport)) {
+                // Weg (weggesleept en verdwenen), of de robot staat weer op: niets te melden.
+                Bodies.markReported(bodyToReport, false);
+                bodyToReport = null;
+            } else if (soldier.distanceTo(bodyToReport) < 3.5) {
+                startCall(true);
+            } else {
+                lookAt = bodyToReport.position();
+            }
+        }
         if (state == RavenAlert.SEARCHING && level.getGameTime() >= searchUntil) {
             calmDown();
         }
         sync();
+    }
+
+    /** Ziet hij een lichaam dat nog niemand meldde, en is er nog geen alarm? Dan gaat hij erheen om het te melden. */
+    private void lookForBodies(ServerLevel level) {
+        if (bodyToReport != null) {
+            return;
+        }
+        net.minecraft.world.entity.Entity body = Bodies.visible(soldier, ImtConfig.Guards.VIEW_RANGE, ImtConfig.Guards.VIEW_ANGLE / 2.0);
+        if (body == null || !RavenSites.shouldCall(level, soldier)) {
+            return;
+        }
+        Bodies.markReported(body, true);
+        bodyToReport = body;
+        state = RavenAlert.SUSPICIOUS;
+        slow = false;
+        lookAt = body.position();
+        suspicion = Math.max(suspicion, ImtConfig.Guards.SUSPICIOUS_AT);
+        soldier.getLookControl().setLookAt(body);
     }
 
     /** In het gevecht: ziet hij zijn doelwit nog? Zo niet, dan raakt hij het na een tijdje kwijt en gaat hij zoeken. */
@@ -232,12 +268,18 @@ public final class RavenSenses {
         lastSeen = player.position();
         lostTicks = 0;
         if (RavenSites.shouldCall(level, soldier)) {
-            state = RavenAlert.CALLING;
-            callTicks = 0;
-            soldier.getNavigation().stop();
+            startCall(false);
         } else {
             engage(player);
         }
+    }
+
+    /** Hij begint te roepen: over jou, of over een lichaam (stap 5). */
+    private void startCall(boolean body) {
+        state = RavenAlert.CALLING;
+        callingBody = body;
+        callTicks = 0;
+        soldier.getNavigation().stop();
     }
 
     /** Het gevecht (RavenCombatGoal). */
@@ -251,7 +293,9 @@ public final class RavenSenses {
     /** Hij staat stil en roept: na {@code radioGrabSeconds} heeft hij zijn radio, na {@code radioCallSeconds} is het gesprek af. */
     private void calling(ServerLevel level) {
         soldier.getNavigation().stop();
-        if (suspect != null && suspect.isAlive()) {
+        if (callingBody && bodyToReport != null) {
+            soldier.getLookControl().setLookAt(bodyToReport);
+        } else if (suspect != null && suspect.isAlive()) {
             soldier.getLookControl().setLookAt(suspect, 30.0f, 30.0f);
             if (soldier.hasLineOfSight(suspect)) {
                 lastSeen = suspect.position();
@@ -265,10 +309,14 @@ public final class RavenSenses {
         if (callTicks < Math.max(grab + 1, Math.round(ImtConfig.Guards.RADIO_CALL_SECONDS * 20))) {
             return;
         }
-        // Afgemaakt: alarm voor de hele site (of zijn maten in de buurt), en dan het gevecht.
-        Player target = suspect != null && suspect.isAlive() && !suspect.isCreative() && !suspect.isSpectator() ? suspect : null;
-        Vec3 where = lastSeen != null ? lastSeen : soldier.position();
-        RavenSites.raiseAlarm(level, soldier, target, where, false);
+        // Afgemaakt: alarm voor de hele site (of zijn maten in de buurt), en dan het gevecht (of zoeken, bij een lichaam).
+        boolean body = callingBody;
+        Player target = (!body || suspicion >= 100.0f) && suspect != null && suspect.isAlive() && !suspect.isCreative()
+                && !suspect.isSpectator() ? suspect : null;
+        Vec3 where = body && bodyToReport != null ? bodyToReport.position() : lastSeen != null ? lastSeen : soldier.position();
+        bodyToReport = null;
+        callingBody = false;
+        RavenSites.raiseAlarm(level, soldier, target, where, body);
         if (target != null) {
             engage(target);
         } else {
@@ -296,6 +344,11 @@ public final class RavenSenses {
         boolean heard = callTicks >= grabTicks();
         state = soldier.getTarget() != null ? RavenAlert.COMBAT : RavenAlert.SUSPICIOUS;
         callTicks = 0;
+        if (callingBody && bodyToReport != null) {
+            Bodies.markReported(bodyToReport, false); // een ander mag het alsnog melden
+        }
+        callingBody = false;
+        bodyToReport = null;
         if (state == RavenAlert.SUSPICIOUS) {
             lookAt = lastSeen != null ? lastSeen : soldier.position();
         }
@@ -349,6 +402,10 @@ public final class RavenSenses {
         state = RavenAlert.CALM;
         lookAt = null;
         slow = false;
+        if (bodyToReport != null) {
+            Bodies.markReported(bodyToReport, false);
+            bodyToReport = null;
+        }
         suspicion = Math.min(suspicion, ImtConfig.Guards.SUSPICIOUS_AT - 1);
     }
 
@@ -383,6 +440,10 @@ public final class RavenSenses {
      */
     public void doneLooking() {
         if (state != RavenAlert.SUSPICIOUS) {
+            return;
+        }
+        if (bodyToReport != null) {
+            startCall(true); // hij is bij het lichaam (of komt er niet bij): melden
             return;
         }
         if (suspect != null && suspect.isAlive() && suspicion >= ImtConfig.Guards.SUSPICIOUS_AT) {

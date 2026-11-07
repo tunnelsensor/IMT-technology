@@ -478,9 +478,20 @@ public final class ImtTechGameTests {
         // Een kern meldt zich pas een tick na het neerzetten aan (SecurityCores.loaded): dus even wachten met doodgaan.
         helper.runAfterDelay(5, guard::kill);
         helper.succeedWhen(() -> {
+            // Hoofdstuk 60: zijn buit zit in zijn lichaam (RavenBodyEntity); op de grond ligt hij pas als het lichaam verdwijnt.
+            java.util.List<net.minecraft.world.item.ItemStack> found = new java.util.ArrayList<>();
             for (net.minecraft.world.entity.item.ItemEntity drop : level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
                     helper.getBounds().inflate(2))) {
-                com.senne.imttech.logic.KeycardData data = com.senne.imttech.logic.KeycardItem.data(drop.getItem());
+                found.add(drop.getItem());
+            }
+            for (com.senne.imttech.raven.RavenBodyEntity body : level.getEntitiesOfClass(com.senne.imttech.raven.RavenBodyEntity.class,
+                    helper.getBounds().inflate(2))) {
+                for (int slot = 0; slot < body.loot().getContainerSize(); slot++) {
+                    found.add(body.loot().getItem(slot));
+                }
+            }
+            for (net.minecraft.world.item.ItemStack stack : found) {
+                com.senne.imttech.logic.KeycardData data = com.senne.imttech.logic.KeycardItem.data(stack);
                 if (data == null) {
                     continue;
                 }

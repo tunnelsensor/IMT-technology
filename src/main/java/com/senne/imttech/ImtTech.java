@@ -286,6 +286,9 @@ public class ImtTech {
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.raven.Noises::onFall);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.raven.Noises::onExplosion);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.raven.RavenSites::onServerTick);
+        // Hoofdstuk 60, stap 5: een dode soldaat laat een lichaam liggen met zijn buit erin.
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.raven.Bodies::onLivingDrops);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.raven.Bodies::onServerStopped);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.Zones::onPiston);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.Zones::onMobGriefing);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.Zones::onFluidPlace);
