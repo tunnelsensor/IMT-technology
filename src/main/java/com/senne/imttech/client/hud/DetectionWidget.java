@@ -16,8 +16,11 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Het oogje op je bril (hoofdstuk 60, jouw antwoord 2: "een oogje met een pijl naar de bewaker dat volloopt, en boven
- * zijn hoofd een ? en dan een !", zoals de witte pijl in Hitman). Voor elke bewaker (een Raven-soldaat, en sinds stap 6
+ * Het oogje (hoofdstuk 60, jouw antwoord 2: "een oogje met een pijl naar de bewaker dat volloopt, en boven
+ * zijn hoofd een ? en dan een !", zoals de witte pijl in Hitman). Sinds 8 november zie je het ook <b>zonder bril</b>
+ * (jouw opmerking: "je ziet dit enkel met je bril"): het tekent in een eigen laag, GuardLayer, en niet meer op de HUD
+ * van de bril; en het is kleiner ("de iconen iets kleiner": het oog 11 bij 5 in plaats van 17 bij 7, het teken anderhalf
+ * keer zo groot als gewone tekst in plaats van twee keer). Voor elke bewaker (een Raven-soldaat, en sinds stap 6
  * een robot of drone) die JOU in de gaten begint te krijgen, tekenen we een oog dat van links naar rechts volloopt met
  * zijn meter: wit zolang hij alleen maar kijkt, oranje als hij achterdochtig is, rood als hij je heeft. Staat hij op je
  * scherm, dan zweeft het oog boven zijn hoofd; staat hij erbuiten (achter je), dan staat het op het ovaal rond het
@@ -40,8 +43,10 @@ public final class DetectionWidget implements HudWidget {
     private static final double MAX_DISTANCE = 64;
     private static final int OUTLINE = argb(230, 0x0E1216);
     private static final int EMPTY = argb(150, 0x2E3A44);
-    /** De halve breedte van elke rij van het oog (van boven naar beneden). */
-    private static final int[] HALVES = {2, 5, 7, 8, 7, 5, 2};
+    /** De halve breedte van elke rij van het oog (van boven naar beneden): 11 breed en 5 hoog. */
+    private static final int[] HALVES = {2, 4, 5, 4, 2};
+    /** Hoe groot het "?" of "!" is, tegenover gewone tekst. */
+    private static final float MARK_SCALE = 1.5f;
 
     @Override
     public boolean visible(HudContext c) {
@@ -83,7 +88,7 @@ public final class DetectionWidget implements HudWidget {
                 eye(c.g, x, y, fraction, argb(alpha, colour));
             }
             if (alert.alerted()) {
-                mark(c, x, watchingMe ? y - 8 : y + 4, alert);
+                mark(c, x, watchingMe ? y - HALVES.length / 2 - 3 : y + 4, alert);
             }
             return;
         }
@@ -105,17 +110,17 @@ public final class DetectionWidget implements HudWidget {
         eye(c.g, x, y, fraction, argb(alpha, colour));
     }
 
-    /** Het teken boven een bewaker: een geel "?" of een rood "!", twee keer zo groot als gewone tekst, met een schaduw. */
+    /** Het teken boven een bewaker: een geel "?" of een rood "!", {@link #MARK_SCALE} keer zo groot als gewone tekst, met een schaduw. */
     private static void mark(HudContext c, int cx, int bottom, RavenAlert alert) {
         boolean danger = alert == RavenAlert.COMBAT || alert == RavenAlert.CALLING;
         String text = danger ? "!" : "?";
         int colour = danger ? RED : 0xF0C040;
         // Een lichte pulse zodat het opvalt.
-        float bob = (float) Math.sin(c.now / 160.0) * 1.5f;
+        float bob = (float) Math.sin(c.now / 160.0);
         var pose = c.g.pose();
         pose.pushPose();
-        pose.translate(cx, bottom - 18 + bob, 0);
-        pose.scale(2.0f, 2.0f, 1.0f);
+        pose.translate(cx, bottom - c.font.lineHeight * MARK_SCALE + bob, 0);
+        pose.scale(MARK_SCALE, MARK_SCALE, 1.0f);
         int width = c.font.width(text);
         c.g.drawString(c.font, text, -width / 2 + 1, 1, argb(200, 0x101418), false);
         c.g.drawString(c.font, text, -width / 2, 0, argb(255, colour), false);
@@ -123,22 +128,24 @@ public final class DetectionWidget implements HudWidget {
     }
 
     /**
-     * Een oog van 17 bij 7 pixels rond (cx, cy) met een donkere rand en een pupil, dat van links naar rechts volloopt
+     * Een oog van 11 bij 5 pixels rond (cx, cy) met een donkere rand en een pupil, dat van links naar rechts volloopt
      * met {@code fraction}.
      */
     static void eye(GuiGraphics g, int cx, int cy, float fraction, int colour) {
+        int top = cy - HALVES.length / 2;
+        int edge = HALVES[0] + 1;
         // De rand: elke rij een pixel breder, en een rij extra boven en onder.
-        g.fill(cx - 3, cy - 4, cx + 4, cy - 3, OUTLINE);
-        g.fill(cx - 3, cy + 4, cx + 4, cy + 5, OUTLINE);
+        g.fill(cx - edge, top - 1, cx + edge + 1, top, OUTLINE);
+        g.fill(cx - edge, top + HALVES.length, cx + edge + 1, top + HALVES.length + 1, OUTLINE);
         for (int row = 0; row < HALVES.length; row++) {
             int half = HALVES[row] + 1;
-            int y = cy - 3 + row;
+            int y = top + row;
             g.fill(cx - half, y, cx + half + 1, y + 1, OUTLINE);
         }
         // Het wit van het oog: leeg (grijs) met het gevulde deel erover, van links naar rechts.
         for (int row = 0; row < HALVES.length; row++) {
             int half = HALVES[row];
-            int y = cy - 3 + row;
+            int y = top + row;
             g.fill(cx - half, y, cx + half + 1, y + 1, EMPTY);
             int width = 2 * half + 1;
             int filled = Math.round(width * fraction);

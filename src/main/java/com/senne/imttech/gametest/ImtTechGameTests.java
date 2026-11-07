@@ -2188,8 +2188,15 @@ public final class ImtTechGameTests {
         int soldiers = countInBunker(helper, pos -> helper.getLevel().getBlockEntity(helper.absolutePos(pos))
                 instanceof net.minecraft.world.level.block.entity.StructureBlockEntity marker
                 && com.senne.imttech.raven.RavenRoutes.isSoldier(marker.getMetaData()));
-        if (soldiers != 8) {
-            throw new GameTestAssertException("Er zijn " + soldiers + " plekken voor een soldaat in plaats van 8");
+        // 8 november (jouw wens: "minder guards en ze moeten echt een pad afwandelen"): vijf in plaats van acht, elk met een route.
+        if (soldiers != 5) {
+            throw new GameTestAssertException("Er zijn " + soldiers + " plekken voor een soldaat in plaats van 5");
+        }
+        int standing = countInBunker(helper, pos -> helper.getLevel().getBlockEntity(helper.absolutePos(pos))
+                instanceof net.minecraft.world.level.block.entity.StructureBlockEntity marker
+                && com.senne.imttech.raven.RavenRoutes.isSoldier(marker.getMetaData()) && !marker.getMetaData().contains(";"));
+        if (standing != 0) {
+            throw new GameTestAssertException(standing + " soldaten in de bunker hebben geen route (ze zouden stilstaan)");
         }
         helper.succeed();
     }

@@ -42,6 +42,8 @@ import org.jetbrains.annotations.Nullable;
  *       {@code backupWaves} teams per alarm.</li>
  *   <li><b>Een half gesprek</b> ({@link #halfCall}): zijn maten worden achterdochtig en lopen langzaam naar hem toe, en jij
  *       hoort door de coms "BB-2358, come in".</li>
+ *   <li><b>"Stand down"</b>: het team loopt terug naar de ingang en is daar weg (8 november: minder bewakers, en een
+ *       bunker wordt na een alarm niet voorgoed voller).</li>
  *   <li>Zonder ingang in de buurt (een soldaat uit een spawn egg, een oude wereld) werkt het met de soldaten binnen
  *       {@link #LOOSE_RANGE} blokken, en komt er geen team.</li>
  * </ul>
@@ -262,6 +264,10 @@ public final class RavenSites extends SavedData {
                 site.target = null;
                 setDirty();
                 RavenRadio.standDown(level, site.entry);
+                // 8 november: de versterking gaat weer naar buiten (anders werd de bunker na elk alarm voller).
+                for (RavenSoldierEntity soldier : soldiersOf(level, site.entry)) {
+                    soldier.leave();
+                }
             }
         }
     }
@@ -287,6 +293,10 @@ public final class RavenSites extends SavedData {
             spots.add(site.entry);
         }
         RavenRadio.teamEntering(level, site.entry);
+        // 8 november: zolang het alarm loopt, lopen ze heen en weer tussen de ingang en je laatste plek (niet stilstaan);
+        // na "stand down" gaan ze naar buiten (RavenSoldierEntity.leave).
+        BlockPos watch = RavenCombatGoal.standingSpot(level, BlockPos.containing(lastSeen));
+        List<BlockPos> route = watch == null || watch.closerThan(site.entry, 3) ? List.of() : List.of(site.entry, watch);
         for (BlockPos spot : spots) {
             RavenSoldierEntity soldier = com.senne.imttech.registry.ModEntities.RAVEN_SOLDIER.get().create(level);
             if (soldier == null) {
@@ -296,6 +306,8 @@ public final class RavenSites extends SavedData {
             soldier.finalizeSpawn(level, level.getCurrentDifficultyAt(spot), MobSpawnType.REINFORCEMENT, null);
             soldier.setPersistenceRequired();
             soldier.setPost(site.entry);
+            soldier.setRoute(route);
+            soldier.markBackup();
             level.addFreshEntity(soldier);
             soldier.senses().alarmed(level, target, lastSeen, memory);
         }

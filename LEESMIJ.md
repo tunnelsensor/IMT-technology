@@ -21,7 +21,7 @@ Spotify-koppeling, spraakcommando's en instellingen verhuizen bij de eerste star
 (de map `starktech` wordt `imttech`). Oude werelden niet: blokken en items van de mod verdwijnen
 daaruit, want ze heetten nog `starktech:...`.
 
-Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (419 automatische tests).
+Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (444 automatische tests).
 
 ---
 
@@ -509,16 +509,20 @@ gewoon open**.
 **Bewakers zoals in Hitman** (7 november). Een soldaat ziet je niet meteen: hij kijkt in een kegel voor zich uit
 (140 graden, 28 blokken, niet door muren of rook) en een **meter** loopt vol zolang je in beeld staat: in een
 seconde vlak voor hem, in acht aan de rand; **sluipen** half zo snel, rennen sneller, in zijn ooghoek half. Op je
-bril zie je dat als een **oog** dat volloopt (wit, oranje, rood), boven zijn hoofd als een **?** of een **!**.
-Halfvol wordt hij achterdochtig en komt hij kijken; vol heeft hij je. Rustig loopt hij zijn **route** (per kamer
-getekend) of staat hij op zijn post, en hij **hoort** je: schoten (de Glock door de hele bunker, een laserpistool
+scherm (ook **zonder bril**) zie je dat als een klein **oog** dat volloopt (wit, oranje, rood), boven zijn hoofd als
+een **?** of een **!**. Halfvol wordt hij achterdochtig en komt hij kijken; vol heeft hij je. Rustig loopt elke
+bewaker in de bunker zijn **route** (per kamer getekend, door de hal en de kamers ernaast; een bunker heeft er
+ongeveer half zo veel als vroeger), en hij **hoort** je: schoten (de Glock door de hele bunker, een laserpistool
 twaalf blokken), ontploffingen, blokken kapotslaan, rennen, deuren en vallen; door een muur maar half zo ver.
 Lopen en sluipen zijn stil. Wie je als eerste ziet, **roept via de radio**: een seconde om hem te pakken, drie
 om het gesprek af te maken. Stop je hem binnen die seconde, dan hoorde niemand iets; daarna worden zijn maten
 achterdochtig, komen ze langzaam kijken en hoor jij "[Radio] BB-2358, come in". Maakt hij het af ("Contact!"),
 dan weet de hele bunker het, komt na tien seconden een **team van vier** door de ingang (hooguit twee teams per
 alarm) en zijn ze vijf minuten extra scherp. Raakt hij je kwijt, dan zoekt hij twee minuten rond je laatste plek
-en gaat hij terug naar zijn route. Alle getallen staan in `config/imttech.toml` onder `[guards]`.
+en gaat hij terug naar zijn route. Is het alarm voorbij ("stand down"), dan loopt het team weer naar buiten.
+**Sluipaanval**: sta je met een **zwaard** achter een bewaker die je niet ziet, dan staat er "Takedown" onder je
+vizier; een klik en hij ligt er in één keer, zonder dat de anderen iets horen. Kijkt hij naar je, of vecht hij al,
+dan is het een gewone slag. Alle getallen staan in `config/imttech.toml` onder `[guards]`.
 
 - Versla je er een, dan blijft zijn **lichaam** liggen (vijf minuten), met zijn buit erin: soms een
   **Raven-onderdeel**, soms zijn wapen, bij een bewaker zijn keycard. Rechtsklik: doorzoeken; sneak + rechtsklik:
@@ -2171,7 +2175,7 @@ beveiligingskern, zie "Het datacenter"); zonder luistert ze niet. In creative ho
 
 | Bestand | Wat |
 |---------|-----|
-| `config/imttech.toml` | **Alle getallen van de mod** (ruim 390), in hoofdstukken: wat mag er (`[rules]`: hacken, zakkenrollen, raids aan/uit), de bril, **alle stroom** (`[power]`: wat elk blok opwekt, opslaat en gebruikt), drones, de satelliet **per upgrade-niveau**, harnas, torentjes, beveiliging, datacenter, granaten en lasers, de Glock 19 (`[guns]`), guard robots, Raven, de bewakers zoals in Hitman (`[guards]`: zien, horen, de radio, het team, lichamen), raids... |
+| `config/imttech.toml` | **Alle getallen van de mod** (ruim 390), in hoofdstukken: wat mag er (`[rules]`: hacken, zakkenrollen, raids aan/uit), de bril, **alle stroom** (`[power]`: wat elk blok opwekt, opslaat en gebruikt), drones, de satelliet **per upgrade-niveau**, harnas, torentjes, beveiliging, datacenter, granaten en lasers, de Glock 19 (`[guns]`), guard robots, Raven, de bewakers zoals in Hitman (`[guards]`: zien, horen, de radio, het team, lichamen, de sluipaanval), raids... |
 | `config/imttech-client.toml` | Stem, volume, spraaktekst, Spotify Client ID, GPU voor de AI, het zachte zoemen van de rayshields (`rayshieldHumVolume`: 1 = normaal, 2 = dubbel zo hard, 0 = uit), het laadzoemen van de guard robots (`robotHumVolume`, net zo), de rotors van de security drones (`droneRotorVolume`, net zo), de rand van zones (`zoneBorder`) |
 | `config/imttech-voice.json` | Alle spraakcommando's (zelf uit te breiden) |
 | `config/imttech-spotify.json` | Je Spotify-token (niet delen) |
@@ -2294,7 +2298,7 @@ showcase en staat hij bij NIEUW.
   hoeveel soldaten en torentjes er in de bunker staan en hoe je er met `/tp` komt. Daarna stopt
   hij vanzelf. Wil je een andere wereld, gooi dan `run-structures/world` weg.
 - **De bunker verbouwen**: `python tools/generate_bunker.py`.
-- **Tests**: `gradlew runGameTestServer` — 375 tests over de toren en zijn kluis, het
+- **Tests**: `gradlew runGameTestServer` — 444 tests over de toren en zijn kluis, het
   satellietwrak, de Biebia's Industries-bunker, de drones en het arsenaal, zelf vliegen en landen, de satelliet, navigatie,
   spion, de bril, het laadstation, de rayshields, de relais, de holotafel, het harnas en de
   mini-raketten, de Raven-soldaten, de torentjes, de spraakcommando's, en alles wat erna kwam

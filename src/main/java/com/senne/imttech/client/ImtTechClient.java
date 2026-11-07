@@ -160,6 +160,9 @@ public class ImtTechClient {
     /** De HUD komt boven de camera-effecten maar onder de hotbar, chat en menu's. */
     private static void registerGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(VanillaGuiLayers.CAMERA_OVERLAYS, ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "imt_hud"), new ImtHud());
+        // Hoofdstuk 60 / 8 november: het oog en het "?"/"!" van de bewakers, en "Takedown" onder je vizier, ook zonder bril.
+        event.registerAbove(VanillaGuiLayers.CROSSHAIR, ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "guards"),
+                new com.senne.imttech.client.raven.GuardLayer());
         // Het kaartje naast je vizier als je naar het werkbank-hologram kijkt.
         event.registerAbove(VanillaGuiLayers.CROSSHAIR, ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "workbench_hint"),
                 com.senne.imttech.client.workbench.WorkbenchHologram::renderHint);

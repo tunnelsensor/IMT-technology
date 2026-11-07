@@ -54,7 +54,7 @@ import org.jetbrains.annotations.Nullable;
  * (RavenInvestigateGoal). Wat je spel daarvan ziet, staat in {@link Watcher}.
  */
 public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watcher {
-    /** Hoofdstuk 60: hoe alert hij is, zijn meter en wie hem vult, voor het "?"/"!" en het oogje op je bril. */
+    /** Hoofdstuk 60: hoe alert hij is, zijn meter en wie hem vult, voor het "?"/"!" en het oogje op je scherm. */
     private static final EntityDataAccessor<Byte> ALERT = SynchedEntityData.defineId(RavenSoldierEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Byte> SUSPICION = SynchedEntityData.defineId(RavenSoldierEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Integer> SUSPECT = SynchedEntityData.defineId(RavenSoldierEntity.class, EntityDataSerializers.INT);
@@ -72,6 +72,14 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
     private int grenades;
     private boolean empGrenades;
     private int grenadeCooldown;
+    /**
+     * 8 november: een soldaat van een versterkingsteam (RavenSites). Na "stand down" loopt hij terug naar de ingang en is
+     * hij weg ({@code leaving}), zodat een bunker na een alarm niet voorgoed voller wordt.
+     */
+    private boolean backup;
+    private boolean leaving;
+    /** Neergestoken met een sluipaanval (Takedown): hij sterft zonder geluid. */
+    private boolean silentDeath;
 
     public RavenSoldierEntity(EntityType<? extends Monster> type, Level level) {
         super(type, level);
@@ -151,6 +159,36 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
 
     public void setPost(@Nullable net.minecraft.core.BlockPos post) {
         this.post = post == null ? null : post.immutable();
+    }
+
+    /** Een soldaat van een versterkingsteam (RavenSites.spawnTeam). */
+    public void markBackup() {
+        backup = true;
+    }
+
+    public boolean isBackup() {
+        return backup;
+    }
+
+    /** Is hij op weg naar buiten (na "stand down")? */
+    public boolean isLeaving() {
+        return leaving;
+    }
+
+    /**
+     * "Stand down" (RavenSites): een soldaat van een versterkingsteam gaat terug naar de ingang (zijn post) en verdwijnt
+     * daar zodra hij rustig is. Komt hij onderweg iemand tegen, dan vecht hij eerst nog.
+     */
+    public void leave() {
+        if (backup) {
+            leaving = true;
+            route = java.util.List.of();
+        }
+    }
+
+    /** Een sluipaanval (Takedown): zijn dood maakt geen geluid. */
+    public void silenceDeath() {
+        silentDeath = true;
     }
 
     /** Zijn route (de plekken uit zijn markering, zie RavenRoutes), leeg als hij op zijn post staat. */
@@ -270,6 +308,12 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
             // Hoofdstuk 60: kijken (en sinds stap 3 luisteren), en zijn houding: het geweer aangelegd zodra hij een doelwit heeft.
             senses.tick(level);
             setAggressive(getTarget() != null);
+            // 8 november: een versterkingsteam dat naar buiten loopt, is weg zodra hij rustig bij de ingang staat.
+            if (leaving && post != null && getTarget() == null && senses.state() == RavenAlert.CALM
+                    && !com.senne.imttech.cuffs.Handcuffs.isCuffed(this)
+                    && position().distanceTo(Vec3.atBottomCenterOf(post)) < 2.0) {
+                discard();
+            }
         }
     }
 
@@ -281,6 +325,8 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
         tag.putBoolean("KeycardGuard", keycardGuard);
         tag.putLong("MemoryUntil", senses.memoryUntil());
         tag.putString("Callsign", callsign);
+        tag.putBoolean("Backup", backup);
+        tag.putBoolean("Leaving", leaving);
         if (post != null) {
             tag.putLong("Post", post.asLong());
         }
@@ -297,6 +343,8 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
         keycardGuard = tag.getBoolean("KeycardGuard");
         senses.setMemoryUntil(tag.getLong("MemoryUntil"));
         callsign = tag.getString("Callsign");
+        backup = tag.getBoolean("Backup");
+        leaving = tag.getBoolean("Leaving");
         post = tag.contains("Post") ? net.minecraft.core.BlockPos.of(tag.getLong("Post")) : null;
         route = tag.contains("Route")
                 ? java.util.Arrays.stream(tag.getLongArray("Route")).mapToObj(net.minecraft.core.BlockPos::of).toList()
@@ -356,7 +404,7 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
     }
 
     @Override
-    protected SoundEvent getDeathSound() {
-        return SoundEvents.PLAYER_DEATH;
+    protected @Nullable SoundEvent getDeathSound() {
+        return silentDeath ? null : SoundEvents.PLAYER_DEATH;
     }
 }

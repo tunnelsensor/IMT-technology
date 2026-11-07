@@ -2,7 +2,6 @@ package com.senne.imttech.client;
 
 import com.senne.imttech.client.hud.BootOverlay;
 import com.senne.imttech.client.hud.CompassWidget;
-import com.senne.imttech.client.hud.DetectionWidget;
 import com.senne.imttech.client.hud.DroneFeedWidget;
 import com.senne.imttech.client.hud.FlightWidget;
 import com.senne.imttech.client.hud.HackBubbleWidget;
@@ -56,7 +55,6 @@ public class ImtHud implements LayeredDraw.Layer {
 
     private static final List<HudWidget> WIDGETS = List.of(
             new ThreatMarkerWidget(),
-            new DetectionWidget(),
             new MarkedTargetsWidget(),
             new TargetAnalysisWidget(),
             new OreMarkerWidget(),

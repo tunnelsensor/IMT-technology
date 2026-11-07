@@ -19,6 +19,7 @@ import com.senne.imttech.raven.RavenAlert;
 import com.senne.imttech.raven.RavenRoutes;
 import com.senne.imttech.raven.RavenSites;
 import com.senne.imttech.raven.RavenSoldierEntity;
+import com.senne.imttech.raven.Takedown;
 import com.senne.imttech.registry.ModEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
@@ -28,7 +29,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.entity.Marker;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.phys.AABB;
@@ -355,6 +359,113 @@ public final class GuardGameTests {
                     check(RavenSites.get(helper.getLevel()).site(entryAt).waves() == 1, "Het aantal teams klopt niet");
                     ImtConfig.Guards.BACKUP_DELAY_SECONDS = delayBefore;
                     ImtConfig.Guards.SITE_RANGE = rangeBefore;
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * Na "stand down" gaat het versterkingsteam weer naar buiten: zolang het alarm loopt, lopen ze een route tussen de
+     * ingang en je laatste plek, en daarna lopen ze naar de ingang en zijn ze weg (8 november: minder bewakers, en niet
+     * stilstaan; vroeger bleven ze voorgoed bij de ingang staan).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 600, batch = "guards_team_leaves")
+    public static void backup_team_leaves_after_stand_down(GameTestHelper helper) {
+        float delayBefore = ImtConfig.Guards.BACKUP_DELAY_SECONDS;
+        float rangeBefore = ImtConfig.Guards.SITE_RANGE;
+        float alarmBefore = ImtConfig.Guards.ALARM_SECONDS;
+        float searchBefore = ImtConfig.Guards.SEARCH_SECONDS;
+        ImtConfig.Guards.BACKUP_DELAY_SECONDS = 1.0f;
+        ImtConfig.Guards.SITE_RANGE = 40.0f;
+        ImtConfig.Guards.ALARM_SECONDS = 3.0f;
+        ImtConfig.Guards.SEARCH_SECONDS = 1.0f;
+        Marker entry = EntityType.MARKER.create(helper.getLevel());
+        check(entry != null, "Geen Marker");
+        BlockPos entryAt = helper.absolutePos(new BlockPos(10, 2, 17));
+        entry.moveTo(entryAt.getX() + 0.5, entryAt.getY(), entryAt.getZ() + 0.5, 0, 0);
+        entry.addTag(RavenSites.ENTRY_TAG);
+        helper.getLevel().addFreshEntity(entry);
+        RavenSoldierEntity caller = soldier(helper, new BlockPos(5, 2, 4), 0, false);
+        int before = soldiersIn(helper);
+        RavenSites.raiseAlarm(helper.getLevel(), caller, null, helper.absoluteVec(new Vec3(10.5, 2, 8.5)), false);
+        helper.startSequence()
+                .thenWaitUntil(() -> check(soldiersIn(helper) > before, "Er kwam geen team binnen"))
+                .thenExecute(() -> {
+                    AABB arena = new AABB(helper.absoluteVec(Vec3.ZERO), helper.absoluteVec(new Vec3(20, 8, 20)));
+                    List<RavenSoldierEntity> team = helper.getLevel().getEntitiesOfClass(RavenSoldierEntity.class, arena, s -> s != caller);
+                    check(!team.isEmpty() && team.stream().allMatch(RavenSoldierEntity::isBackup), "Het team staat niet als versterking");
+                    check(team.stream().allMatch(s -> s.route().size() == 2), "Het team loopt geen route tussen de ingang en de laatste plek");
+                    check(!caller.isBackup(), "De soldaat die riep staat als versterking");
+                })
+                .thenWaitUntil(() -> check(soldiersIn(helper) == before,
+                        "Het team ging na stand down niet weg (" + (soldiersIn(helper) - before) + " over)"))
+                .thenExecute(() -> {
+                    check(caller.isAlive(), "De soldaat die riep is ook weg (alleen de versterking gaat naar buiten)");
+                    ImtConfig.Guards.BACKUP_DELAY_SECONDS = delayBefore;
+                    ImtConfig.Guards.SITE_RANGE = rangeBefore;
+                    ImtConfig.Guards.ALARM_SECONDS = alarmBefore;
+                    ImtConfig.Guards.SEARCH_SECONDS = searchBefore;
+                })
+                .thenSucceed();
+    }
+
+    // ================================================================ Een sluipaanval (8 november)
+
+    /**
+     * Met een zwaard langs achter (jouw wens: "met een zwaard een guard kunt neersteken langs achter zodat je die stealth
+     * kunt killen"): hij is in één keer neer, er ligt een lichaam, het zwaard sleet, en zijn maat merkte niets.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "guards_takedown")
+    public static void sword_takedown_from_behind_is_silent(GameTestHelper helper) {
+        RavenSoldierEntity guard = soldier(helper, new BlockPos(5, 2, 8), 0, false); // kijkt naar +z
+        RavenSoldierEntity mate = soldier(helper, new BlockPos(16, 2, 8), -90, false); // kijkt naar +x, van alles weg
+        ServerPlayer player = player(helper, new BlockPos(5, 2, 6), "takedown");
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.IRON_SWORD));
+        AABB arena = new AABB(helper.absoluteVec(Vec3.ZERO), helper.absoluteVec(new Vec3(20, 8, 20)));
+        helper.startSequence()
+                .thenExecuteAfter(5, () -> {
+                    check(guard.senses().suspicion() == 0, "De bewaker ziet de speler achter zijn rug");
+                    check(Takedown.possible(player, guard, guard.senses().state()), "De sluipaanval kan niet met een zwaard achter de bewaker");
+                    player.attack(guard);
+                })
+                .thenExecuteAfter(2, () -> {
+                    check(!guard.isAlive(), "De bewaker leeft nog na de sluipaanval (" + guard.getHealth() + ")");
+                    check(helper.getLevel().getEntitiesOfClass(RavenBodyEntity.class, arena).size() == 1, "Er ligt geen lichaam");
+                    check(player.getMainHandItem().getDamageValue() == 1, "Het zwaard sleet niet (" + player.getMainHandItem().getDamageValue() + ")");
+                })
+                .thenExecuteAfter(40, () -> check(mate.senses().state() == RavenAlert.CALM && mate.getTarget() == null
+                        && mate.senses().suspicion() == 0, "De maat merkte de sluipaanval (" + mate.senses().state() + ")"))
+                .thenSucceed();
+    }
+
+    /**
+     * Geen sluipaanval als hij je ziet (van voren), zonder zwaard, of als hij al vecht: dan is het een gewone slag, hij
+     * leeft nog.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "guards_takedown_front")
+    public static void no_takedown_from_the_front_without_a_sword_or_in_a_fight(GameTestHelper helper) {
+        RavenSoldierEntity front = soldier(helper, new BlockPos(3, 2, 3), 0, false);
+        ServerPlayer facing = player(helper, new BlockPos(3, 2, 5), "takedown-front");
+        facing.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_SWORD));
+        RavenSoldierEntity unarmed = soldier(helper, new BlockPos(10, 2, 12), 0, false);
+        ServerPlayer bare = player(helper, new BlockPos(10, 2, 10), "takedown-bare");
+        RavenSoldierEntity fighting = soldier(helper, new BlockPos(16, 2, 12), 0, false);
+        ServerPlayer late = player(helper, new BlockPos(16, 2, 10), "takedown-late");
+        late.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.DIAMOND_SWORD));
+        fighting.setTarget(late);
+        helper.startSequence()
+                .thenExecuteAfter(2, () -> {
+                    check(!Takedown.possible(facing, front, front.senses().state()), "Een sluipaanval van voren zou niet mogen");
+                    check(!Takedown.possible(bare, unarmed, unarmed.senses().state()), "Een sluipaanval zonder zwaard zou niet mogen");
+                    check(fighting.senses().state() == RavenAlert.COMBAT, "De bewaker met een doelwit vecht niet");
+                    facing.attack(front);
+                    bare.attack(unarmed);
+                    late.attack(fighting);
+                })
+                .thenExecuteAfter(2, () -> {
+                    for (RavenSoldierEntity guard : List.of(front, unarmed, fighting)) {
+                        check(guard.isAlive(), "Een gewone slag doodde een bewaker in één keer");
+                        check(guard.getHealth() < guard.getMaxHealth(), "De gewone slag kwam niet aan (de sluipaanval hield hem tegen)");
+                    }
                 })
                 .thenSucceed();
     }

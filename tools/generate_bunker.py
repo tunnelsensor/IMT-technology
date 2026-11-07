@@ -94,12 +94,53 @@ def soldier(x, y, z, route=None):
     """
     Hier komt bij het bouwen van de wereld een Raven-soldaat (zie BiebiaBunkerPiece). Hoofdstuk 60 (bewakers zoals in
     Hitman): met een route (plekken (x, z) op dezelfde hoogte) loopt hij die rond en kijkt hij bij elk punt even om zich
-    heen; zonder route staat hij op zijn post. De route staat als verschuivingen in de markering
+    heen; zonder route staat hij op zijn post (in de bunker heeft sinds 8 november elke soldaat een route, zie
+    check_routes). De route staat als verschuivingen in de markering
     ("raven_soldier;2,0,0;2,0,5"), zodat ze meeschuiven met shift() in generate_bunker_rooms.py en de mod ze mee kan
     draaien met het stuk (RavenRoutes).
     """
     put(x, y, z, "minecraft:structure_block", {"mode": "data"},
         {"id": "minecraft:structure_block", "mode": "DATA", "metadata": marker_text(SOLDIER, x, z, route)})
+
+
+# Waar een soldaat doorheen kan lopen (op y = 1 en 2); al het andere houdt hem tegen. Een markering wordt lucht.
+WALKABLE = {"minecraft:air", "minecraft:rail", "minecraft:ladder", "minecraft:structure_block",
+            "minecraft:polished_blackstone_pressure_plate"}
+
+
+def walkable(x, z):
+    """Kan een soldaat op (x, 1, z) staan? Twee blokken waar hij doorheen kan; buiten de kamers is het rots."""
+    for y in (1, 2):
+        block = blocks.get((x, y, z))
+        if block is None or block[0] not in WALKABLE:
+            return False
+    return True
+
+
+def check_routes(name):
+    """
+    8 november (jouw wens: "ze moeten echt een pad afwandelen, niet static staan"): elke soldaat in dit bestand heeft
+    een route, en hij kan elk punt ervan te voet bereiken vanaf zijn plek (door de deuropeningen, niet door muren,
+    meubels of een vat voor de deur). Klopt dat niet, dan stopt het script met een foutmelding.
+    """
+    for (x, y, z), (block, _, nbt) in list(blocks.items()):
+        if block != "minecraft:structure_block" or not nbt["metadata"].startswith(SOLDIER):
+            continue
+        offsets = nbt["metadata"].split(";")[1:]
+        if not offsets:
+            raise SystemExit(f"{name}: de soldaat op x={x} z={z} heeft geen route (hij zou stilstaan)")
+        reach = {(x, z)}
+        todo = [(x, z)]
+        while todo:
+            cx, cz = todo.pop()
+            for nx, nz in ((cx + 1, cz), (cx - 1, cz), (cx, cz + 1), (cx, cz - 1)):
+                if (nx, nz) not in reach and walkable(nx, nz):
+                    reach.add((nx, nz))
+                    todo.append((nx, nz))
+        for offset in offsets:
+            dx, _, dz = (int(n) for n in offset.split(","))
+            if (x + dx, z + dz) not in reach:
+                raise SystemExit(f"{name}: de soldaat op x={x} z={z} kan het punt x={x + dx} z={z + dz} van zijn route niet bereiken")
 
 
 def entry(x, y, z):
@@ -198,11 +239,12 @@ def build_corridor():
     # Een rode streep over de vloer.
     for z in range(4, 15):
         put(MID, 0, z, RED)
-    # De controlepost: een bureau met een lessenaar, en een soldaat.
+    # De controlepost: een bureau met een lessenaar. 8 november: de soldaat staat er niet meer stil, hij loopt de gang
+    # op en neer (van net binnen de deur tot de hal), met zijn rug naar de deur als hij naar de hal loopt.
     put(MID - 2, 1, 8, TRIM)
     put(MID - 2, 1, 9, TRIM)
     put(MID - 2, 2, 8, "minecraft:polished_blackstone_pressure_plate", {"powered": "false"})
-    soldier(MID + 1, 1, 9)
+    soldier(MID + 1, 1, 7, route=[(MID + 1, 6), (MID + 1, 13)])
     # Hoofdstuk 60: net binnen de deur komt de versterking binnen.
     entry(MID, 1, 5)
 
@@ -240,11 +282,9 @@ def build_hall():
     turret(x0 + 2, 3, 27)
     put(x0 + 4, 1, 27, "minecraft:ladder", {"facing": "east", "waterlogged": "false"})
     put(x0 + 4, 2, 27, "minecraft:ladder", {"facing": "east", "waterlogged": "false"})
-    # Soldaten.
-    # Hoofdstuk 60: twee rondes door de hal (west en oost, om de zuilen heen), en een post achterin bij de vaandels.
-    soldier(MID - 5, 1, 20, route=[(MID - 6, 17), (MID - 6, 24), (MID - 2, 24), (MID - 2, 17)])
-    soldier(MID + 5, 1, 24, route=[(MID + 6, 25), (MID + 6, 18), (MID + 2, 18), (MID + 2, 25)])
-    soldier(MID, 1, 26)
+    # Soldaten. 8 november (jouw wens: "minder guards en ze moeten echt een pad afwandelen"): nog één, die een grote
+    # ronde loopt om de zuilen en de kaartentafel heen (vroeger twee halve rondes en een post bij de vaandels).
+    soldier(MID - 6, 1, 17, route=[(MID - 6, 24), (MID + 6, 24), (MID + 6, 17), (MID - 6, 17)])
 
 
 def build_barracks():
@@ -258,8 +298,7 @@ def build_barracks():
     chest(x1, 1, 25, "west", LOOT_BARRACKS)
     for z in (19, 24):
         put(4, 5, z, LIGHT)
-    soldier(4, 1, 20, route=[(4, 18), (4, 25)])  # hoofdstuk 60: langs de bedden heen en weer
-    soldier(5, 1, 24)
+    soldier(4, 1, 20, route=[(4, 18), (4, 25)])  # hoofdstuk 60: langs de bedden heen en weer (de tweede man is weg)
 
 
 def build_reactor():
@@ -344,7 +383,8 @@ def build_vault():
     banner(MID + 3, 4, z1, "north")
     turret(x0, 1, z0)
     turret(x1, 1, z0)
-    soldier(MID + 2, 1, 40)
+    # 8 november: de kluiswacht loopt heen en weer voor de kisten (vroeger stond hij stil).
+    soldier(MID + 3, 1, 40, route=[(MID - 3, 40), (MID + 3, 40)])
 
 
 # --------------------------------------------------------------------- Bestand
@@ -437,6 +477,7 @@ def to_nbt():
 
 if __name__ == "__main__":
     build()
+    check_routes("biebia_bunker")
     write_nbt(OUT, to_nbt())
     soldiers = sum(1 for b in blocks.values() if b[0] == "minecraft:structure_block" and b[2]["metadata"].startswith(SOLDIER))
     print(f"geschreven: {OUT} ({len(blocks)} blokken, {soldiers} soldaten)")

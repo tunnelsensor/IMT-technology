@@ -45,6 +45,18 @@ public final class StructureGameTests {
         return helper.getLevel().getStructureManager().get(id).orElseThrow(() -> new GameTestAssertException("Het bestand " + id + " ontbreekt"));
     }
 
+    /** De markeringen van de soldaten in een stuk ("raven_soldier;dx,0,dz;..."). */
+    private static List<String> soldierMarkers(StructureTemplate template) {
+        List<String> markers = new ArrayList<>();
+        for (StructureTemplate.StructureBlockInfo info : template.filterBlocks(BlockPos.ZERO, new StructurePlaceSettings(), Blocks.STRUCTURE_BLOCK)) {
+            String metadata = info.nbt() == null ? "" : info.nbt().getString("metadata");
+            if (com.senne.imttech.raven.RavenRoutes.isSoldier(metadata)) {
+                markers.add(metadata);
+            }
+        }
+        return markers;
+    }
+
     private static boolean contains(StructureTemplate template, Block block) {
         return !template.filterBlocks(BlockPos.ZERO, new StructurePlaceSettings(), block).isEmpty();
     }
@@ -146,6 +158,23 @@ public final class StructureGameTests {
         check(vault.getSize().equals(new Vec3i(35, 8, BunkerLayout.END_DEPTH)) && has(vault, Blocks.AIR, new BlockPos(17, 2, 0))
                 && contains(vault, com.senne.imttech.registry.ModBlocks.LASER_EMITTER.get()) && contains(vault, Blocks.CHEST),
                 "De kluis heeft niet de goede maat, is vooraan dicht, of mist de lasers of de kisten");
+        // 8 november (jouw wens: "minder guards en ze moeten echt een pad afwandelen, niet static staan"): de hal en de
+        // reactor twee soldaten, de rest één, en elke soldaat heeft een route.
+        java.util.Map<String, Integer> expected = new java.util.LinkedHashMap<>();
+        expected.put(BunkerLayout.ENTRANCE, 1);
+        expected.put("hall", 2);
+        expected.put(BunkerLayout.REACTOR, 2);
+        expected.put(BunkerLayout.VAULT, 1);
+        for (String hall : BunkerLayout.HALLS) {
+            expected.putIfAbsent(hall, 1);
+        }
+        for (java.util.Map.Entry<String, Integer> piece : expected.entrySet()) {
+            List<String> soldiers = soldierMarkers(template(helper, BiebiaBunkerPiece.template(piece.getKey())));
+            check(soldiers.size() == piece.getValue(), piece.getKey() + " heeft " + soldiers.size() + " soldaten in plaats van " + piece.getValue());
+            for (String marker : soldiers) {
+                check(marker.contains(";"), piece.getKey() + " heeft een soldaat zonder route (hij zou stilstaan): " + marker);
+            }
+        }
         helper.succeed();
     }
 }

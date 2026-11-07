@@ -3,7 +3,7 @@ package com.senne.imttech.raven;
 /**
  * Hoe alert een bewaker is (hoofdstuk 60, jouw wens: bewakers zoals in Hitman). Een Raven-soldaat (en sinds stap 6
  * ook een robot of drone) zit altijd in één van deze toestanden; je spel krijgt hem mee om het "?" of "!" boven zijn
- * hoofd te tekenen en het oogje op je bril (allebei in hud/DetectionWidget).
+ * hoofd te tekenen en het oogje op je scherm (allebei in hud/DetectionWidget, ook zonder bril).
  */
 public enum RavenAlert {
     /** Niets aan de hand: hij loopt zijn route of staat op zijn post. */

@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 413 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 444 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -5201,10 +5201,68 @@ Erbij: **geen** minimap en **geen** tekst "ze zoeken je" zoals in Hitman. Alleen
       pas van dichtbij (of als je rent of iets vreemds doet).
 - [ ] **10. Een demper** (later) — een Glock-onderdeel dat het schot zachter maakt (lawaai 48 wordt 10).
 
+### 61. Bewakers bijgesteld (8 november)
+
+Jouw opmerkingen: "Het spotten van de speler met het oogje werkt nog niet helemaal goed, er wordt meteen versterking
+geroepen. Zorg ook dat je met een zwaard een guard kunt neersteken langs achter zodat je die stealth kunt killen." En
+daarna: "Ik heb gemerkt hoe het komt, je ziet dit enkel met je bril, ik wil dat je dit ook zonder bril ziet en dat de
+iconen iets kleiner zijn. Ik wil in de bunkers ook minder guards en ze moeten echt een pad afwandelen, niet static
+staan."
+
+**Mijn invulling**: de meter zelf werkte zoals afgesproken (een seconde vlak voor hem, acht aan de rand); zonder bril zag
+je hem alleen niet vollopen, en dan lijkt het alsof hij meteen roept. De getallen blijven dus gelijk (`[guards]`). De
+sluipaanval werkt met elk zwaard (de tag `minecraft:swords`), vanuit de halve cirkel achter zijn rug, zolang hij niet
+vecht en niet roept; een geboeide soldaat mag ook. Alleen Raven-soldaten, niet de robots van Biebia. De twee bewakers
+met een staff-keycard in de toren blijven op hun post (je vraag ging over de bunkers).
+
+- [x] **1. Het oog zonder bril, en kleiner** — het oog en het "?"/"!" tekenen nu in een eigen laag boven het vizier
+      (`client/raven/GuardLayer`), los van de HUD van de bril: ze staan er ook zonder bril, met een lege bril of tijdens
+      een EMP. `DetectionWidget` staat niet meer in de lijst van de bril. Het oog is 11 bij 5 pixels (was 17 bij 7), het
+      "?"/"!" anderhalf keer zo groot als gewone tekst (was twee keer), met een kleinere pulse.
+- [x] **2. Een sluipaanval met een zwaard** — `raven/Takedown`: sla je een soldaat met een zwaard terwijl je achter hem
+      staat (`[guards] takedownAngle`, 180 graden: alles achter zijn schouders, gemeten vanaf waar zijn hoofd heen kijkt;
+      0 zet het uit) en hij nog geen doelwit heeft en niet roept, dan is hij in één keer neer. Stil: geen lawaai voor de
+      andere bewakers, zijn doodsgeluid valt weg, alleen een zachte steek en wat vonkjes. Zijn lichaam blijft liggen zoals
+      altijd. Het zwaard slijt één punt, en de gewone slag (met zijn zwaai die een tweede soldaat kan raken) gebeurt niet.
+      Onder je vizier staat "Takedown [Left Button]" zolang het kan (ook zonder bril). Van voren, zonder zwaard of als hij
+      al vecht is het een gewone slag. Twee tests.
+- [x] **3. Minder bewakers, en allemaal een route** — in `generate_bunker.py` en `generate_bunker_rooms.py`:
+
+      | Stuk | Was | Nu |
+      |---|---|---|
+      | De klassieke bunker | 8 (4 op een post) | 5 |
+      | Ingang | 1 (post) | 1 |
+      | Hal met slaapzaal | 5 | 2 |
+      | Reactor | 5 | 2 |
+      | Kluis | 1 (post) | 1 |
+      | Cellen, kantine | 3 | 1 |
+      | Wapenkamer, lab, garage, radiokamer | 2 | 1 |
+
+      Geen enkele soldaat staat nog op een post. De controlepost loopt de gang op en neer, de hal heeft één grote ronde om
+      de zuilen en de kaartentafel, de kluiswacht loopt heen en weer voor de kisten, en in de nieuwe zalen loopt één
+      soldaat door de westkamer, de hal en de oostkamer. Een bunker van vijf zalen heeft nu ongeveer negen soldaten in
+      plaats van achttien. De generator controleert zelf dat elke soldaat een route heeft en elk punt te voet kan
+      bereiken (`check_routes`): klopt dat niet, dan stopt hij met een foutmelding. Daarbij bleek dat het middelste vat in
+      de wapenkamer precies voor de deur stond (niemand kwam erin); dat staat nu ernaast. De westkamer van de garage blijft
+      dicht (de wagen steekt in de deur), daar loopt dus niemand. Alle elf bunkerbestanden opnieuw gemaakt. De tests
+      tellen nu vijf soldaten in de klassieke bunker en per zaal één of twee, allemaal met een route.
+- [x] **4. De versterking gaat weer weg** — een team (`RavenSites.spawnTeam`) loopt tijdens het alarm heen en weer
+      tussen de ingang en je laatste plek, in plaats van bij de ingang te blijven staan. Bij "stand down" lopen ze naar de
+      ingang en zijn ze daar weg (`RavenSoldierEntity.leave`), zodat een bunker na een alarm niet voorgoed voller wordt.
+      Een test.
+- [x] **5. Rondleiding** — `gradlew runVisualCheck -Ponly=guards` draait nu zonder bril (hg01 tot hg06) en heeft twee
+      nieuwe shots: `hg07_guard_takedown` (achter een bewaker met een zwaard, "Takedown" onder je vizier) en
+      `hg08_guard_taken_down` (hij ligt er). 444 tests, allemaal groen.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
+
+- [ ] **De sluipaanval en het oog zonder bril (hoofdstuk 61)**: gezien op screenshots (`-Ponly=guards`, hg03, hg07,
+      hg08), niet gespeeld. Probeer: sluip achter een bewaker met een zwaard (staat "Takedown" onder je vizier, ook net
+      naast zijn rug?), klik (ligt hij er meteen, en blijft zijn maat rustig?), en kijk of het kleinere oog en het "?"/"!"
+      op jouw GUI-schaal nog goed te zien zijn.
 
 - [ ] **De onderdelen in je inventaris (hoofdstuk 59)**: gezien op screenshots (`-Ponly=creative`: `ct03_weapons`,
       `ct03_weapons_b_glock_parts`, `ct03_weapons_c_laser_parts`; en `lp10`), niet gespeeld. Kijk of je op jouw

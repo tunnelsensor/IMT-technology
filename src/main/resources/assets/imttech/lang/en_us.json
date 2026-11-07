@@ -1945,5 +1945,6 @@
   "entity.imttech.raven_body": "Fallen Raven soldier",
   "raven.imttech.body.search": "Search the body",
   "raven.imttech.body.drag": "You drag the body along. Sneak + right-click it to let go.",
-  "raven.imttech.body.let_go": "You let go of the body."
+  "raven.imttech.body.let_go": "You let go of the body.",
+  "raven.imttech.takedown.hint": "Takedown [%s]"
 }

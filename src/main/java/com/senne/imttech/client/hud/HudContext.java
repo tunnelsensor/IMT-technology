@@ -20,7 +20,7 @@ public final class HudContext {
     public final GuiGraphics g;
     public final Font font;
     public final Player player;
-    /** De bril die je op hebt (nooit leeg zolang de HUD tekent). */
+    /** De bril die je op hebt; leeg voor wat je ook zonder bril ziet (het oog van de bewakers, zie GuardLayer). */
     public final ItemStack glasses;
     public final int width;
     public final int height;

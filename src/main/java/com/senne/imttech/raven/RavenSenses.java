@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
  * zijn route lopen. Geraakt worden of een maat die je al heeft (HurtByTargetGoal, alertSquad) is nog steeds meteen
  * gevecht.
  *
- * Wat je spel ervan ziet (het "?" en "!" boven zijn hoofd, het oogje op je bril) gaat via {@link Watcher}.
+ * Wat je spel ervan ziet (het "?" en "!" boven zijn hoofd, het oogje op je scherm, ook zonder bril) gaat via {@link Watcher}.
  */
 public final class RavenSenses {
     private final RavenSoldierEntity soldier;
@@ -503,7 +503,7 @@ public final class RavenSenses {
         memoryUntil = until;
     }
 
-    /** Naar je spel: de toestand, de meter en wie hem vult (voor het "?"/"!" en het oogje op je bril). */
+    /** Naar je spel: de toestand, de meter en wie hem vult (voor het "?"/"!" en het oogje op je scherm). */
     private void sync() {
         soldier.syncAlert(state, Math.round(suspicion), suspect == null || suspicion <= 0 ? -1 : suspect.getId());
     }

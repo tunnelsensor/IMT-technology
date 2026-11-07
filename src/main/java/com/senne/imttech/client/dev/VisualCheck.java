@@ -1186,8 +1186,9 @@ public final class VisualCheck {
         }
 
         // --- Hoofdstuk 60: bewakers zoals in Hitman. Een soldaat loopt zijn route met zijn rug naar je toe; lawaai vlak
-        // voor je maakt hem achterdochtig ("?") en hij komt kijken; hij ziet je (het oog op je bril loopt vol), heeft je
-        // ("!") en grijpt naar zijn radio; daarna valt hij en ligt zijn lichaam er, met zijn buit erin (het scherm).
+        // voor je maakt hem achterdochtig ("?") en hij komt kijken; hij ziet je (het oog loopt vol), heeft je ("!") en
+        // grijpt naar zijn radio; daarna valt hij en ligt zijn lichaam er, met zijn buit erin (het scherm). Sinds
+        // 8 november zonder bril (het oog en het "?"/"!" zie je ook zonder), en op het eind een sluipaanval met een zwaard.
         if (want("guards")) {
             // Je staat 22 blokken achter hem: dichterbij ziet hij je al als hij bij een punt van zijn route rondkijkt.
             t.view(0, 100.5, -60, 82.5, 180, 4);
@@ -1196,6 +1197,8 @@ public final class VisualCheck {
                 player.setGameMode(net.minecraft.world.level.GameType.SURVIVAL); // in creative ziet een bewaker je niet
                 player.getAbilities().invulnerable = true;
                 player.onUpdateAbilities();
+                GUARD_HEAD_BEFORE = player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).copy();
+                player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, ItemStack.EMPTY); // zonder bril
                 spawnPatrollingGuard(player.serverLevel(), new BlockPos(100, -60, 60));
             });
             t.shot(40, "hg01_guard_patrol");
@@ -1212,9 +1215,27 @@ public final class VisualCheck {
             t.onServer(0, VisualCheck::searchNearestBody);
             t.shot(15, "hg06_guard_body_search");
             t.close(0);
+            // 8 november: een sluipaanval. Een bewaker met zijn rug naar je toe, jij er vlak achter met een zwaard: onder je
+            // vizier staat "Takedown"; een klik en hij ligt er, zonder dat iemand iets hoorde.
+            t.onServer(0, player -> {
+                GUARD_HAND_BEFORE = player.getMainHandItem().copy();
+                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(net.minecraft.world.item.Items.IRON_SWORD));
+                Entity guard = DevWorld.spawnStill(player.serverLevel(), com.senne.imttech.registry.ModEntities.RAVEN_SOLDIER.get(),
+                        new BlockPos(112, -60, 60), 180);
+                if (guard instanceof net.minecraft.world.entity.Mob mob) {
+                    mob.finalizeSpawn(player.serverLevel(), player.serverLevel().getCurrentDifficultyAt(mob.blockPosition()),
+                            net.minecraft.world.entity.MobSpawnType.SPAWN_EGG, null);
+                }
+            });
+            t.view(0, 112.5, -60, 62.2, 180, 12);
+            t.shot(20, "hg07_guard_takedown");
+            t.onServer(0, VisualCheck::takeDownNearestGuard);
+            t.shot(20, "hg08_guard_taken_down");
             t.onServer(0, player -> {
                 player.getAbilities().invulnerable = false;
                 player.setGameMode(GUARD_MODE_BEFORE);
+                player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, GUARD_HEAD_BEFORE);
+                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, GUARD_HAND_BEFORE);
                 player.onUpdateAbilities();
             });
         }
@@ -5542,6 +5563,24 @@ public final class VisualCheck {
     /** Hoort dit stuk bij de rondleiding van vandaag (zie ONLY)? */
     /** De spelmodus voor het stuk "guards" (hoofdstuk 60): daar ben je even survival, want in creative ziet een bewaker je niet. */
     private static net.minecraft.world.level.GameType GUARD_MODE_BEFORE = net.minecraft.world.level.GameType.CREATIVE;
+    /** Wat je op je hoofd en in je hand had voor het stuk "guards" (daar ben je zonder bril, en met een zwaard). */
+    private static ItemStack GUARD_HEAD_BEFORE = ItemStack.EMPTY;
+    private static ItemStack GUARD_HAND_BEFORE = ItemStack.EMPTY;
+
+    /** 8 november: de dichtstbijzijnde bewaker krijgt je zwaard in zijn rug (een gewone klik, langs achter: Takedown). */
+    static void takeDownNearestGuard(ServerPlayer player) {
+        com.senne.imttech.raven.RavenSoldierEntity nearest = null;
+        for (com.senne.imttech.raven.RavenSoldierEntity soldier : player.serverLevel().getEntitiesOfClass(
+                com.senne.imttech.raven.RavenSoldierEntity.class, player.getBoundingBox().inflate(6), Entity::isAlive)) {
+            if (nearest == null || soldier.distanceToSqr(player) < nearest.distanceToSqr(player)) {
+                nearest = soldier;
+            }
+        }
+        if (nearest != null) {
+            player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
+            player.attack(nearest);
+        }
+    }
 
     /** Hoofdstuk 60: een bewaker met zijn rug naar het zuiden (naar jou), die een route van tien blokken breed loopt. */
     static void spawnPatrollingGuard(ServerLevel level, BlockPos post) {

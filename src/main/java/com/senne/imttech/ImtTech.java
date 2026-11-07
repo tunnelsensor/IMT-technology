@@ -289,6 +289,8 @@ public class ImtTech {
         // Hoofdstuk 60, stap 5: een dode soldaat laat een lichaam liggen met zijn buit erin.
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.raven.Bodies::onLivingDrops);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.raven.Bodies::onServerStopped);
+        // 8 november: met een zwaard langs achter een bewaker neersteken (stil, in één keer).
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.raven.Takedown::onAttack);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.Zones::onPiston);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.Zones::onMobGriefing);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.Zones::onFluidPlace);

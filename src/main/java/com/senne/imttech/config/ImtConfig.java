@@ -1922,6 +1922,11 @@ public final class ImtConfig {
         // ------------------------------------------------------------------------- Lichamen (stap 5)
         @Tunable(value = "Minutes the body of a dead soldier stays (then it vanishes and what was in it drops)", min = 0.05)
         public static float BODY_MINUTES = 5.0f;
+
+        // ------------------------------------------------------------------------- Een sluipaanval (8 november)
+        /** Hoe breed de zone achter een bewaker is van waaruit je hem met een zwaard in één keer neersteekt. */
+        @Tunable(value = "How wide the zone behind a guard's back is from which a sword takedown kills him at once (degrees, 0 = no takedowns)", max = 360)
+        public static float TAKEDOWN_ANGLE = 180.0f;
     }
 
     // =============================================================================================== Raids
