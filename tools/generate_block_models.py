@@ -616,6 +616,67 @@ def camera_monitor():
     write(ROOT / "models" / "item" / "camera_monitor.json", {"parent": "imttech:block/camera_monitor_item"})
 
 
+# ================================================================ Serverrack (hoofdstuk 64)
+
+# De vakjes op de voorkant, in pixels van linksboven zoals je ervoor staat (zelfde als RackBay in de mod):
+# twee kolommen, en vier rijen: CPU/GPU, RAM/SSD, en twee rijen fans.
+RACK_COLUMNS = [(2, 8), (8, 14)]
+RACK_ROWS = [(1, 4), (5, 8), (9, 12), (12, 15)]
+RACK_KINDS = [("cpu", "gpu"), ("ram", "ssd"), ("fan",), ("fan",)]
+
+
+def server_rack():
+    """
+    Het serverrack met acht vakjes (hoofdstuk 64, jouw wens: "echt klikken op het onderdeel zoals bij een boekenkast").
+    Het rack zelf blijft een kast (server_rack en server_rack_on); elk onderdeel is een eigen modelletje: een plaatje dat
+    een halve pixel uit de voorkant steekt, precies in zijn vakje (vakje 0 links bovenaan, 1 rechts ernaast, enz.). De
+    blockstate ("multipart", zoals de boekenkast van Minecraft) zet de kast neer en daarbovenop het onderdeel van elk vakje
+    (bay_0 tot bay_7), met de lampjes en draaiende fans als het rack meedraait (online).
+
+    Een model kijkt naar het noorden: wat je dan links ziet, ligt bij x = 16, dus een vakje van pixel u0 tot u1 (van links)
+    loopt van x = 16 - u1 tot 16 - u0. Rijen tellen van boven: van y = 16 - v1 tot 16 - v0.
+    """
+    for slot in range(8):
+        row, column = slot // 2, slot % 2
+        u0, u1 = RACK_COLUMNS[column]
+        v0, v1 = RACK_ROWS[row]
+        w, h = u1 - u0, v1 - v0
+        for kind in RACK_KINDS[row]:
+            for on in (False, True):
+                texture = "imttech:block/server_bay_%s%s" % (kind, "_on" if on else "")
+                element = {
+                    "from": [16 - u1, 16 - v1, -0.5], "to": [16 - u0, 16 - v0, 0],
+                    "faces": {
+                        "north": {"uv": [0, 0, w, h], "texture": "#part", "cullface": "north"},
+                        "up": {"uv": [0, 0, w, 0.5], "texture": "#part"},
+                        "down": {"uv": [0, h - 0.5, w, h], "texture": "#part"},
+                        "east": {"uv": [0, 0, 0.5, h], "texture": "#part"},
+                        "west": {"uv": [w - 0.5, 0, w, h], "texture": "#part"},
+                    },
+                }
+                write(ROOT / "models" / "block" / ("server_rack_bay_%d_%s%s.json" % (slot, kind, "_on" if on else "")), {
+                    "parent": "block/block",
+                    "textures": {"particle": texture, "part": texture},
+                    "elements": [element],
+                })
+    multipart = []
+    turn = {"north": 0, "east": 90, "south": 180, "west": 270}
+    for facing, y in turn.items():
+        for online in ("false", "true"):
+            on = "_on" if online == "true" else ""
+            apply = {"model": "imttech:block/server_rack" + on}
+            if y:
+                apply["y"] = y
+            multipart.append({"when": {"facing": facing, "online": online}, "apply": apply})
+            for slot in range(8):
+                for kind in RACK_KINDS[slot // 2]:
+                    apply = {"model": "imttech:block/server_rack_bay_%d_%s%s" % (slot, kind, on)}
+                    if y:
+                        apply["y"] = y
+                    multipart.append({"when": {"facing": facing, "online": online, "bay_%d" % slot: kind}, "apply": apply})
+    write(ROOT / "blockstates" / "server_rack.json", {"multipart": multipart})
+
+
 def write(path, data):
     path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8", newline="\n")
     print("geschreven:", path.relative_to(ROOT.parent.parent.parent.parent.parent))
@@ -634,3 +695,4 @@ if __name__ == "__main__":
     robot_dock()
     computer_and_monitor()
     camera_monitor()
+    server_rack()

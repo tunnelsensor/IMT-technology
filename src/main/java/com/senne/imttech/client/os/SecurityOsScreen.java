@@ -51,8 +51,11 @@ public class SecurityOsScreen extends Screen {
         KEYCARDS("Keycards", "K", 396, 200),
         /** De diagrammen (redstone programmeren); dit venster vult het hele scherm. */
         LOGIC("Logic", "{}", 420, 240),
-        /** Hoe hard het datacenter werkt (CPU, brein, RAM, SSD, temperatuur), zoals Taakbeheer (8 oktober). */
-        MONITOR("Monitor", "M", 360, 196),
+        /**
+         * Hoe hard het datacenter werkt (CPU, brein, RAM, SSD, temperatuur), zoals Taakbeheer (8 oktober); sinds hoofdstuk 64
+         * ook elk rack met zijn naam en zijn eigen cijfers, dus iets groter.
+         */
+        MONITOR("Monitor", "M", 380, 206),
         /** Backups naar een ander datacenter van jezelf (8 oktober). */
         BACKUP("Backup", "B", 340, 196),
         /** De zone: kubussen waarin alleen jij en je vrienden bouwen en breken (hoofdstuk 10). */
@@ -488,6 +491,12 @@ public class SecurityOsScreen extends Screen {
         openApp(app);
     }
 
+    /** Alleen voor de rondleiding en de showcase: de app Monitor met het rack met deze naam gekozen (null = de hele server). */
+    public void tourMonitorRack(@Nullable String name) {
+        openApp(App.MONITOR);
+        monitor.tourSelect(name);
+    }
+
     /** Alleen voor de plaatjes van How it works (hoofdstuk 63): alle vensters dicht, zodat je de desktop ziet. */
     public void tourCloseAll() {
         new java.util.ArrayList<>(windows).forEach(this::closeWindow);
@@ -750,6 +759,7 @@ public class SecurityOsScreen extends Screen {
             case KEYCARDS -> keycards.mouseClicked(font, contentArea(win), mx, my);
             case LOGIC -> logic.mouseClicked(font, contentArea(win), mx, my, button);
             case BACKUP -> backup.mouseClicked(font, contentArea(win), mx, my);
+            case MONITOR -> monitor.mouseClicked(font, contentArea(win), mx, my);
             case ZONE -> zone.mouseClicked(font, contentArea(win), mx, my);
             case COMPUTERS -> computers.mouseClicked(font, contentArea(win), mx, my);
             case LOGS -> {

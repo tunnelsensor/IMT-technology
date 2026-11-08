@@ -3195,67 +3195,183 @@ def suit_hologram():
 
 def server_rack_textures():
     """
-    Het serverrack (7 oktober): een zwarte kast met zes "bays" in twee kolommen van drie (de vakjes
-    voor CPU, GPU, RAM, SSD en fans; tot 8 oktober waren het er vier onder elkaar).
-    - voorkant uit: de bays met donkere lampjes;
-    - voorkant aan: hetzelfde, maar de lampjes knipperen (vier plaatjes onder elkaar, met een
+    Het serverrack (7 oktober): een zwarte kast. Sinds hoofdstuk 64 (8 november) met acht vakjes op de voorkant waar je
+    de onderdelen rechtstreeks in klikt: twee kolommen, en vier rijen van 3 pixels hoog (bovenaan CPU/GPU, dan RAM/SSD,
+    onderaan twee rijen fans die samen een fanwand zijn).
+    - voorkant uit: twee rails met gaatjes (zoals een echt serverrack), de lege vakjes donker, en in de fanrijen de ronde
+      openingen voor de fans; bovenaan een klein cyaan streepje (het I.M.T-randje);
+    - voorkant aan: hetzelfde, en per rij knippert een lampje op de rechter rail (vier plaatjes onder elkaar, met een
       .mcmeta-bestand erbij: zo maakt Minecraft er een filmpje van);
-    - zijkant: geperforeerd staal (gaatjes voor de lucht);
+    - zijkant: donker staal met verticale luchtsleuven;
     - boven/onder: een ventilatierooster.
+    De onderdelen zelf zijn eigen plaatjes (server_bay_*.png, zie server_bay_textures), die het blokmodel in hun vakje
+    zet (tools/generate_block_models.py, server_rack).
     """
     import random
-    shell = (30, 32, 38, 255)
-    shell_dark = (18, 19, 23, 255)
-    shell_light = (70, 74, 84, 255)
-    bay = (40, 44, 52, 255)
+    shell = (32, 34, 40, 255)
+    outline = (16, 17, 20, 255)
+    rail = (74, 78, 88, 255)
+    rail_hole = (36, 39, 46, 255)
+    recess = (17, 18, 21, 255)
+    recess_top = (11, 12, 14, 255)
+    fan_hole = (8, 9, 11, 255)
+    fan_ring = (13, 14, 16, 255)
     green = (80, 235, 120, 255)
     amber = (250, 180, 50, 255)
-    off = (52, 60, 66, 255)
+    off = (46, 52, 58, 255)
+    columns = [(2, 8), (8, 14)]
+    rows = [(1, 4), (5, 8), (9, 12), (12, 15)]
+    led_rows = (2, 6, 10, 13)
 
-    def front(lights):
+    def front(cyan, leds):
         im = img(16, 16, shell)
         d = ImageDraw.Draw(im)
-        d.rectangle([0, 0, 15, 15], outline=shell_dark)
-        px(im, [(1, y) for y in range(1, 15)] + [(14, y) for y in range(1, 15)], shell_light)
-        # Twee kolommen van drie bays (zelfde volgorde als de vakjes in het spel: eerst de linker
-        # kolom van boven naar beneden, dan de rechter).
-        for i in range(6):
-            x = 2 if i < 3 else 8
-            y = 2 + (i % 3) * 4
-            d.rectangle([x, y, x + 5, y + 2], fill=bay)
-            d.line([x + 1, y + 1, x + 2, y + 1], fill=shell_dark)  # de greep van de bay
-            for j, lx in enumerate((x + 3, x + 4)):
-                px(im, [(lx, y + 1)], lights[i][j])
-        # Onderaan een cyaan statusstreepje (het I.M.T-randje).
-        d.line([3, 14, 12, 14], fill=CYAN_DIM if lights[0][0] != off else CYAN_DARK)
+        d.rectangle([0, 0, 15, 15], outline=outline)
+        # De rails links en rechts, met een gaatje om de twee pixels (zoals de montagegaten van een echt rack).
+        for x in (1, 14):
+            px(im, [(x, y) for y in range(1, 15)], rail)
+            px(im, [(x, y) for y in range(2, 15, 3)], rail_hole)
+        for row, (v0, v1) in enumerate(rows):
+            for u0, u1 in columns:
+                d.rectangle([u0, v0, u1 - 1, v1 - 1], fill=recess)
+                if row < 2:
+                    d.line([u0, v0, u1 - 1, v0], fill=recess_top)  # een schaduwlijntje bovenin: het vakje ligt dieper
+                else:
+                    # Twee ronde fanopeningen van 3 x 3 per vakje.
+                    for fx in (u0, u0 + 3):
+                        px(im, [(fx + 1, v0), (fx, v0 + 1), (fx + 2, v0 + 1), (fx + 1, v0 + 2)], fan_ring)
+                        px(im, [(fx + 1, v0 + 1)], fan_hole)
+        # Bovenaan het I.M.T-randje, en per rij een lampje op de rechter rail.
+        d.line([6, 0, 9, 0], fill=cyan)
+        for i, y in enumerate(led_rows):
+            px(im, [(14, y)], leds[i])
         return im
 
-    save(front([(off, off)] * 6), "block/server_rack_front.png")
+    save(front(CYAN_DARK, (off,) * 4), "block/server_rack_front.png")
     # Aan: vier plaatjes met telkens andere lampjes (vast patroon, elke keer hetzelfde).
     pattern = random.Random(7)
     frames = img(16, 64)
     for frame in range(4):
-        lights = [(green if pattern.random() < 0.7 else off, amber if pattern.random() < 0.35 else green)
-                  for _ in range(6)]
-        frames.paste(front(lights), (0, frame * 16))
+        leds = tuple(green if pattern.random() < 0.7 else (amber if pattern.random() < 0.3 else off) for _ in range(4))
+        frames.paste(front(CYAN_DIM, leds), (0, frame * 16))
     save(frames, "block/server_rack_front_on.png")
     (ROOT / "block/server_rack_front_on.png.mcmeta").write_text('{\n  "animation": {\n    "frametime": 4\n  }\n}\n')
 
+    # De zijkant: donker staal met verticale luchtsleuven en een randje.
     side = img(16, 16, shell)
     d = ImageDraw.Draw(side)
-    d.rectangle([0, 0, 15, 15], outline=shell_dark)
-    for y in range(2, 14, 2):
-        for x in range(2 + (y // 2) % 2, 14, 2):
-            px(side, [(x, y)], shell_dark)
+    d.rectangle([0, 0, 15, 15], outline=outline)
+    d.rectangle([1, 1, 14, 14], outline=(42, 45, 52, 255))
+    for x in range(3, 13, 2):
+        d.line([x, 3, x, 12], fill=(19, 20, 24, 255))
+        px(side, [(x + 1, 3)], (48, 51, 58, 255))  # een lichtje boven elke sleuf: het staal staat er wat voor
     save(side, "block/server_rack_side.png")
 
     top = img(16, 16, shell)
     d = ImageDraw.Draw(top)
-    d.rectangle([0, 0, 15, 15], outline=shell_dark)
+    d.rectangle([0, 0, 15, 15], outline=outline)
     for y in range(3, 13, 2):
-        d.line([3, y, 12, y], fill=shell_dark)
-    px(top, [(1, 1), (14, 1), (1, 14), (14, 14)], shell_light)
+        d.line([3, y, 12, y], fill=(18, 19, 23, 255))
+    px(top, [(1, 1), (14, 1), (1, 14), (14, 14)], rail)
     save(top, "block/server_rack_top.png")
+    server_bay_textures()
+
+
+def server_bay_textures():
+    """
+    De onderdelen in hun vakje op de voorkant van een serverrack (hoofdstuk 64). Een vakje is 6 x 3 pixels; dat stukje
+    staat linksboven in een plaatje van 16 x 16 (de rest heeft de kleur van het onderdeel, zodat het van ver niet zwart
+    uitslaat). Elk onderdeel twee keer: uit (alles stil), en aan (_on: de lampjes knipperen en de fans draaien, een filmpje
+    van plaatjes onder elkaar). Elk onderdeel is een module die een halve pixel uit het rack steekt: licht van boven,
+    donker van onder.
+    - CPU: een zilveren module met een zwarte greep links, een ventilatiesleuf en een cyaan lampje;
+    - GPU: zwart met een groen randje en twee fannetjes, en een paars lampje (de kleur van het brein in de app Monitor);
+    - RAM: een groen printje met zwarte chips, een gouden rand en een groen lampje;
+    - SSD: een grijze slede met een wit etiket en een geel lampje dat flikkert als hij werkt;
+    - fan: twee ronde fannetjes van 3 x 3; aan draaien hun bladen (een plus en een kruis om de beurt).
+    """
+    def part(art, base, frames=1):
+        """art(frame) geeft de pixels van het onderdeel (drie rijen van zes); base vult de rest van het plaatje."""
+        sheet = img(16, 16 * frames, base)
+        for f in range(frames):
+            for y, line in enumerate(art(f)):
+                for x, c in enumerate(line):
+                    sheet.putpixel((x, f * 16 + y), c)
+        return sheet
+
+    def save_part(name, art, base, frames, frametime):
+        save(part(art, base), "block/server_bay_%s.png" % name)
+        save(part(lambda f: art(f, True), base, frames), "block/server_bay_%s_on.png" % name)
+        (ROOT / ("block/server_bay_%s_on.png.mcmeta" % name)).write_text(
+            '{\n  "animation": {\n    "frametime": %d\n  }\n}\n' % frametime)
+
+    led_off = (44, 50, 56, 255)
+
+    def blink(on, frame, colour, pattern):
+        return colour if on and pattern[frame % len(pattern)] else led_off
+
+    # CPU: zilver, met een greep links en een sleuf in het midden.
+    light, mid, dark, slot, grip = (190, 196, 206, 255), (154, 160, 170, 255), (112, 118, 128, 255), \
+        (78, 84, 94, 255), (44, 48, 56, 255)
+
+    def cpu(frame, on=False):
+        return [
+            [grip, light, light, light, light, light],
+            [grip, slot, slot, slot, mid, blink(on, frame, CYAN, (1, 1, 0, 1))],
+            [grip, dark, dark, dark, dark, dark],
+        ]
+    save_part("cpu", lambda f, on=False: cpu(f, on), mid, 4, 4)
+
+    # GPU: zwart, een groen randje bovenaan, twee fannetjes.
+    body, body_dark, hub, hub_dark = (34, 36, 42, 255), (20, 21, 25, 255), (126, 132, 142, 255), (66, 72, 82, 255)
+
+    def gpu(frame, on=False):
+        brand = (76, 214, 120, 255) if on else (46, 118, 74, 255)
+        spin = on and frame % 2 == 1
+        a, b = (hub_dark, hub) if spin else (hub, hub_dark)
+        return [
+            [brand] * 6,
+            [body, a, body, b, body, blink(on, frame, (184, 156, 255, 255), (1, 0, 1, 1))],
+            [body_dark] * 6,
+        ]
+    save_part("gpu", lambda f, on=False: gpu(f, on), body, 4, 3)
+
+    # RAM: een groen printje met zwarte chips, een gouden rand onderaan.
+    pcb, pcb_light, chip = (36, 124, 68, 255), (58, 150, 88, 255), (26, 26, 30, 255)
+
+    def ram(frame, on=False):
+        return [
+            [pcb_light, chip, pcb_light, chip, pcb_light, pcb_light],
+            [pcb, chip, pcb, chip, pcb, blink(on, frame, (80, 235, 120, 255), (1, 0, 0, 1))],
+            [GOLD_DARK, GOLD, GOLD, GOLD, GOLD, GOLD_DARK],
+        ]
+    save_part("ram", lambda f, on=False: ram(f, on), pcb, 4, 4)
+
+    # SSD: een grijze slede met een wit etiket.
+    sled, sled_light, sled_dark, label = (98, 104, 114, 255), (128, 134, 144, 255), (64, 70, 80, 255), (214, 218, 224, 255)
+
+    def ssd(frame, on=False):
+        return [
+            [sled_light] * 6,
+            [sled, label, label, label, sled, blink(on, frame, (240, 210, 90, 255), (1, 1, 0, 1, 0, 1))],
+            [sled_dark] * 6,
+        ]
+    save_part("ssd", lambda f, on=False: ssd(f, on), sled, 6, 2)
+
+    # Fan: twee ronde fannetjes van 3 x 3: de hoeken zijn het frame, de vier pixels ertussen de ring van bladen, het midden
+    # de naaf. Aan loopt er een lichte vlek rond over de ring (boven, rechts, onder, links): zo zie je ze draaien.
+    frame_c, ring, shine, hub = (30, 33, 38, 255), (96, 102, 112, 255), (158, 164, 174, 255), (50, 54, 62, 255)
+    around = [(1, 0), (2, 1), (1, 2), (0, 1)]
+
+    def fan(frame, on=False):
+        rows = [[frame_c] * 6 for _ in range(3)]
+        for n, ox in enumerate((0, 3)):
+            for i, (x, y) in enumerate(around):
+                lit = on and i == (frame + n * 2) % 4  # de twee fannetjes lopen niet gelijk
+                rows[y][ox + x] = shine if lit else ring
+            rows[1][ox + 1] = hub
+        return rows
+    save_part("fan", lambda f, on=False: fan(f, on), frame_c, 4, 1)
 
 
 def server_part_items():

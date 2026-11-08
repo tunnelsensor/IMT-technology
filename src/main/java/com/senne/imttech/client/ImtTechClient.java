@@ -187,7 +187,6 @@ public class ImtTechClient {
         event.register(ModMenus.CHARGING_STATION.get(), ChargingStationScreen::new);
         event.register(ModMenus.CHARGER.get(), ChargerScreen::new);
         event.register(ModMenus.LANDING_PAD.get(), com.senne.imttech.client.LandingPadScreen::new);
-        event.register(ModMenus.SERVER_RACK.get(), com.senne.imttech.client.ServerRackScreen::new);
         event.register(ModMenus.CRACK_MACHINE.get(), com.senne.imttech.client.repair.CrackMachineScreen::new);
         event.register(ModMenus.ROBOT_ASSEMBLER.get(), com.senne.imttech.client.robot.RobotAssemblerScreen::new);
         event.register(ModMenus.GUNSMITH_TABLE.get(), com.senne.imttech.client.guns.GunsmithScreen::new);

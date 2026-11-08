@@ -3,7 +3,9 @@ package com.senne.imttech.client;
 import com.senne.imttech.client.hud.HudStyle;
 import com.senne.imttech.logic.InputDeviceBlock;
 import com.senne.imttech.logic.InputDeviceBlockEntity;
+import com.senne.imttech.logic.ServerRackBlock;
 import com.senne.imttech.network.InputRenamePayload;
+import com.senne.imttech.network.RackRenamePayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -16,9 +18,11 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Het naamscherm van een keycardlezer of codepaneel (13 oktober). Openen: sneak + rechtsklik met een lege hand,
- * als jij hem neerzette of als je in deze basis vertrouwd bent (de server kijkt dat na, zie logic/InputDevices).
- * Bij een codepaneel staat er {@code when codepanel("...")} onder het vakje.
+ * Het naamscherm van een keycardlezer of codepaneel (13 oktober), en sinds hoofdstuk 64 ook van een serverrack. Openen:
+ * sneak + rechtsklik met een lege hand, als jij hem neerzette of als je in deze basis vertrouwd bent (de server kijkt dat
+ * na, zie logic/InputDevices en logic/ServerRacks).
+ * Bij een codepaneel staat er {@code when codepanel("...")} onder het vakje; bij een rack waar je hem in de app Monitor
+ * terugvindt.
  * <pre>
  *   Keycard Reader                    Placed by Senne
  *   Name
@@ -69,14 +73,20 @@ public class InputNameScreen extends Screen {
         return false;
     }
 
-    /** De lezer (of het paneel) zoals hij nu in de wereld hangt, of null als hij weg is. */
+    /** De lezer (of het paneel, of het rack) zoals hij nu in de wereld staat, of null als hij weg is. */
     private @Nullable BlockState device() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) {
             return null;
         }
         BlockState state = mc.level.getBlockState(pos);
-        return state.getBlock() instanceof InputDeviceBlock ? state : null;
+        return state.getBlock() instanceof InputDeviceBlock || state.getBlock() instanceof ServerRackBlock ? state : null;
+    }
+
+    /** Is het een serverrack (hoofdstuk 64)? Dan geen diagramcode maar waar je hem terugvindt: de app Monitor. */
+    private boolean rack() {
+        BlockState state = device();
+        return state != null && state.getBlock() instanceof ServerRackBlock;
     }
 
     /** De naam zoals de server hem bewaart (zonder spaties eromheen, aanhalingstekens of te lange staart). */
@@ -129,7 +139,11 @@ public class InputNameScreen extends Screen {
         if (typed().isEmpty()) {
             return;
         }
-        PacketDistributor.sendToServer(new InputRenamePayload(pos, typed()));
+        if (rack()) {
+            PacketDistributor.sendToServer(new RackRenamePayload(pos, typed()));
+        } else {
+            PacketDistributor.sendToServer(new InputRenamePayload(pos, typed()));
+        }
         onClose();
     }
 
@@ -181,6 +195,14 @@ public class InputNameScreen extends Screen {
         g.drawString(font, Component.translatable("screen.imttech.input_name.name"), left + MARGIN, top + 24,
                 HudStyle.argb(200, HudStyle.WHITE), false);
 
+        if (state.getBlock() instanceof ServerRackBlock) {
+            // Een rack: zo staat hij in de app Monitor op de desktop van je kern, met zijn eigen cijfers.
+            g.drawString(font, Component.translatable("screen.imttech.input_name.in_monitor"), left + MARGIN, top + 60,
+                    HudStyle.argb(150, HudStyle.WHITE), false);
+            g.drawString(font, Component.literal(typed().isEmpty() ? "-" : typed()).withColor(HudStyle.CYAN), left + MARGIN,
+                    top + 72, HudStyle.argb(255, PLAIN), false);
+            return;
+        }
         // Zo noem je hem in een diagram: when keycard("Lab door"):
         g.drawString(font, Component.translatable("screen.imttech.input_name.in_diagram"), left + MARGIN, top + 60,
                 HudStyle.argb(150, HudStyle.WHITE), false);

@@ -8,8 +8,12 @@ import com.senne.imttech.logic.DatacenterBrain;
 import com.senne.imttech.logic.Datacenters;
 import com.senne.imttech.logic.LogicServer;
 import com.senne.imttech.logic.LogicStats;
+import com.senne.imttech.logic.RackBay;
 import com.senne.imttech.logic.ServerPartItem;
+import com.senne.imttech.logic.ServerRackBlock;
 import com.senne.imttech.logic.ServerRackBlockEntity;
+import com.senne.imttech.logic.ServerRacks;
+import com.senne.imttech.network.RackRenamePayload;
 import com.senne.imttech.logic.program.GraphConverter;
 import com.senne.imttech.logic.program.LogicProgram;
 import com.senne.imttech.logic.program.ScriptParser;
@@ -17,7 +21,9 @@ import com.senne.imttech.registry.ModBlocks;
 import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.security.SecurityCoreBlockEntity;
 import com.senne.imttech.security.os.EventLog;
+import java.util.List;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
@@ -25,14 +31,22 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 /**
- * Tests voor het datacenter (hoofdstuk 9 van het plan, 8 oktober): zes vakjes per rack, de GPU
- * en de fan, warmte (elk rack zijn eigen temperatuur), slijten en brand, het gebruik, backups en het
- * brein van I.M.T
+ * Tests voor het datacenter (hoofdstuk 9 van het plan, 8 oktober): de GPU en de fan, warmte (elk rack zijn eigen
+ * temperatuur), slijten en brand, het gebruik, backups en het brein van I.M.T. Sinds hoofdstuk 64 (8 november): acht
+ * vakjes waar je de onderdelen in klikt, de rechte lijn naar 30 en 120 CPU's, RAM en SSD per 10 CPU's of GPU's, en de
+ * naam van een rack.
  */
 @GameTestHolder(ImtTech.MODID)
 @PrefixGameTestTemplate(false)
@@ -57,61 +71,243 @@ public final class DatacenterGameTests {
     }
 
     /**
-     * Een rack heeft zes vakjes. Een GPU is half zo snel voor Logic als een CPU (de server reageert
-     * twee keer zo traag), maar dubbel zo goed voor het brein (de helft van de vertraging). Zonder
-     * CPU of GPU draait de server niet, en zegt hij waarom.
+     * Hoofdstuk 64, de rechte lijn met jouw getallen: diagrammen 1 s met 25 CPU's en meteen vanaf 30 CPU's (of 60 GPU's),
+     * I.M.T 2 s met 100 CPU's en meteen vanaf 120 CPU's (of 60 GPU's); met één CPU 5,8 en 11,9 seconden. Een GPU telt voor
+     * de diagrammen half en voor I.M.T dubbel; een CPU en een GPU samen zijn 1,5 en 3. Zonder CPU of GPU draait de server
+     * niet, en zegt hij waarom.
      */
     @GameTest(template = ARENA, timeoutTicks = 40, batch = "datacenter")
-    public static void datacenter_gpu_power(GameTestHelper helper) {
+    public static void datacenter_straight_line_to_30_and_120(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         Setup setup = datacenter(helper);
         ServerRackBlockEntity rack = setup.rackEntity(helper);
-        if (rack.parts().getContainerSize() != 6) {
-            throw new GameTestAssertException("Een rack zou 6 vakjes moeten hebben, niet " + rack.parts().getContainerSize());
-        }
-        // De CPU eruit, een GPU erin (in de rechter kolom), en een fan in het laatste vakje.
+        check(rack.parts().getContainerSize() == 8, "Een rack zou 8 vakjes moeten hebben, niet " + rack.parts().getContainerSize());
+        // De CPU eruit, een GPU erin, en een fan.
         rack.parts().setItem(0, ItemStack.EMPTY);
-        rack.parts().setItem(3, new ItemStack(ModItems.SERVER_GPU.get()));
-        rack.parts().setItem(5, new ItemStack(ModItems.SERVER_FAN.get()));
+        rack.insert(new ItemStack(ModItems.SERVER_GPU.get()));
+        rack.insert(new ItemStack(ModItems.SERVER_FAN.get()));
         helper.runAfterDelay(2, () -> {
             ImtTechGameTests.startServer(helper, setup.rack(), setup.core());
-            LogicServer.Stats gpu = LogicServer.stats(level, setup.core());
-            if (!gpu.online() || gpu.cpus() != 0 || gpu.gpus() != 1 || gpu.fans() != 1) {
-                throw new GameTestAssertException("De server met een GPU telt verkeerd: " + gpu + " (" + gpu.problem() + ")");
-            }
-            int oneCpu = LogicStats.reactionTicks(LogicStats.logicPower(com.senne.imttech.logic.ServerPartItem.Kind.CPU));
-            if (gpu.reactionTicks() != oneCpu * 2) {
-                throw new GameTestAssertException("Een GPU zou twee keer zo traag moeten reageren als een CPU ("
-                        + oneCpu * 2 + " ticks), niet " + gpu.reactionTicks());
-            }
-            int cpuDelay = LogicStats.brainDelayTicks(LogicStats.brainPower(com.senne.imttech.logic.ServerPartItem.Kind.CPU));
-            if (gpu.brainDelayTicks() != Math.round(cpuDelay / 2.0f)) {
-                throw new GameTestAssertException("Met een GPU zou het brein half zo lang moeten wachten als met een CPU ("
-                        + cpuDelay / 2 + " ticks), niet " + gpu.brainDelayTicks());
+            // De echte schaal (in de tests wachten diagrammen anders hooguit 10 ticks), alleen in dit stukje van één tick.
+            LogicStats.overrideRealScale(true);
+            try {
+                check(LogicStats.reactionTicks(25) == 20 && LogicStats.reactionTicks(30) == 1 && LogicStats.reactionTicks(60 * 0.5) == 1
+                                && LogicStats.reactionTicks(1) == 116 && LogicStats.reactionTicks(0) == Integer.MAX_VALUE,
+                        "Diagrammen: 25 CPU's 20 ticks, 30 CPU's of 60 GPU's 1 tick, 1 CPU 116 ticks; niet " + LogicStats.reactionTicks(25)
+                                + " / " + LogicStats.reactionTicks(30) + " / " + LogicStats.reactionTicks(1));
+                check(LogicStats.brainDelayTicks(100) == 40 && LogicStats.brainDelayTicks(120) == 0 && LogicStats.brainDelayTicks(60 * 2.0) == 0
+                                && LogicStats.brainDelayTicks(1) == 238 && LogicStats.brainDelayTicks(0) == -1,
+                        "I.M.T: 100 CPU's 40 ticks, 120 CPU's of 60 GPU's 0, 1 CPU 238, niets -1; niet " + LogicStats.brainDelayTicks(100)
+                                + " / " + LogicStats.brainDelayTicks(120) + " / " + LogicStats.brainDelayTicks(1));
+                LogicServer.Stats gpu = LogicServer.stats(level, setup.core());
+                check(gpu.online() && gpu.cpus() == 0 && gpu.gpus() == 1 && gpu.fans() == 1,
+                        "De server met een GPU telt verkeerd: " + gpu + " (" + gpu.problem() + ")");
+                check(Math.abs(gpu.logicPower() - 0.5) < 1.0e-9 && Math.abs(gpu.brainPower() - 2.0) < 1.0e-9,
+                        "Een GPU zou 0,5 Logic en 2 brein moeten zijn: " + gpu.logicPower() + " / " + gpu.brainPower());
+                check(gpu.reactionTicks() == LogicStats.reactionTicks(0.5) && gpu.reactionTicks() > LogicStats.reactionTicks(1.0)
+                                && gpu.brainDelayTicks() == LogicStats.brainDelayTicks(2.0) && gpu.brainDelayTicks() < LogicStats.brainDelayTicks(1.0),
+                        "Een GPU zou trager moeten reageren en sneller denken dan een CPU: " + gpu.reactionTicks() + " / " + gpu.brainDelayTicks());
+            } finally {
+                LogicStats.overrideRealScale(null);
             }
             // Een CPU erbij: samen 1,5 voor Logic en 3 voor het brein.
-            rack.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
+            rack.insert(new ItemStack(ModItems.SERVER_CPU.get()));
             LogicServer.Stats both = LogicServer.stats(level, setup.core());
-            double cpu = LogicStats.logicPower(com.senne.imttech.logic.ServerPartItem.Kind.CPU);
-            double cpuBrain = LogicStats.brainPower(com.senne.imttech.logic.ServerPartItem.Kind.CPU);
-            if (Math.abs(both.logicPower() - 1.5 * cpu) > 1.0e-9 || Math.abs(both.brainPower() - 3.0 * cpuBrain) > 1.0e-9) {
-                throw new GameTestAssertException("CPU + GPU zou 1.5 Logic en 3 brein moeten zijn (in CPU's): " + both.logicPower()
-                        + " / " + both.brainPower());
-            }
-            // Een groot datacenter (8 GPU's = kracht 16): geen vertraging meer. Niets: kan niet denken.
-            if (LogicStats.brainDelayTicks(16.0) != 0 || LogicStats.brainDelayTicks(0.0) != -1) {
-                throw new GameTestAssertException("Vertraging bij kracht 16 of 0 klopt niet: " + LogicStats.brainDelayTicks(16.0)
-                        + " / " + LogicStats.brainDelayTicks(0.0));
-            }
+            check(Math.abs(both.logicPower() - 1.5) < 1.0e-9 && Math.abs(both.brainPower() - 3.0) < 1.0e-9,
+                    "CPU + GPU zou 1.5 Logic en 3 brein moeten zijn: " + both.logicPower() + " / " + both.brainPower());
+            // In de automatische tests wacht een diagram hooguit TEST_LOGIC_MAX_DELAY_TICKS (zie LogicStats.logicMaxDelayTicks).
+            check(both.reactionTicks() <= LogicStats.TEST_LOGIC_MAX_DELAY_TICKS, "In de tests zou een server snel moeten reageren: "
+                    + both.reactionTicks());
             // Geen CPU en geen GPU: de server zegt wat er mist.
             rack.parts().setItem(0, ItemStack.EMPTY);
-            rack.parts().setItem(3, ItemStack.EMPTY);
+            rack.parts().setItem(1, ItemStack.EMPTY);
             LogicServer.Stats none = LogicServer.stats(level, setup.core());
-            if (none.online() || !"The server needs a CPU or GPU".equals(none.problem())) {
-                throw new GameTestAssertException("Zonder CPU of GPU zou de server dat moeten zeggen, niet: " + none.problem());
-            }
+            check(!none.online() && "The server needs a CPU or GPU".equals(none.problem()),
+                    "Zonder CPU of GPU zou de server dat moeten zeggen, niet: " + none.problem());
             helper.succeed();
         });
+    }
+
+    /**
+     * Hoofdstuk 64: "voor elke 10 cpu's of gpu's moet je 3 ssd's en 4 ramsticks hebben", in MB, GB en TB (een latje 16 GB,
+     * een SSD 1 TB). Twee racks met samen vier CPU's maar één latje (16 GB van de 25,6 GB die nodig is): maar 62,5% van de
+     * CPU's draait mee. Een tweede latje: dan is de SSD het krapst (1 TB van 1,2 TB). Een tweede SSD: alles. De oude grenzen
+     * (2 diagrammen per latje, 24 blokjes per SSD) zijn weg.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "datacenter")
+    public static void datacenter_ram_and_ssd_feed_the_processors(GameTestHelper helper) {
+        check(Math.abs(LogicStats.fed(10, 4, 3) - 1.0) < 1.0e-9 && Math.abs(LogicStats.fed(10, 2, 3) - 0.5) < 1.0e-9
+                && Math.abs(LogicStats.fed(10, 4, 1) - 1.0 / 3.0) < 1.0e-9 && LogicStats.fed(0, 0, 0) == 1.0,
+                "Per 10 CPU's 4 latjes en 3 SSD's: de helft van het RAM zou de helft moeten geven");
+        check("16 GB".equals(LogicStats.bytes(LogicStats.ramStickMb())) && "1 TB".equals(LogicStats.bytes(LogicStats.ssdMb()))
+                && "64 GB".equals(LogicStats.bytes(LogicStats.ramNeededMb(10))) && "3 TB".equals(LogicStats.bytes(LogicStats.ssdNeededMb(10)))
+                && "76.8 GB".equals(LogicStats.bytes(LogicStats.ramNeededMb(12))) && "512 MB".equals(LogicStats.bytes(512)),
+                "MB, GB en TB kloppen niet: " + LogicStats.bytes(LogicStats.ramNeededMb(12)));
+        check(LogicStats.blockCapacity(1) == 1_000_000 && LogicStats.maxRuns(1) == 250,
+                "Een SSD zou een miljoen blokjes en een latje 250 diagrammen moeten houden: " + LogicStats.blockCapacity(1)
+                        + " / " + LogicStats.maxRuns(1));
+        ServerLevel level = helper.getLevel();
+        Setup setup = datacenter(helper);
+        SecurityCoreBlockEntity core = setup.core();
+        ServerRackBlockEntity a = setup.rackEntity(helper);
+        a.insert(new ItemStack(ModItems.SERVER_CPU.get()));
+        a.insert(new ItemStack(ModItems.SERVER_FAN.get()));
+        BlockPos bPos = setup.rack().east();
+        helper.setBlock(bPos, ModBlocks.SERVER_RACK.get());
+        ServerRackBlockEntity b = (ServerRackBlockEntity) helper.getBlockEntity(bPos);
+        b.insert(new ItemStack(ModItems.SERVER_CPU.get()));
+        b.insert(new ItemStack(ModItems.SERVER_CPU.get()));
+        b.insert(new ItemStack(ModItems.SERVER_FAN.get()));
+        helper.runAfterDelay(2, () -> {
+            ImtTechGameTests.startServer(helper, setup.rack(), core);
+            ImtTechGameTests.startServer(helper, bPos, core);
+            LogicServer.Stats short1 = LogicServer.stats(level, core);
+            check(short1.cpus() == 4 && short1.ram() == 1 && short1.ssd() == 1 && Math.abs(short1.fed() - 0.625) < 1.0e-9
+                    && Math.abs(short1.logicPower() - 2.5) < 1.0e-9, "Vier CPU's met 16 GB RAM zouden voor 62,5% moeten draaien: "
+                    + short1 + ", " + short1.fed());
+            b.insert(new ItemStack(ModItems.SERVER_RAM.get()));
+            LogicServer.Stats short2 = LogicServer.stats(level, core);
+            check(Math.abs(short2.fed() - 1000.0 / 1200.0) < 1.0e-9, "Met 32 GB RAM zou de SSD (1 TB van 1,2 TB) het krapst moeten zijn: "
+                    + short2.fed());
+            b.insert(new ItemStack(ModItems.SERVER_SSD.get()));
+            LogicServer.Stats full = LogicServer.stats(level, core);
+            check(full.fed() == 1.0 && Math.abs(full.logicPower() - 4.0) < 1.0e-9, "Met genoeg RAM en SSD zou alles moeten meedraaien: "
+                    + full.fed());
+            CompoundTag snapshot = LogicServer.snapshot(level, core);
+            check(snapshot.getDouble("ramMb") == 32_000 && snapshot.getDouble("ramNeedMb") == 25_600
+                    && snapshot.getDouble("ssdMb") == 2_000_000 && snapshot.getDouble("ssdNeedMb") == 1_200_000,
+                    "De app Monitor krijgt het geheugen verkeerd: " + snapshot.getDouble("ramMb") + " / " + snapshot.getDouble("ramNeedMb"));
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Hoofdstuk 64: geen scherm meer, je klikt de onderdelen in de vakjes op de voorkant (zoals bij de boekenkast). Een CPU
+     * past niet in een vakje voor RAM (hij blijft in je hand), wel bovenaan; RAM in de middelste rij, een fan alleen onderaan;
+     * de blokstaat toont wat erin zit. Een klik met een lege hand op een vol vakje geeft het onderdeel terug. Een naam
+     * (sneak + rechtsklik): de eigenaar van de basis mag, een vreemde niet; de naam blijft na opslaan en laden, en staat in de
+     * momentopname voor de app Monitor.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "datacenter")
+    public static void datacenter_click_parts_into_bays(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(5, 3, 5));
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), owner);
+        ServerPlayer stranger = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(8, 3, 8));
+        BlockPos rackPos = new BlockPos(6, 3, 6);
+        helper.setBlock(rackPos, ModBlocks.SERVER_RACK.get());
+        ImtTechGameTests.powerTurret(helper, rackPos.below());
+        helper.runAfterDelay(2, () -> {
+            ServerRackBlockEntity rack = (ServerRackBlockEntity) helper.getBlockEntity(rackPos);
+            owner.getAbilities().instabuild = false; // een testspeler heeft anders "oneindig materiaal", zoals in creative
+            owner.getInventory().clearContent();
+            owner.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.SERVER_CPU.get(), 2));
+            clickBay(helper, owner, rackPos, 2);
+            check(rack.parts().getItem(2).isEmpty() && owner.getMainHandItem().getCount() == 2,
+                    "Een CPU zou niet in een vakje voor RAM mogen");
+            clickBay(helper, owner, rackPos, 0);
+            check(rack.count(ServerPartItem.Kind.CPU) == 1 && owner.getMainHandItem().getCount() == 1
+                    && bayOf(helper, rackPos, 0) == RackBay.CPU, "De CPU zou in het vakje linksboven moeten zitten (en te zien zijn)");
+            owner.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.SERVER_RAM.get()));
+            clickBay(helper, owner, rackPos, 3);
+            check(bayOf(helper, rackPos, 3) == RackBay.RAM && owner.getMainHandItem().isEmpty(), "Het RAM zou in het middelste vakje rechts moeten zitten");
+            owner.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.SERVER_FAN.get()));
+            clickBay(helper, owner, rackPos, 1);
+            check(bayOf(helper, rackPos, 1) == RackBay.NONE, "Een fan zou niet in een vakje voor een CPU mogen");
+            clickBay(helper, owner, rackPos, 7);
+            check(bayOf(helper, rackPos, 7) == RackBay.FAN, "De fan zou in het vakje rechtsonder moeten zitten");
+            // Een lege hand op het volle vakje: de CPU komt terug in je rugzak.
+            owner.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            int before = owner.getInventory().countItem(ModItems.SERVER_CPU.get());
+            clickBay(helper, owner, rackPos, 0);
+            check(bayOf(helper, rackPos, 0) == RackBay.NONE && rack.count(ServerPartItem.Kind.CPU) == 0
+                    && owner.getInventory().countItem(ModItems.SERVER_CPU.get()) == before + 1, "De CPU zou terug in de rugzak moeten zitten");
+            // De naam: een vreemde mag niet, de eigenaar van de basis wel.
+            BlockPos abs = helper.absolutePos(rackPos);
+            ServerRacks.handleRename(stranger, new RackRenamePayload(abs, "mine"));
+            check(rack.name().isEmpty(), "Een vreemde mocht het rack hernoemen");
+            ServerRacks.handleRename(owner, new RackRenamePayload(abs, "rack1"));
+            check("rack1".equals(rack.name()), "De eigenaar van de basis zou het rack moeten kunnen hernoemen: " + rack.name());
+            ServerRackBlockEntity loaded = new ServerRackBlockEntity(rack.getBlockPos(), rack.getBlockState());
+            loaded.loadWithComponents(rack.saveWithoutMetadata(level.registryAccess()), level.registryAccess());
+            check("rack1".equals(loaded.name()) && loaded.parts().getItem(3).is(ModItems.SERVER_RAM.get())
+                    && loaded.parts().getItem(7).is(ModItems.SERVER_FAN.get()), "Na opslaan en laden zijn de naam of de vakjes anders");
+            // In de app Monitor: het rack met zijn naam (en in welk vakje elk onderdeel zit).
+            ImtTechGameTests.startServer(helper, rackPos, core);
+            net.minecraft.nbt.ListTag racks = LogicServer.snapshot(level, core).getList("racksInfo", 10);
+            check(racks.size() == 1 && "rack1".equals(racks.getCompound(0).getString("name"))
+                    && racks.getCompound(0).getList("parts", 10).getCompound(0).getInt("s") == 3,
+                    "De app Monitor krijgt het rack niet met zijn naam: " + racks);
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Een rack van voor 8 november (zes vakjes, alles mocht overal) wordt bij het laden netjes ingedeeld: de GPU en een CPU
+     * bovenaan, RAM en SSD in het midden, de fan onderaan; wat niet meer past (een tweede CPU, er zijn maar twee vakjes voor
+     * CPU's en GPU's) valt eruit.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "datacenter")
+    public static void datacenter_old_rack_is_sorted_into_bays(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos rackPos = new BlockPos(6, 3, 6);
+        helper.setBlock(rackPos, ModBlocks.SERVER_RACK.get());
+        ServerRackBlockEntity rack = (ServerRackBlockEntity) helper.getBlockEntity(rackPos);
+        net.minecraft.core.NonNullList<ItemStack> old = net.minecraft.core.NonNullList.withSize(6, ItemStack.EMPTY);
+        old.set(0, new ItemStack(ModItems.SERVER_RAM.get()));
+        old.set(1, new ItemStack(ModItems.SERVER_CPU.get()));
+        old.set(2, new ItemStack(ModItems.SERVER_FAN.get()));
+        old.set(3, new ItemStack(ModItems.SERVER_GPU.get()));
+        old.set(4, new ItemStack(ModItems.SERVER_SSD.get()));
+        old.set(5, new ItemStack(ModItems.SERVER_CPU.get()));
+        CompoundTag tag = new CompoundTag();
+        net.minecraft.world.ContainerHelper.saveAllItems(tag, old, level.registryAccess());
+        tag.putString("Status", "NO_NETWORK");
+        rack.loadWithComponents(tag, level.registryAccess());
+        helper.runAfterDelay(3, () -> {
+            check(rack.count(ServerPartItem.Kind.CPU) == 1 && rack.count(ServerPartItem.Kind.GPU) == 1
+                    && rack.count(ServerPartItem.Kind.RAM) == 1 && rack.count(ServerPartItem.Kind.SSD) == 1
+                    && rack.count(ServerPartItem.Kind.FAN) == 1, "Het oude rack is verkeerd ingedeeld");
+            for (int slot = 0; slot < rack.parts().getContainerSize(); slot++) {
+                ItemStack stack = rack.parts().getItem(slot);
+                check(stack.isEmpty() || stack.getItem() instanceof ServerPartItem part && RackBay.accepts(slot, part.kind()),
+                        "Vakje " + slot + " heeft " + stack);
+            }
+            check(bayOf(helper, rackPos, 0) != RackBay.NONE && bayOf(helper, rackPos, 4) == RackBay.FAN,
+                    "De voorkant laat de onderdelen niet zien");
+            List<ItemEntity> dropped = level.getEntitiesOfClass(ItemEntity.class, new AABB(helper.absolutePos(rackPos)).inflate(3),
+                    item -> item.getItem().is(ModItems.SERVER_CPU.get()));
+            check(dropped.size() == 1, "De CPU die niet meer past, zou eruit moeten vallen, niet " + dropped.size());
+            helper.succeed();
+        });
+    }
+
+    /** Een rechtsklik op het vakje {@code slot} van een rack dat naar het noorden kijkt, zoals Minecraft het doet. */
+    static void clickBay(GameTestHelper helper, ServerPlayer player, BlockPos rackPos, int slot) {
+        ServerLevel level = helper.getLevel();
+        BlockPos abs = helper.absolutePos(rackPos);
+        BlockState state = level.getBlockState(abs);
+        double across = (slot % 2 == 0 ? 5.0 : 11.0) / 16.0;
+        int[] pixels = RackBay.ROW_PIXELS[RackBay.row(slot)];
+        double fromTop = (pixels[0] + pixels[1]) / 2.0 / 16.0;
+        // Kijkt hij naar het noorden, dan is links (zoals je ervoor staat) x = 1.
+        Vec3 at = new Vec3(abs.getX() + 1.0 - across, abs.getY() + 1.0 - fromTop, abs.getZ());
+        BlockHitResult hit = new BlockHitResult(at, Direction.NORTH, abs, false);
+        ItemInteractionResult result = state.useItemOn(player.getMainHandItem(), level, player, InteractionHand.MAIN_HAND, hit);
+        if (result == ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION) {
+            state.useWithoutItem(level, player, hit);
+        }
+    }
+
+    /** Wat er volgens de blokstaat in dit vakje van het rack zit. */
+    static RackBay bayOf(GameTestHelper helper, BlockPos rackPos, int slot) {
+        return ServerRackBlock.bay(helper.getBlockState(rackPos), slot);
+    }
+
+    private static void check(boolean ok, String message) {
+        if (!ok) {
+            throw new GameTestAssertException(message);
+        }
     }
 
     /** Laat de temperatuur zoveel stappen (van twee seconden) opschuiven, telkens met verse stats. */
@@ -151,11 +347,11 @@ public final class DatacenterGameTests {
         Setup setup = datacenter(helper);
         SecurityCoreBlockEntity core = setup.core();
         ServerRackBlockEntity a = setup.rackEntity(helper);
-        a.parts().setItem(5, new ItemStack(ModItems.SERVER_FAN.get()));
+        a.insert(new ItemStack(ModItems.SERVER_FAN.get()));
         BlockPos bPos = setup.rack().east();
         helper.setBlock(bPos, ModBlocks.SERVER_RACK.get());
         ServerRackBlockEntity b = (ServerRackBlockEntity) helper.getBlockEntity(bPos);
-        b.parts().setItem(0, new ItemStack(ModItems.SERVER_RAM.get()));
+        b.insert(new ItemStack(ModItems.SERVER_RAM.get()));
         helper.runAfterDelay(2, () -> {
             ImtTechGameTests.startServer(helper, setup.rack(), core);
             ImtTechGameTests.startServer(helper, bPos, core);
@@ -201,7 +397,7 @@ public final class DatacenterGameTests {
                 throw new GameTestAssertException("Na opslaan en laden is de temperatuur van rack B anders: " + loaded.temperature());
             }
             // Een fan in rack B: het koelt weer af.
-            b.parts().setItem(5, new ItemStack(ModItems.SERVER_FAN.get()));
+            b.insert(new ItemStack(ModItems.SERVER_FAN.get()));
             settleUntil(level, core, () -> b.temperature() < LogicStats.coolAgainTemperature() - 1, 200);
             settle(level, core, 1);
             if (b.temperature() >= LogicStats.coolAgainTemperature() || LogicServer.stats(level, core).warm()) {
@@ -272,7 +468,7 @@ public final class DatacenterGameTests {
     }
 
     /**
-     * Brand: blijft een rack lang boven 110 graden, dan vat het vlam (hier het rack met drie GPU's,
+     * Brand: blijft een rack lang boven 110 graden, dan vat het vlam (hier het rack met twee GPU's,
      * niet zijn buur met de CPU: elk rack heeft zijn eigen temperatuur), met vuur erop. Daarna brandt
      * het af: het rack en wat erin zat zijn weg, en het logboek zegt het.
      */
@@ -284,8 +480,8 @@ public final class DatacenterGameTests {
         BlockPos gpuRack = setup.rack().east();
         helper.setBlock(gpuRack, ModBlocks.SERVER_RACK.get());
         ServerRackBlockEntity hot = (ServerRackBlockEntity) helper.getBlockEntity(gpuRack);
-        for (int slot = 0; slot < 3; slot++) {
-            hot.parts().setItem(slot, new ItemStack(ModItems.SERVER_GPU.get()));
+        for (int i = 0; i < 2; i++) {
+            hot.insert(new ItemStack(ModItems.SERVER_GPU.get()));
         }
         helper.runAfterDelay(2, () -> {
             ImtTechGameTests.startServer(helper, setup.rack(), core);
@@ -329,8 +525,9 @@ public final class DatacenterGameTests {
 
     /**
      * Gebruik meten (de app Monitor): een timer die elke seconde iets doet en dan 5 seconden wacht,
-     * laat de CPU werken en vult het RAM (1 latje = 2 tegelijk). De kern meet dat elke seconde en
-     * onthoudt de laatste minuut; de momentopname voor de desktop heeft alles erin, ook de racks.
+     * laat de CPU werken en neemt RAM in (sinds hoofdstuk 64: de CPU 6,4 GB en elk bezig diagram 64 MB, van een latje van
+     * 16 GB). De kern meet dat elke seconde en onthoudt de laatste minuut; de momentopname voor de desktop heeft alles
+     * erin, ook de racks.
      */
     @GameTest(template = ARENA, timeoutTicks = 160, batch = "datacenter")
     public static void datacenter_usage_history(GameTestHelper helper) {
@@ -351,7 +548,9 @@ public final class DatacenterGameTests {
                 throw new GameTestAssertException("De kern zou elke seconde moeten meten, maar heeft " + history.size() + " metingen");
             }
             boolean cpu = history.stream().anyMatch(sample -> sample[0] > 0);
-            boolean ram = history.stream().anyMatch(sample -> sample[2] >= 50);
+            LogicServer.Stats now = LogicServer.stats(level, core);
+            int expectedRam = (int) Math.floor(100 * Datacenter.ramUsedMb(now, 1) / now.ramMb());
+            boolean ram = history.stream().anyMatch(sample -> sample[2] >= expectedRam);
             if (!cpu || !ram) {
                 throw new GameTestAssertException("De metingen zouden CPU- en RAM-gebruik moeten tonen: cpu " + cpu + ", ram " + ram);
             }
@@ -417,7 +616,7 @@ public final class DatacenterGameTests {
                 throw new GameTestAssertException("Backup naar B mislukte: " + chosen.text() + " / " + made.text());
             }
             int size = Backups.size(a.logic());
-            if (datacenters.free(atB, null, Math.round(ImtConfig.Logic.BACKUPS_KEPT)) != Math.round(ImtConfig.Logic.BLOCKS_PER_SSD) - size) {
+            if (datacenters.free(atB, null, Math.round(ImtConfig.Logic.BACKUPS_KEPT)) != LogicStats.blockCapacity(1) - size) {
                 throw new GameTestAssertException("De backup zou " + size + " blokjes op B moeten innemen, er is nog "
                         + datacenters.free(atB, null, Math.round(ImtConfig.Logic.BACKUPS_KEPT)) + " vrij");
             }
@@ -493,7 +692,7 @@ public final class DatacenterGameTests {
                         + " / " + DatacenterBrain.delayFor(creative));
             }
             // Een GPU erbij: kracht 1 + 2 = 3.
-            setup.rackEntity(helper).parts().setItem(3, new ItemStack(ModItems.SERVER_GPU.get()));
+            setup.rackEntity(helper).insert(new ItemStack(ModItems.SERVER_GPU.get()));
             settle(level, core, 1);
             if (DatacenterBrain.delayFor(owner) != LogicStats.brainDelayTicks(3.0 * cpu)) {
                 throw new GameTestAssertException("Met een CPU en een GPU zou het " + LogicStats.brainDelayTicks(3.0 * cpu)

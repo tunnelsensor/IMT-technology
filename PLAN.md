@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 449 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 452 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -5470,6 +5470,77 @@ hebben, zodat er geen vergeten wordt.
       lasergeweren, de Laser Workbench, de Ion Blaster, EMP- en fraggranaten, rook en flashbang, de Remote EMP en Remote
       Frag, de Glock 19, de Gunsmith Table, de Reloading Bench, de holster en de pouches. Equipment: het harnas, het
       raketpakket, drones, de E.M.P.
+
+### 64. Grotere datacenters, en racks zonder scherm (8 november)
+
+Jouw wens: "Zorg dat datacenters nog groter moeten zijn, ik wil dat je minstens 100 serverracks hebt om 2 sec delay op imt
+en 1 sec delay op diagrams ... vanaf 120 reageert alles instant", en daarna: "het is natuurlijk niet afhankelijk van de
+racks maar van hoeveel gpu/cpu. Ik wil dat je voor imt 120 cpu's nodig hebt of 60 gpu's en voor de diagrams heb je 60
+gpu's nodig of 30 cpu's. De ssd's en ram zijn hierbij ook belangrijk. Voor elke 10 cpu's of gpu's moet je 3 ssd's en 4
+ramsticks hebben om dit vlot te laten verlopen. Druk deze gegevens allemaal in MB, GB en TB uit." En: "dat je vanaf nu met
+serverracks kunt interacten niet via een GUI maar echt klikken op het onderdeel zoals bij een boekenkast".
+
+Jouw vier antwoorden:
+1. **Rechte lijn** (mijn aanbeveling): de vertraging loopt recht af. Diagrammen: 6 s met bijna niets, elke CPU haalt er
+   0,2 s af, 1 s bij 25 CPU's, meteen vanaf 30 CPU's (of 60 GPU's). I.M.T: 12 s met bijna niets, 0,1 s per CPU, 2 s bij 100
+   CPU's, meteen vanaf 120 CPU's (of 60 GPU's). Zo kloppen je twee punten (100 = 2 s / 1 s, 120 = meteen) zonder sprong.
+2. **Echte maten, limieten weg** (mijn aanbeveling): een RAM-latje is 16 GB, een SSD 1 TB; per 10 CPU's of GPU's 64 GB en
+   3 TB. Minder = naar verhouding trager. Een blokje van een diagram is 1 MB en een bezig diagram 64 MB, dus de oude
+   grenzen (2 tegelijk per latje, 24 blokjes per SSD) raken praktisch nooit meer op.
+3. **Alleen in de Monitor** (jouw eigen antwoord): "je kunt dit enkel op de monitor zien, je kunt elke rack een naam
+   geven door die te sneakklikken, dan noem je die bijvoorbeeld rack1 en dan zie je in de monitor op rack1 met zijn stats".
+4. **Acht vakjes** (jouw eigen antwoord): "ga van 3 rijen naar 4 rijen, dit geeft je in totaal 8 slots, 2 daarvan kan een
+   CPU of GPU, 2 daarvan kan SSD of RAM, 4 daarvan kunnen enkel fans".
+
+**Mijn invulling**: de verhoudingen van 8 oktober blijven (een GPU telt voor je diagrammen half en voor I.M.T dubbel), dus
+"120 CPU's of 60 GPU's" en "30 CPU's of 60 GPU's" komen vanzelf uit. Een tekort aan RAM of SSD remt alle CPU's en GPU's
+evenveel af (het krapste van de twee telt). De config-getallen hebben nieuwe namen, zodat de nieuwe waarden ook in een
+oude wereld gelden. Een oud rack (zes vakjes) wordt bij het laden ingedeeld; wat niet past valt eruit. Hernoemen mag
+volgens dezelfde regel als een keycardlezer (wie hem neerzette, of wie vertrouwd is in de basis). In de automatische tests
+wacht een diagram hooguit 10 ticks (zoals de netwerkkabel daar ook een uitzondering heeft), anders wacht elke test 6 s.
+
+- [x] **1. De snelheid** — `LogicStats`: een rechte lijn van `logicMaxDelayTicks` (120) naar 1 tick bij `logicInstantPower`
+      (30), en van `brainMaxDelayTicks` (240) naar 0 bij `brainInstantPower` (120). `cpusPerPower`, `reactionTicks`,
+      `brainDelayTicks` en `brainDelayGoneTicks` zijn weg. Warm: alsof je de helft van je CPU's hebt (zoals altijd).
+- [x] **2. Het geheugen** — `ramStickGb` (16), `ssdGb` (1000), `ramGbPerTen` (64), `ssdGbPerTen` (3000): `LogicStats.fed`
+      zegt welk deel van de CPU's en GPU's meedraait. `blockMb` (1) en `runMb` (64) vervangen `blocksPerSsd` en `runsPerRam`.
+      Alles als tekst in MB, GB en TB (`LogicStats.bytes`): de tooltips ("16 GB per stick. Every 10 CPUs or GPUs need 64 GB
+      of RAM"), de app Backup, de melding als een diagram niet past.
+- [x] **3. Acht vakjes, klikken zoals een boekenkast** — `RackBay` en de blokstaat `bay_0` tot `bay_7`: bovenaan CPU of
+      GPU, dan RAM of SSD, onderaan vier fans. Rechtsklik met een onderdeel op een leeg vakje: erin (past het daar niet,
+      dan zegt het "this bay takes a CPU or GPU"); op een vol vakje: eruit, in je rugzak; met iets anders in je hand (een
+      kabel) doet de klik wat dat voorwerp doet. Elk onderdeel steekt een halve pixel uit zijn vakje (eigen plaatjes
+      `server_bay_*`, aan met knipperende lampjes en draaiende fans; `tools/generate_block_models.py` en
+      `generate_textures.py`, functie `server_rack`). Het scherm en het menu van het rack zijn weg.
+      Jouw opmerking "de textures zijn niet super mooi" (8 november): alle rijen zijn nu 3 pixels hoog, zodat elk fanvakje
+      twee ronde fannetjes heeft (een ring met een naaf, aan loopt er een lichte vlek rond) in plaats van een wit dambord;
+      links en rechts rails met gaatjes zoals een echt serverrack, met per rij een lampje; geen dikke cyaan balken meer
+      (alleen een streepje bovenaan); rustigere onderdelen (een zilveren CPU-module met greep en sleuf, een zwarte GPU met
+      een groen randje en twee fannetjes, RAM met chips en een gouden rand, een grijze SSD-slede met etiket), en een zijkant
+      met verticale luchtsleuven.
+- [x] **4. Een naam, en de Monitor** — sneak + rechtsklik met een lege hand: het naamscherm van de lezer, dat nu ook een
+      rack kent ("In the Monitor app on Security OS: rack1"). De app Monitor (iets groter) toont elk rack met zijn naam;
+      klik er een aan en rechts staan zijn acht vakjes in het klein, temperatuur, warmte en koeling, slijtage en wat je moet
+      doen; nog eens klikken geeft de hele server (CPU's en GPU's, genoeg RAM en SSD, hoe snel, wat je diagrammen innemen,
+      koeling, wat er bezig is). De tegels RAM en SSD tonen wat je hebt, een balk met hoe vol het is (wat de CPU's en GPU's
+      innemen plus de diagrammen; vol en oranje als ze meer nodig hebben dan er is) en wat er nodig is. Waarschuwingen van
+      I.M.T en het logboek noemen het rack bij zijn naam. Diagrammen die nog op de reactietijd van de server wachten, staan
+      onder RUNNING als "5 starting (5.7 s)" (eerst stond er "waiting for RAM", maar dat was het niet), en de rij mag zo
+      lang zijn als het RAM diagrammen kan houden, zodat een trage server niet "out of memory" zegt (wel "Too slow ... Add
+      CPUs" als een run echt te lang wacht).
+      De crash die je zag bij het openen van Security OS (`NoClassDefFoundError: SecurityOs$Session`) kwam doordat je spel
+      draaide terwijl ik de mod opnieuw bouwde: Gradle haalt de oude klassen even weg, en precies dan wilde je spel ze laden.
+      Geen fout in de code (de rondleiding opent de desktop en de Monitor zonder problemen); start het spel opnieuw na een
+      build van mij.
+- [x] **5. Rondleiding, showcase, How it works en LEESMIJ** — `-Ponly=racks` fotografeert de vakjes van dichtbij, het
+      naamscherm en de Monitor per rack (warm, koel, niet verbonden, in brand); de showcase "The datacenter" kijkt in de
+      Monitor naar lab-3 in plaats van naar het scherm van het rack; de animatie *Server racks* klikt onderdelen in de
+      vakjes, bouwt een muur van racks ("Bigger is faster", met 30 en 120 CPU's, 64 GB en 3 TB uit je config), geeft een
+      naam en toont de Monitor als plaatje (`monitor_rack`, door `-Ponly=howtopics`); *Heat and fans* klikt de fans
+      onderaan in het rack.
+- [x] **6. Tests** — de rechte lijn met jouw getallen, RAM en SSD die de CPU's voeden (62,5% met te weinig RAM), klikken in
+      de vakjes en de naam (een vreemde mag niet), en een oud rack dat ingedeeld wordt; de test van de oude grenzen zegt nu
+      dat ze weg zijn. 452 tests, groen (`raven_soldier_shoots` blijft af en toe rood door de spreiding, zoals eerder).
 
 ## Nog nooit in het spel bekeken
 

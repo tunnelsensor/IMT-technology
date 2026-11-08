@@ -53,7 +53,11 @@ import org.jetbrains.annotations.Nullable;
 public final class LogicRunner {
     private LogicRunner() {}
 
-    /** Zoveel runs mogen er hooguit in de rij staan (daarna valt de oudste af: "out of memory"). */
+    /**
+     * Zoveel runs mogen er minstens in de rij staan (daarna valt de oudste af). Sinds hoofdstuk 64 mag de rij zo lang zijn
+     * als het RAM diagrammen kan houden (LogicServer.Stats.maxRuns): een trage server laat runs tot 6 seconden in de rij
+     * wachten op zijn reactietijd, en dat is geen geheugen dat op is.
+     */
     private static final int MAX_QUEUE = 32;
     /** Zoveel triggers per seconde neemt één server hooguit aan (tegen eindeloze kettingreacties). */
     private static final int MAX_TRIGGERS_PER_SECOND = 40;
@@ -365,10 +369,13 @@ public final class LogicRunner {
     private static void enqueue(ServerLevel level, SecurityCoreBlockEntity core, Runtime runtime, Run run) {
         runtime.steps++; // een trigger aannemen is ook werk
         runtime.queue.addLast(run);
-        if (runtime.queue.size() > MAX_QUEUE) {
+        if (runtime.queue.size() > Math.max(MAX_QUEUE, LogicServer.stats(level, core).maxRuns())) {
             Run dropped = runtime.queue.removeFirst();
-            report(level, core, runtime, EventLog.Type.LOGIC, "Out of memory: \"" + dropped.program.name()
-                    + "\" had to wait too long and was skipped. Add RAM.");
+            // Wachtte hij nog op de reactietijd, dan is de server te traag (te weinig CPU's); anders is het RAM vol.
+            boolean slow = dropped.startAt > level.getGameTime();
+            report(level, core, runtime, EventLog.Type.LOGIC, slow
+                    ? "Too slow: \"" + dropped.program.name() + "\" waited too long for the server and was skipped. Add CPUs."
+                    : "Out of memory: \"" + dropped.program.name() + "\" had to wait too long and was skipped. Add RAM.");
         }
     }
 
@@ -766,10 +773,22 @@ public final class LogicRunner {
 
     // ================================================================ Voor de desktop en de tests
 
-    /** Hoeveel runs er nu bezig zijn en hoeveel er in de rij wachten. */
+    /** Hoeveel runs er nu bezig zijn, hoeveel er in de rij staan, en hoeveel daarvan al mogen maar op RAM wachten. */
     public static int[] load(ServerLevel level, SecurityCoreBlockEntity core) {
         Runtime runtime = RUNTIMES.get(GlobalPos.of(level.dimension(), core.getBlockPos()));
-        return runtime == null ? new int[] {0, 0} : new int[] {runtime.running.size(), runtime.queue.size()};
+        if (runtime == null) {
+            return new int[] {0, 0, 0};
+        }
+        // Hoofdstuk 64: in de rij staan runs die nog op de reactietijd van de server wachten, en runs die al mogen maar
+        // geen plaats in het RAM vinden. Alleen die laatste wachten echt op RAM.
+        long now = level.getGameTime();
+        int ready = 0;
+        for (Run run : runtime.queue) {
+            if (run.startAt <= now) {
+                ready++;
+            }
+        }
+        return new int[] {runtime.running.size(), runtime.queue.size(), ready};
     }
 
     /**

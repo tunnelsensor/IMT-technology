@@ -886,8 +886,10 @@ public final class SecurityOs {
         }
         int used = store.blocks() - (old == null ? 0 : old.graph().size()) + graph.size();
         if (used > stats.capacity()) {
-            notify(player, core, session, "Not enough storage: this needs " + used + " blocks, your SSDs hold "
-                    + stats.capacity() + ". Add an SSD to a server rack.", true);
+            notify(player, core, session, "Not enough storage: this needs "
+                    + com.senne.imttech.logic.LogicStats.bytes(com.senne.imttech.logic.LogicStats.blocksMb(used))
+                    + ", your SSDs hold " + com.senne.imttech.logic.LogicStats.bytes(stats.ssdMb())
+                    + ". Add an SSD to a server rack.", true);
             return;
         }
         store.put(old == null ? null : old.name(), new com.senne.imttech.logic.program.LogicProgram(name,

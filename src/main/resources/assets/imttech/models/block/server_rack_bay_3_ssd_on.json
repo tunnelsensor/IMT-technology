@@ -1,0 +1,69 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "particle": "imttech:block/server_bay_ssd_on",
+    "part": "imttech:block/server_bay_ssd_on"
+  },
+  "elements": [
+    {
+      "from": [
+        2,
+        8,
+        -0.5
+      ],
+      "to": [
+        8,
+        11,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            6,
+            3
+          ],
+          "texture": "#part",
+          "cullface": "north"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            6,
+            0.5
+          ],
+          "texture": "#part"
+        },
+        "down": {
+          "uv": [
+            0,
+            2.5,
+            6,
+            3
+          ],
+          "texture": "#part"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            3
+          ],
+          "texture": "#part"
+        },
+        "west": {
+          "uv": [
+            5.5,
+            0,
+            6,
+            3
+          ],
+          "texture": "#part"
+        }
+      }
+    }
+  ]
+}

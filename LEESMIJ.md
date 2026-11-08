@@ -802,13 +802,25 @@ tegen de lezer, open dan de kluis 3 seconden; anders alarm". De server hangt aan
 **beveiligingskern** (Security OS).
 1. **Bouwen**: zet **Server Racks** binnen 200 blokken van je kern, naast of op elkaar: samen zijn
    ze één server, je **datacenter** (een los rack draait niet mee). Geef ze stroom met een kabel;
-   racks geven de stroom aan elkaar door. Rechtsklik op een rack: zes vakjes, twee kolommen van
-   drie. Stop er onderdelen in: een **CPU** of **GPU** (rekenkracht: de server reageert sneller,
-   1 CPU = 0,5 s, 2 CPU's = 0,25 s; een GPU is half zo snel voor je redstone maar dubbel zo goed
-   voor het brein van I.M.T), **RAM** (hoeveel diagrammen tegelijk bezig kunnen zijn) en een
-   **SSD** (hoeveel blokjes je kwijt kunt). Rekenkracht, RAM en een SSD: dan knipperen de lampjes.
-   Elk rack met iets erin heeft ook minstens één **fan** nodig, anders wordt het te heet (zie
-   hieronder, "Het datacenter").
+   racks geven de stroom aan elkaar door. Een rack heeft **geen scherm**: op de voorkant zitten acht
+   vakjes in twee kolommen, en je **klikt de onderdelen er rechtstreeks in**, zoals boeken in een
+   boekenkast (rechtsklik met het onderdeel op een leeg vakje; rechtsklik op een vol vakje haalt het
+   eruit, in je rugzak). Bovenaan twee vakjes voor een **CPU** of **GPU**, daaronder twee voor **RAM**
+   of een **SSD**, en onderaan vier voor **fans**; een onderdeel dat niet in een vakje past, blijft in
+   je hand ("this bay takes a CPU or GPU"). Je ziet op de voorkant wat erin zit; draait het rack mee,
+   dan knipperen de lampjes en draaien de fans. Elk rack met iets erin heeft minstens één **fan**
+   nodig, anders wordt het te heet (zie hieronder, "Het datacenter").
+   **Hoe snel**: een server met bijna geen rekenkracht laat een diagram 6 seconden wachten; elke CPU
+   haalt er een stukje af (0,2 s), en vanaf **30 CPU's** (of 60 GPU's: een GPU telt voor je redstone
+   half) reageren je diagrammen meteen. Met 25 CPU's is het 1 seconde, met 10 CPU's 4 seconden.
+   **RAM en SSD** voeden de CPU's en GPU's: een latje RAM is **16 GB**, een SSD **1 TB**, en elke 10
+   CPU's of GPU's hebben **64 GB RAM en 3 TB SSD** nodig (4 latjes en 3 SSD's). Heb je minder, dan
+   draait alles naar verhouding trager (de helft van het RAM = alsof je de helft van je CPU's hebt).
+   Je diagrammen zelf nemen maar een paar MB in (1 MB per blokje), dus die passen altijd. Zonder
+   rekenkracht, RAM of een SSD draait de server niet.
+   **Een naam**: sluip + rechtsklik met een lege hand op een rack en geef het een naam (bijvoorbeeld
+   "rack1"; mag als jij het neerzette of als je in de basis vertrouwd bent). Onder die naam staat het in
+   de app **Monitor**, met zijn eigen cijfers (zie hieronder).
 2. **Apparaten**: zet relais (of laserzenders, torentjes, koepels) neer en geef ze met je bril een
    naam ("Vault door"): met die naam noem je ze in je diagram. Een **groep** werkt ook: `on("base")`
    zet alles in `base` aan, ook wat in groepen eronder zit. Een **Keycard Reader** en een
@@ -1038,23 +1050,30 @@ er backups van, en het brein van I.M.T draait erop.
   ijzeren tralies, redstone = 2 fans) koelt 6 W weg, maar **alleen in zijn eigen rack**: een fan in
   het rack ernaast helpt niet. **Zonder fan raakt de warmte er niet uit**: dan wordt het rack steeds
   warmer, ook als er alleen RAM of een SSD in zit (dan wel langzaam). Dus: elk rack met iets erin
-  heeft minstens één fan nodig. Met fans gaat de temperatuur in ongeveer een minuut naar 25° plus
-  8° voor elke watt die de fans niet wegkoelen. Het scherm van een rack toont de temperatuur van
-  dát rack (**RACK TEMP**, nu en waar hij heen gaat, of "rising" zonder fan), **HEAT/COOL**, en
-  hoeveel fans er nog in moeten ("Add 2 fans here").
+  heeft minstens één fan nodig, en er passen er vier in. Met fans gaat de temperatuur in ongeveer een
+  minuut naar 25° plus 8° voor elke watt die de fans niet wegkoelen. In de app **Monitor** zie je per
+  rack zijn temperatuur (nu en waar hij heen gaat, of "rising" zonder fan), zijn warmte en koeling, en
+  hoeveel fans er nog in moeten ("Add 2 fans").
 - **Te warm** gaat stap voor stap, per rack. Is één rack warmer dan **70°**, dan werkt de hele
   server op halve snelheid (alles werkt samen, dus het warme rack remt de rest af) en waarschuwt
-  I.M.T je, met waar dat rack staat. Vanaf **90°** slijten de onderdelen in dat rack (een
-  balkje onder het icoon) en gaan ze één voor één kapot. Blijft een rack **10 seconden boven
-  110°**, dan vat het vlam: je hebt 10 seconden om je onderdelen eruit te halen, dan is het weg met
-  alles erin.
+  I.M.T je, met de naam van dat rack (of waar het staat). Vanaf **90°** slijten de onderdelen in dat
+  rack (een balkje onder het icoon) en gaan ze één voor één kapot. Blijft een rack **10 seconden
+  boven 110°**, dan vat het vlam: je hebt 10 seconden om je onderdelen eruit te klikken, dan is het
+  weg met alles erin.
 - **Een SSD kapot of verbrand = alle diagrammen en keycards weg** (ze staan verspreid over al je
   SSD's). Een SSD er gewoon uithalen of een rack afbreken mag wel. Je bestanden, notities en je
   wachtwoord staan in de kern zelf en blijven.
-- **Aflezen**: de app **Monitor** op de desktop, zoals Taakbeheer: CPU, BRAIN, RAM, SSD en TEMP (het
-  heetste rack) met een grafiekje van de laatste minuut, elk rack met zijn onderdelen (rood streepje
-  = versleten), zijn eigen temperatuur en hoeveel fans er nog in moeten ("+1 fan"), wat je moet doen
-  tegen de warmte ("Fans: #2 +1"), en welke diagrammen er nu bezig zijn.
+- **Aflezen**: alleen in de app **Monitor** op de desktop, zoals Taakbeheer. Bovenaan CPU (en hoe snel
+  je diagrammen reageren), BRAIN (de vertraging van I.M.T), **RAM** en **SSD** (wat je hebt in GB en
+  TB, een balk, en wat je CPU's en GPU's nodig hebben: oranje als het te weinig is) en TEMP (het
+  heetste rack). Links al je racks met hun **naam** (zonder naam hun nummer en plek), hun onderdelen
+  (rood streepje = versleten), hun temperatuur en hoeveel fans er nog in moeten ("+1 fan"). **Klik op
+  een rack** en rechts staan zijn eigen cijfers: zijn acht vakjes in het klein, temperatuur, warmte en
+  koeling, slijtage, en wat je moet doen. Klik er nog eens op voor de hele server: hoeveel CPU's en
+  GPU's, of er genoeg RAM en SSD is, hoe snel de diagrammen en I.M.T zijn, wat je diagrammen innemen,
+  de koeling ("Fans: rack2 +1") en welke diagrammen er nu bezig zijn ("5 starting (5.7 s)" zijn
+  diagrammen die nog op de reactietijd van je server wachten; "waiting for RAM" alleen als het RAM echt
+  vol is).
 - **Backups**: bouw een tweede datacenter (een andere kern met racks, ver genoeg weg). In de app
   **Backup** kies je met **<** en **>** waar de backups heen gaan, dan **Backup now**, of
   **Automatic** elke 5, 15 of 60 minuten. Een backup neemt plek op de SSD's van dat andere
@@ -1063,17 +1082,22 @@ er backups van, en het brein van I.M.T draait erop.
 - **Het brein van I.M.T** draait op je sterkste datacenter, waar het ook staat. **Zonder
   datacenter werkt er geen enkel brein**, ook het woordenboek niet: dan is het gewoon een mooie
   bril (in creative hoeft het niet). Met een datacenter duurt een antwoord de tijd van het model
-  plus een vertraging zolang je datacenter nog niet sterk is: 1 CPU +8 s, 1 GPU +4 s, 4 GPU's +1 s,
-  vanaf 8 GPU's niets meer (warm: twee keer zo lang). Rechtsboven in **G > Systems > AI Brain** zie
-  je op welk datacenter het draait en hoeveel het erbij zet. Terwijl ze nadenkt, werkt je
+  plus een vertraging zolang je datacenter nog niet sterk is: met bijna niets 12 seconden, elke CPU
+  haalt er 0,1 s af (een GPU telt voor het brein dubbel), met 100 CPU's nog 2 seconden, en vanaf
+  **120 CPU's** (of 60 GPU's) niets meer (warm: alsof je de helft hebt). Rechtsboven in **G > Systems >
+  AI Brain** zie je op welk datacenter het draait en hoeveel het erbij zet. Terwijl ze nadenkt, werkt je
   datacenter hard (en wordt het warmer).
-- **Groot genoeg** (6 november): voor het brein tellen **zes CPU's** (of GPU's) samen als één rekenpunt
-  (`cpusPerPower` onder `[logic]`): de vertragingen hierboven gelden dus per zes. Met een handvol racks is
-  I.M.T traag; een echt datacenter (zo'n dertig racks) maakt haar vlot. Je redstone (Logic) rekent nog gewoon
-  per CPU. Racks hoeven ook niet meer tegen elkaar: alle racks die met een netwerkkabel (of PoE) aan je kern
-  hangen, zijn samen één server.
+- **Groot genoeg** (8 november): een echt datacenter is groot. Een rack heeft plaats voor twee CPU's of
+  GPU's, dus voor 30 CPU's (diagrammen meteen) heb je 15 racks nodig, en voor 120 CPU's (I.M.T meteen)
+  60 racks; met GPU's de helft voor I.M.T. Vergeet het RAM en de SSD's niet (per 10 CPU's of GPU's 4
+  latjes en 3 SSD's). Racks hoeven niet tegen elkaar: alle racks die met een netwerkkabel (of PoE) aan
+  je kern hangen, zijn samen één server.
 
-Alle getallen staan in `config/imttech.toml` onder `[logic]` (de stroom van een kast onder `[power]`).
+Alle getallen staan in `config/imttech.toml` onder `[logic]` (de stroom van een kast onder `[power]`):
+`logicInstantPower` (30) en `logicMaxDelayTicks` (120 = 6 s) voor je diagrammen, `brainInstantPower` (120)
+en `brainMaxDelayTicks` (240 = 12 s) voor I.M.T, `ramStickGb` (16), `ssdGb` (1000), `ramGbPerTen` (64) en
+`ssdGbPerTen` (3000) voor het geheugen. Een rack van voor 8 november (zes vakjes) wordt bij het laden netjes
+ingedeeld; wat niet meer in een vakje past, valt eruit.
 
 ### Je basis beveiligen: zones (en inbreken met frags)
 In Minecraft kan iedereen elk blok weghakken. Met een **zone** kunnen in je basis alleen jij en je

@@ -1301,42 +1301,72 @@ public final class ImtConfig {
     public static final class Logic {
         private Logic() {}
 
-        // ------------------------------------------------------------------------- Snelheid en ruimte
-        /** Zo lang wacht een server met kracht 1 (één CPU) voordat hij reageert; 2 x de kracht = de helft. */
-        @Tunable("How long a server with Logic power 1 (one CPU) waits before it reacts to a trigger (ticks); "
-                + "twice the power = half the time, never below 1 tick")
-        public static float REACTION_TICKS = 10.0f;
-        /**
-         * Zoveel CPU's samen zijn één "breinkracht" voor I.M.T (hoofdstuk 54, jouw notitie: "een data center moet veel groter
-         * zijn om goed te werken, minstens 30 racks in plaats van 5"): 6 CPU's = 1, dus 30 racks vol CPU's = 30 kracht (geen
-         * vertraging meer), 5 racks = 5 kracht (32 ticks). De snelheid van je diagrammen (Logic) blijft 1 CPU = 1.
+        // ------------------------------------------------------------------------- Snelheid (hoofdstuk 64)
+        /*
+         * Jouw wens van 8 november: "voor imt heb je 120 cpu's nodig of 60 gpu's en voor de diagrams 60 gpu's of 30 cpu's",
+         * met daarvoor "100 ... is 1 sec diagram delay en 2 sec imt delay, vanaf 120 reageert alles instant" en je keuze
+         * "rechte lijn": de vertraging loopt in een rechte lijn af van MAX_DELAY (bijna geen kracht) tot 0 bij INSTANT_POWER.
+         * Elke CPU haalt er dus evenveel af: voor de diagrammen 120 / 30 = 4 ticks (0,2 s), voor I.M.T 240 / 120 = 2 ticks.
+         * Zo komt I.M.T op 2 s bij 100 CPU's en diagrammen op 1 s bij 25 CPU's. Een GPU telt voor de diagrammen half en
+         * voor I.M.T dubbel (dezelfde verhouding als sinds 8 oktober). Tot hier deelde een CPU de tijd (REACTION_TICKS,
+         * CPUS_PER_POWER, BRAIN_DELAY_TICKS); die regels zijn weg, en met nieuwe namen gelden de nieuwe getallen ook in een
+         * oude wereld.
          */
-        @Tunable(value = "How many CPUs together count as one brain power for I.M.T; 6 = a datacenter needs six times as"
-                + " many racks as before 6 November to think without delay (Logic itself stays 1 CPU = 1)", min = 0.1, max = 100)
-        public static double CPUS_PER_POWER = 6.0;
+        /** Vanaf zoveel Logic-kracht (1 CPU = 1, 1 GPU = GPU_LOGIC_POWER) reageren je diagrammen meteen (1 tick). */
+        @Tunable(value = "From this much Logic power (a CPU counts 1, a GPU counts gpuLogicPower) your diagrams react at "
+                + "once: 30 = 30 CPUs or 60 GPUs", min = 0.1)
+        public static float LOGIC_INSTANT_POWER = 30.0f;
+        /** Zo lang (ticks) wacht een server met bijna geen kracht voor hij reageert: 120 = 6 seconden. */
+        @Tunable(value = "How long (ticks) a server with almost no Logic power waits before a diagram starts: 120 = 6 s. "
+                + "Every bit of power takes an equal part off, down to 1 tick at logicInstantPower", min = 1)
+        public static float LOGIC_MAX_DELAY_TICKS = 120.0f;
+        /** Vanaf zoveel breinkracht (1 CPU = 1, 1 GPU = GPU_BRAIN_POWER) denkt I.M.T zonder vertraging. */
+        @Tunable(value = "From this much brain power (a CPU counts 1, a GPU counts gpuBrainPower) I.M.T thinks without "
+                + "delay: 120 = 120 CPUs or 60 GPUs", min = 0.1)
+        public static float BRAIN_INSTANT_POWER = 120.0f;
+        /** Zo lang (ticks) denkt I.M.T extra na met bijna geen breinkracht: 240 = 12 seconden (2 s bij 100 CPU's). */
+        @Tunable(value = "How long (ticks) I.M.T thinks extra on a datacenter with almost no brain power: 240 = 12 s. "
+                + "Every bit of power takes an equal part off, down to 0 at brainInstantPower (2 s with 100 CPUs)", min = 0)
+        public static float BRAIN_MAX_DELAY_TICKS = 240.0f;
         /** Hoeveel één GPU telt voor Logic (een CPU telt 1). */
         @Tunable("How much one GPU counts for Logic (a CPU counts 1)")
         public static double GPU_LOGIC_POWER = 0.5;
         /** Hoeveel één GPU telt voor het brein van I.M.T (een CPU telt 1). */
         @Tunable("How much one GPU counts for I.M.T's brain (a CPU counts 1)")
         public static double GPU_BRAIN_POWER = 2.0;
-        /** Zo lang denkt I.M.T extra na op een datacenter met breinkracht 1 (160 = 8 seconden). */
-        @Tunable("How long I.M.T thinks extra on a datacenter with brain power 1 (one CPU), in ticks; "
-                + "twice the power = half the time")
-        public static float BRAIN_DELAY_TICKS = 160.0f;
-        /** Is het nadenken zo kort of korter, dan valt het helemaal weg: het datacenter is sterk genoeg. */
-        @Tunable("A brain delay this short or shorter (ticks) falls away completely: the datacenter is strong enough")
-        public static float BRAIN_DELAY_GONE_TICKS = 10.0f;
         /** Zoveel blokken per seconde kan één CPU afwerken voordat hij op 100% zit (meer werk = meer warmte). */
         @Tunable(value = "How many blocks per second one Logic power (one CPU) can work through before the CPU use is 100% "
                 + "(more work = more heat)", min = 1)
         public static float LOGIC_STEPS_PER_SECOND = 100.0f;
-        /** Hoeveel diagrammen tegelijk kunnen lopen per RAM-latje. */
-        @Tunable("How many diagrams can be busy at the same time per RAM stick")
-        public static float RUNS_PER_RAM = 2.0f;
-        /** Hoeveel blokken (triggers, ifs, acties) één SSD kan bewaren. */
-        @Tunable("How many blocks (triggers, ifs, actions) one SSD can hold")
-        public static float BLOCKS_PER_SSD = 24.0f;
+
+        // ------------------------------------------------------------------------- Geheugen (hoofdstuk 64)
+        /*
+         * "Voor elke 10 cpu's of gpu's moet je 3 ssd's en 4 ramsticks hebben om dit vlot te laten verlopen. Druk deze
+         * gegevens allemaal in MB, GB en TB uit." Een RAM-latje is 16 GB, een SSD 1 TB (1000 GB): per 10 CPU's of GPU's
+         * dus 64 GB RAM en 3 TB SSD. Heb je minder, dan draait alles naar verhouding trager (de helft van het RAM = alsof
+         * je maar de helft van je CPU's en GPU's hebt). De oude grenzen (2 diagrammen tegelijk per latje, 24 blokjes per
+         * SSD) zijn weg: een blokje is 1 MB en een bezig diagram 64 MB, dus dat raakt praktisch nooit op.
+         */
+        /** Zoveel GB zit er op één RAM-latje. */
+        @Tunable(value = "How many GB one RAM stick holds", min = 0.001)
+        public static float RAM_STICK_GB = 16.0f;
+        /** Zoveel GB past er op één SSD (1000 = 1 TB). */
+        @Tunable(value = "How many GB one SSD holds (1000 = 1 TB)", min = 0.001)
+        public static float SSD_GB = 1000.0f;
+        /** Zoveel GB RAM hebben elke 10 CPU's of GPU's nodig om op volle snelheid te draaien (64 = 4 latjes). */
+        @Tunable("How much RAM (GB) every 10 CPUs or GPUs need to run at full speed: 64 = 4 sticks. Less = everything "
+                + "runs that much slower. 0 = RAM never slows anything down")
+        public static float RAM_GB_PER_TEN = 64.0f;
+        /** Zoveel GB SSD hebben elke 10 CPU's of GPU's nodig om op volle snelheid te draaien (3000 = 3 SSD's). */
+        @Tunable("How much SSD storage (GB) every 10 CPUs or GPUs need to run at full speed: 3000 = 3 TB = 3 SSDs. Less = "
+                + "everything runs that much slower. 0 = storage never slows anything down")
+        public static float SSD_GB_PER_TEN = 3000.0f;
+        /** Zoveel MB neemt één blokje van een diagram in op de SSD's (ook in een backup). */
+        @Tunable(value = "How many MB one block of a diagram takes on the SSDs (also in a backup)", min = 0.001)
+        public static float BLOCK_MB = 1.0f;
+        /** Zoveel MB RAM neemt een diagram in zolang het bezig is (wachten telt mee). */
+        @Tunable(value = "How many MB of RAM a diagram takes while it is busy (also while it waits)", min = 0.001)
+        public static float RUN_MB = 64.0f;
         /** Zoveel backups van één netwerk blijven op één datacenter staan (de oudste gaat eraf). */
         @Tunable(value = "How many backups of one network a datacenter keeps (the oldest goes first)", min = 1, max = 64)
         public static float BACKUPS_KEPT = 3.0f;
@@ -1398,10 +1428,13 @@ public final class ImtConfig {
                 + "(time to take your parts out)")
         public static float BURN_TICKS = 200.0f;
 
-        /** VAST: zoveel vakjes heeft één serverkast (twee kolommen van drie): zo ziet het scherm eruit. */
-        public static final int RACK_SLOTS = 6;
-        /** VAST: zoveel vakjes staan er onder elkaar in één kolom. */
-        public static final int RACK_ROWS = 3;
+        /**
+         * VAST: zoveel vakjes heeft één serverkast (hoofdstuk 64: twee kolommen van vier, bovenaan twee voor een CPU of GPU,
+         * dan twee voor RAM of een SSD, en onderaan vier voor fans; zie logic/RackBay). Zo ziet de voorkant van het blok eruit.
+         */
+        public static final int RACK_SLOTS = 8;
+        /** VAST: zoveel rijen vakjes staan er onder elkaar op de voorkant. */
+        public static final int RACK_ROWS = 4;
     }
 
     // =============================================================================================== Breach

@@ -131,9 +131,30 @@ public final class Datacenter {
         return brainLoad;
     }
 
-    /** Hoe vol het RAM is (0..1): diagrammen die bezig zijn of wachten, tegen wat er tegelijk kan. */
+    /**
+     * Hoe vol het RAM is (0..1), de laatste meting: wat de CPU's en GPU's ervan innemen, plus de diagrammen die bezig zijn
+     * (zie {@link #ramUsedMb}).
+     */
     public double ramLoad() {
         return ramLoad;
+    }
+
+    /**
+     * Zoveel MB RAM is er bezet (hoofdstuk 64): de CPU's en GPU's nemen wat ze nodig hebben (64 GB per 10, zolang het er
+     * is), en elk diagram dat bezig is (ook als het in een wait() staat) RUN_MB. Nooit meer dan er is.
+     */
+    public static double ramUsedMb(LogicServer.Stats stats, int busyDiagrams) {
+        double used = Math.min(stats.ramMb(), stats.ramNeededMb()) + busyDiagrams * (double) Math.max(0.001, ImtConfig.Logic.RUN_MB);
+        return Math.min(stats.ramMb(), used);
+    }
+
+    /**
+     * Zoveel MB van de SSD's is er bezet: wat de CPU's en GPU's ervan nodig hebben (3 TB per 10, zolang het er is), je
+     * diagrammen (BLOCK_MB per blokje) en de backups van andere netwerken die hier staan. Nooit meer dan er is.
+     */
+    public static double ssdUsedMb(LogicServer.Stats stats, int ownBlocks, int storedBlocks) {
+        double used = Math.min(stats.ssdMb(), stats.ssdNeededMb()) + LogicStats.blocksMb(ownBlocks + storedBlocks);
+        return Math.min(stats.ssdMb(), used);
     }
 
     /**
@@ -218,7 +239,7 @@ public final class Datacenter {
         double capacity = stats.online() ? logicCapacity(stats) : 0;
         cpuLoad = capacity > 0 ? Math.min(1.0, perSecond / capacity) : 0;
         int[] load = LogicRunner.load(level, core);
-        ramLoad = stats.online() && stats.maxRuns() > 0 ? Math.min(1.0, (load[0] + load[1]) / (double) stats.maxRuns()) : 0;
+        ramLoad = stats.online() && stats.ramMb() > 0 ? Math.min(1.0, ramUsedMb(stats, load[0]) / stats.ramMb()) : 0;
         // Denkt het brein van I.M.T hier nu na (voor iemand)? Dan werken de chips op vol.
         brainLoad = DatacenterBrain.thinkingOn(level, GlobalPos.of(level.dimension(), core.getBlockPos())).isEmpty() ? 0.0 : 1.0;
         history.addLast(new int[] {percent(cpuLoad), percent(brainLoad), percent(ramLoad), (int) Math.round(temperature)});
@@ -421,7 +442,7 @@ public final class Datacenter {
         }
         rack.setFireTicks(0);
         rack.ignite(level, level.getGameTime() + Math.round(ImtConfig.Logic.BURN_TICKS));
-        core.logEvent(EventLog.Type.ALARM, "A server rack is on fire! (" + where(rack.getBlockPos()) + ")");
+        core.logEvent(EventLog.Type.ALARM, "A server rack is on fire! (" + where(level, rack.getBlockPos()) + ")");
         tellOwner(level, core, Component.translatable("logic.imttech.heat.fire", core.hostname(),
                 Math.max(1, Math.round(ImtConfig.Logic.BURN_TICKS) / 20)), ImtMessagePayload.Level.ALERT);
     }
@@ -461,7 +482,7 @@ public final class Datacenter {
     private void warn(ServerLevel level, SecurityCoreBlockEntity core, @Nullable BlockPos hottest) {
         int now = temperature >= ImtConfig.Logic.HOT_TEMPERATURE ? HOT : temperature >= ImtConfig.Logic.WARM_TEMPERATURE ? WARM : COOL;
         String degrees = degrees(temperature);
-        String where = hottest == null ? "?" : where(hottest);
+        String where = hottest == null ? "?" : where(level, hottest);
         if (now > warned) {
             warned = now;
             if (now == HOT) {
@@ -498,6 +519,17 @@ public final class Datacenter {
     /** Waar een rack staat, zoals in de app Monitor: "12 64 -30". */
     static String where(BlockPos pos) {
         return pos.getX() + " " + pos.getY() + " " + pos.getZ();
+    }
+
+    /**
+     * Welk rack, zoals in de app Monitor: met een naam (hoofdstuk 64, sneak + rechtsklik) "rack1 (12 64 -30)", anders alleen
+     * waar het staat.
+     */
+    static String where(ServerLevel level, BlockPos pos) {
+        if (level.getBlockEntity(pos) instanceof ServerRackBlockEntity rack && !rack.name().isEmpty()) {
+            return rack.name() + " (" + where(pos) + ")";
+        }
+        return where(pos);
     }
 
     /** 72.4 wordt "72°". */

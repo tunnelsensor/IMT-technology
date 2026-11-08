@@ -12,16 +12,16 @@ import net.minecraft.world.item.TooltipFlag;
  * Een onderdeel voor een serverrack (jouw wens, 7 oktober: "hier kun je de RAM, CPU verbeteren
  * waardoor je redstone sneller reageert"; 8 oktober kwamen de GPU en de fan erbij). Er zijn er vijf:
  * <ul>
- *   <li><b>CPU</b>: rekenkracht, 1 voor Logic (hoe snel de server reageert) en 1 voor het brein
- *       van I.M.T;</li>
+ *   <li><b>CPU</b>: rekenkracht, 1 voor Logic (hoe snel je diagrammen reageren: meteen vanaf 30) en 1 voor het brein
+ *       van I.M.T (zonder vertraging vanaf 120);</li>
  *   <li><b>GPU</b>: rekenkracht, maar anders verdeeld: half zo goed voor Logic, dubbel zo goed
  *       voor het brein (zie ImtConfig.Logic.GPU_...);</li>
- *   <li><b>RAM</b>: hoeveel diagrammen tegelijk bezig kunnen zijn (bijvoorbeeld allemaal aan het
- *       wachten met {@code wait(5)});</li>
- *   <li><b>SSD</b>: hoeveel blokjes je in totaal in je diagrammen kwijt kunt;</li>
- *   <li><b>Fan</b>: rekent niets, maar koelt het datacenter.</li>
+ *   <li><b>RAM</b>: 16 GB; elke 10 CPU's of GPU's hebben er 64 GB van nodig om vlot te draaien (hoofdstuk 64);</li>
+ *   <li><b>SSD</b>: 1 TB; elke 10 CPU's of GPU's hebben er 3 TB van nodig, en je diagrammen staan erop (1 MB per blokje);</li>
+ *   <li><b>Fan</b>: rekent niets, maar koelt het rack waar hij in zit.</li>
  * </ul>
- * Je steekt ze in een rack (zie ServerRackBlockEntity); alle racks die elkaar raken tellen samen.
+ * Je klikt ze in de vakjes op de voorkant van een rack (zie ServerRackBlock en RackBay): bovenaan een CPU of GPU, dan RAM
+ * of een SSD, onderaan fans. Alle racks van een server tellen samen.
  */
 public class ServerPartItem extends Item {
     /** Welk onderdeel het is. */
@@ -49,9 +49,13 @@ public class ServerPartItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         String key = "item.imttech.server_" + kind.name().toLowerCase(java.util.Locale.ROOT) + ".tooltip";
         Component text = switch (kind) {
-            case CPU, GPU -> Component.translatable(key, number(LogicStats.logicPower(kind)), number(LogicStats.brainPower(kind)));
-            case RAM -> Component.translatable(key, Math.round(ImtConfig.Logic.RUNS_PER_RAM));
-            case SSD -> Component.translatable(key, Math.round(ImtConfig.Logic.BLOCKS_PER_SSD));
+            case CPU, GPU -> Component.translatable(key, number(LogicStats.logicPower(kind)),
+                    number(ImtConfig.Logic.LOGIC_INSTANT_POWER), number(LogicStats.brainPower(kind)),
+                    number(ImtConfig.Logic.BRAIN_INSTANT_POWER));
+            case RAM -> Component.translatable(key, LogicStats.bytes(LogicStats.ramStickMb()),
+                    LogicStats.bytes(LogicStats.ramNeededMb(10)));
+            case SSD -> Component.translatable(key, LogicStats.bytes(LogicStats.ssdMb()),
+                    LogicStats.bytes(LogicStats.ssdNeededMb(10)), LogicStats.bytes(LogicStats.blocksMb(1)));
             case FAN -> Component.translatable(key);
         };
         tooltip.add(text.copy().withStyle(ChatFormatting.GRAY));
@@ -70,7 +74,9 @@ public class ServerPartItem extends Item {
             tooltip.add(Component.translatable("item.imttech.server_part.worn", Math.min(100, wear * 100 / Math.max(1, Math.round(ImtConfig.Logic.MAX_WEAR))))
                     .withStyle(ChatFormatting.RED));
         }
-        tooltip.add(Component.translatable("item.imttech.server_part.tooltip").withStyle(ChatFormatting.DARK_GRAY));
+        // In welke rij van het rack hij hoort (hoofdstuk 64).
+        String row = kind.isProcessor() ? "top" : kind == Kind.FAN ? "bottom" : "middle";
+        tooltip.add(Component.translatable("item.imttech.server_part.tooltip." + row).withStyle(ChatFormatting.DARK_GRAY));
     }
 
     // ---------------------------------------------------------------- Slijten (8 oktober)
@@ -104,6 +110,7 @@ public class ServerPartItem extends Item {
 
     /** 1 blijft "1", 0.5 wordt "0.5" (geen ".0" achter hele getallen). */
     private static String number(double value) {
-        return value == Math.rint(value) ? String.valueOf((long) value) : String.valueOf(value);
+        double rounded = Math.round(value * 100) / 100.0;
+        return rounded == Math.rint(rounded) ? String.valueOf((long) rounded) : String.valueOf(rounded);
     }
 }

@@ -79,14 +79,49 @@ public final class LogicServer {
             return null;
         }
 
-        /** Rekenkracht voor Logic (je diagrammen): een CPU telt 1, een GPU ½. */
-        public double logicPower() {
-            return cpus * LogicStats.logicPower(ServerPartItem.Kind.CPU) + gpus * LogicStats.logicPower(ServerPartItem.Kind.GPU);
+        /** CPU's en GPU's samen (zij hebben het RAM en de SSD's nodig). */
+        public int processors() {
+            return cpus + gpus;
         }
 
-        /** Rekenkracht voor het brein van I.M.T: een CPU telt 1, een GPU 2. */
+        /**
+         * Welk deel van de CPU's en GPU's meedraait (hoofdstuk 64): 1 als er per 10 genoeg RAM (64 GB) en SSD (3 TB) is,
+         * anders zoveel als het krapste toelaat (zie LogicStats.fed).
+         */
+        public double fed() {
+            return LogicStats.fed(processors(), ram, ssd);
+        }
+
+        /** Rekenkracht voor Logic (je diagrammen): een CPU telt 1, een GPU ½, maal wat het geheugen voedt. */
+        public double logicPower() {
+            return (cpus * LogicStats.logicPower(ServerPartItem.Kind.CPU) + gpus * LogicStats.logicPower(ServerPartItem.Kind.GPU))
+                    * fed();
+        }
+
+        /** Rekenkracht voor het brein van I.M.T: een CPU telt 1, een GPU 2, maal wat het geheugen voedt. */
         public double brainPower() {
-            return cpus * LogicStats.brainPower(ServerPartItem.Kind.CPU) + gpus * LogicStats.brainPower(ServerPartItem.Kind.GPU);
+            return (cpus * LogicStats.brainPower(ServerPartItem.Kind.CPU) + gpus * LogicStats.brainPower(ServerPartItem.Kind.GPU))
+                    * fed();
+        }
+
+        /** Zoveel MB RAM heeft de server (alle latjes in racks die meedraaien). */
+        public double ramMb() {
+            return ram * LogicStats.ramStickMb();
+        }
+
+        /** Zoveel MB SSD heeft de server. */
+        public double ssdMb() {
+            return ssd * LogicStats.ssdMb();
+        }
+
+        /** Zoveel MB RAM hebben de CPU's en GPU's nodig om op volle snelheid te draaien. */
+        public double ramNeededMb() {
+            return LogicStats.ramNeededMb(processors());
+        }
+
+        /** Zoveel MB SSD hebben de CPU's en GPU's nodig om op volle snelheid te draaien. */
+        public double ssdNeededMb() {
+            return LogicStats.ssdNeededMb(processors());
         }
 
         /**
@@ -112,14 +147,14 @@ public final class LogicServer {
             return online() ? LogicStats.brainDelayTicks(brainPower() / slowdown()) : -1;
         }
 
-        /** Zoveel diagrammen kunnen tegelijk bezig zijn. */
+        /** Zoveel diagrammen kunnen tegelijk bezig zijn (een bezig diagram neemt RUN_MB van het RAM). */
         public int maxRuns() {
-            return ram * Math.round(ImtConfig.Logic.RUNS_PER_RAM);
+            return LogicStats.maxRuns(ram);
         }
 
-        /** Zoveel blokjes passen er in totaal in de diagrammen. */
+        /** Zoveel blokjes passen er in totaal in de diagrammen (een blokje neemt BLOCK_MB van de SSD's). */
         public int capacity() {
-            return ssd * Math.round(ImtConfig.Logic.BLOCKS_PER_SSD);
+            return LogicStats.blockCapacity(ssd);
         }
     }
 
@@ -233,6 +268,17 @@ public final class LogicServer {
         }
         tag.putInt("react", stats.online() ? stats.reactionTicks() : 0);
         tag.putInt("brainDelay", stats.brainDelayTicks());
+        // Hoofdstuk 64: het geheugen in MB (de app Monitor maakt er GB en TB van), wat de CPU's en GPU's ervan nodig
+        // hebben, en welk deel van hen daardoor meedraait.
+        tag.putDouble("ramMb", stats.ramMb());
+        tag.putDouble("ssdMb", stats.ssdMb());
+        tag.putDouble("ramNeedMb", stats.ramNeededMb());
+        tag.putDouble("ssdNeedMb", stats.ssdNeededMb());
+        tag.putDouble("fed", stats.fed());
+        int[] busy = LogicRunner.load(level, core);
+        tag.putDouble("ramUsedMb", Datacenter.ramUsedMb(stats, busy[0]));
+        tag.putDouble("ssdUsedMb", Datacenter.ssdUsedMb(stats, core.logic().blocks(),
+                Datacenters.get(level).storedAt(GlobalPos.of(level.dimension(), core.getBlockPos()))));
         // Het datacenter: hoe warm, en waarom (zie Datacenter).
         Datacenter datacenter = core.datacenter();
         tag.putDouble("temp", datacenter.temperature());
@@ -250,7 +296,9 @@ public final class LogicServer {
         tag.putInt("used", core.logic().blocks());
         int[] load = LogicRunner.load(level, core);
         tag.putInt("running", load[0]);
-        tag.putInt("waiting", load[1]);
+        // Hoofdstuk 64: wat nog op de reactietijd van de server wacht ("starting"), en wat echt op RAM wacht ("waiting").
+        tag.putInt("starting", load[1] - load[2]);
+        tag.putInt("waiting", load[2]);
         tag.putDouble("logicPower", stats.logicPower());
         tag.putDouble("brainPower", stats.brainPower());
         tag.putBoolean("warm", stats.warm());
@@ -288,6 +336,8 @@ public final class LogicServer {
             entry.putInt("x", pos.getX());
             entry.putInt("y", pos.getY());
             entry.putInt("z", pos.getZ());
+            // Hoofdstuk 64: de naam die je het rack gaf (sneak + rechtsklik), of leeg.
+            entry.putString("name", rack.name());
             entry.putString("status", rack.status().name());
             entry.putInt("burn", rack.burnSecondsLeft(level.getGameTime()));
             // Elk rack zijn eigen temperatuur, warmte en koeling (zijn fans).
@@ -302,6 +352,7 @@ public final class LogicServer {
                     CompoundTag p = new CompoundTag();
                     p.putString("k", part.kind().name());
                     p.putInt("w", Math.min(100, ServerPartItem.wear(stack) * 100 / Math.max(1, Math.round(ImtConfig.Logic.MAX_WEAR))));
+                    p.putInt("s", slot); // in welk vakje (voor de app Monitor: zo ziet het rack eruit)
                     parts.add(p);
                 }
             }

@@ -14,13 +14,13 @@ import net.minecraft.nbt.Tag;
  * een ander datacenter, omdat als alles afbrandt anders je hele config weg is").
  *
  * <pre>
- *  Back up to:  [<] dev-lab (10.4.2.9) [>]                 30/48 free
- *  This server: 12 blocks                              [Backup now]
+ *  Back up to:  [<] dev-lab (10.4.2.9) [>]     1 TB free of 1 TB
+ *  This server: 12 MB                                  [Backup now]
  *  Automatic:   [Off] [5 min] [15 min] [60 min]
  *  Last backup: 3 min ago
  *  YOUR BACKUPS (2)
- *   dev-sec on dev-lab  12 blocks  3 min ago  auto       [Restore] [Delete]
- *   dev-sec on dev-lab  11 blocks  18 min ago            [Restore] [Delete]
+ *   dev-sec on dev-lab  12 MB  3 min ago  auto           [Restore] [Delete]
+ *   dev-sec on dev-lab  11 MB  18 min ago                [Restore] [Delete]
  * </pre>
  *
  * Alles komt uit de momentopname (het stuk "backup", zie Backups.snapshot); de knoppen sturen een
@@ -74,7 +74,9 @@ final class BackupApp {
                 CompoundTag target = (CompoundTag) targets.get(index);
                 name = target.getString("host") + " (" + target.getString("ip") + ")";
                 nameColour = target.getBoolean("online") ? HudStyle.WHITE : HudStyle.ORANGE;
-                String free = target.getBoolean("online") ? target.getInt("free") + "/" + target.getInt("cap") + " free" : "offline";
+                // Hoofdstuk 64: in MB, GB en TB (de server telt in blokjes van BLOCK_MB).
+                String free = target.getBoolean("online") ? mb(target.getInt("free")) + " free of " + mb(target.getInt("cap"))
+                        : "offline";
                 g.drawString(font, free, x + a.w() - font.width(free), y + 2,
                         HudStyle.argb(255, target.getBoolean("online") ? OsDraw.GREY : HudStyle.ORANGE), false);
             }
@@ -86,7 +88,7 @@ final class BackupApp {
         // Nu een backup maken.
         y += 15;
         label(g, font, "This server:", x, y + 2);
-        g.drawString(font, data.getInt("size") + " blocks", x + labelW, y + 2, HudStyle.argb(255, HudStyle.WHITE), false);
+        g.drawString(font, mb(data.getInt("size")), x + labelW, y + 2, HudStyle.argb(255, HudStyle.WHITE), false);
         String now = "Backup now";
         button(g, font, x + a.w() - OsDraw.buttonWidth(font, now), y, now, !targetKey.isEmpty(), HudStyle.CYAN,
                 () -> screen.send("backup_now", new CompoundTag()));
@@ -136,7 +138,7 @@ final class BackupApp {
             int ry = top + 2 + (i - scroll) * ROW;
             int id = item.getInt("id");
             boolean online = item.getBoolean("online");
-            String text = item.getString("from") + " on " + item.getString("at") + "  " + item.getInt("size") + " blocks  "
+            String text = item.getString("from") + " on " + item.getString("at") + "  " + mb(item.getInt("size")) + "  "
                     + ago(item.getInt("ago")) + (item.getBoolean("auto") ? "  auto" : "");
             int textW = a.w() - deleteW - restoreW - 14;
             g.drawString(font, OsDraw.fitRight(font, text, textW), x + 4, ry + 2,
@@ -239,5 +241,10 @@ final class BackupApp {
 
     void mouseScrolled(double amount) {
         scroll = Math.max(0, scroll - (int) Math.signum(amount));
+    }
+
+    /** Zoveel blokjes als tekst in MB, GB of TB (een blokje is BLOCK_MB groot): 12 wordt "12 MB". */
+    private static String mb(int blocks) {
+        return com.senne.imttech.logic.LogicStats.bytes(com.senne.imttech.logic.LogicStats.blocksMb(blocks));
     }
 }

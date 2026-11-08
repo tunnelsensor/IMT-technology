@@ -1323,11 +1323,11 @@ public final class ImtTechGameTests {
         var bottomRack = (com.senne.imttech.logic.ServerRackBlockEntity) helper.getBlockEntity(bottom);
         var topRack = (com.senne.imttech.logic.ServerRackBlockEntity) helper.getBlockEntity(top);
         var loneRack = (com.senne.imttech.logic.ServerRackBlockEntity) helper.getBlockEntity(lone);
-        bottomRack.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
-        topRack.parts().setItem(0, new ItemStack(ModItems.SERVER_RAM.get()));
-        topRack.parts().setItem(1, new ItemStack(ModItems.SERVER_SSD.get()));
-        topRack.parts().setItem(2, new ItemStack(ModItems.SERVER_CPU.get()));
-        loneRack.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
+        bottomRack.insert(new ItemStack(ModItems.SERVER_CPU.get()));
+        topRack.insert(new ItemStack(ModItems.SERVER_RAM.get()));
+        topRack.insert(new ItemStack(ModItems.SERVER_SSD.get()));
+        topRack.insert(new ItemStack(ModItems.SERVER_CPU.get()));
+        loneRack.insert(new ItemStack(ModItems.SERVER_CPU.get()));
         helper.runAfterDelay(2, () -> {
             com.senne.imttech.security.SecurityDevices.forget(level, core);
             for (BlockPos pos : List.of(bottom, top, lone)) {
@@ -1348,11 +1348,11 @@ public final class ImtTechGameTests {
                 throw new GameTestAssertException("De server telt verkeerd: " + stats);
             }
             int expected = LogicStats.reactionTicks(2.0 * LogicStats.logicPower(com.senne.imttech.logic.ServerPartItem.Kind.CPU)); // twee CPU's
-            if (stats.reactionTicks() != expected || stats.maxRuns() != Math.round(ImtConfig.Logic.RUNS_PER_RAM)) {
+            if (stats.reactionTicks() != expected || stats.maxRuns() != LogicStats.maxRuns(1)) {
                 throw new GameTestAssertException("Reageren of tegelijk klopt niet: " + stats.reactionTicks() + " ticks, " + stats.maxRuns() + " tegelijk");
             }
-            // Zonder SSD draait hij niet, en zegt hij waarom.
-            topRack.parts().setItem(1, ItemStack.EMPTY);
+            // Zonder SSD draait hij niet, en zegt hij waarom (de SSD zit in het rechter vakje van de middelste rij).
+            topRack.parts().setItem(3, ItemStack.EMPTY);
             var without = com.senne.imttech.logic.LogicServer.stats(level, core);
             if (without.online() || !"The server needs an SSD".equals(without.problem())) {
                 throw new GameTestAssertException("Zonder SSD zou de server niet moeten draaien: " + without.problem());
@@ -1397,9 +1397,9 @@ public final class ImtTechGameTests {
         helper.setBlock(rackPos, ModBlocks.SERVER_RACK.get());
         powerTurret(helper, rackPos.below());
         var rack = (com.senne.imttech.logic.ServerRackBlockEntity) helper.getBlockEntity(rackPos);
-        rack.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
-        rack.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
-        rack.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
+        rack.insert(new ItemStack(ModItems.SERVER_CPU.get()));
+        rack.insert(new ItemStack(ModItems.SERVER_RAM.get()));
+        rack.insert(new ItemStack(ModItems.SERVER_SSD.get()));
     }
 
     /** Laat de racks van deze server meteen kijken of ze meedraaien (anders duurt dat tot twee seconden). */
@@ -3487,7 +3487,7 @@ public final class ImtTechGameTests {
     }
 
     /** Een warmtegenerator vol stroom naast het torentje (er direct tegenaan is ook aangesloten). */
-    private static void powerTurret(GameTestHelper helper, BlockPos generator) {
+    static void powerTurret(GameTestHelper helper, BlockPos generator) {
         helper.setBlock(generator, ModBlocks.HEAT_GENERATOR.get());
         ((ChargerBlockEntity) helper.getBlockEntity(generator)).fill(5_000);
     }

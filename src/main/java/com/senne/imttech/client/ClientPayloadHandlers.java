@@ -281,7 +281,7 @@ public final class ClientPayloadHandlers {
         }
     }
 
-    /** Het naamscherm van een keycardlezer openen (sneak + rechtsklik, 13 oktober). */
+    /** Het naamscherm van een keycardlezer, codepaneel of (sinds hoofdstuk 64) serverrack openen (sneak + rechtsklik). */
     public static void onInputNameOpen(com.senne.imttech.network.InputNameOpenPayload payload, IPayloadContext context) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen == null) {

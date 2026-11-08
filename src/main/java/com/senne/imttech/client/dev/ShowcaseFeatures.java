@@ -1380,17 +1380,16 @@ final class ShowcaseFeatures {
                     .close(20);
         });
 
-        add("The datacenter", "Hoofdstuk 9: het datacenter (in survival). Het lab van hiervoor: elk rack heeft "
-                + "zijn eigen temperatuur en dus zijn eigen fan, maar het rack rechts heeft nu RAM, een SSD en vier "
-                + "GPU's en geen fan meer. Eerst zijn scherm: zes vakjes in twee kolommen, en onderaan RACK TEMP "
-                + "('rising': zonder fan raakt de warmte er niet uit), HEAT/COOL en hoeveel fans erin moeten. Dan is "
-                + "dat rack te heet (96 graden): de hele server op halve snelheid, I.M.T waarschuwt (met waar "
-                + "het rack staat), en de GPU's slijten (een balkje onder het icoon). Daarna vat het rack vlam: vuur, "
-                + "rook, het scherm knippert ON FIRE, en na 8 seconden is het weg, met alles erin; de andere twee "
-                + "racks blijven koel. Er zat een SSD in: I.M.T zegt dat alle diagrammen en keycards weg zijn. "
-                + "Dan de desktop: de app Monitor (tegels met de laatste minuut, elk rack met zijn eigen temperatuur, "
-                + "wat er bezig is) en de app Backup: er staat een backup op een tweede "
-                + "datacenter ver weg (dev-vault), en Restore zet alles terug. Tot slot het scherm AI Brain "
+        add("The datacenter", "Hoofdstuk 9: het datacenter (in survival), sinds hoofdstuk 64 zonder scherm op het rack. Het lab "
+                + "van hiervoor: drie racks (lab-1, lab-2 en lab-3, zo heten ze in de app Monitor), elk met zijn eigen temperatuur "
+                + "en dus zijn eigen fan, maar lab-3 heeft nu twee GPU's bovenaan en geen fan meer. Eerst de app Monitor met "
+                + "lab-3 gekozen: zijn acht vakjes in het klein, Temp 'rising' (zonder fan raakt de warmte er niet uit), warmte en "
+                + "koeling en hoeveel fans erin moeten. Dan is dat rack te heet (96 graden): de hele server op halve snelheid, "
+                + "I.M.T waarschuwt (met de naam van het rack), en de GPU's slijten (rood in de Monitor). Daarna vat het rack vlam: "
+                + "vuur, rook, ON FIRE knippert in de Monitor, en na 8 seconden is het weg, met alles erin; de andere twee racks "
+                + "blijven koel. Er zat een SSD in: I.M.T zegt dat alle diagrammen en keycards weg zijn. Dan de hele server in de "
+                + "app Monitor (RAM en SSD in GB en TB, met wat de CPU's en GPU's nodig hebben) en de app Backup: er staat een "
+                + "backup op een tweede datacenter ver weg (dev-vault), en Restore zet alles terug. Tot slot het scherm AI Brain "
                 + "(rechtsboven: op welk datacenter het brein draait, en hoeveel vertraging) en 'night vision on': "
                 + "eerst THINKING..., dan doet ze het.",
                 GameType.SURVIVAL, Vec3.atBottomCenterOf(LOGIC_LAB.offset(3, 0, 4)), 180, 20, s -> {
@@ -1398,32 +1397,39 @@ final class ShowcaseFeatures {
             s.onServer(0, ShowcaseFeatures::buildDatacenter)
                     // Een nieuwe kern meldt zich pas een tick later: daarna pas verbinden en de backup.
                     .onServer(30, ShowcaseFeatures::connectDatacenters)
-                    .pause(20)
-                    // Het scherm van het rack zonder fan: RACK TEMP "rising", "No fan: ... Add 4 fans!".
-                    .onServer(0, player -> openRack(player, hot))
+                    .pause(40)
+                    // Het rack zonder fan in de app Monitor: Temp "rising", "No fan: ... Add 1 fan."
+                    .stand(0, LOGIC_LAB.getX() + 0.5, LOGIC_LAB.getY(), LOGIC_LAB.getZ() + 3.5, 180, 20)
+                    .onServer(5, player -> com.senne.imttech.security.os.SecurityOs.open(player, LOGIC_LAB))
+                    .step(10, () -> desktop(os -> os.tourMonitorRack("lab-3")))
                     .pause(90)
                     .close(0)
                     // Te heet: halve snelheid, waarschuwing, slijten.
                     .onServer(0, player -> heatUp(player, hot, 96))
                     .pause(20)
-                    .onServer(0, player -> openRack(player, hot))
+                    .onServer(5, player -> com.senne.imttech.security.os.SecurityOs.open(player, LOGIC_LAB))
+                    .step(10, () -> desktop(os -> os.tourMonitorRack("lab-3")))
                     .pause(90)
                     .close(0)
                     // Brand: het te hete rack vat vlam en is na 8 seconden weg (de andere twee niet).
+                    .stand(0, LOGIC_LAB.getX() + 3.5, LOGIC_LAB.getY(), LOGIC_LAB.getZ() + 4.5, 180, 20)
                     .onServer(0, player -> {
                         if (player.serverLevel().getBlockEntity(hot) instanceof com.senne.imttech.logic.ServerRackBlockEntity rack) {
                             rack.ignite(player.serverLevel(), player.serverLevel().getGameTime() + 160);
                         }
                     })
                     .pause(40)
-                    .onServer(0, player -> openRack(player, hot))
+                    .stand(0, LOGIC_LAB.getX() + 0.5, LOGIC_LAB.getY(), LOGIC_LAB.getZ() + 3.5, 180, 20)
+                    .onServer(5, player -> com.senne.imttech.security.os.SecurityOs.open(player, LOGIC_LAB))
+                    .step(10, () -> desktop(os -> os.tourMonitorRack("lab-3")))
                     .pause(50)
                     .close(0)
+                    .stand(0, LOGIC_LAB.getX() + 3.5, LOGIC_LAB.getY(), LOGIC_LAB.getZ() + 4.5, 180, 20)
                     .pause(90)
                     // De desktop: Monitor en Backup.
                     .stand(0, LOGIC_LAB.getX() + 0.5, LOGIC_LAB.getY(), LOGIC_LAB.getZ() + 3.5, 180, 20)
                     .onServer(5, player -> com.senne.imttech.security.os.SecurityOs.open(player, LOGIC_LAB))
-                    .step(10, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.MONITOR)))
+                    .step(10, () -> desktop(os -> os.tourMonitorRack(null)))
                     .pause(140)
                     .step(0, () -> desktop(os -> os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.BACKUP)))
                     .pause(60)
@@ -3626,10 +3632,10 @@ final class ShowcaseFeatures {
         level.setBlockAndUpdate(rack, com.senne.imttech.registry.ModBlocks.SERVER_RACK.get().defaultBlockState()
                 .setValue(com.senne.imttech.logic.ServerRackBlock.FACING, net.minecraft.core.Direction.SOUTH));
         if (level.getBlockEntity(rack) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
-            be.parts().setItem(0, new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.SERVER_CPU.get()));
-            be.parts().setItem(1, new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.SERVER_RAM.get()));
-            be.parts().setItem(2, new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.SERVER_SSD.get()));
-            be.parts().setItem(5, new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.SERVER_FAN.get()));
+            be.insert(new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.SERVER_CPU.get()));
+            be.insert(new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.SERVER_RAM.get()));
+            be.insert(new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.SERVER_SSD.get()));
+            be.insert(new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.SERVER_FAN.get()));
         }
         // PoE van de kern naar de switch, de switch met een grijze stroomkabel.
         for (int dx = 1; dx <= 2; dx++) {
@@ -3954,10 +3960,10 @@ final class ShowcaseFeatures {
             level.setBlockAndUpdate(racks[i], rack);
             if (level.getBlockEntity(racks[i]) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
                 for (int slot = 0; slot < parts[i].length; slot++) {
-                    be.parts().setItem(slot, new net.minecraft.world.item.ItemStack(parts[i][slot]));
+                    be.insert(new net.minecraft.world.item.ItemStack(parts[i][slot]));
                 }
                 // Elk rack heeft zijn eigen fan nodig (8 oktober), anders wordt het steeds warmer.
-                be.parts().setItem(5, new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.SERVER_FAN.get()));
+                be.insert(new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.SERVER_FAN.get()));
             }
         }
         // De muur (z + 6), met een ijzeren deur, een lamp erin en de lezer en het paneel ervoor.
@@ -4283,17 +4289,27 @@ final class ShowcaseFeatures {
     static final BlockPos DATACENTER_VAULT = new BlockPos(-50, -60, -130);
 
     /**
-     * Het lab van hoofdstuk 8, met in het rack rechts vier GPU's erbij, ook op de plek van zijn fan (en
-     * dus geen fan meer: dat rack wordt steeds warmer; de andere twee racks hebben hun fan en blijven koel),
-     * en een tweede datacenter "dev-vault" ver weg met daarop al een backup van het lab.
+     * Het lab van hoofdstuk 8, met in het rack rechts twee GPU's erbij en zijn fan eruit (dus geen fan meer: dat rack wordt
+     * steeds warmer; de andere twee racks hebben hun fan en blijven koel), en een tweede datacenter "dev-vault" ver weg met
+     * daarop al een backup van het lab. De racks heten lab-1, lab-2 en lab-3 (hoofdstuk 64: zo staan ze in de app Monitor).
      */
     static void buildDatacenter(net.minecraft.server.level.ServerPlayer player) {
         net.minecraft.server.level.ServerLevel level = player.serverLevel();
         buildLogicLab(player);
-        if (level.getBlockEntity(LOGIC_LAB.offset(4, 0, 0)) instanceof com.senne.imttech.logic.ServerRackBlockEntity rack) {
-            for (int slot = 2; slot < 6; slot++) {
-                rack.parts().setItem(slot, new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.SERVER_GPU.get()));
+        BlockPos[] labRacks = {LOGIC_LAB.offset(3, 0, 0), LOGIC_LAB.offset(3, 1, 0), LOGIC_LAB.offset(4, 0, 0)};
+        for (int i = 0; i < labRacks.length; i++) {
+            if (level.getBlockEntity(labRacks[i]) instanceof com.senne.imttech.logic.ServerRackBlockEntity rack) {
+                rack.setName("lab-" + (i + 1));
             }
+        }
+        if (level.getBlockEntity(LOGIC_LAB.offset(4, 0, 0)) instanceof com.senne.imttech.logic.ServerRackBlockEntity rack) {
+            for (int slot = 4; slot < rack.parts().getContainerSize(); slot++) {
+                rack.parts().setItem(slot, net.minecraft.world.item.ItemStack.EMPTY); // de fans eruit
+            }
+            for (int i = 0; i < 2; i++) {
+                rack.insert(new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.SERVER_GPU.get()));
+            }
+            rack.refresh();
         }
         // Het tweede datacenter: een kern, een generator en een rack met CPU, RAM en twee SSD's.
         BlockPos vault = DATACENTER_VAULT;
@@ -4311,11 +4327,11 @@ final class ShowcaseFeatures {
         }
         level.setBlockAndUpdate(vaultRack, com.senne.imttech.registry.ModBlocks.SERVER_RACK.get().defaultBlockState());
         if (level.getBlockEntity(vaultRack) instanceof com.senne.imttech.logic.ServerRackBlockEntity rack) {
-            rack.parts().setItem(0, new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.SERVER_CPU.get()));
-            rack.parts().setItem(1, new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.SERVER_RAM.get()));
-            rack.parts().setItem(2, new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.SERVER_SSD.get()));
-            rack.parts().setItem(3, new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.SERVER_SSD.get()));
-            rack.parts().setItem(4, new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.SERVER_FAN.get()));
+            rack.insert(new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.SERVER_CPU.get()));
+            rack.insert(new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.SERVER_RAM.get()));
+            rack.insert(new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.SERVER_SSD.get()));
+            rack.insert(new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.SERVER_SSD.get()));
+            rack.insert(new net.minecraft.world.item.ItemStack(com.senne.imttech.registry.ModItems.SERVER_FAN.get()));
         }
         if (level.getBlockEntity(vault) instanceof com.senne.imttech.security.SecurityCoreBlockEntity core) {
             core.setHostname("dev-vault");
@@ -4368,19 +4384,13 @@ final class ShowcaseFeatures {
         }
     }
 
-    /** Opent het scherm van een rack. */
-    private static void openRack(net.minecraft.server.level.ServerPlayer player, BlockPos pos) {
-        if (player.serverLevel().getBlockEntity(pos) instanceof com.senne.imttech.logic.ServerRackBlockEntity rack) {
-            player.openMenu(rack, pos);
-        }
-    }
 
     /** Maakt één rack van het lab te heet (en zijn GPU's al wat versleten), zodat je de waarschuwingen ziet. */
     private static void heatUp(net.minecraft.server.level.ServerPlayer player, BlockPos rackPos, double temperature) {
         net.minecraft.server.level.ServerLevel level = player.serverLevel();
         if (level.getBlockEntity(rackPos) instanceof com.senne.imttech.logic.ServerRackBlockEntity rack) {
-            for (int slot = 2; slot < 6; slot++) {
-                com.senne.imttech.logic.ServerPartItem.setWear(rack.parts().getItem(slot), 6 + slot * 2);
+            for (int slot = 0; slot < 2; slot++) { // de twee GPU's bovenaan
+                com.senne.imttech.logic.ServerPartItem.setWear(rack.parts().getItem(slot), 8 + slot * 3);
             }
             rack.setTemperature(temperature);
         }
@@ -4745,10 +4755,10 @@ final class ShowcaseFeatures {
         level.setBlockAndUpdate(rack, com.senne.imttech.registry.ModBlocks.SERVER_RACK.get().defaultBlockState()
                 .setValue(com.senne.imttech.logic.ServerRackBlock.FACING, net.minecraft.core.Direction.SOUTH));
         if (level.getBlockEntity(rack) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
-            be.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
-            be.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
-            be.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
-            be.parts().setItem(5, new ItemStack(ModItems.SERVER_FAN.get()));
+            be.insert(new ItemStack(ModItems.SERVER_CPU.get()));
+            be.insert(new ItemStack(ModItems.SERVER_RAM.get()));
+            be.insert(new ItemStack(ModItems.SERVER_SSD.get()));
+            be.insert(new ItemStack(ModItems.SERVER_FAN.get()));
         }
         if (level.getBlockEntity(ROBOT_BAY.offset(10, 0, 6)) instanceof com.senne.imttech.security.SecurityCoreBlockEntity core) {
             core.logic().put(null, program("Patrol", BAY_PATROL, com.senne.imttech.logic.program.ProgramKind.ROBOT));

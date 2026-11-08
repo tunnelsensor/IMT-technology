@@ -15,22 +15,25 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.ContainerHelper;
-import net.minecraft.world.MenuProvider;
+import net.minecraft.world.Containers;
 import net.minecraft.world.SimpleContainer;
-import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseFireBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * De "binnenkant" van een serverrack: zijn zes vakjes (CPU, GPU, RAM, SSD, fan), en of hij meedraait.
+ * De "binnenkant" van een serverrack: zijn acht vakjes (zie RackBay), zijn naam, wie hem neerzette, en of hij meedraait.
  *
  * Elke twee seconden kijkt hij:
  * <ul>
@@ -48,18 +51,25 @@ import net.minecraft.world.level.block.state.BlockState;
  * rekenen doet Datacenter (om de twee seconden); het rack onthoudt alleen hoe warm het is.
  *
  * Wordt een rack veel te heet, dan kan het in brand vliegen: vuur erop, rook, en na BURN_TICKS is het
- * weg, met alles wat er dan nog in zit. Tot die tijd kun je het openen en je onderdelen eruit halen.
+ * weg, met alles wat er dan nog in zit. Tot die tijd kun je je onderdelen eruit klikken.
+ *
+ * Hoofdstuk 64: wat er in de vakjes zit, staat ook in de blokstaat (bay_0 tot bay_7), zodat je het op de voorkant ziet;
+ * na elke verandering werkt {@link #refresh} die bij. Een rack van voor 8 november had zes vakjes waar alles in mocht: bij
+ * het laden gaat elk onderdeel naar een vakje waar het mag, en wat niet meer past valt eruit ({@link #dropOverflow}).
  */
-public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
-    /** Waarom hij niet meedraait (voor het scherm). */
+public class ServerRackBlockEntity extends BlockEntity implements com.senne.imttech.security.BaseTrust.Placed {
+    /** Waarom hij niet meedraait (voor de app Monitor). */
     public enum Status {
         ONLINE, NO_NETWORK, NOT_CONNECTED, NO_POWER
     }
 
+    /** Hoe de vakjes liggen: 2 = de acht vakjes van hoofdstuk 64 (een rack zonder dit getal had er zes). */
+    private static final int LAYOUT = 2;
+
     private final SimpleContainer parts = new SimpleContainer(ImtConfig.Logic.RACK_SLOTS) {
         @Override
         public boolean canPlaceItem(int slot, ItemStack stack) {
-            return stack.getItem() instanceof ServerPartItem;
+            return stack.getItem() instanceof ServerPartItem part && RackBay.accepts(slot, part.kind());
         }
 
         @Override
@@ -87,66 +97,22 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
     private double fullHeat;
     private double cooling;
 
-    /** Wat het scherm te zien krijgt; zie ServerRackMenu. */
-    private final ContainerData data = new ContainerData() {
-        @Override
-        public int get(int index) {
-            if (index == ServerRackMenu.DATA_STATUS) {
-                return status.ordinal();
-            }
-            if (!(level instanceof ServerLevel serverLevel)) {
-                return 0;
-            }
-            if (index == ServerRackMenu.DATA_BURN) {
-                return burnSecondsLeft(serverLevel.getGameTime());
-            }
-            if (index == ServerRackMenu.DATA_TEMP) {
-                return tenths(temperature); // ook zonder netwerk: dan koelt het af
-            }
-            SecurityCoreBlockEntity core = SecurityCores.deviceCore(serverLevel, worldPosition);
-            if (core == null) {
-                return 0;
-            }
-            LogicServer.Stats stats = LogicServer.stats(serverLevel, core);
-            return switch (index) {
-                case ServerRackMenu.DATA_RACKS -> stats.racks();
-                case ServerRackMenu.DATA_CPU -> stats.cpus();
-                case ServerRackMenu.DATA_GPU -> stats.gpus();
-                case ServerRackMenu.DATA_FAN -> stats.fans();
-                case ServerRackMenu.DATA_RAM -> stats.ram();
-                case ServerRackMenu.DATA_SSD -> stats.ssd();
-                case ServerRackMenu.DATA_CORE_ONLINE -> stats.coreOnline() ? 1 : 0;
-                // De warmte en koeling van DIT rack, en de temperatuur van het heetste rack van de server
-                // (dat bepaalt hoe snel de hele server werkt).
-                case ServerRackMenu.DATA_HEAT -> tenths(heat);
-                case ServerRackMenu.DATA_FULL_HEAT -> tenths(fullHeat);
-                case ServerRackMenu.DATA_COOLING -> tenths(cooling);
-                case ServerRackMenu.DATA_SERVER_TEMP -> tenths(core.datacenter().temperature());
-                default -> 0;
-            };
-        }
-
-        @Override
-        public void set(int index, int value) {
-            // Alleen de server rekent; het scherm leest alleen.
-        }
-
-        @Override
-        public int getCount() {
-            return ServerRackMenu.DATA_COUNT;
-        }
-    };
-
-    /** 72.44 wordt 724 (het scherm krijgt alleen hele getallen, en niet groter dan 32767). */
-    private static int tenths(double value) {
-        return (int) Math.max(-32000, Math.min(32000, Math.round(value * 10)));
-    }
+    /** De naam die je het rack gaf (sneak + rechtsklik), zoals hij in de app Monitor staat; leeg = nog geen naam. */
+    private String name = "";
+    /** Wie hem neerzette (hoofdstuk 64, voor de naam: zie security/BaseTrust), of null. */
+    private @Nullable UUID owner;
+    private String ownerName = "";
+    /** Onderdelen van een oud rack (zes vakjes) die niet meer in een vakje passen: die vallen eruit bij de eerste tick. */
+    private final List<ItemStack> overflow = new ArrayList<>();
+    /** Moeten de vakjes nog nagekeken en de blokstaat bijgewerkt worden (na een verandering)? */
+    private boolean dirtyBays = true;
 
     public ServerRackBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SERVER_RACK.get(), pos, state);
         parts.addListener(container -> {
             setChanged();
             LogicServer.forgetAll(); // de server telt opnieuw
+            dirtyBays = true; // de voorkant bijwerken (bij de volgende tick, of meteen via refresh)
         });
     }
 
@@ -169,9 +135,113 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
         return count;
     }
 
+    /**
+     * Zet een onderdeel in het eerste lege vakje waar het mag (voor de showcase, de rondleiding en de tests); geeft false als
+     * er geen plek meer is. Eén stuk, ook als je een stapel geeft.
+     */
+    public boolean insert(ItemStack stack) {
+        if (!(stack.getItem() instanceof ServerPartItem part)) {
+            return false;
+        }
+        for (int slot = 0; slot < parts.getContainerSize(); slot++) {
+            if (parts.getItem(slot).isEmpty() && RackBay.accepts(slot, part.kind())) {
+                parts.setItem(slot, stack.copyWithCount(1));
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Na een verandering: een onderdeel dat in een verkeerd vakje zit (een oud rack, of code die het er zo in zette) gaat
+     * naar een vakje waar het mag, of eruit; en de blokstaat laat zien wat er in elk vakje zit.
+     */
+    public void refresh() {
+        dirtyBays = false;
+        List<ItemStack> misplaced = new ArrayList<>();
+        for (int slot = 0; slot < parts.getContainerSize(); slot++) {
+            ItemStack stack = parts.getItem(slot);
+            if (!stack.isEmpty() && !(stack.getItem() instanceof ServerPartItem part && RackBay.accepts(slot, part.kind()))) {
+                misplaced.add(parts.removeItemNoUpdate(slot));
+            }
+        }
+        for (ItemStack stack : misplaced) {
+            if (!insert(stack)) {
+                overflow.add(stack);
+            }
+        }
+        if (!misplaced.isEmpty()) {
+            setChanged();
+            LogicServer.forgetAll();
+        }
+        dirtyBays = false; // insert hierboven zette het weer aan
+        if (level != null && !level.isClientSide) {
+            BlockState state = level.getBlockState(worldPosition);
+            if (state.getBlock() instanceof ServerRackBlock) {
+                BlockState shown = state;
+                for (int slot = 0; slot < parts.getContainerSize(); slot++) {
+                    ItemStack stack = parts.getItem(slot);
+                    RackBay bay = stack.getItem() instanceof ServerPartItem part ? RackBay.of(part.kind()) : RackBay.NONE;
+                    shown = shown.setValue(ServerRackBlock.BAYS.get(slot), bay);
+                }
+                if (shown != state) {
+                    level.setBlock(worldPosition, shown, Block.UPDATE_CLIENTS);
+                }
+            }
+        }
+    }
+
+    /** De onderdelen die niet meer in een vakje passen (van een oud rack), naast het rack laten vallen. */
+    public void dropOverflow(Level level) {
+        if (overflow.isEmpty()) {
+            return;
+        }
+        for (ItemStack stack : overflow) {
+            Containers.dropItemStack(level, worldPosition.getX() + 0.5, worldPosition.getY() + 1.0, worldPosition.getZ() + 0.5, stack);
+        }
+        overflow.clear();
+        setChanged();
+    }
+
+    // ================================================================ Naam en eigenaar (hoofdstuk 64)
+
+    /** De naam die je het rack gaf, of "" (dan staat hij in de app Monitor met zijn plek). */
+    public String name() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = InputDeviceBlockEntity.cleanName(name);
+        setChanged();
+    }
+
+    @Override
+    public @Nullable UUID owner() {
+        return owner;
+    }
+
+    @Override
+    public String ownerName() {
+        return ownerName;
+    }
+
+    @Override
+    public void setOwner(ServerPlayer player) {
+        owner = player.getUUID();
+        ownerName = player.getGameProfile().getName();
+        setChanged();
+    }
+
     // ================================================================ Elke twee seconden
 
     public void serverTick(ServerLevel level, BlockPos pos, BlockState state) {
+        if (dirtyBays) {
+            refresh();
+            state = level.getBlockState(pos);
+        }
+        if (!overflow.isEmpty()) {
+            dropOverflow(level);
+        }
         if (burnUntil > 0) {
             if (level.getGameTime() >= burnUntil) {
                 burnDown(level);
@@ -342,18 +412,6 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
         }
     }
 
-    // ================================================================ Het scherm
-
-    @Override
-    public Component getDisplayName() {
-        return Component.translatable("block.imttech.server_rack");
-    }
-
-    @Override
-    public AbstractContainerMenu createMenu(int containerId, Inventory inventory, Player player) {
-        return new ServerRackMenu(containerId, inventory, parts, data);
-    }
-
     // ================================================================ Opslaan
 
     @Override
@@ -364,6 +422,21 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
             items.set(i, parts.getItem(i));
         }
         ContainerHelper.saveAllItems(tag, items, registries);
+        tag.putInt("Layout", LAYOUT);
+        if (!overflow.isEmpty()) {
+            net.minecraft.nbt.ListTag extra = new net.minecraft.nbt.ListTag();
+            for (ItemStack stack : overflow) {
+                extra.add(stack.save(registries));
+            }
+            tag.put("Overflow", extra);
+        }
+        if (!name.isEmpty()) {
+            tag.putString("Name", name);
+        }
+        if (owner != null) {
+            tag.putUUID("Owner", owner);
+            tag.putString("OwnerName", ownerName);
+        }
         tag.putString("Status", status.name());
         if (burnUntil > 0) {
             tag.putLong("BurnUntil", burnUntil);
@@ -377,11 +450,21 @@ public class ServerRackBlockEntity extends BlockEntity implements MenuProvider {
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
+        // Een oud rack (zes vakjes, alles mocht overal): zijn vakjes 0 tot 5 komen gewoon binnen, en refresh zet bij de
+        // eerste tick elk onderdeel in een vakje waar het mag (wat niet meer past, valt eruit).
         NonNullList<ItemStack> items = NonNullList.withSize(parts.getContainerSize(), ItemStack.EMPTY);
         ContainerHelper.loadAllItems(tag, items, registries);
         for (int i = 0; i < items.size(); i++) {
             parts.setItem(i, items.get(i));
         }
+        overflow.clear();
+        for (net.minecraft.nbt.Tag element : tag.getList("Overflow", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+            ItemStack.parse(registries, element).ifPresent(overflow::add);
+        }
+        dirtyBays = true;
+        name = tag.getString("Name");
+        owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
+        ownerName = tag.getString("OwnerName");
         try {
             status = Status.valueOf(tag.getString("Status"));
         } catch (IllegalArgumentException e) {

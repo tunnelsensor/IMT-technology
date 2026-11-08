@@ -1,34 +1,1114 @@
 {
-  "variants": {
-    "facing=north,online=false": {
-      "model": "imttech:block/server_rack"
+  "multipart": [
+    {
+      "when": {
+        "facing": "north",
+        "online": "false"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack"
+      }
     },
-    "facing=north,online=true": {
-      "model": "imttech:block/server_rack_on"
+    {
+      "when": {
+        "facing": "north",
+        "online": "false",
+        "bay_0": "cpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_0_cpu"
+      }
     },
-    "facing=east,online=false": {
-      "model": "imttech:block/server_rack",
-      "y": 90
+    {
+      "when": {
+        "facing": "north",
+        "online": "false",
+        "bay_0": "gpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_0_gpu"
+      }
     },
-    "facing=east,online=true": {
-      "model": "imttech:block/server_rack_on",
-      "y": 90
+    {
+      "when": {
+        "facing": "north",
+        "online": "false",
+        "bay_1": "cpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_1_cpu"
+      }
     },
-    "facing=south,online=false": {
-      "model": "imttech:block/server_rack",
-      "y": 180
+    {
+      "when": {
+        "facing": "north",
+        "online": "false",
+        "bay_1": "gpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_1_gpu"
+      }
     },
-    "facing=south,online=true": {
-      "model": "imttech:block/server_rack_on",
-      "y": 180
+    {
+      "when": {
+        "facing": "north",
+        "online": "false",
+        "bay_2": "ram"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_2_ram"
+      }
     },
-    "facing=west,online=false": {
-      "model": "imttech:block/server_rack",
-      "y": 270
+    {
+      "when": {
+        "facing": "north",
+        "online": "false",
+        "bay_2": "ssd"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_2_ssd"
+      }
     },
-    "facing=west,online=true": {
-      "model": "imttech:block/server_rack_on",
-      "y": 270
+    {
+      "when": {
+        "facing": "north",
+        "online": "false",
+        "bay_3": "ram"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_3_ram"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "online": "false",
+        "bay_3": "ssd"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_3_ssd"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "online": "false",
+        "bay_4": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_4_fan"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "online": "false",
+        "bay_5": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_5_fan"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "online": "false",
+        "bay_6": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_6_fan"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "online": "false",
+        "bay_7": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_7_fan"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "online": "true"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_on"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "online": "true",
+        "bay_0": "cpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_0_cpu_on"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "online": "true",
+        "bay_0": "gpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_0_gpu_on"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "online": "true",
+        "bay_1": "cpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_1_cpu_on"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "online": "true",
+        "bay_1": "gpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_1_gpu_on"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "online": "true",
+        "bay_2": "ram"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_2_ram_on"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "online": "true",
+        "bay_2": "ssd"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_2_ssd_on"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "online": "true",
+        "bay_3": "ram"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_3_ram_on"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "online": "true",
+        "bay_3": "ssd"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_3_ssd_on"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "online": "true",
+        "bay_4": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_4_fan_on"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "online": "true",
+        "bay_5": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_5_fan_on"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "online": "true",
+        "bay_6": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_6_fan_on"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "online": "true",
+        "bay_7": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_7_fan_on"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "online": "false"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "online": "false",
+        "bay_0": "cpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_0_cpu",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "online": "false",
+        "bay_0": "gpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_0_gpu",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "online": "false",
+        "bay_1": "cpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_1_cpu",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "online": "false",
+        "bay_1": "gpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_1_gpu",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "online": "false",
+        "bay_2": "ram"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_2_ram",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "online": "false",
+        "bay_2": "ssd"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_2_ssd",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "online": "false",
+        "bay_3": "ram"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_3_ram",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "online": "false",
+        "bay_3": "ssd"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_3_ssd",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "online": "false",
+        "bay_4": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_4_fan",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "online": "false",
+        "bay_5": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_5_fan",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "online": "false",
+        "bay_6": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_6_fan",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "online": "false",
+        "bay_7": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_7_fan",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "online": "true"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_on",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "online": "true",
+        "bay_0": "cpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_0_cpu_on",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "online": "true",
+        "bay_0": "gpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_0_gpu_on",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "online": "true",
+        "bay_1": "cpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_1_cpu_on",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "online": "true",
+        "bay_1": "gpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_1_gpu_on",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "online": "true",
+        "bay_2": "ram"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_2_ram_on",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "online": "true",
+        "bay_2": "ssd"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_2_ssd_on",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "online": "true",
+        "bay_3": "ram"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_3_ram_on",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "online": "true",
+        "bay_3": "ssd"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_3_ssd_on",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "online": "true",
+        "bay_4": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_4_fan_on",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "online": "true",
+        "bay_5": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_5_fan_on",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "online": "true",
+        "bay_6": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_6_fan_on",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "online": "true",
+        "bay_7": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_7_fan_on",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "online": "false"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "online": "false",
+        "bay_0": "cpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_0_cpu",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "online": "false",
+        "bay_0": "gpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_0_gpu",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "online": "false",
+        "bay_1": "cpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_1_cpu",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "online": "false",
+        "bay_1": "gpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_1_gpu",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "online": "false",
+        "bay_2": "ram"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_2_ram",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "online": "false",
+        "bay_2": "ssd"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_2_ssd",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "online": "false",
+        "bay_3": "ram"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_3_ram",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "online": "false",
+        "bay_3": "ssd"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_3_ssd",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "online": "false",
+        "bay_4": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_4_fan",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "online": "false",
+        "bay_5": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_5_fan",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "online": "false",
+        "bay_6": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_6_fan",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "online": "false",
+        "bay_7": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_7_fan",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "online": "true"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_on",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "online": "true",
+        "bay_0": "cpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_0_cpu_on",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "online": "true",
+        "bay_0": "gpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_0_gpu_on",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "online": "true",
+        "bay_1": "cpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_1_cpu_on",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "online": "true",
+        "bay_1": "gpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_1_gpu_on",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "online": "true",
+        "bay_2": "ram"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_2_ram_on",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "online": "true",
+        "bay_2": "ssd"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_2_ssd_on",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "online": "true",
+        "bay_3": "ram"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_3_ram_on",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "online": "true",
+        "bay_3": "ssd"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_3_ssd_on",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "online": "true",
+        "bay_4": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_4_fan_on",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "online": "true",
+        "bay_5": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_5_fan_on",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "online": "true",
+        "bay_6": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_6_fan_on",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "online": "true",
+        "bay_7": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_7_fan_on",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "online": "false"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "online": "false",
+        "bay_0": "cpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_0_cpu",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "online": "false",
+        "bay_0": "gpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_0_gpu",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "online": "false",
+        "bay_1": "cpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_1_cpu",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "online": "false",
+        "bay_1": "gpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_1_gpu",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "online": "false",
+        "bay_2": "ram"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_2_ram",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "online": "false",
+        "bay_2": "ssd"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_2_ssd",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "online": "false",
+        "bay_3": "ram"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_3_ram",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "online": "false",
+        "bay_3": "ssd"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_3_ssd",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "online": "false",
+        "bay_4": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_4_fan",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "online": "false",
+        "bay_5": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_5_fan",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "online": "false",
+        "bay_6": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_6_fan",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "online": "false",
+        "bay_7": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_7_fan",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "online": "true"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_on",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "online": "true",
+        "bay_0": "cpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_0_cpu_on",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "online": "true",
+        "bay_0": "gpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_0_gpu_on",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "online": "true",
+        "bay_1": "cpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_1_cpu_on",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "online": "true",
+        "bay_1": "gpu"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_1_gpu_on",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "online": "true",
+        "bay_2": "ram"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_2_ram_on",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "online": "true",
+        "bay_2": "ssd"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_2_ssd_on",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "online": "true",
+        "bay_3": "ram"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_3_ram_on",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "online": "true",
+        "bay_3": "ssd"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_3_ssd_on",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "online": "true",
+        "bay_4": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_4_fan_on",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "online": "true",
+        "bay_5": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_5_fan_on",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "online": "true",
+        "bay_6": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_6_fan_on",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "online": "true",
+        "bay_7": "fan"
+      },
+      "apply": {
+        "model": "imttech:block/server_rack_bay_7_fan_on",
+        "y": 270
+      }
     }
-  }
+  ]
 }

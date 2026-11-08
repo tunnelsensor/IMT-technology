@@ -1446,10 +1446,10 @@ public final class VisualCheck {
                 }
                 level.setBlockAndUpdate(rack, ModBlocks.SERVER_RACK.get().defaultBlockState());
                 if (level.getBlockEntity(rack) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
-                    be.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
-                    be.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
-                    be.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
-                    be.parts().setItem(5, new ItemStack(ModItems.SERVER_FAN.get()));
+                    be.insert(new ItemStack(ModItems.SERVER_CPU.get()));
+                    be.insert(new ItemStack(ModItems.SERVER_RAM.get()));
+                    be.insert(new ItemStack(ModItems.SERVER_SSD.get()));
+                    be.insert(new ItemStack(ModItems.SERVER_FAN.get()));
                 }
                 for (com.senne.imttech.robot.GuardRobotEntity robot : level.getEntitiesOfClass(com.senne.imttech.robot.GuardRobotEntity.class,
                         new net.minecraft.world.phys.AABB(robotCore).inflate(24))) {
@@ -2445,8 +2445,9 @@ public final class VisualCheck {
             t.shot(25, "95_bombardment_more");
         }
 
-        // --- De server (7 oktober): drie racks tegen elkaar (één generator eronder), een los rack
-        // ernaast dat niet meedraait, het scherm van een rack, en de server in de app Status.
+        // --- De server (7 oktober): drie racks tegen elkaar (één generator eronder) en een los rack ernaast dat niet
+        // meedraait. Sinds hoofdstuk 64 zonder scherm: je ziet de onderdelen in hun vakjes op de voorkant (dichtbij), het
+        // naamscherm (sneak + rechtsklik), en de cijfers van elk rack in de app Monitor.
         if (want("racks")) {
             BlockPos core = new BlockPos(60, -60, -80);
             BlockPos[] server = {new BlockPos(63, -60, -78), new BlockPos(63, -59, -78), new BlockPos(64, -60, -78)};
@@ -2480,69 +2481,65 @@ public final class VisualCheck {
                     level.setBlockAndUpdate(pos, rack);
                 }
                 level.setBlockAndUpdate(lone, rack);
+                // Het eerste rack vol (2 x CPU/GPU, RAM en SSD, 4 fans), het tweede half, het derde alleen geheugen.
                 ItemStack[][] parts = {
-                        {new ItemStack(ModItems.SERVER_CPU.get()), new ItemStack(ModItems.SERVER_RAM.get()), new ItemStack(ModItems.SERVER_SSD.get()),
-                                new ItemStack(ModItems.SERVER_GPU.get()), new ItemStack(ModItems.SERVER_FAN.get())},
+                        {new ItemStack(ModItems.SERVER_CPU.get()), new ItemStack(ModItems.SERVER_GPU.get()), new ItemStack(ModItems.SERVER_RAM.get()),
+                                new ItemStack(ModItems.SERVER_SSD.get()), new ItemStack(ModItems.SERVER_FAN.get()), new ItemStack(ModItems.SERVER_FAN.get()),
+                                new ItemStack(ModItems.SERVER_FAN.get()), new ItemStack(ModItems.SERVER_FAN.get())},
                         {new ItemStack(ModItems.SERVER_CPU.get()), new ItemStack(ModItems.SERVER_RAM.get())},
-                        {new ItemStack(ModItems.SERVER_SSD.get())}};
+                        {new ItemStack(ModItems.SERVER_SSD.get()), new ItemStack(ModItems.SERVER_RAM.get()), new ItemStack(ModItems.SERVER_FAN.get())}};
+                String[] names = {"rack1", "rack2", ""};
                 for (int i = 0; i < server.length; i++) {
                     if (level.getBlockEntity(server[i]) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
-                        for (int slot = 0; slot < parts[i].length; slot++) {
-                            be.parts().setItem(slot, parts[i][slot]);
+                        for (ItemStack part : parts[i]) {
+                            be.insert(part);
                         }
+                        be.setName(names[i]);
+                        be.refresh();
                     }
                 }
                 if (level.getBlockEntity(lone) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
-                    be.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
+                    be.insert(new ItemStack(ModItems.SERVER_CPU.get()));
+                    be.setName("spare");
+                    be.refresh();
                 }
             });
             t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
             t.stand(10, 65.0, -60, -74.5, 180, 12);
             t.shot(90, "r01_racks");
+            // Dichtbij: de acht vakjes op de voorkant, met de onderdelen erin (de lampjes knipperen, de fans draaien).
+            t.stand(0, 63.5, -60, -76.2, 180, 10);
+            t.shot(20, "r01b_rack_bays");
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
-            t.onServer(0, player -> {
-                if (player.serverLevel().getBlockEntity(server[0]) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
-                    player.openMenu(be, server[0]);
-                }
-            });
-            t.shot(20, "r02_rack_screen");
+            // Sneak + rechtsklik met een lege hand: het naamscherm (de naam staat in de app Monitor).
+            t.open(5, () -> new com.senne.imttech.client.InputNameScreen(server[1], "rack2", "Dev"));
+            t.shot(15, "r02_rack_name");
             t.close(0);
-            t.onServer(0, player -> {
-                if (player.serverLevel().getBlockEntity(lone) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
-                    player.openMenu(be, lone);
-                }
-            });
-            t.shot(20, "r03_rack_not_connected");
-            t.close(0);
-            // Een warm rack (8 oktober: elk rack zijn eigen temperatuur): het tweede rack (zonder fan)
-            // krijgt twee GPU's erbij en is 78 graden. Zijn scherm zegt dat de hele server op halve
-            // snelheid gaat en hoeveel fans erin moeten; het eerste rack (met fan) blijft koel en zegt
-            // dat een ander rack te heet is.
+            // Een warm rack (8 oktober: elk rack zijn eigen temperatuur): het tweede rack (zonder fan) krijgt een GPU erbij
+            // en is 78 graden. In de app Monitor: zijn eigen cijfers (de hele server op halve snelheid, hoeveel fans erin
+            // moeten), het eerste rack (met fans) blijft koel, en het losse rack draait niet mee.
             t.onServer(0, player -> {
                 if (player.serverLevel().getBlockEntity(server[1]) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
-                    be.parts().setItem(2, new ItemStack(ModItems.SERVER_GPU.get()));
-                    be.parts().setItem(3, new ItemStack(ModItems.SERVER_GPU.get()));
+                    be.insert(new ItemStack(ModItems.SERVER_GPU.get()));
                     be.setTemperature(78);
+                    be.refresh();
                 }
                 com.senne.imttech.logic.LogicServer.forgetAll();
                 if (player.serverLevel().getBlockEntity(core) instanceof com.senne.imttech.security.SecurityCoreBlockEntity be) {
                     be.datacenter().update(player.serverLevel(), be);
                 }
-                if (player.serverLevel().getBlockEntity(server[1]) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
-                    player.openMenu(be, server[1]);
-                }
             });
-            t.shot(20, "r05_rack_hot");
-            t.close(0);
-            t.onServer(0, player -> {
-                if (player.serverLevel().getBlockEntity(server[0]) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
-                    player.openMenu(be, server[0]);
-                }
-            });
-            t.shot(20, "r05b_rack_other_hot");
-            t.close(0);
-            // Brand (8 oktober): het rack met de GPU's vat vlam (vuur erop, rook), en zijn scherm
-            // zegt dat je je onderdelen eruit moet halen. Na 20 seconden is het weg.
+            t.stand(0, 60.5, -60, -77.5, 180, 20);
+            t.onServer(5, player -> com.senne.imttech.security.os.SecurityOs.open(player, core));
+            t.step(10, () -> monitorRack("rack2"));
+            t.shot(15, "r05_monitor_rack_hot");
+            t.step(0, () -> monitorRack("rack1"));
+            t.shot(10, "r05b_monitor_rack_cool");
+            t.step(0, () -> monitorRack("spare"));
+            t.shot(10, "r03_monitor_rack_not_connected");
+            t.close(5);
+            // Brand (8 oktober): het rack met de GPU vat vlam (vuur erop, rook), en in de app Monitor knippert ON FIRE: klik
+            // je onderdelen eruit. Na 20 seconden is het weg.
             t.onServer(0, player -> {
                 if (player.serverLevel().getBlockEntity(server[1]) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
                     be.ignite(player.serverLevel(), player.serverLevel().getGameTime() + 400);
@@ -2552,28 +2549,19 @@ public final class VisualCheck {
             t.stand(0, 65.0, -60, -74.5, 180, 12);
             t.shot(30, "r06_rack_fire");
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
-            t.onServer(0, player -> {
-                if (player.serverLevel().getBlockEntity(server[1]) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
-                    player.openMenu(be, server[1]);
-                }
-            });
-            t.shot(20, "r07_rack_fire_screen");
-            t.close(0);
             t.stand(0, 60.5, -60, -77.5, 180, 20);
             t.onServer(5, player -> com.senne.imttech.security.os.SecurityOs.open(player, core));
-            t.step(10, () -> {
+            t.step(10, () -> monitorRack("rack2"));
+            t.shot(10, "r07_monitor_rack_fire");
+            t.step(5, () -> {
                 if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen os) {
                     os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.STATUS);
                 }
             });
             t.shot(10, "r04_os_status_server");
-            // De app Monitor (8 oktober): tegels met de laatste minuut, de racks (een staat in brand)
-            // en wat er bezig is.
-            t.step(5, () -> {
-                if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen os) {
-                    os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.MONITOR);
-                }
-            });
+            // De app Monitor zonder gekozen rack (8 oktober): tegels met de laatste minuut (RAM en SSD in GB en TB, met wat
+            // er nodig is), de racks met hun naam (een staat in brand) en de hele server.
+            t.step(5, () -> monitorRack(null));
             t.shot(15, "r08_os_monitor");
             t.close(10);
             // De app Backup (8 oktober): een tweede datacenter ver weg ("dev-vault"), een backup met de
@@ -2591,11 +2579,10 @@ public final class VisualCheck {
                 }
                 level.setBlockAndUpdate(vaultRack, ModBlocks.SERVER_RACK.get().defaultBlockState());
                 if (level.getBlockEntity(vaultRack) instanceof com.senne.imttech.logic.ServerRackBlockEntity rack) {
-                    rack.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
-                    rack.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
-                    rack.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
-                    rack.parts().setItem(3, new ItemStack(ModItems.SERVER_SSD.get()));
-                    rack.parts().setItem(4, new ItemStack(ModItems.SERVER_FAN.get()));
+                    rack.insert(new ItemStack(ModItems.SERVER_CPU.get()));
+                    rack.insert(new ItemStack(ModItems.SERVER_RAM.get()));
+                    rack.insert(new ItemStack(ModItems.SERVER_SSD.get()));
+                    rack.insert(new ItemStack(ModItems.SERVER_FAN.get()));
                 }
                 if (level.getBlockEntity(vault) instanceof com.senne.imttech.security.SecurityCoreBlockEntity be) {
                     be.setOwner(player);
@@ -2670,9 +2657,9 @@ public final class VisualCheck {
                 level.setBlockAndUpdate(rack, ModBlocks.SERVER_RACK.get().defaultBlockState()
                         .setValue(com.senne.imttech.logic.ServerRackBlock.FACING, Direction.SOUTH));
                 if (level.getBlockEntity(rack) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
-                    be.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
-                    be.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
-                    be.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
+                    be.insert(new ItemStack(ModItems.SERVER_CPU.get()));
+                    be.insert(new ItemStack(ModItems.SERVER_RAM.get()));
+                    be.insert(new ItemStack(ModItems.SERVER_SSD.get()));
                 }
                 for (int dy = 0; dy < 3; dy++) {
                     for (int dx = -1; dx <= 1; dx++) {
@@ -2807,9 +2794,9 @@ public final class VisualCheck {
                 level.setBlockAndUpdate(rack, ModBlocks.SERVER_RACK.get().defaultBlockState()
                         .setValue(com.senne.imttech.logic.ServerRackBlock.FACING, Direction.SOUTH));
                 if (level.getBlockEntity(rack) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
-                    be.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
-                    be.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
-                    be.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
+                    be.insert(new ItemStack(ModItems.SERVER_CPU.get()));
+                    be.insert(new ItemStack(ModItems.SERVER_RAM.get()));
+                    be.insert(new ItemStack(ModItems.SERVER_SSD.get()));
                 }
                 for (int dx = -1; dx <= 1; dx++) {
                     level.setBlockAndUpdate(wall.offset(dx, 0, 0), Blocks.SMOOTH_STONE.defaultBlockState());
@@ -2936,10 +2923,10 @@ public final class VisualCheck {
                 }
                 level.setBlockAndUpdate(rack, ModBlocks.SERVER_RACK.get().defaultBlockState());
                 if (level.getBlockEntity(rack) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
-                    be.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
-                    be.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
-                    be.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
-                    be.parts().setItem(3, new ItemStack(ModItems.SERVER_SSD.get()));
+                    be.insert(new ItemStack(ModItems.SERVER_CPU.get()));
+                    be.insert(new ItemStack(ModItems.SERVER_RAM.get()));
+                    be.insert(new ItemStack(ModItems.SERVER_SSD.get()));
+                    be.insert(new ItemStack(ModItems.SERVER_SSD.get()));
                 }
                 String[] names = {"Vault door", "Lab lights"};
                 for (int i = 0; i < names.length; i++) {
@@ -4012,10 +3999,10 @@ public final class VisualCheck {
         }
         level.setBlockAndUpdate(rack, ModBlocks.SERVER_RACK.get().defaultBlockState());
         if (level.getBlockEntity(rack) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
-            be.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
-            be.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
-            be.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
-            be.parts().setItem(5, new ItemStack(ModItems.SERVER_FAN.get()));
+            be.insert(new ItemStack(ModItems.SERVER_CPU.get()));
+            be.insert(new ItemStack(ModItems.SERVER_RAM.get()));
+            be.insert(new ItemStack(ModItems.SERVER_SSD.get()));
+            be.insert(new ItemStack(ModItems.SERVER_FAN.get()));
         }
     }
 
@@ -4186,9 +4173,9 @@ public final class VisualCheck {
         level.setBlockAndUpdate(rack, ModBlocks.SERVER_RACK.get().defaultBlockState()
                 .setValue(com.senne.imttech.logic.ServerRackBlock.FACING, Direction.SOUTH));
         if (level.getBlockEntity(rack) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
-            be.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
-            be.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
-            be.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
+            be.insert(new ItemStack(ModItems.SERVER_CPU.get()));
+            be.insert(new ItemStack(ModItems.SERVER_RAM.get()));
+            be.insert(new ItemStack(ModItems.SERVER_SSD.get()));
         }
         for (int dx = 3; dx <= 6; dx++) {
             for (int dy = 0; dy <= 2; dy++) {
@@ -4395,10 +4382,10 @@ public final class VisualCheck {
         level.setBlockAndUpdate(rack, ModBlocks.SERVER_RACK.get().defaultBlockState()
                 .setValue(com.senne.imttech.logic.ServerRackBlock.FACING, Direction.SOUTH));
         if (level.getBlockEntity(rack) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
-            be.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
-            be.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
-            be.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
-            be.parts().setItem(5, new ItemStack(ModItems.SERVER_FAN.get()));
+            be.insert(new ItemStack(ModItems.SERVER_CPU.get()));
+            be.insert(new ItemStack(ModItems.SERVER_RAM.get()));
+            be.insert(new ItemStack(ModItems.SERVER_SSD.get()));
+            be.insert(new ItemStack(ModItems.SERVER_FAN.get()));
         }
         // Het muurtje, met het paneel en de console ervoor (naar het noorden: naar jou).
         for (int x = 0; x <= 4; x++) {
@@ -5236,10 +5223,10 @@ public final class VisualCheck {
         level.setBlockAndUpdate(rack, ModBlocks.SERVER_RACK.get().defaultBlockState()
                 .setValue(com.senne.imttech.logic.ServerRackBlock.FACING, Direction.SOUTH));
         if (level.getBlockEntity(rack) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
-            be.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
-            be.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
-            be.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
-            be.parts().setItem(5, new ItemStack(ModItems.SERVER_FAN.get()));
+            be.insert(new ItemStack(ModItems.SERVER_CPU.get()));
+            be.insert(new ItemStack(ModItems.SERVER_RAM.get()));
+            be.insert(new ItemStack(ModItems.SERVER_SSD.get()));
+            be.insert(new ItemStack(ModItems.SERVER_FAN.get()));
         }
         // De stenen muur, met het scherm ervoor (het kijkt naar het zuiden, de kamer in).
         for (int x = -5; x <= 5; x++) {
@@ -5683,6 +5670,13 @@ public final class VisualCheck {
 
     private static boolean want(String section) {
         return ONLY.isEmpty() || ONLY.contains(section);
+    }
+
+    /** Op de open desktop: de app Monitor met het rack met deze naam gekozen (hoofdstuk 64), of null = de hele server. */
+    static void monitorRack(@org.jetbrains.annotations.Nullable String name) {
+        if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen os) {
+            os.tourMonitorRack(name);
+        }
     }
 
     /** Alle upgrades van de satelliet op hetzelfde niveau; de drie schietstanden minstens vrijgespeeld. */

@@ -27,9 +27,6 @@ public final class ModMenus {
      */
     public static final DeferredHolder<MenuType<?>, MenuType<ChargerMenu>> CHARGER =
             MENUS.register("charger", () -> IMenuTypeExtension.create(ChargerMenu::new));
-    /** Het scherm van een serverrack: zijn vier vakjes en wat de server kan (zie ServerRackMenu). */
-    public static final DeferredHolder<MenuType<?>, MenuType<com.senne.imttech.logic.ServerRackMenu>> SERVER_RACK =
-            MENUS.register("server_rack", () -> IMenuTypeExtension.create(com.senne.imttech.logic.ServerRackMenu::new));
     /** Het scherm van een Crusher of Compactor (hoofdstuk 11): met welke machine het is erbij (zie CrackMachineMenu). */
     public static final DeferredHolder<MenuType<?>, MenuType<com.senne.imttech.repair.CrackMachineMenu>> CRACK_MACHINE =
             MENUS.register("crack_machine", () -> IMenuTypeExtension.create(com.senne.imttech.repair.CrackMachineMenu::new));

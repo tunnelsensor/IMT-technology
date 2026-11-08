@@ -230,6 +230,12 @@ public final class ModNetwork {
                 com.senne.imttech.logic.InputDevices.handleRename(player, payload);
             }
         });
+        // Een serverrack: Save in zijn naamscherm (hoofdstuk 64).
+        registrar.playToServer(RackRenamePayload.TYPE, RackRenamePayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                com.senne.imttech.logic.ServerRacks.handleRename(player, payload);
+            }
+        });
 
         // Server -> speler. In 1.21.1 geef je de afhandeling hier meteen mee. We doen dat met
         // lambda's die pas op het moment van uitvoeren naar de client-code kijken; zo laadt een

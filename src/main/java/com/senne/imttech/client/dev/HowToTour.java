@@ -283,10 +283,14 @@ final class HowToTour {
             }
             level.setBlockAndUpdate(rack, com.senne.imttech.registry.ModBlocks.SERVER_RACK.get().defaultBlockState());
             if (level.getBlockEntity(rack) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
-                be.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
-                be.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
-                be.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
-                be.parts().setItem(3, new ItemStack(ModItems.SERVER_FAN.get()));
+                // Hoofdstuk 64: twee CPU's, RAM en een SSD, twee fans, en een naam (zo staat hij in de app Monitor).
+                be.insert(new ItemStack(ModItems.SERVER_CPU.get()));
+                be.insert(new ItemStack(ModItems.SERVER_CPU.get()));
+                be.insert(new ItemStack(ModItems.SERVER_RAM.get()));
+                be.insert(new ItemStack(ModItems.SERVER_SSD.get()));
+                be.insert(new ItemStack(ModItems.SERVER_FAN.get()));
+                be.insert(new ItemStack(ModItems.SERVER_FAN.get()));
+                be.setName("rack1");
             }
             level.setBlockAndUpdate(DEMO_EMITTER, com.senne.imttech.registry.ModBlocks.LASER_EMITTER.get().defaultBlockState()
                     .setValue(com.senne.imttech.shield.LaserEmitterBlock.FACING, net.minecraft.core.Direction.SOUTH));
@@ -362,19 +366,15 @@ final class HowToTour {
             }
         });
         t.close(5);
-        // Het scherm van een serverrek (het rek naast de kern, met een CPU, RAM, een SSD en een fan).
-        t.onServer(5, player -> {
-            // Net zoals het rek het zelf doet: met zijn plek erbij (anders verbreekt het spel de verbinding).
-            if (player.serverLevel().getBlockEntity(DEMO_CORE.east()) instanceof net.minecraft.world.MenuProvider rack) {
-                player.openMenu(rack, buf -> buf.writeBlockPos(DEMO_CORE.east()));
-            }
-        });
-        t.step(15, () -> {
-            Minecraft mc = Minecraft.getInstance();
-            if (mc.screen != null) {
-                capture("server_rack", (mc.screen.width - 176) / 2, (mc.screen.height - 190) / 2, 176, 190);
-            }
-        });
+        // De app Monitor met het rek naast de kern gekozen (hoofdstuk 64: het rek heeft geen eigen scherm meer, zijn cijfers
+        // staan in de Monitor onder zijn naam).
+        t.onServer(5, player -> com.senne.imttech.security.os.SecurityOs.open(player, DEMO_CORE));
+        t.step(10, () -> mouseTo(1, 1));
+        t.step(5, () -> os(screen -> {
+            screen.tourCloseAll();
+            screen.tourMonitorRack("rack1");
+        }));
+        t.step(40, () -> captureScreen("monitor_rack"));
         t.close(5);
         // Het scherm van een koepelgenerator.
         t.onServer(0, player -> player.serverLevel().setBlockAndUpdate(DEMO_DOME,

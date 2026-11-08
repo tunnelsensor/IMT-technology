@@ -9,6 +9,8 @@ import com.senne.imttech.logic.InputLight;
 import com.senne.imttech.logic.KeycardData;
 import com.senne.imttech.logic.LogicEvents;
 import com.senne.imttech.logic.LogicRunner;
+import com.senne.imttech.logic.LogicServer;
+import com.senne.imttech.logic.LogicStats;
 import com.senne.imttech.logic.program.Expr;
 import com.senne.imttech.logic.program.ExprCache;
 import com.senne.imttech.logic.program.GraphConverter;
@@ -1957,11 +1959,12 @@ public final class LogicGameTests {
     }
 
     /**
-     * De onderdelen tellen: met één SSD (24 blokjes) past een te groot diagram niet, en met één RAM-latje
-     * (2 tegelijk) wacht de derde run in de rij.
+     * Hoofdstuk 64 (jouw keuze "echte maten, limieten weg"): een SSD is 1 TB en een blokje 1 MB, een RAM-latje 16 GB en
+     * een bezig diagram 64 MB. Met één SSD past nu ook een groot diagram (26 blokjes, vroeger te veel), en met één RAM-latje
+     * lopen drie wachtende diagrammen gewoon tegelijk (vroeger moest de derde wachten).
      */
     @GameTest(template = ARENA, timeoutTicks = 100, batch = "logic_runner_limits")
-    public static void logic_ssd_and_ram_limits(GameTestHelper helper) {
+    public static void logic_ssd_and_ram_no_longer_limit(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         Setup setup = setup(helper);
         relay(helper, setup, new BlockPos(9, 3, 4), "Lamp");
@@ -1972,14 +1975,14 @@ public final class LogicGameTests {
         helper.runAfterDelay(2, () -> {
             ImtTechGameTests.startServer(helper, setup.rack(), setup.core());
             SecurityOs.open(setup.owner(), setup.coreAbs());
-            // 25 acties onder een when = 26 blokjes: past niet op één SSD.
+            // 25 acties onder een when = 26 blokjes = 26 MB: past ruim op één SSD van 1 TB.
             StringBuilder big = new StringBuilder("when every(5):\n");
             for (int i = 0; i < 25; i++) {
                 big.append("    toggle(\"Lamp\")\n");
             }
-            save(setup, "Too big", big.toString());
-            if (setup.core().logic().program("Too big") != null) {
-                throw new GameTestAssertException("Een diagram dat niet op de SSD past, werd toch bewaard");
+            save(setup, "Big", big.toString());
+            if (setup.core().logic().program("Big") == null) {
+                throw new GameTestAssertException("Een diagram van 26 MB zou op een SSD van 1 TB moeten passen");
             }
             save(setup, "Slow", "when keycard(\"Slow\"):\n    wait(5)\n    on(\"Lamp\")\n");
             for (int i = 0; i < 3; i++) {
@@ -1990,9 +1993,12 @@ public final class LogicGameTests {
         });
         helper.runAfterDelay(30, () -> {
             int[] load = LogicRunner.load(level, setup.core());
-            if (load[0] != Math.round(ImtConfig.Logic.RUNS_PER_RAM) || load[1] != 1) {
-                throw new GameTestAssertException("Met één RAM-latje zouden er 2 bezig moeten zijn en 1 wachten, niet "
-                        + load[0] + " en " + load[1]);
+            if (load[0] < 3 || load[1] != 0) {
+                throw new GameTestAssertException("Met één RAM-latje van 16 GB zouden de drie diagrammen tegelijk moeten lopen, niet "
+                        + load[0] + " bezig en " + load[1] + " wachtend");
+            }
+            if (LogicServer.stats(level, setup.core()).maxRuns() != LogicStats.maxRuns(1) || LogicStats.maxRuns(1) < 200) {
+                throw new GameTestAssertException("Eén latje zou plaats voor honderden diagrammen moeten hebben: " + LogicStats.maxRuns(1));
             }
             helper.succeed();
         });
