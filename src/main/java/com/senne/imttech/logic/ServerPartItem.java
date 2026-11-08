@@ -16,12 +16,14 @@ import net.minecraft.world.item.TooltipFlag;
  *       van I.M.T (zonder vertraging vanaf 120);</li>
  *   <li><b>GPU</b>: rekenkracht, maar anders verdeeld: half zo goed voor Logic, dubbel zo goed
  *       voor het brein (zie ImtConfig.Logic.GPU_...);</li>
- *   <li><b>RAM</b>: 16 GB; elke 10 CPU's of GPU's hebben er 64 GB van nodig om vlot te draaien (hoofdstuk 64);</li>
- *   <li><b>SSD</b>: 1 TB opslag voor je diagrammen (1 MB per blokje) en backups; een SSD maakt niets sneller;</li>
+ *   <li><b>RAM</b>: standaard 8 GB per latje; elke 10 CPU's of GPU's hebben er 64 GB van nodig om vlot te draaien
+ *       (hoofdstuk 64);</li>
+ *   <li><b>SSD</b>: standaard 200 GB opslag voor je diagrammen (2 MB per blokje) en backups; een SSD maakt niets sneller;</li>
  *   <li><b>Fan</b>: rekent niets, maar koelt het rack waar hij in zit.</li>
  * </ul>
  * Je klikt ze in de vakjes op de voorkant van een rack (zie ServerRackBlock en RackBay): bovenaan een CPU of GPU, dan RAM
- * of een SSD, onderaan fans. Alle racks van een server tellen samen.
+ * of een SSD, onderaan fans. Alle racks van een server tellen samen. Alle getallen in de tooltip komen uit de config
+ * ([logic] in imttech.toml): verander je er een, dan verandert de tooltip mee.
  */
 public class ServerPartItem extends Item {
     /** Welk onderdeel het is. */

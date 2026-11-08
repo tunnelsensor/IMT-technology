@@ -110,11 +110,13 @@ public final class DatacenterGameTests {
             } finally {
                 LogicStats.overrideRealScale(null);
             }
-            // Een CPU erbij: samen 1,5 voor Logic en 3 voor het brein.
+            // Een CPU erbij: samen 1,5 voor Logic en 3 voor het brein, maal wat het ene latje RAM van twee chips kan voeden.
             rack.insert(new ItemStack(ModItems.SERVER_CPU.get()));
             LogicServer.Stats both = LogicServer.stats(level, setup.core());
-            check(Math.abs(both.logicPower() - 1.5) < 1.0e-9 && Math.abs(both.brainPower() - 3.0) < 1.0e-9,
-                    "CPU + GPU zou 1.5 Logic en 3 brein moeten zijn: " + both.logicPower() + " / " + both.brainPower());
+            double fedBoth = LogicStats.fed(2, 1);
+            check(Math.abs(both.logicPower() - 1.5 * fedBoth) < 1.0e-9 && Math.abs(both.brainPower() - 3.0 * fedBoth) < 1.0e-9,
+                    "CPU + GPU zou 1.5 Logic en 3 brein moeten zijn (maal " + fedBoth + " voor het RAM): " + both.logicPower()
+                            + " / " + both.brainPower());
             // In de automatische tests wacht een diagram hooguit TEST_LOGIC_MAX_DELAY_TICKS (zie LogicStats.logicMaxDelayTicks).
             check(both.reactionTicks() <= LogicStats.TEST_LOGIC_MAX_DELAY_TICKS, "In de tests zou een server snel moeten reageren: "
                     + both.reactionTicks());
@@ -129,23 +131,28 @@ public final class DatacenterGameTests {
     }
 
     /**
-     * Hoofdstuk 64: "voor elke 10 cpu's of gpu's moet je 4 ramsticks hebben", in MB, GB en TB (een latje 16 GB, een SSD
-     * 1 TB). Twee racks met samen vier CPU's maar één latje (16 GB van de 25,6 GB die nodig is): maar 62,5% van de CPU's
-     * draait mee. Een tweede latje: alles. Een SSD is alleen opslag ("zorg ook dat de ssd geen invloed heeft op de speed"):
-     * een SSD erbij maakt niets sneller. De oude grenzen (2 diagrammen per latje, 24 blokjes per SSD) zijn weg.
+     * Hoofdstuk 64: "voor elke 10 cpu's of gpu's ... ramsticks", in MB, GB en TB. De maten staan in de config (een latje van
+     * ramStickGb, ramGbPerTen per 10 CPU's of GPU's), dus de test rekent daarmee: met de helft van het RAM draait maar de
+     * helft van de CPU's mee. In de wereld: twee CPU's met één latje (standaard 8 GB van de 12,8 GB die ze nodig hebben),
+     * een tweede latje erbij (genoeg). Een SSD is alleen opslag ("zorg ook dat de ssd geen invloed heeft op de speed"): een
+     * SSD erbij maakt niets sneller. De oude grenzen (2 diagrammen per latje, 24 blokjes per SSD) zijn weg.
      */
     @GameTest(template = ARENA, timeoutTicks = 40, batch = "datacenter")
     public static void datacenter_ram_and_ssd_feed_the_processors(GameTestHelper helper) {
-        check(Math.abs(LogicStats.fed(10, 4) - 1.0) < 1.0e-9 && Math.abs(LogicStats.fed(10, 2) - 0.5) < 1.0e-9
-                && LogicStats.fed(10, 8) == 1.0 && LogicStats.fed(0, 0) == 1.0,
-                "Per 10 CPU's 4 latjes: de helft van het RAM zou de helft moeten geven");
-        check("16 GB".equals(LogicStats.bytes(LogicStats.ramStickMb())) && "1 TB".equals(LogicStats.bytes(LogicStats.ssdMb()))
-                && "64 GB".equals(LogicStats.bytes(LogicStats.ramNeededMb(10)))
-                && "76.8 GB".equals(LogicStats.bytes(LogicStats.ramNeededMb(12))) && "512 MB".equals(LogicStats.bytes(512)),
-                "MB, GB en TB kloppen niet: " + LogicStats.bytes(LogicStats.ramNeededMb(12)));
-        check(LogicStats.blockCapacity(1) == 1_000_000 && LogicStats.maxRuns(1) == 250,
-                "Een SSD zou een miljoen blokjes en een latje 250 diagrammen moeten houden: " + LogicStats.blockCapacity(1)
-                        + " / " + LogicStats.maxRuns(1));
+        // De rekenregel: de helft van het RAM = de helft van de CPU's; genoeg latjes = alles; geen CPU's = niets te voeden.
+        int enough = (int) Math.ceil(LogicStats.ramNeededMb(10) / LogicStats.ramStickMb());
+        check(LogicStats.fed(10, enough) == 1.0 && LogicStats.fed(0, 0) == 1.0
+                        && Math.abs(LogicStats.fed(20, 1) - LogicStats.fed(10, 1) / 2.0) < 1.0e-9,
+                "Met genoeg latjes zou alles moeten draaien, en met twee keer zoveel CPU's per latje de helft");
+        // MB, GB en TB (1000 MB = 1 GB, zoals op een doos).
+        check("16 GB".equals(LogicStats.bytes(16_000)) && "1 TB".equals(LogicStats.bytes(1_000_000))
+                        && "200 GB".equals(LogicStats.bytes(200_000)) && "76.8 GB".equals(LogicStats.bytes(76_800))
+                        && "1.5 TB".equals(LogicStats.bytes(1_500_000)) && "512 MB".equals(LogicStats.bytes(512)),
+                "MB, GB en TB kloppen niet: " + LogicStats.bytes(76_800));
+        // De oude grenzen zijn weg: een latje houdt minstens honderd bezige diagrammen, een SSD duizenden blokjes.
+        check(LogicStats.maxRuns(1) >= 100 && LogicStats.blockCapacity(1) >= 10_000,
+                "Een latje zou minstens 100 diagrammen en een SSD minstens 10 000 blokjes moeten houden: " + LogicStats.maxRuns(1)
+                        + " / " + LogicStats.blockCapacity(1));
         ServerLevel level = helper.getLevel();
         Setup setup = datacenter(helper);
         SecurityCoreBlockEntity core = setup.core();
@@ -155,30 +162,122 @@ public final class DatacenterGameTests {
         BlockPos bPos = setup.rack().east();
         helper.setBlock(bPos, ModBlocks.SERVER_RACK.get());
         ServerRackBlockEntity b = (ServerRackBlockEntity) helper.getBlockEntity(bPos);
-        b.insert(new ItemStack(ModItems.SERVER_CPU.get()));
-        b.insert(new ItemStack(ModItems.SERVER_CPU.get()));
         b.insert(new ItemStack(ModItems.SERVER_FAN.get()));
         helper.runAfterDelay(2, () -> {
             ImtTechGameTests.startServer(helper, setup.rack(), core);
             ImtTechGameTests.startServer(helper, bPos, core);
-            LogicServer.Stats short1 = LogicServer.stats(level, core);
-            check(short1.cpus() == 4 && short1.ram() == 1 && short1.ssd() == 1 && Math.abs(short1.fed() - 0.625) < 1.0e-9
-                    && Math.abs(short1.logicPower() - 2.5) < 1.0e-9, "Vier CPU's met 16 GB RAM zouden voor 62,5% moeten draaien: "
-                    + short1 + ", " + short1.fed());
+            // Twee CPU's en één latje.
+            LogicServer.Stats one = LogicServer.stats(level, core);
+            double expected = Math.min(1.0, LogicStats.ramStickMb() / LogicStats.ramNeededMb(2));
+            check(one.cpus() == 2 && one.ram() == 1 && one.ssd() == 1 && Math.abs(one.fed() - expected) < 1.0e-9
+                            && Math.abs(one.logicPower() - 2.0 * expected) < 1.0e-9,
+                    "Twee CPU's met één latje zouden voor " + Math.round(expected * 100) + "% moeten draaien: " + one + ", " + one.fed());
+            // Een tweede latje.
             b.insert(new ItemStack(ModItems.SERVER_RAM.get()));
-            LogicServer.Stats full = LogicServer.stats(level, core);
-            check(full.fed() == 1.0 && Math.abs(full.logicPower() - 4.0) < 1.0e-9, "Met 32 GB RAM zou alles moeten meedraaien (de SSD"
-                    + " telt niet mee): " + full.fed());
+            LogicServer.Stats two = LogicServer.stats(level, core);
+            double expectedTwo = Math.min(1.0, 2.0 * LogicStats.ramStickMb() / LogicStats.ramNeededMb(2));
+            check(Math.abs(two.fed() - expectedTwo) < 1.0e-9 && (expected >= 1.0 || two.logicPower() > one.logicPower()),
+                    "Met een tweede latje zou het voor " + Math.round(expectedTwo * 100) + "% moeten draaien: " + two.fed());
+            // Een SSD erbij: alleen opslag, niets sneller.
             b.insert(new ItemStack(ModItems.SERVER_SSD.get()));
             LogicServer.Stats more = LogicServer.stats(level, core);
-            check(more.ssd() == 2 && Math.abs(more.logicPower() - full.logicPower()) < 1.0e-9 && more.reactionTicks() == full.reactionTicks(),
-                    "Een SSD erbij zou niets sneller mogen maken: " + more.logicPower() + " / " + full.logicPower());
+            check(more.ssd() == 2 && Math.abs(more.logicPower() - two.logicPower()) < 1.0e-9 && more.reactionTicks() == two.reactionTicks(),
+                    "Een SSD erbij zou niets sneller mogen maken: " + more.logicPower() + " / " + two.logicPower());
             CompoundTag snapshot = LogicServer.snapshot(level, core);
-            check(snapshot.getDouble("ramMb") == 32_000 && snapshot.getDouble("ramNeedMb") == 25_600
-                    && snapshot.getDouble("ssdMb") == 2_000_000 && !snapshot.contains("ssdNeedMb"),
+            check(snapshot.getDouble("ramMb") == 2 * LogicStats.ramStickMb() && snapshot.getDouble("ramNeedMb") == LogicStats.ramNeededMb(2)
+                            && snapshot.getDouble("ssdMb") == 2 * LogicStats.ssdMb() && !snapshot.contains("ssdNeedMb"),
                     "De app Monitor krijgt het geheugen verkeerd: " + snapshot.getDouble("ramMb") + " / " + snapshot.getDouble("ramNeedMb"));
             helper.succeed();
         });
+    }
+
+    /**
+     * Jouw vraag "kun je de config value eens nakijken en kijken of dat in de tooltips ook klopt": elke tooltip van een
+     * onderdeel toont de getallen uit de config. Een RAM-latje: hoeveel GB erop zit en hoeveel elke 10 CPU's of GPU's nodig
+     * hebben; een SSD: hoeveel erop past en hoe groot een blokje is; een CPU en een GPU: hun kracht, en vanaf hoeveel het
+     * meteen gaat; en de warmte en koeling. Verander je een getal (zoals in het configbestand), dan verandert de tooltip mee.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "datacenter")
+    public static void datacenter_part_tooltips_follow_the_config(GameTestHelper helper) {
+        checkTooltips(helper);
+        float stick = ImtConfig.Logic.RAM_STICK_GB;
+        float perTen = ImtConfig.Logic.RAM_GB_PER_TEN;
+        float ssd = ImtConfig.Logic.SSD_GB;
+        float block = ImtConfig.Logic.BLOCK_MB;
+        float logicInstant = ImtConfig.Logic.LOGIC_INSTANT_POWER;
+        double fan = ImtConfig.Logic.FAN_COOLING;
+        try {
+            // Andere getallen, zoals in het configbestand: de tooltips volgen.
+            ImtConfig.Logic.RAM_STICK_GB = 32.0f;
+            ImtConfig.Logic.RAM_GB_PER_TEN = 48.0f;
+            ImtConfig.Logic.SSD_GB = 4000.0f;
+            ImtConfig.Logic.BLOCK_MB = 0.5f;
+            ImtConfig.Logic.LOGIC_INSTANT_POWER = 45.0f;
+            ImtConfig.Logic.FAN_COOLING = 7.5;
+            checkTooltips(helper);
+            check(tooltipArgs(helper, ModItems.SERVER_RAM.get(), 0).equals(List.of("32 GB", "48 GB"))
+                            && tooltipArgs(helper, ModItems.SERVER_SSD.get(), 0).equals(List.of("4 TB", "0.5 MB"))
+                            && tooltipArgs(helper, ModItems.SERVER_CPU.get(), 0).get(1).equals("45")
+                            && tooltipArgs(helper, ModItems.SERVER_FAN.get(), 1).equals(List.of("7.5")),
+                    "De tooltips zouden de nieuwe getallen moeten tonen: " + tooltipArgs(helper, ModItems.SERVER_RAM.get(), 0)
+                            + " " + tooltipArgs(helper, ModItems.SERVER_SSD.get(), 0));
+        } finally {
+            ImtConfig.Logic.RAM_STICK_GB = stick;
+            ImtConfig.Logic.RAM_GB_PER_TEN = perTen;
+            ImtConfig.Logic.SSD_GB = ssd;
+            ImtConfig.Logic.BLOCK_MB = block;
+            ImtConfig.Logic.LOGIC_INSTANT_POWER = logicInstant;
+            ImtConfig.Logic.FAN_COOLING = fan;
+        }
+        helper.succeed();
+    }
+
+    /** Kloppen de tooltips van alle onderdelen met de getallen die nu in de config staan? */
+    private static void checkTooltips(GameTestHelper helper) {
+        String gpuLogic = plain(ImtConfig.Logic.GPU_LOGIC_POWER);
+        String gpuBrain = plain(ImtConfig.Logic.GPU_BRAIN_POWER);
+        String instant = plain(ImtConfig.Logic.LOGIC_INSTANT_POWER);
+        String brainInstant = plain(ImtConfig.Logic.BRAIN_INSTANT_POWER);
+        check(tooltipArgs(helper, ModItems.SERVER_RAM.get(), 0).equals(List.of(LogicStats.bytes(LogicStats.ramStickMb()),
+                        LogicStats.bytes(LogicStats.ramNeededMb(10)))),
+                "De tooltip van het RAM klopt niet met de config: " + tooltipArgs(helper, ModItems.SERVER_RAM.get(), 0));
+        check(tooltipArgs(helper, ModItems.SERVER_SSD.get(), 0).equals(List.of(LogicStats.bytes(LogicStats.ssdMb()),
+                        LogicStats.bytes(LogicStats.blocksMb(1)))),
+                "De tooltip van de SSD klopt niet met de config: " + tooltipArgs(helper, ModItems.SERVER_SSD.get(), 0));
+        check(tooltipArgs(helper, ModItems.SERVER_CPU.get(), 0).equals(List.of("1", instant, "1", brainInstant)),
+                "De tooltip van de CPU klopt niet met de config: " + tooltipArgs(helper, ModItems.SERVER_CPU.get(), 0));
+        check(tooltipArgs(helper, ModItems.SERVER_GPU.get(), 0).equals(List.of(gpuLogic, instant, gpuBrain, brainInstant)),
+                "De tooltip van de GPU klopt niet met de config: " + tooltipArgs(helper, ModItems.SERVER_GPU.get(), 0));
+        check(tooltipArgs(helper, ModItems.SERVER_CPU.get(), 1).equals(List.of(plain(ImtConfig.Logic.CPU_HEAT),
+                        plain(ImtConfig.Logic.CPU_HEAT + ImtConfig.Logic.CPU_BUSY_HEAT)))
+                        && tooltipArgs(helper, ModItems.SERVER_GPU.get(), 1).equals(List.of(plain(ImtConfig.Logic.GPU_HEAT),
+                        plain(ImtConfig.Logic.GPU_HEAT + ImtConfig.Logic.GPU_BUSY_HEAT)))
+                        && tooltipArgs(helper, ModItems.SERVER_RAM.get(), 1).equals(List.of(plain(ImtConfig.Logic.MEMORY_HEAT)))
+                        && tooltipArgs(helper, ModItems.SERVER_FAN.get(), 1).equals(List.of(plain(ImtConfig.Logic.FAN_COOLING))),
+                "De warmte of koeling in de tooltips klopt niet met de config");
+    }
+
+    /** De getallen (de %s) in regel {@code line} van de tooltip van dit onderdeel, als tekst. */
+    private static List<String> tooltipArgs(GameTestHelper helper, net.minecraft.world.item.Item item, int line) {
+        List<net.minecraft.network.chat.Component> tooltip = new java.util.ArrayList<>();
+        ItemStack stack = new ItemStack(item);
+        item.appendHoverText(stack, net.minecraft.world.item.Item.TooltipContext.of(helper.getLevel()), tooltip,
+                net.minecraft.world.item.TooltipFlag.NORMAL);
+        if (line >= tooltip.size()
+                || !(tooltip.get(line).getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents text)) {
+            return List.of();
+        }
+        List<String> args = new java.util.ArrayList<>();
+        for (Object arg : text.getArgs()) {
+            args.add(arg instanceof net.minecraft.network.chat.Component component ? component.getString() : String.valueOf(arg));
+        }
+        return args;
+    }
+
+    /** Zoals ServerPartItem een getal laat zien: 1 blijft "1", 0.5 wordt "0.5", 7.5 blijft "7.5". */
+    private static String plain(double value) {
+        double rounded = Math.round(value * 100) / 100.0;
+        return rounded == Math.rint(rounded) ? String.valueOf((long) rounded) : String.valueOf(rounded);
     }
 
     /**
@@ -525,10 +624,10 @@ public final class DatacenterGameTests {
 
     /**
      * Gebruik meten (de app Monitor): een timer die elke seconde iets doet en dan 5 seconden wacht,
-     * laat de CPU werken en neemt RAM in (sinds hoofdstuk 64: elk bezig diagram 64 MB, en de CPU zijn 6,4 GB zo ver als
-     * hij aan het werk is, van een latje van 16 GB). De kern meet dat elke seconde en onthoudt de laatste minuut; de
-     * momentopname voor de desktop heeft alles erin, ook de racks, en wat er van het RAM en de SSD in gebruik is (op de SSD:
-     * precies de diagrammen, 1 MB per blokje).
+     * laat de CPU werken en neemt RAM in (sinds hoofdstuk 64: elk bezig diagram RUN_MB, en de CPU zijn deel zo ver als hij
+     * aan het werk is). De kern meet dat elke seconde en onthoudt de laatste minuut; de momentopname voor de desktop heeft
+     * alles erin, ook de racks, en wat er van het RAM en de SSD in gebruik is (op de SSD: precies de diagrammen, BLOCK_MB per
+     * blokje).
      */
     @GameTest(template = ARENA, timeoutTicks = 160, batch = "datacenter")
     public static void datacenter_usage_history(GameTestHelper helper) {
@@ -700,11 +799,12 @@ public final class DatacenterGameTests {
                 throw new GameTestAssertException("Zonder datacenter -1 en in creative 0, niet " + DatacenterBrain.delayFor(stranger)
                         + " / " + DatacenterBrain.delayFor(creative));
             }
-            // Een GPU erbij: kracht 1 + 2 = 3.
+            // Een GPU erbij: kracht 1 + 2 = 3, maal wat het ene latje RAM van twee chips kan voeden (hoofdstuk 64).
+            double fed = LogicStats.fed(2, 1);
             setup.rackEntity(helper).insert(new ItemStack(ModItems.SERVER_GPU.get()));
             settle(level, core, 1);
-            if (DatacenterBrain.delayFor(owner) != LogicStats.brainDelayTicks(3.0 * cpu)) {
-                throw new GameTestAssertException("Met een CPU en een GPU zou het " + LogicStats.brainDelayTicks(3.0 * cpu)
+            if (DatacenterBrain.delayFor(owner) != LogicStats.brainDelayTicks(3.0 * cpu * fed)) {
+                throw new GameTestAssertException("Met een CPU en een GPU zou het " + LogicStats.brainDelayTicks(3.0 * cpu * fed)
                         + " ticks moeten zijn, niet " + DatacenterBrain.delayFor(owner));
             }
             // Warm: half zo snel.
@@ -714,7 +814,7 @@ public final class DatacenterGameTests {
             setup.rackEntity(helper).setTemperature(ImtConfig.Logic.WARM_TEMPERATURE + 5);
             LogicServer.forgetAll();
             core.datacenter().update(level, core);
-            if (DatacenterBrain.delayFor(owner) != LogicStats.brainDelayTicks(3.0 * cpu / ImtConfig.Logic.WARM_SLOWDOWN)) {
+            if (DatacenterBrain.delayFor(owner) != LogicStats.brainDelayTicks(3.0 * cpu * fed / ImtConfig.Logic.WARM_SLOWDOWN)) {
                 throw new GameTestAssertException("Warm zou het brein half zo snel moeten zijn: " + DatacenterBrain.delayFor(owner));
             }
             // Nadenken: het datacenter werkt hard, en de Monitor zegt voor wie.

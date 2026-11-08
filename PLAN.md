@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 452 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 453 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -5486,7 +5486,8 @@ Jouw vier antwoorden:
    CPU's, meteen vanaf 120 CPU's (of 60 GPU's). Zo kloppen je twee punten (100 = 2 s / 1 s, 120 = meteen) zonder sprong.
 2. **Echte maten, limieten weg** (mijn aanbeveling): een RAM-latje is 16 GB, een SSD 1 TB; per 10 CPU's of GPU's 64 GB
    RAM. Minder = naar verhouding trager. (Eerst ook 3 TB SSD per 10; jouw opmerking later die dag: "zorg ook dat de ssd geen
-   invloed heeft op de speed, enkel opslag", dus een SSD is alleen opslag.) Een blokje van een diagram is 1 MB en een bezig diagram 64 MB, dus de oude
+   invloed heeft op de speed, enkel opslag", dus een SSD is alleen opslag. Daarna zette je zelf de standaard op een latje
+   van 8 GB, een SSD van 200 GB en 2 MB per blokje; per 10 CPU's of GPU's bleef 64 GB, dus nu 8 latjes.) Een blokje van een diagram is 1 MB en een bezig diagram 64 MB, dus de oude
    grenzen (2 tegelijk per latje, 24 blokjes per SSD) raken praktisch nooit meer op.
 3. **Alleen in de Monitor** (jouw eigen antwoord): "je kunt dit enkel op de monitor zien, je kunt elke rack een naam
    geven door die te sneakklikken, dan noem je die bijvoorbeeld rack1 en dan zie je in de monitor op rack1 met zijn stats".
@@ -5545,6 +5546,13 @@ wacht een diagram hooguit 10 ticks (zoals de netwerkkabel daar ook een uitzonder
 - [x] **6. Tests** — de rechte lijn met jouw getallen, RAM en SSD die de CPU's voeden (62,5% met te weinig RAM), klikken in
       de vakjes en de naam (een vreemde mag niet), en een oud rack dat ingedeeld wordt; de test van de oude grenzen zegt nu
       dat ze weg zijn. 452 tests, groen (`raven_soldier_shoots` blijft af en toe rood door de spreiding, zoals eerder).
+- [x] **7. De config en de tooltips nagekeken** (jouw vraag "kun je de config value eens nakijken en kijken of dat in de
+      tooltips ook klopt"): de tooltips van de onderdelen halen al hun getallen uit de config (er staat geen getal vast in
+      de teksten). Wat niet klopte: in `run/config/imttech.toml` stonden nog 16 GB, 1000 GB en 1 MB, en een getal in het
+      bestand wint van de standaard in de code; nu staan daar jouw 8 GB, 200 GB en 2 MB. De uitleg van `ramGbPerTen` zei
+      "64 = 4 sticks" (nu 8 latjes van 8 GB), en LEESMIJ en twee tests noemden nog de oude getallen: de tests rekenen nu met
+      wat er in de config staat. Een nieuwe test kijkt dat elke tooltip (RAM, SSD, CPU, GPU, fan) de getallen uit de config
+      toont en meeverandert als je er een verandert. 453 tests, groen.
 
 ## Nog nooit in het spel bekeken
 

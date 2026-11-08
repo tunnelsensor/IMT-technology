@@ -62,12 +62,12 @@ public final class LogicStats {
 
     // ================================================================ Geheugen: het RAM voedt de CPU's en GPU's, de SSD bewaart
 
-    /** Zoveel MB zit er op één RAM-latje (16 GB = 16 000 MB). */
+    /** Zoveel MB zit er op één RAM-latje (8 GB = 8 000 MB). */
     public static double ramStickMb() {
         return Math.max(0.001, ImtConfig.Logic.RAM_STICK_GB) * 1000.0;
     }
 
-    /** Zoveel MB past er op één SSD (1 TB = 1 000 000 MB). */
+    /** Zoveel MB past er op één SSD (200 GB = 200 000 MB; 1 TB = 1 000 000 MB). */
     public static double ssdMb() {
         return Math.max(0.001, ImtConfig.Logic.SSD_GB) * 1000.0;
     }

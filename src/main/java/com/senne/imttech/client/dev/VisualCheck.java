@@ -2445,6 +2445,35 @@ public final class VisualCheck {
             t.shot(25, "95_bombardment_more");
         }
 
+        // --- De tooltips van de onderdelen van een serverrack (hoofdstuk 64, jouw vraag "kijk of de config ook in de tooltips
+        // klopt"): elk onderdeel in de werkbalk, de muis erop, een foto per onderdeel.
+        if (want("parttips")) {
+            // De items pas opvragen als de foto gemaakt wordt: de rondleiding wordt al opgebouwd terwijl de mod laadt.
+            java.util.List<java.util.function.Supplier<? extends net.minecraft.world.item.Item>> parts = java.util.List.of(
+                    ModItems.SERVER_CPU, ModItems.SERVER_GPU, ModItems.SERVER_RAM, ModItems.SERVER_SSD, ModItems.SERVER_FAN);
+            String[] names = {"cpu", "gpu", "ram", "ssd", "fan"};
+            // In creative opent Minecraft het creative-menu in plaats van je inventaris: dus even survival.
+            t.command(0, "gamemode survival @a");
+            t.onServer(0, player -> {
+                for (int i = 0; i < parts.size(); i++) {
+                    player.getInventory().setItem(i, new ItemStack(parts.get(i).get()));
+                }
+                player.getInventory().selected = 8;
+            });
+            t.open(10, () -> new net.minecraft.client.gui.screens.inventory.InventoryScreen(Minecraft.getInstance().player));
+            for (int i = 0; i < parts.size(); i++) {
+                int slot = i;
+                t.step(5, () -> {
+                    if (Minecraft.getInstance().screen instanceof net.minecraft.client.gui.screens.inventory.InventoryScreen screen) {
+                        HowToTour.mouseTo(screen.getGuiLeft() + 16 + slot * 18, screen.getGuiTop() + 150);
+                    }
+                });
+                t.shot(8, "pt0" + (i + 1) + "_tooltip_" + names[i]);
+            }
+            t.close(5);
+            t.command(0, "gamemode creative @a");
+        }
+
         // --- De server (7 oktober): drie racks tegen elkaar (één generator eronder) en een los rack ernaast dat niet
         // meedraait. Sinds hoofdstuk 64 zonder scherm: je ziet de onderdelen in hun vakjes op de voorkant (dichtbij), het
         // naamscherm (sneak + rechtsklik), en de cijfers van elk rack in de app Monitor.
