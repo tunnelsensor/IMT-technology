@@ -1343,24 +1343,23 @@ public final class ImtConfig {
         /*
          * "Voor elke 10 cpu's of gpu's moet je 3 ssd's en 4 ramsticks hebben om dit vlot te laten verlopen. Druk deze
          * gegevens allemaal in MB, GB en TB uit." Een RAM-latje is 16 GB, een SSD 1 TB (1000 GB): per 10 CPU's of GPU's
-         * dus 64 GB RAM en 3 TB SSD. Heb je minder, dan draait alles naar verhouding trager (de helft van het RAM = alsof
-         * je maar de helft van je CPU's en GPU's hebt). De oude grenzen (2 diagrammen tegelijk per latje, 24 blokjes per
-         * SSD) zijn weg: een blokje is 1 MB en een bezig diagram 64 MB, dus dat raakt praktisch nooit op.
+         * 64 GB RAM. Heb je minder, dan draait alles naar verhouding trager (de helft van het RAM = alsof je maar de helft
+         * van je CPU's en GPU's hebt). Later dezelfde dag: "zorg ook dat de ssd geen invloed heeft op de speed, enkel
+         * opslag": een SSD bewaart alleen je diagrammen en backups (een server heeft er minstens één nodig), en maakt
+         * niets sneller. De oude grenzen (2 diagrammen tegelijk per latje, 24 blokjes per SSD) zijn weg: een blokje is
+         * 1 MB en een bezig diagram 64 MB, dus dat raakt praktisch nooit op.
          */
         /** Zoveel GB zit er op één RAM-latje. */
         @Tunable(value = "How many GB one RAM stick holds", min = 0.001)
         public static float RAM_STICK_GB = 16.0f;
-        /** Zoveel GB past er op één SSD (1000 = 1 TB). */
-        @Tunable(value = "How many GB one SSD holds (1000 = 1 TB)", min = 0.001)
+        /** Zoveel GB past er op één SSD (1000 = 1 TB): alleen opslag, een SSD maakt niets sneller. */
+        @Tunable(value = "How many GB one SSD holds (1000 = 1 TB). SSDs only store your diagrams and backups: they don't "
+                + "make anything faster", min = 0.001)
         public static float SSD_GB = 1000.0f;
         /** Zoveel GB RAM hebben elke 10 CPU's of GPU's nodig om op volle snelheid te draaien (64 = 4 latjes). */
         @Tunable("How much RAM (GB) every 10 CPUs or GPUs need to run at full speed: 64 = 4 sticks. Less = everything "
                 + "runs that much slower. 0 = RAM never slows anything down")
         public static float RAM_GB_PER_TEN = 64.0f;
-        /** Zoveel GB SSD hebben elke 10 CPU's of GPU's nodig om op volle snelheid te draaien (3000 = 3 SSD's). */
-        @Tunable("How much SSD storage (GB) every 10 CPUs or GPUs need to run at full speed: 3000 = 3 TB = 3 SSDs. Less = "
-                + "everything runs that much slower. 0 = storage never slows anything down")
-        public static float SSD_GB_PER_TEN = 3000.0f;
         /** Zoveel MB neemt één blokje van een diagram in op de SSD's (ook in een backup). */
         @Tunable(value = "How many MB one block of a diagram takes on the SSDs (also in a backup)", min = 0.001)
         public static float BLOCK_MB = 1.0f;

@@ -5484,8 +5484,9 @@ Jouw vier antwoorden:
 1. **Rechte lijn** (mijn aanbeveling): de vertraging loopt recht af. Diagrammen: 6 s met bijna niets, elke CPU haalt er
    0,2 s af, 1 s bij 25 CPU's, meteen vanaf 30 CPU's (of 60 GPU's). I.M.T: 12 s met bijna niets, 0,1 s per CPU, 2 s bij 100
    CPU's, meteen vanaf 120 CPU's (of 60 GPU's). Zo kloppen je twee punten (100 = 2 s / 1 s, 120 = meteen) zonder sprong.
-2. **Echte maten, limieten weg** (mijn aanbeveling): een RAM-latje is 16 GB, een SSD 1 TB; per 10 CPU's of GPU's 64 GB en
-   3 TB. Minder = naar verhouding trager. Een blokje van een diagram is 1 MB en een bezig diagram 64 MB, dus de oude
+2. **Echte maten, limieten weg** (mijn aanbeveling): een RAM-latje is 16 GB, een SSD 1 TB; per 10 CPU's of GPU's 64 GB
+   RAM. Minder = naar verhouding trager. (Eerst ook 3 TB SSD per 10; jouw opmerking later die dag: "zorg ook dat de ssd geen
+   invloed heeft op de speed, enkel opslag", dus een SSD is alleen opslag.) Een blokje van een diagram is 1 MB en een bezig diagram 64 MB, dus de oude
    grenzen (2 tegelijk per latje, 24 blokjes per SSD) raken praktisch nooit meer op.
 3. **Alleen in de Monitor** (jouw eigen antwoord): "je kunt dit enkel op de monitor zien, je kunt elke rack een naam
    geven door die te sneakklikken, dan noem je die bijvoorbeeld rack1 en dan zie je in de monitor op rack1 met zijn stats".
@@ -5502,8 +5503,8 @@ wacht een diagram hooguit 10 ticks (zoals de netwerkkabel daar ook een uitzonder
 - [x] **1. De snelheid** — `LogicStats`: een rechte lijn van `logicMaxDelayTicks` (120) naar 1 tick bij `logicInstantPower`
       (30), en van `brainMaxDelayTicks` (240) naar 0 bij `brainInstantPower` (120). `cpusPerPower`, `reactionTicks`,
       `brainDelayTicks` en `brainDelayGoneTicks` zijn weg. Warm: alsof je de helft van je CPU's hebt (zoals altijd).
-- [x] **2. Het geheugen** — `ramStickGb` (16), `ssdGb` (1000), `ramGbPerTen` (64), `ssdGbPerTen` (3000): `LogicStats.fed`
-      zegt welk deel van de CPU's en GPU's meedraait. `blockMb` (1) en `runMb` (64) vervangen `blocksPerSsd` en `runsPerRam`.
+- [x] **2. Het geheugen** — `ramStickGb` (16), `ssdGb` (1000), `ramGbPerTen` (64): `LogicStats.fed` zegt welk deel van
+      de CPU's en GPU's meedraait (alleen het RAM telt; `ssdGbPerTen` is weer weg: een SSD is alleen opslag). `blockMb` (1) en `runMb` (64) vervangen `blocksPerSsd` en `runsPerRam`.
       Alles als tekst in MB, GB en TB (`LogicStats.bytes`): de tooltips ("16 GB per stick. Every 10 CPUs or GPUs need 64 GB
       of RAM"), de app Backup, de melding als een diagram niet past.
 - [x] **3. Acht vakjes, klikken zoals een boekenkast** — `RackBay` en de blokstaat `bay_0` tot `bay_7`: bovenaan CPU of
@@ -5521,9 +5522,12 @@ wacht een diagram hooguit 10 ticks (zoals de netwerkkabel daar ook een uitzonder
 - [x] **4. Een naam, en de Monitor** — sneak + rechtsklik met een lege hand: het naamscherm van de lezer, dat nu ook een
       rack kent ("In the Monitor app on Security OS: rack1"). De app Monitor (iets groter) toont elk rack met zijn naam;
       klik er een aan en rechts staan zijn acht vakjes in het klein, temperatuur, warmte en koeling, slijtage en wat je moet
-      doen; nog eens klikken geeft de hele server (CPU's en GPU's, genoeg RAM en SSD, hoe snel, wat je diagrammen innemen,
-      koeling, wat er bezig is). De tegels RAM en SSD tonen wat je hebt, een balk met hoe vol het is (wat de CPU's en GPU's
-      innemen plus de diagrammen; vol en oranje als ze meer nodig hebben dan er is) en wat er nodig is. Waarschuwingen van
+      doen; nog eens klikken geeft de hele server (CPU's en GPU's, "RAM 48 GB, need 25.6 GB" in groen of oranje, "SSD 2 TB:
+      only storage", hoe snel, koeling, wat er bezig is). De tegels bovenaan (jouw opmerking "laat zien hoeveel er in totaal
+      is en hoeveel er al in gebruik is, bv. 100 GB RAM, 1% gebruik: 1 GB"): rechtsboven hoeveel procent er nu in gebruik
+      is, eronder hoeveel van het totaal: CPU "3%" van "4 CPU, 2 GPU", BRAIN van je breinkracht, RAM "1 GB / 48 GB" (de
+      diagrammen die bezig zijn, plus wat de CPU's en GPU's innemen terwijl ze werken: een stille server zit bijna op 0%,
+      denkt I.M.T na dan loopt het op), SSD "4 MB / 2 TB" (wat er echt op staat: diagrammen en backups). Waarschuwingen van
       I.M.T en het logboek noemen het rack bij zijn naam. Diagrammen die nog op de reactietijd van de server wachten, staan
       onder RUNNING als "5 starting (5.7 s)" (eerst stond er "waiting for RAM", maar dat was het niet), en de rij mag zo
       lang zijn als het RAM diagrammen kan houden, zodat een trage server niet "out of memory" zegt (wel "Too slow ... Add
@@ -5535,7 +5539,7 @@ wacht een diagram hooguit 10 ticks (zoals de netwerkkabel daar ook een uitzonder
 - [x] **5. Rondleiding, showcase, How it works en LEESMIJ** — `-Ponly=racks` fotografeert de vakjes van dichtbij, het
       naamscherm en de Monitor per rack (warm, koel, niet verbonden, in brand); de showcase "The datacenter" kijkt in de
       Monitor naar lab-3 in plaats van naar het scherm van het rack; de animatie *Server racks* klikt onderdelen in de
-      vakjes, bouwt een muur van racks ("Bigger is faster", met 30 en 120 CPU's, 64 GB en 3 TB uit je config), geeft een
+      vakjes, bouwt een muur van racks ("Bigger is faster", met 30 en 120 CPU's en 64 GB uit je config), geeft een
       naam en toont de Monitor als plaatje (`monitor_rack`, door `-Ponly=howtopics`); *Heat and fans* klikt de fans
       onderaan in het rack.
 - [x] **6. Tests** — de rechte lijn met jouw getallen, RAM en SSD die de CPU's voeden (62,5% met te weinig RAM), klikken in

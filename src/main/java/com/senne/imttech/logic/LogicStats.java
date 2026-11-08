@@ -13,8 +13,8 @@ import org.jetbrains.annotations.Nullable;
  *
  * Hoofdstuk 64 (jouw wens van 8 november): "voor imt heb je 120 cpu's nodig of 60 gpu's en voor de diagrams 60 gpu's
  * of 30 cpu's", in een rechte lijn: zonder kracht wachten de diagrammen 6 s en I.M.T 12 s, en elke CPU haalt er
- * evenveel af tot het meteen gaat. En "voor elke 10 cpu's of gpu's 3 ssd's en 4 ramsticks": met minder RAM of SSD
- * telt maar een deel van je CPU's en GPU's mee ({@link #fed}).
+ * evenveel af tot het meteen gaat. En "voor elke 10 cpu's of gpu's 4 ramsticks": met minder RAM telt maar een deel van
+ * je CPU's en GPU's mee ({@link #fed}). Een SSD is alleen opslag ("zorg ook dat de ssd geen invloed heeft op de speed").
  *
  * <pre>
  *   CPU's   I.M.T     diagrammen
@@ -60,7 +60,7 @@ public final class LogicStats {
         };
     }
 
-    // ================================================================ Geheugen: RAM en SSD voeden de CPU's en GPU's
+    // ================================================================ Geheugen: het RAM voedt de CPU's en GPU's, de SSD bewaart
 
     /** Zoveel MB zit er op één RAM-latje (16 GB = 16 000 MB). */
     public static double ramStickMb() {
@@ -77,29 +77,19 @@ public final class LogicStats {
         return processors * Math.max(0, ImtConfig.Logic.RAM_GB_PER_TEN) * 100.0; // per 10 in GB = per 1 in MB x 100
     }
 
-    /** Zoveel MB SSD hebben zoveel CPU's en GPU's samen nodig om op volle snelheid te draaien. */
-    public static double ssdNeededMb(int processors) {
-        return processors * Math.max(0, ImtConfig.Logic.SSD_GB_PER_TEN) * 100.0;
-    }
-
     /**
-     * Welk deel van de CPU's en GPU's echt meedraait: 1 als er genoeg RAM en SSD is (per 10 CPU's of GPU's 64 GB en
-     * 3 TB), anders zoveel als het krapste van de twee toelaat. Met de helft van het RAM dat nodig is: 0,5.
+     * Welk deel van de CPU's en GPU's echt meedraait: 1 als er genoeg RAM is (per 10 CPU's of GPU's 64 GB), anders zoveel
+     * als het RAM toelaat. Met de helft van het RAM dat nodig is: 0,5. De SSD's tellen hier niet mee: die zijn alleen opslag.
      */
-    public static double fed(int processors, int ramSticks, int ssds) {
+    public static double fed(int processors, int ramSticks) {
         if (processors <= 0) {
             return 1.0;
         }
-        double fed = 1.0;
         double ramNeed = ramNeededMb(processors);
-        if (ramNeed > 0) {
-            fed = Math.min(fed, ramSticks * ramStickMb() / ramNeed);
+        if (ramNeed <= 0) {
+            return 1.0;
         }
-        double ssdNeed = ssdNeededMb(processors);
-        if (ssdNeed > 0) {
-            fed = Math.min(fed, ssds * ssdMb() / ssdNeed);
-        }
-        return Math.max(0.0, fed);
+        return Math.max(0.0, Math.min(1.0, ramSticks * ramStickMb() / ramNeed));
     }
 
     /** Zoveel diagrammen kunnen tegelijk bezig zijn met zoveel RAM-latjes (een bezig diagram neemt RUN_MB in). */

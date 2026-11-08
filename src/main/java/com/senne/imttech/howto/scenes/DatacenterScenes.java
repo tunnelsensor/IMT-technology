@@ -85,7 +85,8 @@ public final class DatacenterScenes {
 
     /**
      * Serverracks: samen één server tegen je kern, onderdelen in de vakjes klikken (CPU, GPU, RAM, SSD, fans), hoe groot een
-     * datacenter moet zijn (30 en 120 CPU's, 64 GB en 3 TB per 10), een naam en de app Monitor, en dan "online".
+     * datacenter moet zijn (30 en 120 CPU's, 64 GB RAM per 10, een SSD is alleen opslag), een naam en de app Monitor, en
+     * dan "online".
      */
     public static List<HowToScene> racks() {
         HowToSceneBuilder s = new HowToSceneBuilder("server_racks", "Server racks").plate(6, 5);
@@ -125,11 +126,11 @@ public final class DatacenterScenes {
                 HowToSceneBuilder.GREEN, Math.round(ImtConfig.Logic.LOGIC_MAX_DELAY_TICKS / 20.0f), " s");
         s.text(140, HowToSceneBuilder.top(new BlockPos(3, 3, 4)), Side.RIGHT,
                 "Every CPU makes your server a bit faster. From *%s CPUs* (or %s GPUs) your diagrams react at once; I.M.T"
-                        + " needs *%s CPUs* (or %s GPUs). Every 10 CPUs or GPUs need *%s RAM* and *%s SSD*, or everything runs"
-                        + " slower.",
+                        + " needs *%s CPUs* (or %s GPUs). Every 10 CPUs or GPUs need *%s RAM*, or everything runs slower."
+                        + " *SSDs* only store your diagrams.",
                 number(ImtConfig.Logic.LOGIC_INSTANT_POWER), number(ImtConfig.Logic.LOGIC_INSTANT_POWER / ImtConfig.Logic.GPU_LOGIC_POWER),
                 number(ImtConfig.Logic.BRAIN_INSTANT_POWER), number(ImtConfig.Logic.BRAIN_INSTANT_POWER / ImtConfig.Logic.GPU_BRAIN_POWER),
-                LogicStats.bytes(LogicStats.ramNeededMb(10)), LogicStats.bytes(LogicStats.ssdNeededMb(10)));
+                LogicStats.bytes(LogicStats.ramNeededMb(10)));
         s.idle(145);
         s.remove(wall.keySet().toArray(new BlockPos[0]));
         s.idle(10);
@@ -143,7 +144,7 @@ public final class DatacenterScenes {
         s.picture(140, "monitor_rack", 426, 240,
                 s.arrow(0.17f, 0.46f, "Your racks by *name*: click one"),
                 s.arrow(0.66f, 0.56f, "Its own stats: bays, heat, fans"),
-                s.arrow(0.53f, 0.26f, "*RAM* and *SSD*: what you have and need"));
+                s.arrow(0.53f, 0.26f, "*RAM* and *SSD*: in use of the total"));
         s.idle(145);
 
         s.chapter("Online");

@@ -79,17 +79,17 @@ public final class LogicServer {
             return null;
         }
 
-        /** CPU's en GPU's samen (zij hebben het RAM en de SSD's nodig). */
+        /** CPU's en GPU's samen (zij hebben het RAM nodig). */
         public int processors() {
             return cpus + gpus;
         }
 
         /**
-         * Welk deel van de CPU's en GPU's meedraait (hoofdstuk 64): 1 als er per 10 genoeg RAM (64 GB) en SSD (3 TB) is,
-         * anders zoveel als het krapste toelaat (zie LogicStats.fed).
+         * Welk deel van de CPU's en GPU's meedraait (hoofdstuk 64): 1 als er per 10 genoeg RAM (64 GB) is, anders zoveel als
+         * het RAM toelaat (zie LogicStats.fed). De SSD's zijn alleen opslag.
          */
         public double fed() {
-            return LogicStats.fed(processors(), ram, ssd);
+            return LogicStats.fed(processors(), ram);
         }
 
         /** Rekenkracht voor Logic (je diagrammen): een CPU telt 1, een GPU ½, maal wat het geheugen voedt. */
@@ -117,11 +117,6 @@ public final class LogicServer {
         /** Zoveel MB RAM hebben de CPU's en GPU's nodig om op volle snelheid te draaien. */
         public double ramNeededMb() {
             return LogicStats.ramNeededMb(processors());
-        }
-
-        /** Zoveel MB SSD hebben de CPU's en GPU's nodig om op volle snelheid te draaien. */
-        public double ssdNeededMb() {
-            return LogicStats.ssdNeededMb(processors());
         }
 
         /**
@@ -273,10 +268,10 @@ public final class LogicServer {
         tag.putDouble("ramMb", stats.ramMb());
         tag.putDouble("ssdMb", stats.ssdMb());
         tag.putDouble("ramNeedMb", stats.ramNeededMb());
-        tag.putDouble("ssdNeedMb", stats.ssdNeededMb());
         tag.putDouble("fed", stats.fed());
         int[] busy = LogicRunner.load(level, core);
-        tag.putDouble("ramUsedMb", Datacenter.ramUsedMb(stats, busy[0]));
+        tag.putDouble("ramUsedMb", Datacenter.ramUsedMb(stats, busy[0],
+                Math.max(core.datacenter().cpuLoad(), core.datacenter().brainLoad())));
         tag.putDouble("ssdUsedMb", Datacenter.ssdUsedMb(stats, core.logic().blocks(),
                 Datacenters.get(level).storedAt(GlobalPos.of(level.dimension(), core.getBlockPos()))));
         // Het datacenter: hoe warm, en waarom (zie Datacenter).

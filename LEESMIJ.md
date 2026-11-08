@@ -813,10 +813,10 @@ tegen de lezer, open dan de kluis 3 seconden; anders alarm". De server hangt aan
    **Hoe snel**: een server met bijna geen rekenkracht laat een diagram 6 seconden wachten; elke CPU
    haalt er een stukje af (0,2 s), en vanaf **30 CPU's** (of 60 GPU's: een GPU telt voor je redstone
    half) reageren je diagrammen meteen. Met 25 CPU's is het 1 seconde, met 10 CPU's 4 seconden.
-   **RAM en SSD** voeden de CPU's en GPU's: een latje RAM is **16 GB**, een SSD **1 TB**, en elke 10
-   CPU's of GPU's hebben **64 GB RAM en 3 TB SSD** nodig (4 latjes en 3 SSD's). Heb je minder, dan
-   draait alles naar verhouding trager (de helft van het RAM = alsof je de helft van je CPU's hebt).
-   Je diagrammen zelf nemen maar een paar MB in (1 MB per blokje), dus die passen altijd. Zonder
+   **RAM** voedt de CPU's en GPU's: een latje RAM is **16 GB**, en elke 10 CPU's of GPU's hebben
+   **64 GB RAM** nodig (4 latjes). Heb je minder, dan draait alles naar verhouding trager (de helft van
+   het RAM = alsof je de helft van je CPU's hebt). Een **SSD** (**1 TB**) is alleen **opslag**: daar
+   staan je diagrammen (1 MB per blokje) en backups op, en meer SSD's maken niets sneller. Zonder
    rekenkracht, RAM of een SSD draait de server niet.
    **Een naam**: sluip + rechtsklik met een lege hand op een rack en geef het een naam (bijvoorbeeld
    "rack1"; mag als jij het neerzette of als je in de basis vertrouwd bent). Onder die naam staat het in
@@ -1063,15 +1063,16 @@ er backups van, en het brein van I.M.T draait erop.
 - **Een SSD kapot of verbrand = alle diagrammen en keycards weg** (ze staan verspreid over al je
   SSD's). Een SSD er gewoon uithalen of een rack afbreken mag wel. Je bestanden, notities en je
   wachtwoord staan in de kern zelf en blijven.
-- **Aflezen**: alleen in de app **Monitor** op de desktop, zoals Taakbeheer. Bovenaan CPU (en hoe snel
-  je diagrammen reageren), BRAIN (de vertraging van I.M.T), **RAM** en **SSD** (wat je hebt in GB en
-  TB, een balk, en wat je CPU's en GPU's nodig hebben: oranje als het te weinig is) en TEMP (het
-  heetste rack). Links al je racks met hun **naam** (zonder naam hun nummer en plek), hun onderdelen
+- **Aflezen**: alleen in de app **Monitor** op de desktop, zoals Taakbeheer. Bovenaan per tegel
+  rechtsboven hoeveel procent er **nu in gebruik** is, en eronder hoeveel dat is **van het totaal**:
+  CPU (bijvoorbeeld 3%, van "4 CPU, 2 GPU"), BRAIN (van je breinkracht), **RAM** ("1 GB / 48 GB": de
+  diagrammen die bezig zijn, en wat de CPU's en GPU's innemen terwijl ze werken; denkt I.M.T na, dan
+  loopt het op), **SSD** ("4 MB / 2 TB": wat er op staat) en TEMP (het heetste rack). Links al je racks met hun **naam** (zonder naam hun nummer en plek), hun onderdelen
   (rood streepje = versleten), hun temperatuur en hoeveel fans er nog in moeten ("+1 fan"). **Klik op
   een rack** en rechts staan zijn eigen cijfers: zijn acht vakjes in het klein, temperatuur, warmte en
   koeling, slijtage, en wat je moet doen. Klik er nog eens op voor de hele server: hoeveel CPU's en
-  GPU's, of er genoeg RAM en SSD is, hoe snel de diagrammen en I.M.T zijn, wat je diagrammen innemen,
-  de koeling ("Fans: rack2 +1") en welke diagrammen er nu bezig zijn ("5 starting (5.7 s)" zijn
+  GPU's, of er genoeg RAM is ("RAM 48 GB, need 25.6 GB", oranje als het te weinig is), hoe snel de
+  diagrammen en I.M.T zijn, de koeling ("Fans: rack2 +1") en welke diagrammen er nu bezig zijn ("5 starting (5.7 s)" zijn
   diagrammen die nog op de reactietijd van je server wachten; "waiting for RAM" alleen als het RAM echt
   vol is).
 - **Backups**: bouw een tweede datacenter (een andere kern met racks, ver genoeg weg). In de app
@@ -1089,14 +1090,14 @@ er backups van, en het brein van I.M.T draait erop.
   datacenter hard (en wordt het warmer).
 - **Groot genoeg** (8 november): een echt datacenter is groot. Een rack heeft plaats voor twee CPU's of
   GPU's, dus voor 30 CPU's (diagrammen meteen) heb je 15 racks nodig, en voor 120 CPU's (I.M.T meteen)
-  60 racks; met GPU's de helft voor I.M.T. Vergeet het RAM en de SSD's niet (per 10 CPU's of GPU's 4
-  latjes en 3 SSD's). Racks hoeven niet tegen elkaar: alle racks die met een netwerkkabel (of PoE) aan
+  60 racks; met GPU's de helft voor I.M.T. Vergeet het RAM niet (per 10 CPU's of GPU's 4 latjes); een
+  SSD is alleen opslag. Racks hoeven niet tegen elkaar: alle racks die met een netwerkkabel (of PoE) aan
   je kern hangen, zijn samen één server.
 
 Alle getallen staan in `config/imttech.toml` onder `[logic]` (de stroom van een kast onder `[power]`):
 `logicInstantPower` (30) en `logicMaxDelayTicks` (120 = 6 s) voor je diagrammen, `brainInstantPower` (120)
-en `brainMaxDelayTicks` (240 = 12 s) voor I.M.T, `ramStickGb` (16), `ssdGb` (1000), `ramGbPerTen` (64) en
-`ssdGbPerTen` (3000) voor het geheugen. Een rack van voor 8 november (zes vakjes) wordt bij het laden netjes
+en `brainMaxDelayTicks` (240 = 12 s) voor I.M.T, `ramStickGb` (16), `ramGbPerTen` (64) en `ssdGb` (1000) voor het
+geheugen. Een rack van voor 8 november (zes vakjes) wordt bij het laden netjes
 ingedeeld; wat niet meer in een vakje past, valt eruit.
 
 ### Je basis beveiligen: zones (en inbreken met frags)

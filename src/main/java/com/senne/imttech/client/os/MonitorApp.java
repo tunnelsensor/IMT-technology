@@ -22,9 +22,9 @@ import org.jetbrains.annotations.Nullable;
  * van usage van de RAM, CPU, SSD"). Zoals Taakbeheer in Windows:
  *
  * <pre>
- *  +- CPU ---- 12% +- BRAIN --- 0% +- RAM --- 64 GB +- SSD ---- 3 TB +- TEMP --- 48° +
- *  | ..|||..|..    | ...           | #######   60%  | ####      40%  | ___---'''      |
- *  | diagrams 1.0 s| I.M.T +9.0 s  | need 64 GB     | need 3 TB      | > 61°          |
+ *  +- CPU ---- 12% +- BRAIN --- 0% +- RAM ----- 2% +- SSD ---- <1% +- TEMP --- 48° +
+ *  | ..|||..|..    | ...           | ._.._.         | #              | ___---'''      |
+ *  | 4 CPU, 2 GPU  | 6 power       | 1 GB / 48 GB   | 4 MB / 2 TB    | > 61°          |
  *  +---------------+---------------+----------------+----------------+----------------+
  *  RACKS (3)   click one for its stats   | rack1                          ONLINE
  *  o rack1  [C][G][R][S][F][F]      31°  | 12 64 -30
@@ -36,8 +36,12 @@ import org.jetbrains.annotations.Nullable;
  * Geef een rack een naam (sneak + rechtsklik op het rack, bijvoorbeeld "rack1") en hij staat hier onder die naam; klik
  * erop en rechts staan zijn eigen cijfers: hoe hij eruitziet (welk onderdeel in welk vakje), zijn temperatuur, warmte en
  * koeling, slijtage, en wat je moet doen. Zonder gekozen rack staat rechts de hele server: hoeveel CPU's en GPU's, of er
- * genoeg RAM en SSD is (per 10 CPU's of GPU's 64 GB en 3 TB), hoe snel de diagrammen en I.M.T zijn, de koeling en wat er
- * bezig is. RAM en SSD staan in MB, GB en TB.
+ * genoeg RAM is (per 10 CPU's of GPU's 64 GB; een SSD is alleen opslag), hoe snel de diagrammen en I.M.T zijn, de koeling
+ * en wat er bezig is. RAM en SSD staan in MB, GB en TB.
+ *
+ * De tegels bovenaan (jouw opmerking, ook 8 november: "laat zien hoeveel er in totaal is en hoeveel er al in gebruik is,
+ * bv. 100 GB RAM, 1% gebruik: 1 GB"): rechtsboven hoeveel procent er nu in gebruik is, eronder hoeveel dat is van het
+ * totaal ("1 GB / 48 GB"). Wat de CPU's en GPU's nodig hebben om vlot te draaien staat rechts bij de server.
  *
  * Alles komt uit de momentopname van de server (het stuk "server", zie LogicServer.snapshot), die
  * twee keer per seconde ververst. De grafiekjes tonen de laatste minuut (één streepje per seconde).
@@ -87,23 +91,23 @@ final class MonitorApp {
         int tileW = (a.w() - 4 * GAP) / 5;
         int x = a.x();
         int y = a.y();
-        // CPU (Logic): hoe hard de CPU's werken, en hoe snel je diagrammen reageren.
-        int react = server.getInt("react");
-        String diagrams = !online ? "server off" : "diagrams " + LogicStats.delay(react);
-        tile(g, font, x, y, tileW, "CPU", server.getInt("cpuUse") + "%", CPU, server.getIntArray("hCpu"), 100, diagrams);
+        // Elke tegel: rechtsboven hoeveel procent er nu in gebruik is, eronder hoeveel er in totaal is (hoofdstuk 64).
+        // CPU: hoe hard de CPU's en GPU's werken voor je diagrammen, van hoeveel chips.
+        tile(g, font, x, y, tileW, "CPU", server.getInt("cpuUse") + "%", CPU, server.getIntArray("hCpu"), 100,
+                server.getInt("cpu") + " CPU, " + server.getInt("gpu") + " GPU");
         x += tileW + GAP;
-        // Het brein van I.M.T
-        int delay = server.getInt("brainDelay");
-        String brain = !online || delay < 0 ? "can't think" : delay == 0 ? "I.M.T no delay"
-                : String.format(Locale.ROOT, "I.M.T +%.1f s", delay / 20.0);
-        tile(g, font, x, y, tileW, "BRAIN", server.getInt("brainUse") + "%", BRAIN, server.getIntArray("hBrain"), 100, brain);
+        // Het brein van I.M.T: hoe hard het hier werkt, van hoeveel breinkracht.
+        tile(g, font, x, y, tileW, "BRAIN", server.getInt("brainUse") + "%", BRAIN, server.getIntArray("hBrain"), 100,
+                number(server.getDouble("brainPower")) + " power");
         x += tileW + GAP;
-        // RAM en SSD (hoofdstuk 64): wat er is, en wat de CPU's en GPU's ervan nodig hebben (de balk: hoeveel daarvan).
-        memoryTile(g, font, x, y, tileW, "RAM", server.getDouble("ramMb"), server.getDouble("ramNeedMb"),
-                server.getDouble("ramUsedMb"), RAM);
+        // RAM: wat er nu in gebruik is, van het totaal ("1 GB / 48 GB"), met een grafiekje van de laatste minuut.
+        double ram = server.getDouble("ramMb");
+        double ramUsed = server.getDouble("ramUsedMb");
+        tile(g, font, x, y, tileW, "RAM", percent(ramUsed, ram), ram <= 0 ? HudStyle.RED : RAM, server.getIntArray("hRam"), 100,
+                ram <= 0 ? "no RAM" : compact(ramUsed) + " / " + compact(ram));
         x += tileW + GAP;
-        memoryTile(g, font, x, y, tileW, "SSD", server.getDouble("ssdMb"), server.getDouble("ssdNeedMb"),
-                server.getDouble("ssdUsedMb"), SSD);
+        // SSD: wat er op staat (je diagrammen en backups), van het totaal; een balk, want dat verandert maar traag.
+        storageTile(g, font, x, y, tileW, server.getDouble("ssdUsedMb"), server.getDouble("ssdMb"));
         x += tileW + GAP;
         // Temperatuur: van het heetste rack.
         double temp = server.getDouble("temp");
@@ -167,26 +171,46 @@ final class MonitorApp {
     }
 
     /**
-     * Een tegel voor RAM of SSD (hoofdstuk 64): rechtsboven wat er is ("64 GB"), een balk die zegt hoe vol het is (wat de
-     * CPU's en GPU's innemen, plus de diagrammen), en eronder wat de CPU's en GPU's nodig hebben. Hebben ze meer nodig dan er
-     * is, dan is de balk vol en oranje: dan draait alles trager.
+     * De tegel SSD (hoofdstuk 64): rechtsboven hoeveel procent er in gebruik is, een balk, en eronder hoeveel dat is van het
+     * totaal ("4 MB / 2 TB").
      */
-    private static void memoryTile(GuiGraphics g, Font font, int x, int y, int w, String title, double have, double need,
-                                   double used, int colour) {
-        boolean enough = need <= 0 || have + 0.001 >= need;
-        tileFrame(g, font, x, y, w, title, LogicStats.bytes(have), have <= 0 ? HudStyle.RED : colour);
+    private static void storageTile(GuiGraphics g, Font font, int x, int y, int w, double used, double total) {
+        tileFrame(g, font, x, y, w, "SSD", percent(used, total), total <= 0 ? HudStyle.RED : SSD);
         int barX = x + 4;
         int barW = w - 8;
-        int barY = y + 20;
-        double fraction = have <= 0 ? 0.0 : enough ? Math.min(1.0, used / have) : 1.0;
-        g.fill(barX, barY, barX + barW, barY + 10, HudStyle.argb(255, 0x0A141B));
-        g.fill(barX, barY, barX + (int) Math.round(barW * fraction), barY + 10,
-                HudStyle.argb(200, enough ? colour : HudStyle.ORANGE));
-        String percent = Math.round(fraction * 100) + "%";
-        small(g, font, percent, barX + barW - 2 - (int) Math.ceil(font.width(percent) * 0.75f), barY + 2,
-                HudStyle.argb(255, HudStyle.WHITE));
-        String below = need <= 0 ? "no CPU or GPU" : "need " + LogicStats.bytes(need);
-        small(g, font, below, x + 4, y + TILE_H - 9, HudStyle.argb(255, enough ? OsDraw.GREY : HudStyle.ORANGE));
+        int barY = y + 18;
+        double fraction = total <= 0 ? 0.0 : Math.min(1.0, used / total);
+        g.fill(barX, barY, barX + barW, barY + 12, HudStyle.argb(255, 0x0A141B));
+        int filled = (int) Math.round(barW * fraction);
+        if (filled == 0 && used > 0) {
+            filled = 1; // er staat iets op: een streepje, ook al is het minder dan een procent
+        }
+        g.fill(barX, barY, barX + filled, barY + 12, HudStyle.argb(200, SSD));
+        small(g, font, total <= 0 ? "no SSD" : compact(used) + " / " + compact(total), x + 4, y + TILE_H - 9,
+                HudStyle.argb(255, OsDraw.GREY));
+    }
+
+    /** Hoeveel procent {@code used} van {@code total} is: "2%", en "<1%" als er wel iets in gebruik is maar minder dan 1%. */
+    private static String percent(double used, double total) {
+        if (total <= 0) {
+            return "-";
+        }
+        long percent = Math.round(100.0 * used / total);
+        return percent == 0 && used > 0 ? "<1%" : percent + "%";
+    }
+
+    /**
+     * MB, GB of TB, kort genoeg voor een tegel: één cijfer achter de komma onder de 10 ("1.5 GB"), anders hele getallen
+     * ("25 GB", "1.9 TB" blijft "1.9 TB").
+     */
+    private static String compact(double mb) {
+        String unit = mb >= 1_000_000 ? " TB" : mb >= 1000 ? " GB" : " MB";
+        double value = mb >= 1_000_000 ? mb / 1_000_000 : mb >= 1000 ? mb / 1000 : mb;
+        if (value >= 10) {
+            return Math.round(value) + unit;
+        }
+        double rounded = Math.round(value * 10) / 10.0;
+        return (rounded == Math.rint(rounded) ? String.valueOf((long) rounded) : String.valueOf(rounded)) + unit;
     }
 
     /** Het kader van een tegel, met de titel links en de waarde rechts. */
@@ -463,16 +487,19 @@ final class MonitorApp {
         int gpus = server.getInt("gpu");
         small(g, font, cpus + (cpus == 1 ? " CPU, " : " CPUs, ") + gpus + (gpus == 1 ? " GPU" : " GPUs"), x, y + 12,
                 HudStyle.argb(255, HudStyle.WHITE));
-        double fed = server.getDouble("fed");
-        String memory = cpus + gpus == 0 ? "No CPU or GPU yet" : fed >= 0.999 ? "Enough RAM and SSD"
-                : String.format(Locale.ROOT, "Too little RAM or SSD: %d%% speed", Math.round(fed * 100));
-        small(g, font, memory, x, y + 21, HudStyle.argb(255, cpus + gpus > 0 && fed < 0.999 ? HudStyle.ORANGE : HudStyle.GREEN));
+        // Wat de CPU's en GPU's aan RAM nodig hebben om op volle snelheid te draaien (per 10: 64 GB). Een SSD is alleen opslag.
+        memoryNeed(g, font, x, y + 21, w, "RAM", server.getDouble("ramMb"), server.getDouble("ramNeedMb"));
+        double ssd = server.getDouble("ssdMb");
+        small(g, font, ssd <= 0 ? "No SSD: nowhere to store diagrams" : "SSD " + LogicStats.bytes(ssd) + ": only storage", x, y + 30,
+                HudStyle.argb(255, ssd <= 0 ? HudStyle.ORANGE : OsDraw.GREY));
         int delay = server.getInt("brainDelay");
+        double fed = server.getDouble("fed");
         String speed = online ? "Diagrams " + LogicStats.delay(server.getInt("react")) + ",  I.M.T "
-                + (delay < 0 ? "-" : delay == 0 ? "no delay" : String.format(Locale.ROOT, "+%.1f s", delay / 20.0)) : "Server offline";
-        small(g, font, OsDraw.fitRight(font, speed, (int) (w / 0.75f)), x, y + 30, HudStyle.argb(255, OsDraw.GREY));
-        small(g, font, "Diagrams take " + LogicStats.bytes(LogicStats.blocksMb(server.getInt("used"))), x, y + 39,
-                HudStyle.argb(255, OsDraw.GREY));
+                + (delay < 0 ? "-" : delay == 0 ? "no delay" : String.format(Locale.ROOT, "+%.1f s", delay / 20.0))
+                + (cpus + gpus > 0 && fed < 0.999 ? String.format(Locale.ROOT, "  (%d%% speed)", Math.round(fed * 100)) : "")
+                : "Server offline";
+        small(g, font, OsDraw.fitRight(font, speed, (int) (w / 0.75f)), x, y + 39,
+                HudStyle.argb(255, cpus + gpus > 0 && fed < 0.999 ? HudStyle.ORANGE : OsDraw.GREY));
 
         int cy = y + 51;
         g.drawString(font, "COOLING", x, cy, HudStyle.argb(255, HudStyle.CYAN), false);
@@ -554,6 +581,21 @@ final class MonitorApp {
             small(g, font, OsDraw.fitRight(font, line, (int) (w / 0.75f)), x, py, HudStyle.argb(255, HudStyle.WHITE));
             py += 9;
         }
+    }
+
+    /**
+     * Eén regel bij de server: hoeveel RAM er is en hoeveel de CPU's en GPU's ervan nodig hebben, groen als het genoeg is,
+     * oranje als het te weinig is (dan draait alles trager).
+     */
+    private static void memoryNeed(GuiGraphics g, Font font, int x, int y, int w, String what, double have, double need) {
+        if (need <= 0) {
+            small(g, font, what + " " + LogicStats.bytes(have) + " (no CPU or GPU yet)", x, y, HudStyle.argb(255, OsDraw.GREY));
+            return;
+        }
+        boolean enough = have + 0.001 >= need;
+        String text = what + " " + LogicStats.bytes(have) + ", need " + LogicStats.bytes(need) + (enough ? "" : ": too little");
+        small(g, font, OsDraw.fitRight(font, text, (int) (w / 0.75f)), x, y,
+                HudStyle.argb(255, enough ? HudStyle.GREEN : HudStyle.ORANGE));
     }
 
     // ================================================================ Muis

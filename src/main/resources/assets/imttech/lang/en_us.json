@@ -1327,7 +1327,7 @@
   "screen.imttech.brain.datacenter.creative": "Creative: no datacenter needed",
   "item.imttech.server_part.worn": "Worn out: %s%%",
   "item.imttech.server_ram.tooltip": "%s per stick. Every 10 CPUs or GPUs need %s of RAM to run at full speed",
-  "item.imttech.server_ssd.tooltip": "%s per SSD. Every 10 CPUs or GPUs need %s to run at full speed; a diagram block takes %s",
+  "item.imttech.server_ssd.tooltip": "%s of storage for your diagrams and backups (a diagram block takes %s). It doesn't make anything faster",
   "item.imttech.server_part.tooltip.top": "Right-click it into a top bay of a Server Rack",
   "item.imttech.server_part.tooltip.middle": "Right-click it into a middle bay of a Server Rack",
   "item.imttech.server_part.tooltip.bottom": "Right-click it into a bottom bay of a Server Rack",

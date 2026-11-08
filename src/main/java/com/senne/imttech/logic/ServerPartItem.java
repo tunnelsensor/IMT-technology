@@ -17,7 +17,7 @@ import net.minecraft.world.item.TooltipFlag;
  *   <li><b>GPU</b>: rekenkracht, maar anders verdeeld: half zo goed voor Logic, dubbel zo goed
  *       voor het brein (zie ImtConfig.Logic.GPU_...);</li>
  *   <li><b>RAM</b>: 16 GB; elke 10 CPU's of GPU's hebben er 64 GB van nodig om vlot te draaien (hoofdstuk 64);</li>
- *   <li><b>SSD</b>: 1 TB; elke 10 CPU's of GPU's hebben er 3 TB van nodig, en je diagrammen staan erop (1 MB per blokje);</li>
+ *   <li><b>SSD</b>: 1 TB opslag voor je diagrammen (1 MB per blokje) en backups; een SSD maakt niets sneller;</li>
  *   <li><b>Fan</b>: rekent niets, maar koelt het rack waar hij in zit.</li>
  * </ul>
  * Je klikt ze in de vakjes op de voorkant van een rack (zie ServerRackBlock en RackBay): bovenaan een CPU of GPU, dan RAM
@@ -54,8 +54,7 @@ public class ServerPartItem extends Item {
                     number(ImtConfig.Logic.BRAIN_INSTANT_POWER));
             case RAM -> Component.translatable(key, LogicStats.bytes(LogicStats.ramStickMb()),
                     LogicStats.bytes(LogicStats.ramNeededMb(10)));
-            case SSD -> Component.translatable(key, LogicStats.bytes(LogicStats.ssdMb()),
-                    LogicStats.bytes(LogicStats.ssdNeededMb(10)), LogicStats.bytes(LogicStats.blocksMb(1)));
+            case SSD -> Component.translatable(key, LogicStats.bytes(LogicStats.ssdMb()), LogicStats.bytes(LogicStats.blocksMb(1)));
             case FAN -> Component.translatable(key);
         };
         tooltip.add(text.copy().withStyle(ChatFormatting.GRAY));

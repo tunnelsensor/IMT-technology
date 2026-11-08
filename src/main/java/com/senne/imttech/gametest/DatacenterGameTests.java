@@ -129,18 +129,18 @@ public final class DatacenterGameTests {
     }
 
     /**
-     * Hoofdstuk 64: "voor elke 10 cpu's of gpu's moet je 3 ssd's en 4 ramsticks hebben", in MB, GB en TB (een latje 16 GB,
-     * een SSD 1 TB). Twee racks met samen vier CPU's maar één latje (16 GB van de 25,6 GB die nodig is): maar 62,5% van de
-     * CPU's draait mee. Een tweede latje: dan is de SSD het krapst (1 TB van 1,2 TB). Een tweede SSD: alles. De oude grenzen
-     * (2 diagrammen per latje, 24 blokjes per SSD) zijn weg.
+     * Hoofdstuk 64: "voor elke 10 cpu's of gpu's moet je 4 ramsticks hebben", in MB, GB en TB (een latje 16 GB, een SSD
+     * 1 TB). Twee racks met samen vier CPU's maar één latje (16 GB van de 25,6 GB die nodig is): maar 62,5% van de CPU's
+     * draait mee. Een tweede latje: alles. Een SSD is alleen opslag ("zorg ook dat de ssd geen invloed heeft op de speed"):
+     * een SSD erbij maakt niets sneller. De oude grenzen (2 diagrammen per latje, 24 blokjes per SSD) zijn weg.
      */
     @GameTest(template = ARENA, timeoutTicks = 40, batch = "datacenter")
     public static void datacenter_ram_and_ssd_feed_the_processors(GameTestHelper helper) {
-        check(Math.abs(LogicStats.fed(10, 4, 3) - 1.0) < 1.0e-9 && Math.abs(LogicStats.fed(10, 2, 3) - 0.5) < 1.0e-9
-                && Math.abs(LogicStats.fed(10, 4, 1) - 1.0 / 3.0) < 1.0e-9 && LogicStats.fed(0, 0, 0) == 1.0,
-                "Per 10 CPU's 4 latjes en 3 SSD's: de helft van het RAM zou de helft moeten geven");
+        check(Math.abs(LogicStats.fed(10, 4) - 1.0) < 1.0e-9 && Math.abs(LogicStats.fed(10, 2) - 0.5) < 1.0e-9
+                && LogicStats.fed(10, 8) == 1.0 && LogicStats.fed(0, 0) == 1.0,
+                "Per 10 CPU's 4 latjes: de helft van het RAM zou de helft moeten geven");
         check("16 GB".equals(LogicStats.bytes(LogicStats.ramStickMb())) && "1 TB".equals(LogicStats.bytes(LogicStats.ssdMb()))
-                && "64 GB".equals(LogicStats.bytes(LogicStats.ramNeededMb(10))) && "3 TB".equals(LogicStats.bytes(LogicStats.ssdNeededMb(10)))
+                && "64 GB".equals(LogicStats.bytes(LogicStats.ramNeededMb(10)))
                 && "76.8 GB".equals(LogicStats.bytes(LogicStats.ramNeededMb(12))) && "512 MB".equals(LogicStats.bytes(512)),
                 "MB, GB en TB kloppen niet: " + LogicStats.bytes(LogicStats.ramNeededMb(12)));
         check(LogicStats.blockCapacity(1) == 1_000_000 && LogicStats.maxRuns(1) == 250,
@@ -166,16 +166,16 @@ public final class DatacenterGameTests {
                     && Math.abs(short1.logicPower() - 2.5) < 1.0e-9, "Vier CPU's met 16 GB RAM zouden voor 62,5% moeten draaien: "
                     + short1 + ", " + short1.fed());
             b.insert(new ItemStack(ModItems.SERVER_RAM.get()));
-            LogicServer.Stats short2 = LogicServer.stats(level, core);
-            check(Math.abs(short2.fed() - 1000.0 / 1200.0) < 1.0e-9, "Met 32 GB RAM zou de SSD (1 TB van 1,2 TB) het krapst moeten zijn: "
-                    + short2.fed());
-            b.insert(new ItemStack(ModItems.SERVER_SSD.get()));
             LogicServer.Stats full = LogicServer.stats(level, core);
-            check(full.fed() == 1.0 && Math.abs(full.logicPower() - 4.0) < 1.0e-9, "Met genoeg RAM en SSD zou alles moeten meedraaien: "
-                    + full.fed());
+            check(full.fed() == 1.0 && Math.abs(full.logicPower() - 4.0) < 1.0e-9, "Met 32 GB RAM zou alles moeten meedraaien (de SSD"
+                    + " telt niet mee): " + full.fed());
+            b.insert(new ItemStack(ModItems.SERVER_SSD.get()));
+            LogicServer.Stats more = LogicServer.stats(level, core);
+            check(more.ssd() == 2 && Math.abs(more.logicPower() - full.logicPower()) < 1.0e-9 && more.reactionTicks() == full.reactionTicks(),
+                    "Een SSD erbij zou niets sneller mogen maken: " + more.logicPower() + " / " + full.logicPower());
             CompoundTag snapshot = LogicServer.snapshot(level, core);
             check(snapshot.getDouble("ramMb") == 32_000 && snapshot.getDouble("ramNeedMb") == 25_600
-                    && snapshot.getDouble("ssdMb") == 2_000_000 && snapshot.getDouble("ssdNeedMb") == 1_200_000,
+                    && snapshot.getDouble("ssdMb") == 2_000_000 && !snapshot.contains("ssdNeedMb"),
                     "De app Monitor krijgt het geheugen verkeerd: " + snapshot.getDouble("ramMb") + " / " + snapshot.getDouble("ramNeedMb"));
             helper.succeed();
         });
@@ -525,9 +525,10 @@ public final class DatacenterGameTests {
 
     /**
      * Gebruik meten (de app Monitor): een timer die elke seconde iets doet en dan 5 seconden wacht,
-     * laat de CPU werken en neemt RAM in (sinds hoofdstuk 64: de CPU 6,4 GB en elk bezig diagram 64 MB, van een latje van
-     * 16 GB). De kern meet dat elke seconde en onthoudt de laatste minuut; de momentopname voor de desktop heeft alles
-     * erin, ook de racks.
+     * laat de CPU werken en neemt RAM in (sinds hoofdstuk 64: elk bezig diagram 64 MB, en de CPU zijn 6,4 GB zo ver als
+     * hij aan het werk is, van een latje van 16 GB). De kern meet dat elke seconde en onthoudt de laatste minuut; de
+     * momentopname voor de desktop heeft alles erin, ook de racks, en wat er van het RAM en de SSD in gebruik is (op de SSD:
+     * precies de diagrammen, 1 MB per blokje).
      */
     @GameTest(template = ARENA, timeoutTicks = 160, batch = "datacenter")
     public static void datacenter_usage_history(GameTestHelper helper) {
@@ -548,13 +549,21 @@ public final class DatacenterGameTests {
                 throw new GameTestAssertException("De kern zou elke seconde moeten meten, maar heeft " + history.size() + " metingen");
             }
             boolean cpu = history.stream().anyMatch(sample -> sample[0] > 0);
-            LogicServer.Stats now = LogicServer.stats(level, core);
-            int expectedRam = (int) Math.floor(100 * Datacenter.ramUsedMb(now, 1) / now.ramMb());
-            boolean ram = history.stream().anyMatch(sample -> sample[2] >= expectedRam);
+            boolean ram = history.stream().anyMatch(sample -> sample[2] > 0);
             if (!cpu || !ram) {
                 throw new GameTestAssertException("De metingen zouden CPU- en RAM-gebruik moeten tonen: cpu " + cpu + ", ram " + ram);
             }
             var snapshot = LogicServer.snapshot(level, core);
+            LogicServer.Stats now = LogicServer.stats(level, core);
+            if (snapshot.getDouble("ramUsedMb") <= 0 || snapshot.getDouble("ramUsedMb") > now.ramMb()
+                    || snapshot.getDouble("ssdUsedMb") != LogicStats.blocksMb(core.logic().blocks())) {
+                throw new GameTestAssertException("In gebruik klopt niet: RAM " + snapshot.getDouble("ramUsedMb") + " MB van "
+                        + now.ramMb() + ", SSD " + snapshot.getDouble("ssdUsedMb") + " MB voor " + core.logic().blocks() + " blokjes");
+            }
+            // Doet niets (geen diagram bezig, CPU en brein stil): dan is er ook geen RAM in gebruik.
+            if (Datacenter.ramUsedMb(now, 0, 0.0) != 0.0 || Datacenter.ramUsedMb(now, 0, 1.0) != Math.min(now.ramMb(), now.ramNeededMb())) {
+                throw new GameTestAssertException("Stil zou 0 MB RAM moeten zijn, en hard werken het deel van de CPU's");
+            }
             if (snapshot.getInt("used") != core.logic().blocks() || snapshot.getIntArray("hCpu").length != history.size()
                     || snapshot.getList("racksInfo", 10).size() != 1
                     || snapshot.getList("racksInfo", 10).getCompound(0).getList("parts", 10).size() != 3

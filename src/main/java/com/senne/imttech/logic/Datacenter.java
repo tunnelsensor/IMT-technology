@@ -132,29 +132,32 @@ public final class Datacenter {
     }
 
     /**
-     * Hoe vol het RAM is (0..1), de laatste meting: wat de CPU's en GPU's ervan innemen, plus de diagrammen die bezig zijn
-     * (zie {@link #ramUsedMb}).
+     * Hoeveel van het RAM er in gebruik is (0..1), de laatste meting: de diagrammen die bezig zijn, en wat de CPU's en
+     * GPU's innemen terwijl ze werken (zie {@link #ramUsedMb}).
      */
     public double ramLoad() {
         return ramLoad;
     }
 
     /**
-     * Zoveel MB RAM is er bezet (hoofdstuk 64): de CPU's en GPU's nemen wat ze nodig hebben (64 GB per 10, zolang het er
-     * is), en elk diagram dat bezig is (ook als het in een wait() staat) RUN_MB. Nooit meer dan er is.
+     * Zoveel MB RAM is er nu in gebruik (hoofdstuk 64, jouw opmerking: "laat zien hoeveel er in totaal is en hoeveel er al
+     * in gebruik is, bv. 100 GB RAM, 1% gebruik: 1 GB"): elk diagram dat bezig is (ook in een wait()) neemt RUN_MB, en de
+     * CPU's en GPU's nemen hun deel (64 GB per 10, zolang het er is) zo ver als ze aan het werk zijn ({@code busy}, 0 tot 1:
+     * het drukste van je diagrammen en het brein). Een server die niets doet, gebruikt dus bijna niets; denkt I.M.T na,
+     * dan loopt het op. Nooit meer dan er is.
      */
-    public static double ramUsedMb(LogicServer.Stats stats, int busyDiagrams) {
-        double used = Math.min(stats.ramMb(), stats.ramNeededMb()) + busyDiagrams * (double) Math.max(0.001, ImtConfig.Logic.RUN_MB);
+    public static double ramUsedMb(LogicServer.Stats stats, int busyDiagrams, double busy) {
+        double working = Math.min(stats.ramMb(), stats.ramNeededMb()) * Math.max(0.0, Math.min(1.0, busy));
+        double used = working + busyDiagrams * (double) Math.max(0.001, ImtConfig.Logic.RUN_MB);
         return Math.min(stats.ramMb(), used);
     }
 
     /**
-     * Zoveel MB van de SSD's is er bezet: wat de CPU's en GPU's ervan nodig hebben (3 TB per 10, zolang het er is), je
-     * diagrammen (BLOCK_MB per blokje) en de backups van andere netwerken die hier staan. Nooit meer dan er is.
+     * Zoveel MB van de SSD's is er in gebruik: wat er echt op staat, je diagrammen (BLOCK_MB per blokje) en de backups van
+     * andere netwerken die hier staan. Nooit meer dan er is.
      */
     public static double ssdUsedMb(LogicServer.Stats stats, int ownBlocks, int storedBlocks) {
-        double used = Math.min(stats.ssdMb(), stats.ssdNeededMb()) + LogicStats.blocksMb(ownBlocks + storedBlocks);
-        return Math.min(stats.ssdMb(), used);
+        return Math.min(stats.ssdMb(), LogicStats.blocksMb(ownBlocks + storedBlocks));
     }
 
     /**
@@ -239,7 +242,8 @@ public final class Datacenter {
         double capacity = stats.online() ? logicCapacity(stats) : 0;
         cpuLoad = capacity > 0 ? Math.min(1.0, perSecond / capacity) : 0;
         int[] load = LogicRunner.load(level, core);
-        ramLoad = stats.online() && stats.ramMb() > 0 ? Math.min(1.0, ramUsedMb(stats, load[0]) / stats.ramMb()) : 0;
+        ramLoad = stats.online() && stats.ramMb() > 0
+                ? Math.min(1.0, ramUsedMb(stats, load[0], Math.max(cpuLoad, brainLoad)) / stats.ramMb()) : 0;
         // Denkt het brein van I.M.T hier nu na (voor iemand)? Dan werken de chips op vol.
         brainLoad = DatacenterBrain.thinkingOn(level, GlobalPos.of(level.dimension(), core.getBlockPos())).isEmpty() ? 0.0 : 1.0;
         history.addLast(new int[] {percent(cpuLoad), percent(brainLoad), percent(ramLoad), (int) Math.round(temperature)});
