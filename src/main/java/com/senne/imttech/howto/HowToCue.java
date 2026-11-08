@@ -81,9 +81,34 @@ public sealed interface HowToCue {
      * {@code data} zijn gegevens zoals het spel ze bewaart (leeg = niets): een robot met zijn onderdelen, printplaat en of
      * hij aan staat of neerligt (hoofdstuk 63, de robots). Bij een speler zegt {@code "Profile"} dat het iemand anders is
      * (een vreemde, met een gewone skin) in plaats van jij.
+     *
+     * {@code worn} is wat een speler aan uitrusting draagt (de wapens): de holster, de granaatpouch, de magazijnpouch, en
+     * het geweer op zijn rug en voor zijn borst (in die volgorde; leeg = niets, een lege lijst = helemaal niets).
      */
     record Actor(int tick, int duration, String key, @Nullable EntityType<?> type, List<Vec3> path, int move, float yaw,
-                 Map<EquipmentSlot, ItemStack> gear, CompoundTag data) implements HowToCue {}
+                 Map<EquipmentSlot, ItemStack> gear, CompoundTag data, List<ItemStack> worn) implements HowToCue {}
+
+    /**
+     * Een voorwerp dat op {@code pos} in de lucht zweeft en langzaam ronddraait (de onderdelen van een pistool, een
+     * patroon), {@code scale} groot (1 = zo groot als een blok).
+     */
+    record Item(int tick, int duration, Vec3 pos, ItemStack stack, float scale) implements HowToCue {}
+
+    /**
+     * Een bol van licht die in een paar ticks groeit tot {@code radius} en dan wegvaagt: de puls van een EMP (blauw), de
+     * flits van een flashbang (wit), een ontploffing (oranje).
+     */
+    record Pulse(int tick, int duration, Vec3 center, float radius, int color) implements HowToCue {}
+
+    /**
+     * Rook: deze stukjes lucht ({@code cells}, de dichtstbijzijnde eerst) vullen zich vanaf {@code tick} met een wolk in kleur
+     * {@code color}, en tegen het eind van {@code duration} trekt hij op. Wat een blok is, houdt hem tegen (zie
+     * HowToSceneBuilder#smoke).
+     */
+    record Smoke(int tick, int duration, Vec3 center, List<BlockPos> cells, int color) implements HowToCue {}
+
+    /** Barsten in het blok op {@code pos}: van 0 (net begonnen) tot 9 (bijna kapot), -1 = weer heel (zoals bij hakken). */
+    record Crack(int tick, BlockPos pos, int stage) implements HowToCue {}
 
     /** Een schot: een felle straal van {@code from} naar {@code to} (een laser van een torentje). */
     record Beam(int tick, int duration, Vec3 from, Vec3 to, int color) implements HowToCue {}

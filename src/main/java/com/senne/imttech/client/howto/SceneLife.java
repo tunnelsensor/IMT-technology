@@ -2,15 +2,23 @@ package com.senne.imttech.client.howto;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.blaze3d.platform.Lighting;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.math.Axis;
 import com.senne.imttech.ImtTech;
 import com.senne.imttech.client.CableRenderer;
+import com.senne.imttech.client.suit.SuitEffects;
+import com.senne.imttech.guns.Gear;
+import com.senne.imttech.guns.GearItem;
 import com.senne.imttech.howto.HowToCue;
 import com.senne.imttech.turret.TurretBlock;
 import com.senne.imttech.turret.TurretBlockEntity;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -18,22 +26,28 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.RemotePlayer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderStateShard;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix4f;
 
 /**
  * Wat er leeft en beweegt in het wereldje van een "How it works"-animatie (hoofdstuk 63, stap 7): wezens (een speler met
@@ -47,6 +61,8 @@ final class SceneLife {
     private final Map<String, Map<EquipmentSlot, ItemStack>> dressed = new HashMap<>();
     /** Welke gegevens elk wezen nu heeft (zie HowToCue.Actor#data). */
     private final Map<String, CompoundTag> loaded = new HashMap<>();
+    /** Welke uitrusting elke speler nu draagt (zie HowToCue.Actor#worn). */
+    private final Map<String, List<ItemStack>> worn = new HashMap<>();
     private final Map<String, Integer> walkedTo = new HashMap<>();
     /** Waar de monsters nu staan (voor de torentjes, die erop mikken). */
     private final Map<String, Vec3> monsters = new HashMap<>();
@@ -96,6 +112,8 @@ final class SceneLife {
         if (entity == null) {
             return;
         }
+        // De tijd eerst: een granaat die geladen wordt, telt zijn lont vanaf nu (zijn lampje knippert steeds sneller).
+        entity.tickCount = (int) time;
         if (actor.type() != null && !actor.data().isEmpty() && !actor.data().equals(loaded.get(actor.key()))) {
             // Zijn gegevens (een robot met zijn onderdelen en printplaat, aan of neer), zoals het spel ze laadt. Daarna
             // zetten we hem hieronder gewoon op zijn plek.
@@ -117,13 +135,21 @@ final class SceneLife {
             if (dx * dx + dz * dz > 1.0E-6) {
                 yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
             }
+            // Ook zijn snelheid (en die houdt hij als hij stilstaat): een sticky granaat die tegen een muur vloog, ligt dan
+            // met zijn kussen tegen de muur (zie GrenadeRenderer).
+            if (ahead.distanceToSqr(at) > 1.0E-8) {
+                entity.setDeltaMovement(ahead.subtract(at).normalize().scale(0.5));
+            }
         }
         entity.setPos(at.x, at.y, at.z);
         entity.setYRot(yaw);
         entity.setXRot(0.0f);
         // Ook de "vorige" plek: anders denkt een drone dat hij vliegt (en draaien zijn rotors terwijl hij uit staat).
         entity.setOldPosAndRot();
-        entity.tickCount = (int) time;
+        if (entity instanceof Player person && worn.get(actor.key()) != actor.worn()) {
+            wear(person, actor.worn());
+            worn.put(actor.key(), actor.worn());
+        }
         if (entity instanceof LivingEntity living) {
             living.yBodyRot = yaw;
             living.yBodyRotO = yaw;
@@ -158,6 +184,195 @@ final class SceneLife {
             return new RemotePlayer(mc.level, new GameProfile(id, name));
         }
         return new RemotePlayer(mc.level, mc.player.getGameProfile());
+    }
+
+    /**
+     * Wat een speler aan uitrusting draagt (de holster, de pouches en de twee slings, zie HowToCue.Actor#worn): dan tekent
+     * het spel ze op zijn lijf. Met Curios in de modpack lukt dat bij een speler in de animatie niet (hij heeft geen
+     * Curios-vakjes); dan zie je ze gewoon niet.
+     */
+    private static void wear(Player person, List<ItemStack> worn) {
+        try {
+            GearItem.Kind[] kinds = GearItem.Kind.values();
+            for (int i = 0; i < kinds.length; i++) {
+                Gear.set(person, kinds[i], i < worn.size() ? worn.get(i).copy() : ItemStack.EMPTY);
+            }
+            for (int i = 0; i < Gear.SLINGS; i++) {
+                int index = kinds.length + i;
+                Gear.setSling(person, i, index < worn.size() ? worn.get(index).copy() : ItemStack.EMPTY);
+            }
+        } catch (RuntimeException e) {
+            ImtTech.LOGGER.warn("[how it works] de uitrusting van een speler lukt niet", e);
+        }
+    }
+
+    // ================================================================ Voorwerpen, licht en rook
+
+    /** Voorwerpen die zweven en ronddraaien (de onderdelen van een pistool, een patroon): ze springen even op als ze komen. */
+    void renderItems(PoseStack pose, MultiBufferSource buffers, ScenePlayer player, float time) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) {
+            return;
+        }
+        Lighting.setupForEntityInInventory();
+        try {
+            for (HowToCue cue : player.scene.cues()) {
+                if (cue.tick() > time) {
+                    break;
+                }
+                if (cue instanceof HowToCue.Item item && time < item.tick() + item.duration()) {
+                    float in = Mth.clamp((time - item.tick()) / 6.0f, 0.0f, 1.0f);
+                    float out = Mth.clamp((item.tick() + item.duration() - time) / 6.0f, 0.0f, 1.0f);
+                    float size = item.scale() * Math.min(in, out);
+                    if (size <= 0.01f) {
+                        continue;
+                    }
+                    pose.pushPose();
+                    pose.translate(item.pos().x, item.pos().y + Mth.sin(time * 0.12f + item.tick()) * 0.04f, item.pos().z);
+                    pose.mulPose(Axis.YP.rotationDegrees(time * 3.0f + item.tick() * 7.0f));
+                    pose.scale(size, size, size);
+                    mc.getItemRenderer().renderStatic(item.stack(), ItemDisplayContext.FIXED, LightTexture.FULL_BRIGHT,
+                            OverlayTexture.NO_OVERLAY, pose, buffers, mc.level, 0);
+                    pose.popPose();
+                }
+            }
+        } finally {
+            Lighting.setupFor3DItems();
+        }
+    }
+
+    /**
+     * Bollen van licht (een EMP, een flits, een ontploffing): in {@link #PULSE_GROW} ticks groot (eerst snel, dan trager),
+     * daarna vagen ze weg. Licht dat opgeteld wordt, zoals de echte EMP (zie EmpEffects): je ziet erdoorheen.
+     */
+    void renderPulses(PoseStack pose, MultiBufferSource.BufferSource buffers, ScenePlayer player, float time) {
+        VertexConsumer out = null;
+        for (HowToCue cue : player.scene.cues()) {
+            if (cue.tick() > time) {
+                break;
+            }
+            if (cue instanceof HowToCue.Pulse pulse && time < pulse.tick() + pulse.duration()) {
+                if (out == null) {
+                    out = buffers.getBuffer(SuitEffects.GLOW);
+                }
+                float age = time - pulse.tick();
+                float grow = Mth.clamp(age / PULSE_GROW, 0.0f, 1.0f);
+                grow = 1 - (1 - grow) * (1 - grow);
+                float radius = 0.2f + (pulse.radius() - 0.2f) * grow;
+                float fade = 1 - Mth.clamp((age - PULSE_GROW) / Math.max(1.0f, pulse.duration() - PULSE_GROW), 0.0f, 1.0f);
+                Matrix4f m = pose.last().pose();
+                sphere(m, out, pulse.center(), radius, pulse.color(), 0.3f * fade);
+                sphere(m, out, pulse.center(), radius * 0.96f, 0xF2FCFF, 0.12f * fade);
+            }
+        }
+        if (out != null) {
+            buffers.endBatch(SuitEffects.GLOW);
+        }
+    }
+
+    private static final float PULSE_GROW = 6.0f;
+
+    /** Een bol van vierhoekjes (lengte- en breedtegraden), zoals de bol van een EMP. */
+    private static void sphere(Matrix4f m, VertexConsumer out, Vec3 c, float r, int rgb, float alpha) {
+        int rings = 12;
+        int segments = 24;
+        for (int i = 0; i < rings; i++) {
+            double a0 = Math.PI * i / rings - Math.PI / 2;
+            double a1 = Math.PI * (i + 1) / rings - Math.PI / 2;
+            for (int j = 0; j < segments; j++) {
+                double b0 = Math.PI * 2 * j / segments;
+                double b1 = Math.PI * 2 * (j + 1) / segments;
+                SuitEffects.quad(m, out, point(c, r, a0, b0), point(c, r, a0, b1), point(c, r, a1, b1), point(c, r, a1, b0),
+                        rgb, alpha);
+            }
+        }
+    }
+
+    private static Vec3 point(Vec3 c, float r, double lat, double lon) {
+        double cos = Math.cos(lat);
+        return c.add(Math.cos(lon) * cos * r, Math.sin(lat) * r, Math.sin(lon) * cos * r);
+    }
+
+    /** Half doorzichtige rook die achter blokken verdwijnt (wel diepte testen, niet schrijven: de rook is geen muur). */
+    private static final RenderType SMOKE = RenderType.create("imttech_howto_smoke", DefaultVertexFormat.POSITION_COLOR,
+            VertexFormat.Mode.QUADS, 8192, false, true,
+            RenderType.CompositeState.builder()
+                    .setShaderState(RenderStateShard.RENDERTYPE_LIGHTNING_SHADER)
+                    .setWriteMaskState(RenderStateShard.COLOR_WRITE)
+                    .setTransparencyState(RenderStateShard.TRANSLUCENT_TRANSPARENCY)
+                    .setCullState(RenderStateShard.NO_CULL)
+                    .createCompositeState(false));
+
+    private static final float SMOKE_GROW = 30.0f;
+    private static final float SMOKE_FADE = 40.0f;
+
+    /**
+     * Rookwolken: de stukjes lucht vullen zich, de dichtstbijzijnde eerst, en tegen het eind trekt de rook op. We tekenen
+     * alleen de buitenkant van de wolk (een kant van een stukje rook waar geen rook naast zit), met elk stukje een tikje
+     * anders van dikte: zo is het een wolk en geen raster van doosjes.
+     */
+    void renderSmoke(PoseStack pose, MultiBufferSource.BufferSource buffers, ScenePlayer player, float time) {
+        boolean any = false;
+        for (HowToCue cue : player.scene.cues()) {
+            if (cue.tick() > time) {
+                break;
+            }
+            if (!(cue instanceof HowToCue.Smoke smoke) || time >= smoke.tick() + smoke.duration() || smoke.cells().isEmpty()) {
+                continue;
+            }
+            float age = time - smoke.tick();
+            int shown = Math.max(1, Math.round(smoke.cells().size() * Mth.clamp(age / SMOKE_GROW, 0.0f, 1.0f)));
+            float fade = Mth.clamp((smoke.tick() + smoke.duration() - time) / SMOKE_FADE, 0.0f, 1.0f);
+            Set<BlockPos> cells = new HashSet<>(smoke.cells().subList(0, Math.min(shown, smoke.cells().size())));
+            VertexConsumer out = buffers.getBuffer(SMOKE);
+            Matrix4f m = pose.last().pose();
+            for (BlockPos cell : cells) {
+                int hash = cell.getX() * 7 + cell.getY() * 13 + cell.getZ() * 5;
+                float density = 0.46f + 0.12f * ((hash & 3) / 3.0f);
+                // Elk stukje een beetje anders van grootte: dan is de rand van de wolk hobbelig, geen strakke doos.
+                float puff = 0.12f * (((hash >> 2) & 3) / 3.0f) - 0.04f;
+                int alpha = Math.round(255 * density * fade);
+                for (Direction side : Direction.values()) {
+                    if (!cells.contains(cell.relative(side))) {
+                        smokeFace(m, out, cell, side, smoke.color(), alpha, puff);
+                    }
+                }
+            }
+            any = true;
+        }
+        if (any) {
+            buffers.endBatch(SMOKE);
+        }
+    }
+
+    /**
+     * Eén kant van een stukje rook: {@code puff} groter of kleiner dan het blok (de hobbels van de wolk), en altijd een heel
+     * klein beetje binnen het blok als er een muur naast staat (dan flikkert hij niet).
+     */
+    private static void smokeFace(Matrix4f m, VertexConsumer out, BlockPos cell, Direction side, int rgb, int alpha, float puff) {
+        float in = 0.02f - puff;
+        float x0 = cell.getX() + in;
+        float y0 = cell.getY() + in;
+        float z0 = cell.getZ() + in;
+        float x1 = cell.getX() + 1 - in;
+        float y1 = cell.getY() + 1 - in;
+        float z1 = cell.getZ() + 1 - in;
+        // De bovenkant iets lichter, de onderkant iets donkerder: dan zie je de vorm van de wolk.
+        float shade = side == Direction.UP ? 1.0f : side == Direction.DOWN ? 0.7f : side.getAxis() == Direction.Axis.X ? 0.85f : 0.92f;
+        int r = Math.round((rgb >> 16 & 0xFF) * shade);
+        int g = Math.round((rgb >> 8 & 0xFF) * shade);
+        int b = Math.round((rgb & 0xFF) * shade);
+        float[][] corners = switch (side) {
+            case UP -> new float[][] {{x0, y1, z0}, {x0, y1, z1}, {x1, y1, z1}, {x1, y1, z0}};
+            case DOWN -> new float[][] {{x0, y0, z0}, {x1, y0, z0}, {x1, y0, z1}, {x0, y0, z1}};
+            case NORTH -> new float[][] {{x0, y0, z0}, {x0, y1, z0}, {x1, y1, z0}, {x1, y0, z0}};
+            case SOUTH -> new float[][] {{x0, y0, z1}, {x1, y0, z1}, {x1, y1, z1}, {x0, y1, z1}};
+            case WEST -> new float[][] {{x0, y0, z0}, {x0, y0, z1}, {x0, y1, z1}, {x0, y1, z0}};
+            case EAST -> new float[][] {{x1, y0, z0}, {x1, y1, z0}, {x1, y1, z1}, {x1, y0, z1}};
+        };
+        for (float[] c : corners) {
+            out.addVertex(m, c[0], c[1], c[2]).setColor(r, g, b, alpha);
+        }
     }
 
     /** De benen: per tick van de animatie een stapje verder zolang het wezen loopt (terugspoelen begint opnieuw). */

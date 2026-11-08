@@ -343,14 +343,23 @@ public final class HowToSceneBuilder {
      */
     public HowToSceneBuilder actor(String key, EntityType<?> type, int duration, int move, float yaw, CompoundTag data,
                                    Vec3... path) {
-        cues.add(new HowToCue.Actor(t, duration, key, type, List.of(path), move, yaw, Map.of(), data.copy()));
+        cues.add(new HowToCue.Actor(t, duration, key, type, List.of(path), move, yaw, Map.of(), data.copy(), List.of()));
         return this;
     }
 
     /** Een speler met jouw skin, met {@code gear} aan (of in zijn hand), die in {@code move} ticks langs {@code path} loopt. */
     public HowToSceneBuilder player(String key, int duration, int move, float yaw, Map<EquipmentSlot, ItemStack> gear,
                                     Vec3... path) {
-        return person(key, new CompoundTag(), duration, move, yaw, gear, path);
+        return person(key, new CompoundTag(), duration, move, yaw, gear, List.of(), path);
+    }
+
+    /**
+     * Een speler met jouw skin die ook uitrusting draagt ({@code worn}: de holster, de granaatpouch, de magazijnpouch, het
+     * geweer op zijn rug en dat voor zijn borst; zie HowToCue.Actor). Verder net als {@link #player}.
+     */
+    public HowToSceneBuilder player(String key, int duration, int move, float yaw, Map<EquipmentSlot, ItemStack> gear,
+                                    List<ItemStack> worn, Vec3... path) {
+        return person(key, new CompoundTag(), duration, move, yaw, gear, worn, path);
     }
 
     /**
@@ -361,14 +370,82 @@ public final class HowToSceneBuilder {
                                       Map<EquipmentSlot, ItemStack> gear, Vec3... path) {
         CompoundTag data = new CompoundTag();
         data.putString("Profile", name);
-        return person(key, data, duration, move, yaw, gear, path);
+        return person(key, data, duration, move, yaw, gear, List.of(), path);
     }
 
     private HowToSceneBuilder person(String key, CompoundTag data, int duration, int move, float yaw,
-                                     Map<EquipmentSlot, ItemStack> gear, Vec3... path) {
+                                     Map<EquipmentSlot, ItemStack> gear, List<ItemStack> worn, Vec3... path) {
         Map<EquipmentSlot, ItemStack> copy = new EnumMap<>(EquipmentSlot.class);
         gear.forEach((slot, stack) -> copy.put(slot, stack.copy()));
-        cues.add(new HowToCue.Actor(t, duration, key, null, List.of(path), move, yaw, Collections.unmodifiableMap(copy), data));
+        List<ItemStack> wornCopy = worn.stream().map(ItemStack::copy).toList();
+        cues.add(new HowToCue.Actor(t, duration, key, null, List.of(path), move, yaw, Collections.unmodifiableMap(copy), data,
+                wornCopy));
+        return this;
+    }
+
+    /** Een voorwerp dat op {@code pos} zweeft en ronddraait, {@code duration} ticks lang ({@code scale} 1 = een blok groot). */
+    public HowToSceneBuilder item(int duration, Vec3 pos, ItemStack stack, float scale) {
+        cues.add(new HowToCue.Item(t, duration, pos, stack.copy(), scale));
+        return this;
+    }
+
+    /** Een bol van licht op {@code center} die groeit tot {@code radius} en wegvaagt (een EMP, een flits, een ontploffing). */
+    public HowToSceneBuilder pulse(int duration, Vec3 center, float radius, int rgb) {
+        cues.add(new HowToCue.Pulse(t, duration, center, radius, rgb));
+        return this;
+    }
+
+    /**
+     * Een rookwolk vanaf {@code center} tot {@code radius} ver, {@code duration} ticks lang. Zoals de echte rook gaat hij niet
+     * door blokken: vanaf het blok van {@code center} vult hij de lucht stap voor stap (zes kanten op, niet schuin), en
+     * een omweg telt mee; om een muur heen en door een open deur komt er dus maar een beetje. Wat er op dit moment in
+     * het wereldje staat, houdt hem tegen.
+     */
+    public HowToSceneBuilder smoke(int duration, Vec3 center, float radius, int rgb) {
+        BlockPos start = BlockPos.containing(center);
+        int steps = (int) Math.ceil(radius);
+        Map<BlockPos, Integer> distance = new LinkedHashMap<>();
+        java.util.ArrayDeque<BlockPos> queue = new java.util.ArrayDeque<>();
+        if (smokePasses(world.get(start))) {
+            distance.put(start, 0);
+            queue.add(start);
+        }
+        while (!queue.isEmpty()) {
+            BlockPos pos = queue.poll();
+            int d = distance.get(pos);
+            if (d >= steps) {
+                continue;
+            }
+            for (Direction side : Direction.values()) {
+                BlockPos next = pos.relative(side);
+                BlockState there = world.get(next);
+                if (next.getY() < 1 || distance.containsKey(next) || !smokePasses(there)
+                        || Vec3.atCenterOf(next).distanceTo(center) > radius + 0.5) {
+                    continue;
+                }
+                // Door een open deur kost drie stappen: daar komt maar een beetje rook door.
+                int cost = there != null && !there.isAir() ? 3 : 1;
+                distance.put(next, d + cost);
+                queue.add(next);
+            }
+        }
+        // De dichtstbijzijnde eerst (zo groeit de wolk).
+        List<BlockPos> cells = new ArrayList<>(distance.keySet());
+        cells.sort(Comparator.comparingInt(distance::get));
+        cues.add(new HowToCue.Smoke(t, duration, center, List.copyOf(cells), rgb));
+        return this;
+    }
+
+    /** Gaat rook hier doorheen? Door lucht en een open deur wel; door elk ander blok (ook glas en een dichte deur) niet. */
+    private static boolean smokePasses(@Nullable BlockState state) {
+        return state == null || state.isAir()
+                || state.getBlock() instanceof net.minecraft.world.level.block.DoorBlock
+                && state.getValue(net.minecraft.world.level.block.DoorBlock.OPEN);
+    }
+
+    /** Barsten in het blok op {@code pos}: 0 tot 9, of -1 = weer heel. */
+    public HowToSceneBuilder crack(BlockPos pos, int stage) {
+        cues.add(new HowToCue.Crack(t, pos, stage));
         return this;
     }
 
@@ -455,7 +532,7 @@ public final class HowToSceneBuilder {
         for (int i = 0; i < sorted.size(); i++) {
             if (sorted.get(i) instanceof HowToCue.Actor a && a.duration() < 0) {
                 sorted.set(i, new HowToCue.Actor(a.tick(), end + 20 - a.tick(), a.key(), a.type(), a.path(), a.move(), a.yaw(),
-                        a.gear(), a.data()));
+                        a.gear(), a.data(), a.worn()));
             }
         }
         List<HowToScene.Chapter> list = new ArrayList<>(chapters);
@@ -486,6 +563,10 @@ public final class HowToSceneBuilder {
             case HowToCue.Beam b -> b.tick() + b.duration();
             case HowToCue.BlockData d -> d.tick();
             case HowToCue.Sound s -> s.tick();
+            case HowToCue.Item i -> i.tick() + i.duration();
+            case HowToCue.Pulse p -> p.tick() + p.duration();
+            case HowToCue.Smoke s -> s.tick() + s.duration();
+            case HowToCue.Crack c -> c.tick();
         };
     }
 }

@@ -397,6 +397,7 @@ final class HowToTour {
         t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.COMBAT);
         t.look(0, 0.0f, 10.0f);
         robotPictures(t);
+        weaponPictures(t);
     }
 
     // ================================================================ De robots
@@ -651,6 +652,124 @@ final class HowToTour {
         t.close(5);
         t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         t.look(0, 0.0f, 10.0f);
+    }
+
+    // ================================================================ De wapens
+
+    /** Waar je staat voor de plaatjes van de wapens: de banken staan links van je (zie ShowcaseFeatures.buildGunBenches). */
+    private static final BlockPos GUN_STAND = DEMO_CORE.offset(10, 0, 8);
+
+    /**
+     * De plaatjes van de wapens (hoofdstuk 63, de wapens): de Gunsmith Table met een half pistool, de Reloading Bench, de
+     * Laser Workbench met een half geweer, de skilltree, de HUD met een lasergeweer en met de Glock, je inventaris met de
+     * vakjes van je uitrusting, het wiel, de magazijnpouch en het witte scherm van een flashbang. In survival: in creative
+     * opent je inventaris het creative-menu (zonder de vakjes van je uitrusting).
+     */
+    private static void weaponPictures(DevScript t) {
+        t.command(0, "gamemode survival @a");
+        t.onServer(5, player -> {
+            ShowcaseFeatures.buildGunBenches(player, GUN_STAND);
+            ShowcaseFeatures.buildLaserBench(player, GUN_STAND);
+            ShowcaseFeatures.giveGlock(player);
+        });
+        t.stand(10, GUN_STAND.getX() + 0.5, GUN_STAND.getY(), GUN_STAND.getZ() + 0.5, 0, -90);
+        t.step(30, () -> {
+            Minecraft.getInstance().options.hideGui = true;
+            noToasts();
+        });
+        // De Gunsmith Table en de Reloading Bench.
+        t.onServer(5, player -> ShowcaseFeatures.openBench(player, GUN_STAND.offset(-2, 0, -2)));
+        t.step(5, () -> mouseTo(1, 1));
+        t.step(25, () -> captureCentered("gunsmith_table", 328, 186));
+        t.close(5);
+        t.onServer(5, player -> ShowcaseFeatures.openBench(player, GUN_STAND.offset(-2, 0, 2)));
+        t.step(5, () -> mouseTo(1, 1));
+        t.step(20, () -> captureCentered("reloading_bench", 176, 166));
+        t.close(5);
+        // De Laser Workbench (met de laseronderdelen in je inventaris).
+        t.onServer(5, ShowcaseFeatures::giveLaserParts);
+        t.step(5, HowToTour::noToasts);
+        t.onServer(5, player -> ShowcaseFeatures.openBench(player, GUN_STAND.offset(-2, 0, 0)));
+        t.step(5, () -> mouseTo(1, 1));
+        t.step(25, () -> captureCentered("laser_workbench", 328, 186));
+        t.close(5);
+        // De skilltree, met punten om te verdelen en een paar niveaus geleerd.
+        t.onServer(0, player -> {
+            player.setData(com.senne.imttech.registry.ModAttachments.GUN_SKILLS,
+                    new com.senne.imttech.guns.GunSkills(25, 7, 7, java.util.Map.of()));
+            com.senne.imttech.guns.GunSkillsServer.learn(player, "glock_19", com.senne.imttech.guns.GunSkill.RELOAD);
+            com.senne.imttech.guns.GunSkillsServer.learn(player, "glock_19", com.senne.imttech.guns.GunSkill.RELOAD);
+            com.senne.imttech.guns.GunSkillsServer.learn(player, com.senne.imttech.guns.GunSkills.GLOBAL,
+                    com.senne.imttech.guns.GunSkill.AIM);
+        });
+        t.open(10, com.senne.imttech.client.guns.SkillTreeScreen::new);
+        t.step(20, () -> captureScreen("gun_skills"));
+        t.close(5);
+        t.onServer(0, player -> player.setData(com.senne.imttech.registry.ModAttachments.GUN_SKILLS,
+                com.senne.imttech.guns.GunSkills.EMPTY));
+        // De HUD: eerst met de laser rifle in je hand (vak 0 na giveLaserParts), dan met de Glock. Je kijkt over de grond.
+        t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+        t.look(5, 0.0f, 12.0f);
+        t.step(0, () -> select(0));
+        t.step(30, HowToTour::noToasts);
+        t.step(15, () -> captureScreen("laser_hud"));
+        t.onServer(0, ShowcaseFeatures::giveGlock);
+        t.step(5, () -> select(0));
+        t.step(5, HowToTour::noToasts);
+        t.step(30, () -> captureScreen("glock_hud"));
+        // De vakjes van je uitrusting in je inventaris: een holster met de Glock, twee pouches, en twee geweren aan een sling.
+        t.onServer(0, player -> {
+            ShowcaseFeatures.giveGear(player);
+            com.senne.imttech.guns.Gear.setSling(player, 0, ShowcaseFeatures.slungGun(com.senne.imttech.weapons.GunType.RIFLE, 60));
+            com.senne.imttech.guns.Gear.setSling(player, 1, ShowcaseFeatures.slungGun(com.senne.imttech.weapons.GunType.SNIPER, 100));
+        });
+        t.look(5, 0.0f, -90.0f);
+        t.step(5, () -> Minecraft.getInstance().options.hideGui = true);
+        t.step(10, HowToTour::noToasts);
+        t.open(5, () -> new net.minecraft.client.gui.screens.inventory.InventoryScreen(Minecraft.getInstance().player));
+        t.step(5, () -> mouseTo(1, 1));
+        t.step(15, () -> captureCentered("gear_inventory", 176, 166));
+        t.close(5);
+        // Het wiel (linker Alt vasthouden), met de wereld erachter.
+        t.look(5, 0.0f, 12.0f);
+        t.wheel(10, true);
+        t.step(15, () -> captureScreen("weapon_wheel"));
+        t.wheel(2, false);
+        t.step(10, () -> Minecraft.getInstance().options.hideGui = true);
+        // De magazijnpouch open.
+        t.look(5, 0.0f, -90.0f);
+        t.onServer(5, player -> com.senne.imttech.guns.Gear.openPouch(player, com.senne.imttech.guns.GearItem.Kind.MAG_POUCH.ordinal()));
+        t.step(5, () -> mouseTo(1, 1));
+        t.step(15, () -> captureCentered("mag_pouch", 176, 166));
+        t.close(5);
+        // Een flashbang vlak voor je, en je kijkt ernaar: het witte scherm.
+        t.look(5, 0.0f, 10.0f);
+        t.onServer(10, player -> com.senne.imttech.weapons.Flashbang.bang(player.serverLevel(),
+                new Vec3(GUN_STAND.getX() + 0.5, GUN_STAND.getY() + 1.5, GUN_STAND.getZ() + 3.5), null));
+        // Even later: nog bijna wit, maar de wereld schemert er al doorheen (zie FlashOverlay: eerst wit, dan vaagt het weg).
+        t.step(55, () -> captureScreen("flashbang"));
+        t.step(60, () -> Minecraft.getInstance().options.hideGui = false);
+        t.command(0, "gamemode creative @a");
+        t.look(0, 0.0f, 10.0f);
+    }
+
+    /** Een paneel in het midden van het scherm (een scherm met vakjes: {@code w} x {@code h}) als plaatje. */
+    private static void captureCentered(String name, int w, int h) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen != null) {
+            capture(name, (mc.screen.width - w) / 2, (mc.screen.height - h) / 2, w, h);
+        } else {
+            ImtTech.LOGGER.warn("[visual check] voor het plaatje {} staat geen scherm open", name);
+        }
+    }
+
+    /** Dit vak van je werkbalk in je hand (ook op de server, zoals met het scrollwiel). */
+    private static void select(int slot) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null && mc.getConnection() != null) {
+            mc.player.getInventory().selected = slot;
+            mc.getConnection().send(new net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket(slot));
+        }
     }
 
     /** Weg met de meldingen rechtsboven (een nieuw recept, een prestatie): die staan anders op een plaatje. */

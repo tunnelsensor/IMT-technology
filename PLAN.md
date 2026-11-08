@@ -5508,13 +5508,58 @@ hebben, zodat er geen vergeten wordt.
       het geweer (geel), de Ion Blaster (blauw), de blauwe flits, de berichtjes naar en van de kern en de rode flits van
       de kortsluiting. 454 tests, allemaal groen (in de eerste ronde miste de Raven-soldaat van `raven_soldier_shoots` een
       keer binnen zijn tien seconden; dat hangt aan zijn willekeurige wapen en richten, niet aan dit werk).
-- [ ] **9. Nog te doen (28 onderwerpen)** — Power: de stroomkast. Interior: de holotafel, de harnas-werkbank met alle
+- [x] **9. De wapens** — jouw opmerking (8 november): "Ga verder met IMT weapons." Het hele tabblad Weapons: elf
+      onderwerpen met elk één animatie (34 van de 51 klaar):
+      - *Laser guns* (43 s): de vier geweren zwevend boven het plateau, schieten met het pistool op een husk (blauwe
+        stralen), de rifle (automatisch), de sniper (één zware straal ver weg) en de shotgun (een waaier van acht stralen),
+        energiecellen (de HUD als plaatje) en laden in het laadstation.
+      - *Laser guns from parts* (39 s): de zes onderdelen zwevend op een rij, titanium en netherite, de Nether Star als
+        kern, de Laser Workbench (zijn scherm als plaatje), slijtage zonder storingen, en jij met een rifle aan een sling
+        op je rug.
+      - *Ion Blaster* (20 s): een robot valt op zijn rug, een drone valt naar de grond, een koe merkt niets.
+      - *EMP grenades* (30 s): gooien (de granaat vliegt, stuitert en piept steeds sneller), de puls (een blauwe bol: de
+        robot en de drone vallen neer, het torentje laat zijn loop hangen, de camera gaat uit), kabels en uitrusting, alles
+        weer aan, en een sticky op de robot.
+      - *Frag grenades* (26 s): een sticky frag op een stenen muur blaast het blok eruit (een oranje bol), barsten eromheen,
+        en een tweede eronder maakt een gat.
+      - *Smoke grenade and flashbang* (42 s): een rookbom in een schuurtje met een glazen dak: de wolk blijft binnen en er
+        komt een beetje uit de open deur; rode rook in de open lucht; en een flashbang (een witte flits, en je scherm als
+        plaatje: nog bijna wit, de wereld schemert erdoor).
+      - *Remote EMP and Remote Frag* (35 s): een Remote EMP op de vloer naast een open kabel, van ver af met de EMP Trigger
+        (het torentje gaat uit), een Remote Frag op een muur, met de Frag Trigger een blok eruit, en de schaar.
+      - *Glock 19* (51 s): schieten op een husk (gele spoortjes, de hulzen springen rechts uit het pistool en blijven
+        liggen), hulzen oprapen, het magazijn kogel per kogel, herladen (de HUD als plaatje), storingen en de tap-rack, en
+        de skilltree (F6) als plaatje.
+      - *Gunsmith Table* (32 s): de zes onderdelen, drie materialen, de tafel als plaatje, en versleten onderdelen.
+      - *Reloading Bench* (23 s): een huls, een kogelpunt en buskruit worden een patroon, de bank als plaatje, en je
+        hulzen terug.
+      - *Holster, pouches and slings* (51 s): je inventaris met de vakjes als plaatje, jij met holster, pouches en een
+        rifle op je rug (je draait rond), het wiel als plaatje, het pistool trekken, en een pouch vullen (als plaatje).
+      Nieuwe bouwstenen: een **zwevend voorwerp** dat ronddraait (`item`), een **bol van licht** die groeit en wegvaagt
+      (`pulse`: de EMP, de flits, een ontploffing, zoals de echte bol van een EMP), **rook** die stap voor stap de lucht
+      vult en niet door blokken gaat (`smoke`: door lucht en een open deur wel, door een open deur maar een beetje, door
+      glas en muren niet; we tekenen alleen de hobbelige buitenkant van de wolk, en vóór glas, anders verdween hij achter
+      een glazen dak), **barsten** in een blok (`crack`: de laag van Minecraft als je aan een blok hakt, net als de echte
+      barsten), en een speler met **uitrusting** om (de holster, de pouches en de slings; met Curios in de modpack zie je
+      die bij een speler in de animatie niet). Een wezen houdt zijn snelheid na het vliegen, zodat een sticky met zijn
+      kussen tegen een muur ligt, en de lont van een granaat telt vanaf het moment dat hij in beeld komt. Tien nieuwe
+      plaatjes (`-Ponly=howtopics`): de Gunsmith Table met een half pistool, de Reloading Bench, de Laser Workbench met een
+      half geweer, de skilltree, de HUD met een lasergeweer en met de Glock, je inventaris met de vakjes van je uitrusting,
+      het wiel, de magazijnpouch en het scherm na een flashbang. Wat ik op de foto's zag en verbeterde: de zwevende
+      voorwerpen hingen achter de tekstballon bovenaan (nu lager, en lange teksten in twee stukken), een tekstballon
+      tegelijk met een plaatje verdween eronder (nu na elkaar), de rook was achter het glazen dak onzichtbaar, en bij de
+      Reloading Bench schoot je op de bank. In de magazijnpouch liepen de twee uitlegregels rechts buiten het scherm (nu
+      korter: "Drag or shift-click magazines in and out", "Also from the Alt wheel, or its own key"). Gezien maar niet
+      veranderd: op de Laser Workbench liggen de vakjes van de capacitor, de trigger module en de sling van een rifle in de
+      uitgeschoven tekening over elkaar, met hun namen erdoor; ze verder uit elkaar schuiven hielp niet meteen (dan schoof
+      de capacitor onder het geweer), dus dat blijft een apart klusje. De test van de draaiboeken kijkt nu ook de nieuwe
+      bouwstenen na (zwevende voorwerpen niet leeg, een bol met een maat, rook met plek, barsten van 0 tot 9, hooguit vijf
+      stuks uitrusting). 454 tests, allemaal groen.
+- [ ] **10. Nog te doen (17 onderwerpen)** — Power: de stroomkast. Interior: de holotafel, de harnas-werkbank met alle
       upgrades, barsten herstellen, het landingsplatform, de Arc Lamp met de lichtschakelaar. Security: de Block
       Reinforcer, handboeien, de Auth Console, de Bypass Kit, de Hacking Laptop, de Phone, en (minder belangrijk, jouw
       keuze) computer en monitor; en voor de Laser Emitter nog de animaties van zijn instellingen en het draden knippen.
-      Weapons: de lasergeweren, de Laser Workbench, de Ion Blaster, EMP- en fraggranaten, rook en flashbang, de Remote EMP
-      en Remote Frag, de Glock 19, de Gunsmith Table, de Reloading Bench, de holster en de pouches. Equipment: het harnas,
-      het raketpakket, drones, de E.M.P.
+      Equipment: het harnas, het raketpakket, drones, de E.M.P.
 
 ### 64. Grotere datacenters, en racks zonder scherm (8 november)
 

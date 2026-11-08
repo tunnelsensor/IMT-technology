@@ -5,11 +5,13 @@ import com.senne.imttech.guns.GunPart;
 import com.senne.imttech.howto.scenes.DatacenterScenes;
 import com.senne.imttech.howto.scenes.DefenceScenes;
 import com.senne.imttech.howto.scenes.EquipmentScenes;
+import com.senne.imttech.howto.scenes.GrenadeScenes;
 import com.senne.imttech.howto.scenes.InteriorScenes;
 import com.senne.imttech.howto.scenes.PowerScenes;
 import com.senne.imttech.howto.scenes.RobotScenes;
 import com.senne.imttech.howto.scenes.SecurityScenes;
 import com.senne.imttech.howto.scenes.TrainingScenes;
+import com.senne.imttech.howto.scenes.WeaponScenes;
 import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.weapons.GunType;
 import com.senne.imttech.weapons.LaserPart;
@@ -46,24 +48,25 @@ public final class HowToTopics {
             planned("drones", "equipment", "Drones", ModItems.DRONE),
             planned("emp", "equipment", "E.M.P.", ModItems.EMP),
             // ------------------------------------------------------------ Weapons
-            planned("laser_guns", "weapons", "Laser guns", ModItems.LASER_PISTOL, ModItems.LASER_RIFLE, ModItems.LASER_SNIPER,
-                    ModItems.LASER_SHOTGUN, ModItems.ENERGY_CELL),
-            plannedItems("laser_workbench", "weapons", "Laser guns from parts",
+            topic("laser_guns", "weapons", "Laser guns", WeaponScenes::laserGuns, ModItems.LASER_PISTOL, ModItems.LASER_RIFLE,
+                    ModItems.LASER_SNIPER, ModItems.LASER_SHOTGUN, ModItems.ENERGY_CELL),
+            topicItems("laser_workbench", "weapons", "Laser guns from parts", WeaponScenes::laserWorkbench,
                     () -> concat(laserParts(), List.of(ModItems.LASER_WORKBENCH.get(), ModItems.GUN_SLING.get()))),
-            planned("ion_blaster", "weapons", "Ion Blaster", ModItems.ION_BLASTER),
-            planned("emp_grenades", "weapons", "EMP grenades", ModItems.EMP_GRENADE, ModItems.STICKY_EMP_GRENADE),
-            planned("frag_grenades", "weapons", "Frag grenades", ModItems.FRAG_GRENADE, ModItems.STICKY_FRAG_GRENADE),
-            planned("smoke_flashbang", "weapons", "Smoke grenade and flashbang", ModItems.SMOKE_GRENADE, ModItems.FLASHBANG),
-            planned("remote_charges", "weapons", "Remote EMP and Remote Frag", ModItems.REMOTE_EMP, ModItems.EMP_TRIGGER,
-                    ModItems.REMOTE_FRAG, ModItems.FRAG_TRIGGER),
-            planned("glock", "weapons", "Glock 19", ModItems.GLOCK_19, ModItems.GLOCK_19_MAGAZINE, ModItems.ROUND_9MM),
-            plannedItems("gunsmith", "weapons", "Gunsmith Table",
+            topic("ion_blaster", "weapons", "Ion Blaster", WeaponScenes::ionBlaster, ModItems.ION_BLASTER),
+            topic("emp_grenades", "weapons", "EMP grenades", GrenadeScenes::emp, ModItems.EMP_GRENADE, ModItems.STICKY_EMP_GRENADE),
+            topic("frag_grenades", "weapons", "Frag grenades", GrenadeScenes::frag, ModItems.FRAG_GRENADE, ModItems.STICKY_FRAG_GRENADE),
+            topic("smoke_flashbang", "weapons", "Smoke grenade and flashbang", GrenadeScenes::smokeFlash, ModItems.SMOKE_GRENADE,
+                    ModItems.FLASHBANG),
+            topic("remote_charges", "weapons", "Remote EMP and Remote Frag", GrenadeScenes::remotes, ModItems.REMOTE_EMP,
+                    ModItems.EMP_TRIGGER, ModItems.REMOTE_FRAG, ModItems.FRAG_TRIGGER),
+            topic("glock", "weapons", "Glock 19", WeaponScenes::glock, ModItems.GLOCK_19, ModItems.GLOCK_19_MAGAZINE, ModItems.ROUND_9MM),
+            topicItems("gunsmith", "weapons", "Gunsmith Table", WeaponScenes::gunsmith,
                     () -> concat(Arrays.stream(GunPart.values()).map(part -> (Item) ModItems.gunPart(part)).toList(),
                             List.of(ModItems.GUNSMITH_TABLE.get()))),
-            planned("reloading", "weapons", "Reloading Bench", ModItems.RELOADING_BENCH, ModItems.CASING_9MM, ModItems.BULLET_9MM,
-                    ModItems.ROUND_9MM),
-            planned("gear", "weapons", "Holster, pouches and slings", ModItems.HOLSTER, ModItems.GRENADE_POUCH, ModItems.MAG_POUCH,
-                    ModItems.GUN_SLING),
+            topic("reloading", "weapons", "Reloading Bench", WeaponScenes::reloading, ModItems.RELOADING_BENCH, ModItems.CASING_9MM,
+                    ModItems.BULLET_9MM, ModItems.ROUND_9MM),
+            topic("gear", "weapons", "Holster, pouches and slings", WeaponScenes::gear, ModItems.HOLSTER, ModItems.GRENADE_POUCH,
+                    ModItems.MAG_POUCH, ModItems.GUN_SLING),
             // ------------------------------------------------------------ Power
             topic("power_battery", "power", "Power Battery", PowerScenes::battery, ModItems.BATTERY_CASING, ModItems.BATTERY_GLASS,
                     ModItems.BATTERY_CELL, ModItems.BATTERY_PORT),

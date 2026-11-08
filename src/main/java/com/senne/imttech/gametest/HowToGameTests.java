@@ -88,7 +88,8 @@ public final class HowToGameTests {
     /**
      * Elk draaiboek dat klaar is, klopt: een uniek id, hoofdstukjes op volgorde vanaf tick 0, cues op volgorde en binnen de
      * lengte, teksten met Engelse tekst, blokken op of boven de grondplaat, en een lengte tussen 10 seconden en anderhalve
-     * minuut.
+     * minuut. Sinds de wapens ook: zwevende voorwerpen zijn niet leeg, een bol heeft een maat, rook heeft plek om te
+     * groeien, barsten lopen van 0 tot 9, en een speler draagt hooguit vijf stuks uitrusting.
      */
     @GameTest(template = ARENA, timeoutTicks = 20)
     public static void how_it_works_scenes_are_sound(GameTestHelper helper) {
@@ -130,6 +131,12 @@ public final class HowToGameTests {
                         case HowToCue.Cable cable -> check(cable.points().size() >= 2, name + ": een kabel van minder dan twee punten");
                         case HowToCue.Picture picture -> check(!picture.arrows().isEmpty() && picture.width() > 0 && picture.height() > 0,
                                 name + ": een plaatje zonder pijltjes of maat");
+                        case HowToCue.Item item -> check(!item.stack().isEmpty() && item.scale() > 0, name + ": een leeg zwevend voorwerp");
+                        case HowToCue.Pulse pulse -> check(pulse.radius() > 0 && pulse.duration() > 0, name + ": een bol zonder maat");
+                        case HowToCue.Smoke smoke -> check(!smoke.cells().isEmpty(),
+                                name + ": rook zonder plek (begint de wolk in een blok?)");
+                        case HowToCue.Crack crack -> check(crack.stage() >= -1 && crack.stage() <= 9, name + ": barsten " + crack.stage());
+                        case HowToCue.Actor actor -> check(actor.worn().size() <= 5, name + ": te veel uitrusting voor " + actor.key());
                         default -> {
                         }
                     }

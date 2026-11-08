@@ -2,11 +2,14 @@ package com.senne.imttech.client.howto;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.SheetedDecalTextureGenerator;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import com.senne.imttech.client.CableRenderer;
 import com.senne.imttech.howto.HowToCue;
 import com.senne.imttech.howto.HowToScene;
 import com.senne.imttech.howto.HowToSceneBuilder;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import net.minecraft.client.Minecraft;
@@ -16,6 +19,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.client.resources.model.ModelBakery;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
@@ -84,13 +88,19 @@ final class SceneRenderer {
                 renderLayer(pose, buffers, player, time, layer);
             }
         }
+        renderCracks(pose, buffers, player, time);
         renderPlate(pose, buffers, player);
         renderCables(pose, buffers, player, time);
-        // Wezens, de bewegende delen van blokken (het geschut van een torentje, de koepel) en schoten.
+        // Wezens, voorwerpen die zweven, de bewegende delen van blokken (het geschut van een torentje, de koepel) en schoten.
         life.renderActors(pose, buffers, player, time, partialTick);
+        life.renderItems(pose, buffers, player, time);
         life.renderBlockEntities(pose, buffers, player, time, partialTick);
         life.renderBeams(pose, buffers, player, time);
         buffers.endBatch();
+        // Rook en bollen van licht vóór glas: glas schrijft diepte, en dan verdween de rook achter een glazen dak. Zo komt
+        // het glas er gewoon overheen (rook en licht zelf schrijven geen diepte).
+        life.renderSmoke(pose, buffers, player, time);
+        life.renderPulses(pose, buffers, player, time);
         for (RenderType layer : RenderType.chunkBufferLayers()) {
             if (translucent(layer)) {
                 renderLayer(pose, buffers, player, time, layer);
@@ -123,6 +133,44 @@ final class SceneRenderer {
     }
 
     // ================================================================ Blokken
+
+    /**
+     * Barsten (hoofdstuk 63, de wapens): over een blok de laag die Minecraft tekent als je eraan hakt, zoals de barsten van
+     * een frag in de echte wereld (zie breach/Cracks). De laatste Crack-cue per blok tot nu toe telt.
+     */
+    private static void renderCracks(PoseStack pose, MultiBufferSource.BufferSource buffers, ScenePlayer player, float time) {
+        Map<BlockPos, Integer> stages = new HashMap<>();
+        for (HowToCue cue : player.scene.cues()) {
+            if (cue.tick() > time) {
+                break;
+            }
+            if (cue instanceof HowToCue.Crack crack) {
+                if (crack.stage() < 0) {
+                    stages.remove(crack.pos());
+                } else {
+                    stages.put(crack.pos(), Math.min(9, crack.stage()));
+                }
+            }
+        }
+        if (stages.isEmpty()) {
+            return;
+        }
+        BlockRenderDispatcher dispatcher = Minecraft.getInstance().getBlockRenderer();
+        for (Map.Entry<BlockPos, Integer> entry : stages.entrySet()) {
+            BlockPos pos = entry.getKey();
+            BlockState state = player.world.blocks().get(pos);
+            if (state == null || state.getRenderShape() != RenderShape.MODEL) {
+                continue;
+            }
+            pose.pushPose();
+            pose.translate(pos.getX(), pos.getY(), pos.getZ());
+            VertexConsumer cracks = new SheetedDecalTextureGenerator(
+                    buffers.getBuffer(ModelBakery.DESTROY_TYPES.get(entry.getValue())), pose.last(), 1.0f);
+            dispatcher.renderBreakingTexture(state, pos, player.world, pose, cracks, ModelData.EMPTY);
+            pose.popPose();
+        }
+        buffers.endBatch();
+    }
 
     private static boolean translucent(RenderType layer) {
         return layer == RenderType.translucent() || layer == RenderType.tripwire();
