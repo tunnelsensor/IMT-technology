@@ -4118,7 +4118,7 @@ public final class VisualCheck {
     }
 
     /** Waar het lab van hoofdstuk 12 staat (zie buildBypassLab). */
-    private static final BlockPos BYPASS_LAB = new BlockPos(170, -60, 128);
+    static final BlockPos BYPASS_LAB = new BlockPos(170, -60, 128);
 
     /** Doet iets met de zak die nu open is (als hij open is). */
     private static void pocket(java.util.function.Consumer<com.senne.imttech.client.pickpocket.PocketScreen> action) {
@@ -4153,7 +4153,7 @@ public final class VisualCheck {
      * generator, met een redstoneblok), tot een steen 5 blokken verder. Elke keer nieuw: hele draden, niet op slot.
      * Jij zette hem neer. In je hand de Bypass Kit.
      */
-    private static void buildBypassLaser(ServerPlayer player) {
+    static void buildBypassLaser(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
         BlockPos bottom = BYPASS_LAB.offset(8, 0, 4);
         for (BlockPos pos : BlockPos.betweenClosed(bottom.offset(-6, 0, 0), bottom.offset(1, 1, 0))) {
@@ -4188,7 +4188,7 @@ public final class VisualCheck {
      * met een keycardlezer "Lab door" en een codepaneel "Front door", en een diagram: een kaart van
      * niveau 3 of hoger geeft groen, anders rood, en de code 4711 op het paneel ook. In je hand de Bypass Kit.
      */
-    private static void buildBypassLab(ServerPlayer player) {
+    static void buildBypassLab(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
         BlockPos lab = BYPASS_LAB;
         BlockPos rack = lab.offset(-2, 0, 0);
@@ -4365,7 +4365,7 @@ public final class VisualCheck {
     }
 
     /** Hoofdstuk 49: het veldje van de autorisatiecodes (zie "auth"). */
-    private static final BlockPos AUTH_YARD = new BlockPos(-400, -60, -340);
+    static final BlockPos AUTH_YARD = new BlockPos(-400, -60, -340);
     /** Het IP van de kern van dat veldje (de server zet het, het scherm van de telefoon typt het; hoofdstuk 50). */
     static volatile String authYardIp = "";
 
@@ -5210,7 +5210,7 @@ public final class VisualCheck {
      * de kern een laserbrug met een netwerkkabel (en een eigen generator en redstone, zodat hij er ligt).
      */
     /** Hoofdstuk 40: de receptie met computers (zie "computers" hierboven). */
-    private static final BlockPos COMPUTER_DESK = new BlockPos(-300, -60, -340);
+    static final BlockPos COMPUTER_DESK = new BlockPos(-300, -60, -340);
     /** Waar de schermmuur staat (19 oktober, zie {@link #buildCameraWall}). */
     private static final BlockPos CAMERA_WALL = new BlockPos(-300, -60, -390);
 

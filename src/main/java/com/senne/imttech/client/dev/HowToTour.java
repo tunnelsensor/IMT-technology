@@ -398,6 +398,7 @@ final class HowToTour {
         t.look(0, 0.0f, 10.0f);
         robotPictures(t);
         weaponPictures(t);
+        securityItemPictures(t);
     }
 
     // ================================================================ De robots
@@ -751,6 +752,180 @@ final class HowToTour {
         t.step(60, () -> Minecraft.getInstance().options.hideGui = false);
         t.command(0, "gamemode creative @a");
         t.look(0, 0.0f, 10.0f);
+    }
+
+    // ================================================================ De laatste beveiligingsitems
+
+    /** Waar de kern staat die we voor het plaatje van de terminal hacken (niet van jou). */
+    private static final BlockPos HACK_CORE = DEMO_CORE.offset(-8, 0, 10);
+
+    /**
+     * De plaatjes van de laatste beveiligingsitems (hoofdstuk 63, stap 10): de app Computers en de desktop van een computer
+     * (op het bureau van de rondleiding), de inlog van de laptop en de desktop op afstand, de autorisatiecode in Status en
+     * een verzoek in Requests (op het veldje van de Auth Console), de PIN en de desktop van de telefoon, de drie spelletjes
+     * van de Bypass Kit en de zak van iemand anders (in het lab van de Bypass Kit), en de terminal van de laptop op de kern
+     * van een ander. Allemaal het hele venster, zonder de HUD.
+     */
+    private static void securityItemPictures(DevScript t) {
+        BlockPos desk = VisualCheck.COMPUTER_DESK;
+        BlockPos reception = desk.east(4);
+        t.step(0, () -> {
+            com.senne.imttech.lan.LanGrid.overrideRequired(true);
+            Minecraft.getInstance().options.hideGui = true;
+        });
+        t.onServer(0, player -> VisualCheck.buildComputerDesk(player, desk));
+        t.stand(20, desk.getX() + 1.5, desk.getY(), desk.getZ() + 2.5, 180, 10);
+        t.step(20, HowToTour::noToasts);
+        t.onServer(5, player -> com.senne.imttech.security.os.SecurityOs.open(player, desk));
+        t.step(5, () -> mouseTo(1, 1));
+        t.step(20, () -> os(screen -> {
+            screen.tourCloseAll();
+            screen.tourComputers(reception);
+        }));
+        t.step(20, () -> captureScreen("computers_app"));
+        t.close(5);
+        t.onServer(5, player -> com.senne.imttech.computer.Computers.use(player, reception.east()));
+        t.step(5, () -> mouseTo(1, 1));
+        t.step(25, () -> captureScreen("pc_desktop"));
+        t.close(5);
+        // De laptop: inloggen op die kern, en dan de desktop op afstand (zonder vensters).
+        t.onServer(0, player -> player.getInventory().setItem(0, new ItemStack(ModItems.HACKING_LAPTOP.get())));
+        t.open(10, () -> new com.senne.imttech.client.os.OsLoginScreen(""));
+        t.step(5, () -> login(screen -> screen.tourType(VisualCheck.computerDeskIp, "recept1")));
+        t.step(10, () -> captureScreen("ssh_login"));
+        t.step(0, () -> login(com.senne.imttech.client.os.OsLoginScreen::tourConnect));
+        t.step(30, () -> os(com.senne.imttech.client.os.SecurityOsScreen::tourCloseAll));
+        t.step(10, () -> captureScreen("remote_session"));
+        t.close(5);
+        t.step(0, () -> com.senne.imttech.lan.LanGrid.overrideRequired(false));
+
+        // De autorisatiecode en een verzoek van Bram aan de Auth Console.
+        BlockPos yard = VisualCheck.AUTH_YARD;
+        t.onServer(0, player -> VisualCheck.buildAuthYard(player, yard));
+        t.onServer(30, player -> VisualCheck.wakeAuthServer(player, yard));
+        t.stand(20, yard.getX() + 2.5, yard.getY(), yard.getZ() + 2.5, 0, 10);
+        t.onServer(10, player -> com.senne.imttech.security.os.SecurityOs.open(player, yard));
+        t.step(15, () -> os(screen -> {
+            screen.tourCloseAll();
+            screen.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.STATUS);
+        }));
+        t.step(20, () -> captureScreen("auth_status"));
+        t.close(5);
+        t.onServer(10, player -> VisualCheck.bramAsks(player, yard.offset(3, 0, 4)));
+        t.onServer(15, player -> com.senne.imttech.security.os.SecurityOs.open(player, yard));
+        t.step(15, () -> os(screen -> {
+            screen.tourCloseAll();
+            screen.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.REQUESTS);
+        }));
+        t.step(20, () -> captureScreen("auth_requests"));
+        t.step(0, () -> os(screen -> screen.tourRequestAnswer(true)));
+        t.close(15);
+        // De telefoon: verbinden, een PIN kiezen, en de kleine desktop. Bram gaat eerst opzij: hij stond half in beeld
+        // achter het inlogscherm.
+        t.onServer(0, player -> {
+            net.minecraft.server.level.ServerPlayer bram = player.server.getPlayerList().getPlayerByName("Bram");
+            if (bram != null) {
+                bram.teleportTo(player.serverLevel(), yard.getX() + 9.5, yard.getY(), yard.getZ() + 0.5, 90, 0);
+            }
+        });
+        t.onServer(0, player -> VisualCheck.givePhone(player, yard));
+        t.onServer(10, player -> com.senne.imttech.security.os.Phones.use(player, player.getMainHandItem()));
+        t.step(15, () -> login(screen -> screen.tourType(VisualCheck.authYardIp, "bitech1")));
+        t.step(0, () -> login(com.senne.imttech.client.os.OsLoginScreen::tourConnect));
+        t.step(20, () -> login(screen -> screen.tourType("", "1234")));
+        t.step(10, () -> captureScreen("phone_pin"));
+        t.step(0, () -> login(com.senne.imttech.client.os.OsLoginScreen::tourConnect));
+        t.step(25, () -> os(com.senne.imttech.client.os.SecurityOsScreen::tourCloseAll));
+        t.step(10, () -> captureScreen("phone_desktop"));
+        t.close(5);
+
+        // De Bypass Kit: het stroomcircuit van een lezer (half opgelost), de afdrukken op een paneel, de zak van Lotte, en de
+        // draden van een laserzender met de zaklamp erop.
+        BlockPos lab = VisualCheck.BYPASS_LAB;
+        BlockPos reader = lab.offset(4, 1, 3);
+        BlockPos panel = lab.offset(5, 1, 3);
+        t.onServer(0, VisualCheck::buildBypassLab);
+        t.stand(10, lab.getX() + 4.5, lab.getY(), lab.getZ() + 6.5, 180, 12);
+        t.onServer(30, player -> {
+            sameEveryTime(player, 11L);
+            com.senne.imttech.bypass.Bypass.start(player, reader, net.minecraft.world.InteractionHand.MAIN_HAND);
+        });
+        t.step(10, () -> screenOf(com.senne.imttech.client.bypass.CircuitScreen.class, screen -> screen.tourChoose("staff")));
+        t.step(5, () -> screenOf(com.senne.imttech.client.bypass.CircuitScreen.class, screen -> screen.tourSolve(-1)));
+        t.step(10, () -> captureScreen("bypass_circuit"));
+        t.close(5);
+        t.onServer(20, player -> {
+            sameEveryTime(player, 12L);
+            com.senne.imttech.bypass.Bypass.start(player, panel, net.minecraft.world.InteractionHand.MAIN_HAND);
+        });
+        t.step(10, () -> screenOf(com.senne.imttech.client.bypass.FingerprintScreen.class, screen -> screen.tourDust(12)));
+        t.step(30, () -> screenOf(com.senne.imttech.client.bypass.FingerprintScreen.class, screen -> {
+            screen.tourType("1147");
+            screen.tourTry();
+        }));
+        t.step(10, () -> screenOf(com.senne.imttech.client.bypass.FingerprintScreen.class, screen -> screen.tourType("41")));
+        t.step(5, () -> captureScreen("bypass_prints"));
+        t.close(5);
+        t.open(5, () -> new com.senne.imttech.client.pickpocket.PocketScreen(-1, "Lotte", 3, 7L));
+        t.step(5, () -> screenOf(com.senne.imttech.client.pickpocket.PocketScreen.class,
+                com.senne.imttech.client.pickpocket.PocketScreen::tourUncover));
+        t.step(3, () -> screenOf(com.senne.imttech.client.pickpocket.PocketScreen.class, screen -> screen.tourNotice(0.55f)));
+        t.step(5, () -> captureScreen("pickpocket"));
+        t.close(5);
+        BlockPos laser = lab.offset(8, 0, 4);
+        t.onServer(0, VisualCheck::buildBypassLaser);
+        t.stand(5, lab.getX() + 4.5, lab.getY(), lab.getZ() + 6.5, 180, 12);
+        t.onServer(30, player -> {
+            sameEveryTime(player, 13L);
+            com.senne.imttech.bypass.Bypass.start(player, laser, net.minecraft.world.InteractionHand.MAIN_HAND);
+        });
+        t.step(10, () -> screenOf(com.senne.imttech.client.bypass.WireScreen.class, screen -> screen.tourTrace(0.55f)));
+        t.step(3, () -> captureScreen("bypass_wires"));
+        t.close(5);
+
+        // De terminal: de laptop op een kern die niet van jou is, en hij speelt zichzelf tot de geheugendump.
+        t.onServer(0, player -> {
+            net.minecraft.server.level.ServerLevel level = player.serverLevel();
+            level.setBlockAndUpdate(HACK_CORE.above(), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+            level.setBlockAndUpdate(HACK_CORE, com.senne.imttech.registry.ModBlocks.SECURITY_CORE.get().defaultBlockState());
+        });
+        t.stand(20, HACK_CORE.getX() + 0.5, HACK_CORE.getY(), HACK_CORE.getZ() + 2.5, 180, 10);
+        t.step(0, com.senne.imttech.client.HackScreen::startAutoPlay);
+        t.onServer(5, player -> {
+            sameEveryTime(player, 14L);
+            com.senne.imttech.security.TowerHack.placeLaptop(player, HACK_CORE, new ItemStack(ModItems.HACKING_LAPTOP.get()));
+        });
+        t.waitUntil(900, () -> Minecraft.getInstance().screen instanceof com.senne.imttech.client.HackScreen hack
+                && hack.terminal().output().stream().anyMatch(line -> line.text().startsWith("Still possible")));
+        t.step(3, () -> captureScreen("hack_terminal"));
+        t.step(0, () -> com.senne.imttech.client.HackScreen.autoPlay = false);
+        t.close(5);
+        t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+        t.look(0, 0.0f, 10.0f);
+    }
+
+    /**
+     * Zet het toeval van de wereld op een vast getal, vlak voor iets dat er zelf een kiest (het raster van een lezer, de
+     * draden van een laserzender, de woorden van de terminal). Anders is het plaatje bij elke ronde anders, en wijzen de
+     * pijltjes in de animatie naar de verkeerde plek (CARD en ACCEPT stonden de tweede keer op een andere rij).
+     */
+    private static void sameEveryTime(net.minecraft.server.level.ServerPlayer player, long seed) {
+        player.serverLevel().random.setSeed(seed);
+    }
+
+    /** Doet iets met het inlogscherm (van de laptop of de telefoon) als dat open staat. */
+    private static void login(Consumer<com.senne.imttech.client.os.OsLoginScreen> action) {
+        screenOf(com.senne.imttech.client.os.OsLoginScreen.class, action);
+    }
+
+    /** Doet iets met het scherm dat nu open staat, als het van deze soort is (anders een regel in de log). */
+    private static <T> void screenOf(Class<T> kind, Consumer<T> action) {
+        Object screen = Minecraft.getInstance().screen;
+        if (kind.isInstance(screen)) {
+            action.accept(kind.cast(screen));
+        } else {
+            ImtTech.LOGGER.warn("[visual check] verwacht {}, maar open staat {}", kind.getSimpleName(), screen);
+        }
     }
 
     /** Een paneel in het midden van het scherm (een scherm met vakjes: {@code w} x {@code h}) als plaatje. */

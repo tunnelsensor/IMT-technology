@@ -257,22 +257,21 @@ public class OsLoginScreen extends Screen {
         switch (mode) {
             case COMPUTER -> {
                 g.drawString(font, "Code", left + MARGIN, top + 56, HudStyle.argb(200, HudStyle.WHITE), false);
-                g.drawString(font, "This computer asks for a code.", left + MARGIN, top + 30, HudStyle.argb(150, HudStyle.WHITE), false);
+                hint(g, "This computer asks for a code.", top + 30);
             }
             case PHONE_PIN -> {
                 g.drawString(font, "PIN", left + MARGIN, top + 56, HudStyle.argb(200, HudStyle.WHITE), false);
-                g.drawString(font, "Four digits. Wrong too often: the phone locks, and the owner is told.", left + MARGIN, top + 30,
-                        HudStyle.argb(150, HudStyle.WHITE), false);
+                hint(g, "Four digits. Wrong too often: the phone locks, and the owner is told.", top + 30);
             }
             case PHONE_SET_PIN -> {
                 g.drawString(font, "New PIN", left + MARGIN, top + 56, HudStyle.argb(200, HudStyle.WHITE), false);
-                g.drawString(font, "Four digits. You type it every time you open the phone.", left + MARGIN, top + 30,
-                        HudStyle.argb(150, HudStyle.WHITE), false);
+                hint(g, "Four digits. You type it every time you open the phone.", top + 30);
             }
             default -> {
                 g.drawString(font, "IP address", left + MARGIN, top + 24, HudStyle.argb(200, HudStyle.WHITE), false);
                 g.drawString(font, "Password", left + MARGIN, top + 56, HudStyle.argb(200, HudStyle.WHITE), false);
-                g.drawString(font, mode == Mode.PHONE_LOGIN ? "The IP (Status) and the password (Settings) of your core."
+                // Eén regel (eronder komt de melding): kort genoeg voor het paneel.
+                g.drawString(font, mode == Mode.PHONE_LOGIN ? "Your core's IP (Status) and password."
                         : "The IP is in the Status app of a security core.", left + MARGIN, top + 88, HudStyle.argb(150, HudStyle.WHITE), false);
             }
         }
@@ -283,6 +282,21 @@ public class OsLoginScreen extends Screen {
                 g.drawString(font, line, left + MARGIN, y, HudStyle.argb(255, colour), false);
                 y += 10;
             }
+        }
+    }
+
+    /**
+     * Een uitleg boven het invulvak, afgebroken op de breedte van het paneel (hooguit twee regels: daaronder staat het
+     * vak). Op één regel liep een lange uitleg rechts buiten het paneel (gezien op een plaatje van How it works).
+     */
+    private void hint(GuiGraphics g, String text, int y) {
+        int line = 0;
+        for (FormattedCharSequence part : font.split(Component.literal(text), PANEL_W - 2 * MARGIN)) {
+            if (line == 2) {
+                break;
+            }
+            g.drawString(font, part, left + MARGIN, y + line * 10, HudStyle.argb(150, HudStyle.WHITE), false);
+            line++;
         }
     }
 

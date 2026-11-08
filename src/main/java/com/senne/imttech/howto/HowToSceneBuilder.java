@@ -373,8 +373,12 @@ public final class HowToSceneBuilder {
         return person(key, data, duration, move, yaw, gear, List.of(), path);
     }
 
-    private HowToSceneBuilder person(String key, CompoundTag data, int duration, int move, float yaw,
-                                     Map<EquipmentSlot, ItemStack> gear, List<ItemStack> worn, Vec3... path) {
+    /**
+     * Een speler met gegevens ({@code data}): {@code "Profile"} = iemand anders met een gewone skin (zie {@link #stranger}),
+     * {@code "Crouch"} = sluipen, {@code "Cuffed"} = geboeid. Verder net als {@link #player}.
+     */
+    public HowToSceneBuilder person(String key, CompoundTag data, int duration, int move, float yaw,
+                                    Map<EquipmentSlot, ItemStack> gear, List<ItemStack> worn, Vec3... path) {
         Map<EquipmentSlot, ItemStack> copy = new EnumMap<>(EquipmentSlot.class);
         gear.forEach((slot, stack) -> copy.put(slot, stack.copy()));
         List<ItemStack> wornCopy = worn.stream().map(ItemStack::copy).toList();

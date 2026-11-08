@@ -352,7 +352,11 @@ public class HackScreen extends Screen {
                 HudStyle.argb(200, HudStyle.ORANGE));
     }
 
-    /** Knipt lange regels op de breedte van de terminal (de rest op de volgende regel). */
+    /**
+     * Knipt lange regels op de breedte van de terminal (de rest op de volgende regel), liefst op een spatie: midden in een
+     * woord ("they don't mat" / "ch") zag er raar uit (gezien op een plaatje van How it works). Een woord dat langer is dan
+     * de hele breedte wordt toch geknipt.
+     */
     private List<HackTerminal.Line> wrap(List<HackTerminal.Line> lines, int width) {
         List<HackTerminal.Line> result = new ArrayList<>();
         for (HackTerminal.Line line : lines) {
@@ -362,8 +366,13 @@ public class HackScreen extends Screen {
                 if (part.isEmpty()) {
                     break;
                 }
+                int space = part.lastIndexOf(' ');
+                // Na de twee spaties vooraan een vervolgregel, en alleen als de knip echt midden in een woord valt.
+                if (space > 2 && part.length() < text.length() && text.charAt(part.length()) != ' ') {
+                    part = part.substring(0, space);
+                }
                 result.add(new HackTerminal.Line(part, line.kind()));
-                text = "  " + text.substring(part.length());
+                text = "  " + text.substring(part.length()).stripLeading();
             }
             result.add(new HackTerminal.Line(text, line.kind()));
         }

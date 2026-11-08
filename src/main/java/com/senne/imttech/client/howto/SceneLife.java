@@ -10,9 +10,11 @@ import com.mojang.math.Axis;
 import com.senne.imttech.ImtTech;
 import com.senne.imttech.client.CableRenderer;
 import com.senne.imttech.client.suit.SuitEffects;
+import com.senne.imttech.cuffs.Handcuffs;
 import com.senne.imttech.guns.Gear;
 import com.senne.imttech.guns.GearItem;
 import com.senne.imttech.howto.HowToCue;
+import com.senne.imttech.registry.ModAttachments;
 import com.senne.imttech.turret.TurretBlock;
 import com.senne.imttech.turret.TurretBlockEntity;
 import java.nio.charset.StandardCharsets;
@@ -20,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.client.Minecraft;
@@ -38,6 +41,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemDisplayContext;
@@ -146,6 +150,7 @@ final class SceneLife {
         entity.setXRot(0.0f);
         // Ook de "vorige" plek: anders denkt een drone dat hij vliegt (en draaien zijn rotors terwijl hij uit staat).
         entity.setOldPosAndRot();
+        pose(entity, actor);
         if (entity instanceof Player person && worn.get(actor.key()) != actor.worn()) {
             wear(person, actor.worn());
             worn.put(actor.key(), actor.worn());
@@ -184,6 +189,26 @@ final class SceneLife {
             return new RemotePlayer(mc.level, new GameProfile(id, name));
         }
         return new RemotePlayer(mc.level, mc.player.getGameProfile());
+    }
+
+    /**
+     * Hoe een wezen erbij staat (hoofdstuk 63, de beveiliging): {@code "Crouch"} in zijn gegevens = sluipen, {@code "Cuffed"}
+     * = geboeid (de handen op de rug, zoals het spel een geboeide speler of Raven-soldaat tekent: zie CuffRenderer).
+     */
+    private static void pose(Entity entity, HowToCue.Actor actor) {
+        boolean crouch = actor.data().getBoolean("Crouch");
+        if (entity.isShiftKeyDown() != crouch) {
+            entity.setShiftKeyDown(crouch);
+            entity.setPose(crouch ? Pose.CROUCHING : Pose.STANDING);
+        }
+        boolean cuffed = actor.data().getBoolean("Cuffed");
+        if (Handcuffs.isCuffed(entity) != cuffed) {
+            if (cuffed) {
+                entity.setData(ModAttachments.CUFFS, new Handcuffs.State(true, Optional.empty()));
+            } else {
+                entity.removeData(ModAttachments.CUFFS);
+            }
+        }
     }
 
     /**

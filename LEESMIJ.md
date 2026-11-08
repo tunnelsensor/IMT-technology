@@ -185,9 +185,11 @@ Elk item dat meer doet dan in een recept gaan, krijgt een animatie die laat zien
   **wijs je een blok aan**, dan zie je hoe het heet. Heeft een item meer animaties, dan blader je met de
   pijltjes bovenaan. **Esc** brengt je terug naar je inventaris, met alles nog zoals het was. In je eigen
   wereld staat het spel stil terwijl je kijkt.
-- **Wat er al is** (34 van de 51): de bril, de Security Core, keycards en lezers, het codepaneel,
-  laserpoorten, de laserbrug, torentjes, camera's en de schermmuur, zones, de netwerkknop en -hendel, de
-  schildkoepel, serverracks, warmte en fans, relais, stroom maken (zonnepaneel en warmtegenerator),
+- **Wat er al is** (41 van de 51): de bril, alles van het tabblad Security (de Security Core, computer en
+  monitor, zones, de Block Reinforcer, handboeien, keycards en lezers, het codepaneel, autorisatiecodes en de Auth
+  Console, de netwerkknop en -hendel, laserpoorten, de laserbrug, de schildkoepel, camera's en de schermmuur,
+  torentjes, de Bypass Kit met lezers en panelen hacken, laserdraden knippen en zakkenrollen, de Hacking Laptop en
+  de I.M.T Phone), serverracks, warmte en fans, relais, stroom maken (zonnepaneel en warmtegenerator),
   stroomkabels, netwerkkabels met PoE en de switch, het laadstation, de Power Battery, alles van het
   tabblad Robots (een guard robot bouwen en programmeren, modules solderen en wat ze doen, security drones en
   training) en alles van het tabblad Weapons: de lasergeweren, lasergeweren uit onderdelen, de Ion Blaster,
@@ -195,8 +197,9 @@ Elk item dat meer doet dan in een recept gaan, krijgt een animatie die laat zien
   Table, de Reloading Bench, en de holster, de pouches en de slings. De rest komt eraan, de belangrijkste
   eerst (PLAN.md, hoofdstuk 63). In de animaties lopen ook wezens rond: jij (met je eigen skin, en met je
   holster en pouches om), een vreemde in je basis, een husk, een raiddrone, je eigen robots en drones (met
-  hun onderdelen, hun modules en hun lichtjes), en granaten die stuiteren en piepen; er is een EMP-puls, een
-  rookwolk die niet door muren gaat, een flits, en barsten in een muur.
+  hun onderdelen, hun modules en hun lichtjes), een geboeide Raven-soldaat met zijn handen op zijn rug, en
+  granaten die stuiteren en piepen; er is een EMP-puls, een rookwolk die niet door muren gaat, een flits, en
+  barsten in een muur.
 - Het geluid (een blok dat neerkomt): `howToVolume` in `imttech-client.toml` (1 = normaal, 0 = uit).
 
 ### Het drone-arsenaal

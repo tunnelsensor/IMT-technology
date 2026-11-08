@@ -9,6 +9,7 @@ import com.senne.imttech.howto.scenes.GrenadeScenes;
 import com.senne.imttech.howto.scenes.InteriorScenes;
 import com.senne.imttech.howto.scenes.PowerScenes;
 import com.senne.imttech.howto.scenes.RobotScenes;
+import com.senne.imttech.howto.scenes.SecurityItemScenes;
 import com.senne.imttech.howto.scenes.SecurityScenes;
 import com.senne.imttech.howto.scenes.TrainingScenes;
 import com.senne.imttech.howto.scenes.WeaponScenes;
@@ -88,22 +89,24 @@ public final class HowToTopics {
             topic("relays", "interior", "Redstone relays", InteriorScenes::relays, ModItems.RELAY, ModItems.RELAY_EMITTER),
             // ------------------------------------------------------------ Security
             topic("security_core", "security", "Security Core", SecurityScenes::core, ModItems.SECURITY_CORE),
-            planned("computer", "security", "Computer and monitor", ModItems.COMPUTER, ModItems.MONITOR),
+            topic("computer", "security", "Computer and monitor", SecurityItemScenes::computer, ModItems.COMPUTER, ModItems.MONITOR),
             topic("zones", "security", "Protected zones", DefenceScenes::zones, ModItems.ZONE_MARKER),
-            planned("block_reinforcer", "security", "Block Reinforcer", ModItems.BLOCK_REINFORCER, ModItems.REINFORCEMENT_PLATE),
-            planned("handcuffs", "security", "Handcuffs", ModItems.HANDCUFFS, ModItems.HANDCUFF_KEY),
+            topic("block_reinforcer", "security", "Block Reinforcer", SecurityItemScenes::reinforcer, ModItems.BLOCK_REINFORCER,
+                    ModItems.REINFORCEMENT_PLATE),
+            topic("handcuffs", "security", "Handcuffs", SecurityItemScenes::handcuffs, ModItems.HANDCUFFS, ModItems.HANDCUFF_KEY),
             topic("keycards", "security", "Keycards and readers", SecurityScenes::keycards, ModItems.KEYCARD, ModItems.KEYCARD_READER),
             topic("code_panel", "security", "Code panel", SecurityScenes::codePanel, ModItems.CODE_PANEL),
-            planned("auth_console", "security", "Auth codes and the Auth Console", ModItems.AUTH_CONSOLE),
+            topic("auth_console", "security", "Auth codes and the Auth Console", SecurityItemScenes::auth, ModItems.AUTH_CONSOLE),
             topic("network_controls", "security", "Network button and lever", DefenceScenes::networkControls, ModItems.NETWORK_BUTTON, ModItems.NETWORK_LEVER),
             topic("laser_emitter", "security", "Laser gates", SecurityScenes::laserGate, ModItems.LASER_EMITTER),
             topic("laser_bridge", "security", "Laser bridge", DefenceScenes::laserBridge, ModItems.LASER_BRIDGE),
             topic("shield_dome", "security", "Shield dome", DefenceScenes::dome, ModItems.DOME_GENERATOR),
             topic("cameras", "security", "Cameras and the camera wall", DefenceScenes::cameras, ModItems.SECURITY_CAMERA, ModItems.CAMERA_MONITOR),
             topic("turrets", "security", "Turrets", DefenceScenes::turrets, ModItems.SECURITY_TURRET, ModItems.ROCKET_TURRET, ModItems.ROCKET_AMMO),
-            planned("bypass_kit", "security", "Breaking in: the Bypass Kit", ModItems.BYPASS_KIT),
-            planned("hacking_laptop", "security", "Hacking Laptop", ModItems.HACKING_LAPTOP),
-            planned("phone", "security", "I.M.T Phone", ModItems.PHONE),
+            topic("bypass_kit", "security", "Breaking in: the Bypass Kit", scenes(SecurityItemScenes::bypassReaders,
+                    SecurityItemScenes::bypassWires, SecurityItemScenes::pickpocket), ModItems.BYPASS_KIT),
+            topic("hacking_laptop", "security", "Hacking Laptop", SecurityItemScenes::laptop, ModItems.HACKING_LAPTOP),
+            topic("phone", "security", "I.M.T Phone", SecurityItemScenes::phone, ModItems.PHONE),
             // ------------------------------------------------------------ Robots
             topicItems("guard_robot", "robots", "Guard robots", scenes(RobotScenes::build, RobotScenes::program),
                     () -> concat(robotParts(), List.of(ModItems.ROBOT_ASSEMBLER.get(), ModItems.ROBOT_DOCK.get(),

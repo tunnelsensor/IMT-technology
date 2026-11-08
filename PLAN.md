@@ -5555,11 +5555,50 @@ hebben, zodat er geen vergeten wordt.
       de capacitor onder het geweer), dus dat blijft een apart klusje. De test van de draaiboeken kijkt nu ook de nieuwe
       bouwstenen na (zwevende voorwerpen niet leeg, een bol met een maat, rook met plek, barsten van 0 tot 9, hooguit vijf
       stuks uitrusting). 454 tests, allemaal groen.
-- [ ] **10. Nog te doen (17 onderwerpen)** — Power: de stroomkast. Interior: de holotafel, de harnas-werkbank met alle
-      upgrades, barsten herstellen, het landingsplatform, de Arc Lamp met de lichtschakelaar. Security: de Block
-      Reinforcer, handboeien, de Auth Console, de Bypass Kit, de Hacking Laptop, de Phone, en (minder belangrijk, jouw
-      keuze) computer en monitor; en voor de Laser Emitter nog de animaties van zijn instellingen en het draden knippen.
-      Equipment: het harnas, het raketpakket, drones, de E.M.P.
+- [x] **10. De beveiliging** — jouw opmerking (8 november): "Ga verder met een volgende categorie: security items." De
+      rest van het tabblad Security (`howto/scenes/SecurityItemScenes`): zeven onderwerpen, de Bypass Kit met drie
+      animaties (41 van de 51 klaar):
+      - *Computer and monitor* (39 s): een computer met een monitor erop, een PoE-kabel naar de kern (de ring rond de
+        aan-knop licht op en het scherm gaat aan), instellen in de app Computers (als plaatje: wie hem mag gebruiken, een
+        eigen code, per app Off, View of Use), de desktop van de computer (als plaatje), en wie er binnenkwam (Logs).
+      - *Block Reinforcer* (39 s): een muur van kwarts, één blok verstevigen (het blauwe randje), sneak + rechtsklik voor
+        de hele muur, het randje dat alleen jij met je bril ziet, en twee sticky frags: een gewoon blok vliegt eruit, een
+        verstevigd blok krijgt alleen barsten.
+      - *Handcuffs* (26 s): een Raven-soldaat van achteren boeien (rechtsklik vasthouden), geboeid met zijn handen op zijn
+        rug, meenemen (hij loopt recht voor je, met een ketting van je handen naar zijn polsen) en los met de sleutel.
+      - *Auth codes and the Auth Console* (44 s): de code in Status (als plaatje), ermee een codepaneel openen vanuit je
+        diagram, een vreemde drukt op de Auth Console (het lampje wordt oranje), jij antwoordt in Requests (als plaatje),
+        en de deur gaat open.
+      - *Bypass Kit*, drie animaties: *Hacking readers and code panels* (49 s: het stroomcircuit van een lezer en de
+        afdrukken op een codepaneel als plaatje, telkens gaat de deur open, en betrapt: rood licht en het alarm), *Cutting
+        laser wires* (33 s: de draden in het donker als plaatje, de goede draad zet de hele poort uit tot Repair wires,
+        een verkeerde geeft een schok) en *Pickpocketing* (19 s: sluipend achter iemand, de zak als plaatje, en betrapt:
+        die draait zich om en jij licht op).
+      - *Hacking Laptop* (45 s): inloggen met IP en wachtwoord (als plaatje), je desktop op afstand (als plaatje), en de kern
+        van een ander: de laptop staat bovenop de kern, het alarm gaat af, de terminal met de geheugendump (als plaatje).
+      - *I.M.T Phone* (26 s): verbinden en een PIN kiezen (als plaatje), de kleine desktop (als plaatje), en een gestolen
+        telefoon blokkeren in Access.
+      Een speler in een animatie kan nu sluipen en geboeid zijn (`Crouch` en `Cuffed` in zijn gegevens): geboeid tekent het
+      spel zelf zijn handen op zijn rug, net als bij een echte geboeide speler of soldaat. Dertien nieuwe plaatjes
+      (`-Ponly=howtopics`): de app Computers, de desktop van een computer, de inlog van de laptop, de desktop op afstand,
+      Status met de autorisatiecode, een verzoek in Requests, de PIN en de desktop van de telefoon, het stroomcircuit, de
+      afdrukken, de draden van een laserzender, de zak van iemand anders en de terminal van de laptop (de rondleiding
+      speelt die zelf tot de geheugendump). Wat ik op de plaatjes zag en verbeterde: in de app Computers liep de derde kolom
+      apps (Notes, Logs) rechts buiten het vak (de kolommen zijn nu zo breed als er plaats is, en een naam loopt tot vlak
+      voor de breedste knop, anders werden Messages en Keycards afgekapt), op het inlogscherm liep de uitleg bij de PIN
+      rechts buiten het paneel (nu afgebroken op hooguit twee regels) en die bij de telefoon ook (nu korter: "Your core's IP
+      (Status) and password."), op het plaatje van de PIN stond de nep-speler van het veldje half in beeld (die gaat nu
+      eerst opzij), en in de terminal van de laptop brak een lange regel midden in een woord af ("they don't mat" / "ch";
+      nu op een spatie). Het raster van een lezer, de draden van een laserzender en de woorden van de terminal kiest de
+      server zelf, bij elke ronde anders: de rondleiding zet het toeval van de wereld daarvoor op een vast getal, zodat die
+      plaatjes elke keer hetzelfde zijn en de pijltjes blijven kloppen. Op de foto's per hoofdstukje stonden
+      tekstballonnen voor de muren van de Reinforcer, de Bypass Kit en de Auth Console (nu rechts naast de muur) en voor de
+      geboeide soldaat (nu aan de andere kant), wees een pijltje in de app Computers naast de knoppen, en verdween jij bij
+      de laptop na het eerste hoofdstukje. 454 tests, allemaal groen.
+- [ ] **11. Nog te doen (10 onderwerpen)** — Power: de stroomkast. Interior: de holotafel, de harnas-werkbank met alle
+      upgrades, barsten herstellen, het landingsplatform, de Arc Lamp met de lichtschakelaar. Equipment: het harnas, het
+      raketpakket, drones, de E.M.P. (De instellingen van de Laser Emitter staan al in de animatie van de laserpoorten, en
+      het draden knippen zit nu bij de Bypass Kit.)
 
 ### 64. Grotere datacenters, en racks zonder scherm (8 november)
 

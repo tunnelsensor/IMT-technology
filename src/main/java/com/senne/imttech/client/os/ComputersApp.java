@@ -154,7 +154,10 @@ final class ComputersApp {
 
     /** Het vak van één app in het rooster: {x, y, breedte}. */
     private static int[] appCell(SecurityOsScreen.Area a, int index) {
-        int cellW = rightW(a) / 2;
+        // Zoveel kolommen als nodig, zeven rijen per kolom. Met twee vaste kolommen stond de derde (Notes en Logs, die
+        // later bij kwamen) half buiten het venster (gezien op een plaatje van How it works).
+        int columns = Math.max(1, (DesktopRights.COMPUTER_APPS.size() + APP_ROWS - 1) / APP_ROWS);
+        int cellW = rightW(a) / columns;
         int x = rightX(a) + (index / APP_ROWS) * cellW;
         int y = a.y() + 78 + (index % APP_ROWS) * APP_H;
         return new int[] {x, y, cellW};
@@ -255,7 +258,7 @@ final class ComputersApp {
                 OsDraw.button(g, font, bx, y + 46, "Clear", true, HudStyle.RED);
             }
         }
-        // De apps, in twee kolommen.
+        // De apps, in kolommen van zeven (zie appCell).
         g.drawString(font, "APPS", x, y + 64, HudStyle.argb(255, TITLE_COLOUR), false);
         String hint = "click: Off, View, Use";
         g.drawString(font, hint, x + w - font.width(hint) - 2, y + 64, HudStyle.argb(255, OsDraw.GREY), false);
@@ -266,7 +269,10 @@ final class ComputersApp {
             DesktopRights.Access access = accessOf(computer, apps.get(i));
             String button = accessLabel(access);
             int bw = OsDraw.buttonWidth(font, button);
-            g.drawString(font, OsDraw.fitRight(font, label(apps.get(i)), cell[2] - 40), cell[0], cell[1] + 2,
+            // De naam mag tot vlak voor de breedste knop (View), dus hij wordt niet korter als je klikt. Met een vaste 40
+            // werden Messages en Keycards in drie kolommen net afgekapt.
+            int labelW = cell[2] - OsDraw.buttonWidth(font, accessLabel(DesktopRights.Access.VIEW)) - 8;
+            g.drawString(font, OsDraw.fitRight(font, label(apps.get(i)), labelW), cell[0], cell[1] + 2,
                     HudStyle.argb(255, access == DesktopRights.Access.OFF ? OsDraw.GREY : HudStyle.WHITE), false);
             OsDraw.button(g, font, cell[0] + cell[2] - bw - 6, cell[1], button, true, accessColour(access));
         }
