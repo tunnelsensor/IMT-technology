@@ -148,6 +148,16 @@ final class SceneLife {
         entity.setPos(at.x, at.y, at.z);
         entity.setYRot(yaw);
         entity.setXRot(0.0f);
+        if (entity instanceof com.senne.imttech.suit.MiniRocketEntity && actor.path().size() > 1) {
+            // Een raketje wijst met zijn neus in de vliegrichting, ook omhoog en omlaag (zoals MiniRocketEntity#faceMotion).
+            Vec3 from = ScenePlayer.along(actor.path(), Math.max(0.0f, progress - 0.02f));
+            Vec3 to = ScenePlayer.along(actor.path(), Math.min(1.0f, progress + 0.02f));
+            Vec3 motion = to.subtract(from);
+            if (motion.lengthSqr() > 1.0E-8) {
+                entity.setYRot((float) (Mth.atan2(motion.x, motion.z) * Mth.RAD_TO_DEG));
+                entity.setXRot((float) (Mth.atan2(motion.y, motion.horizontalDistance()) * Mth.RAD_TO_DEG));
+            }
+        }
         // Ook de "vorige" plek: anders denkt een drone dat hij vliegt (en draaien zijn rotors terwijl hij uit staat).
         entity.setOldPosAndRot();
         pose(entity, actor);
@@ -296,6 +306,42 @@ final class SceneLife {
     }
 
     private static final float PULSE_GROW = 6.0f;
+
+    /**
+     * De straalvlammen van het harnas (hoofdstuk 63, de rest van de onderwerpen): onder de laarzen van een speler met
+     * {@code "Thrust"} in zijn gegevens (0 tot 1), dezelfde blauwe vlammen als in de wereld (zie SuitEffects). Ze staan met
+     * hun brede kant naar de kijker: dat is in het wereldje de richting van het scherm naar jou toe.
+     */
+    void renderFlames(PoseStack pose, MultiBufferSource.BufferSource buffers, ScenePlayer player, float time) {
+        Map<String, HowToCue.Actor> active = new java.util.LinkedHashMap<>();
+        for (HowToCue cue : player.scene.cues()) {
+            if (cue.tick() > time) {
+                break;
+            }
+            if (cue instanceof HowToCue.Actor actor && time < actor.tick() + actor.duration()) {
+                active.put(actor.key(), actor);
+            }
+        }
+        Matrix4f m = pose.last().pose();
+        org.joml.Vector3f toViewer = new Matrix4f(m).invert().transformDirection(new org.joml.Vector3f(0, 0, 1)).normalize();
+        VertexConsumer out = null;
+        for (HowToCue.Actor actor : active.values()) {
+            float power = actor.data().getFloat("Thrust");
+            if (actor.type() != null || power <= 0) {
+                continue;
+            }
+            float progress = Mth.clamp((time - actor.tick()) / Math.max(1, actor.move()), 0.0f, 1.0f);
+            Vec3 feet = ScenePlayer.along(actor.path(), progress);
+            if (out == null) {
+                out = buffers.getBuffer(SuitEffects.GLOW);
+            }
+            Vec3 cam = feet.add(toViewer.x() * 100.0, toViewer.y() * 100.0, toViewer.z() * 100.0);
+            SuitEffects.sceneFlames(m, out, feet, actor.yaw(), power, time, cam);
+        }
+        if (out != null) {
+            buffers.endBatch(SuitEffects.GLOW);
+        }
+    }
 
     /** Een bol van vierhoekjes (lengte- en breedtegraden), zoals de bol van een EMP. */
     private static void sphere(Matrix4f m, VertexConsumer out, Vec3 c, float r, int rgb, float alpha) {

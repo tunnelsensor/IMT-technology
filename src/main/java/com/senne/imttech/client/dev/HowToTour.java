@@ -399,6 +399,7 @@ final class HowToTour {
         robotPictures(t);
         weaponPictures(t);
         securityItemPictures(t);
+        lastPictures(t);
     }
 
     // ================================================================ De robots
@@ -911,6 +912,141 @@ final class HowToTour {
      */
     private static void sameEveryTime(net.minecraft.server.level.ServerPlayer player, long seed) {
         player.serverLevel().random.setSeed(seed);
+    }
+
+    // ================================================================ De laatste onderwerpen
+
+    /**
+     * De plaatjes van de laatste tien onderwerpen (hoofdstuk 63, stap 11): het deurtje van de stroomkast, de holotafel (het
+     * instelscherm, en in de wereld de kaart, de satelliet en de ertsen: die standen kijken naar de wereld om de tafel heen,
+     * dus die kunnen niet in het wereldje van een animatie), het scherm van de Crusher, de batterij van een landingsplatform,
+     * de Arc Lamp 's nachts en zijn instelscherm, en het arsenaal met drones in elke toestand.
+     */
+    private static void lastPictures(DevScript t) {
+        t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+        // De stroomkast: een generator erachter, kabels links en rechts, één kant uit (zoals de rondleiding "cabinet").
+        BlockPos cabinet = new BlockPos(-4, -60, 4);
+        t.onServer(0, player -> {
+            net.minecraft.server.level.ServerLevel level = player.serverLevel();
+            level.setBlockAndUpdate(cabinet, com.senne.imttech.registry.ModBlocks.POWER_CABINET.get().defaultBlockState());
+            level.setBlockAndUpdate(cabinet.north(), com.senne.imttech.registry.ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+            for (int i = 1; i <= 3; i++) {
+                com.senne.imttech.energy.PowerCables.add(level, cabinet.east(i));
+                com.senne.imttech.energy.PowerCables.add(level, cabinet.west(i));
+            }
+            if (level.getBlockEntity(cabinet) instanceof com.senne.imttech.energy.PowerCabinetBlockEntity entity) {
+                entity.setOwner(player.getUUID());
+            }
+            com.senne.imttech.energy.PowerCabinets.setSwitch(level, cabinet, net.minecraft.core.Direction.WEST, false);
+        });
+        t.stand(10, cabinet.getX() + 0.5, -60, cabinet.getZ() + 3.5, 180, 25);
+        t.step(10, HowToTour::noToasts);
+        t.onServer(5, player -> com.senne.imttech.energy.PowerCabinets.open(player, cabinet));
+        t.step(20, () -> captureScreen("cabinet_screen"));
+        t.close(5);
+
+        // De holotafel van de rondleiding (op 0, -60, 0): eerst het instelscherm, dan de kaart, de satelliet en de ertsen.
+        BlockPos table = VisualCheck.TABLE;
+        t.onServer(0, DevWorld::wearGlasses);
+        VisualCheck.onTable(t, entity -> {
+            entity.setMode(com.senne.imttech.holo.HoloMode.MAP);
+            entity.setScale(1);
+            entity.setRange(1);
+        });
+        t.view(20, 0.5, -60, -3.2, 0, 22);
+        t.open(10, () -> new com.senne.imttech.client.HoloTableScreen(table));
+        t.step(20, () -> captureScreen("holo_screen"));
+        t.close(5);
+        // De kaart van dichterbij en met een smallere camera (het beeld van de rondleiding is breed: met de gewone camera
+        // was de tafel een stipje in het midden; een groot hologram liep buiten het beeld).
+        // Van schuin boven (de kaart hangt op ooghoogte: van op de grond keek je er recht tegenaan).
+        t.step(0, () -> Minecraft.getInstance().options.fov().set(50));
+        t.view(0, 0.5, -57.6, -2.4, 0, 42);
+        t.step(60, () -> captureScreen("holo_map"));
+        VisualCheck.onTable(t, entity -> entity.setMode(com.senne.imttech.holo.HoloMode.SATELLITE));
+        t.step(0, () -> Minecraft.getInstance().options.fov().set(30));
+        t.view(0, 0.5, -60, -3.2, 0, 4);
+        t.step(30, () -> captureScreen("holo_satellite"));
+        t.onServer(0, player -> VisualCheck.oresUnder(player.serverLevel(), table));
+        VisualCheck.onTable(t, entity -> entity.setMode(com.senne.imttech.holo.HoloMode.ORES));
+        // Het hele blok aarde in beeld (bij 22 graden omlaag viel de bovenkant weg).
+        t.step(0, () -> Minecraft.getInstance().options.fov().set(50));
+        t.view(0, 0.5, -60, -3.2, 0, 10);
+        t.step(110, () -> captureScreen("holo_ores"));
+        t.step(0, () -> Minecraft.getInstance().options.fov().set(70));
+        VisualCheck.onTable(t, entity -> entity.setMode(com.senne.imttech.holo.HoloMode.MAP));
+
+        // Het scherm van de Crusher: gebarsten stenen bakstenen erin, poeder eruit (zoals de rondleiding "repair").
+        BlockPos repair = VisualCheck.REPAIR;
+        t.onServer(0, VisualCheck::buildRepairCorner);
+        t.stand(10, repair.getX() + 1.5, repair.getY(), repair.getZ() + 4.5, 180, 15);
+        t.onServer(20, player -> {
+            if (player.serverLevel().getBlockEntity(repair) instanceof com.senne.imttech.repair.CrackMachineBlockEntity machine) {
+                player.openMenu(machine, buf -> buf.writeVarInt(machine.kind().ordinal()));
+            }
+        });
+        t.step(20, () -> captureScreen("crusher_screen"));
+        t.close(5);
+
+        // De batterij van een landingsplatform met twee batterijcellen erin (zoals de rondleiding "padscreen").
+        BlockPos pad = new BlockPos(-4, -61, -4);
+        t.onServer(0, player -> {
+            net.minecraft.server.level.ServerLevel level = player.serverLevel();
+            level.setBlockAndUpdate(pad.below(), com.senne.imttech.registry.ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+            level.setBlockAndUpdate(pad, com.senne.imttech.registry.ModBlocks.LANDING_PAD.get().defaultBlockState());
+            if (level.getBlockEntity(pad.below()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
+                generator.fill(200_000);
+            }
+            if (level.getBlockEntity(pad) instanceof com.senne.imttech.suit.LandingPadBlockEntity entity) {
+                entity.setOwner(player.getUUID());
+                entity.cells().setItem(0, new ItemStack(ModItems.BATTERY_UPGRADE.get(), 2));
+            }
+        });
+        t.stand(0, pad.getX() + 0.5, -60, pad.getZ() + 2.5, 180, 30);
+        t.onServer(80, player -> {
+            if (player.serverLevel().getBlockEntity(pad) instanceof com.senne.imttech.suit.LandingPadBlockEntity entity) {
+                player.openMenu(entity, pad);
+            }
+        });
+        t.step(5, () -> mouseTo(1, 1));
+        t.step(15, () -> captureScreen("pad_screen"));
+        t.close(5);
+
+        // De Arc Lamp op zijn paal, om middernacht aan (zoals de rondleiding "light"), en zijn instelscherm op niveau 40.
+        BlockPos yard = VisualCheck.LAMP_YARD;
+        BlockPos lamp = yard.east(7).above(4);
+        t.onServer(0, VisualCheck::buildLampYard);
+        t.command(0, "time set midnight");
+        t.stand(10, yard.getX() - 1.5, yard.getY(), yard.getZ() + 7.5, 0, 0);
+        t.lookAt(5, net.minecraft.world.phys.Vec3.atCenterOf(lamp).add(0, -2, 0));
+        t.onServer(0, player -> com.senne.imttech.light.LightSwitchBlock.set(player.serverLevel(), yard.east(3), true));
+        t.step(80, () -> captureScreen("lamp_night"));
+        t.stand(0, yard.getX() + 5.5, yard.getY(), yard.getZ() + 1.5, 160, -40);
+        t.onServer(5, player -> com.senne.imttech.light.ArcLamps.open(player, lamp));
+        t.step(10, () -> screenOf(com.senne.imttech.client.light.ArcLampScreen.class, screen -> screen.tourBrightness(40)));
+        t.step(10, () -> captureScreen("lamp_screen"));
+        t.close(5);
+        t.onServer(0, player -> {
+            if (player.serverLevel().getBlockEntity(lamp) instanceof com.senne.imttech.light.ArcLampBlockEntity entity) {
+                entity.setBrightness(100);
+            }
+        });
+        t.command(0, "time set noon");
+
+        // Het arsenaal: vijf drones, een met een tik, een die bezig is, een die aan de grond staat.
+        t.onServer(0, player -> {
+            DevWorld.freshArsenal(player, 5);
+            List<com.senne.imttech.arsenal.ArsenalDrone> drones = com.senne.imttech.arsenal.ArsenalServer.get(player).drones();
+            com.senne.imttech.arsenal.ArsenalServer.setHealth(player, drones.get(1).id(), 7.0f);
+            com.senne.imttech.arsenal.ArsenalServer.markDeployed(player, drones.get(2).id());
+            com.senne.imttech.arsenal.ArsenalServer.setHealth(player, drones.get(3).id(), 4.0f);
+            com.senne.imttech.arsenal.ArsenalServer.recall(player, drones.get(3).id());
+        });
+        t.view(20, 0.5, -60, -3.2, 0, 22);
+        t.open(40, com.senne.imttech.client.ArsenalScreen::new);
+        t.step(20, () -> captureScreen("arsenal_screen"));
+        t.close(5);
+        t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
     }
 
     /** Doet iets met het inlogscherm (van de laptop of de telefoon) als dat open staat. */

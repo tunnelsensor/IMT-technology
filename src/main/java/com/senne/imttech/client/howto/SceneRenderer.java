@@ -101,6 +101,7 @@ final class SceneRenderer {
         // het glas er gewoon overheen (rook en licht zelf schrijven geen diepte).
         life.renderSmoke(pose, buffers, player, time);
         life.renderPulses(pose, buffers, player, time);
+        life.renderFlames(pose, buffers, player, time);
         for (RenderType layer : RenderType.chunkBufferLayers()) {
             if (translucent(layer)) {
                 renderLayer(pose, buffers, player, time, layer);

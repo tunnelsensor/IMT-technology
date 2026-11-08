@@ -6,11 +6,13 @@ import com.senne.imttech.howto.scenes.DatacenterScenes;
 import com.senne.imttech.howto.scenes.DefenceScenes;
 import com.senne.imttech.howto.scenes.EquipmentScenes;
 import com.senne.imttech.howto.scenes.GrenadeScenes;
+import com.senne.imttech.howto.scenes.InteriorItemScenes;
 import com.senne.imttech.howto.scenes.InteriorScenes;
 import com.senne.imttech.howto.scenes.PowerScenes;
 import com.senne.imttech.howto.scenes.RobotScenes;
 import com.senne.imttech.howto.scenes.SecurityItemScenes;
 import com.senne.imttech.howto.scenes.SecurityScenes;
+import com.senne.imttech.howto.scenes.SuitScenes;
 import com.senne.imttech.howto.scenes.TrainingScenes;
 import com.senne.imttech.howto.scenes.WeaponScenes;
 import com.senne.imttech.registry.ModItems;
@@ -44,10 +46,13 @@ public final class HowToTopics {
     public static final List<HowToTopic> ALL = List.of(
             // ------------------------------------------------------------ Equipment
             topic("glasses", "equipment", "I.M.T glasses", EquipmentScenes::glasses, ModItems.IMT_GLASSES),
-            planned("tech_suit", "equipment", "The tech suit", ModItems.TECH_CHESTPLATE, ModItems.TECH_LEGGINGS, ModItems.TECH_BOOTS),
-            planned("rocket_pack", "equipment", "Mini rockets", ModItems.ROCKET_PACK, ModItems.ROCKET_WARHEAD, ModItems.ROCKET_MAGAZINE),
-            planned("drones", "equipment", "Drones", ModItems.DRONE),
-            planned("emp", "equipment", "E.M.P.", ModItems.EMP),
+            topic("tech_suit", "equipment", "The tech suit", SuitScenes::techSuit, ModItems.TECH_CHESTPLATE, ModItems.TECH_LEGGINGS,
+                    ModItems.TECH_BOOTS),
+            topic("rocket_pack", "equipment", "Mini rockets", SuitScenes::rocketPack, ModItems.ROCKET_PACK, ModItems.ROCKET_WARHEAD,
+                    ModItems.ROCKET_MAGAZINE),
+            topic("drones", "equipment", "Drones", SuitScenes::drones, ModItems.DRONE),
+            // Het item heette vroeger E.M.P.-zender; in het spel heet het nu Illusion Jammer.
+            topic("illusion_jammer", "equipment", "Illusion Jammer", SuitScenes::illusionJammer, ModItems.EMP),
             // ------------------------------------------------------------ Weapons
             topic("laser_guns", "weapons", "Laser guns", WeaponScenes::laserGuns, ModItems.LASER_PISTOL, ModItems.LASER_RIFLE,
                     ModItems.LASER_SNIPER, ModItems.LASER_SHOTGUN, ModItems.ENERGY_CELL),
@@ -75,17 +80,19 @@ public final class HowToTopics {
             topic("power_cables", "power", "Power cables", PowerScenes::cables, ModItems.CABLE),
             topic("network_cables", "power", "Network cables and PoE", PowerScenes::network, ModItems.NETWORK_CABLE, ModItems.POE_CABLE,
                     ModItems.NETWORK_SWITCH),
-            planned("power_cabinet", "power", "The power cabinet", ModItems.POWER_CABINET),
+            topic("power_cabinet", "power", "The power cabinet", PowerScenes::cabinet, ModItems.POWER_CABINET),
             // ------------------------------------------------------------ Interior
-            planned("holo_table", "interior", "Holo table", ModItems.HOLO_TABLE),
-            planned("suit_workbench", "interior", "Suit workbench and upgrades", ModItems.SUIT_WORKBENCH, ModItems.THRUSTER_UPGRADE,
+            topic("holo_table", "interior", "Holo table", InteriorItemScenes::holoTable, ModItems.HOLO_TABLE),
+            topic("suit_workbench", "interior", "Suit workbench and upgrades", InteriorItemScenes::suitWorkbench,
+                    ModItems.SUIT_WORKBENCH, ModItems.THRUSTER_UPGRADE,
                     ModItems.ARMOR_PLATING, ModItems.LASER_CANNON_CAPACITOR, ModItems.ROCKET_WARHEAD, ModItems.ROCKET_MAGAZINE,
                     ModItems.BATTERY_UPGRADE, ModItems.SCANNER_UPGRADE, ModItems.DRONE_UPGRADE),
-            planned("repairing_cracks", "interior", "Repairing cracks", ModItems.CRUSHER, ModItems.COMPACTOR, ModItems.REPAIR_PASTE,
-                    ModItems.CRACKED_BLOCK, ModItems.BLOCK_POWDER),
+            topic("repairing_cracks", "interior", "Repairing cracks", InteriorItemScenes::repairingCracks, ModItems.CRUSHER,
+                    ModItems.COMPACTOR, ModItems.REPAIR_PASTE, ModItems.CRACKED_BLOCK, ModItems.BLOCK_POWDER),
             topic("charging_station", "interior", "Charging station", InteriorScenes::chargingStation, ModItems.CHARGING_STATION, ModItems.ENERGY_CELL),
-            planned("landing_pad", "interior", "Landing pad", ModItems.LANDING_PAD),
-            planned("arc_lamp", "interior", "Arc Lamp and light switch", ModItems.ARC_LAMP, ModItems.LIGHT_SWITCH),
+            topic("landing_pad", "interior", "Landing pad", InteriorItemScenes::landingPad, ModItems.LANDING_PAD),
+            topic("arc_lamp", "interior", "Arc Lamp and light switch", InteriorItemScenes::arcLamp, ModItems.ARC_LAMP,
+                    ModItems.LIGHT_SWITCH),
             topic("relays", "interior", "Redstone relays", InteriorScenes::relays, ModItems.RELAY, ModItems.RELAY_EMITTER),
             // ------------------------------------------------------------ Security
             topic("security_core", "security", "Security Core", SecurityScenes::core, ModItems.SECURITY_CORE),

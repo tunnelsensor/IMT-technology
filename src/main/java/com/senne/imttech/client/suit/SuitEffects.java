@@ -255,16 +255,36 @@ public final class SuitEffects {
             if (tilted) {
                 sole = FlightPose.tilt(player, partialTick, sole);
             }
-            float flicker = 0.9f + 0.1f * Mth.sin(time * 2.3f + side * 1.7f) + 0.06f * Mth.sin(time * 5.1f + side);
-            float length = (0.55f + 0.9f * power) * flicker;
-            // Buiten naar binnen: breed en blauw, dan smaller en lichter, dan een witte kern.
-            flame(m, out, sole, down, cam, 0.3f + 0.08f * power, length, 0x2F7BFF, 0.5f + 0.25f * power);
-            flame(m, out, sole, down, cam, 0.19f, length * 0.72f, 0x5FD0FF, 0.75f + 0.2f * power);
-            flame(m, out, sole, down, cam, 0.1f, length * 0.42f, 0xF2FCFF, 1f);
-            // Een gloeiend schijfje tegen de zool, en een zachte gloed eromheen.
-            disc(m, out, sole.add(down.scale(0.01)), down, 0.11f, 0xBFF4FF, 0.9f);
-            billboard(m, out, sole.add(down.scale(0.08)), cam, 0.45f + 0.2f * power, 0x3F9BFF, 0.3f);
+            soleFlame(m, out, sole, down, power, time, side, cam);
         }
+    }
+
+    /**
+     * De vlammen onder de laarzen van een speler in een animatie van How it works (hoofdstuk 63): dezelfde vlammen, maar
+     * rechtop (een speler in een animatie helt niet over) en op de plek die de animatie kiest. {@code cam}: een punt ver weg
+     * in de richting van de kijker, zodat de vlammen met hun brede kant naar je toe staan.
+     */
+    public static void sceneFlames(Matrix4f m, VertexConsumer out, Vec3 feet, float bodyYawDegrees, float power, float time,
+                                   Vec3 cam) {
+        float bodyYaw = bodyYawDegrees * Mth.DEG_TO_RAD;
+        Vec3 right = new Vec3(Mth.cos(bodyYaw), 0, Mth.sin(bodyYaw));
+        Vec3 down = new Vec3(0, -1, 0);
+        for (int side = -1; side <= 1; side += 2) {
+            soleFlame(m, out, feet.add(right.scale(0.12 * side)).add(0, 0.02, 0), down, power, time, side, cam);
+        }
+    }
+
+    /** De vlam onder één zool: buiten naar binnen breed en blauw, dan smaller en lichter, dan een witte kern. */
+    private static void soleFlame(Matrix4f m, VertexConsumer out, Vec3 sole, Vec3 down, float power, float time, int side,
+                                  Vec3 cam) {
+        float flicker = 0.9f + 0.1f * Mth.sin(time * 2.3f + side * 1.7f) + 0.06f * Mth.sin(time * 5.1f + side);
+        float length = (0.55f + 0.9f * power) * flicker;
+        flame(m, out, sole, down, cam, 0.3f + 0.08f * power, length, 0x2F7BFF, 0.5f + 0.25f * power);
+        flame(m, out, sole, down, cam, 0.19f, length * 0.72f, 0x5FD0FF, 0.75f + 0.2f * power);
+        flame(m, out, sole, down, cam, 0.1f, length * 0.42f, 0xF2FCFF, 1f);
+        // Een gloeiend schijfje tegen de zool, en een zachte gloed eromheen.
+        disc(m, out, sole.add(down.scale(0.01)), down, 0.11f, 0xBFF4FF, 0.9f);
+        billboard(m, out, sole.add(down.scale(0.08)), cam, 0.45f + 0.2f * power, 0x3F9BFF, 0.3f);
     }
 
     // ================================================================ Bouwstenen

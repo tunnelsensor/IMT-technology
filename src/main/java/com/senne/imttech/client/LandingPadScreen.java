@@ -100,9 +100,16 @@ public class LandingPadScreen extends AbstractContainerScreen<LandingPadMenu> {
         int dim = HudStyle.argb(150, HudStyle.ORANGE);
         int value = HudStyle.argb(230, HudStyle.WHITE);
 
-        // Boven de batterij: hoeveel erin zit.
-        small(g, Component.translatable("screen.imttech.landing_pad.battery").getString(), BAT_X, BAT_Y - 7, dim);
+        // Boven de batterij: hoeveel erin zit. Past het hele getal niet naast het woord BATTERY (een grote batterij met cellen:
+        // "BATTERY2456 / 400000" plakte aan elkaar, gezien op een plaatje van How it works), dan korter: "2.5k / 400k".
+        String label = Component.translatable("screen.imttech.landing_pad.battery").getString();
+        small(g, label, BAT_X, BAT_Y - 7, dim);
         String stored = Component.translatable("screen.imttech.landing_pad.stored", menu.energy(), menu.capacity()).getString();
+        int room = BAT_W - (int) Math.ceil(font.width(label) * 0.75f) - 4;
+        if (font.width(stored) * 0.75f > room) {
+            stored = Component.translatable("screen.imttech.landing_pad.stored", compact(menu.energy()), compact(menu.capacity()))
+                    .getString();
+        }
         small(g, stored, BAT_X + BAT_W - (int) Math.ceil(font.width(stored) * 0.75f), BAT_Y - 7, value);
         // Het percentage midden in de batterij.
         String percent = Math.round(100.0f * menu.energy() / Math.max(1, menu.capacity())) + "%";
@@ -155,6 +162,20 @@ public class LandingPadScreen extends AbstractContainerScreen<LandingPadMenu> {
             g.renderTooltip(font, Component.translatable("screen.imttech.landing_pad.cells_tooltip",
                     (int) ImtConfig.Power.PAD_BATTERY_PER_CELL, LandingPadBlockEntity.MAX_CELLS), mouseX, mouseY);
         }
+    }
+
+    /** Een groot getal kort: 2456 = "2.5k", 400000 = "400k", 1500000 = "1.5M". */
+    static String compact(long value) {
+        if (value >= 1_000_000) {
+            return String.format(java.util.Locale.ROOT, "%.1fM", value / 1_000_000.0).replace(".0M", "M");
+        }
+        if (value >= 10_000) {
+            return Math.round(value / 1000.0) + "k";
+        }
+        if (value >= 1_000) {
+            return String.format(java.util.Locale.ROOT, "%.1fk", value / 1000.0).replace(".0k", "k");
+        }
+        return String.valueOf(value);
     }
 
     /** Kleine tekst (75%), links uitgelijnd. */

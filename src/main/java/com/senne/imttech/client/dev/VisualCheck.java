@@ -88,7 +88,7 @@ public final class VisualCheck {
     private static final String WORLD = "VisualCheck";
 
     /** Waar alles staat in de platte wereld (de grond is daar y = -61, je staat op -60). */
-    private static final BlockPos TABLE = new BlockPos(0, -60, 0);
+    static final BlockPos TABLE = new BlockPos(0, -60, 0);
     private static final BlockPos HILL = new BlockPos(14, -60, 10);
     private static final BlockPos PIT = new BlockPos(-14, -61, -8);
     private static final BlockPos TOWER = new BlockPos(-10, -60, 14);
@@ -4250,14 +4250,14 @@ public final class VisualCheck {
     }
 
     /** Waar de generator voor de Arc Lamp staat (zie "light"): ver van de rest, want zijn licht reikt 100 blokken. */
-    private static final BlockPos LAMP_YARD = new BlockPos(-260, -60, -260);
+    static final BlockPos LAMP_YARD = new BlockPos(-260, -60, -260);
 
     /**
      * Een volle generator, daarnaast een kabel over het gras met halverwege een lichtschakelaar (uit), en
      * aan het eind een paal van vier blokken (met de kabel erin) met de Arc Lamp erop. In je hotbar de lamp
      * en de schakelaar.
      */
-    private static void buildLampYard(ServerPlayer player) {
+    static void buildLampYard(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
         BlockPos y = LAMP_YARD;
         level.setBlockAndUpdate(y, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
@@ -4597,7 +4597,7 @@ public final class VisualCheck {
     }
 
     /** Waar de Crusher van hoofdstuk 11 staat; de Compactor staat twee blokken oostelijker (zie "repair"). */
-    private static final BlockPos REPAIR = new BlockPos(140, -60, 128);
+    static final BlockPos REPAIR = new BlockPos(140, -60, 128);
 
     /**
      * Een Crusher en een Compactor (voorkant naar het zuiden), elk tegen een volle generator: de Crusher
@@ -4605,7 +4605,7 @@ public final class VisualCheck {
      * obsidiaanpoeders erin en al twee blokken obsidiaan eruit. Een gebarsten stenen baksteen op de
      * grond, en in je hotbar gebarsten blokken en poeder van verschillende blokken, en Repair Paste.
      */
-    private static void buildRepairCorner(ServerPlayer player) {
+    static void buildRepairCorner(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
         BlockPos r = REPAIR;
         net.minecraft.world.item.Item cracked = ModItems.CRACKED_BLOCK.get();
@@ -5757,7 +5757,7 @@ public final class VisualCheck {
      * Wat ertsen onder de holotafel (de platte wereld heeft er geen): een diamantader, goud,
      * redstone, lapis, een kluit kolen en wat ijzer, op twee en drie blokken diep.
      */
-    private static void oresUnder(ServerLevel level, BlockPos table) {
+    static void oresUnder(ServerLevel level, BlockPos table) {
         int[][] spots = {{3, 2}, {4, 2}, {4, 3}, {-5, 4}, {-6, 4}, {8, -6}, {-9, -3}, {-9, -4}, {-10, -3},
                 {12, 9}, {-12, 10}, {6, -11}, {7, -11}, {0, 13}, {-3, -14}, {14, -2}};
         BlockState[] kinds = {Blocks.DIAMOND_ORE.defaultBlockState(), Blocks.DIAMOND_ORE.defaultBlockState(),
@@ -5771,7 +5771,7 @@ public final class VisualCheck {
         }
     }
 
-    private static void onTable(DevScript t, Consumer<HoloTableBlockEntity> action) {
+    static void onTable(DevScript t, Consumer<HoloTableBlockEntity> action) {
         t.onServer(0, player -> {
             if (player.serverLevel().getBlockEntity(TABLE) instanceof HoloTableBlockEntity table) {
                 action.accept(table);

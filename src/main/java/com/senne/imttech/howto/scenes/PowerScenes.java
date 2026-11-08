@@ -354,4 +354,99 @@ public final class PowerScenes {
 
     /** Een helder vakje over een netwerkkabel (wit), zoals G > Information > Cable signals. */
     private static final int NETWORK_WHITE = 0xF2F6FA;
+
+    // ================================================================ De stroomkast
+
+    static BlockState cabinet(boolean west, boolean east) {
+        return ModBlocks.POWER_CABINET.get().defaultBlockState()
+                .setValue(com.senne.imttech.energy.PowerCabinetBlock.FACING, Direction.SOUTH)
+                .setValue(com.senne.imttech.energy.PowerCabinetBlock.SWITCHES.get(Direction.WEST), west)
+                .setValue(com.senne.imttech.energy.PowerCabinetBlock.SWITCHES.get(Direction.EAST), east);
+    }
+
+    static BlockState arcLamp(boolean lit) {
+        return ModBlocks.ARC_LAMP.get().defaultBlockState().setValue(com.senne.imttech.light.ArcLampBlock.LIT, lit);
+    }
+
+    /**
+     * De stroomkast (LEESMIJ, "De stroomkast"): kabels van alle kanten komen er samen, achter het deurtje een schakelaar per
+     * kant (als plaatje), een kant uit (het torentje laat zijn loop hangen, de lamp gaat uit), en schakelen op afstand.
+     */
+    public static List<HowToScene> cabinet() {
+        HowToSceneBuilder s = new HowToSceneBuilder("power_cabinet", "The power cabinet").plate(7, 5).height(4);
+        // De ballonnen hangen boven de blokken: het torentje, de kast en de lamp staan over de hele breedte, dus een
+        // ballon op de hoogte van de blokken stond altijd voor een van de drie.
+        // Alles staat vooraan op de plaat (z = 3): dan hangen de ballonnen erboven in de lucht.
+        Vec3 above = new Vec3(3.5, 3.7, 3.5);
+        BlockPos box = new BlockPos(3, 1, 3);
+        BlockPos gen = new BlockPos(3, 1, 2);
+        BlockPos turret = new BlockPos(0, 1, 3);
+        BlockPos lamp = new BlockPos(6, 1, 3);
+        Vec3[] toTurret = {new Vec3(3.0, 1.05, 3.5), new Vec3(1.0, 1.05, 3.5)};
+        Vec3[] toLamp = {new Vec3(4.0, 1.05, 3.5), new Vec3(6.0, 1.05, 3.5)};
+        net.minecraft.world.level.block.Block laserTurret = ModBlocks.SECURITY_TURRET.get();
+        s.idle(6);
+        s.chapter("Where cables meet");
+        s.place(box, cabinet(true, true));
+        s.idle(6);
+        s.place(gen, heat(Direction.SOUTH));
+        s.idle(6);
+        s.place(turret, DefenceScenes.turret(laserTurret, false, true));
+        s.idle(4);
+        s.place(lamp, arcLamp(false));
+        s.idle(10);
+        s.cable(CableKind.POWER, 14, toTurret);
+        s.cable(CableKind.POWER, 14, toLamp);
+        s.idle(16);
+        s.change(turret, DefenceScenes.turret(laserTurret, true, true));
+        s.change(lamp, arcLamp(true));
+        s.text(100, above, Side.RIGHT,
+                "A *Power Cabinet* is where cables from all sides meet: here the generator at the back, a turret on one side"
+                        + " and a lamp on the other. All sides that are on hang together.");
+        for (int i = 0; i < 3; i++) {
+            s.signal(30, POWER_YELLOW, toTurret);
+            s.signal(30, POWER_YELLOW, toLamp);
+            s.idle(30);
+        }
+        s.idle(15);
+
+        s.chapter("A switch per side");
+        s.rightClick(HowToSceneBuilder.face(box, Direction.SOUTH), ItemStack.EMPTY);
+        s.idle(12);
+        s.text(60, above, Side.RIGHT,
+                "Right-click opens its little door. Anyone standing in front of it can switch.");
+        s.idle(65);
+        s.picture(150, "cabinet_screen", 426, 240,
+                s.arrow(0.303f, 0.228f, "Front, back, left, right, top and bottom"),
+                s.arrow(0.244f, 0.503f, "Red light: that side is off"),
+                s.arrow(0.526f, 0.41f, "*wired*: something hangs on that side"),
+                s.arrow(0.698f, 0.503f, "The switch"),
+                s.arrow(0.382f, 0.833f, "*Link to I.M.T* (only the owner)"));
+        s.idle(155);
+
+        s.chapter("A side off");
+        s.change(box, cabinet(false, true));
+        s.sound(net.minecraft.sounds.SoundEvents.LEVER_CLICK, 0.4f, 0.8f);
+        s.change(turret, DefenceScenes.turret(laserTurret, false, true));
+        s.outline(60, turret, turret, HowToSceneBuilder.RED);
+        s.text(100, HowToSceneBuilder.top(turret).add(0, 1.7, 0), Side.RIGHT,
+                "Switch a side off, and what hangs there gets no more power from the cabinet: the turret lets its barrel"
+                        + " drop. The lamp on the other side stays on.");
+        for (int i = 0; i < 3; i++) {
+            s.signal(30, POWER_YELLOW, toLamp);
+            s.idle(30);
+        }
+        s.idle(15);
+
+        s.chapter("From anywhere");
+        s.change(box, cabinet(true, false));
+        s.sound(net.minecraft.sounds.SoundEvents.LEVER_CLICK, 0.4f, 0.8f);
+        s.change(turret, DefenceScenes.turret(laserTurret, true, true));
+        s.change(lamp, arcLamp(false));
+        s.text(115, above, Side.RIGHT,
+                "*Link to I.M.T* puts the six switches in your redstone list ([']): switch them from anywhere, or say \"turn"
+                        + " off cabinet 1 left\". Towers and bunkers have one in a well-guarded spot.");
+        s.idle(125);
+        return List.of(s.build());
+    }
 }

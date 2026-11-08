@@ -185,21 +185,30 @@ Elk item dat meer doet dan in een recept gaan, krijgt een animatie die laat zien
   **wijs je een blok aan**, dan zie je hoe het heet. Heeft een item meer animaties, dan blader je met de
   pijltjes bovenaan. **Esc** brengt je terug naar je inventaris, met alles nog zoals het was. In je eigen
   wereld staat het spel stil terwijl je kijkt.
-- **Wat er al is** (41 van de 51): de bril, alles van het tabblad Security (de Security Core, computer en
-  monitor, zones, de Block Reinforcer, handboeien, keycards en lezers, het codepaneel, autorisatiecodes en de Auth
-  Console, de netwerkknop en -hendel, laserpoorten, de laserbrug, de schildkoepel, camera's en de schermmuur,
-  torentjes, de Bypass Kit met lezers en panelen hacken, laserdraden knippen en zakkenrollen, de Hacking Laptop en
-  de I.M.T Phone), serverracks, warmte en fans, relais, stroom maken (zonnepaneel en warmtegenerator),
-  stroomkabels, netwerkkabels met PoE en de switch, het laadstation, de Power Battery, alles van het
-  tabblad Robots (een guard robot bouwen en programmeren, modules solderen en wat ze doen, security drones en
-  training) en alles van het tabblad Weapons: de lasergeweren, lasergeweren uit onderdelen, de Ion Blaster,
-  EMP-granaten, fraggranaten, rook en de flashbang, de Remote EMP en Remote Frag, de Glock 19, de Gunsmith
-  Table, de Reloading Bench, en de holster, de pouches en de slings. De rest komt eraan, de belangrijkste
-  eerst (PLAN.md, hoofdstuk 63). In de animaties lopen ook wezens rond: jij (met je eigen skin, en met je
-  holster en pouches om), een vreemde in je basis, een husk, een raiddrone, je eigen robots en drones (met
-  hun onderdelen, hun modules en hun lichtjes), een geboeide Raven-soldaat met zijn handen op zijn rug, en
-  granaten die stuiteren en piepen; er is een EMP-puls, een rookwolk die niet door muren gaat, een flits, en
-  barsten in een muur.
+- **Alles is er** (51 van de 51), per tabblad:
+  - *Equipment*: de bril, het harnas (minder schade, vliegen, landen, de laser cannon), de mini-raketten, de
+    drones van je arsenaal en de Illusion Jammer.
+  - *Weapons*: de lasergeweren, lasergeweren uit onderdelen, de Ion Blaster, EMP-granaten, fraggranaten, rook en
+    de flashbang, de Remote EMP en Remote Frag, de Glock 19, de Gunsmith Table, de Reloading Bench, en de holster,
+    de pouches en de slings.
+  - *Power*: de Power Battery, stroom maken (zonnepaneel en warmtegenerator), stroomkabels, netwerkkabels met PoE en
+    de switch, en de stroomkast.
+  - *Interior*: de holotafel, de harnas-werkbank met zijn upgrades, barsten herstellen (Repair Paste, de Crusher en
+    de Compactor), het laadstation, het landingsplatform, de Arc Lamp met de lichtschakelaar, en relais.
+  - *Security*: de Security Core, computer en monitor, zones, de Block Reinforcer, handboeien, keycards en lezers,
+    het codepaneel, autorisatiecodes en de Auth Console, de netwerkknop en -hendel, laserpoorten, de laserbrug, de
+    schildkoepel, camera's en de schermmuur, torentjes, de Bypass Kit (lezers en panelen hacken, laserdraden
+    knippen en zakkenrollen), de Hacking Laptop en de I.M.T Phone.
+  - *Robots*: een guard robot bouwen en programmeren, modules solderen en wat ze doen, security drones en training.
+  - *Datacenter*: serverracks en warmte en fans.
+  In de animaties lopen ook wezens rond: jij (met je eigen skin, je holster en pouches, of in het harnas met
+  blauwe straalvlammen onder je laarzen), een vreemde in je basis, een husk, een raiddrone, je eigen robots en
+  drones (met hun onderdelen, hun modules en hun lichtjes), de drones van je arsenaal (rood als ze aanvallen,
+  blauw als ze je bewaken), mini-raketjes die met hun neus naar hun doel draaien, een geboeide Raven-soldaat met
+  zijn handen op zijn rug, en granaten die stuiteren en piepen; er is een EMP-puls, een rookwolk die niet door
+  muren gaat, een flits, barsten in een muur, het hologram van de holotafel en van de harnas-werkbank. Wat
+  naar de echte wereld kijkt (de kaart en de ertsen van de holotafel, het licht van de Arc Lamp 's nachts) is
+  een plaatje uit het spel.
 - Het geluid (een blok dat neerkomt): `howToVolume` in `imttech-client.toml` (1 = normaal, 0 = uit).
 
 ### Het drone-arsenaal

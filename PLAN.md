@@ -5595,10 +5595,53 @@ hebben, zodat er geen vergeten wordt.
       tekstballonnen voor de muren van de Reinforcer, de Bypass Kit en de Auth Console (nu rechts naast de muur) en voor de
       geboeide soldaat (nu aan de andere kant), wees een pijltje in de app Computers naast de knoppen, en verdween jij bij
       de laptop na het eerste hoofdstukje. 454 tests, allemaal groen.
-- [ ] **11. Nog te doen (10 onderwerpen)** — Power: de stroomkast. Interior: de holotafel, de harnas-werkbank met alle
-      upgrades, barsten herstellen, het landingsplatform, de Arc Lamp met de lichtschakelaar. Equipment: het harnas, het
-      raketpakket, drones, de E.M.P. (De instellingen van de Laser Emitter staan al in de animatie van de laserpoorten, en
-      het draden knippen zit nu bij de Bypass Kit.)
+- [x] **11. De rest** — jouw opmerking (8 november): "Werk de overschot ook nog uit." De laatste tien onderwerpen: nu
+      hebben alle 51 een animatie (`PowerScenes.cabinet`, `howto/scenes/InteriorItemScenes`, `howto/scenes/SuitScenes`):
+      - *The power cabinet* (31 s): een generator erachter, een torentje en een Arc Lamp aan de zijkanten, stroom die
+        als gele streepjes loopt, het deurtje als plaatje (een lampje, "wired" en de schakelaar per kant, Link to I.M.T),
+        een kant uit (het torentje laat zijn loop hangen) en schakelen op afstand.
+      - *Holo table* (59 s): zonder stroom een rood ringetje, met stroom het hologram, een voorwerp erop toont zijn
+        recept, sneak + rechtsklik de zes kleuren, het instelscherm als plaatje, en de kaart, de satelliet en de ertsen
+        als plaatje uit de echte wereld (die standen kijken naar de grond om de tafel heen, dus die kunnen niet in het
+        wereldje van een animatie).
+      - *Suit workbench and upgrades* (50 s): het echte hologram van één stuk (met de gegevens van een echte
+        werkbank), een klik op de werkbank kiest het volgende stuk, bouwen (plaatje voor plaatje met de scanring, en dan
+        heb jij de borstplaat aan), de laarzen neerleggen, een Thruster Upgrade inbouwen (hij draait om het stuk en
+        krimpt erin), en de upgrades van het harnas en van de bril.
+      - *Repairing cracks* (37 s): barsten in een muur, Repair Paste (het balkje STRENGTH zakt naar 85%), een blok
+        weghakken (het wordt een gebarsten blok), de Crusher en de Compactor naast een generator (gebarsten blok, poeder,
+        een nieuw blok), en het scherm van de Crusher als plaatje.
+      - *Landing pad* (35 s): het platform met zijn vak van 5 x 5, jij die in het harnas met blauwe vlammen komt
+        aanvliegen en landt ("Welcome home"), je bril die laadt, en de batterij van het platform als plaatje.
+      - *Arc Lamp and light switch* (48 s): de lamp op een paal aan een kabel, 's nachts als plaatje (het hele veld is
+        licht), elke kamer zijn eigen lamp, alleen op netstroom, het instelscherm als plaatje, en de lichtschakelaar op
+        de kabel (uit: de lamp gaat uit).
+      - *The tech suit* (39 s): de stukken een voor een aan, minder schade (een husk slaat, een blauwe flits), vliegen
+        (blauwe straalvlammen onder je laarzen, net als in de wereld), landen, en de laser cannon die een husk wegduwt.
+      - *Mini rockets* (31 s): het raketpakket op de borstplaat, een salvo van zes echte mini-raketjes die om de
+        beurt links en rechts vertrekken, uitwaaieren en met hun neus naar drie husks draaien (een streepje vuur erachter,
+        een ontploffing), herladen, en het magazijn en de springkop.
+      - *Drones* (45 s): een drone gebruiken (hij schiet de lucht in), het arsenaal als plaatje (in orbit, beschadigd,
+        on a job, grounded), terugroepen in een boog en repareren met ijzer, een zwerm met rode lampjes die op een husk
+        duikt en schiet, en de escorte met blauwe lampjes die om je heen vliegt.
+      - *Illusion Jammer* (22 s): een valse muur van een onzichtbare cloakingdrone (alleen zijn vonkjes), de jammer
+        (een blauwe puls, de muur flikkert en is weg, vonken bij de drone), en de zwakke plekken. Het onderwerp heette in
+        de lijst nog "E.M.P."; het item heet in het spel al Illusion Jammer, dus het onderwerp nu ook.
+      Nieuwe bouwstenen: een speler met `Thrust` in zijn gegevens krijgt de straalvlammen van het harnas onder zijn
+      laarzen (SuitEffects tekent ze nu ook voor een animatie, met hun brede kant naar de kijker), en een mini-raketje
+      wijst met zijn neus in de richting waarin het vliegt. Het hologram van de holotafel en van de werkbank tekent de
+      animatie met hun echte renderer, gevoed met gegevens zoals een echt blok ze bewaart. Tien nieuwe plaatjes
+      (`-Ponly=howtopics`): het deurtje van de stroomkast, het instelscherm van de holotafel en de kaart, de satelliet en
+      de ertsen, het scherm van de Crusher, de batterij van een platform, de Arc Lamp 's nachts en zijn instelscherm, en
+      het arsenaal. Wat ik op de foto's zag en verbeterde: tekstballonnen voor de lamp van de stroomkast, voor jou
+      tijdens het vliegen en voor de doelwitten van de raketten (nu boven de blokken of aan de andere kant), de
+      holotafel, de werkbank en het platform waren klein (kleinere platen), en een husk verdween pas seconden na zijn
+      ontploffing (een cue van één tick neemt het niet over van een langere; nu duurt elke husk precies tot zijn
+      laatste treffer). Op de kaart van de holotafel stond de tafel als een stipje (de rondleiding heeft een brede
+      camera; nu van dichterbij en schuin van boven), en bij de ertsen viel de bovenkant weg. Op het scherm van een
+      platform met cellen plakte het getal tegen het woord BATTERY ("BATTERY2456 / 400000"; past het niet, dan nu korter:
+      "2.5k / 400k"), en de config van de rondleiding (run-visual, niet in git) had voor het platform en de Arc Lamp nog
+      de getallen van voor de energie x10 werd (nu gelijk aan de standaard in de code). 454 tests, allemaal groen.
 
 ### 64. Grotere datacenters, en racks zonder scherm (8 november)
 
