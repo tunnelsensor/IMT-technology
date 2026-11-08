@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 453 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 454 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -5462,14 +5462,59 @@ hebben, zodat er geen vergeten wordt.
       rode doos getekend te worden (een doos langs de assen, zoals een kabel: nu een echte dunne straal), stonden drie
       tekstballonnen over de monitoren, de relay emitter en het laadstation, en stond de temperatuur in procenten. 449
       tests, allemaal groen.
-- [ ] **8. Nog te doen (32 onderwerpen)** — Power: de stroomkast. Interior: de holotafel, de harnas-werkbank met alle
+- [x] **8. De robots** — jouw opmerking (8 november): "Ga verder met alles over de robots maken/bouwen/coden." Het hele
+      tabblad Robots, zes animaties in vier onderwerpen (23 van de 51 klaar):
+      - *Guard robots*, twee animaties. **Building a guard robot** (56 s): de vier stijlen naast elkaar (met hun lichtjes
+        aan), wat elk onderdeel doet, de Robot Assembler (zijn scherm als plaatje, met dezelfde gemengde robot: hoofd en
+        benen van een Commando, lijf en armen van een Super Battle), een Robot Dock naast een zonnepaneel en het item erop
+        (een balkje BATTERY), zijn scherm als plaatje, aan (twee piepjes, de lichtjes aan, `stepOut` blokken naar voren),
+        uit (terug in zijn dock), ijzer en Robot Ammo. **Programming a robot** (47 s): het robotprogramma Patrol in Logic
+        als plaatje (rondjes met `send("corner")`, en `when ordered("attack")`), de app Robots met de knop Program als
+        plaatje, de robot loopt zijn vierkantje van 3 blokken, een tweede rondje met op elke hoek een berichtje door de
+        lucht naar de kern, een opdracht van de kern (een oranje berichtje naar de robot; hij loopt naar het rode vak en
+        daarna verder), en `charge(80)`.
+      - *Soldering modules*, twee animaties. **Soldering modules** (44 s): een grote Commando op zijn dock, de acht
+        modules, het bordscherm met de hittebalk als plaatje, loslaten in het groen (het schoteltje van de Scan verschijnt
+        op zijn hoofd), een brug met Inspect als plaatje, aanzetten met een brug (een rode flits en een knal, de laser
+        wordt een Burnt Module), en alle acht modules op de robot. **Seeing and shooting** (45 s): het bewakersprogramma
+        met `read` en `write` als plaatje, jij loopt langs (het filter "strangers"), een vreemde (een speler met een
+        gewone skin) krijgt de laser, een tweede het geweer, jij legt de robot neer met de Ion Blaster (hij ligt op zijn
+        rug), en de andere vier modules in een zin.
+      - *Security drones* (39 s): een drone die zweeft, een Drone Dock naast een zonnepaneel met de drone erop ("Drone 1
+        is charging (56%)"), aan (hij stijgt op), het droneprogramma in Logic als plaatje, een vierkantje vliegen, en
+        `charge()` terug naar zijn dock.
+      - *Training* (70 s): de drie blokken bij een kern met twee Trainers op hun dock, het instelscherm van Training Start
+        als plaatje, klikken (aftellen, de robots van Wave 1 stappen uit), een treffer (een laser, een blauwe flits rond
+        jou, het lampje van Training End en een redstonelamp ernaast), de mini-editor als plaatje, jij legt beide robots
+        neer met de Ion Blaster (squads en `squad_down`), je stapt op het doel, de app Training met de rapporten als
+        plaatje, en de oefeningen (inbraak en uitbraak).
+      Daarvoor kan een wezen nu **gegevens** meekrijgen zoals het spel ze bewaart (`HowToCue.Actor.data`, geladen met
+      `Entity.load`): een robot met zijn onderdelen, printplaat en of hij aan staat of neerligt; een nieuwe cue met andere
+      gegevens verandert hetzelfde wezen (een module erbij, aan, neergeschoten). Een **vreemde** is een speler met een
+      gewone skin van Minecraft in plaats van jij (`stranger`), en een randje rond een wezen is een flits (`flash`). De
+      "vorige plek" van een wezen staat nu gelijk met zijn plek: anders dacht een drone dat hij vloog en draaiden zijn
+      rotors terwijl hij uit stond. Een nieuwe test (`robot_animations_load_like_real_robots`) laadt elke robot en drone
+      uit de animaties zoals het spel dat doet en kijkt dat zijn onderdelen, printplaat en toestand kloppen. Elf nieuwe
+      plaatjes (`-Ponly=howtopics`, zonder de HUD erachter en zonder de meldingen rechtsboven): de Robot Assembler, het
+      robotscherm, het bordscherm met de hittebalk en met Inspect, Logic met het robot-, bewakers- en droneprogramma
+      (Logic opent nu het bewaarde programma, in plaats van een nieuw met dezelfde naam dat dan dubbel in de lijst stond),
+      de app Robots met Program, de app Training, het instelscherm van Training Start en de mini-editor van Training End.
+      Wat ik op de plaatjes zag en verbeterde: in het bordscherm liep "Right-click a pin = desolder." rechts buiten het
+      scherm (nu op een tweede regel), en in de mini-editor van Training End werd de uitleg bovenaan vooraan afgekapt
+      ("..n trainee_hit"; nu korter: "Runs on every hit (trainee, lives, hits)"). Op de foto's per hoofdstukje stonden
+      tekstballonnen voor de kern, de blokken van de training, een robot die uit zijn dock stapte en een vreemde, en de
+      robot bij het solderen en de drone waren klein; nu staan de robots en blokken in het midden van het beeld, de
+      ballonnen aan de andere kant, en zijn de platen kleiner. Op foto's van precieze momenten nagekeken: de laser (rood),
+      het geweer (geel), de Ion Blaster (blauw), de blauwe flits, de berichtjes naar en van de kern en de rode flits van
+      de kortsluiting. 454 tests, allemaal groen (in de eerste ronde miste de Raven-soldaat van `raven_soldier_shoots` een
+      keer binnen zijn tien seconden; dat hangt aan zijn willekeurige wapen en richten, niet aan dit werk).
+- [ ] **9. Nog te doen (28 onderwerpen)** — Power: de stroomkast. Interior: de holotafel, de harnas-werkbank met alle
       upgrades, barsten herstellen, het landingsplatform, de Arc Lamp met de lichtschakelaar. Security: de Block
       Reinforcer, handboeien, de Auth Console, de Bypass Kit, de Hacking Laptop, de Phone, en (minder belangrijk, jouw
       keuze) computer en monitor; en voor de Laser Emitter nog de animaties van zijn instellingen en het draden knippen.
-      Robots: een guard robot bouwen en op zijn dock zetten, modules solderen, security drones, training. Weapons: de
-      lasergeweren, de Laser Workbench, de Ion Blaster, EMP- en fraggranaten, rook en flashbang, de Remote EMP en Remote
-      Frag, de Glock 19, de Gunsmith Table, de Reloading Bench, de holster en de pouches. Equipment: het harnas, het
-      raketpakket, drones, de E.M.P.
+      Weapons: de lasergeweren, de Laser Workbench, de Ion Blaster, EMP- en fraggranaten, rook en flashbang, de Remote EMP
+      en Remote Frag, de Glock 19, de Gunsmith Table, de Reloading Bench, de holster en de pouches. Equipment: het harnas,
+      het raketpakket, drones, de E.M.P.
 
 ### 64. Grotere datacenters, en racks zonder scherm (8 november)
 

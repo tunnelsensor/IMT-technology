@@ -7,7 +7,9 @@ import com.senne.imttech.howto.scenes.DefenceScenes;
 import com.senne.imttech.howto.scenes.EquipmentScenes;
 import com.senne.imttech.howto.scenes.InteriorScenes;
 import com.senne.imttech.howto.scenes.PowerScenes;
+import com.senne.imttech.howto.scenes.RobotScenes;
 import com.senne.imttech.howto.scenes.SecurityScenes;
+import com.senne.imttech.howto.scenes.TrainingScenes;
 import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.weapons.GunType;
 import com.senne.imttech.weapons.LaserPart;
@@ -100,12 +102,15 @@ public final class HowToTopics {
             planned("hacking_laptop", "security", "Hacking Laptop", ModItems.HACKING_LAPTOP),
             planned("phone", "security", "I.M.T Phone", ModItems.PHONE),
             // ------------------------------------------------------------ Robots
-            plannedItems("guard_robot", "robots", "Guard robots", () -> concat(robotParts(), List.of(ModItems.ROBOT_ASSEMBLER.get(),
-                    ModItems.ROBOT_DOCK.get(), ModItems.GUARD_ROBOT.get(), ModItems.ROBOT_AMMO.get()))),
-            plannedItems("soldering", "robots", "Soldering modules", () -> concat(ModItems.ROBOT_MODULES.values().stream()
-                    .map(module -> (Item) module.get()).toList(), List.of(ModItems.ROBOT_CIRCUIT_BOARD.get(), ModItems.SOLDERING_IRON.get()))),
-            planned("security_drones", "robots", "Security drones", ModItems.GUARD_DRONE, ModItems.DRONE_DOCK),
-            planned("training", "robots", "Training", ModItems.TRAINING_START, ModItems.TRAINING_END, ModItems.TRAINING_GOAL),
+            topicItems("guard_robot", "robots", "Guard robots", scenes(RobotScenes::build, RobotScenes::program),
+                    () -> concat(robotParts(), List.of(ModItems.ROBOT_ASSEMBLER.get(), ModItems.ROBOT_DOCK.get(),
+                            ModItems.GUARD_ROBOT.get(), ModItems.ROBOT_AMMO.get()))),
+            topicItems("soldering", "robots", "Soldering modules", scenes(RobotScenes::soldering, RobotScenes::modules),
+                    () -> concat(ModItems.ROBOT_MODULES.values().stream().map(module -> (Item) module.get()).toList(),
+                            List.of(ModItems.ROBOT_CIRCUIT_BOARD.get(), ModItems.SOLDERING_IRON.get()))),
+            topic("security_drones", "robots", "Security drones", RobotScenes::drones, ModItems.GUARD_DRONE, ModItems.DRONE_DOCK),
+            topic("training", "robots", "Training", TrainingScenes::training, ModItems.TRAINING_START, ModItems.TRAINING_END,
+                    ModItems.TRAINING_GOAL),
             // ------------------------------------------------------------ Datacenter
             topic("server_racks", "datacenter", "Server racks and Logic", DatacenterScenes::racks, ModItems.SERVER_RACK, ModItems.SERVER_CPU,
                     ModItems.SERVER_RAM, ModItems.SERVER_SSD, ModItems.SERVER_GPU),
@@ -176,6 +181,24 @@ public final class HowToTopics {
 
     private static HowToTopic plannedItems(String id, String tab, String english, Supplier<List<Item>> items) {
         return new HowToTopic(id, tab, title(id, english), items, null);
+    }
+
+    /** Een onderwerp met animaties, voor een lange lijst items (bv. alle robotonderdelen). */
+    private static HowToTopic topicItems(String id, String tab, String english, Supplier<List<HowToScene>> scenes,
+                                         Supplier<List<Item>> items) {
+        return new HowToTopic(id, tab, title(id, english), items, scenes);
+    }
+
+    /** De animaties van een paar onderwerpen na elkaar (bouwen, dan programmeren). */
+    @SafeVarargs
+    private static Supplier<List<HowToScene>> scenes(Supplier<List<HowToScene>>... parts) {
+        return () -> {
+            List<HowToScene> out = new ArrayList<>();
+            for (Supplier<List<HowToScene>> part : parts) {
+                out.addAll(part.get());
+            }
+            return out;
+        };
     }
 
     @SafeVarargs

@@ -396,6 +396,266 @@ final class HowToTour {
         t.close(5);
         t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.COMBAT);
         t.look(0, 0.0f, 10.0f);
+        robotPictures(t);
+    }
+
+    // ================================================================ De robots
+
+    private static final BlockPos ROBOT_DOCK = DEMO_CORE.offset(-2, 0, 2);
+    private static final BlockPos DRONE_DOCK = DEMO_CORE.offset(2, 0, 2);
+    private static final BlockPos ASSEMBLER = DEMO_CORE.offset(-3, 0, 4);
+    private static final BlockPos TRAINING_START = DEMO_CORE.offset(-1, 0, 5);
+    private static final BlockPos TRAINING_END = DEMO_CORE.offset(1, 0, 5);
+    private static final BlockPos TRAINING_GOAL = DEMO_CORE.offset(3, 0, 5);
+
+    /** Het robotprogramma op het plaatje "logic_robot": rondjes lopen, en een opdracht van de server. */
+    private static final String PATROL_CODE = String.join("\n",
+            "when started:",
+            "    while true:",
+            "        if robot.battery < 20:",
+            "            charge(80)",
+            "        forward(3)",
+            "        turn_right()",
+            "        send(\"corner\")",
+            "",
+            "when ordered(\"attack\"):",
+            "    goto(order.x, order.y, order.z)");
+
+    /** Het robotprogramma op het plaatje "logic_guard": de modules met read en write. */
+    private static final String GUARD_CODE = String.join("\n",
+            "scanPin = pin(1)",
+            "facePin = pin(2)",
+            "laserPin = pin(3)",
+            "",
+            "when started:",
+            "    write(facePin, \"strangers\")",
+            "    write(laserPin, true)",
+            "",
+            "when every(1):",
+            "    if read(scanPin):",
+            "        alarm(\"Intruder near \" + robot.name)");
+
+    /** Het droneprogramma op het plaatje "logic_drone". */
+    private static final String DRONE_CODE = String.join("\n",
+            "when started:",
+            "    up(1)",
+            "    while true:",
+            "        if drone.battery < 30:",
+            "            charge(50)",
+            "        forward(3)",
+            "        turn_right()");
+
+    /** Het programmaatje van het Training End-blok op het plaatje "training_end". */
+    private static final String END_CODE = String.join("\n",
+            "# Runs when the trainee is hit.",
+            "when trainee_hit:",
+            "    say(\"You're hit, cadet\")",
+            "    if lives == 0:",
+            "        deactivate(\"Wave 1\")",
+            "        deactivate(\"Wave 2\")",
+            "");
+
+    /**
+     * De plaatjes van de robots (hoofdstuk 63, de robots): de Robot Assembler met een gemengde robot, het robotscherm, het
+     * bordscherm met de hittebalk en met Inspect, de app Logic met een robot-, bewakers- en droneprogramma, de app Robots
+     * met de knop Program, de app Training met twee rapporten, het instelscherm van Training Start en de mini-editor van
+     * Training End. Bij de kern van de plaatjes van de beveiliging (met een serverrek: dan hebben de robots verbinding).
+     */
+    private static void robotPictures(DevScript t) {
+        t.onServer(0, player -> {
+            net.minecraft.server.level.ServerLevel level = player.serverLevel();
+            // Een robot in zijn dock (uit, halfvol, wat schade), met modules op pin 1, 3 en 6 en een verstopte brug 3-4.
+            level.setBlockAndUpdate(ROBOT_DOCK, com.senne.imttech.registry.ModBlocks.ROBOT_DOCK.get().defaultBlockState()
+                    .setValue(com.senne.imttech.robot.RobotDockBlock.FACING, net.minecraft.core.Direction.SOUTH));
+            if (DevWorld.spawnStill(level, com.senne.imttech.registry.ModEntities.GUARD_ROBOT.get(), ROBOT_DOCK, 0)
+                    instanceof com.senne.imttech.robot.GuardRobotEntity robot
+                    && level.getBlockEntity(ROBOT_DOCK) instanceof com.senne.imttech.robot.RobotDockBlockEntity dock) {
+                robot.setParts(com.senne.imttech.howto.scenes.RobotScenes.MIX);
+                robot.setPos(ROBOT_DOCK.getX() + 0.5, ROBOT_DOCK.getY() + 3.0 / 16.0, ROBOT_DOCK.getZ() + 0.5);
+                robot.setOwner(player);
+                robot.setHome(ROBOT_DOCK);
+                dock.setRobot(robot.getUUID());
+                robot.setBattery(robot.maxBattery() * 0.56);
+                robot.setHealth(robot.getMaxHealth() * 0.8f);
+                robot.setBoard(com.senne.imttech.bot.BotBoard.EMPTY.with(1, "scan").with(3, "laser").with(6, "camera")
+                        .withBridge(3));
+            }
+            com.senne.imttech.robot.GuardDroneEntity drone = VisualCheck.securityDrone(level, player, DRONE_DOCK, false);
+            level.setBlockAndUpdate(DRONE_DOCK, com.senne.imttech.registry.ModBlocks.DRONE_DOCK.get().defaultBlockState()
+                    .setValue(com.senne.imttech.arsenal.DroneDockBlock.FACING, net.minecraft.core.Direction.SOUTH));
+            drone.moveTo(DRONE_DOCK.getX() + 0.5, DRONE_DOCK.getY() + 4.0 / 16.0, DRONE_DOCK.getZ() + 0.5, 0, 0);
+            drone.setHome(DRONE_DOCK);
+            if (level.getBlockEntity(DRONE_DOCK) instanceof com.senne.imttech.arsenal.DroneDockBlockEntity dock) {
+                dock.setBot(drone.getUUID());
+            }
+            // Wat je bij je hebt om te solderen.
+            player.getInventory().add(new ItemStack(ModItems.SOLDERING_IRON.get()));
+            player.getInventory().add(new ItemStack(ModItems.robotModule(com.senne.imttech.bot.BotModule.SCAN), 2));
+            player.getInventory().add(new ItemStack(ModItems.robotModule(com.senne.imttech.bot.BotModule.GUN)));
+            player.getInventory().add(new ItemStack(ModItems.robotModule(com.senne.imttech.bot.BotModule.FACE_RECOGNITION)));
+            // De programma's op de server, de training en zijn blokken.
+            if (level.getBlockEntity(DEMO_CORE) instanceof com.senne.imttech.security.SecurityCoreBlockEntity core) {
+                core.logic().put(null, VisualCheck.robotProgram("Patrol", PATROL_CODE + "\n",
+                        com.senne.imttech.logic.program.ProgramKind.ROBOT));
+                core.logic().put(null, VisualCheck.robotProgram("Guard", GUARD_CODE + "\n",
+                        com.senne.imttech.logic.program.ProgramKind.ROBOT));
+                core.logic().put(null, VisualCheck.robotProgram("Flight 1", DRONE_CODE + "\n",
+                        com.senne.imttech.logic.program.ProgramKind.DRONE));
+                com.senne.imttech.training.Training.Mode shots = com.senne.imttech.training.Training.Mode.TRAINING_SHOTS;
+                long now = level.getGameTime();
+                String name = player.getGameProfile().getName();
+                core.addTrainingReport(new com.senne.imttech.training.TrainingReport("Bootcamp", name, shots,
+                        com.senne.imttech.training.Training.Result.OUT_OF_LIVES, 1440, 3, 0, "Guard 2 x2, Guard 1 x1", 1, now - 4000));
+                core.addTrainingReport(new com.senne.imttech.training.TrainingReport("Bootcamp", name, shots,
+                        com.senne.imttech.training.Training.Result.GOAL, 2680, 1, 2, "Guard 1 x1", 2, now - 1200));
+            }
+            level.setBlockAndUpdate(TRAINING_START, com.senne.imttech.registry.ModBlocks.TRAINING_START.get().defaultBlockState());
+            level.setBlockAndUpdate(TRAINING_END, com.senne.imttech.registry.ModBlocks.TRAINING_END.get().defaultBlockState());
+            level.setBlockAndUpdate(TRAINING_GOAL, com.senne.imttech.registry.ModBlocks.TRAINING_GOAL.get().defaultBlockState());
+            if (level.getBlockEntity(TRAINING_START) instanceof com.senne.imttech.training.TrainingStartBlockEntity be) {
+                be.setSettings(new com.senne.imttech.training.Training.Settings("Bootcamp",
+                        com.senne.imttech.training.Training.Mode.TRAINING_SHOTS, 3, 0, com.senne.imttech.training.Training.Kind.TRAINING));
+            }
+            if (level.getBlockEntity(TRAINING_END) instanceof com.senne.imttech.training.TrainingEndBlockEntity be) {
+                be.setSource(END_CODE);
+            }
+            // De Robot Assembler met dezelfde gemengde robot en een printplaat.
+            level.setBlockAndUpdate(ASSEMBLER, com.senne.imttech.registry.ModBlocks.ROBOT_ASSEMBLER.get().defaultBlockState()
+                    .setValue(com.senne.imttech.robot.RobotAssemblerBlock.FACING, net.minecraft.core.Direction.SOUTH));
+            if (level.getBlockEntity(ASSEMBLER) instanceof com.senne.imttech.robot.RobotAssemblerBlockEntity be) {
+                com.senne.imttech.robot.RobotParts mix = com.senne.imttech.howto.scenes.RobotScenes.MIX;
+                be.items().setItem(0, new ItemStack(ModItems.robotPart(com.senne.imttech.robot.RobotSlot.HEAD, mix.head())));
+                be.items().setItem(1, new ItemStack(ModItems.robotPart(com.senne.imttech.robot.RobotSlot.BODY, mix.body())));
+                be.items().setItem(2, new ItemStack(ModItems.robotPart(com.senne.imttech.robot.RobotSlot.ARMS, mix.arms())));
+                be.items().setItem(3, new ItemStack(ModItems.robotPart(com.senne.imttech.robot.RobotSlot.LEGS, mix.legs())));
+                be.items().setItem(4, new ItemStack(ModItems.ROBOT_CIRCUIT_BOARD.get()));
+            }
+        });
+        t.stand(10, DEMO_CORE.getX() + 0.5, DEMO_CORE.getY(), DEMO_CORE.getZ() + 3.5, 180, 0);
+        t.look(5, 0.0f, -90.0f);
+        // Zonder de HUD van de bril achter de schermen, en zonder meldingen rechtsboven (nieuwe recepten van de modules).
+        t.step(40, () -> {
+            Minecraft.getInstance().options.hideGui = true;
+            noToasts();
+        });
+        // De Robot Assembler.
+        t.onServer(5, player -> {
+            if (player.serverLevel().getBlockEntity(ASSEMBLER) instanceof com.senne.imttech.robot.RobotAssemblerBlockEntity be) {
+                player.openMenu(be, ASSEMBLER);
+            }
+        });
+        t.step(5, () -> mouseTo(1, 1));
+        t.step(0, HowToTour::noToasts);
+        t.step(30, () -> {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.screen != null) {
+                capture("robot_assembler", (mc.screen.width - 176) / 2, (mc.screen.height - 186) / 2, 176, 186);
+            }
+        });
+        t.close(5);
+        // Het robotscherm (sneak + rechtsklik).
+        t.onServer(5, player -> {
+            for (com.senne.imttech.robot.GuardRobotEntity robot : player.serverLevel().getEntitiesOfClass(
+                    com.senne.imttech.robot.GuardRobotEntity.class, new net.minecraft.world.phys.AABB(ROBOT_DOCK).inflate(0.5))) {
+                com.senne.imttech.robot.Robots.open(player, robot);
+            }
+        });
+        t.step(20, () -> {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.screen != null) {
+                capture("robot_screen", (mc.screen.width - 300) / 2, Math.max(6, (mc.screen.height - 176) / 2), 300, 176);
+            }
+        });
+        t.close(5);
+        // Het bordscherm: de hittebalk boven pin 2, dan Inspect met de brug tussen 3 en 4.
+        t.step(5, () -> {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.level != null) {
+                for (com.senne.imttech.robot.GuardRobotEntity robot : mc.level.getEntitiesOfClass(
+                        com.senne.imttech.robot.GuardRobotEntity.class, new net.minecraft.world.phys.AABB(ROBOT_DOCK).inflate(0.5))) {
+                    com.senne.imttech.client.robot.BoardScreen board = new com.senne.imttech.client.robot.BoardScreen(robot.getId(), null);
+                    mc.setScreen(board);
+                    board.tourHeat(com.senne.imttech.bot.BotModule.SCAN, 2,
+                            Math.round(com.senne.imttech.config.ImtConfig.Robots.SOLDER_FULL_TICKS * 0.6f));
+                }
+            }
+        });
+        t.step(15, () -> {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.screen != null) {
+                capture("robot_board", (mc.screen.width - 300) / 2, Math.max(6, (mc.screen.height - 196) / 2), 300, 196);
+            }
+        });
+        t.step(0, () -> {
+            if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.robot.BoardScreen board) {
+                board.tourHeat(com.senne.imttech.bot.BotModule.SCAN, -1, 0);
+                board.tourInspect(true);
+            }
+        });
+        t.step(10, () -> {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.screen != null) {
+                capture("robot_board_inspect", (mc.screen.width - 300) / 2, Math.max(6, (mc.screen.height - 196) / 2), 300, 196);
+            }
+        });
+        t.close(5);
+        // De desktop: Logic met de drie programma's, de app Robots (Program) en de app Training.
+        t.onServer(10, player -> com.senne.imttech.security.os.SecurityOs.open(player, DEMO_CORE));
+        t.step(5, () -> mouseTo(1, 1));
+        t.step(40, () -> os(screen -> {
+            screen.tourCloseAll();
+            screen.tourLogicOpen("Patrol");
+        }));
+        t.step(15, () -> captureScreen("logic_robot"));
+        t.step(0, () -> os(screen -> {
+            screen.tourCloseAll();
+            screen.tourLogicOpen("Guard");
+        }));
+        t.step(15, () -> captureScreen("logic_guard"));
+        t.step(0, () -> os(screen -> {
+            screen.tourCloseAll();
+            screen.tourLogicOpen("Flight 1");
+        }));
+        t.step(15, () -> captureScreen("logic_drone"));
+        t.step(0, () -> os(screen -> {
+            screen.tourCloseAll();
+            screen.tourRobotsProgram();
+        }));
+        t.step(15, () -> captureScreen("robots_program"));
+        t.step(0, () -> os(screen -> {
+            screen.tourCloseAll();
+            screen.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.TRAINING);
+        }));
+        t.step(15, () -> captureScreen("training_app"));
+        t.close(5);
+        t.close(5);
+        // Het instelscherm van Training Start en de mini-editor van Training End.
+        t.onServer(5, player -> com.senne.imttech.training.TrainingBlocks.useStart(player, TRAINING_START, true));
+        t.step(20, () -> {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.screen != null) {
+                capture("training_start", (mc.screen.width - 316) / 2, Math.max(6, (mc.screen.height - 204) / 2), 316, 204);
+            }
+        });
+        t.close(5);
+        t.onServer(5, player -> com.senne.imttech.training.TrainingBlocks.useEnd(player, TRAINING_END, true));
+        t.step(20, () -> {
+            // Het paneel van de mini-editor met zijn rand (zie TrainingEndScreen: 20 kleiner dan het venster, hooguit 420 x 240).
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.screen != null) {
+                int pw = Math.min(mc.screen.width - 20, 420);
+                int ph = Math.min(mc.screen.height - 20, 240);
+                capture("training_end", (mc.screen.width - pw) / 2 - 4, (mc.screen.height - ph) / 2 - 4, pw + 8, ph + 8);
+            }
+        });
+        t.close(5);
+        t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+        t.look(0, 0.0f, 10.0f);
+    }
+
+    /** Weg met de meldingen rechtsboven (een nieuw recept, een prestatie): die staan anders op een plaatje. */
+    private static void noToasts() {
+        Minecraft.getInstance().getToasts().clear();
     }
 
     private static final BlockPos DEMO_DOME = DEMO_CORE.offset(-4, 0, 0);

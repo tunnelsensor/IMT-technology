@@ -173,7 +173,8 @@ public class TrainingEndScreen extends Screen {
     public void render(GuiGraphics g, int mouseX, int mouseY, float a) {
         super.render(g, mouseX, mouseY, a);
         g.drawString(font, "Training End", left + MARGIN, top + 7, HudStyle.argb(255, HudStyle.RED), true);
-        String hint = "when trainee_hit: runs when the trainee is hit (trainee, lives, hits)";
+        // Kort genoeg voor het paneel (de lange versie werd vooraan afgekapt: "..n trainee_hit").
+        String hint = "Runs on every hit (trainee, lives, hits)";
         g.drawString(font, OsDraw.fitLeft(font, hint, panelW - 2 * MARGIN - font.width("Training End") - 10),
                 left + panelW - MARGIN - Math.min(font.width(hint), panelW - 2 * MARGIN - font.width("Training End") - 10), top + 7,
                 HudStyle.argb(180, 0x9FC9D6), false);

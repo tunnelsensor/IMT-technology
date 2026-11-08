@@ -296,8 +296,10 @@ public class BoardScreen extends Screen {
         } else if (iron == null) {
             g.drawString(font, "You need a Soldering Iron in your inventory.", left + MARGIN, y, HudStyle.argb(255, HudStyle.RED), false);
         } else {
-            g.drawString(font, "Soldering Iron: " + (iron.getMaxDamage() - iron.getDamageValue()) + " uses left.   Right-click a pin = desolder.",
+            // Twee regels: op één regel liep de tekst rechts buiten het scherm (gezien op een plaatje van How it works).
+            g.drawString(font, "Soldering Iron: " + (iron.getMaxDamage() - iron.getDamageValue()) + " uses left.",
                     left + MARGIN, y, HudStyle.argb(170, HudStyle.WHITE), false);
+            g.drawString(font, "Right-click a pin = desolder.", left + MARGIN, y + 10, HudStyle.argb(170, HudStyle.WHITE), false);
         }
         // Een gesleepte module volgt de muis.
         if (mouseDown && held != null && heatPin < 0) {

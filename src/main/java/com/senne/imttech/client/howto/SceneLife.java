@@ -1,5 +1,6 @@
 package com.senne.imttech.client.howto;
 
+import com.mojang.authlib.GameProfile;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.senne.imttech.ImtTech;
@@ -7,10 +8,12 @@ import com.senne.imttech.client.CableRenderer;
 import com.senne.imttech.howto.HowToCue;
 import com.senne.imttech.turret.TurretBlock;
 import com.senne.imttech.turret.TurretBlockEntity;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.RemotePlayer;
 import net.minecraft.client.renderer.LightTexture;
@@ -30,6 +33,7 @@ import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Wat er leeft en beweegt in het wereldje van een "How it works"-animatie (hoofdstuk 63, stap 7): wezens (een speler met
@@ -41,6 +45,8 @@ import net.minecraft.world.phys.Vec3;
 final class SceneLife {
     private final Map<String, Entity> actors = new HashMap<>();
     private final Map<String, Map<EquipmentSlot, ItemStack>> dressed = new HashMap<>();
+    /** Welke gegevens elk wezen nu heeft (zie HowToCue.Actor#data). */
+    private final Map<String, CompoundTag> loaded = new HashMap<>();
     private final Map<String, Integer> walkedTo = new HashMap<>();
     /** Waar de monsters nu staan (voor de torentjes, die erop mikken). */
     private final Map<String, Vec3> monsters = new HashMap<>();
@@ -86,10 +92,19 @@ final class SceneLife {
 
     private void renderActor(Minecraft mc, EntityRenderDispatcher dispatcher, PoseStack pose, MultiBufferSource buffers,
                              HowToCue.Actor actor, float time, float partialTick) {
-        Entity entity = actors.computeIfAbsent(actor.key(), key -> actor.type() == null
-                ? new RemotePlayer(mc.level, mc.player.getGameProfile()) : actor.type().create(mc.level));
+        Entity entity = actors.computeIfAbsent(actor.key(), key -> create(mc, actor));
         if (entity == null) {
             return;
+        }
+        if (actor.type() != null && !actor.data().isEmpty() && !actor.data().equals(loaded.get(actor.key()))) {
+            // Zijn gegevens (een robot met zijn onderdelen en printplaat, aan of neer), zoals het spel ze laadt. Daarna
+            // zetten we hem hieronder gewoon op zijn plek.
+            loaded.put(actor.key(), actor.data());
+            try {
+                entity.load(actor.data());
+            } catch (RuntimeException e) {
+                ImtTech.LOGGER.warn("[how it works] de gegevens van {} laden lukt niet", actor.key(), e);
+            }
         }
         float progress = Mth.clamp((time - actor.tick()) / Math.max(1, actor.move()), 0.0f, 1.0f);
         Vec3 at = ScenePlayer.along(actor.path(), progress);
@@ -105,9 +120,9 @@ final class SceneLife {
         }
         entity.setPos(at.x, at.y, at.z);
         entity.setYRot(yaw);
-        entity.yRotO = yaw;
         entity.setXRot(0.0f);
-        entity.xRotO = 0.0f;
+        // Ook de "vorige" plek: anders denkt een drone dat hij vliegt (en draaien zijn rotors terwijl hij uit staat).
+        entity.setOldPosAndRot();
         entity.tickCount = (int) time;
         if (entity instanceof LivingEntity living) {
             living.yBodyRot = yaw;
@@ -126,6 +141,23 @@ final class SceneLife {
             monsters.put(actor.key(), at.add(0, entity.getBbHeight() * 0.6, 0));
         }
         dispatcher.render(entity, at.x, at.y, at.z, yaw, partialTick, pose, buffers, LightTexture.FULL_BRIGHT);
+    }
+
+    /**
+     * Een nieuw wezen: een speler met jouw skin, een vreemde (met een gewone skin van Minecraft die bij zijn naam hoort:
+     * zijn UUID staat niet in de spelerslijst, dus het spel kiest er een van de standaardskins bij), of een wezen van
+     * {@code type}.
+     */
+    private static @Nullable Entity create(Minecraft mc, HowToCue.Actor actor) {
+        if (actor.type() != null) {
+            return actor.type().create(mc.level);
+        }
+        if (actor.data().contains("Profile")) {
+            String name = actor.data().getString("Profile");
+            UUID id = UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(StandardCharsets.UTF_8));
+            return new RemotePlayer(mc.level, new GameProfile(id, name));
+        }
+        return new RemotePlayer(mc.level, mc.player.getGameProfile());
     }
 
     /** De benen: per tick van de animatie een stapje verder zolang het wezen loopt (terugspoelen begint opnieuw). */

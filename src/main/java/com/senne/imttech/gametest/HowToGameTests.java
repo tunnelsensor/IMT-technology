@@ -2,6 +2,8 @@ package com.senne.imttech.gametest;
 
 import com.senne.imttech.ImtTech;
 import com.senne.imttech.battery.BatteryStructure;
+import com.senne.imttech.bot.BotBoard;
+import com.senne.imttech.bot.BotEntity;
 import com.senne.imttech.howto.HowToCue;
 import com.senne.imttech.howto.HowToScene;
 import com.senne.imttech.howto.HowToTopic;
@@ -9,6 +11,8 @@ import com.senne.imttech.howto.HowToTopics;
 import com.senne.imttech.howto.scenes.PowerScenes;
 import com.senne.imttech.registry.ModCreativeTabs;
 import com.senne.imttech.registry.ModItems;
+import com.senne.imttech.robot.GuardRobotEntity;
+import com.senne.imttech.robot.RobotState;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -19,6 +23,8 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.gametest.GameTestHolder;
@@ -27,7 +33,8 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 
 /**
  * Tests voor "How it works" (hoofdstuk 63): elk item heeft een onderwerp (of gaat bewust alleen in recepten), de
- * draaiboeken kloppen, en wat de animatie van de Power Battery laat bouwen is echt een batterij.
+ * draaiboeken kloppen, wat de animatie van de Power Battery laat bouwen is echt een batterij, en de robots in de
+ * animaties laden zoals echte robots.
  */
 @GameTestHolder(ImtTech.MODID)
 @PrefixGameTestTemplate(false)
@@ -130,6 +137,47 @@ public final class HowToGameTests {
             }
         }
         check(ready > 0, "Er is nog geen enkel onderwerp klaar");
+        helper.succeed();
+    }
+
+    /**
+     * De robots en drones in de animaties zijn echte robots (hoofdstuk 63, de robots): elk wezen met gegevens laadt ze zoals
+     * het spel een robot laadt, en dan klopt wat je ziet: zijn onderdelen, zijn printplaat, en of hij aan staat, uit staat
+     * of neerligt. Zo merken we het als het opslaan van een robot ooit andere namen krijgt (dan stond de robot in de
+     * animatie anders stilletjes uit, zonder modules).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20)
+    public static void robot_animations_load_like_real_robots(GameTestHelper helper) {
+        int robots = 0;
+        for (HowToTopic topic : HowToTopics.ALL) {
+            if (!topic.ready()) {
+                continue;
+            }
+            for (HowToScene scene : topic.buildScenes()) {
+                for (HowToCue cue : scene.cues()) {
+                    if (!(cue instanceof HowToCue.Actor actor) || actor.type() == null || actor.data().isEmpty()) {
+                        continue;
+                    }
+                    String name = scene.id() + "/" + actor.key();
+                    Entity entity = actor.type().create(helper.getLevel());
+                    check(entity != null, name + ": het wezen bestaat niet");
+                    entity.load(actor.data());
+                    if (entity instanceof BotEntity bot) {
+                        robots++;
+                        BotBoard board = BotBoard.CODEC.parse(NbtOps.INSTANCE, actor.data().get("Board")).result().orElse(null);
+                        check(board != null && bot.board().equals(board), name + ": de printplaat laadt niet: " + bot.board());
+                        RobotState state = actor.data().contains("DownTicks") ? RobotState.DOWN
+                                : actor.data().getBoolean("Active") ? RobotState.ACTIVE : RobotState.STANDBY;
+                        check(bot.state() == state, name + ": zou " + state + " moeten zijn, niet " + bot.state());
+                        if (bot instanceof GuardRobotEntity robot) {
+                            check(robot.parts().pack() == actor.data().getInt("Parts"), name + ": de onderdelen laden niet: " + robot.parts());
+                        }
+                    }
+                    entity.discard();
+                }
+            }
+        }
+        check(robots > 0, "Geen enkele animatie heeft een robot of drone");
         helper.succeed();
     }
 

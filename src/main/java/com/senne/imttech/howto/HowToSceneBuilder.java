@@ -310,6 +310,16 @@ public final class HowToSceneBuilder {
         return this;
     }
 
+    /**
+     * Een randje om een wezen dat op {@code feet} staat ({@code width} breed, {@code height} hoog): een flits, zoals de
+     * blauwe flits rond de trainee die geraakt wordt.
+     */
+    public HowToSceneBuilder flash(int duration, Vec3 feet, double width, double height, int rgb) {
+        AABB box = new AABB(feet.x - width / 2, feet.y, feet.z - width / 2, feet.x + width / 2, feet.y + height, feet.z + width / 2);
+        cues.add(new HowToCue.Outline(t, duration, box, rgb));
+        return this;
+    }
+
     /** Een getekende kabel langs {@code points} (rechte stukken), die in {@code grow} ticks verschijnt. */
     public HowToSceneBuilder cable(CableKind kind, int grow, Vec3... points) {
         cues.add(new HowToCue.Cable(t, grow, kind, List.of(points)));
@@ -324,17 +334,48 @@ public final class HowToSceneBuilder {
      * {@code move} ticks langs {@code path} loopt. Dezelfde {@code key} = hetzelfde wezen.
      */
     public HowToSceneBuilder actor(String key, EntityType<?> type, int duration, int move, float yaw, Vec3... path) {
-        cues.add(new HowToCue.Actor(t, duration, key, type, List.of(path), move, yaw, Map.of()));
+        return actor(key, type, duration, move, yaw, new CompoundTag(), path);
+    }
+
+    /**
+     * Hetzelfde, met gegevens zoals het spel ze bewaart ({@code data}): een guard robot met zijn onderdelen en printplaat,
+     * aan of uit, of neergeschoten (zie RobotScenes). Een nieuwe cue met andere gegevens verandert hetzelfde wezen.
+     */
+    public HowToSceneBuilder actor(String key, EntityType<?> type, int duration, int move, float yaw, CompoundTag data,
+                                   Vec3... path) {
+        cues.add(new HowToCue.Actor(t, duration, key, type, List.of(path), move, yaw, Map.of(), data.copy()));
         return this;
     }
 
     /** Een speler met jouw skin, met {@code gear} aan (of in zijn hand), die in {@code move} ticks langs {@code path} loopt. */
     public HowToSceneBuilder player(String key, int duration, int move, float yaw, Map<EquipmentSlot, ItemStack> gear,
                                     Vec3... path) {
+        return person(key, new CompoundTag(), duration, move, yaw, gear, path);
+    }
+
+    /**
+     * Een andere speler dan jij (een vreemde in je basis), met een gewone skin van Minecraft die bij {@code name} hoort.
+     * Verder net als {@link #player}.
+     */
+    public HowToSceneBuilder stranger(String key, String name, int duration, int move, float yaw,
+                                      Map<EquipmentSlot, ItemStack> gear, Vec3... path) {
+        CompoundTag data = new CompoundTag();
+        data.putString("Profile", name);
+        return person(key, data, duration, move, yaw, gear, path);
+    }
+
+    private HowToSceneBuilder person(String key, CompoundTag data, int duration, int move, float yaw,
+                                     Map<EquipmentSlot, ItemStack> gear, Vec3... path) {
         Map<EquipmentSlot, ItemStack> copy = new EnumMap<>(EquipmentSlot.class);
         gear.forEach((slot, stack) -> copy.put(slot, stack.copy()));
-        cues.add(new HowToCue.Actor(t, duration, key, null, List.of(path), move, yaw, Collections.unmodifiableMap(copy)));
+        cues.add(new HowToCue.Actor(t, duration, key, null, List.of(path), move, yaw, Collections.unmodifiableMap(copy), data));
         return this;
+    }
+
+    /** Een getal uit de config voor een tekst: 30.0 wordt "30", 2.5 blijft "2.5". */
+    public static String number(double value) {
+        double rounded = Math.round(value * 10) / 10.0;
+        return rounded == Math.rint(rounded) ? String.valueOf((long) rounded) : String.valueOf(rounded);
     }
 
     /** Een schot van {@code from} naar {@code to}, {@code duration} ticks lang. */
@@ -414,7 +455,7 @@ public final class HowToSceneBuilder {
         for (int i = 0; i < sorted.size(); i++) {
             if (sorted.get(i) instanceof HowToCue.Actor a && a.duration() < 0) {
                 sorted.set(i, new HowToCue.Actor(a.tick(), end + 20 - a.tick(), a.key(), a.type(), a.path(), a.move(), a.yaw(),
-                        a.gear()));
+                        a.gear(), a.data()));
             }
         }
         List<HowToScene.Chapter> list = new ArrayList<>(chapters);

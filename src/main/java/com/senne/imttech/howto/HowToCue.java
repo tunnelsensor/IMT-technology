@@ -77,9 +77,13 @@ public sealed interface HowToCue {
      * is stilstaan), met zijn gezicht naar {@code yaw} (0 = zuid, 90 = west), of in de looprichting zolang het loopt.
      * {@code gear} is wat het draagt of vasthoudt. Cues met dezelfde {@code key} zijn hetzelfde wezen (dan lopen zijn
      * benen gewoon door).
+     *
+     * {@code data} zijn gegevens zoals het spel ze bewaart (leeg = niets): een robot met zijn onderdelen, printplaat en of
+     * hij aan staat of neerligt (hoofdstuk 63, de robots). Bij een speler zegt {@code "Profile"} dat het iemand anders is
+     * (een vreemde, met een gewone skin) in plaats van jij.
      */
     record Actor(int tick, int duration, String key, @Nullable EntityType<?> type, List<Vec3> path, int move, float yaw,
-                 Map<EquipmentSlot, ItemStack> gear) implements HowToCue {}
+                 Map<EquipmentSlot, ItemStack> gear, CompoundTag data) implements HowToCue {}
 
     /** Een schot: een felle straal van {@code from} naar {@code to} (een laser van een torentje). */
     record Beam(int tick, int duration, Vec3 from, Vec3 to, int color) implements HowToCue {}

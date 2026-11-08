@@ -1443,6 +1443,18 @@ final class LogicApp {
         }
     }
 
+    /** Alleen voor de screenshot-rondleiding: open het bewaarde programma met deze naam (in de code, zonder Help). */
+    void tourOpen(String name) {
+        Entry entry = find(name);
+        if (entry != null) {
+            if (mode == Mode.BLOCKS) {
+                switchMode();
+            }
+            helpOpen = false;
+            openEntry(entry, false);
+        }
+    }
+
     /** Een nieuw diagram met deze code en naam, en meteen Check. */
     void tourCode(String name, String code, boolean help) {
         current = null;

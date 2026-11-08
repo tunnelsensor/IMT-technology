@@ -208,9 +208,7 @@ public final class DatacenterScenes {
         return List.of(s.build());
     }
 
-    /** 30.0 wordt "30", 2.5 blijft "2.5". */
     private static String number(double value) {
-        double rounded = Math.round(value * 10) / 10.0;
-        return rounded == Math.rint(rounded) ? String.valueOf((long) rounded) : String.valueOf(rounded);
+        return HowToSceneBuilder.number(value);
     }
 }

@@ -4039,7 +4039,7 @@ public final class VisualCheck {
      * Een security drone (hoofdstuk 25) van deze speler: op het Drone Dock op {@code pos} (zijn thuis, uit), of hangend
      * in dat blok.
      */
-    private static com.senne.imttech.robot.GuardDroneEntity securityDrone(ServerLevel level, net.minecraft.server.level.ServerPlayer player,
+    static com.senne.imttech.robot.GuardDroneEntity securityDrone(ServerLevel level, net.minecraft.server.level.ServerPlayer player,
                                                                          BlockPos pos, boolean onDock) {
         com.senne.imttech.robot.GuardDroneEntity drone = com.senne.imttech.registry.ModEntities.GUARD_DRONE.get().create(level);
         double y = onDock ? pos.getY() + 4.0 / 16.0 : pos.getY() + com.senne.imttech.robot.GuardDroneEntity.HOVER;
@@ -4061,7 +4061,7 @@ public final class VisualCheck {
     }
 
     /** Een programma van deze soort (een robot- of droneprogramma) uit deze code. */
-    private static com.senne.imttech.logic.program.LogicProgram robotProgram(String name, String code,
+    static com.senne.imttech.logic.program.LogicProgram robotProgram(String name, String code,
                                                                                 com.senne.imttech.logic.program.ProgramKind kind) {
         return new com.senne.imttech.logic.program.LogicProgram(name, true,
                 com.senne.imttech.logic.program.GraphConverter.toGraph(com.senne.imttech.logic.program.ScriptParser.parse(code, kind), null),

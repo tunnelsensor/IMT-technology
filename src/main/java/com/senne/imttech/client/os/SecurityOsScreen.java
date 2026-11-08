@@ -376,6 +376,12 @@ public class SecurityOsScreen extends Screen {
         logic.tourCode(name, code, help);
     }
 
+    /** Alleen voor de screenshot-rondleiding: de app Logic met het bewaarde programma met deze naam open (hoofdstuk 63). */
+    public void tourLogicOpen(String name) {
+        openApp(App.LOGIC);
+        logic.tourOpen(name);
+    }
+
     /** Alleen voor de screenshot-rondleiding: de app Logic in de blokjes, met eventueel een blokje gekozen. */
     public void tourLogicBlocks(@Nullable com.senne.imttech.logic.program.Op select) {
         logic.tourBlocks(select);
