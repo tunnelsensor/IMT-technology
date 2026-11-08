@@ -1229,9 +1229,22 @@ public final class VisualCheck {
             });
             t.view(0, 112.5, -60, 62.2, 180, 12);
             t.shot(20, "hg07_guard_takedown");
-            t.onServer(0, VisualCheck::takeDownNearestGuard);
-            t.shot(20, "hg08_guard_taken_down");
+            // De worsteling in slow motion (zes seconden in plaats van twee), zodat de shots op vaste momenten vallen: eerst
+            // zoals jij het ziet, dan van voren (de camera van F5, twee keer) om zijn armen, het zakken en het vallen te zien.
             t.onServer(0, player -> {
+                GUARD_TAKEDOWN_BEFORE = com.senne.imttech.config.ImtConfig.Guards.TAKEDOWN_SECONDS;
+                com.senne.imttech.config.ImtConfig.Guards.TAKEDOWN_SECONDS = 6.0f;
+                takeDownNearestGuard(player);
+            });
+            t.shot(25, "hg08_takedown_struggle");
+            t.step(0, () -> Minecraft.getInstance().options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_FRONT));
+            t.shot(12, "hg09_takedown_struggle_front");
+            t.shot(42, "hg10_takedown_limp_front");
+            t.shot(24, "hg11_takedown_falling_front");
+            t.shot(35, "hg12_guard_taken_down");
+            t.step(0, () -> Minecraft.getInstance().options.setCameraType(net.minecraft.client.CameraType.FIRST_PERSON));
+            t.onServer(0, player -> {
+                com.senne.imttech.config.ImtConfig.Guards.TAKEDOWN_SECONDS = GUARD_TAKEDOWN_BEFORE;
                 player.getAbilities().invulnerable = false;
                 player.setGameMode(GUARD_MODE_BEFORE);
                 player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, GUARD_HEAD_BEFORE);
@@ -5566,8 +5579,10 @@ public final class VisualCheck {
     /** Wat je op je hoofd en in je hand had voor het stuk "guards" (daar ben je zonder bril, en met een zwaard). */
     private static ItemStack GUARD_HEAD_BEFORE = ItemStack.EMPTY;
     private static ItemStack GUARD_HAND_BEFORE = ItemStack.EMPTY;
+    /** Hoe lang een sluipaanval duurde voor de rondleiding hem vertraagde (zie het stuk "guards"). */
+    private static float GUARD_TAKEDOWN_BEFORE = 2.0f;
 
-    /** 8 november: de dichtstbijzijnde bewaker krijgt je zwaard in zijn rug (een gewone klik, langs achter: Takedown). */
+    /** 8 november: je grijpt de dichtstbijzijnde bewaker van achteren met je zwaard (een gewone klik: Takedown). */
     static void takeDownNearestGuard(ServerPlayer player) {
         com.senne.imttech.raven.RavenSoldierEntity nearest = null;
         for (com.senne.imttech.raven.RavenSoldierEntity soldier : player.serverLevel().getEntitiesOfClass(

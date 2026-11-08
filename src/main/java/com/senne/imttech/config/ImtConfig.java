@@ -1927,6 +1927,9 @@ public final class ImtConfig {
         /** Hoe breed de zone achter een bewaker is van waaruit je hem met een zwaard in één keer neersteekt. */
         @Tunable(value = "How wide the zone behind a guard's back is from which a sword takedown kills him at once (degrees, 0 = no takedowns)", max = 360)
         public static float TAKEDOWN_ANGLE = 180.0f;
+        /** Hoe lang een sluipaanval duurt: je houdt hem vast, hij worstelt, wordt slap en valt (de animatie). */
+        @Tunable(value = "How long a sword takedown takes (seconds): you hold him while he struggles, goes limp and falls; 0 = at once", max = 10)
+        public static float TAKEDOWN_SECONDS = 2.0f;
     }
 
     // =============================================================================================== Raids

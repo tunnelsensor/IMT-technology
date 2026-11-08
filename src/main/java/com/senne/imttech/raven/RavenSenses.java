@@ -274,6 +274,19 @@ public final class RavenSenses {
         }
     }
 
+    /**
+     * Hij had iemand op zijn rug voor een sluipaanval, maar kwam los (8 november, Takedown): hij draait zich om naar die
+     * speler en heeft hem meteen; is er nog geen alarm, dan roept hij dus via de radio.
+     */
+    public void escaped(ServerLevel level, Player player) {
+        float yaw = (float) (Mth.atan2(player.getZ() - soldier.getZ(), player.getX() - soldier.getX()) * Mth.RAD_TO_DEG) - 90.0f;
+        soldier.setYRot(yaw);
+        soldier.setYBodyRot(yaw);
+        soldier.setYHeadRot(yaw);
+        spotted(level, player);
+        sync();
+    }
+
     /** Hij begint te roepen: over jou, of over een lichaam (stap 5). */
     private void startCall(boolean body) {
         state = RavenAlert.CALLING;

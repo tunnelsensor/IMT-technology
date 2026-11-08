@@ -291,6 +291,8 @@ public class ImtTech {
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.raven.Bodies::onServerStopped);
         // 8 november: met een zwaard langs achter een bewaker neersteken (stil, in één keer).
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.raven.Takedown::onAttack);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.raven.Takedown::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.raven.Takedown::onServerStopped);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.Zones::onPiston);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.Zones::onMobGriefing);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.Zones::onFluidPlace);

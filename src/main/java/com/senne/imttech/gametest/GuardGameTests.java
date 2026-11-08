@@ -27,6 +27,7 @@ import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.InteractionHand;
@@ -412,28 +413,67 @@ public final class GuardGameTests {
 
     /**
      * Met een zwaard langs achter (jouw wens: "met een zwaard een guard kunt neersteken langs achter zodat je die stealth
-     * kunt killen"): hij is in één keer neer, er ligt een lichaam, het zwaard sleet, en zijn maat merkte niets.
+     * kunt killen"). Sinds je tweede opmerking geen instakill maar een worsteling: je trekt hem naar je toe en staat
+     * stil, hij worstelt {@code takedownSeconds} lang, en dan pas is hij neer. Er ligt een lichaam, het zwaard sleet, je
+     * kunt weer lopen, en zijn maat merkte niets.
      */
-    @GameTest(template = ARENA, timeoutTicks = 100, batch = "guards_takedown")
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "guards_takedown")
     public static void sword_takedown_from_behind_is_silent(GameTestHelper helper) {
         RavenSoldierEntity guard = soldier(helper, new BlockPos(5, 2, 8), 0, false); // kijkt naar +z
         RavenSoldierEntity mate = soldier(helper, new BlockPos(16, 2, 8), -90, false); // kijkt naar +x, van alles weg
         ServerPlayer player = player(helper, new BlockPos(5, 2, 6), "takedown");
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.IRON_SWORD));
         AABB arena = new AABB(helper.absoluteVec(Vec3.ZERO), helper.absoluteVec(new Vec3(20, 8, 20)));
+        long[] grabbedAt = {0};
         helper.startSequence()
                 .thenExecuteAfter(5, () -> {
                     check(guard.senses().suspicion() == 0, "De bewaker ziet de speler achter zijn rug");
                     check(Takedown.possible(player, guard, guard.senses().state()), "De sluipaanval kan niet met een zwaard achter de bewaker");
+                    grabbedAt[0] = helper.getLevel().getGameTime();
                     player.attack(guard);
                 })
-                .thenExecuteAfter(2, () -> {
-                    check(!guard.isAlive(), "De bewaker leeft nog na de sluipaanval (" + guard.getHealth() + ")");
+                .thenExecuteAfter(5, () -> {
+                    check(guard.isAlive() && guard.isBeingTakenDown(), "De bewaker worstelt niet (hij hoort nog vast te zitten, niet meteen neer)");
+                    check(guard.takedownBy() == player.getId() && Takedown.busy(player), "De bewaker en de speler weten niet van elkaar wie wie vastheeft");
+                    check(guard.distanceTo(player) < 1.2, "De bewaker werd niet naar de speler toe getrokken (" + guard.distanceTo(player) + ")");
+                    check(player.getAttributeValue(Attributes.MOVEMENT_SPEED) == 0, "De speler kan nog lopen terwijl hij de bewaker vasthoudt");
+                    check(!Takedown.possible(player, guard, guard.senses().state()), "Een tweede sluipaanval op dezelfde bewaker zou niet mogen");
+                })
+                .thenWaitUntil(() -> check(!guard.isAlive(), "De bewaker leeft nog na de sluipaanval"))
+                .thenExecute(() -> {
+                    long took = helper.getLevel().getGameTime() - grabbedAt[0];
+                    check(took >= Math.round(ImtConfig.Guards.TAKEDOWN_SECONDS * 20) - 1, "De sluipaanval was te snel: " + took + " ticks");
                     check(helper.getLevel().getEntitiesOfClass(RavenBodyEntity.class, arena).size() == 1, "Er ligt geen lichaam");
                     check(player.getMainHandItem().getDamageValue() == 1, "Het zwaard sleet niet (" + player.getMainHandItem().getDamageValue() + ")");
+                    check(player.getAttributeValue(Attributes.MOVEMENT_SPEED) > 0 && !Takedown.busy(player), "De speler staat na de sluipaanval nog vast");
                 })
                 .thenExecuteAfter(40, () -> check(mate.senses().state() == RavenAlert.CALM && mate.getTarget() == null
                         && mate.senses().suspicion() == 0, "De maat merkte de sluipaanval (" + mate.senses().state() + ")"))
+                .thenSucceed();
+    }
+
+    /**
+     * Laat je hem los voor het af is (hier: je staat ineens vijf blokken verder), dan komt hij los: hij leeft nog, draait
+     * zich om, heeft je, en roept versterking. Je kunt weer lopen.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "guards_takedown_abort")
+    public static void takedown_breaks_off_when_you_let_go(GameTestHelper helper) {
+        RavenSoldierEntity guard = soldier(helper, new BlockPos(5, 2, 8), 0, false);
+        ServerPlayer player = player(helper, new BlockPos(5, 2, 6), "takedown-abort");
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.IRON_SWORD));
+        helper.startSequence()
+                .thenExecuteAfter(3, () -> player.attack(guard))
+                .thenExecuteAfter(5, () -> {
+                    check(guard.isBeingTakenDown(), "De sluipaanval begon niet");
+                    Vec3 away = helper.absoluteVec(new Vec3(5.5, 2, 1.5));
+                    player.setPos(away.x, away.y, away.z);
+                })
+                .thenExecuteAfter(2, () -> {
+                    check(guard.isAlive() && !guard.isBeingTakenDown(), "De bewaker kwam niet los toen de speler hem losliet");
+                    check(guard.senses().state() == RavenAlert.CALLING || guard.getTarget() == player,
+                            "De losgekomen bewaker heeft de speler niet (" + guard.senses().state() + ")");
+                    check(player.getAttributeValue(Attributes.MOVEMENT_SPEED) > 0 && !Takedown.busy(player), "De speler staat nog vast na het loslaten");
+                })
                 .thenSucceed();
     }
 

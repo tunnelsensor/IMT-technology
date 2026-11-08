@@ -24,7 +24,8 @@ import org.jetbrains.annotations.Nullable;
  *   <li>het lichaam van een gevallen soldaat ({@link RavenBodyEntity}; een dode soldaat laat er een achter, zie
  *       {@link #onLivingDrops});</li>
  *   <li>een geboeide soldaat (hoofdstuk 48; jouw antwoord 5: "een geboeide soldaat telt ook");</li>
- *   <li>een gevloerde robot of drone (de Ion Blaster, hoofdstuk 24; "een neergelegde robot telt ook").</li>
+ *   <li>een gevloerde robot of drone (de Ion Blaster, hoofdstuk 24; "een neergelegde robot telt ook");</li>
+ *   <li>een soldaat die iemand vastheeft voor een sluipaanval (8 november, Takedown).</li>
  * </ul>
  * Een bewaker die er een ziet (RavenSenses.lookForBodies), loopt erheen en roept via de radio ("Man down!"): hetzelfde
  * alarm als bij een indringer, per lichaam één keer. Verstop je het lichaam (sleep het weg, sneak + rechtsklik), dan
@@ -45,7 +46,8 @@ public final class Bodies {
             return true;
         }
         if (entity instanceof RavenSoldierEntity soldier) {
-            return Handcuffs.isCuffed(soldier);
+            // Geboeid, of iemand heeft hem vast voor een sluipaanval (8 november: wie dat ziet, komt kijken).
+            return Handcuffs.isCuffed(soldier) || soldier.isBeingTakenDown();
         }
         return entity instanceof BotEntity bot && bot.isDown();
     }

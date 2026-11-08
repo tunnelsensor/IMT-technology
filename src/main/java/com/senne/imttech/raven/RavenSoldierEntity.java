@@ -58,6 +58,13 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
     private static final EntityDataAccessor<Byte> ALERT = SynchedEntityData.defineId(RavenSoldierEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Byte> SUSPICION = SynchedEntityData.defineId(RavenSoldierEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Integer> SUSPECT = SynchedEntityData.defineId(RavenSoldierEntity.class, EntityDataSerializers.INT);
+    /**
+     * 8 november: een sluipaanval (Takedown) is een korte worsteling. Wie hem vastheeft (het nummer van de speler, -1 =
+     * niemand) en hoe lang het duurt (ticks, 0 = niemand heeft hem vast); je spel tekent er de animatie mee
+     * (RavenSoldierRenderer en TakedownPose).
+     */
+    private static final EntityDataAccessor<Integer> TAKEDOWN_BY = SynchedEntityData.defineId(RavenSoldierEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> TAKEDOWN_LENGTH = SynchedEntityData.defineId(RavenSoldierEntity.class, EntityDataSerializers.INT);
 
     /** Zijn zintuigen (hoofdstuk 60). */
     private final RavenSenses senses = new RavenSenses(this);
@@ -80,6 +87,13 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
     private boolean leaving;
     /** Neergestoken met een sluipaanval (Takedown): hij sterft zonder geluid. */
     private boolean silentDeath;
+    /**
+     * De sluipaanval: bij welke tick van dit wezen hij begon (aan beide kanten: in je spel loopt de animatie daarvandaan),
+     * en op de server wie hem vastheeft en hoeveel ticks al. Niet opgeslagen: na opnieuw laden is hij gewoon weer vrij.
+     */
+    private int takedownStart;
+    private @Nullable java.util.UUID takedownHolder;
+    private int takedownTicks;
 
     public RavenSoldierEntity(EntityType<? extends Monster> type, Level level) {
         super(type, level);
@@ -100,10 +114,13 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
                 .add(Attributes.ATTACK_DAMAGE, ImtConfig.Raven.LASER_DAMAGE);
     }
 
-    /** Geboeid met handboeien (hoofdstuk 48): hij staat stil en doet niets, tot hij los is (of zich loswurmt). */
+    /**
+     * Geboeid met handboeien (hoofdstuk 48): hij staat stil en doet niets, tot hij los is (of zich loswurmt). En sinds
+     * 8 november ook als iemand hem vastheeft voor een sluipaanval.
+     */
     @Override
     protected boolean isImmobile() {
-        return super.isImmobile() || com.senne.imttech.cuffs.Handcuffs.isCuffed(this);
+        return super.isImmobile() || com.senne.imttech.cuffs.Handcuffs.isCuffed(this) || isBeingTakenDown();
     }
 
     @Override
@@ -130,6 +147,8 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
         builder.define(ALERT, (byte) 0);
         builder.define(SUSPICION, (byte) 0);
         builder.define(SUSPECT, -1);
+        builder.define(TAKEDOWN_BY, -1);
+        builder.define(TAKEDOWN_LENGTH, 0);
     }
 
     // ================================================================ Zijn zintuigen (hoofdstuk 60)
@@ -189,6 +208,73 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
     /** Een sluipaanval (Takedown): zijn dood maakt geen geluid. */
     public void silenceDeath() {
         silentDeath = true;
+    }
+
+    // ================================================================ De sluipaanval (8 november)
+
+    /** Heeft iemand hem nu vast voor een sluipaanval? (aan beide kanten) */
+    public boolean isBeingTakenDown() {
+        return entityData.get(TAKEDOWN_LENGTH) > 0;
+    }
+
+    /** Het nummer (entity id) van de speler die hem vastheeft, of -1. */
+    public int takedownBy() {
+        return entityData.get(TAKEDOWN_BY);
+    }
+
+    /** Hoe lang de sluipaanval duurt (ticks), of 0. */
+    public int takedownLength() {
+        return entityData.get(TAKEDOWN_LENGTH);
+    }
+
+    /** Hoe ver de sluipaanval is, van 0 tot 1; {@code age} is zijn tickCount plus de partial tick (voor een vloeiende animatie). */
+    public float takedownProgress(float age) {
+        int length = takedownLength();
+        return length <= 0 ? 0.0f : Mth.clamp((age - takedownStart) / length, 0.0f, 1.0f);
+    }
+
+    /** Op de server: wie hem vastheeft (null = niemand). */
+    public @Nullable java.util.UUID takedownHolder() {
+        return takedownHolder;
+    }
+
+    /** Op de server: weer een tick verder met worstelen; geeft hoeveel ticks het nu al duurt. */
+    int nextTakedownTick() {
+        return ++takedownTicks;
+    }
+
+    /** Een speler grijpt hem van achteren (Takedown): hij staat stil en worstelt {@code length} ticks. */
+    void grab(Player player, int length) {
+        takedownHolder = player.getUUID();
+        takedownTicks = 0;
+        getNavigation().stop();
+        entityData.set(TAKEDOWN_BY, player.getId());
+        entityData.set(TAKEDOWN_LENGTH, length);
+    }
+
+    /** De sluipaanval is voorbij: af, of hij is losgekomen. */
+    void releaseTakedown() {
+        takedownHolder = null;
+        takedownTicks = 0;
+        entityData.set(TAKEDOWN_LENGTH, 0);
+        entityData.set(TAKEDOWN_BY, -1);
+    }
+
+    @Override
+    public void onSyncedDataUpdated(EntityDataAccessor<?> key) {
+        super.onSyncedDataUpdated(key);
+        if (TAKEDOWN_LENGTH.equals(key)) {
+            takedownStart = tickCount; // ook in je spel: daar begint de animatie nu
+        }
+    }
+
+    /** Verdwijnt hij terwijl iemand hem vastheeft (gedood door iets anders, weggehaald), dan is die speler weer vrij. */
+    @Override
+    public void remove(RemovalReason reason) {
+        if (takedownHolder != null && level() instanceof ServerLevel level) {
+            Takedown.released(level, this);
+        }
+        super.remove(reason);
     }
 
     /** Zijn route (de plekken uit zijn markering, zie RavenRoutes), leeg als hij op zijn post staat. */
@@ -305,6 +391,12 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
             grenadeCooldown--;
         }
         if (level() instanceof ServerLevel level) {
+            if (isBeingTakenDown()) {
+                // 8 november: iemand heeft hem vast voor een sluipaanval. Hij ziet en hoort niets meer, en roept niet: hij worstelt.
+                setAggressive(false);
+                Takedown.tick(level, this);
+                return;
+            }
             // Hoofdstuk 60: kijken (en sinds stap 3 luisteren), en zijn houding: het geweer aangelegd zodra hij een doelwit heeft.
             senses.tick(level);
             setAggressive(getTarget() != null);

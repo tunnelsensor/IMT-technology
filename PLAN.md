@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 444 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 445 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -5253,16 +5253,33 @@ met een staff-keycard in de toren blijven op hun post (je vraag ging over de bun
 - [x] **5. Rondleiding** — `gradlew runVisualCheck -Ponly=guards` draait nu zonder bril (hg01 tot hg06) en heeft twee
       nieuwe shots: `hg07_guard_takedown` (achter een bewaker met een zwaard, "Takedown" onder je vizier) en
       `hg08_guard_taken_down` (hij ligt er). 444 tests, allemaal groen.
+- [x] **6. De sluipaanval als animatie** — jouw tweede opmerking: "Kun je bij de kill langs achter een leuke animatie
+      doen zodat het geen instakill is maar een beetje tijd kost met die te killen." Een klik grijpt hem nu: hij wordt
+      naar je toe getrokken (vlak voor je, met zijn rug naar je toe), je benen gaan op slot (niet lopen en niet
+      springen), en hij worstelt `[guards] takedownSeconds` lang (2 seconden; 0 = meteen, zoals eerst). De animatie
+      (`client/raven/TakedownPose`, en het kantelen in `RavenSoldierRenderer`): zijn handen naar je arm om zijn nek en
+      wild heen en weer, zijn hoofd achterover en schuddend, trappende benen en een trillend lijf; dan slap (armen
+      omlaag, hoofd voorover), door zijn knieën tot hij zit, en achterover tegen je aan, zodat het aansluit op zijn
+      lichaam dat op zijn rug ligt. Daarbij geritsel en gesmoorde kreten, je beeld schudt een beetje mee, en onder je
+      vizier loopt een balkje vol. Pas aan het eind de steek: dan is hij neer, stil zoals eerst. Laat je hem los
+      (weggeduwd, een teleport, uitgelogd), dan komt hij los, draait zich om en heeft je, en roept dus versterking.
+      Wie de worsteling ziet, ziet een "lichaam" en komt kijken. Tijdens de worsteling sla je niet. De rondleiding
+      fotografeert het in slow motion: `hg08_takedown_struggle` zoals jij het ziet, `hg09` tot `hg11` van voren (de
+      camera van F5), `hg12_guard_taken_down` het lichaam. Een nieuwe test (loslaten); de test van de sluipaanval
+      controleert nu ook de tijd, het slot op je benen en dat hij naar je toe getrokken wordt.
+- [x] **7. Het "?" en "!" nog kleiner** — jouw tweede opmerking: "ik wil dat de ? en ! kleiner zijn boven een guard".
+      Ze zijn nu zo groot als gewone tekst (was anderhalf keer), met een kleinere pulse. 445 tests, allemaal groen.
 
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
-- [ ] **De sluipaanval en het oog zonder bril (hoofdstuk 61)**: gezien op screenshots (`-Ponly=guards`, hg03, hg07,
-      hg08), niet gespeeld. Probeer: sluip achter een bewaker met een zwaard (staat "Takedown" onder je vizier, ook net
-      naast zijn rug?), klik (ligt hij er meteen, en blijft zijn maat rustig?), en kijk of het kleinere oog en het "?"/"!"
-      op jouw GUI-schaal nog goed te zien zijn.
+- [ ] **De sluipaanval en het oog zonder bril (hoofdstuk 61)**: gezien op screenshots (`-Ponly=guards`, hg02, hg03,
+      hg07 tot hg12), niet gespeeld. Probeer: sluip achter een bewaker met een zwaard (staat "Takedown" onder je vizier,
+      ook net naast zijn rug?), klik (grijp je hem, worstelt hij twee seconden en sta je zolang stil? schudt je beeld niet
+      te hard?), laat eens los door weg te vliegen of te teleporteren (draait hij zich om?), en kijk of het kleinere oog
+      en het "?"/"!" op jouw GUI-schaal nog goed te zien zijn.
 
 - [ ] **De onderdelen in je inventaris (hoofdstuk 59)**: gezien op screenshots (`-Ponly=creative`: `ct03_weapons`,
       `ct03_weapons_b_glock_parts`, `ct03_weapons_c_laser_parts`; en `lp10`), niet gespeeld. Kijk of je op jouw

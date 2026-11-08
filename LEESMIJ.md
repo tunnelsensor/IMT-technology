@@ -21,7 +21,7 @@ Spotify-koppeling, spraakcommando's en instellingen verhuizen bij de eerste star
 (de map `starktech` wordt `imttech`). Oude werelden niet: blokken en items van de mod verdwijnen
 daaruit, want ze heetten nog `starktech:...`.
 
-Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (444 automatische tests).
+Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (445 automatische tests).
 
 ---
 
@@ -521,8 +521,9 @@ dan weet de hele bunker het, komt na tien seconden een **team van vier** door de
 alarm) en zijn ze vijf minuten extra scherp. Raakt hij je kwijt, dan zoekt hij twee minuten rond je laatste plek
 en gaat hij terug naar zijn route. Is het alarm voorbij ("stand down"), dan loopt het team weer naar buiten.
 **Sluipaanval**: sta je met een **zwaard** achter een bewaker die je niet ziet, dan staat er "Takedown" onder je
-vizier; een klik en hij ligt er in één keer, zonder dat de anderen iets horen. Kijkt hij naar je, of vecht hij al,
-dan is het een gewone slag. Alle getallen staan in `config/imttech.toml` onder `[guards]`.
+vizier. Een klik en je grijpt hem: twee seconden worstelt hij (je staat zolang stil en een balkje loopt vol), dan
+wordt hij slap, zakt door zijn knieën en valt achterover, zonder dat de anderen iets horen. Laat je hem los, dan
+komt hij los en heeft hij je. Kijkt hij naar je, of vecht hij al, dan is het een gewone slag. Alle getallen staan in `config/imttech.toml` onder `[guards]`.
 
 - Versla je er een, dan blijft zijn **lichaam** liggen (vijf minuten), met zijn buit erin: soms een
   **Raven-onderdeel**, soms zijn wapen, bij een bewaker zijn keycard. Rechtsklik: doorzoeken; sneak + rechtsklik:
@@ -2298,7 +2299,7 @@ showcase en staat hij bij NIEUW.
   hoeveel soldaten en torentjes er in de bunker staan en hoe je er met `/tp` komt. Daarna stopt
   hij vanzelf. Wil je een andere wereld, gooi dan `run-structures/world` weg.
 - **De bunker verbouwen**: `python tools/generate_bunker.py`.
-- **Tests**: `gradlew runGameTestServer` — 444 tests over de toren en zijn kluis, het
+- **Tests**: `gradlew runGameTestServer` — 445 tests over de toren en zijn kluis, het
   satellietwrak, de Biebia's Industries-bunker, de drones en het arsenaal, zelf vliegen en landen, de satelliet, navigatie,
   spion, de bril, het laadstation, de rayshields, de relais, de holotafel, het harnas en de
   mini-raketten, de Raven-soldaten, de torentjes, de spraakcommando's, en alles wat erna kwam

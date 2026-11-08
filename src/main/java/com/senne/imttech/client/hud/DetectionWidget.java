@@ -19,8 +19,9 @@ import net.minecraft.world.phys.Vec3;
  * Het oogje (hoofdstuk 60, jouw antwoord 2: "een oogje met een pijl naar de bewaker dat volloopt, en boven
  * zijn hoofd een ? en dan een !", zoals de witte pijl in Hitman). Sinds 8 november zie je het ook <b>zonder bril</b>
  * (jouw opmerking: "je ziet dit enkel met je bril"): het tekent in een eigen laag, GuardLayer, en niet meer op de HUD
- * van de bril; en het is kleiner ("de iconen iets kleiner": het oog 11 bij 5 in plaats van 17 bij 7, het teken anderhalf
- * keer zo groot als gewone tekst in plaats van twee keer). Voor elke bewaker (een Raven-soldaat, en sinds stap 6
+ * van de bril; en het is kleiner ("de iconen iets kleiner": het oog 11 bij 5 in plaats van 17 bij 7; het teken eerst anderhalf
+ * keer zo groot als gewone tekst in plaats van twee keer, en na je tweede opmerking "de ? en ! kleiner" zo groot als
+ * gewone tekst). Voor elke bewaker (een Raven-soldaat, en sinds stap 6
  * een robot of drone) die JOU in de gaten begint te krijgen, tekenen we een oog dat van links naar rechts volloopt met
  * zijn meter: wit zolang hij alleen maar kijkt, oranje als hij achterdochtig is, rood als hij je heeft. Staat hij op je
  * scherm, dan zweeft het oog boven zijn hoofd; staat hij erbuiten (achter je), dan staat het op het ovaal rond het
@@ -45,8 +46,8 @@ public final class DetectionWidget implements HudWidget {
     private static final int EMPTY = argb(150, 0x2E3A44);
     /** De halve breedte van elke rij van het oog (van boven naar beneden): 11 breed en 5 hoog. */
     private static final int[] HALVES = {2, 4, 5, 4, 2};
-    /** Hoe groot het "?" of "!" is, tegenover gewone tekst. */
-    private static final float MARK_SCALE = 1.5f;
+    /** Hoe groot het "?" of "!" is, tegenover gewone tekst (8 november, tweede keer "kleiner": gewone tekstgrootte). */
+    private static final float MARK_SCALE = 1.0f;
 
     @Override
     public boolean visible(HudContext c) {
@@ -116,7 +117,7 @@ public final class DetectionWidget implements HudWidget {
         String text = danger ? "!" : "?";
         int colour = danger ? RED : 0xF0C040;
         // Een lichte pulse zodat het opvalt.
-        float bob = (float) Math.sin(c.now / 160.0);
+        float bob = (float) Math.sin(c.now / 160.0) * 0.5f;
         var pose = c.g.pose();
         pose.pushPose();
         pose.translate(cx, bottom - c.font.lineHeight * MARK_SCALE + bob, 0);
