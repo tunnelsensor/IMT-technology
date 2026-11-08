@@ -43,7 +43,7 @@ public final class GunHud implements LayeredDraw.Layer {
         int w = g.guiWidth();
         int h = g.guiHeight();
         float aim = GunControl.aim(pt);
-        if (type == GunType.SNIPER && aim > 0.92f) {
+        if (GunControl.scoped(pt)) {
             scope(g, w, h);
         }
         if (mc.options.getCameraType().isFirstPerson() && mc.screen == null && aim < 0.5f) {

@@ -5726,6 +5726,33 @@ wacht een diagram hooguit 10 ticks (zoals de netwerkkabel daar ook een uitzonder
       wat er in de config staat. Een nieuwe test kijkt dat elke tooltip (RAM, SSD, CPU, GPU, fan) de getallen uit de config
       toont en meeverandert als je er een verandert. 453 tests, groen.
 
+### 65. De kijker van de sniper in F5 (8 november)
+
+Jouw vraag: "Kun je zorgen dat scope met sniper in F5 niet meer raar is. Als je nu met een sniper scopet in F5 dan zie je
+jezelf door de scope."
+
+**Mijn keuze** (zoals in de meeste shooters): door de kijker kijk je altijd door je eigen ogen. In F5 hangt de camera
+achter je hoofd (of ervoor), dus zag je door de kijker je eigen hoofd, 4 keer ingezoomd.
+
+- [x] **Door je eigen ogen** — `ScopeView`: zolang de kijker op je scherm staat, zet hij de camera op eerste persoon, en
+      gaat de kijker weg, dan meteen terug naar de stand die je had (F5 van achteren of van voren). Hij wisselt vlak voor
+      elk beeld (`RenderFrameEvent.Pre`), precies wanneer de kijker verschijnt of weggaat, zodat de kijker de sprong
+      afdekt. Alleen als jij de camera bent (niet als je door een drone kijkt). F5 tijdens het richten: je blijft door de
+      kijker kijken en kiest de stand waarin je straks terugkomt. De stand van de camera staat niet in options.txt, dus
+      ook als het spel stopt terwijl je richt blijft er niets verkeerd staan.
+- [x] **Geen zoom op je rug** — tot de kijker er is (de eerste 4 ticks van het richten) zoomt de sniper in derde
+      persoon niet in (`GunControl.zoom`, ook de muis blijft dan even gevoelig); daarna 4 keer, zoals in eerste persoon. De
+      andere geweren zoomen in derde persoon zoals vroeger (1,2 tot 1,4 keer, over je schouder).
+- [x] **Eén regel voor "door de kijker"** — `GunControl.scoped` (de sniper, meer dan 0,92 gericht): daarmee tekent
+      `GunHud` de kijker, laat `GunRenderer` het geweer weg en wisselt `ScopeView` de camera. Die 0,92 stond eerst op twee
+      plekken.
+- [x] **Bekeken in het spel** — `-Ponly=scopef5`: in F5 richten (nog zonder zoom), door de kijker (de husk in het
+      dradenkruis, geen hoofd), schieten, F5 tijdens het richten (je blijft in de kijker), en loslaten (meteen terug, nu
+      van voren). De log noemt telkens de stand van de camera en de kijkhoek ("[dev] scopef5"). LEESMIJ aangepast. 454
+      tests, groen (in een eerste ronde ging bij `glock_chamber_and_magazine_math` schot 6 niet af: de Glock-tests van
+      de batch "guns" lopen tegelijk, en een test die eerder klaar was zette met `restore()` de kans op storingen terug
+      voor deze test schoot; niets met de kijker te maken, de tweede ronde was helemaal groen).
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het

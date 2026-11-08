@@ -1904,6 +1904,11 @@ R, U en H doen alleen dit met een geweer in je hand; anders doen ze wat ze altij
 ze veranderen in Opties > Besturing > I.M.T. Sprinten laat het geweer zakken, en schieten stopt je sprint. Een schot in
 het hoofd doet 1,5 keer zoveel; spelers raak je alleen met PvP aan.
 
+**De kijker van de sniper in F5.** Richt je met de sniper in derde persoon, dan kijk je door de kijker door je eigen
+ogen, net als in eerste persoon (anders zag je door de kijker je eigen hoofd). Laat je los, dan sta je meteen weer in
+derde persoon. Tot de kijker er is, zoomt de sniper in derde persoon niet in. Druk je F5 terwijl je door de kijker kijkt,
+dan kies je in welke stand je daarna terugkomt.
+
 **Munitie: energiecellen.** Een geweer heeft een **Energy Cell** als magazijn. Cellen stapelen niet: elke cel heeft zijn
 eigen lading (het streepje onder het item). Een nieuw geweer is leeg: **rechtsklik met een cel in je hand** en hij gaat
 in het lasergeweer in je werkbalk dat er geen heeft (sinds hoofdstuk 57 werkt een cel als een magazijn van de Glock; R

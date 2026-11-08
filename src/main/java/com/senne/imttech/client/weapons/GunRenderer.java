@@ -83,7 +83,7 @@ public final class GunRenderer {
         GunRig rig = GunRig.of(type);
         float aim = GunControl.aim(pt);
         // De sniper: helemaal gericht zie je alleen nog de kijker (die tekent GunHud).
-        if (type == GunType.SNIPER && aim > 0.92f) {
+        if (GunControl.scoped(pt)) {
             muzzleX = 0;
             muzzleY = 0;
             muzzleKnown = true;

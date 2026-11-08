@@ -45,6 +45,8 @@ public final class GunControl {
     public static final float INSPECT_TICKS = 50;
     /** Hoe snel (per tick) je naar het vizier gaat en terug. */
     private static final float AIM_SPEED = 0.22f;
+    /** Zo ver gericht (0 tot 1) zie je met de sniper alleen nog zijn kijker, en geen geweer meer. */
+    private static final float SCOPE_AT = 0.92f;
 
     // Wat je vasthoudt.
     private static @Nullable GunType held;
@@ -88,6 +90,14 @@ public final class GunControl {
     public static float aim(float partialTick) {
         float t = Mth.lerp(partialTick, aimO, aim);
         return t * t * (3 - 2 * t);
+    }
+
+    /**
+     * Kijk je nu door de kijker van de sniper? Dan tekent GunHud de kijker, tekent GunRenderer geen geweer, en kijk je
+     * door je eigen ogen, ook in derde persoon (ScopeView).
+     */
+    public static boolean scoped(float partialTick) {
+        return held == GunType.SNIPER && aim(partialTick) > SCOPE_AT;
     }
 
     /** Hoe ver het geweer gezakt is omdat je sprint (0 tot 1). */
@@ -371,24 +381,30 @@ public final class GunControl {
         if (!event.usedConfiguredFov()) {
             return;
         }
-        if (held != null) {
-            float zoom = 1 + (held.zoom - 1) * aim((float) event.getPartialTick());
-            if (zoom > 1.001f) {
-                event.setFOV(event.getFOV() / zoom);
-            }
+        float zoom = zoom((float) event.getPartialTick());
+        if (zoom > 1.001f) {
+            event.setFOV(event.getFOV() / zoom);
         }
         worldFov = event.getFOV();
     }
 
     /** Ingezoomd: de muis minder gevoelig, anders schiet je alle kanten op. */
     public static void onPlayerTurn(CalculatePlayerTurnEvent event) {
-        if (held == null) {
-            return;
-        }
-        float zoom = 1 + (held.zoom - 1) * aim(1);
+        float zoom = zoom(1);
         if (zoom > 1.001f) {
             event.setMouseSensitivity(event.getMouseSensitivity() / Math.sqrt(zoom));
         }
+    }
+
+    /**
+     * Zo ver zoom je nu in (1 = niet). De sniper in derde persoon niet: daar hangt de camera achter je hoofd, en dan zou
+     * je 4 keer inzoomen op je eigen rug. Zodra de kijker er is, kijk je door je eigen ogen (ScopeView) en zoom je wel in.
+     */
+    private static float zoom(float partialTick) {
+        if (held == null || held == GunType.SNIPER && !Minecraft.getInstance().options.getCameraType().isFirstPerson()) {
+            return 1;
+        }
+        return 1 + (held.zoom - 1) * aim(partialTick);
     }
 
     // ================================================================ Hulpjes

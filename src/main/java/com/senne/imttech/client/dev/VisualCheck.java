@@ -2307,6 +2307,41 @@ public final class VisualCheck {
             t.shot(15, "g21_no_cell");
         }
 
+        // --- De kijker van de sniper in F5 (8 november, jouw opmerking: "als je met een sniper scopet in F5 dan zie je
+        // jezelf door de scope"): richten in derde persoon (nog zonder zoom), door de kijker kijk je door je eigen ogen,
+        // F5 tijdens het richten kiest de stand voor straks (van voren), en losgelaten sta je meteen weer in derde
+        // persoon. De stand van de camera staat telkens in de log ("[dev] scopef5").
+        if (want("scopef5")) {
+            t.onServer(0, VisualCheck::buildGunRange);
+            t.onServer(0, player -> {
+                player.getInventory().clearContent();
+                ItemStack sniper = com.senne.imttech.weapons.LaserGunItem.complete(com.senne.imttech.weapons.GunType.SNIPER,
+                        com.senne.imttech.guns.GunMaterial.TITANIUM);
+                com.senne.imttech.weapons.LaserGunItem.setCell(sniper, 100);
+                player.getInventory().setItem(0, sniper);
+            });
+            t.stand(20, GUN_RANGE.getX() + 0.5, GUN_RANGE.getY() + 1, GUN_RANGE.getZ() + 0.5, 0, 2);
+            t.step(0, () -> selectSlot(0));
+            t.camera(0, CameraType.THIRD_PERSON_BACK);
+            t.shot(25, "sf01_f5_sniper_hip");
+            t.step(0, () -> logScopeCamera("hip"));
+            t.key(0, () -> Minecraft.getInstance().options.keyUse, true);
+            t.shot(2, "sf02_f5_sniper_raising");
+            t.step(0, () -> logScopeCamera("raising"));
+            t.shot(12, "sf03_f5_sniper_scope");
+            t.step(0, () -> logScopeCamera("scope"));
+            t.key(0, () -> Minecraft.getInstance().options.keyAttack, true);
+            t.key(1, () -> Minecraft.getInstance().options.keyAttack, false);
+            t.shot(0, "sf04_f5_sniper_fire");
+            t.step(10, () -> KeyMapping.click(Minecraft.getInstance().options.keyTogglePerspective.getKey()));
+            t.shot(3, "sf05_f5_pressed_while_scoped");
+            t.step(0, () -> logScopeCamera("F5 while scoped"));
+            t.key(0, () -> Minecraft.getInstance().options.keyUse, false);
+            t.shot(12, "sf06_released_front");
+            t.step(0, () -> logScopeCamera("released"));
+            t.camera(0, CameraType.FIRST_PERSON);
+        }
+
         // --- De acht creative-tabbladen van I.M.T (26 oktober), elk een plaatje; de muis in de hoek, anders ligt er
         // een tooltip over het midden. Het wapentabblad is langer dan het scherm (hoofdstuk 59): twee keer drie rijen
         // verder gescrold, zodat ook de onderdelen van de Glock en de lasergeweren op een plaatje staan.
@@ -4933,6 +4968,14 @@ public final class VisualCheck {
         if (Minecraft.getInstance().player != null) {
             Minecraft.getInstance().player.getInventory().selected = slot;
         }
+    }
+
+    /** Voor -Ponly=scopef5: de stand van de camera, kijk je door de kijker, en de kijkhoek van de wereld. */
+    private static void logScopeCamera(String label) {
+        Minecraft mc = Minecraft.getInstance();
+        ImtTech.LOGGER.info(String.format(java.util.Locale.ROOT, "[dev] scopef5 %-16s camera=%s scoped=%s fov=%.1f", label,
+                mc.options.getCameraType(), com.senne.imttech.client.weapons.GunControl.scoped(1),
+                com.senne.imttech.client.weapons.GunControl.worldFov()));
     }
 
     private static BlockState emitter(Direction facing, ShieldColor colour) {
