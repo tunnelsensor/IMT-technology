@@ -1,0 +1,202 @@
+package com.senne.imttech.howto;
+
+import com.senne.imttech.ImtTech;
+import com.senne.imttech.guns.GunPart;
+import com.senne.imttech.howto.scenes.PowerScenes;
+import com.senne.imttech.registry.ModItems;
+import com.senne.imttech.weapons.GunType;
+import com.senne.imttech.weapons.LaserPart;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Supplier;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.ItemLike;
+import org.jetbrains.annotations.Nullable;
+
+/**
+ * Alle onderwerpen van "How it works" (hoofdstuk 63), in de volgorde van het overzicht, en welke items welk onderwerp
+ * openen. Een onderwerp zonder animaties ({@code planned}) staat al in de lijst, zodat de test weet welke items nog aan de
+ * beurt komen; in het spel zie je alleen onderwerpen die klaar zijn.
+ *
+ * Een nieuw item van de mod moet hier ergens in: bij een onderwerp, of in {@link #craftingOnly()} als het alleen in
+ * recepten gaat. De test {@code every_item_has_a_how_it_works} controleert dat.
+ */
+public final class HowToTopics {
+    private HowToTopics() {}
+
+    /** Alle onderwerpen, per creative-tabblad in de volgorde van de tabbladen. */
+    public static final List<HowToTopic> ALL = List.of(
+            // ------------------------------------------------------------ Equipment
+            planned("glasses", "equipment", "I.M.T glasses", ModItems.IMT_GLASSES),
+            planned("tech_suit", "equipment", "The tech suit", ModItems.TECH_CHESTPLATE, ModItems.TECH_LEGGINGS, ModItems.TECH_BOOTS),
+            planned("rocket_pack", "equipment", "Mini rockets", ModItems.ROCKET_PACK, ModItems.ROCKET_WARHEAD, ModItems.ROCKET_MAGAZINE),
+            planned("drones", "equipment", "Drones", ModItems.DRONE),
+            planned("emp", "equipment", "E.M.P.", ModItems.EMP),
+            // ------------------------------------------------------------ Weapons
+            planned("laser_guns", "weapons", "Laser guns", ModItems.LASER_PISTOL, ModItems.LASER_RIFLE, ModItems.LASER_SNIPER,
+                    ModItems.LASER_SHOTGUN, ModItems.ENERGY_CELL),
+            plannedItems("laser_workbench", "weapons", "Laser guns from parts",
+                    () -> concat(laserParts(), List.of(ModItems.LASER_WORKBENCH.get(), ModItems.GUN_SLING.get()))),
+            planned("ion_blaster", "weapons", "Ion Blaster", ModItems.ION_BLASTER),
+            planned("emp_grenades", "weapons", "EMP grenades", ModItems.EMP_GRENADE, ModItems.STICKY_EMP_GRENADE),
+            planned("frag_grenades", "weapons", "Frag grenades", ModItems.FRAG_GRENADE, ModItems.STICKY_FRAG_GRENADE),
+            planned("smoke_flashbang", "weapons", "Smoke grenade and flashbang", ModItems.SMOKE_GRENADE, ModItems.FLASHBANG),
+            planned("remote_charges", "weapons", "Remote EMP and Remote Frag", ModItems.REMOTE_EMP, ModItems.EMP_TRIGGER,
+                    ModItems.REMOTE_FRAG, ModItems.FRAG_TRIGGER),
+            planned("glock", "weapons", "Glock 19", ModItems.GLOCK_19, ModItems.GLOCK_19_MAGAZINE, ModItems.ROUND_9MM),
+            plannedItems("gunsmith", "weapons", "Gunsmith Table",
+                    () -> concat(Arrays.stream(GunPart.values()).map(part -> (Item) ModItems.gunPart(part)).toList(),
+                            List.of(ModItems.GUNSMITH_TABLE.get()))),
+            planned("reloading", "weapons", "Reloading Bench", ModItems.RELOADING_BENCH, ModItems.CASING_9MM, ModItems.BULLET_9MM,
+                    ModItems.ROUND_9MM),
+            planned("gear", "weapons", "Holster, pouches and slings", ModItems.HOLSTER, ModItems.GRENADE_POUCH, ModItems.MAG_POUCH,
+                    ModItems.GUN_SLING),
+            // ------------------------------------------------------------ Power
+            topic("power_battery", "power", "Power Battery", PowerScenes::battery, ModItems.BATTERY_CASING, ModItems.BATTERY_GLASS,
+                    ModItems.BATTERY_CELL, ModItems.BATTERY_PORT),
+            planned("making_power", "power", "Making power", ModItems.SOLAR_PANEL, ModItems.HEAT_GENERATOR),
+            planned("power_cables", "power", "Power cables", ModItems.CABLE),
+            planned("network_cables", "power", "Network cables and PoE", ModItems.NETWORK_CABLE, ModItems.POE_CABLE,
+                    ModItems.NETWORK_SWITCH),
+            planned("power_cabinet", "power", "The power cabinet", ModItems.POWER_CABINET),
+            // ------------------------------------------------------------ Interior
+            planned("holo_table", "interior", "Holo table", ModItems.HOLO_TABLE),
+            planned("suit_workbench", "interior", "Suit workbench and upgrades", ModItems.SUIT_WORKBENCH, ModItems.THRUSTER_UPGRADE,
+                    ModItems.ARMOR_PLATING, ModItems.LASER_CANNON_CAPACITOR, ModItems.ROCKET_WARHEAD, ModItems.ROCKET_MAGAZINE,
+                    ModItems.BATTERY_UPGRADE, ModItems.SCANNER_UPGRADE, ModItems.DRONE_UPGRADE),
+            planned("repairing_cracks", "interior", "Repairing cracks", ModItems.CRUSHER, ModItems.COMPACTOR, ModItems.REPAIR_PASTE,
+                    ModItems.CRACKED_BLOCK, ModItems.BLOCK_POWDER),
+            planned("charging_station", "interior", "Charging station", ModItems.CHARGING_STATION, ModItems.ENERGY_CELL),
+            planned("landing_pad", "interior", "Landing pad", ModItems.LANDING_PAD),
+            planned("arc_lamp", "interior", "Arc Lamp and light switch", ModItems.ARC_LAMP, ModItems.LIGHT_SWITCH),
+            planned("relays", "interior", "Redstone relays", ModItems.RELAY, ModItems.RELAY_EMITTER),
+            // ------------------------------------------------------------ Security
+            planned("security_core", "security", "Security Core", ModItems.SECURITY_CORE),
+            planned("computer", "security", "Computer and monitor", ModItems.COMPUTER, ModItems.MONITOR),
+            planned("zones", "security", "Protected zones", ModItems.ZONE_MARKER),
+            planned("block_reinforcer", "security", "Block Reinforcer", ModItems.BLOCK_REINFORCER, ModItems.REINFORCEMENT_PLATE),
+            planned("handcuffs", "security", "Handcuffs", ModItems.HANDCUFFS, ModItems.HANDCUFF_KEY),
+            planned("keycards", "security", "Keycards and readers", ModItems.KEYCARD, ModItems.KEYCARD_READER),
+            planned("code_panel", "security", "Code panel", ModItems.CODE_PANEL),
+            planned("auth_console", "security", "Auth codes and the Auth Console", ModItems.AUTH_CONSOLE),
+            planned("network_controls", "security", "Network button and lever", ModItems.NETWORK_BUTTON, ModItems.NETWORK_LEVER),
+            planned("laser_emitter", "security", "Laser gates", ModItems.LASER_EMITTER),
+            planned("laser_bridge", "security", "Laser bridge", ModItems.LASER_BRIDGE),
+            planned("shield_dome", "security", "Shield dome", ModItems.DOME_GENERATOR),
+            planned("cameras", "security", "Cameras and the camera wall", ModItems.SECURITY_CAMERA, ModItems.CAMERA_MONITOR),
+            planned("turrets", "security", "Turrets", ModItems.SECURITY_TURRET, ModItems.ROCKET_TURRET, ModItems.ROCKET_AMMO),
+            planned("bypass_kit", "security", "Breaking in: the Bypass Kit", ModItems.BYPASS_KIT),
+            planned("hacking_laptop", "security", "Hacking Laptop", ModItems.HACKING_LAPTOP),
+            planned("phone", "security", "I.M.T Phone", ModItems.PHONE),
+            // ------------------------------------------------------------ Robots
+            plannedItems("guard_robot", "robots", "Guard robots", () -> concat(robotParts(), List.of(ModItems.ROBOT_ASSEMBLER.get(),
+                    ModItems.ROBOT_DOCK.get(), ModItems.GUARD_ROBOT.get(), ModItems.ROBOT_AMMO.get()))),
+            plannedItems("soldering", "robots", "Soldering modules", () -> concat(ModItems.ROBOT_MODULES.values().stream()
+                    .map(module -> (Item) module.get()).toList(), List.of(ModItems.ROBOT_CIRCUIT_BOARD.get(), ModItems.SOLDERING_IRON.get()))),
+            planned("security_drones", "robots", "Security drones", ModItems.GUARD_DRONE, ModItems.DRONE_DOCK),
+            planned("training", "robots", "Training", ModItems.TRAINING_START, ModItems.TRAINING_END, ModItems.TRAINING_GOAL),
+            // ------------------------------------------------------------ Datacenter
+            planned("server_racks", "datacenter", "Server racks and Logic", ModItems.SERVER_RACK, ModItems.SERVER_CPU,
+                    ModItems.SERVER_RAM, ModItems.SERVER_SSD, ModItems.SERVER_GPU),
+            planned("datacenter_heat", "datacenter", "Heat and fans", ModItems.SERVER_FAN, ModItems.SERVER_RACK));
+
+    /**
+     * Items die alleen in recepten gaan (of alleen voor oude werelden bestaan): bewust geen animatie (mijn invulling bij
+     * hoofdstuk 63). De spawn-eieren doen wel iets, maar dat is gewoon vanilla.
+     */
+    public static Set<Item> craftingOnly() {
+        return Set.of(ModItems.COMPUTER_CHIP.get(), ModItems.RAVEN_CIRCUIT.get(), ModItems.STEEL_BLEND.get(),
+                ModItems.STEEL_INGOT.get(), ModItems.TITANIUM_BLEND.get(), ModItems.TITANIUM_INGOT.get(), ModItems.POLYMER.get(),
+                ModItems.GUARD_ROBOT_SPAWN_EGG.get(), ModItems.RAVEN_SOLDIER_SPAWN_EGG.get(), ModItems.RAVEN_TURRET.get());
+    }
+
+    private static @Nullable Map<Item, List<HowToTopic>> byItem;
+
+    /** De onderwerpen van dit item, ook die nog niet klaar zijn. */
+    public static List<HowToTopic> allFor(Item item) {
+        if (byItem == null) {
+            Map<Item, List<HowToTopic>> map = new HashMap<>();
+            for (HowToTopic topic : ALL) {
+                for (Item each : new HashSet<>(topic.items().get())) {
+                    map.computeIfAbsent(each, key -> new ArrayList<>()).add(topic);
+                }
+            }
+            byItem = map;
+        }
+        return byItem.getOrDefault(item, List.of());
+    }
+
+    /** De onderwerpen van dit item die klaar zijn (wat je met W op het item ziet). */
+    public static List<HowToTopic> readyFor(Item item) {
+        return allFor(item).stream().filter(HowToTopic::ready).toList();
+    }
+
+    /** Heeft dit item een animatie die klaar is? */
+    public static boolean has(Item item) {
+        return !readyFor(item).isEmpty();
+    }
+
+    /** Het onderwerp met dit id, of null. */
+    public static @Nullable HowToTopic byId(String id) {
+        for (HowToTopic topic : ALL) {
+            if (topic.id().equals(id)) {
+                return topic;
+            }
+        }
+        return null;
+    }
+
+    // ================================================================ Lijstjes maken
+
+    private static Component title(String id, String english) {
+        return Component.translatableWithFallback("howto." + ImtTech.MODID + ".topic." + id, english);
+    }
+
+    @SafeVarargs
+    private static HowToTopic topic(String id, String tab, String english, Supplier<List<HowToScene>> scenes,
+                                    Supplier<? extends ItemLike>... items) {
+        return new HowToTopic(id, tab, title(id, english), list(items), scenes);
+    }
+
+    @SafeVarargs
+    private static HowToTopic planned(String id, String tab, String english, Supplier<? extends ItemLike>... items) {
+        return new HowToTopic(id, tab, title(id, english), list(items), null);
+    }
+
+    private static HowToTopic plannedItems(String id, String tab, String english, Supplier<List<Item>> items) {
+        return new HowToTopic(id, tab, title(id, english), items, null);
+    }
+
+    @SafeVarargs
+    private static Supplier<List<Item>> list(Supplier<? extends ItemLike>... items) {
+        return () -> Arrays.stream(items).map(item -> item.get().asItem()).toList();
+    }
+
+    private static List<Item> concat(List<Item> a, List<Item> b) {
+        List<Item> out = new ArrayList<>(a);
+        out.addAll(b);
+        return out;
+    }
+
+    /** Alle robotonderdelen: per stijl hoofd, lijf, armen en benen. */
+    private static List<Item> robotParts() {
+        return ModItems.ROBOT_PARTS.values().stream().flatMap(List::stream).map(part -> (Item) part.get()).toList();
+    }
+
+    /** Alle onderdelen van de lasergeweren: per geweer de zes onderdelen. */
+    private static List<Item> laserParts() {
+        List<Item> out = new ArrayList<>();
+        for (GunType type : GunType.values()) {
+            for (LaserPart part : LaserPart.wearing()) {
+                out.add(ModItems.laserPart(type, part));
+            }
+        }
+        return out;
+    }
+}

@@ -140,6 +140,14 @@ public final class ImtKeys {
         }
     }
 
+    /**
+     * Hoofdstuk 63: "How it works". Houd deze toets vast terwijl je muis op een item staat (in je inventaris, een kist,
+     * het creative-menu of JEI), en de animatie van dat item gaat open. Standaard W, zoals Ponder van Create. Werkt alleen
+     * in een scherm (KeyConflictContext.GUI), dus lopen met W botst er niet mee.
+     */
+    public static final KeyMapping HOW_IT_WORKS = new KeyMapping("key.imttech.how_it_works", KeyConflictContext.GUI,
+            Type.KEYSYM, InputConstants.KEY_W, CATEGORY);
+
     private static KeyMapping key(String name, int defaultKey) {
         // KeyConflictContext.IN_GAME: de toets doet alleen iets als er geen scherm open is.
         return new KeyMapping("key.imttech." + name, KeyConflictContext.IN_GAME, Type.KEYSYM, defaultKey, CATEGORY);
@@ -182,5 +190,6 @@ public final class ImtKeys {
         event.register(OPEN_HOLSTER);
         event.register(OPEN_GRENADE_POUCH);
         event.register(OPEN_MAG_POUCH);
+        event.register(HOW_IT_WORKS);
     }
 }

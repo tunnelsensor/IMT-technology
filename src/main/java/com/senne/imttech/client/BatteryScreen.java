@@ -29,8 +29,9 @@ import net.neoforged.neoforge.network.PacketDistributor;
  * Elke tick vraagt het scherm nieuwe cijfers aan de server (BatteryRequestPayload), zodat de opslag echt loopt.
  */
 public class BatteryScreen extends Screen {
-    private static final int W = 300;
-    private static final int H = 228;
+    /** De maat van het paneel (ook voor het plaatje in How it works, hoofdstuk 63). */
+    public static final int W = 300;
+    public static final int H = 228;
     private static final int GRAPH_W = 120;
     private static final int GRAPH_H = 64;
 

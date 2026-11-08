@@ -3260,6 +3260,64 @@ final class ShowcaseFeatures {
                 .pause(80)
                 .close(0)
                 .onServer(0, player -> player.getInventory().clearContent()));
+
+        // ---------------------------------------------------------------- How it works (hoofdstuk 63)
+        add("How it works (hold W on an item)", "Hoofdstuk 63, zoals Ponder van Create. In je werkbalk ligt een Battery "
+                + "Casing en je muis staat erop: in de tooltip staat 'Hold [W]: How it works'. Dan wordt W echt ingedrukt: de "
+                + "regel loopt vol en na 0,6 seconde gaat de animatie van de Power Battery open. Let op: de doos van casing valt "
+                + "laag voor laag op zijn plek (met een tikje), een raam van Battery Glass dat één groot raam wordt, de cellen "
+                + "erin, een poort in de wand, een kabel die van een zonnepaneel en een warmtegenerator naar de poort getekend "
+                + "wordt (de muis houdt de rechterknop ingedrukt), het balkje STORED, en het echte batterijscherm als plaatje "
+                + "met vier pijltjes. Halverwege springt hij met het pijltje naar het volgende hoofdstukje, draait het wereldje "
+                + "rond en zoomt in. Dan Esc (terug in je inventaris), het knopje '?' rechtsboven en het overzicht.",
+                at(ShowcaseScene.START), 180, 0, s -> s
+                .onServer(0, player -> {
+                    player.getInventory().clearContent();
+                    player.getInventory().setItem(0, new ItemStack(ModItems.BATTERY_CASING.get()));
+                    player.getInventory().selected = 1;
+                })
+                .open(10, () -> new net.minecraft.client.gui.screens.inventory.InventoryScreen(Minecraft.getInstance().player))
+                .step(5, () -> {
+                    if (Minecraft.getInstance().screen instanceof net.minecraft.client.gui.screens.inventory.InventoryScreen screen) {
+                        HowToTour.mouseTo(screen.getGuiLeft() + 16, screen.getGuiTop() + 150);
+                    }
+                })
+                .pause(50)
+                .step(0, () -> DevKeys.press(org.lwjgl.glfw.GLFW.GLFW_KEY_W, true))
+                .pause(20)
+                .step(0, () -> DevKeys.press(org.lwjgl.glfw.GLFW.GLFW_KEY_W, false))
+                .step(0, () -> HowToTour.mouseTo(2, 2))
+                .pause(420)
+                // Het pijltje naar rechts: het volgende hoofdstukje; dan het wereldje draaien en inzoomen.
+                .step(0, () -> {
+                    if (Minecraft.getInstance().screen != null) {
+                        Minecraft.getInstance().screen.keyPressed(org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT, 0, 0);
+                    }
+                })
+                .pause(160)
+                .step(0, () -> {
+                    if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.howto.HowToScreen screen) {
+                        screen.devCamera(-35.0f, 50.0f, 1.5f);
+                    }
+                })
+                .pause(160)
+                .close(0)
+                .step(10, () -> {
+                    if (Minecraft.getInstance().screen instanceof net.minecraft.client.gui.screens.inventory.InventoryScreen screen) {
+                        HowToTour.mouseTo(screen.getGuiLeft() + 164, screen.getGuiTop() + 11);
+                    }
+                })
+                .pause(40)
+                .step(0, () -> {
+                    if (Minecraft.getInstance().screen instanceof net.minecraft.client.gui.screens.inventory.InventoryScreen screen) {
+                        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(new net.neoforged.neoforge.client.event.ScreenEvent
+                                .MouseButtonPressed.Pre(screen, screen.getGuiLeft() + 164, screen.getGuiTop() + 11, 0));
+                    }
+                })
+                .pause(80)
+                .close(0)
+                .close(5)
+                .onServer(0, player -> player.getInventory().clearContent()));
     }
 
     /** Hoofdstuk 55: een Laser Workbench met een half gebouwde rifle erop, naast {@code stand} (tussen de twee banken van de Glock). */

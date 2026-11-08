@@ -3974,6 +3974,15 @@ public final class VisualCheck {
             t.onServer(0, DevWorld::wearGlasses);
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }
+
+        // --- How it works (hoofdstuk 63): de plaatjes van echte schermen (alleen als je erom vraagt: dat verandert
+        // bestanden van de mod), en W op een item, de animatie van de Power Battery, het knopje en het overzicht.
+        if (ONLY.contains("howtopics")) {
+            HowToTour.pictures(t);
+        }
+        if (want("howto")) {
+            HowToTour.tour(t);
+        }
 }
 
     /**

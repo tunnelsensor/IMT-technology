@@ -178,6 +178,37 @@ public final class CableRenderer {
         pose.popPose();
     }
 
+    // ================================================================ Voor How it works (hoofdstuk 63)
+
+    /**
+     * Een kabel langs {@code points} (rechte stukken) in het wereldje van een "How it works"-animatie, met dezelfde dikte
+     * en kleuren als een echte kabel. De punten zijn al uitgerekend door het draaiboek (zie CableGeometry voor waar een
+     * kabel in een blok ligt).
+     */
+    public static void drawPath(Matrix4f m, MultiBufferSource buffers, CableKind kind, List<Vec3> points, int light) {
+        VertexConsumer vc = buffers.getBuffer(CABLE);
+        Look look = look(kind);
+        if (points.size() == 1) {
+            box(m, vc, points.getFirst(), points.getFirst(), light, look, false);
+        }
+        for (int i = 1; i < points.size(); i++) {
+            box(m, vc, points.get(i - 1), points.get(i), light, look, false);
+        }
+    }
+
+    /**
+     * Een dun gekleurd blokje van {@code a} naar {@code b} (dikte {@code half} naar elke kant), in de tekenstijl van de
+     * kabels: voor de randjes in de animaties van How it works.
+     */
+    public static void drawBar(Matrix4f m, MultiBufferSource buffers, Vec3 a, Vec3 b, double half, int rgb, int light) {
+        cuboid(m, buffers.getBuffer(CABLE), a, b, half, light, false, rgb, rgb, rgb, 255);
+    }
+
+    /** Een effen doos van hoek {@code min} tot hoek {@code max}, met een eigen kleur boven, opzij en onder (het platform van How it works). */
+    public static void drawBox(Matrix4f m, MultiBufferSource buffers, Vec3 min, Vec3 max, int top, int side, int bottom, int light) {
+        cuboid(m, buffers.getBuffer(CABLE), min, max, 0.0, light, false, top, side, bottom, 255);
+    }
+
     // ================================================================ Eén plek
 
     private static void drawCell(Matrix4f m, VertexConsumer vc, ClientLevel level, BlockPos cell, CableKind kind,

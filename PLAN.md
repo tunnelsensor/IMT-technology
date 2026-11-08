@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 446 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 449 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -5309,10 +5309,108 @@ een ander stuk dan het gekozen, dan loopt dat door; het kaartje bij de werkbank 
       hand, met en zonder sneak, neerleggen kiest het stuk, en elk klikvak begint op dezelfde hoogte); de test van de bril
       controleert nu ook beide richtingen. 446 tests, allemaal groen.
 
+### 63. How it works: animaties zoals Ponder van Create (8 november)
+
+Jouw wens: "Ken je de ponder functie van create mod? Ik wil dat je ook zoiets maakt voor elke item dat een functie heeft
+buiten gebruiken om te craften bijvoorbeeld casings om een multiblock batterij te maken. Ik wil dat je in je inventory
+via een knop kunt 'how it works' kunt doen en dan krijg je een soort animatie over hoe het werkt."
+
+Jouw vier antwoorden (alle vier mijn aanbeveling):
+1. **Openen**: in elk inventarisscherm (ook kisten, het creative-menu en JEI) houd je je muis op een item en **W**
+   ingedrukt, zoals bij Create; een balkje loopt vol en de animatie gaat open. Daarnaast een knopje **How it works** in je
+   eigen inventaris dat een **overzicht** van alle onderwerpen opent, per creative-tabblad. De toets staat in Controls.
+2. **Zelf bouwen**, niet de Ponder-bibliotheek van Create: geen extra mod nodig, en onze getekende kabels (geen blokken),
+   hologrammen, robots en effecten moeten erin. De opbouw van Create (tekstballonnen, tijdlijn, draaien met de muis), de
+   kleuren van I.M.T.
+3. Opent een item een scherm, dan schuift er een **plaatje van het echte scherm** in beeld, met pijltjes naar de
+   belangrijke delen. De rondleiding maakt die plaatjes zelf (`-Ponly=howtopics`).
+4. **Per onderwerp, extra waar nodig**: items die bij elkaar horen delen één animatie van 20 tot 40 seconden (casing,
+   glass, cell en port: de Power Battery); een item met heel verschillende functies krijgt er meer (de Laser Emitter: de
+   poort, de instellingen, draden knippen). Zo'n 50 onderwerpen voor ongeveer 90 items.
+
+**Mijn invulling**: gewone grondstoffen die alleen in een recept gaan (Computer Chip, Raven Circuit, staal, titanium,
+polymeer) en de spawn-eieren krijgen geen animatie; onderdelen die in een machine van ons gaan (geweeronderdelen,
+robotonderdelen, modules, hulzen) wel. Alle tekst in het spel is Engels, de getallen komen uit de config. Eerst het
+systeem met de Power Battery (jouw voorbeeld), dan tabblad voor tabblad. Een test houdt bij welke items nog geen animatie
+hebben, zodat er geen vergeten wordt.
+
+- [x] **1. Het systeem** — het draaiboek is gewone gegevens (`howto/`: `HowToCue`, `HowToScene`, een bouwer
+      `HowToSceneBuilder` zoals de SceneBuilder van Ponder, met een klok en `idle`), zodat een test het op de server kan
+      nalopen; het tekenen staat in `client/howto/`. Het wereldje (`SceneWorld`) is een "BlockAndTintGetter" zonder
+      chunks: Minecraft tekent elk blok dan met dezelfde code als in de wereld (schaduw in de hoekjes, verborgen kanten
+      tussen blokken, de kleur van gras), en buren die aan elkaar hangen (Battery Glass) worden verbonden. `ScenePlayer`
+      bouwt het wereldje op uit de cues tot het huidige moment, dus springen en terugspoelen is gewoon de tijd
+      veranderen; blokken vallen in 6 ticks op hun plek (met het geluid van neerzetten), kabels groeien langs hun punten
+      (met de tekencode van de echte kabels), randjes kloppen een beetje. `SceneOverlays` tekent de tekstballonnen met
+      een lijntje en `*woorden*` in cyaan en `[toetsen]` in oranje, de muis met de ingedrukte knop en wat je vasthoudt
+      (die langs een pad loopt als je een kabel tekent), balkjes, en de plaatjes. Het scherm (`HowToScreen`): bovenaan
+      het item en het onderwerp (met pijltjes als er meer animaties zijn), onderaan de tijdlijn met een streepje per
+      hoofdstukje, de knoppen opnieuw, vorig, pauze en volgend (en spatie, pijltjes links en rechts), klikken of slepen
+      op de tijdlijn; slepen draait, scrollen zoomt, rechtsklik zet de camera terug, en wijs je een blok aan, dan zie je
+      zijn naam (met een wit randje). Het scherm komt als laag boven je inventaris of kist (Esc brengt je terug, alles
+      nog zoals het was), en in je eigen wereld staat het spel stil terwijl je kijkt. Geluid: `howToVolume` in
+      `imttech-client.toml`.
+- [x] **2. Openen** — `HowToHover`: een item met een animatie krijgt in zijn tooltip "Hold [W]: How it works" (in elk
+      scherm, ook het creative-menu en JEI, want we kijken naar het tooltip dat echt getekend wordt); houd je W vast,
+      dan loopt de regel in cyaan vol en na 12 ticks gaat de animatie open. Typ je in een zoekvak, of liep je met W
+      ingedrukt je inventaris in, dan gebeurt er niets (eerst loslaten). De toets is "How it works" onder I.M.T in
+      Controls (KeyConflictContext.GUI, dus geen botsing met lopen). Op jouw AZERTY-toetsenbord heet die toets Z: de
+      toetsen van de mod zijn plekken op het toetsenbord, net als bij Create. `HowToButton`: een knopje **?** rechtsboven
+      in je inventaris (boven het craftraster) opent het overzicht (`HowToIndexScreen`): per creative-tabblad een tegel
+      per onderwerp dat klaar is; wijs je er een aan, dan staat bovenaan hoe het heet.
+- [x] **3. Plaatjes van echte schermen** — `gradlew runVisualCheck -Ponly=howtopics` opent het echte scherm, knipt het
+      paneel eruit (in de pixels van het venster, bij GUI-schaal 3 dus 900 x 684) en zet het in
+      `textures/gui/howto/` (met `blur`, zodat het verkleind niet korrelig is). Alleen als je erom vraagt, want het
+      verandert bestanden van de mod. Het batterijscherm krijgt voorbeeldcijfers (twee zonnepanelen en een
+      warmtegenerator, drie laserzenders, twee camera's en een holotafel): in de testwereld stond alles op 0 per tick, en
+      dat lijkt in een uitleg kapot. In de animatie schuift het plaatje van rechts in beeld, de rest wordt donker, en
+      links komen de pijltjes er een voor een bij.
+- [x] **4. De Power Battery** — `howto/scenes/PowerScenes.battery`, 44 seconden in zes hoofdstukjes: de doos van 5 x 4 x
+      5 van casing laag voor laag (met een raam van 3 x 2 glas in de zuidkant, dat één raam wordt), 18 cellen erin en het
+      dak erop, een poort in de westwand (een klik met de poort in je hand), een zonnepaneel en een brandende
+      warmtegenerator met een kabel naar de poort (de muis houdt de rechterknop ingedrukt en loopt mee) en het balkje
+      STORED dat volloopt, het batterijscherm als plaatje met vier pijltjes, en een gat in het dak (rood randje) dat weer
+      dicht gaat (groen randje). De getallen in de tekst (3 x 3 x 3 tot 18 x 18 x 18, 1,000,000 FE per cel, 2,000 FE per
+      tick) komen uit de config van je wereld.
+- [x] **5. Test, rondleiding, showcase en LEESMIJ** — drie tests (`HowToGameTests`): elk item van de mod hoort bij een
+      onderwerp (klaar of nog in het plan) of bij de items die alleen in recepten gaan, en niet allebei; elk draaiboek
+      klopt (hoofdstukjes en cues op volgorde, teksten met Engelse tekst en lang genoeg in beeld, blokken op de plaat,
+      tussen 10 seconden en anderhalve minuut); en de blokken aan het eind van de animatie van de batterij vormen in een
+      testwereld echt een batterij van 5 x 4 x 5 met 18 cellen en één poort. `HowToTopics` heeft alle 51 onderwerpen al,
+      met hun items; de onderwerpen die nog niet klaar zijn, zie je in het spel niet. De rondleiding `-Ponly=howto`
+      (ht01 tot ht19): de tooltip, W echt ingedrukt (de regel loopt vol), de vloer die valt, elk hoofdstukje, gedraaid en
+      ingezoomd, een blok aanwijzen, het knopje, het overzicht en een animatie vanuit het overzicht. De showcase heeft
+      "How it works (hold W on an item)" (de laatste), en LEESMIJ een stuk in hoofdstuk 2, 3, 5 en 6. 449 tests, allemaal
+      groen.
+- [x] **Jouw opmerking: "het lijkt net iets te hard op Create"** — het dambord van wit en grijs beton (zoals Ponder) is
+      weg. Onder elke animatie ligt nu het platform van I.M.T: een dunne, donkere plaat in de kleuren van de HUD, met een
+      fijn cyaan raster op de naden (zo tel je de blokken nog) en een oplichtende cyaan rand, alsof het een hologram is
+      dat in het donker zweeft (`SceneRenderer.renderPlate`). Onder de plaat zit een blok dat je niet ziet, zodat wat erop
+      staat schaduw in de hoekjes houdt. Ook de knoppen kregen eigen plaatjes (|◀ opnieuw, ◀◀ en ▶▶ voor de
+      hoofdstukjes), en het eerste hoofdstukje begint nu meteen (er stond een leeg hoofdstukje "1/7" voor).
+- [ ] **6. Power** — stroom maken (zonnepaneel, warmtegenerator), stroomkabels tekenen, netwerkkabels met PoE en de
+      switch, de stroomkast.
+- [ ] **7. Interior** — de holotafel, de harnas-werkbank met alle upgrades, barsten herstellen (Crusher, Compactor,
+      Repair Paste), het laadstation, het landingsplatform, de Arc Lamp met de lichtschakelaar, de relais met de zender.
+- [ ] **8. Security** — de kern, computer en monitor, zones, de Block Reinforcer, handboeien, keycards en lezers, het
+      codepaneel, de Auth Console, netwerkknop en -hendel, de Laser Emitter (poort, instellingen, draden knippen), de
+      laserbrug, de schildkoepel, camera's en de schermmuur, de torentjes, de Bypass Kit, de Hacking Laptop, de Phone.
+- [ ] **9. Robots** — een guard robot bouwen en op zijn dock zetten, modules solderen, security drones, training.
+- [ ] **10. Datacenter** — serverracks en Logic, warmte en fans.
+- [ ] **11. Weapons** — de lasergeweren, de Laser Workbench, de Ion Blaster, EMP- en fraggranaten, rook en flashbang,
+      de Remote EMP en Remote Frag, de Glock 19, de Gunsmith Table, de Reloading Bench, de holster en de pouches.
+- [ ] **12. Equipment** — de bril, het harnas, het raketpakket, drones, de E.M.P.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
+
+- [ ] **How it works (hoofdstuk 63)**: gezien op screenshots (`-Ponly=howto`, ht01 tot ht19), niet met de muis gespeeld.
+      Probeer: in je inventaris je muis op een Battery Casing en W vasthouden (op jouw AZERTY-toetsenbord: Z); voelt 0,6
+      seconde goed? Slepen en scrollen in het wereldje, de knoppen onderaan, klikken op de tijdlijn, een blok aanwijzen,
+      Esc (ben je terug in je inventaris?), en het knopje ? rechtsboven. Ook in een kist en in JEI. Hoor je de tikjes van
+      de blokken (niet te hard? `howToVolume`), en is het platform mooi genoeg op jouw GUI-schaal?
 
 - [ ] **De sluipaanval en het oog zonder bril (hoofdstuk 61)**: gezien op screenshots (`-Ponly=guards`, hg02, hg03,
       hg07 tot hg12), niet gespeeld. Probeer: sluip achter een bewaker met een zwaard (staat "Takedown" onder je vizier,

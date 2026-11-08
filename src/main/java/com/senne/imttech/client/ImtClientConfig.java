@@ -147,6 +147,12 @@ public final class ImtClientConfig {
             .comment("How loud the soft whir of a flying security drone's rotors is (1 = normal, 2 = twice as loud, 0 = off)")
             .defineInRange("droneRotorVolume", 1.0, 0.0, 3.0);
 
+    // ---------------------------------------------------------------- How it works (hoofdstuk 63)
+    /** Hoe hard de geluidjes in de animaties van How it works zijn (een blok dat neerkomt, een klik). */
+    public static final ModConfigSpec.DoubleValue HOWTO_VOLUME = BUILDER
+            .comment("How loud the little sounds in the How it works animations are (1 = normal, 0 = off)")
+            .defineInRange("howToVolume", 1.0, 0.0, 3.0);
+
     // ---------------------------------------------------------------- Stroom laten zien
     /** In welke tijd de schermen stroom laten zien (de knop /tick, /sec, /min, /hour in de stroomschermen). */
     public static final ModConfigSpec.EnumValue<PowerUnit> POWER_UNIT = BUILDER
@@ -181,6 +187,11 @@ public final class ImtClientConfig {
     /** Hoe hard de rotors van de security drones zijn (zolang de instellingen nog niet geladen zijn: gewoon). */
     public static double droneRotorVolume() {
         return SPEC.isLoaded() ? DRONE_ROTOR_VOLUME.get() : 1.0;
+    }
+
+    /** Hoe hard de geluidjes van How it works zijn (zolang de instellingen nog niet geladen zijn: gewoon). */
+    public static double howToVolume() {
+        return SPEC.isLoaded() ? HOWTO_VOLUME.get() : 1.0;
     }
 
 

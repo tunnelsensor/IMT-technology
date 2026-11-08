@@ -27,6 +27,9 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (445 automati
 
 ## 2. Beginnen in het spel
 
+- **Hoe werkt een item?** Houd in je inventaris (of een kist, het creative-menu, JEI) je muis op een item
+  en houd **W** ingedrukt: dan gaat **How it works** open, een animatie zoals Ponder van Create (zie "How
+  it works" in hoofdstuk 5). Het knopje **?** rechtsboven in je inventaris toont alle onderwerpen.
 - **De bril kun je niet maken.** Er bestaat geen recept voor: de enige I.M.T-bril in je
   wereld ligt in de kluis van een Biebia's Industries Tower. Zoek er dus eerst een (zie hieronder).
 - Craft een **computerchip** (koper, goud, redstone, diamant) — die heb je nodig voor bijna al het
@@ -131,6 +134,7 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (445 automati
 | **Z** | Spraaktoets: ingedrukt houden en praten |
 | **I** | Laser cannon aan/uit (met de borstplaat aan); vuren met de aanvalsknop |
 | **X** | Salvo mini-raketten (hele harnas + raketpakket) |
+| **W** (vasthouden, in een scherm, met je muis op een item) | How it works: de animatie van dat item |
 
 Alle toetsen kun je aanpassen: **Opties > Besturing > I.M.T** Daar staan ook "Cable X-ray
 on/off" (verborgen kabels door muren heen zien), "Zone border on/off" (de rand van je zones), "Gun
@@ -161,6 +165,28 @@ Wisselen van tabblad: scrollen, de pijltjes links/rechts, of meteen met de cijfe
 ---
 
 ## 5. De grote functies
+
+### How it works: animaties zoals Ponder (sinds 8 november)
+Elk item dat meer doet dan in een recept gaan, krijgt een animatie die laat zien hoe het werkt, zoals
+**Ponder** in Create (maar dan zelf gebouwd, zonder extra mod, in de kleuren van I.M.T).
+- **Openen**: houd in eender welk scherm met voorwerpen (je inventaris, een kist, het creative-menu, de
+  lijst van JEI) je muis op het item en houd **W** ingedrukt. In de tooltip staat "Hold [W]: How it works";
+  die regel loopt vol en na 0,6 seconde gaat de animatie open. Typ je in een zoekvak, dan is W gewoon een
+  letter. De toets verander je in **Opties > Besturing > I.M.T** ("How it works").
+- **Het overzicht**: het knopje **?** rechtsboven in je inventaris (boven het craftraster) toont alle
+  onderwerpen, per creative-tabblad. Een klik op een tegel opent de animatie.
+- **Het scherm**: bovenaan het onderwerp, in het midden een klein wereldje waarin blokken op hun plek
+  vallen, met tekstballonnen, een muis die laat zien waar je klikt (en met wat in je hand), kabels die
+  getekend worden, gekleurde randjes, balkjes, en een **plaatje van het echte scherm** met pijltjes als een
+  blok een scherm opent. Onderaan de tijdlijn in hoofdstukjes: **opnieuw**, **vorig** en **volgend
+  hoofdstukje** (of de pijltjes links en rechts), **pauze** (spatie); klik op de tijdlijn om ergens heen te
+  springen. **Slepen** draait het wereldje, **scrollen** zoomt, **rechtsklik** zet de camera terug, en
+  **wijs je een blok aan**, dan zie je hoe het heet. Heeft een item meer animaties, dan blader je met de
+  pijltjes bovenaan. **Esc** brengt je terug naar je inventaris, met alles nog zoals het was. In je eigen
+  wereld staat het spel stil terwijl je kijkt.
+- **Wat er al is**: de Power Battery (casing, glass, cell en port). De andere onderwerpen komen tabblad voor
+  tabblad (PLAN.md, hoofdstuk 63).
+- Het geluid (een blok dat neerkomt): `howToVolume` in `imttech-client.toml` (1 = normaal, 0 = uit).
 
 ### Het drone-arsenaal
 Drones komen niet meer uit het niets: je moet ze **bouwen**. Craft een **drone**
@@ -2181,7 +2207,7 @@ beveiligingskern, zie "Het datacenter"); zonder luistert ze niet. In creative ho
 | Bestand | Wat |
 |---------|-----|
 | `config/imttech.toml` | **Alle getallen van de mod** (ruim 390), in hoofdstukken: wat mag er (`[rules]`: hacken, zakkenrollen, raids aan/uit), de bril, **alle stroom** (`[power]`: wat elk blok opwekt, opslaat en gebruikt), drones, de satelliet **per upgrade-niveau**, harnas, torentjes, beveiliging, datacenter, granaten en lasers, de Glock 19 (`[guns]`), guard robots, Raven, de bewakers zoals in Hitman (`[guards]`: zien, horen, de radio, het team, lichamen, de sluipaanval), raids... |
-| `config/imttech-client.toml` | Stem, volume, spraaktekst, Spotify Client ID, GPU voor de AI, het zachte zoemen van de rayshields (`rayshieldHumVolume`: 1 = normaal, 2 = dubbel zo hard, 0 = uit), het laadzoemen van de guard robots (`robotHumVolume`, net zo), de rotors van de security drones (`droneRotorVolume`, net zo), de rand van zones (`zoneBorder`) |
+| `config/imttech-client.toml` | Stem, volume, spraaktekst, Spotify Client ID, GPU voor de AI, het zachte zoemen van de rayshields (`rayshieldHumVolume`: 1 = normaal, 2 = dubbel zo hard, 0 = uit), het laadzoemen van de guard robots (`robotHumVolume`, net zo), de rotors van de security drones (`droneRotorVolume`, net zo), de geluidjes in de animaties van How it works (`howToVolume`, net zo), de rand van zones (`zoneBorder`) |
 | `config/imttech-voice.json` | Alle spraakcommando's (zelf uit te breiden) |
 | `config/imttech-spotify.json` | Je Spotify-token (niet delen) |
 | `src/main/java/.../config/ImtConfig.java` | De standaardwaarden van al die getallen, met uitleg in het Nederlands, plus een paar vaste getallen die niet in het `.toml`-bestand kunnen |
