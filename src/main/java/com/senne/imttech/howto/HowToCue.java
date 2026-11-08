@@ -58,6 +58,12 @@ public sealed interface HowToCue {
     /** Een balkje bij {@code anchor} dat van {@code from} naar {@code to} loopt (0 tot 1), bv. hoe vol de batterij is. */
     record Meter(int tick, int duration, Vec3 anchor, Component label, float from, float to, int color) implements HowToCue {}
 
+    /**
+     * Een helder blokje dat in {@code duration} ticks langs {@code path} loopt: een signaal over een netwerkkabel (een kaart
+     * die gelezen wordt, en het antwoord terug), of stroom die naar een apparaat loopt.
+     */
+    record Signal(int tick, int duration, List<Vec3> path, int color) implements HowToCue {}
+
     /** Een geluidje. Alleen als de animatie er gewoon langs speelt, niet als je ernaartoe springt. */
     record Sound(int tick, SoundEvent sound, float volume, float pitch) implements HowToCue {}
 

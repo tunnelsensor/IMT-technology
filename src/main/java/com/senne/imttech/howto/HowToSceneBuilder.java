@@ -142,6 +142,15 @@ public final class HowToSceneBuilder {
 
     /** Een groep blokken die tegelijk op hun plek vallen (in {@code drop} ticks; 0 = meteen). */
     public HowToSceneBuilder place(Map<BlockPos, BlockState> blocks, int drop) {
+        return place(blocks, drop, true);
+    }
+
+    /** Een blok meteen in een andere stand, zonder geluid: een lampje dat aangaat, een deur die opengaat. */
+    public HowToSceneBuilder change(BlockPos pos, BlockState state) {
+        return place(Map.of(pos, state), 0, false);
+    }
+
+    private HowToSceneBuilder place(Map<BlockPos, BlockState> blocks, int drop, boolean sound) {
         if (blocks.isEmpty()) {
             return this;
         }
@@ -151,8 +160,10 @@ public final class HowToSceneBuilder {
         for (BlockPos pos : copy.keySet()) {
             maxY = Math.max(maxY, pos.getY());
         }
-        BlockState first = copy.values().iterator().next();
-        cues.add(new HowToCue.Sound(t + drop, first.getSoundType().getPlaceSound(), 0.5f, 0.8f));
+        if (sound) {
+            BlockState first = copy.values().iterator().next();
+            cues.add(new HowToCue.Sound(t + drop, first.getSoundType().getPlaceSound(), 0.5f, 0.8f));
+        }
         return this;
     }
 
@@ -185,6 +196,16 @@ public final class HowToSceneBuilder {
         cues.add(new HowToCue.Remove(t, Collections.unmodifiableSet(set)));
         cues.add(new HowToCue.Sound(t, first.getSoundType().getBreakSound(), 0.5f, 0.8f));
         set.forEach(world::remove);
+        return this;
+    }
+
+    /** Blokken weg zonder geluid (een laserwand die terugschuift: die heeft zijn eigen geluid). */
+    public HowToSceneBuilder clear(BlockPos... positions) {
+        LinkedHashSet<BlockPos> set = new LinkedHashSet<>(List.of(positions));
+        if (!set.isEmpty()) {
+            cues.add(new HowToCue.Remove(t, Collections.unmodifiableSet(set)));
+            set.forEach(world::remove);
+        }
         return this;
     }
 
@@ -268,6 +289,12 @@ public final class HowToSceneBuilder {
         return this;
     }
 
+    /** Een helder blokje in kleur {@code rgb} dat in {@code duration} ticks langs {@code path} loopt (een signaal, stroom). */
+    public HowToSceneBuilder signal(int duration, int rgb, Vec3... path) {
+        cues.add(new HowToCue.Signal(t, duration, List.of(path), rgb));
+        return this;
+    }
+
     /**
      * Een plaatje van een echt scherm: {@code textures/gui/howto/<name>.png}, dat de rondleiding maakt. {@code width} x
      * {@code height}: hoe groot het scherm in het spel is.
@@ -333,6 +360,7 @@ public final class HowToSceneBuilder {
             case HowToCue.Cable c -> c.tick() + c.grow();
             case HowToCue.Picture p -> p.tick() + p.duration();
             case HowToCue.Meter m -> m.tick() + m.duration();
+            case HowToCue.Signal s -> s.tick() + s.duration();
             case HowToCue.Sound s -> s.tick();
         };
     }

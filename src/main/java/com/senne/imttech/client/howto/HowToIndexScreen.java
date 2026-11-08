@@ -20,7 +20,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Het overzicht van "How it works" (hoofdstuk 63, jouw antwoord 1: een knopje in je inventaris dat alle onderwerpen
  * laat zien, per creative-tabblad). Elk onderwerp is een tegel met zijn item; wijs je er een aan, dan staat bovenaan hoe
- * het heet, en een klik opent de animatie. Alleen onderwerpen die al klaar zijn staan erin.
+ * het heet, en een klik opent de animatie. Sinds je opmerking van 8 november staan ook de onderwerpen erin die nog geen
+ * animatie hebben ("zodat je weet dat dat een topic is"): die zijn grijs, en bovenaan staat "no animation yet".
  */
 public final class HowToIndexScreen extends Screen {
     private static final int PANEL = 0x0E1216;
@@ -48,9 +49,7 @@ public final class HowToIndexScreen extends Screen {
             byTab.put(tab.getId().getPath(), new ArrayList<>());
         }
         for (HowToTopic topic : HowToTopics.ALL) {
-            if (topic.ready()) {
-                byTab.computeIfAbsent(topic.tab(), key -> new ArrayList<>()).add(topic);
-            }
+            byTab.computeIfAbsent(topic.tab(), key -> new ArrayList<>()).add(topic);
         }
     }
 
@@ -127,11 +126,16 @@ public final class HowToIndexScreen extends Screen {
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
         g.drawString(font, "HOW IT WORKS", left + 8, top + 8, HudStyle.argb(255, HudStyle.CYAN), false);
+        // Rechtsboven: hoeveel onderwerpen al een animatie hebben.
+        long readyCount = tiles.stream().filter(tile -> tile.topic().ready()).count();
+        String count = Component.translatable("screen.imttech.howto.index.count", readyCount, tiles.size()).getString();
+        g.drawString(font, count, left + panelW - 8 - font.width(count), top + 8, HudStyle.argb(170, HudStyle.WHITE), false);
         Tile hovered = tileAt(mouseX, mouseY);
-        // De regel onder de kop: wat je aanwijst, of hoe het werkt.
-        Component info = hovered != null
-                ? Component.translatable("screen.imttech.howto.index.topic", hovered.topic().title())
-                : Component.translatable("screen.imttech.howto.index.hint", ImtKeys.HOW_IT_WORKS.getTranslatedKeyMessage());
+        // De regel onder de kop: wat je aanwijst (en of het al een animatie heeft), of hoe het werkt.
+        Component info = hovered == null
+                ? Component.translatable("screen.imttech.howto.index.hint", ImtKeys.HOW_IT_WORKS.getTranslatedKeyMessage())
+                : Component.translatable(hovered.topic().ready() ? "screen.imttech.howto.index.topic"
+                        : "screen.imttech.howto.index.planned", hovered.topic().title());
         HudStyle.wrappedCentered(g, font, SceneOverlays.styled(info.getString()), left + panelW / 2, top + 22, panelW - 16,
                 HudStyle.argb(hovered != null ? 255 : 190, HudStyle.WHITE));
         if (tiles.isEmpty()) {
@@ -148,9 +152,17 @@ public final class HowToIndexScreen extends Screen {
             int x = left + 8 + tile.x();
             int y = listTop() + tile.y() - (int) scroll;
             boolean over = tile == hovered;
-            g.fill(x, y, x + TILE, y + TILE, HudStyle.argb(255, over ? 0x1A2733 : 0x0A1016));
-            g.renderOutline(x, y, TILE, TILE, HudStyle.argb(255, over ? HudStyle.CYAN : EDGE));
+            boolean ready = tile.topic().ready();
+            g.fill(x, y, x + TILE, y + TILE, HudStyle.argb(255, over && ready ? 0x1A2733 : 0x0A1016));
+            g.renderOutline(x, y, TILE, TILE, HudStyle.argb(255, over ? (ready ? HudStyle.CYAN : 0x8A99A6) : ready ? 0x3A8FA8 : 0x2A333C));
             g.renderItem(tile.icon(), x + 4, y + 4);
+            if (!ready) {
+                // Nog geen animatie: het voorwerp grijs (een donker vlak erover, voor het voorwerp uit).
+                g.pose().pushPose();
+                g.pose().translate(0, 0, 250);
+                g.fill(x + 1, y + 1, x + TILE - 1, y + TILE - 1, HudStyle.argb(over ? 120 : 165, 0x0A1016));
+                g.pose().popPose();
+            }
         }
         g.disableScissor();
         // Een schuifbalkje als het niet allemaal past.
@@ -167,7 +179,10 @@ public final class HowToIndexScreen extends Screen {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         Tile tile = button == 0 ? tileAt(mouseX, mouseY) : null;
         if (tile != null) {
-            HowToScreen.open(tile.topic());
+            // Een onderwerp zonder animatie doet niets (bovenaan staat al "no animation yet").
+            if (tile.topic().ready()) {
+                HowToScreen.open(tile.topic());
+            }
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -182,6 +197,16 @@ public final class HowToIndexScreen extends Screen {
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    /** Alleen voor de rondleiding: het midden van de tegel van het onderwerp {@code topicId} (of null als die er niet is). */
+    public int @Nullable [] devTileCenter(String topicId) {
+        for (int i = 0; i < tiles.size(); i++) {
+            if (tiles.get(i).topic().id().equals(topicId)) {
+                return devTileCenter(i);
+            }
+        }
+        return null;
     }
 
     /** Alleen voor de rondleiding: het midden van tegel {@code index} op het scherm (of null als die er niet is). */

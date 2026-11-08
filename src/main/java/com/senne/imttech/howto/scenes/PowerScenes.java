@@ -5,15 +5,21 @@ import com.senne.imttech.energy.CableKind;
 import com.senne.imttech.howto.HowToCue.Side;
 import com.senne.imttech.howto.HowToScene;
 import com.senne.imttech.howto.HowToSceneBuilder;
+import com.senne.imttech.lan.NetworkSwitchBlock;
+import com.senne.imttech.logic.InputLight;
+import com.senne.imttech.security.CameraBlock;
 import com.senne.imttech.registry.ModBlocks;
 import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.station.HeatGeneratorBlock;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
@@ -146,4 +152,206 @@ public final class PowerScenes {
         s.idle(35);
         return s;
     }
+
+    // ================================================================ Stroom maken
+
+    /** Gele streepjes: stroom op weg naar een apparaat (zoals G > Information > Power flow). */
+    private static final int POWER_YELLOW = 0xFFD84A;
+
+    static BlockState station(Direction facing) {
+        return ModBlocks.CHARGING_STATION.get().defaultBlockState()
+                .setValue(com.senne.imttech.station.ChargingStationBlock.FACING, facing);
+    }
+
+    static BlockState heat(Direction facing) {
+        return ModBlocks.HEAT_GENERATOR.get().defaultBlockState().setValue(HeatGeneratorBlock.FACING, facing)
+                .setValue(HeatGeneratorBlock.LIT, true);
+    }
+
+    /**
+     * Stroom maken: het zonnepaneel (alleen overdag, onder open hemel), de warmtegenerator op brandstof of op warmte van
+     * magma, lava of vuur, en dat een apparaat dat ertegen staat geen kabel nodig heeft.
+     */
+    public static List<HowToScene> makingPower() {
+        String solar = String.format(Locale.ROOT, "%,d", Math.round(ImtConfig.Power.SOLAR_RATE));
+        String fuel = String.format(Locale.ROOT, "%,d", Math.round(ImtConfig.Power.HEAT_RATE_FUEL));
+        HowToSceneBuilder s = new HowToSceneBuilder("making_power", "Making power").plate(7, 5);
+        s.idle(8);
+        s.chapter("Solar panels");
+        BlockPos panelA = new BlockPos(1, 1, 1);
+        BlockPos panelB = new BlockPos(2, 1, 1);
+        s.place(panelA, ModBlocks.SOLAR_PANEL.get().defaultBlockState());
+        s.idle(6);
+        s.place(panelB, ModBlocks.SOLAR_PANEL.get().defaultBlockState());
+        s.idle(8);
+        s.text(80, HowToSceneBuilder.top(panelB), Side.RIGHT,
+                "A *Solar Panel* makes %s FE per tick in full sun: only by day, under open sky.", solar);
+        s.idle(85);
+
+        s.chapter("Heat generators");
+        BlockPos burner = new BlockPos(4, 1, 1);
+        s.place(burner, ModBlocks.HEAT_GENERATOR.get().defaultBlockState().setValue(HeatGeneratorBlock.FACING, Direction.SOUTH));
+        s.idle(10);
+        Vec3 grill = HowToSceneBuilder.face(burner, Direction.SOUTH);
+        s.rightClick(grill, new ItemStack(Items.COAL));
+        s.idle(14);
+        s.change(burner, heat(Direction.SOUTH));
+        s.text(80, grill, Side.RIGHT, "A *Heat Generator* burns fuel (right-click it): %s FE per tick. Its grill glows while"
+                + " it works.", fuel);
+        s.idle(85);
+        BlockPos warm = new BlockPos(5, 1, 3);
+        s.place(warm, ModBlocks.HEAT_GENERATOR.get().defaultBlockState().setValue(HeatGeneratorBlock.FACING, Direction.SOUTH));
+        s.idle(8);
+        Map<BlockPos, BlockState> magma = new LinkedHashMap<>();
+        magma.put(new BlockPos(4, 1, 3), Blocks.MAGMA_BLOCK.defaultBlockState());
+        magma.put(new BlockPos(6, 1, 3), Blocks.MAGMA_BLOCK.defaultBlockState());
+        magma.put(new BlockPos(5, 1, 2), Blocks.MAGMA_BLOCK.defaultBlockState());
+        s.place(magma, HowToSceneBuilder.DROP);
+        s.idle(12);
+        s.change(warm, heat(Direction.SOUTH));
+        s.text(85, HowToSceneBuilder.face(warm, Direction.SOUTH), Side.RIGHT,
+                "Or no fuel at all: it takes free heat from *lava*, *magma* or *fire* around it. The more, the better.");
+        s.idle(90);
+
+        s.chapter("Using it");
+        BlockPos user = new BlockPos(3, 1, 1);
+        s.place(user, station(Direction.SOUTH));
+        s.idle(8);
+        s.outline(80, user, user, HowToSceneBuilder.CYAN);
+        s.text(85, HowToSceneBuilder.face(user, Direction.SOUTH), Side.RIGHT,
+                "A machine right against a generator needs no cable. Further away: draw a *Power Cable* to it.");
+        s.idle(90);
+        return List.of(s.build());
+    }
+
+    // ================================================================ Stroomkabels
+
+    /**
+     * Stroomkabels: je tekent ze (rechtermuisknop ingedrukt), stroom loopt erover als gele streepjes, je bouwt eroverheen
+     * om ze weg te werken, en sneak + rechtsklik raapt ze op (een schaar knipt ze door).
+     */
+    public static List<HowToScene> cables() {
+        HowToSceneBuilder s = new HowToSceneBuilder("power_cables", "Power cables").plate(8, 5);
+        BlockPos panel = new BlockPos(0, 1, 2);
+        BlockPos user = new BlockPos(6, 1, 2);
+        Vec3[] path = {new Vec3(1.0, 1.05, 2.5), new Vec3(3.5, 1.05, 2.5), new Vec3(3.5, 1.05, 3.5), new Vec3(5.5, 1.05, 3.5),
+                new Vec3(5.5, 1.05, 2.5), new Vec3(6.0, 1.05, 2.5)};
+        s.idle(8);
+        s.chapter("Draw it");
+        s.place(panel, ModBlocks.SOLAR_PANEL.get().defaultBlockState());
+        s.idle(5);
+        s.place(user, station(Direction.SOUTH));
+        s.idle(12);
+        s.holdRight(50, new ItemStack(ModItems.CABLE.get()), path);
+        s.cable(CableKind.POWER, 50, path);
+        s.text(95, new Vec3(3.5, 1.05, 3.5), Side.RIGHT,
+                "Cables are not blocks: you *draw* them. Hold [Right Button] with a *Power Cable* and look where it should go.");
+        s.idle(100);
+
+        s.chapter("Power flows");
+        for (int i = 0; i < 3; i++) {
+            s.signal(30, POWER_YELLOW, path);
+            s.idle(12);
+        }
+        s.text(80, new Vec3(5.5, 1.05, 3.5), Side.RIGHT,
+                "Yellow stripes show power on its way to a machine (G > Information > Power flow).");
+        for (int i = 0; i < 4; i++) {
+            s.signal(30, POWER_YELLOW, path);
+            s.idle(12);
+        }
+        s.idle(30);
+
+        s.chapter("Hide it");
+        Map<BlockPos, BlockState> floor = new LinkedHashMap<>();
+        for (BlockPos pos : new BlockPos[] {new BlockPos(1, 1, 2), new BlockPos(2, 1, 2), new BlockPos(3, 1, 2),
+                new BlockPos(3, 1, 3), new BlockPos(4, 1, 3), new BlockPos(5, 1, 3), new BlockPos(5, 1, 2)}) {
+            floor.put(pos, Blocks.SMOOTH_STONE_SLAB.defaultBlockState());
+        }
+        s.place(floor, HowToSceneBuilder.DROP);
+        s.idle(16);
+        s.text(90, new Vec3(3.5, 1.5, 3.5), Side.RIGHT,
+                "Build over a cable to hide it: it runs on inside. With your glasses on you see hidden cables through walls.");
+        s.idle(95);
+
+        s.chapter("Pick it up");
+        s.clear(floor.keySet().toArray(new BlockPos[0]));
+        s.idle(8);
+        s.sneakRightClick(new Vec3(3.5, 1.1, 3.0), new ItemStack(ModItems.CABLE.get()));
+        s.text(80, new Vec3(3.5, 1.05, 3.0), Side.RIGHT,
+                "Sneak + right-click a cable with a cable in your hand to pick it up. *Shears* cut it in two.");
+        s.idle(85);
+        return List.of(s.build());
+    }
+
+    // ================================================================ Netwerkkabels en PoE
+
+    /**
+     * Netwerkkabels: wit van de kern naar een apparaat; PoE (groen) brengt ook stroom; signalen lopen over de kabel; en de
+     * switch, waar kabels samenkomen en je elke poort aan of uit zet.
+     */
+    public static List<HowToScene> network() {
+        HowToSceneBuilder s = new HowToSceneBuilder("network_cables", "Network cables and PoE").plate(7, 6);
+        BlockPos core = SecurityScenes.CORE;
+        BlockPos gen = SecurityScenes.CORE_GEN;
+        BlockPos reader = SecurityScenes.CORE_READER;
+        BlockPos camera = SecurityScenes.CORE_CAMERA;
+        // De switch komt op de hoek van de witte kabel (die loopt er recht doorheen).
+        BlockPos sw = new BlockPos(3, 1, 3);
+        Vec3[] white = SecurityScenes.CORE_TO_READER;
+        Vec3[] whiteBack = {white[4], white[3], white[2], white[1], white[0]};
+        Vec3[] green = SecurityScenes.CORE_TO_CAMERA;
+        s.idle(8);
+        s.chapter("Network cable");
+        s.place(core, SecurityScenes.core(Direction.SOUTH, true));
+        s.idle(4);
+        s.place(gen, heat(Direction.WEST));
+        s.idle(6);
+        s.place(SecurityScenes.coreProps(), HowToSceneBuilder.DROP);
+        s.idle(6);
+        s.place(reader, SecurityScenes.reader(Direction.WEST, InputLight.OFF));
+        s.idle(4);
+        s.place(camera, SecurityScenes.camera(Direction.SOUTH).setValue(CameraBlock.ONLINE, false));
+        s.idle(10);
+        s.holdRight(30, new ItemStack(ModItems.NETWORK_CABLE.get()), white);
+        s.cable(CableKind.NETWORK, 30, white);
+        s.idle(32);
+        s.text(90, new Vec3(3.5, 1.05, 3.0), Side.RIGHT,
+                "A *Network Cable* (white) links a security device to the *Security Core*. Small devices like a reader also"
+                        + " need a little power.");
+        s.idle(95);
+
+        s.chapter("PoE cable");
+        s.holdRight(26, new ItemStack(ModItems.POE_CABLE.get()), green);
+        s.cable(CableKind.POE, 26, green);
+        s.idle(28);
+        s.change(camera, SecurityScenes.camera(Direction.SOUTH));
+        s.text(85, new Vec3(2.5, 1.05, 1.0), Side.LEFT,
+                "A *PoE Cable* (green) carries network and power at once: the core feeds it from its own power.");
+        s.idle(90);
+
+        s.chapter("Signals");
+        s.signal(16, NETWORK_WHITE, whiteBack);
+        s.idle(18);
+        s.signal(16, NETWORK_WHITE, white);
+        s.text(80, new Vec3(4.2, 1.05, 3.5), Side.RIGHT,
+                "A card, a code or a button sends a signal over the cable to the core, and the answer comes back.");
+        s.idle(20);
+        s.signal(16, NETWORK_WHITE, whiteBack);
+        s.idle(18);
+        s.signal(16, NETWORK_WHITE, white);
+        s.idle(45);
+
+        s.chapter("Network Switch");
+        s.place(sw, ModBlocks.NETWORK_SWITCH.get().defaultBlockState().setValue(NetworkSwitchBlock.FACING, Direction.WEST)
+                .setValue(NetworkSwitchBlock.ONLINE, true));
+        s.idle(8);
+        s.outline(80, sw, sw, HowToSceneBuilder.CYAN);
+        s.text(85, HowToSceneBuilder.face(sw, Direction.WEST), Side.LEFT,
+                "A *Network Switch* joins cables from all six sides. Behind its little door you turn each port on or off.");
+        s.idle(90);
+        return List.of(s.build());
+    }
+
+    /** Een helder vakje over een netwerkkabel (wit), zoals G > Information > Cable signals. */
+    private static final int NETWORK_WHITE = 0xF2F6FA;
 }

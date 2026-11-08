@@ -1966,5 +1966,7 @@
   "screen.imttech.howto.index.topic": "*%s* - click to watch",
   "screen.imttech.howto.index.empty": "Nothing here yet.",
   "screen.imttech.howto.button": "How it works",
-  "screen.imttech.howto.button.info": "Every topic, with animations"
+  "screen.imttech.howto.button.info": "Every topic, with animations",
+  "screen.imttech.howto.index.planned": "*%s* - no animation yet",
+  "screen.imttech.howto.index.count": "%s of %s with an animation"
 }

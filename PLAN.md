@@ -5388,18 +5388,54 @@ hebben, zodat er geen vergeten wordt.
       dat in het donker zweeft (`SceneRenderer.renderPlate`). Onder de plaat zit een blok dat je niet ziet, zodat wat erop
       staat schaduw in de hoekjes houdt. Ook de knoppen kregen eigen plaatjes (|◀ opnieuw, ◀◀ en ▶▶ voor de
       hoofdstukjes), en het eerste hoofdstukje begint nu meteen (er stond een leeg hoofdstukje "1/7" voor).
-- [ ] **6. Power** — stroom maken (zonnepaneel, warmtegenerator), stroomkabels tekenen, netwerkkabels met PoE en de
-      switch, de stroomkast.
-- [ ] **7. Interior** — de holotafel, de harnas-werkbank met alle upgrades, barsten herstellen (Crusher, Compactor,
-      Repair Paste), het laadstation, het landingsplatform, de Arc Lamp met de lichtschakelaar, de relais met de zender.
-- [ ] **8. Security** — de kern, computer en monitor, zones, de Block Reinforcer, handboeien, keycards en lezers, het
-      codepaneel, de Auth Console, netwerkknop en -hendel, de Laser Emitter (poort, instellingen, draden knippen), de
-      laserbrug, de schildkoepel, camera's en de schermmuur, de torentjes, de Bypass Kit, de Hacking Laptop, de Phone.
-- [ ] **9. Robots** — een guard robot bouwen en op zijn dock zetten, modules solderen, security drones, training.
-- [ ] **10. Datacenter** — serverracks en Logic, warmte en fans.
-- [ ] **11. Weapons** — de lasergeweren, de Laser Workbench, de Ion Blaster, EMP- en fraggranaten, rook en flashbang,
+- [x] **6. Jouw volgorde: alle onderwerpen in het overzicht, en eerst de belangrijkste** — jouw opmerking (8 november):
+      "Zorg om te beginnen dat elke topic in de menu van de topics staat. Als er nog geen animatie voor is staat dat er
+      gewoon bij maar dan weet je dat dat een topic is. Hierna begin je eerst aan de belangrijkste topics die simpel zijn
+      en veel in de mod gebruikt worden, denk maar aan keycards, securitycore... dingen die minder belangrijk zijn zoals
+      een desktop verbinden aan de core mag je er dan nog uitlaten."
+      **Het overzicht** toont nu alle 51 onderwerpen: wat al een animatie heeft is helder met een cyaan randje, de rest
+      grijs; wijs je een grijze aan, dan staat bovenaan "*Keycards and readers* - no animation yet", en rechtsboven
+      "9 of 51 with an animation". Een klik op een grijze tegel doet niets.
+      **Acht nieuwe animaties** (samen met de batterij negen), elk getest en per hoofdstukje gefotografeerd:
+      - *Security Core* (32 s): het hart van je basis, op stroom, PoE-kabels naar een lezer en een camera (zonder kabel doet
+        een apparaat niets), de desktop als plaatje met Devices, Keycards, Zone en Logic, en dat alleen jij hem opent
+        (weghakken houdt alles).
+      - *Keycards and readers* (38 s): een lezer naast een ijzeren deur, een PoE-kabel naar de kern, de app Keycards als
+        plaatje (schrijven, groepen, blokkeren), de app Logic als plaatje met het diagram (`when keycard`, `card.in_group`,
+        `accept()`, `pulse("Lab lock", 3)`), dan een goede kaart (het signaal loopt over de kabel naar de kern en terug,
+        groen, het relais "Lab lock" opent de deur 3 seconden) en een verkeerde (rood, de deur blijft dicht).
+      - *Code panel* (30 s): hetzelfde met een codepaneel, het scherm met de toetsen als plaatje, en het diagram
+        (`when codepanel`, `code == "4321"`).
+      - *Laser gates* (35 s): een zender schuift zijn wand uit tot de pilaar, aan zolang hij stroom heeft, drie zenders
+        boven elkaar zijn één poort, uit en aan op zijn naam (bril, stem, `off("Gate 1")`), en het instelscherm als
+        plaatje (Color, Name, Switch, Wall), waarna de poort rood wordt.
+      - *Making power* (22 s): twee zonnepanelen, een warmtegenerator op kolen (het rooster gaat gloeien) en een op
+        magma, en een laadstation ertegen dat geen kabel nodig heeft.
+      - *Power cables* (23 s): een kabel tekenen met de rechtermuisknop ingedrukt, gele streepjes van stroom, eroverheen
+        bouwen (gladde stenen platen), en oprapen of doorknippen.
+      - *Network cables and PoE* (25 s): wit naar een lezer, groen (PoE) naar een camera die dan aangaat, signalen heen en
+        terug, en een switch in de kabel.
+      - *Charging station* (19 s): de bril laden (balkje GLASSES), een energiecel laden, en dat het alleen neemt wat de
+        generatoren over hebben.
+      Nieuwe bouwstenen: een **signaal** dat over een kabel loopt (wit, groen of geel), een blok **van stand veranderen**
+      zonder geluid (een lampje, een deur) en blokken **stil weghalen** (een laserwand die terugschuift). De plaatjes
+      (`-Ponly=howtopics`): de desktop van een kern (met een wachtwoord, dus zonder het venster Settings), de app
+      Keycards met vier kaarten in groepen, de app Logic met het diagram van de deur (met een serverrek, dus "online"),
+      het codepaneel met een getypte code, en het instelscherm van een laserzender. `-Ponly=howtoall` fotografeert elk
+      hoofdstukje van elke animatie (`ha_...`), om ze na te kijken; daarbij bleek de paal van de camera voor de kern te
+      staan (nu erachter) en stonden twee tekstballonnen over de generator en de kern heen. Tekstballonnen staan nu
+      boven de muis die klikt (het voorwerp in je hand viel over de tekst). 449 tests, allemaal groen.
+- [ ] **7. Power** (nog) — de stroomkast.
+- [ ] **8. Interior** (nog) — de holotafel, de harnas-werkbank met alle upgrades, barsten herstellen (Crusher, Compactor,
+      Repair Paste), het landingsplatform, de Arc Lamp met de lichtschakelaar, de relais met de zender.
+- [ ] **9. Security** (nog) — zones, de Block Reinforcer, handboeien, de Auth Console, netwerkknop en -hendel, de
+      instellingen en het draden knippen van de Laser Emitter, de laserbrug, de schildkoepel, camera's en de schermmuur,
+      de torentjes, de Bypass Kit, de Hacking Laptop, de Phone, en (minder belangrijk, jouw keuze) computer en monitor.
+- [ ] **10. Robots** — een guard robot bouwen en op zijn dock zetten, modules solderen, security drones, training.
+- [ ] **11. Datacenter** — serverracks en Logic, warmte en fans.
+- [ ] **12. Weapons** — de lasergeweren, de Laser Workbench, de Ion Blaster, EMP- en fraggranaten, rook en flashbang,
       de Remote EMP en Remote Frag, de Glock 19, de Gunsmith Table, de Reloading Bench, de holster en de pouches.
-- [ ] **12. Equipment** — de bril, het harnas, het raketpakket, drones, de E.M.P.
+- [ ] **13. Equipment** — de bril, het harnas, het raketpakket, drones, de E.M.P.
 
 ## Nog nooit in het spel bekeken
 
@@ -5410,7 +5446,9 @@ eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er
       Probeer: in je inventaris je muis op een Battery Casing en W vasthouden (op jouw AZERTY-toetsenbord: Z); voelt 0,6
       seconde goed? Slepen en scrollen in het wereldje, de knoppen onderaan, klikken op de tijdlijn, een blok aanwijzen,
       Esc (ben je terug in je inventaris?), en het knopje ? rechtsboven. Ook in een kist en in JEI. Hoor je de tikjes van
-      de blokken (niet te hard? `howToVolume`), en is het platform mooi genoeg op jouw GUI-schaal?
+      de blokken (niet te hard? `howToVolume`), en is het platform mooi genoeg op jouw GUI-schaal? Sinds stap 6 ook: kloppen
+      de acht nieuwe animaties met hoe jij het speelt (de kern, keycards, het codepaneel, laserpoorten, stroom, kabels,
+      netwerk, het laadstation), en zijn de plaatjes van de desktop en de apps leesbaar?
 
 - [ ] **De sluipaanval en het oog zonder bril (hoofdstuk 61)**: gezien op screenshots (`-Ponly=guards`, hg02, hg03,
       hg07 tot hg12), niet gespeeld. Probeer: sluip achter een bewaker met een zwaard (staat "Takedown" onder je vizier,

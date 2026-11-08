@@ -174,7 +174,8 @@ Elk item dat meer doet dan in een recept gaan, krijgt een animatie die laat zien
   die regel loopt vol en na 0,6 seconde gaat de animatie open. Typ je in een zoekvak, dan is W gewoon een
   letter. De toets verander je in **Opties > Besturing > I.M.T** ("How it works").
 - **Het overzicht**: het knopje **?** rechtsboven in je inventaris (boven het craftraster) toont alle
-  onderwerpen, per creative-tabblad. Een klik op een tegel opent de animatie.
+  onderwerpen, per creative-tabblad. Een klik op een tegel opent de animatie. Een grijze tegel heeft nog
+  geen animatie (bovenaan staat dan "no animation yet"); rechtsboven staat hoeveel er al klaar zijn.
 - **Het scherm**: bovenaan het onderwerp, in het midden een klein wereldje waarin blokken op hun plek
   vallen, met tekstballonnen, een muis die laat zien waar je klikt (en met wat in je hand), kabels die
   getekend worden, gekleurde randjes, balkjes, en een **plaatje van het echte scherm** met pijltjes als een
@@ -184,8 +185,10 @@ Elk item dat meer doet dan in een recept gaan, krijgt een animatie die laat zien
   **wijs je een blok aan**, dan zie je hoe het heet. Heeft een item meer animaties, dan blader je met de
   pijltjes bovenaan. **Esc** brengt je terug naar je inventaris, met alles nog zoals het was. In je eigen
   wereld staat het spel stil terwijl je kijkt.
-- **Wat er al is**: de Power Battery (casing, glass, cell en port). De andere onderwerpen komen tabblad voor
-  tabblad (PLAN.md, hoofdstuk 63).
+- **Wat er al is**: de Security Core, keycards en lezers, het codepaneel, laserpoorten, stroom maken
+  (zonnepaneel en warmtegenerator), stroomkabels, netwerkkabels met PoE en de switch, het laadstation en de
+  Power Battery (casing, glass, cell en port). De rest komt eraan, de belangrijkste eerst (PLAN.md,
+  hoofdstuk 63).
 - Het geluid (een blok dat neerkomt): `howToVolume` in `imttech-client.toml` (1 = normaal, 0 = uit).
 
 ### Het drone-arsenaal

@@ -2,7 +2,9 @@ package com.senne.imttech.howto;
 
 import com.senne.imttech.ImtTech;
 import com.senne.imttech.guns.GunPart;
+import com.senne.imttech.howto.scenes.InteriorScenes;
 import com.senne.imttech.howto.scenes.PowerScenes;
+import com.senne.imttech.howto.scenes.SecurityScenes;
 import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.weapons.GunType;
 import com.senne.imttech.weapons.LaserPart;
@@ -60,9 +62,9 @@ public final class HowToTopics {
             // ------------------------------------------------------------ Power
             topic("power_battery", "power", "Power Battery", PowerScenes::battery, ModItems.BATTERY_CASING, ModItems.BATTERY_GLASS,
                     ModItems.BATTERY_CELL, ModItems.BATTERY_PORT),
-            planned("making_power", "power", "Making power", ModItems.SOLAR_PANEL, ModItems.HEAT_GENERATOR),
-            planned("power_cables", "power", "Power cables", ModItems.CABLE),
-            planned("network_cables", "power", "Network cables and PoE", ModItems.NETWORK_CABLE, ModItems.POE_CABLE,
+            topic("making_power", "power", "Making power", PowerScenes::makingPower, ModItems.SOLAR_PANEL, ModItems.HEAT_GENERATOR),
+            topic("power_cables", "power", "Power cables", PowerScenes::cables, ModItems.CABLE),
+            topic("network_cables", "power", "Network cables and PoE", PowerScenes::network, ModItems.NETWORK_CABLE, ModItems.POE_CABLE,
                     ModItems.NETWORK_SWITCH),
             planned("power_cabinet", "power", "The power cabinet", ModItems.POWER_CABINET),
             // ------------------------------------------------------------ Interior
@@ -72,21 +74,21 @@ public final class HowToTopics {
                     ModItems.BATTERY_UPGRADE, ModItems.SCANNER_UPGRADE, ModItems.DRONE_UPGRADE),
             planned("repairing_cracks", "interior", "Repairing cracks", ModItems.CRUSHER, ModItems.COMPACTOR, ModItems.REPAIR_PASTE,
                     ModItems.CRACKED_BLOCK, ModItems.BLOCK_POWDER),
-            planned("charging_station", "interior", "Charging station", ModItems.CHARGING_STATION, ModItems.ENERGY_CELL),
+            topic("charging_station", "interior", "Charging station", InteriorScenes::chargingStation, ModItems.CHARGING_STATION, ModItems.ENERGY_CELL),
             planned("landing_pad", "interior", "Landing pad", ModItems.LANDING_PAD),
             planned("arc_lamp", "interior", "Arc Lamp and light switch", ModItems.ARC_LAMP, ModItems.LIGHT_SWITCH),
             planned("relays", "interior", "Redstone relays", ModItems.RELAY, ModItems.RELAY_EMITTER),
             // ------------------------------------------------------------ Security
-            planned("security_core", "security", "Security Core", ModItems.SECURITY_CORE),
+            topic("security_core", "security", "Security Core", SecurityScenes::core, ModItems.SECURITY_CORE),
             planned("computer", "security", "Computer and monitor", ModItems.COMPUTER, ModItems.MONITOR),
             planned("zones", "security", "Protected zones", ModItems.ZONE_MARKER),
             planned("block_reinforcer", "security", "Block Reinforcer", ModItems.BLOCK_REINFORCER, ModItems.REINFORCEMENT_PLATE),
             planned("handcuffs", "security", "Handcuffs", ModItems.HANDCUFFS, ModItems.HANDCUFF_KEY),
-            planned("keycards", "security", "Keycards and readers", ModItems.KEYCARD, ModItems.KEYCARD_READER),
-            planned("code_panel", "security", "Code panel", ModItems.CODE_PANEL),
+            topic("keycards", "security", "Keycards and readers", SecurityScenes::keycards, ModItems.KEYCARD, ModItems.KEYCARD_READER),
+            topic("code_panel", "security", "Code panel", SecurityScenes::codePanel, ModItems.CODE_PANEL),
             planned("auth_console", "security", "Auth codes and the Auth Console", ModItems.AUTH_CONSOLE),
             planned("network_controls", "security", "Network button and lever", ModItems.NETWORK_BUTTON, ModItems.NETWORK_LEVER),
-            planned("laser_emitter", "security", "Laser gates", ModItems.LASER_EMITTER),
+            topic("laser_emitter", "security", "Laser gates", SecurityScenes::laserGate, ModItems.LASER_EMITTER),
             planned("laser_bridge", "security", "Laser bridge", ModItems.LASER_BRIDGE),
             planned("shield_dome", "security", "Shield dome", ModItems.DOME_GENERATOR),
             planned("cameras", "security", "Cameras and the camera wall", ModItems.SECURITY_CAMERA, ModItems.CAMERA_MONITOR),

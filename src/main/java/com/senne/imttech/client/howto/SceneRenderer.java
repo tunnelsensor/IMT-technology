@@ -237,6 +237,13 @@ final class SceneRenderer {
                 float grown = cable.grow() <= 0 ? 1.0f : Math.min(1.0f, (time - cable.tick()) / cable.grow());
                 List<Vec3> points = ScenePlayer.partial(cable.points(), grown);
                 CableRenderer.drawPath(pose.last().pose(), buffers, cable.kind(), points, LightTexture.FULL_BRIGHT);
+            } else if (cue instanceof HowToCue.Signal signal) {
+                // Een signaal: een helder blokje dat over de kabel loopt (net iets dikker dan de kabel).
+                float progress = ScenePlayer.progress(time, signal.tick(), signal.duration());
+                if (progress >= 0.0f) {
+                    Vec3 at = ScenePlayer.along(signal.path(), progress);
+                    CableRenderer.drawBar(pose.last().pose(), buffers, at, at, 0.075, signal.color(), LightTexture.FULL_BRIGHT);
+                }
             }
         }
     }

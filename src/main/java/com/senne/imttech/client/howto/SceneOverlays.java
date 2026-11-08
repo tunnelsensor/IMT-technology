@@ -36,13 +36,14 @@ final class SceneOverlays {
     static void render(GuiGraphics g, Font font, SceneRenderer renderer, ScenePlayer player, float time, int x, int y, int w,
                        int h) {
         List<int[]> taken = new ArrayList<>();
+        List<HowToCue.Text> texts = new ArrayList<>();
         HowToCue.Picture picture = null;
         for (HowToCue cue : player.scene.cues()) {
             if (cue.tick() > time) {
                 break;
             }
             switch (cue) {
-                case HowToCue.Text text -> text(g, font, renderer, text, time, x, y, w, h, taken);
+                case HowToCue.Text text -> texts.add(text);
                 case HowToCue.Click click -> click(g, font, renderer, click, time);
                 case HowToCue.Meter meter -> meter(g, font, renderer, meter, time);
                 case HowToCue.Picture p -> {
@@ -54,6 +55,13 @@ final class SceneOverlays {
                 }
             }
         }
+        // De tekstballonnen boven de muis en zijn voorwerp (dat tekent Minecraft een stukje naar voren): de tekst gaat voor.
+        g.pose().pushPose();
+        g.pose().translate(0, 0, 300);
+        for (HowToCue.Text text : texts) {
+            text(g, font, renderer, text, time, x, y, w, h, taken);
+        }
+        g.pose().popPose();
         if (picture != null) {
             picture(g, font, picture, time, x, y, w, h);
         }
@@ -240,8 +248,8 @@ final class SceneOverlays {
         float in = Math.min(1.0f, (time - picture.tick()) / 10.0f);
         float slide = (1.0f - (1.0f - (1.0f - in) * (1.0f - in))) * w * 0.6f;
         g.pose().pushPose();
-        // Boven de voorwerpjes van de klikken uit (die tekent Minecraft een stukje naar voren).
-        g.pose().translate(0, 0, 300);
+        // Boven de voorwerpjes van de klikken en de tekstballonnen uit.
+        g.pose().translate(0, 0, 500);
         g.fill(x, y, x + w, y + h, HudStyle.argb(Math.round(fade * 170), 0x04070A));
         // Zo groot mogelijk in de rechterkant, met de verhouding van het echte scherm.
         float ratio = picture.width() / (float) picture.height();

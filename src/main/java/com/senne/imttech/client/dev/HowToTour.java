@@ -94,7 +94,7 @@ final class HowToTour {
         t.shot(10, "ht17_overview");
         t.step(0, () -> {
             if (Minecraft.getInstance().screen instanceof HowToIndexScreen index) {
-                int[] tile = index.devTileCenter(0);
+                int[] tile = index.devTileCenter("power_battery");
                 if (tile != null) {
                     mouseTo(tile[0], tile[1]);
                 }
@@ -103,7 +103,7 @@ final class HowToTour {
         t.shot(5, "ht18_overview_hover");
         t.step(0, () -> {
             if (Minecraft.getInstance().screen instanceof HowToIndexScreen index) {
-                int[] tile = index.devTileCenter(0);
+                int[] tile = index.devTileCenter("power_battery");
                 if (tile != null) {
                     index.mouseClicked(tile[0], tile[1], 0);
                 }
@@ -115,6 +115,55 @@ final class HowToTour {
         t.close(2);
         t.close(2);
         t.command(0, "gamemode creative @a");
+    }
+
+    /** Zoveel animaties per onderwerp en hoofdstukjes per animatie fotograferen we hooguit (wat er niet is, slaan we over). */
+    private static final int MAX_SCENES = 3;
+    private static final int MAX_CHAPTERS = 8;
+
+    /**
+     * {@code -Ponly=howtoall}: van elke animatie die klaar is een screenshot per hoofdstukje (op 55% en 90% ervan), om ze
+     * allemaal na te kijken: {@code ha_<onderwerp>_<animatie>_<hoofdstukje><a of b>}. Het draaiboek van de rondleiding
+     * wordt gemaakt voor de blokken van Minecraft bestaan; de animaties maken we dus pas tijdens de rondleiding zelf, en
+     * wat er niet is (een tweede animatie, een achtste hoofdstukje), slaan we dan over.
+     */
+    static void allScenes(DevScript t) {
+        for (com.senne.imttech.howto.HowToTopic topic : com.senne.imttech.howto.HowToTopics.ALL) {
+            if (!topic.ready()) {
+                continue;
+            }
+            for (int scene = 0; scene < MAX_SCENES; scene++) {
+                final int index = scene;
+                t.step(2, () -> {
+                    Minecraft.getInstance().setScreen(null);
+                    if (index < topic.buildScenes().size()) {
+                        HowToScreen.open(topic);
+                        howTo(screen -> screen.devScene(index));
+                    }
+                });
+                t.step(2, () -> mouseTo(2, 2));
+                for (int chapter = 0; chapter < MAX_CHAPTERS; chapter++) {
+                    final int c = chapter;
+                    for (String part : new String[] {"a", "b"}) {
+                        float fraction = part.equals("a") ? 0.55f : 0.9f;
+                        String name = "ha_" + topic.id() + "_" + scene + "_" + chapter + part;
+                        t.step(0, () -> {
+                            if (Minecraft.getInstance().screen instanceof HowToScreen screen && c < screen.devChapters()) {
+                                screen.devShowFraction(c, fraction);
+                            }
+                        });
+                        t.step(3, () -> {
+                            Minecraft mc = Minecraft.getInstance();
+                            if (mc.screen instanceof HowToScreen screen && c < screen.devChapters()) {
+                                Screenshot.grab(mc.gameDirectory, name + ".png", mc.getMainRenderTarget(),
+                                        message -> ImtTech.LOGGER.info("[dev] {}", message.getString()));
+                            }
+                        });
+                    }
+                }
+            }
+        }
+        t.step(2, () -> Minecraft.getInstance().setScreen(null));
     }
 
     /** Springt in de open animatie naar een hoofdstukje (+ ticks) en maakt een screenshot. */
@@ -177,6 +226,146 @@ final class HowToTour {
         });
         t.close(0);
         t.look(0, 0.0f, 10.0f);
+        securityPictures(t);
+    }
+
+    /** Waar de kern voor de plaatjes van de beveiliging staat (ver van de rest van de rondleiding). */
+    private static final BlockPos DEMO_CORE = new BlockPos(-460, -60, -460);
+    private static final BlockPos DEMO_EMITTER = DEMO_CORE.offset(4, 0, 0);
+
+    /** Het diagram op het plaatje "logic" (de keycard en het codepaneel van de animaties openen samen "Lab lock"). */
+    private static final String DEMO_CODE = String.join("\n",
+            "when keycard(\"Lab door\"):",
+            "    if card.in_group(\"lab\"):",
+            "        accept()",
+            "        pulse(\"Lab lock\", 3)",
+            "    else:",
+            "        deny()",
+            "",
+            "when codepanel(\"Front door\"):",
+            "    if code == \"4321\":",
+            "        accept()",
+            "        pulse(\"Lab lock\", 3)",
+            "    else:",
+            "        deny()");
+
+    /**
+     * De plaatjes van de beveiliging (hoofdstuk 63, stap 8): de desktop van een kern, de app Keycards met een paar groepen
+     * en kaarten, de app Logic met het diagram van de deur, het codepaneel met een getypte code, en het instelscherm van
+     * een laserzender. Allemaal het hele venster (de desktop) of het paneel (de kleine schermen).
+     */
+    private static void securityPictures(DevScript t) {
+        t.onServer(0, player -> {
+            net.minecraft.server.level.ServerLevel level = player.serverLevel();
+            level.setBlockAndUpdate(DEMO_CORE.below(), com.senne.imttech.registry.ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+            if (level.getBlockEntity(DEMO_CORE.below()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
+                generator.fill(200_000);
+            }
+            level.setBlockAndUpdate(DEMO_CORE, com.senne.imttech.registry.ModBlocks.SECURITY_CORE.get().defaultBlockState());
+            if (level.getBlockEntity(DEMO_CORE) instanceof com.senne.imttech.security.SecurityCoreBlockEntity core) {
+                core.setOwner(player);
+                core.ensureSystem(level);
+                // Met een wachtwoord opent de desktop niet meteen het venster Settings.
+                core.setPassword("bitech1", level.random);
+            }
+            // Een serverrek tegen de kern (met een generator eronder), zodat Logic "online" is.
+            BlockPos rack = DEMO_CORE.east();
+            level.setBlockAndUpdate(rack.below(), com.senne.imttech.registry.ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+            if (level.getBlockEntity(rack.below()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
+                generator.fill(200_000);
+            }
+            level.setBlockAndUpdate(rack, com.senne.imttech.registry.ModBlocks.SERVER_RACK.get().defaultBlockState());
+            if (level.getBlockEntity(rack) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
+                be.parts().setItem(0, new ItemStack(ModItems.SERVER_CPU.get()));
+                be.parts().setItem(1, new ItemStack(ModItems.SERVER_RAM.get()));
+                be.parts().setItem(2, new ItemStack(ModItems.SERVER_SSD.get()));
+                be.parts().setItem(3, new ItemStack(ModItems.SERVER_FAN.get()));
+            }
+            level.setBlockAndUpdate(DEMO_EMITTER, com.senne.imttech.registry.ModBlocks.LASER_EMITTER.get().defaultBlockState()
+                    .setValue(com.senne.imttech.shield.LaserEmitterBlock.FACING, net.minecraft.core.Direction.SOUTH));
+            player.getInventory().setItem(8, new ItemStack(ModItems.KEYCARD.get(), 8));
+        });
+        t.stand(10, DEMO_CORE.getX() + 0.5, DEMO_CORE.getY(), DEMO_CORE.getZ() + 3.5, 180, 0);
+        t.look(5, 0.0f, -90.0f);
+        // De desktop, zonder vensters.
+        t.onServer(10, player -> com.senne.imttech.security.os.SecurityOs.open(player, DEMO_CORE));
+        t.step(5, () -> mouseTo(1, 1));
+        t.step(5, () -> os(com.senne.imttech.client.os.SecurityOsScreen::tourCloseAll));
+        t.step(15, () -> captureScreen("security_os"));
+        // De app Keycards: groepen en kaarten zoals in de animatie (lab, security, guest).
+        t.onServer(0, player -> {
+            for (String[] group : new String[][] {{"staff", ""}, {"lab", "staff"}, {"security", "staff"}, {"guest", ""}}) {
+                net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
+                args.putString("name", group[0]);
+                args.putString("parent", group[1]);
+                com.senne.imttech.security.os.SecurityOs.handleAction(player,
+                        new com.senne.imttech.network.OsActionPayload(DEMO_CORE, "cgroup_new", args));
+            }
+            for (String[] card : new String[][] {{"Lab access", "2", "lab"}, {"Lotte", "5", "security"},
+                    {"Visitor", "6", "guest"}, {"Night guard", "8", "security"}}) {
+                net.minecraft.nbt.CompoundTag args = new net.minecraft.nbt.CompoundTag();
+                args.putString("label", card[0]);
+                args.putInt("colour", Integer.parseInt(card[1]));
+                args.putString("group", card[2]);
+                com.senne.imttech.security.os.SecurityOs.handleAction(player,
+                        new com.senne.imttech.network.OsActionPayload(DEMO_CORE, "card_write", args));
+            }
+        });
+        // Wachten tot de melding onderaan ("Card written") weg is (vier seconden), anders staat die over de taakbalk.
+        t.step(95, () -> os(screen -> {
+            screen.tourKeycards("Lab access", 2);
+            screen.tourKeycardGroup(null);
+        }));
+        t.step(15, () -> captureScreen("keycards_app"));
+        // De app Logic met het diagram van de deur (alleen dat venster open).
+        t.step(0, () -> os(screen -> {
+            screen.tourCloseAll();
+            screen.tourLogic("Lab door", DEMO_CODE, false);
+        }));
+        t.step(15, () -> captureScreen("logic"));
+        t.close(5);
+        t.close(5);
+        // Het codepaneel met vier cijfers ingetypt.
+        t.step(5, () -> {
+            Minecraft.getInstance().setScreen(new com.senne.imttech.client.CodePanelScreen(DEMO_CORE.east(), "Front door"));
+            if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.CodePanelScreen panel) {
+                panel.tourType("4321");
+            }
+        });
+        t.step(15, () -> {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.screen != null) {
+                capture("code_panel", (mc.screen.width - 94) / 2, (mc.screen.height - 150) / 2, 94, 150);
+            }
+        });
+        t.close(5);
+        // Het instelscherm van een laserzender.
+        t.open(5, () -> new com.senne.imttech.client.shield.LaserEmitterScreen(DEMO_EMITTER, "Dev", "Gate 1"));
+        t.step(15, () -> {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.screen != null) {
+                int top = Math.max(6, (mc.screen.height - 186) / 2);
+                capture("laser_settings", (mc.screen.width - 270) / 2, top, 270, 186);
+            }
+        });
+        t.close(5);
+        t.look(0, 0.0f, 10.0f);
+    }
+
+    private static void os(Consumer<com.senne.imttech.client.os.SecurityOsScreen> action) {
+        if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen screen) {
+            action.accept(screen);
+        } else {
+            ImtTech.LOGGER.warn("[visual check] de desktop staat niet open (maar {})", Minecraft.getInstance().screen);
+        }
+    }
+
+    /** Het hele venster als plaatje (de desktop vult het hele scherm). */
+    private static void captureScreen(String name) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen != null) {
+            capture(name, 0, 0, mc.screen.width, mc.screen.height);
+        }
     }
 
     /**
@@ -214,13 +403,31 @@ final class HowToTour {
         int py = (int) Math.round(y * scale);
         int pw = (int) Math.round(w * scale);
         int ph = (int) Math.round(h * scale);
+        try (NativeImage full = Screenshot.takeScreenshot(mc.getMainRenderTarget())) {
+            // Niet buiten het beeld: de breedte van het scherm is naar boven afgerond (1280 / 3 = 427).
+            px = Math.max(0, Math.min(px, full.getWidth() - 1));
+            py = Math.max(0, Math.min(py, full.getHeight() - 1));
+            pw = Math.min(pw, full.getWidth() - px);
+            ph = Math.min(ph, full.getHeight() - py);
+            writeCrop(full, px, py, pw, ph, name);
+        } catch (IOException | RuntimeException e) {
+            ImtTech.LOGGER.error("[visual check] kon het plaatje {} niet maken", name, e);
+        }
+    }
+
+    private static void writeCrop(NativeImage full, int px, int py, int pw, int ph, String name) throws IOException {
+        Minecraft mc = Minecraft.getInstance();
         Path out = mc.gameDirectory.toPath().toAbsolutePath().normalize().getParent()
                 .resolve("src/main/resources/assets/" + ImtTech.MODID + "/textures/gui/howto/" + name + ".png");
-        try (NativeImage full = Screenshot.takeScreenshot(mc.getMainRenderTarget());
-             NativeImage crop = new NativeImage(pw, ph, false)) {
+        try (NativeImage crop = new NativeImage(pw, ph, false)) {
             full.copyRect(crop, px, py, 0, 0, pw, ph, false, false);
             Files.createDirectories(out.getParent());
             crop.writeToFile(out);
+            // Met "blur" is het plaatje verkleind in de animatie niet korrelig.
+            Path meta = out.resolveSibling(name + ".png.mcmeta");
+            if (!Files.exists(meta)) {
+                Files.writeString(meta, String.join("\n", "{", "  \"texture\": {", "    \"blur\": true", "  }", "}", ""));
+            }
             ImtTech.LOGGER.info("[visual check] plaatje voor How it works: {} ({} x {})", out, pw, ph);
         } catch (IOException | RuntimeException e) {
             ImtTech.LOGGER.error("[visual check] kon het plaatje {} niet maken", name, e);

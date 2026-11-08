@@ -466,6 +466,25 @@ public final class HowToScreen extends Screen {
         player.setPaused(true);
     }
 
+    /** Naar animatie {@code which} van dit item (zoals de pijltjes bovenaan). */
+    public void devScene(int which) {
+        select(which);
+    }
+
+    /** Hoeveel hoofdstukjes de animatie heeft die nu speelt. */
+    public int devChapters() {
+        return player.scene.chapters().size();
+    }
+
+    /** Springt naar {@code fraction} (0 tot 1) van hoofdstukje {@code chapter} en zet de animatie stil. */
+    public void devShowFraction(int chapter, float fraction) {
+        HowToScene scene = player.scene;
+        int start = scene.chapters().get(chapter).tick();
+        int end = chapter + 1 < scene.chapters().size() ? scene.chapters().get(chapter + 1).tick() : scene.length();
+        player.seek(start + Math.round((end - start) * fraction));
+        player.setPaused(true);
+    }
+
     /** Zet de camera ergens anders (alsof je gesleept en gescrold hebt). */
     public void devCamera(float yaw, float pitch, float zoom) {
         this.yaw = yaw;

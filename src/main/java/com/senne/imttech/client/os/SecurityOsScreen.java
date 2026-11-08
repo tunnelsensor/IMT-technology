@@ -488,6 +488,11 @@ public class SecurityOsScreen extends Screen {
         openApp(app);
     }
 
+    /** Alleen voor de plaatjes van How it works (hoofdstuk 63): alle vensters dicht, zodat je de desktop ziet. */
+    public void tourCloseAll() {
+        new java.util.ArrayList<>(windows).forEach(this::closeWindow);
+    }
+
     /** Alleen voor de screenshot-rondleiding: de bewakingsmuur, of het grote beeld van deze camera. */
     public void tourCameras(@Nullable BlockPos camera) {
         openApp(App.CAMERAS);
