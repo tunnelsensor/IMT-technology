@@ -5425,17 +5425,51 @@ hebben, zodat er geen vergeten wordt.
       hoofdstukje van elke animatie (`ha_...`), om ze na te kijken; daarbij bleek de paal van de camera voor de kern te
       staan (nu erachter) en stonden twee tekstballonnen over de generator en de kern heen. Tekstballonnen staan nu
       boven de muis die klikt (het voorwerp in je hand viel over de tekst). 449 tests, allemaal groen.
-- [ ] **7. Power** (nog) — de stroomkast.
-- [ ] **8. Interior** (nog) — de holotafel, de harnas-werkbank met alle upgrades, barsten herstellen (Crusher, Compactor,
-      Repair Paste), het landingsplatform, de Arc Lamp met de lichtschakelaar, de relais met de zender.
-- [ ] **9. Security** (nog) — zones, de Block Reinforcer, handboeien, de Auth Console, netwerkknop en -hendel, de
-      instellingen en het draden knippen van de Laser Emitter, de laserbrug, de schildkoepel, camera's en de schermmuur,
-      de torentjes, de Bypass Kit, de Hacking Laptop, de Phone, en (minder belangrijk, jouw keuze) computer en monitor.
-- [ ] **10. Robots** — een guard robot bouwen en op zijn dock zetten, modules solderen, security drones, training.
-- [ ] **11. Datacenter** — serverracks en Logic, warmte en fans.
-- [ ] **12. Weapons** — de lasergeweren, de Laser Workbench, de Ion Blaster, EMP- en fraggranaten, rook en flashbang,
-      de Remote EMP en Remote Frag, de Glock 19, de Gunsmith Table, de Reloading Bench, de holster en de pouches.
-- [ ] **13. Equipment** — de bril, het harnas, het raketpakket, drones, de E.M.P.
+- [x] **7. De volgende tien** — jouw opmerking (8 november): "Ga verder met de 10 andere net iets minder belangrijke
+      animaties, maar nog steeds de belangrijkste van wat er nog niet is." Mijn keuze, de belangrijkste van wat er nog was:
+      - *I.M.T glasses* (31 s): jij (een speler met jouw skin) zet de bril op, dat je hem alleen in de kluis van een
+        Biebia's Industries Tower vindt, dat hij van de eerste drager is, de HUD en het G-menu (het tabblad Drones) als
+        plaatje, en laden in het laadstation.
+      - *Turrets* (30 s): een Rocket Turret gaat aan op stroom (zonder stroom hangt de loop), een husk loopt erop af en het
+        geschut draait mee en schiet hem neer met de laser, raketten met Rocket Ammo, een Laser Turret aan je kern die een
+        tweede husk neerhaalt, en uit en aan op hun naam (dan hangen de lopen).
+      - *Server racks* (20 s): vier racks tegen de kern zijn één server, het scherm van een rek als plaatje (CPU of GPU,
+        fan, RAM, SSD), en dan knipperen de lampjes.
+      - *Heat and fans* (20 s): het balkje RACK TEMP (in graden) loopt op zonder fan, een fan erin en het zakt, en te heet: vuur op het
+        rek (70, 90 en 110 graden).
+      - *Cameras and the camera wall* (20 s): een camera op een paal met een PoE-kabel (dan gaat hij aan), een muur van
+        vier monitoren die samen één scherm zijn, en instellen met een rechtsklik.
+      - *Protected zones* (26 s): een basis met een kern, jij met de Zone Marker: linksklik hoek 1, rechtsklik hoek 2 (een
+        oranje doos), sneak + rechtsklik (de doos wordt cyaan: je zone), wie er mag bouwen, frags, stroom, de app Zone en
+        Autoscan.
+      - *Laser bridge* (20 s): twee brugzenders in de rand van een gat, de vloer van licht schuift erover, jij loopt erover,
+        en een val: de brug gaat uit en de tweede speler valt.
+      - *Network button and lever* (22 s): een knop en een hendel aan een muur met PoE, de knop stuurt een signaal naar de
+        kern, Logic als plaatje (`when button`, `player.name`, `when lever`, `lever.on`), en de hendel om.
+      - *Shield dome* (22 s): de koepel gaat aan met zijn echte show (de straal, het openvouwen, een hele bol) boven een
+        huisje, een raiddrone kaatst terug, en het scherm als plaatje (aan/uit, kleur, bereik, sterkte).
+      - *Redstone relays* (27 s): een relais en een lamp, een naam geven, aan en uit van overal, groepen, en de relay
+        emitter met een hendel die beide relais aanzet.
+      Daarvoor kan het wereldje nu meer: **wezens** (een speler met jouw skin en wat hij draagt of vasthoudt, een husk,
+      een raiddrone, die langs een pad lopen met hun benen in beweging), de **bewegende delen van blokken** die Minecraft
+      apart tekent (het geschut van een torentje, dat op het dichtstbijzijnde monster mikt, rondkijkt of zijn loop laat
+      hangen; de koepel; de monitoren), **schoten** (een laserstraal), en gegevens voor zo'n blok op een moment (de
+      koepel die opengaat loopt mee met de animatie, ook als je terugspoelt). Een blok waarvan het tekenen buiten de
+      wereld niet lukt, slaan we over in plaats van dat het scherm crasht. Nieuwe plaatjes (`-Ponly=howtopics`): de HUD
+      en het G-menu van de bril, Logic met een knop en een hendel, het scherm van een rek (het rek opende eerst zonder
+      zijn plek, en dan verbrak het spel de verbinding) en het scherm van een koepel. Elk hoofdstukje gefotografeerd
+      (`-Ponly=howtoall`, en met `howto:turrets` erbij alleen dat onderwerp); daarbij bleek een schuin schot als een grote
+      rode doos getekend te worden (een doos langs de assen, zoals een kabel: nu een echte dunne straal), stonden drie
+      tekstballonnen over de monitoren, de relay emitter en het laadstation, en stond de temperatuur in procenten. 449
+      tests, allemaal groen.
+- [ ] **8. Nog te doen (32 onderwerpen)** — Power: de stroomkast. Interior: de holotafel, de harnas-werkbank met alle
+      upgrades, barsten herstellen, het landingsplatform, de Arc Lamp met de lichtschakelaar. Security: de Block
+      Reinforcer, handboeien, de Auth Console, de Bypass Kit, de Hacking Laptop, de Phone, en (minder belangrijk, jouw
+      keuze) computer en monitor; en voor de Laser Emitter nog de animaties van zijn instellingen en het draden knippen.
+      Robots: een guard robot bouwen en op zijn dock zetten, modules solderen, security drones, training. Weapons: de
+      lasergeweren, de Laser Workbench, de Ion Blaster, EMP- en fraggranaten, rook en flashbang, de Remote EMP en Remote
+      Frag, de Glock 19, de Gunsmith Table, de Reloading Bench, de holster en de pouches. Equipment: het harnas, het
+      raketpakket, drones, de E.M.P.
 
 ## Nog nooit in het spel bekeken
 

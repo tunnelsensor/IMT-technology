@@ -2,6 +2,9 @@ package com.senne.imttech.howto;
 
 import com.senne.imttech.ImtTech;
 import com.senne.imttech.guns.GunPart;
+import com.senne.imttech.howto.scenes.DatacenterScenes;
+import com.senne.imttech.howto.scenes.DefenceScenes;
+import com.senne.imttech.howto.scenes.EquipmentScenes;
 import com.senne.imttech.howto.scenes.InteriorScenes;
 import com.senne.imttech.howto.scenes.PowerScenes;
 import com.senne.imttech.howto.scenes.SecurityScenes;
@@ -35,7 +38,7 @@ public final class HowToTopics {
     /** Alle onderwerpen, per creative-tabblad in de volgorde van de tabbladen. */
     public static final List<HowToTopic> ALL = List.of(
             // ------------------------------------------------------------ Equipment
-            planned("glasses", "equipment", "I.M.T glasses", ModItems.IMT_GLASSES),
+            topic("glasses", "equipment", "I.M.T glasses", EquipmentScenes::glasses, ModItems.IMT_GLASSES),
             planned("tech_suit", "equipment", "The tech suit", ModItems.TECH_CHESTPLATE, ModItems.TECH_LEGGINGS, ModItems.TECH_BOOTS),
             planned("rocket_pack", "equipment", "Mini rockets", ModItems.ROCKET_PACK, ModItems.ROCKET_WARHEAD, ModItems.ROCKET_MAGAZINE),
             planned("drones", "equipment", "Drones", ModItems.DRONE),
@@ -77,22 +80,22 @@ public final class HowToTopics {
             topic("charging_station", "interior", "Charging station", InteriorScenes::chargingStation, ModItems.CHARGING_STATION, ModItems.ENERGY_CELL),
             planned("landing_pad", "interior", "Landing pad", ModItems.LANDING_PAD),
             planned("arc_lamp", "interior", "Arc Lamp and light switch", ModItems.ARC_LAMP, ModItems.LIGHT_SWITCH),
-            planned("relays", "interior", "Redstone relays", ModItems.RELAY, ModItems.RELAY_EMITTER),
+            topic("relays", "interior", "Redstone relays", InteriorScenes::relays, ModItems.RELAY, ModItems.RELAY_EMITTER),
             // ------------------------------------------------------------ Security
             topic("security_core", "security", "Security Core", SecurityScenes::core, ModItems.SECURITY_CORE),
             planned("computer", "security", "Computer and monitor", ModItems.COMPUTER, ModItems.MONITOR),
-            planned("zones", "security", "Protected zones", ModItems.ZONE_MARKER),
+            topic("zones", "security", "Protected zones", DefenceScenes::zones, ModItems.ZONE_MARKER),
             planned("block_reinforcer", "security", "Block Reinforcer", ModItems.BLOCK_REINFORCER, ModItems.REINFORCEMENT_PLATE),
             planned("handcuffs", "security", "Handcuffs", ModItems.HANDCUFFS, ModItems.HANDCUFF_KEY),
             topic("keycards", "security", "Keycards and readers", SecurityScenes::keycards, ModItems.KEYCARD, ModItems.KEYCARD_READER),
             topic("code_panel", "security", "Code panel", SecurityScenes::codePanel, ModItems.CODE_PANEL),
             planned("auth_console", "security", "Auth codes and the Auth Console", ModItems.AUTH_CONSOLE),
-            planned("network_controls", "security", "Network button and lever", ModItems.NETWORK_BUTTON, ModItems.NETWORK_LEVER),
+            topic("network_controls", "security", "Network button and lever", DefenceScenes::networkControls, ModItems.NETWORK_BUTTON, ModItems.NETWORK_LEVER),
             topic("laser_emitter", "security", "Laser gates", SecurityScenes::laserGate, ModItems.LASER_EMITTER),
-            planned("laser_bridge", "security", "Laser bridge", ModItems.LASER_BRIDGE),
-            planned("shield_dome", "security", "Shield dome", ModItems.DOME_GENERATOR),
-            planned("cameras", "security", "Cameras and the camera wall", ModItems.SECURITY_CAMERA, ModItems.CAMERA_MONITOR),
-            planned("turrets", "security", "Turrets", ModItems.SECURITY_TURRET, ModItems.ROCKET_TURRET, ModItems.ROCKET_AMMO),
+            topic("laser_bridge", "security", "Laser bridge", DefenceScenes::laserBridge, ModItems.LASER_BRIDGE),
+            topic("shield_dome", "security", "Shield dome", DefenceScenes::dome, ModItems.DOME_GENERATOR),
+            topic("cameras", "security", "Cameras and the camera wall", DefenceScenes::cameras, ModItems.SECURITY_CAMERA, ModItems.CAMERA_MONITOR),
+            topic("turrets", "security", "Turrets", DefenceScenes::turrets, ModItems.SECURITY_TURRET, ModItems.ROCKET_TURRET, ModItems.ROCKET_AMMO),
             planned("bypass_kit", "security", "Breaking in: the Bypass Kit", ModItems.BYPASS_KIT),
             planned("hacking_laptop", "security", "Hacking Laptop", ModItems.HACKING_LAPTOP),
             planned("phone", "security", "I.M.T Phone", ModItems.PHONE),
@@ -104,9 +107,9 @@ public final class HowToTopics {
             planned("security_drones", "robots", "Security drones", ModItems.GUARD_DRONE, ModItems.DRONE_DOCK),
             planned("training", "robots", "Training", ModItems.TRAINING_START, ModItems.TRAINING_END, ModItems.TRAINING_GOAL),
             // ------------------------------------------------------------ Datacenter
-            planned("server_racks", "datacenter", "Server racks and Logic", ModItems.SERVER_RACK, ModItems.SERVER_CPU,
+            topic("server_racks", "datacenter", "Server racks and Logic", DatacenterScenes::racks, ModItems.SERVER_RACK, ModItems.SERVER_CPU,
                     ModItems.SERVER_RAM, ModItems.SERVER_SSD, ModItems.SERVER_GPU),
-            planned("datacenter_heat", "datacenter", "Heat and fans", ModItems.SERVER_FAN, ModItems.SERVER_RACK));
+            topic("datacenter_heat", "datacenter", "Heat and fans", DatacenterScenes::heat, ModItems.SERVER_FAN, ModItems.SERVER_RACK));
 
     /**
      * Items die alleen in recepten gaan (of alleen voor oude werelden bestaan): bewust geen animatie (mijn invulling bij

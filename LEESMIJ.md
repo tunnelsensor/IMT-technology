@@ -185,10 +185,12 @@ Elk item dat meer doet dan in een recept gaan, krijgt een animatie die laat zien
   **wijs je een blok aan**, dan zie je hoe het heet. Heeft een item meer animaties, dan blader je met de
   pijltjes bovenaan. **Esc** brengt je terug naar je inventaris, met alles nog zoals het was. In je eigen
   wereld staat het spel stil terwijl je kijkt.
-- **Wat er al is**: de Security Core, keycards en lezers, het codepaneel, laserpoorten, stroom maken
-  (zonnepaneel en warmtegenerator), stroomkabels, netwerkkabels met PoE en de switch, het laadstation en de
-  Power Battery (casing, glass, cell en port). De rest komt eraan, de belangrijkste eerst (PLAN.md,
-  hoofdstuk 63).
+- **Wat er al is** (19 van de 51): de bril, de Security Core, keycards en lezers, het codepaneel,
+  laserpoorten, de laserbrug, torentjes, camera's en de schermmuur, zones, de netwerkknop en -hendel, de
+  schildkoepel, serverracks, warmte en fans, relais, stroom maken (zonnepaneel en warmtegenerator),
+  stroomkabels, netwerkkabels met PoE en de switch, het laadstation en de Power Battery. De rest komt eraan,
+  de belangrijkste eerst (PLAN.md, hoofdstuk 63). In de animaties lopen ook wezens rond: jij (met je eigen
+  skin), een husk die op een torentje afloopt, een raiddrone.
 - Het geluid (een blok dat neerkomt): `howToVolume` in `imttech-client.toml` (1 = normaal, 0 = uit).
 
 ### Het drone-arsenaal

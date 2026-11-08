@@ -3984,7 +3984,7 @@ public final class VisualCheck {
             HowToTour.tour(t);
         }
         if (ONLY.contains("howtoall")) {
-            HowToTour.allScenes(t);
+            HowToTour.allScenes(t, ONLY);
         }
 }
 

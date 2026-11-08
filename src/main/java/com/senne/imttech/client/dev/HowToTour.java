@@ -127,9 +127,16 @@ final class HowToTour {
      * wordt gemaakt voor de blokken van Minecraft bestaan; de animaties maken we dus pas tijdens de rondleiding zelf, en
      * wat er niet is (een tweede animatie, een achtste hoofdstukje), slaan we dan over.
      */
-    static void allScenes(DevScript t) {
+    static void allScenes(DevScript t, java.util.Set<String> only) {
+        // Met "howto:turrets" (en meer) in -Ponly alleen die onderwerpen, anders allemaal.
+        java.util.Set<String> wanted = new java.util.HashSet<>();
+        for (String part : only) {
+            if (part.startsWith("howto:")) {
+                wanted.add(part.substring("howto:".length()));
+            }
+        }
         for (com.senne.imttech.howto.HowToTopic topic : com.senne.imttech.howto.HowToTopics.ALL) {
-            if (!topic.ready()) {
+            if (!topic.ready() || (!wanted.isEmpty() && !wanted.contains(topic.id()))) {
                 continue;
             }
             for (int scene = 0; scene < MAX_SCENES; scene++) {
@@ -323,6 +330,12 @@ final class HowToTour {
             screen.tourLogic("Lab door", DEMO_CODE, false);
         }));
         t.step(15, () -> captureScreen("logic"));
+        // Logic met een knop en een hendel (voor de animatie van de netwerkknop en -hendel).
+        t.step(0, () -> os(screen -> {
+            screen.tourCloseAll();
+            screen.tourLogic("Front hall", BUTTON_CODE, false);
+        }));
+        t.step(15, () -> captureScreen("logic_button"));
         t.close(5);
         t.close(5);
         // Het codepaneel met vier cijfers ingetypt.
@@ -349,8 +362,55 @@ final class HowToTour {
             }
         });
         t.close(5);
+        // Het scherm van een serverrek (het rek naast de kern, met een CPU, RAM, een SSD en een fan).
+        t.onServer(5, player -> {
+            // Net zoals het rek het zelf doet: met zijn plek erbij (anders verbreekt het spel de verbinding).
+            if (player.serverLevel().getBlockEntity(DEMO_CORE.east()) instanceof net.minecraft.world.MenuProvider rack) {
+                player.openMenu(rack, buf -> buf.writeBlockPos(DEMO_CORE.east()));
+            }
+        });
+        t.step(15, () -> {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.screen != null) {
+                capture("server_rack", (mc.screen.width - 176) / 2, (mc.screen.height - 190) / 2, 176, 190);
+            }
+        });
+        t.close(5);
+        // Het scherm van een koepelgenerator.
+        t.onServer(0, player -> player.serverLevel().setBlockAndUpdate(DEMO_DOME,
+                com.senne.imttech.registry.ModBlocks.DOME_GENERATOR.get().defaultBlockState()));
+        t.open(10, () -> new com.senne.imttech.client.DomeScreen(DEMO_DOME));
+        t.step(15, () -> {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.screen != null) {
+                capture("dome_screen", (mc.screen.width - 300) / 2, Math.max(6, (mc.screen.height - 206) / 2), 300, 206);
+            }
+        });
+        t.close(5);
+        // De bril: de HUD (zonder scherm) en het G-menu op het tabblad Drones, met de wereld erachter.
+        t.look(5, 30.0f, 8.0f);
+        t.step(30, () -> captureScreen("glasses_hud"));
+        t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.DRONES);
+        t.open(0, com.senne.imttech.client.ImtMenuScreen::new);
+        t.step(20, () -> captureScreen("glasses_menu"));
+        t.close(5);
+        t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.COMBAT);
         t.look(0, 0.0f, 10.0f);
     }
+
+    private static final BlockPos DEMO_DOME = DEMO_CORE.offset(-4, 0, 0);
+
+    /** Het diagram op het plaatje "logic_button": een netwerkknop en een netwerkhendel. */
+    private static final String BUTTON_CODE = String.join("\n",
+            "when button(\"Doorbell\"):",
+            "    say(\"Doorbell: \" + player.name)",
+            "    pulse(\"Bell\", 1)",
+            "",
+            "when lever(\"Night mode\"):",
+            "    if lever.on:",
+            "        off(\"Lobby lights\")",
+            "    else:",
+            "        on(\"Lobby lights\")");
 
     private static void os(Consumer<com.senne.imttech.client.os.SecurityOsScreen> action) {
         if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen screen) {
@@ -362,10 +422,9 @@ final class HowToTour {
 
     /** Het hele venster als plaatje (de desktop vult het hele scherm). */
     private static void captureScreen(String name) {
+        // Ook zonder scherm (de HUD van de bril): het hele venster.
         Minecraft mc = Minecraft.getInstance();
-        if (mc.screen != null) {
-            capture(name, 0, 0, mc.screen.width, mc.screen.height);
-        }
+        capture(name, 0, 0, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
     }
 
     /**

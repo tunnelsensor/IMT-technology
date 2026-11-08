@@ -8,6 +8,11 @@ import com.senne.imttech.registry.ModItems;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LeverBlock;
+import net.minecraft.world.level.block.RedstoneLampBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.AttachFace;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 
@@ -50,6 +55,100 @@ public final class InteriorScenes {
         s.text(85, HowToSceneBuilder.top(panel), Side.LEFT,
                 "It only takes what your generators have to spare: they always keep half for the rest of your grid.");
         s.idle(90);
+        return List.of(s.build());
+    }
+
+    static BlockState relay(boolean powered) {
+        return ModBlocks.RELAY.get().defaultBlockState().setValue(com.senne.imttech.redstone.RelayBlock.POWERED, powered);
+    }
+
+    static BlockState lamp(boolean lit) {
+        return Blocks.REDSTONE_LAMP.defaultBlockState().setValue(RedstoneLampBlock.LIT, lit);
+    }
+
+    /**
+     * Relais: een naam geven (rechtsklik, zonder bril), van overal schakelen (de lijst onder ['], je stem, een diagram),
+     * groepen, en de relay emitter die het omgekeerde doet (redstone erin, jouw relais schakelen mee).
+     */
+    public static List<HowToScene> relays() {
+        HowToSceneBuilder s = new HowToSceneBuilder("relays", "Redstone relays").plate(7, 5);
+        BlockPos relayA = new BlockPos(1, 1, 1);
+        BlockPos lampA = new BlockPos(2, 1, 1);
+        BlockPos relayB = new BlockPos(1, 1, 3);
+        BlockPos lampB = new BlockPos(2, 1, 3);
+        BlockPos emitter = new BlockPos(5, 1, 2);
+        BlockPos lever = new BlockPos(5, 2, 2);
+        s.idle(8);
+        s.chapter("A relay");
+        s.place(relayA, relay(false));
+        s.idle(6);
+        s.place(lampA, lamp(false));
+        s.idle(10);
+        s.rightClick(HowToSceneBuilder.face(relayA, Direction.SOUTH), ItemStack.EMPTY);
+        s.text(90, HowToSceneBuilder.top(relayA), Side.RIGHT,
+                "Put an *I.M.T Relay* next to a lamp, door, piston or hopper, and right-click it to give it a name (no glasses"
+                        + " needed).");
+        s.idle(95);
+
+        s.chapter("Switch it from anywhere");
+        for (int i = 0; i < 2; i++) {
+            s.change(relayA, relay(true));
+            s.change(lampA, lamp(true));
+            s.idle(24);
+            s.change(relayA, relay(false));
+            s.change(lampA, lamp(false));
+            s.idle(16);
+        }
+        s.change(relayA, relay(true));
+        s.change(lampA, lamp(true));
+        s.text(95, HowToSceneBuilder.top(lampA), Side.RIGHT,
+                "I.M.T switches it from anywhere in the world: with your glasses (['] list), your voice (turn on the lamp),"
+                        + " or a diagram: on(\"Lamp\").");
+        s.idle(100);
+
+        s.chapter("Groups");
+        s.change(relayA, relay(false));
+        s.change(lampA, lamp(false));
+        s.place(relayB, relay(false));
+        s.idle(4);
+        s.place(lampB, lamp(false));
+        s.idle(12);
+        s.change(relayA, relay(true));
+        s.change(lampA, lamp(true));
+        s.change(relayB, relay(true));
+        s.change(lampB, lamp(true));
+        s.outline(80, relayA, lampB, HowToSceneBuilder.CYAN);
+        s.text(90, HowToSceneBuilder.top(lampB), Side.RIGHT,
+                "Put relays in groups (the *Groups* app on the desktop): switch the group, and everything in it switches"
+                        + " along.");
+        s.idle(95);
+
+        s.chapter("Relay Emitter");
+        s.change(relayA, relay(false));
+        s.change(lampA, lamp(false));
+        s.change(relayB, relay(false));
+        s.change(lampB, lamp(false));
+        s.place(emitter, ModBlocks.RELAY_EMITTER.get().defaultBlockState());
+        s.idle(4);
+        s.place(lever, Blocks.LEVER.defaultBlockState().setValue(LeverBlock.FACE, AttachFace.FLOOR)
+                .setValue(LeverBlock.FACING, Direction.WEST));
+        s.idle(10);
+        s.rightClick(HowToSceneBuilder.top(lever).subtract(0, 0.35, 0), ItemStack.EMPTY);
+        s.idle(8);
+        s.change(lever, Blocks.LEVER.defaultBlockState().setValue(LeverBlock.FACE, AttachFace.FLOOR)
+                .setValue(LeverBlock.FACING, Direction.WEST).setValue(LeverBlock.POWERED, true));
+        s.sound(net.minecraft.sounds.SoundEvents.LEVER_CLICK, 0.4f, 1.0f);
+        s.change(emitter, ModBlocks.RELAY_EMITTER.get().defaultBlockState()
+                .setValue(com.senne.imttech.redstone.RelayEmitterBlock.POWERED, true));
+        s.idle(6);
+        s.change(relayA, relay(true));
+        s.change(lampA, lamp(true));
+        s.change(relayB, relay(true));
+        s.change(lampB, lamp(true));
+        s.text(95, HowToSceneBuilder.top(emitter), Side.LEFT,
+                "A *Relay Emitter* works the other way around: give it redstone and it switches your relays (follow, toggle"
+                        + " or pulse). Free, and it works while you are offline.");
+        s.idle(100);
         return List.of(s.build());
     }
 }

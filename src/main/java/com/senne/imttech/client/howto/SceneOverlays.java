@@ -226,7 +226,7 @@ final class SceneOverlays {
         float[] p = renderer.project(meter.anchor());
         int alpha = Math.max(8, Math.round(fade * 255));
         String label = meter.label().getString();
-        String percent = Math.round(value * 100) + "%";
+        String percent = Math.round(value * meter.max()) + meter.unit();
         int bw = Math.max(64, font.width(label) + font.width(percent) + 16);
         int bx = Math.round(p[0]) - bw / 2;
         int by = Math.round(p[1]) - 24;

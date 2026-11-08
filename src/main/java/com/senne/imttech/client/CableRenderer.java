@@ -204,6 +204,29 @@ public final class CableRenderer {
         cuboid(m, buffers.getBuffer(CABLE), a, b, half, light, false, rgb, rgb, rgb, 255);
     }
 
+    /**
+     * Een rechte straal van {@code a} naar {@code b} in elke richting (een schot in de animaties van How it works): twee
+     * gekruiste smalle vlakjes, zodat hij van elke kant even dik lijkt. (Een doos zoals drawBar kan alleen langs de assen.)
+     */
+    public static void drawBeam(Matrix4f m, MultiBufferSource buffers, Vec3 a, Vec3 b, double half, int rgb, int light) {
+        Vec3 along = b.subtract(a);
+        if (along.lengthSqr() < 1.0E-8) {
+            return;
+        }
+        Vec3 up = Math.abs(along.normalize().y) > 0.9 ? new Vec3(1, 0, 0) : new Vec3(0, 1, 0);
+        Vec3 side = along.cross(up).normalize().scale(half);
+        Vec3 other = along.cross(side).normalize().scale(half);
+        VertexConsumer vc = buffers.getBuffer(CABLE);
+        for (Vec3 p : new Vec3[] {side, other}) {
+            Vec3 a0 = a.add(p);
+            Vec3 a1 = a.subtract(p);
+            Vec3 b1 = b.subtract(p);
+            Vec3 b0 = b.add(p);
+            quad(m, vc, light, false, rgb, 255, (float) a0.x, (float) a0.y, (float) a0.z, (float) a1.x, (float) a1.y,
+                    (float) a1.z, (float) b1.x, (float) b1.y, (float) b1.z, (float) b0.x, (float) b0.y, (float) b0.z);
+        }
+    }
+
     /** Een effen doos van hoek {@code min} tot hoek {@code max}, met een eigen kleur boven, opzij en onder (het platform van How it works). */
     public static void drawBox(Matrix4f m, MultiBufferSource buffers, Vec3 min, Vec3 max, int top, int side, int bottom, int light) {
         cuboid(m, buffers.getBuffer(CABLE), min, max, 0.0, light, false, top, side, bottom, 255);

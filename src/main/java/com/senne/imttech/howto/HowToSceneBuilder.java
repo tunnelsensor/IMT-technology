@@ -5,6 +5,7 @@ import com.senne.imttech.energy.CableKind;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -14,9 +15,12 @@ import java.util.TreeMap;
 import java.util.function.Function;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -70,6 +74,7 @@ public final class HowToSceneBuilder {
     /** Hoe het wereldje eruitziet na alle cues tot nu toe (voor de test en om de hoogte te weten). */
     private final Map<BlockPos, BlockState> world = new HashMap<>();
     private int maxY = 1;
+    private int minHeight;
 
     public HowToSceneBuilder(String id, String englishTitle) {
         this.id = id;
@@ -228,6 +233,28 @@ public final class HowToSceneBuilder {
         return out;
     }
 
+    /** Het punt op {@code fraction} (0 tot 1) van de lengte van een lijn langs {@code points} (waar een wezen dan loopt). */
+    public static Vec3 along(List<Vec3> points, float fraction) {
+        if (points.size() == 1) {
+            return points.getFirst();
+        }
+        double total = 0;
+        for (int i = 1; i < points.size(); i++) {
+            total += points.get(i - 1).distanceTo(points.get(i));
+        }
+        double target = total * Math.max(0.0f, Math.min(1.0f, fraction));
+        for (int i = 1; i < points.size(); i++) {
+            Vec3 a = points.get(i - 1);
+            Vec3 b = points.get(i);
+            double length = a.distanceTo(b);
+            if (target <= length || i == points.size() - 1) {
+                return length < 1.0E-6 ? b : a.lerp(b, Math.min(1.0, target / length));
+            }
+            target -= length;
+        }
+        return points.getLast();
+    }
+
     /** Het midden van een blok. */
     public static Vec3 center(BlockPos pos) {
         return Vec3.atCenterOf(pos);
@@ -289,6 +316,45 @@ public final class HowToSceneBuilder {
         return this;
     }
 
+    /** Als duur van een wezen: tot het eind van de animatie. */
+    public static final int UNTIL_END = -1;
+
+    /**
+     * Een wezen ({@code type}, bv. EntityType.HUSK) dat er {@code duration} ticks staat (of {@link #UNTIL_END}) en in
+     * {@code move} ticks langs {@code path} loopt. Dezelfde {@code key} = hetzelfde wezen.
+     */
+    public HowToSceneBuilder actor(String key, EntityType<?> type, int duration, int move, float yaw, Vec3... path) {
+        cues.add(new HowToCue.Actor(t, duration, key, type, List.of(path), move, yaw, Map.of()));
+        return this;
+    }
+
+    /** Een speler met jouw skin, met {@code gear} aan (of in zijn hand), die in {@code move} ticks langs {@code path} loopt. */
+    public HowToSceneBuilder player(String key, int duration, int move, float yaw, Map<EquipmentSlot, ItemStack> gear,
+                                    Vec3... path) {
+        Map<EquipmentSlot, ItemStack> copy = new EnumMap<>(EquipmentSlot.class);
+        gear.forEach((slot, stack) -> copy.put(slot, stack.copy()));
+        cues.add(new HowToCue.Actor(t, duration, key, null, List.of(path), move, yaw, Collections.unmodifiableMap(copy)));
+        return this;
+    }
+
+    /** Een schot van {@code from} naar {@code to}, {@code duration} ticks lang. */
+    public HowToSceneBuilder beam(int duration, Vec3 from, Vec3 to, int rgb) {
+        cues.add(new HowToCue.Beam(t, duration, from, to, rgb));
+        return this;
+    }
+
+    /** Gegevens voor het block entity op {@code pos} vanaf nu (zie HowToCue.BlockData). */
+    public HowToSceneBuilder blockData(BlockPos pos, CompoundTag tag) {
+        cues.add(new HowToCue.BlockData(t, pos, tag.copy()));
+        return this;
+    }
+
+    /** Het wereldje is minstens zo hoog (de camera past dan meer in beeld), bv. voor een koepel boven de blokken. */
+    public HowToSceneBuilder height(int height) {
+        minHeight = height;
+        return this;
+    }
+
     /** Een helder blokje in kleur {@code rgb} dat in {@code duration} ticks langs {@code path} loopt (een signaal, stroom). */
     public HowToSceneBuilder signal(int duration, int rgb, Vec3... path) {
         cues.add(new HowToCue.Signal(t, duration, List.of(path), rgb));
@@ -310,10 +376,16 @@ public final class HowToSceneBuilder {
         return new HowToCue.Arrow(x, y, Component.translatableWithFallback(key("arrow" + (++arrows)), english, args));
     }
 
-    /** Een balkje bij {@code anchor} dat in {@code duration} ticks van {@code from} naar {@code to} loopt. */
+    /** Een balkje bij {@code anchor} dat in {@code duration} ticks van {@code from} naar {@code to} loopt (in procenten). */
     public HowToSceneBuilder meter(int duration, Vec3 anchor, String english, float from, float to, int rgb) {
+        return meter(duration, anchor, english, from, to, rgb, 100, "%");
+    }
+
+    /** Een balkje met een eigen schaal: het getal is {@code value * max} met {@code unit} erachter. */
+    public HowToSceneBuilder meter(int duration, Vec3 anchor, String english, float from, float to, int rgb, int max,
+                                   String unit) {
         Component label = Component.translatableWithFallback(key("meter" + (++meters)), english);
-        cues.add(new HowToCue.Meter(t, duration, anchor, label, from, to, rgb));
+        cues.add(new HowToCue.Meter(t, duration, anchor, label, from, to, rgb, max, unit));
         return this;
     }
 
@@ -338,6 +410,13 @@ public final class HowToSceneBuilder {
         for (HowToCue cue : sorted) {
             end = Math.max(end, end(cue));
         }
+        // Wezens "tot het eind" krijgen nu hun echte duur (tot een seconde na de laatste cue, als de animatie stopt).
+        for (int i = 0; i < sorted.size(); i++) {
+            if (sorted.get(i) instanceof HowToCue.Actor a && a.duration() < 0) {
+                sorted.set(i, new HowToCue.Actor(a.tick(), end + 20 - a.tick(), a.key(), a.type(), a.path(), a.move(), a.yaw(),
+                        a.gear()));
+            }
+        }
         List<HowToScene.Chapter> list = new ArrayList<>(chapters);
         if (!list.isEmpty() && list.getFirst().tick() <= 40) {
             // Het eerste hoofdstukje begint na een korte stilte: dan hoort die stilte er gewoon bij.
@@ -346,7 +425,8 @@ public final class HowToSceneBuilder {
             list.addFirst(new HowToScene.Chapter(0, title));
         }
         // Na de laatste cue nog een seconde rust.
-        return new HowToScene(id, title, sizeX, sizeZ, maxY + 1, yaw, pitch, end + 20, List.copyOf(sorted), List.copyOf(list));
+        return new HowToScene(id, title, sizeX, sizeZ, Math.max(maxY + 1, minHeight), yaw, pitch, end + 20, List.copyOf(sorted),
+                List.copyOf(list));
     }
 
     /** Wanneer een cue klaar is. */
@@ -361,6 +441,9 @@ public final class HowToSceneBuilder {
             case HowToCue.Picture p -> p.tick() + p.duration();
             case HowToCue.Meter m -> m.tick() + m.duration();
             case HowToCue.Signal s -> s.tick() + s.duration();
+            case HowToCue.Actor a -> a.tick() + Math.max(0, a.duration());
+            case HowToCue.Beam b -> b.tick() + b.duration();
+            case HowToCue.BlockData d -> d.tick();
             case HowToCue.Sound s -> s.tick();
         };
     }

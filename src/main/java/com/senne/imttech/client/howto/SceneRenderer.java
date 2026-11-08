@@ -49,6 +49,7 @@ final class SceneRenderer {
 
     /** Van het wereldje naar het scherm, zoals bij de laatste keer tekenen. */
     private final Matrix4f matrix = new Matrix4f();
+    private final SceneLife life = new SceneLife();
     private boolean drawn;
 
     /**
@@ -85,6 +86,10 @@ final class SceneRenderer {
         }
         renderPlate(pose, buffers, player);
         renderCables(pose, buffers, player, time);
+        // Wezens, de bewegende delen van blokken (het geschut van een torentje, de koepel) en schoten.
+        life.renderActors(pose, buffers, player, time, partialTick);
+        life.renderBlockEntities(pose, buffers, player, time, partialTick);
+        life.renderBeams(pose, buffers, player, time);
         buffers.endBatch();
         for (RenderType layer : RenderType.chunkBufferLayers()) {
             if (translucent(layer)) {
