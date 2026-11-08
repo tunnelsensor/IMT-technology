@@ -571,8 +571,9 @@ public final class VisualCheck {
         // toe), en laarzen erop leggen en er een upgrade in bouwen. Met echte rechtsklikken.
         if (want("workbench")) {
             BlockPos bench = new BlockPos(-80, -60, 60);
-            Vec3 chest = new Vec3(-79.5, -57.8, 60.5);
-            Vec3 boots = new Vec3(-79.5, -58.8, 60.5);
+            // Hoofdstuk 62: elk stuk zweeft met zijn onderkant een halve blok boven de werkbank (y -58.5).
+            Vec3 chest = new Vec3(-79.5, -58.05, 60.5);
+            Vec3 boots = new Vec3(-79.5, -58.3, 60.5);
             Runnable click = () -> KeyMapping.click(Minecraft.getInstance().options.keyUse.getKey());
             t.onServer(0, player -> {
                 ServerLevel level = player.serverLevel();
@@ -580,6 +581,9 @@ public final class VisualCheck {
                 level.setBlockAndUpdate(bench.east(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
                 if (level.getBlockEntity(bench.east()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
                     generator.fill(200_000);
+                }
+                if (level.getBlockEntity(bench) instanceof com.senne.imttech.workbench.SuitWorkbenchBlockEntity be) {
+                    be.select(null, com.senne.imttech.workbench.HoloPiece.CHEST);
                 }
                 player.getInventory().clearContent();
                 player.getInventory().setItem(1, new ItemStack(net.minecraft.world.item.Items.NETHERITE_INGOT, 8));
@@ -608,19 +612,23 @@ public final class VisualCheck {
             t.shot(30, "w05_workbench_wearing");
             t.camera(0, CameraType.FIRST_PERSON);
             t.onServer(0, player -> player.getInventory().setItem(0, new ItemStack(ModItems.TECH_BOOTS.get())));
-            t.lookAt(10, boots);
+            // Hoofdstuk 62: alleen het gekozen stuk staat op het hologram (nog de borstplaat). Laarzen erop leggen kan
+            // daar ook: ze gaan naar hun eigen plek, en dan zijn de laarzen gekozen.
+            t.lookAt(10, chest);
             t.shot(5, "w06_workbench_hover_lay");
             t.step(0, click);
-            t.onServer(10, player -> player.getInventory().setItem(0, new ItemStack(ModItems.THRUSTER_UPGRADE.get())));
+            t.lookAt(10, boots);
+            t.onServer(0, player -> player.getInventory().setItem(0, new ItemStack(ModItems.THRUSTER_UPGRADE.get())));
             t.shot(10, "w07_workbench_hover_install");
             t.step(0, click);
             t.shot(40, "w08_workbench_installing");
             t.onServer(80, player -> player.getInventory().setItem(0, ItemStack.EMPTY));
             t.shot(10, "w09_workbench_upgraded");
-            // Hoofdstuk 54: sneak + klik op de werkbank kiest het volgende stuk (tot de bril), de bril erop, een
-            // batterij-upgrade erin, en het station zonder redstone- en upgradevakje.
+            // Hoofdstuk 54 en 62: sneak + klik op de werkbank kiest het vorige stuk (van de laarzen drie keer naar links,
+            // rond tot de bril), de bril erop (klik op het hologram), een batterij-upgrade erin, en het station zonder
+            // redstone- en upgradevakje.
             t.onServer(0, player -> player.getInventory().setItem(0, DevWorld.ownGlasses(player)));
-            Vec3 glassesBox = new Vec3(-79.5, -57.35, 60.5);
+            Vec3 glassesBox = new Vec3(-79.5, -58.38, 60.5);
             t.stand(0, -79.5, -60, 56.2, 0, 0);
             t.lookAt(5, Vec3.atCenterOf(bench));
             t.key(0, () -> Minecraft.getInstance().options.keyShift, true);
@@ -629,8 +637,8 @@ public final class VisualCheck {
             t.step(8, click);
             t.key(5, () -> Minecraft.getInstance().options.keyShift, false);
             t.shot(10, "w10_workbench_glasses_selected");
-            t.step(0, click);
             t.lookAt(5, glassesBox);
+            t.step(5, click);
             t.shot(10, "w11_workbench_glasses_laid");
             t.onServer(5, player -> player.getInventory().setItem(0, new ItemStack(ModItems.BATTERY_UPGRADE.get())));
             t.step(10, click);

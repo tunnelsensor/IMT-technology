@@ -55,9 +55,12 @@ import org.jetbrains.annotations.Nullable;
  *   borstplaat) en upgrade je net als de rest (batterij, scanner, drones). Bouwen kan niet: de
  *   bril vind je in de toren.
  *
- * Sneak + rechtsklik op de werkbank zelf kiest het volgende stuk ({@link #selected()}: borst,
- * broek, laarzen, bril); een gewone klik op de werkbank doet dan hetzelfde als een klik op dat
- * stuk van het hologram. Zo hoef je niet precies te mikken.
+ * Het hologram toont één stuk tegelijk: het gekozen stuk ({@link #selected()}). Hoofdstuk 62 (jouw
+ * opmerking: "niet heel het armor laten zien maar enkel het selected ding, rechtsklik is naar rechts
+ * gaan in de items, shift rechts is links"): een rechtsklik op de werkbank zelf kiest het volgende
+ * stuk (borst, broek, laarzen, bril, en dan weer de borst), sneak + rechtsklik het vorige. Klikken
+ * op het stuk dat erboven zweeft doet het werk (bouwen, pakken, leggen, inbouwen). Leg je een stuk
+ * neer dat niet gekozen was, dan wordt het gekozen, zodat je het ziet liggen.
  *
  * Bouwen en inbouwen kosten tijd en stroom van het net (een stroomkabel naar een zonnepaneel of
  * warmtegenerator, of er direct tegenaan). Is er even geen stroom, dan wacht de werkbank.
@@ -78,7 +81,7 @@ public class SuitWorkbenchBlockEntity extends BlockEntity {
 
     /** De echte stukken die op het hologram liggen (borst, broek, laarzen, bril). */
     private final ItemStack[] laid = {ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY};
-    /** Het stuk dat gekozen is (sneak + klik op de werkbank kiest het volgende). */
+    /** Het stuk dat gekozen is: alleen dat staat op het hologram (klik op de werkbank = volgende, sneak + klik = vorige). */
     private HoloPiece selected = HoloPiece.CHEST;
     private int job = JOB_NONE;
     private HoloPiece jobPiece = HoloPiece.CHEST;
@@ -114,12 +117,30 @@ public class SuitWorkbenchBlockEntity extends BlockEntity {
         return selected;
     }
 
-    /** Sneak + rechtsklik op de werkbank: het volgende stuk kiezen (hoofdstuk 54). */
+    /** Rechtsklik op de werkbank: het volgende stuk kiezen ("naar rechts", hoofdstuk 62). */
     public void selectNext(ServerPlayer player) {
-        selected = selected.next();
-        player.displayClientMessage(Component.translatable("workbench.imttech.selected",
-                Component.translatable(selected.langKey())), true);
-        play(ModSounds.IMT_SELECT.get(), 0.6f, 1.3f);
+        select(player, selected.next(), 1.3f);
+    }
+
+    /** Sneak + rechtsklik op de werkbank: het vorige stuk kiezen ("naar links", hoofdstuk 62). */
+    public void selectPrevious(ServerPlayer player) {
+        select(player, selected.previous(), 1.1f);
+    }
+
+    /**
+     * Dit stuk kiezen: alleen dat staat dan op het hologram. Met een speler klinkt er een klikje (zonder speler
+     * gebeurt het stil, voor de showcase). Welk stuk het is, staat op het kaartje bij je vizier (geen tekst boven
+     * je hotbar: die viel over het kaartje heen).
+     */
+    public void select(@Nullable ServerPlayer player, HoloPiece piece) {
+        select(player, piece, 1.3f);
+    }
+
+    private void select(@Nullable ServerPlayer player, HoloPiece piece, float pitch) {
+        selected = piece;
+        if (player != null) {
+            play(ModSounds.IMT_SELECT.get(), 0.6f, pitch);
+        }
         sync();
     }
 
@@ -222,6 +243,8 @@ public class SuitWorkbenchBlockEntity extends BlockEntity {
         ItemStack old = laid(target);
         laid[target.ordinal()] = hand.copyWithCount(1);
         hand.shrink(1);
+        // Het hologram toont alleen het gekozen stuk: wat je neerlegt, wordt gekozen, anders zie je het niet liggen.
+        selected = target;
         if (!old.isEmpty()) {
             player.setItemInHand(InteractionHand.MAIN_HAND, old);
         }

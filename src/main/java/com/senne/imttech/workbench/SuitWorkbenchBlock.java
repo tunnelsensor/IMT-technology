@@ -90,16 +90,27 @@ public class SuitWorkbenchBlock extends BaseEntityBlock implements PowerConnecta
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
                                                BlockHitResult hit) {
-        // Hoofdstuk 54 (jouw notitie): sneak + klik op de werkbank kiest het volgende stuk (borst, broek, laarzen,
-        // bril); een gewone klik op de werkbank werkt op het gekozen stuk, net als een klik op het hologram.
+        // Hoofdstuk 62 (jouw opmerking): een klik op de werkbank gaat naar rechts in de stukken (borst, broek, laarzen,
+        // bril), sneak + klik naar links. Het werk zelf doe je met een klik op het stuk dat erboven zweeft.
         if (player instanceof ServerPlayer serverPlayer && level.getBlockEntity(pos) instanceof SuitWorkbenchBlockEntity bench) {
             if (player.isShiftKeyDown()) {
-                bench.selectNext(serverPlayer);
+                bench.selectPrevious(serverPlayer);
             } else {
-                bench.interact(serverPlayer, bench.selected());
+                bench.selectNext(serverPlayer);
             }
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
+    }
+
+    /**
+     * Sneak + klik met iets in je hand slaat in Minecraft het blok over (dan gebruik je het item). Bij de
+     * werkbank willen we de klik altijd, ook met een zwaard of een stuk harnas in je hand: anders kon je niet
+     * naar links. Dit gebeurt aan beide kanten (jouw computer en de server), zodat ze hetzelfde doen.
+     */
+    public static void onRightClickBlock(net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.RightClickBlock event) {
+        if (event.getLevel().getBlockState(event.getPos()).getBlock() instanceof SuitWorkbenchBlock) {
+            event.setUseBlock(net.neoforged.neoforge.common.util.TriState.TRUE);
+        }
     }
 
     /** Afgebroken: alles wat erin lag valt eruit. */

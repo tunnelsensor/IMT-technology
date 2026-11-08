@@ -735,11 +735,14 @@ final class ShowcaseFeatures {
                 + "stuk: het licht op, en naast je vizier staat wat een klik doet en wat het kost (groen = genoeg bij "
                 + "je, rood = te weinig). Rechtsklik op de borstplaat: de materialen gaan uit je rugzak, de borstplaat "
                 + "bouwt zich plaatje voor plaatje op in het hologram en vliegt dan naar je toe (hij gaat meteen aan). "
-                + "Daarna laarzen in je hand + klik = ze liggen op het hologram, en een Thruster Upgrade in je hand + "
-                + "klik op de laarzen = inbouwen (de ring loopt vol).", GameType.SURVIVAL, start, 180, 20, s -> {
+                + "Het hologram toont één stuk tegelijk (hoofdstuk 62): een klik op de werkbank zelf gaat naar het "
+                + "volgende stuk (borst, broek, laarzen, bril), sneak + klik naar het vorige. Twee klikken op de werkbank "
+                + "= de laarzen; dan laarzen in je hand + klik op het hologram = ze liggen erop, en een Thruster Upgrade "
+                + "in je hand + klik op de laarzen = inbouwen (de ring loopt vol).", GameType.SURVIVAL, start, 180, 20, s -> {
             BlockPos bench = ShowcaseScene.START.offset(0, 0, -3);
-            Vec3 chest = new Vec3(0.5, -57.8, -2.5);
-            Vec3 boots = new Vec3(0.5, -58.8, -2.5);
+            // Hoofdstuk 62: elk stuk zweeft met zijn onderkant een halve blok boven de werkbank (y -58.5).
+            Vec3 chest = new Vec3(0.5, -58.05, -2.5);
+            Vec3 boots = new Vec3(0.5, -58.3, -2.5);
             Runnable click = () -> KeyMapping.click(Minecraft.getInstance().options.keyUse.getKey());
             s.onServer(0, player -> {
                 ServerLevel level = player.serverLevel();
@@ -747,6 +750,9 @@ final class ShowcaseFeatures {
                 level.setBlockAndUpdate(bench.east(), com.senne.imttech.registry.ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
                 if (level.getBlockEntity(bench.east()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
                     generator.fill(200_000);
+                }
+                if (level.getBlockEntity(bench) instanceof com.senne.imttech.workbench.SuitWorkbenchBlockEntity be) {
+                    be.select(null, com.senne.imttech.workbench.HoloPiece.CHEST);
                 }
                 for (net.minecraft.world.entity.EquipmentSlot slot : net.minecraft.world.entity.EquipmentSlot.values()) {
                     if (slot.getType() == net.minecraft.world.entity.EquipmentSlot.Type.HUMANOID_ARMOR
@@ -766,6 +772,10 @@ final class ShowcaseFeatures {
                     .pause(90)
                     .camera(0, CameraType.FIRST_PERSON)
                     .onServer(0, player -> player.getInventory().setItem(0, new ItemStack(ModItems.TECH_BOOTS.get())))
+                    // Twee klikken op de werkbank zelf: borst -> broek -> laarzen (alleen dat stuk staat op het hologram).
+                    .lookAt(20, Vec3.atCenterOf(bench))
+                    .step(20, click)
+                    .step(25, click)
                     .lookAt(20, boots)
                     .step(30, click)
                     .onServer(20, player -> player.getInventory().setItem(0, new ItemStack(ModItems.THRUSTER_UPGRADE.get())))
@@ -913,14 +923,17 @@ final class ShowcaseFeatures {
                 .close(0));
 
         add("Glasses upgrades", "De bril upgraden gaat sinds hoofdstuk 54 aan de harnas-werkbank, net als het harnas: "
-                + "de bril is het vierde stuk op het hologram, boven de borstplaat. Je houdt een tweede bril vast en klikt op "
-                + "de werkbank zelf: sneak + klik kiest het volgende stuk (borst, broek, laarzen, bril; het gekozen stuk heeft "
-                + "oranje hoekjes), een gewone klik werkt op dat stuk. De bril komt op het hologram; dan een batterij-upgrade "
-                + "in je hand en klik: de ring loopt vol en de upgrade zit erin (dat zie je in de tooltip). Er zijn drie "
+                + "de bril is het vierde stuk op het hologram (na de laarzen). Het hologram toont één stuk tegelijk "
+                + "(hoofdstuk 62): een klik op de werkbank zelf gaat naar het volgende stuk, sneak + klik naar het vorige. Je "
+                + "houdt een tweede bril vast en doet sneak + klik op de werkbank: van de borstplaat naar links, rond naar de "
+                + "bril. Een klik op de bril die erboven zweeft legt hem erop; dan een batterij-upgrade in je hand en klik: "
+                + "de ring loopt vol en de upgrade zit erin (dat zie je in de tooltip). Er zijn drie "
                 + "soorten: batterij (meer energie), scanner (grotere ertsscan) en drones (meer drones in de zwerm).",
                 GameType.SURVIVAL, new Vec3(0.5, -60, -0.5), 180, 20, s -> {
             BlockPos bench = ShowcaseScene.START.offset(0, 0, -3);
+            Vec3 glassesBox = new Vec3(0.5, -58.38, -2.5);
             Runnable clickBench = () -> rightClick(bench);
+            Runnable click = () -> KeyMapping.click(Minecraft.getInstance().options.keyUse.getKey());
             s.onServer(0, player -> {
                 ServerLevel level = player.serverLevel();
                 level.setBlockAndUpdate(bench, com.senne.imttech.registry.ModBlocks.SUIT_WORKBENCH.get().defaultBlockState());
@@ -928,25 +941,27 @@ final class ShowcaseFeatures {
                 if (level.getBlockEntity(bench.east()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
                     generator.fill(200_000);
                 }
+                if (level.getBlockEntity(bench) instanceof com.senne.imttech.workbench.SuitWorkbenchBlockEntity be) {
+                    be.select(null, com.senne.imttech.workbench.HoloPiece.CHEST);
+                }
                 player.getInventory().setItem(0, DevWorld.ownGlasses(player));
                 player.getInventory().setItem(1, new ItemStack(ModItems.BATTERY_UPGRADE.get(), 2));
                 player.getInventory().selected = 0;
             })
             .lookAt(10, Vec3.atCenterOf(bench))
-            // Sneak + klik: borst -> broek -> laarzen -> bril.
+            // Sneak + klik (naar links): van de borstplaat rond naar de bril.
             .key(0, () -> Minecraft.getInstance().options.keyShift, true)
-            .step(10, clickBench).step(25, clickBench).step(25, clickBench)
+            .step(10, clickBench)
             .key(5, () -> Minecraft.getInstance().options.keyShift, false)
-            .pause(20)
-            // De bril erop, en de upgrade erin.
-            .step(0, clickBench)
+            .pause(30)
+            // De bril erop (klik op de bril die erboven zweeft), en de upgrade erin.
+            .lookAt(15, glassesBox)
+            .step(10, click)
             .pause(30)
             .step(0, () -> hotbar(1))
             .pause(15)
-            .step(0, clickBench)
-            .pause(100)
-            .lookAt(0, new Vec3(0.5, -57.3, -2.5))
-            .pause(60)
+            .step(0, click)
+            .pause(160)
             .onServer(0, player -> {
                 player.getInventory().clearContent();
                 if (player.serverLevel().getBlockEntity(bench) instanceof com.senne.imttech.workbench.SuitWorkbenchBlockEntity be) {

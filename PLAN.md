@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 445 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 446 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -5269,6 +5269,45 @@ met een staff-keycard in de toren blijven op hun post (je vraag ging over de bun
       controleert nu ook de tijd, het slot op je benen en dat hij naar je toe getrokken wordt.
 - [x] **7. Het "?" en "!" nog kleiner** — jouw tweede opmerking: "ik wil dat de ? en ! kleiner zijn boven een guard".
       Ze zijn nu zo groot als gewone tekst (was anderhalf keer), met een kleinere pulse. 445 tests, allemaal groen.
+
+### 62. De harnas-werkbank: één stuk tegelijk (8 november)
+
+Jouw opmerking: "Kun je de workbench het switchen tussen items niet heel het armor laten zien maar enkel het selected
+ding, rechtsklik is naar rechts gaan in de items, shift rechts is links in de items."
+
+**Mijn invulling**: "rechtsklik" en "shift + rechtsklik" zijn klikken op de werkbank zelf (het blok). Het werk (bouwen,
+pakken, neerleggen, inbouwen) doe je met een rechtsklik op het stuk dat erboven zweeft, zoals eerst; een klik op het
+blok doet dat niet meer (dat was de klik "werkt op het gekozen stuk" van hoofdstuk 54). "Rechts" is de volgorde borst,
+broek, laarzen, bril, en na de bril weer de borst; "links" andersom. Leg je een stuk neer dat niet gekozen was (laarzen
+in je hand, klik op de borstplaat), dan wordt dat stuk gekozen, anders lag het er onzichtbaar. Werkt de werkbank aan
+een ander stuk dan het gekozen, dan loopt dat door; het kaartje bij de werkbank laat zien hoe ver hij is.
+
+- [x] **1. Alleen het gekozen stuk op het hologram** — `SuitHologramRenderer` tekent alleen `selected()`; de oranje
+      hoekjes voor het gekozen stuk zijn weg (er staat er toch maar één). Je kunt ook alleen dat stuk aanklikken
+      (`WorkbenchHologram.pick`), dus niet per ongeluk een onzichtbaar stuk.
+- [x] **2. Klik = volgende, sneak + klik = vorige** — `SuitWorkbenchBlock.useWithoutItem` (`selectNext`,
+      `selectPrevious`, `HoloPiece.previous`), met een klikje (iets lager bij vorige). Sneak + klik slaat in Minecraft
+      het blok over als je iets vasthoudt; een `RightClickBlock`-event zet dat voor de werkbank aan, met wat je ook
+      vasthoudt (eerst alleen met het harnas, de bril en de upgrades: die vier uitzonderingen op de items zijn weg).
+- [x] **3. Het kaartje bij de werkbank** — kijk je naar het blok, dan staat er welk stuk gekozen is ("Selected: Glasses
+      (4/4)"), of het een hologram is of erop ligt, wat de werkbank aan het doen is (met het balkje),
+      `[Right Button] > Chestplate`, `[Sneak + Right Button] < Boots` en "Use it: click the piece above". Eerst stond er ook tekst boven
+      je hotbar en was het kaartje breder; in de rondleiding viel dat over elkaar heen (onder het vizier, want rechts
+      paste het niet). Nu is het kaartje smal genoeg voor rechts van je vizier en staat er niets boven je hotbar.
+- [x] **4. Elk stuk op dezelfde hoogte** — jouw tweede opmerking: "Zorg dat elk ding op dezelfde hoogte staat als je
+      erdoor scrolt, een halve block boven de workbench." Elk stuk zweeft nu met zijn onderkant op y 1.5, een halve blok
+      boven de werkbank (`HoloPiece.HOVER`), in plaats van op zijn plek op een heel harnas (de laarzen zaten vlak op de
+      werkbank, de bril hoog in de lucht). Hoe hoog elk stuk echt is, heb ik gemeten aan het model en de plaatjes
+      (`HoloPiece`: top en bottom in pixels onder de nek): de borstplaat 0,86 blok hoog (van de schouderplaten tot de
+      laser cannons), de broek 0,85 (van de riem tot onder de benen), de laarzen 0,39, de bril 0,21 (alleen de band om
+      de ogen). Het klikvak, de scanring, de ring van het inbouwen en de hoekjes gaan mee (`HoloPiece.box`, een klein
+      stuk krijgt een klikvak van minstens 0,35 hoog), en een stuk dat naar je toe vliegt, vertrekt van die hoogte.
+- [x] **5. Showcase, rondleiding, LEESMIJ** — de showcase "Suit workbench hologram" klikt nu twee keer op de werkbank
+      naar de laarzen, "Glasses upgrades" doet één sneak + klik (van de borstplaat rond naar de bril) en klikt op de bril
+      erboven; de rondleiding `-Ponly=workbench` legt de laarzen via de borstplaat neer (w06) en gaat met drie keer
+      sneak + klik van de laarzen naar de bril (w10). Een nieuwe test (echte klikken op het blok met een zwaard in je
+      hand, met en zonder sneak, neerleggen kiest het stuk, en elk klikvak begint op dezelfde hoogte); de test van de bril
+      controleert nu ook beide richtingen. 446 tests, allemaal groen.
 
 ## Nog nooit in het spel bekeken
 

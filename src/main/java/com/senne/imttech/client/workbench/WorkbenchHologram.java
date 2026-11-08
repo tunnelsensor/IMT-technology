@@ -34,14 +34,16 @@ import org.jetbrains.annotations.Nullable;
  * Het hologram boven de harnas-werkbank, aan jouw kant: waar kijk je naar, en wat gebeurt er
  * als je klikt.
  *
- * - Elke tick kijken we of je vizier op een stuk van een hologram staat (een straal vanaf je
- *   ogen door de klikvakken van {@link HoloPiece}). Staat er een muur of een mob tussen, dan
+ * - Elke tick kijken we of je vizier op het stuk van een hologram staat (een straal vanaf je
+ *   ogen door het klikvak van {@link HoloPiece}). Er staat maar één stuk op het hologram, het
+ *   gekozen stuk (hoofdstuk 62), dus alleen dat telt. Staat er een muur of een mob tussen, dan
  *   telt het niet. Met shift ingedrukt ook niet: dan doet rechtsklikken weer het gewone.
  * - Klik je met rechts terwijl je naar een stuk kijkt, dan houden we de gewone klik tegen en
  *   sturen we de server "klik op dit stuk". Blijf je de knop vasthouden, dan telt dat maar als
  *   één klik (anders pakte je een stuk en begon je meteen opnieuw te bouwen).
  * - Naast je vizier staat een kaartje met wat een klik zou doen: bouwen (met wat het kost en
- *   wat je bij je hebt), pakken, neerleggen, of een upgrade inbouwen.
+ *   wat je bij je hebt), pakken, neerleggen, of een upgrade inbouwen. Kijk je naar de werkbank
+ *   zelf, dan zegt het kaartje welk stuk gekozen is en welk stuk een klik (of sneak + klik) kiest.
  */
 public final class WorkbenchHologram {
     private WorkbenchHologram() {}
@@ -107,20 +109,20 @@ public final class WorkbenchHologram {
                     continue;
                 }
                 for (BlockEntity be : chunk.getBlockEntities().values()) {
-                    if (!(be instanceof SuitWorkbenchBlockEntity)) {
+                    if (!(be instanceof SuitWorkbenchBlockEntity bench)) {
                         continue;
                     }
                     BlockPos pos = be.getBlockPos();
                     if (pos.getCenter().distanceToSqr(eye) > (reach + 3) * (reach + 3)) {
                         continue;
                     }
-                    for (HoloPiece piece : HoloPiece.values()) {
-                        Optional<Vec3> hit = piece.box().move(pos).clip(eye, end);
-                        if (hit.isPresent()) {
-                            double distance = hit.get().distanceTo(eye);
-                            if (best == null || distance < best.distance()) {
-                                best = new Target(pos, piece, distance);
-                            }
+                    // Alleen het gekozen stuk staat op het hologram (hoofdstuk 62): alleen dat kun je aanklikken.
+                    HoloPiece piece = bench.selected();
+                    Optional<Vec3> hit = piece.box().move(pos).clip(eye, end);
+                    if (hit.isPresent()) {
+                        double distance = hit.get().distanceTo(eye);
+                        if (best == null || distance < best.distance()) {
+                            best = new Target(pos, piece, distance);
                         }
                     }
                 }
@@ -150,7 +152,7 @@ public final class WorkbenchHologram {
         boolean viaBench = false;
         if (target == null && mc.hitResult instanceof net.minecraft.world.phys.BlockHitResult blockHit
                 && mc.level != null && mc.level.getBlockEntity(blockHit.getBlockPos()) instanceof SuitWorkbenchBlockEntity bench) {
-            // Je kijkt naar de werkbank zelf: een klik werkt op het gekozen stuk (hoofdstuk 54).
+            // Je kijkt naar de werkbank zelf: het kaartje gaat over het gekozen stuk.
             target = new Target(blockHit.getBlockPos(), bench.selected(), 0);
             viaBench = true;
         }
@@ -161,9 +163,13 @@ public final class WorkbenchHologram {
         List<Line> lines = new ArrayList<>();
         float progress = -1;
         HoloPiece piece = target.piece();
+        Component click = Component.literal("[").append(mc.options.keyUse.getTranslatedKeyMessage()).append("] ");
         if (viaBench) {
-            lines.add(new Line(Component.translatable("workbench.imttech.selected_short", Component.translatable(piece.langKey())),
-                    HudStyle.ORANGE));
+            // Je kijkt naar de werkbank zelf: een klik kiest een ander stuk (hoofdstuk 62), het werk doe je op het hologram.
+            benchLines(mc, bench, piece, click, lines);
+            draw(g, mc.font, lines, bench.job() != SuitWorkbenchBlockEntity.JOB_NONE && bench.total() > 0
+                    ? bench.progress() / (float) bench.total() : -1);
+            return;
         }
         ItemStack onIt = bench.laid(piece);
         Component name = Component.translatable(piece.langKey());
@@ -171,7 +177,6 @@ public final class WorkbenchHologram {
                 ? Component.translatable("workbench.imttech.title.hologram", name)
                 : Component.translatable("workbench.imttech.title.laid", name), HudStyle.CYAN));
 
-        Component click = Component.literal("[").append(mc.options.keyUse.getTranslatedKeyMessage()).append("] ");
         ItemStack hand = mc.player.getMainHandItem();
         boolean working = bench.job() != SuitWorkbenchBlockEntity.JOB_NONE;
         boolean busyHere = working && bench.jobPiece() == piece;
@@ -218,10 +223,40 @@ public final class WorkbenchHologram {
             lines.add(new Line(click.copy().append(Component.translatable("workbench.imttech.action.build")), HudStyle.WHITE));
             costLines(mc.player, piece.blueprint(), lines);
         }
-        if (viaBench) {
-            lines.add(new Line(Component.translatable("workbench.imttech.action.next"), 0x8A9BA0));
-        }
         draw(g, mc.font, lines, progress);
+    }
+
+    /**
+     * Het kaartje als je naar de werkbank zelf kijkt: welk stuk gekozen is (en wat ermee is), wat de werkbank
+     * doet, en de twee klikken om een ander stuk te kiezen.
+     */
+    private static void benchLines(Minecraft mc, SuitWorkbenchBlockEntity bench, HoloPiece piece, Component click,
+                                   List<Line> lines) {
+        Component name = Component.translatable(piece.langKey());
+        lines.add(new Line(Component.translatable("workbench.imttech.selected_short", name,
+                piece.ordinal() + 1, HoloPiece.values().length), HudStyle.ORANGE));
+        lines.add(new Line(bench.laid(piece).isEmpty()
+                ? Component.translatable("workbench.imttech.title.hologram", name)
+                : Component.translatable("workbench.imttech.title.laid", name), HudStyle.CYAN));
+        if (bench.job() != SuitWorkbenchBlockEntity.JOB_NONE) {
+            // Ook als het werk aan een ander stuk is (dat staat nu niet op het hologram, maar het loopt door).
+            boolean install = bench.job() == SuitWorkbenchBlockEntity.JOB_INSTALL;
+            int percent = bench.total() == 0 ? 0 : Math.round(100f * bench.progress() / bench.total());
+            lines.add(new Line(Component.translatable(install ? "workbench.imttech.installing" : "workbench.imttech.building",
+                    install ? bench.module().getHoverName() : Component.translatable(bench.jobPiece().langKey()), percent),
+                    HudStyle.WHITE));
+            if (!bench.powered()) {
+                lines.add(new Line(Component.translatable("workbench.imttech.no_power"), HudStyle.RED));
+            }
+        }
+        lines.add(new Line(click.copy().append(Component.translatable("workbench.imttech.action.next",
+                Component.translatable(piece.next().langKey()))), HudStyle.WHITE));
+        // "Sneak" en niet de naam van de toets ("Left Shift"): dat is korter, en zo past het kaartje rechts van je vizier.
+        net.minecraft.network.chat.MutableComponent sneakClick = Component.literal("[").append(Component.translatable("key.sneak"))
+                .append(" + ").append(mc.options.keyUse.getTranslatedKeyMessage()).append("] ");
+        lines.add(new Line(sneakClick.append(Component.translatable("workbench.imttech.action.previous",
+                Component.translatable(piece.previous().langKey()))), HudStyle.WHITE));
+        lines.add(new Line(Component.translatable("workbench.imttech.action.use_hologram"), 0x8A9BA0));
     }
 
     /** Per materiaal: hoeveel nodig, en hoeveel je bij je hebt (groen genoeg, rood te weinig). */

@@ -2056,12 +2056,15 @@ Craft een **Suit Workbench** (computerchips, een redstoneblok, een crafting tabl
 ijzer), of gebruik die in het lab van een Biebia's Industries Tower. Hij heeft **stroom** nodig: een stroomkabel
 naar een zonnepaneel of warmtegenerator, of er direct tegenaan.
 
-Er is **geen scherm**: boven de werkbank zweeft het harnas als een blauw **hologram** dat langzaam
-ronddraait (zonder stroom flikkert het). **Kijk naar een stuk** (borstplaat, broek, laarzen, of de
-**bril** bovenaan): het licht op, en naast je vizier staat een kaartje met wat een **rechtsklik** zou
-doen. Mikken hoeft niet: **sneak + rechtsklik op de werkbank zelf** kiest het volgende stuk (oranje
-hoekjes op het hologram, ook met iets in je hand), en een gewone klik op de werkbank doet hetzelfde als
-een klik op dat stuk.
+Er is **geen scherm**: boven de werkbank zweeft een stuk van het harnas als een blauw **hologram** dat
+langzaam ronddraait (zonder stroom flikkert het). Er staat **één stuk tegelijk**: het gekozen stuk, en
+elk stuk zweeft op dezelfde hoogte, met zijn onderkant een halve blok boven de werkbank.
+**Rechtsklik op de werkbank zelf** gaat naar het volgende stuk (borstplaat, broek, laarzen, **bril**,
+en dan weer de borstplaat), **sneak + rechtsklik** naar het vorige. Dat werkt wat je ook vasthoudt.
+Kijk je naar de werkbank, dan zegt het kaartje naast je vizier welk stuk gekozen is en welk stuk een
+klik kiest. **Kijk naar het stuk dat erboven zweeft**: het licht op, en het kaartje zegt wat een
+**rechtsklik** zou doen. Werkt de werkbank aan een ander stuk, dan loopt dat gewoon door (het kaartje
+bij de werkbank laat zien hoe ver hij is).
 
 - **Bouwen** (lege hand, of iets anders dan harnas of upgrades): klik op een stuk dat nog een
   hologram is. Het kaartje laat zien wat het kost en wat je bij je hebt (groen = genoeg, rood = te
@@ -2071,7 +2074,8 @@ een klik op dat stuk.
   aan (heb je daar al iets, dan komt het in je rugzak). Ben je intussen verder dan 24 blokken weg,
   dan blijft het op de werkbank liggen. Het harnas kun je niet in de crafting table maken.
 - **Neerleggen**: houd een stuk harnas vast en klik op het hologram: het ligt dan echt (in zijn
-  eigen kleuren) op zijn plek. Lag daar al een stuk, dan wisselen ze.
+  eigen kleuren) op zijn plek, en dat stuk wordt gekozen, zodat je het ziet liggen. Lag daar al een
+  stuk, dan wisselen ze.
 - **Pakken**: klik met een lege hand op een stuk dat erop ligt: het vliegt naar je toe. Het kaartje
   laat zien welke upgrades erin zitten.
 - **Upgraden**: houd een upgrade vast en klik op het stuk (dat moet erop liggen). Het kaartje zegt
@@ -2085,7 +2089,7 @@ een klik op dat stuk.
     Craft: ijzer, buskruit, computerchips en een trechter.
   - **Rocket Warhead** (borstplaat met raketpakket, tot 3): 40% meer schade per raket. Craft:
     ijzer, blazepoeder, computerchips en TNT.
-  - **De bril** (sinds 6 november): leg hem op het hologram (het vierde stuk, boven de borstplaat) en
+  - **De bril** (sinds 6 november): leg hem op het hologram (het vierde stuk, na de laarzen) en
     bouw er een **Battery Upgrade**, **Scanner Upgrade** of **Drone Upgrade** in, net zo. Een bril
     bouwen kan hier niet: die ligt in de kluis van een Biebia's Industries Tower.
   In de tooltip van een stuk harnas zie je ook welke upgrades erin zitten.

@@ -37,7 +37,9 @@ import org.joml.Matrix4f;
  * Tekent het harnas-hologram boven de werkbank.
  *
  * Het is het echte 3D-model van het tech-harnas (TechSuitModel), op ware grootte en langzaam
- * ronddraaiend, zoals het harnas in Biebia's lab:
+ * ronddraaiend, zoals het harnas in Biebia's lab. Sinds hoofdstuk 62 staat er maar één stuk: het
+ * gekozen stuk van de werkbank, en elk stuk zweeft op dezelfde hoogte, met zijn onderkant een halve
+ * blok boven de werkbank (zie HoloPiece).
  * - een stuk dat er nog niet is: doorschijnend blauw, met het plaatje van het harnas erin;
  * - een echt stuk dat je erop legde: gewoon zoals het is, in de kleuren van het harnas;
  * - een stuk in aanbouw: plaatje voor plaatje verschijnt het (eerst de romp, dan de
@@ -99,13 +101,16 @@ public class SuitHologramRenderer implements BlockEntityRenderer<SuitWorkbenchBl
         base(pose, buffers.getBuffer(RenderType.lines()), time, power);
         pose.popPose();
 
-        for (HoloPiece piece : HoloPiece.values()) {
+        // Hoofdstuk 62 (jouw opmerking): niet het hele harnas, alleen het gekozen stuk (klik op de werkbank = het
+        // volgende, sneak + klik = het vorige). Wat aan een ander stuk gebeurt, loopt gewoon door.
+        {
+            HoloPiece piece = bench.selected();
             ItemStack onIt = bench.laid(piece);
             boolean glow = piece == hovered;
             boolean building = job == SuitWorkbenchBlockEntity.JOB_BUILD && bench.jobPiece() == piece;
             boolean installing = job == SuitWorkbenchBlockEntity.JOB_INSTALL && bench.jobPiece() == piece;
             pose.pushPose();
-            holoPose(pose, spin, HoloPiece.SCALE);
+            holoPose(pose, piece, spin);
             if (!onIt.isEmpty()) {
                 real(pose, buffers, piece, onIt, worldLight);
                 if (glow || installing) {
@@ -132,9 +137,6 @@ public class SuitHologramRenderer implements BlockEntityRenderer<SuitWorkbenchBl
             }
             if (glow) {
                 corners(pose, buffers.getBuffer(RenderType.lines()), piece.box(), HudStyle.CYAN, 200);
-            } else if (piece == bench.selected()) {
-                // Het gekozen stuk (sneak + klik op de werkbank, hoofdstuk 54): oranje hoekjes.
-                corners(pose, buffers.getBuffer(RenderType.lines()), piece.box(), HudStyle.ORANGE, 150);
             }
         }
 
@@ -145,11 +147,15 @@ public class SuitHologramRenderer implements BlockEntityRenderer<SuitWorkbenchBl
 
     // ================================================================ Het harnas zelf
 
-    /** Naar de plek en de stand van het hologram: de voeten op FEET, draaiend om het midden. */
-    private static void holoPose(PoseStack pose, float spin, float scale) {
-        // Het model heeft zijn nulpunt in de nek, 24 pixels (1,5 blok) boven de voeten, en y
-        // wijst naar beneden: daarom omhoog schuiven en dan omklappen (net als bij een mob).
-        pose.translate(0.5, HoloPiece.FEET + 1.5f * scale, 0.5);
+    /**
+     * Naar de plek en de stand van het hologram: de onderkant van het stuk een halve blok boven de werkbank
+     * ({@link HoloPiece#HOVER}, hoofdstuk 62), draaiend om het midden.
+     */
+    private static void holoPose(PoseStack pose, HoloPiece piece, float spin) {
+        // Het model heeft zijn nulpunt in de nek en y wijst naar beneden: daarom de nek op de juiste hoogte
+        // zetten (HoloPiece.neckY, voor elk stuk anders) en dan omklappen (net als bij een mob).
+        float scale = HoloPiece.SCALE;
+        pose.translate(0.5, piece.neckY(), 0.5);
         pose.mulPose(Axis.YP.rotationDegrees(spin));
         pose.scale(-scale, -scale, scale);
     }
@@ -267,7 +273,9 @@ public class SuitHologramRenderer implements BlockEntityRenderer<SuitWorkbenchBl
                 0, 1);
         float e = t * t * (3 - 2 * t);
         BlockPos pos = bench.getBlockPos();
-        Vec3 start = new Vec3(0.5, HoloPiece.FEET + 1.5f * HoloPiece.SCALE, 0.5);
+        // Het vertrekt waar het op het hologram zweefde (een halve blok boven de werkbank) en komt aan met de nek
+        // van het model op die van de speler, zodat het precies om hem heen valt.
+        Vec3 start = new Vec3(0.5, bench.flyFrom().neckY(), 0.5);
         Vec3 end = player.getPosition(partialTick).subtract(pos.getX(), pos.getY(), pos.getZ()).add(0, 1.501, 0);
         Vec3 at = start.lerp(end, e).add(0, Mth.sin(t * Mth.PI) * 0.8, 0);
         float bodyYaw = Mth.rotLerp(partialTick, player.yBodyRotO, player.yBodyRot);

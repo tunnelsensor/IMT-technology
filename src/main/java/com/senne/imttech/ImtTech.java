@@ -178,6 +178,8 @@ public class ImtTech {
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.energy.PowerCables::onEntityJoin);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.energy.PowerCables::onServerTick);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.energy.CableSpoolItem::onRightClickBlock);
+        // Hoofdstuk 62: sneak + klik op de harnas-werkbank kiest het vorige stuk, wat je ook vasthoudt.
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.workbench.SuitWorkbenchBlock::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.energy.CableSpoolItem::onRightClickItem);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.energy.CableSpoolItem::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->

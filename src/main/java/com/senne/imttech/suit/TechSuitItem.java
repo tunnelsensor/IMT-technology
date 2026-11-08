@@ -1,6 +1,5 @@
 package com.senne.imttech.suit;
 
-import net.minecraft.core.BlockPos;
 import com.senne.imttech.imt.ImtData;
 import com.senne.imttech.registry.ModArmorMaterials;
 import java.util.List;
@@ -81,11 +80,5 @@ public class TechSuitItem extends ArmorItem {
         }
         ItemStack glasses = ImtData.getWornGlasses(player);
         return !glasses.isEmpty() && ImtData.isAuthorized(glasses, player) && ImtData.getEnergy(glasses) > 0;
-    }
-
-    /** Sneak + klik op de harnas-werkbank gaat naar de werkbank (het volgende stuk kiezen, hoofdstuk 54), ook met dit in je hand. */
-    @Override
-    public boolean doesSneakBypassUse(ItemStack stack, net.minecraft.world.level.LevelReader level, BlockPos pos, Player player) {
-        return level.getBlockState(pos).is(com.senne.imttech.registry.ModBlocks.SUIT_WORKBENCH.get());
     }
 }

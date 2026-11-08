@@ -1743,7 +1743,8 @@ public final class ImtTechGameTests {
     /**
      * Hoofdstuk 54 (jouw notitie): de bril is het vierde stuk op het hologram. Je legt hem erop, bouwt er een
      * batterij-upgrade in zoals bij het harnas (de werkbank doet het, met stroom), en pakt hem terug (hij gaat op je
-     * hoofd). Bouwen kan niet (geen blauwdruk), en sneak + klik op de werkbank kiest het volgende stuk, rond.
+     * hoofd). Bouwen kan niet (geen blauwdruk). Sinds hoofdstuk 62 kiest de bril neerleggen de bril, een klik op de
+     * werkbank het volgende stuk en sneak + klik het vorige, rond.
      */
     @GameTest(template = ARENA, timeoutTicks = 300, batch = "workbench")
     public static void workbench_upgrades_the_glasses(GameTestHelper helper) {
@@ -1768,10 +1769,23 @@ public final class ImtTechGameTests {
         if (!bench.interact(player, glassesPiece) || player.getMainHandItem().getCount() != 1) {
             throw new GameTestAssertException("De batterij-upgrade ging er niet in");
         }
-        // Sneak + klik kiest het volgende stuk: borst -> broek -> laarzen -> bril -> borst.
-        for (var expected : new com.senne.imttech.workbench.HoloPiece[] {com.senne.imttech.workbench.HoloPiece.LEGS,
-                com.senne.imttech.workbench.HoloPiece.BOOTS, glassesPiece, com.senne.imttech.workbench.HoloPiece.CHEST}) {
+        // De bril erop leggen kiest de bril (hoofdstuk 62: het hologram toont alleen het gekozen stuk).
+        if (bench.selected() != glassesPiece) {
+            throw new GameTestAssertException("Na het neerleggen is " + bench.selected() + " gekozen, niet de bril");
+        }
+        // Hoofdstuk 62: een klik op de werkbank kiest het volgende stuk (naar rechts): bril -> borst -> broek ->
+        // laarzen -> bril, en sneak + klik het vorige (naar links): bril -> laarzen -> broek -> borst -> bril.
+        var chest = com.senne.imttech.workbench.HoloPiece.CHEST;
+        var legs = com.senne.imttech.workbench.HoloPiece.LEGS;
+        var boots = com.senne.imttech.workbench.HoloPiece.BOOTS;
+        for (var expected : new com.senne.imttech.workbench.HoloPiece[] {chest, legs, boots, glassesPiece}) {
             bench.selectNext(player);
+            if (bench.selected() != expected) {
+                throw new GameTestAssertException("Na een klik is " + bench.selected() + " gekozen, niet " + expected);
+            }
+        }
+        for (var expected : new com.senne.imttech.workbench.HoloPiece[] {boots, legs, chest, glassesPiece}) {
+            bench.selectPrevious(player);
             if (bench.selected() != expected) {
                 throw new GameTestAssertException("Na sneak + klik is " + bench.selected() + " gekozen, niet " + expected);
             }
@@ -1781,6 +1795,67 @@ public final class ImtTechGameTests {
                 throw new GameTestAssertException("De batterij-upgrade is nog niet ingebouwd");
             }
         });
+    }
+
+    /**
+     * Hoofdstuk 62 (jouw opmerking: "niet heel het armor laten zien maar enkel het selected ding, rechtsklik is naar
+     * rechts gaan in de items, shift rechts is links"): een echte rechtsklik op de werkbank zelf kiest het volgende
+     * stuk, sneak + rechtsklik het vorige, ook met een zwaard in je hand (anders gebruikt Minecraft bij sneak het
+     * item), en een klik op het blok bouwt nooit iets. Een stuk neerleggen (op het stuk dat erboven zweeft) kiest
+     * dat stuk, zodat je het ziet liggen.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "workbench")
+    public static void workbench_clicks_through_the_pieces(GameTestHelper helper) {
+        BlockPos at = new BlockPos(12, 3, 12);
+        var bench = placeWorkbench(helper, at);
+        ServerPlayer player = benchUser(helper);
+        var hand = net.minecraft.world.InteractionHand.MAIN_HAND;
+        BlockPos abs = helper.absolutePos(at);
+        var hit = new net.minecraft.world.phys.BlockHitResult(
+                net.minecraft.world.phys.Vec3.atCenterOf(abs).add(0, 0, -0.5), Direction.NORTH, abs, false);
+        var chest = com.senne.imttech.workbench.HoloPiece.CHEST;
+        var legs = com.senne.imttech.workbench.HoloPiece.LEGS;
+        var boots = com.senne.imttech.workbench.HoloPiece.BOOTS;
+        var glasses = com.senne.imttech.workbench.HoloPiece.GLASSES;
+        if (bench.selected() != chest) {
+            throw new GameTestAssertException("Een nieuwe werkbank toont " + bench.selected() + ", niet de borstplaat");
+        }
+        // Jouw tweede opmerking: elk stuk op dezelfde hoogte, een halve blok boven de werkbank (de bovenkant is y 1).
+        // Het klikvak van elk stuk begint dus overal even hoog, net onder y 1.5, en blijft onder y 2.5.
+        if (Math.abs(com.senne.imttech.workbench.HoloPiece.HOVER - 1.5f) > 1.0e-4) {
+            throw new GameTestAssertException("De stukken zweven op " + com.senne.imttech.workbench.HoloPiece.HOVER
+                    + " in plaats van een halve blok boven de werkbank");
+        }
+        for (var piece : com.senne.imttech.workbench.HoloPiece.values()) {
+            var box = piece.box();
+            if (Math.abs(box.minY - chest.box().minY) > 1.0e-4 || box.minY < 1.4 || box.minY > 1.5 || box.maxY > 2.5) {
+                throw new GameTestAssertException(piece + " zweeft niet een halve blok boven de werkbank: " + box);
+            }
+        }
+        player.setItemInHand(hand, new ItemStack(net.minecraft.world.item.Items.DIAMOND_SWORD));
+        // Rechts: borst -> broek -> laarzen. Dan sneak (links): laarzen -> broek -> borst -> bril (rond).
+        boolean[] sneaks = {false, false, true, true, true};
+        com.senne.imttech.workbench.HoloPiece[] expected = {legs, boots, legs, chest, glasses};
+        for (int i = 0; i < sneaks.length; i++) {
+            player.setShiftKeyDown(sneaks[i]);
+            player.gameMode.useItemOn(player, helper.getLevel(), player.getMainHandItem(), hand, hit);
+            if (bench.selected() != expected[i]) {
+                throw new GameTestAssertException((sneaks[i] ? "Na sneak + klik" : "Na een klik") + " op de werkbank is "
+                        + bench.selected() + " gekozen, niet " + expected[i]);
+            }
+        }
+        player.setShiftKeyDown(false);
+        player.setItemInHand(hand, ItemStack.EMPTY);
+        player.gameMode.useItemOn(player, helper.getLevel(), ItemStack.EMPTY, hand, hit);
+        if (bench.selected() != chest || bench.job() != com.senne.imttech.workbench.SuitWorkbenchBlockEntity.JOB_NONE) {
+            throw new GameTestAssertException("Een klik met lege hand op de werkbank koos niet de borstplaat of begon te bouwen");
+        }
+        // Laarzen in je hand en klik op de borstplaat die erboven zweeft: ze liggen erop en de laarzen zijn gekozen.
+        player.setItemInHand(hand, new ItemStack(ModItems.TECH_BOOTS.get()));
+        if (!bench.interact(player, chest) || !bench.laid(boots).is(ModItems.TECH_BOOTS.get()) || bench.selected() != boots) {
+            throw new GameTestAssertException("Neergelegde laarzen zijn niet gekozen (gekozen: " + bench.selected() + ")");
+        }
+        helper.succeed();
     }
 
     /**
