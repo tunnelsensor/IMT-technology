@@ -5900,6 +5900,15 @@ even groot als de sticky's".
       rechthoek zelf bleef 2 x 2, dus waar iets past veranderde niet. De voorbeeldwand (`ArmoryDisplay`) heeft nu ook een
       Remote Frag, boven de Remote EMP met een gaatje ertussen. Bekeken met `-Ponly=armory` en een nieuw plaatje van
       dichtbij (`ar03b_grenades_close`): de sticky's links en de remotes rechts, allebei even breed.
+- [x] **De onderkant even hoog** (jouw vraag: "Zorg ook dat de bodem van de remote en de sticky op dezelfde hoogte hangen,
+      de antenne moet hoger uitsteken, niet de bodem lager") — een remote stond met antenne en al in het midden van zijn
+      rechthoek, dus hing zijn bol lager dan die van de sticky ernaast. Nu meet het Pegboard alles aan de sticky (de
+      draaiing, de grootte en het midden) en schuift het de remote in zijn model naar de plek van de bol van de sticky
+      (als blok staat de remote op de vloer, y = 0, de sticky op y = 5; de verschuiving wordt gemeten: het verschil
+      tussen de hoeken linksonder van beide modellen, `PegboardRenderer.raw`). De bol hangt nu precies waar die van de
+      sticky hangt, de antenne steekt zo'n pixel boven de rechthoek uit. Op de voorbeeldwand hangt de Remote EMP weer op
+      de rij van de sticky's, de Remote Frag erboven en de Ion Blaster een gaatje hoger. Op `ar03b_grenades_close`: de
+      kussens van de twee sticky's en van de Remote EMP op dezelfde lijn.
 
 ## Nog nooit in het spel bekeken
 

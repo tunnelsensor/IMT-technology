@@ -64,10 +64,11 @@ public final class ArmoryDisplay {
         hang(level, leftBottom, 23, 1, new ItemStack(ModItems.GUN_SLING.get()), left);
         hang(level, leftBottom, 27, 1, new ItemStack(ModItems.EMP_TRIGGER.get()), left);
         hang(level, leftBottom, 28, 1, new ItemStack(ModItems.FRAG_TRIGGER.get()), left);
-        // De Remote EMP en Remote Frag boven elkaar, met een gaatje ertussen (hun antenne vult hun rechthoek tot boven).
-        hang(level, leftBottom, 29, 1, new ItemStack(ModItems.REMOTE_EMP.get()), left);
-        hang(level, leftBottom, 29, 4, new ItemStack(ModItems.REMOTE_FRAG.get()), left);
-        hang(level, leftBottom, 27, 6, new ItemStack(ModItems.ION_BLASTER.get()), left);
+        // De Remote EMP op dezelfde rij als de sticky's (zijn bol hangt even hoog), de Remote Frag erboven met een gaatje
+        // ertussen (hun antenne steekt boven hun rechthoek uit), en daarboven de Ion Blaster.
+        hang(level, leftBottom, 29, 2, new ItemStack(ModItems.REMOTE_EMP.get()), left);
+        hang(level, leftBottom, 29, 5, new ItemStack(ModItems.REMOTE_FRAG.get()), left);
+        hang(level, leftBottom, 27, 7, new ItemStack(ModItems.ION_BLASTER.get()), left);
 
         ItemStack[][] contents = {
                 {new ItemStack(ModItems.ROUND_9MM.get(), 64), new ItemStack(ModItems.ROUND_9MM.get(), 64),

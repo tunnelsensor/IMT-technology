@@ -55,7 +55,7 @@ import org.joml.Vector3f;
  * sling en de cel). De rest (granaten, pouches...) is het gewone 3D-model van het item.
  *
  * Elk wapen wordt zo groot getekend als in zijn rechthoek past: we meten het model (eenmalig per stand) en schalen het.
- * De Remote EMP en Remote Frag krijgen de grootte van hun sticky (zie {@link #sizedLike}).
+ * De Remote EMP en Remote Frag krijgen de grootte en de plek van hun sticky (zie {@link #sizedLike}).
  *
  * Houd je iets vast dat erop mag en kijk je naar het paneel, dan zie je een kader waar het komt (rood: geen plek).
  * Met een lege hand krijgt het wapen waar je naar kijkt een wit kader.
@@ -67,6 +67,8 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
 
     /** De gemeten doos van elk model, per stand (in blokken van het model, na het draaien). */
     private static final Map<BakedModel, AABB[]> BOUNDS = new IdentityHashMap<>();
+    /** De doos van elk model zonder te draaien (zie {@link #raw}). */
+    private static final Map<BakedModel, AABB> RAW = new IdentityHashMap<>();
 
     public PegboardRenderer(BlockEntityRendererProvider.Context context) {
     }
@@ -107,17 +109,15 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
         ItemStack stack = hung.stack();
         Minecraft mc = Minecraft.getInstance();
         BakedModel model = mc.getItemRenderer().getModel(stack, level, null, 0);
-        Quaternionf turn = rotation(stack, model, hung.turn());
-        AABB box = bounds(model, turn, hung.turn(), stack);
-        // Hoe groot: zo groot als in de rechthoek past, of (de Remote EMP en Remote Frag) zo groot als hun sticky.
+        // Waar en hoe groot: gemeten aan het item zelf, of (de Remote EMP en Remote Frag) aan hun sticky. Zo'n remote hangt
+        // dan precies waar zijn sticky zou hangen: de bol even groot en zijn onderkant even hoog, alleen de antenne steekt
+        // er bovenuit.
         ItemStack like = sizedLike(stack);
-        AABB fit = box;
-        if (like != stack) {
-            BakedModel likeModel = mc.getItemRenderer().getModel(like, level, null, 0);
-            fit = bounds(likeModel, rotation(like, likeModel, hung.turn()), hung.turn(), like);
-        }
-        double fx = fit.getXsize() * 16, fy = fit.getYsize() * 16;
-        float scale = (float) Math.min(1.3, Math.min(w / Math.max(0.01, fx), h / Math.max(0.01, fy)) * 0.9);
+        BakedModel likeModel = like == stack ? model : mc.getItemRenderer().getModel(like, level, null, 0);
+        Quaternionf turn = rotation(like, likeModel, hung.turn());
+        AABB box = bounds(likeModel, turn, hung.turn(), like);
+        double sx = box.getXsize() * 16, sy = box.getYsize() * 16;
+        float scale = (float) Math.min(1.3, Math.min(w / Math.max(0.01, sx), h / Math.max(0.01, sy)) * 0.9);
         float depth = (float) (box.getZsize() * 16 * scale);
 
         // De haakjes: van het paneel tot net achter het wapen.
@@ -135,8 +135,20 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
         Vector3f centre = box.getCenter().toVector3f();
         pose.translate(-centre.x, -centre.y, -centre.z);
         pose.mulPose(turn);
+        if (like != stack) {
+            // In zijn eigen model ligt de bol van de remote lager dan die van de sticky (als blok staat hij op de
+            // vloer, y = 0; de sticky op y = 5): we schuiven hem naar de plek van de bol van de sticky. De onderkant
+            // (het kleefkussen) is in beide modellen het laagste en het breedste, dus de hoek linksonder vooraan klopt.
+            AABB own = raw(model), theirs = raw(likeModel);
+            pose.translate(theirs.minX - own.minX, theirs.minY - own.minY, theirs.minZ - own.minZ);
+        }
         draw(pose, buffers, light, level, stack, model);
         pose.popPose();
+    }
+
+    /** De doos om het model zoals het in zijn json staat, zonder te draaien (eenmalig gemeten). */
+    private static AABB raw(BakedModel model) {
+        return RAW.computeIfAbsent(model, m -> measure(m, new Quaternionf()));
     }
 
     /** Tekent het item in de ruimte van zijn model (1 = 16 pixels van het model, de hoek (0, 0, 0) hier). */
@@ -197,10 +209,11 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
     }
 
     /**
-     * Het item waarvan dit item de grootte krijgt (meestal zichzelf). Jouw wens (9 november): de Remote EMP en Remote
-     * Frag even groot als de Sticky EMP en de Sticky Frag. Ze hebben dezelfde halve bol, maar hun antenne maakt ze hoger,
-     * en zo groot als in hun 2 x 2 gaatjes past werden ze zo'n 11 % kleiner dan de sticky ernaast. Met de schaal van de
-     * sticky is de bol even groot, en de antenne past dan net in dezelfde rechthoek (4,05 van de 4 pixels).
+     * Het item waarvan dit item de grootte en de plek krijgt (meestal zichzelf). Jouw wens (9 november): de Remote EMP
+     * en Remote Frag even groot als de Sticky EMP en de Sticky Frag, en hun onderkant even hoog ("de antenne moet hoger
+     * uitsteken, niet de bodem lager"). Ze hebben dezelfde halve bol, maar hun antenne maakt ze hoger: zo groot als in hun
+     * 2 x 2 gaatjes past werden ze zo'n 11 % kleiner, en in het midden van hun rechthoek hing de bol lager. Nu hangt de
+     * bol precies waar die van de sticky hangt, en steekt de antenne zo'n pixel boven de rechthoek uit.
      */
     private static ItemStack sizedLike(ItemStack stack) {
         if (stack.getItem() instanceof RemoteChargeItem remote) {
@@ -325,5 +338,6 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
     /** Voor de tests in het spel: de gemeten dozen vergeten (na het herladen van de modellen). */
     public static void forget() {
         BOUNDS.clear();
+        RAW.clear();
     }
 }
