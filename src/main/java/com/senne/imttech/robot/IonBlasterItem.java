@@ -67,7 +67,8 @@ public class IonBlasterItem extends Item {
             end = wall.getLocation();
         }
         EntityHitResult first = ProjectileUtil.getEntityHitResult(level, player, eye, end, new AABB(eye, end).inflate(1.0),
-                entity -> entity.isAlive() && entity.isPickable() && !entity.isSpectator(), 0.3f);
+                entity -> entity.isAlive() && entity.isPickable() && !entity.isSpectator()
+                        && !(entity instanceof com.senne.imttech.weapons.GrenadeEntity), 0.3f); // hoofdstuk 69: erdoor
         Entity hit = null;
         if (first != null) {
             hit = first.getEntity();

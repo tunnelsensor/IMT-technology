@@ -202,6 +202,24 @@ public final class ModDataComponents {
                     .persistent(net.minecraft.world.item.DyeColor.CODEC)
                     .networkSynchronized(net.minecraft.world.item.DyeColor.STREAM_CODEC));
 
+    /**
+     * Hoofdstuk 69: een granaat die je opraapte terwijl hij al op scherp stond (jouw keuze: "de lont loopt door"). Het getal
+     * is de speltijd (ticks, zie Level.getGameTime) waarop hij afgaat; geen = een gewone granaat. Zie weapons/GrenadeItem.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Long>> LIVE_FUSE =
+            COMPONENTS.registerComponentType("live_fuse", builder -> builder
+                    .persistent(Codec.LONG)
+                    .networkSynchronized(ByteBufCodecs.VAR_LONG));
+
+    /**
+     * Hoofdstuk 69: een Remote EMP of Remote Frag die iemand met sneak + lege hand van de muur haalde. Hij blijft scherp en
+     * van zijn eigenaar, aan diens trigger (jouw keuze). Zie weapons/LiveCharge.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.imttech.weapons.LiveCharge>> LIVE_CHARGE =
+            COMPONENTS.registerComponentType("live_charge", builder -> builder
+                    .persistent(com.senne.imttech.weapons.LiveCharge.CODEC)
+                    .networkSynchronized(com.senne.imttech.weapons.LiveCharge.STREAM_CODEC));
+
     // ================================================================ Vuurwapens (hoofdstuk 52)
 
     /** Van welk materiaal een los onderdeel van een pistool is (polymeer, staal, titanium). */

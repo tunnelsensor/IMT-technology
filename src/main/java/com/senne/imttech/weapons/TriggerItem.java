@@ -16,11 +16,14 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -33,6 +36,9 @@ import org.jetbrains.annotations.Nullable;
  *   <li><b>rechtsklik</b>: al zijn ladingen binnen TRIGGER_RANGE blokken gaan af, kort na elkaar;</li>
  *   <li><b>sneak + rechtsklik</b>: hoeveel er bij hem horen en hoeveel er in bereik zijn.</li>
  * </ul>
+ * Hoofdstuk 69: haalt iemand een lading met sneak + lege hand van de muur, dan blijft die aan deze trigger (jouw keuze).
+ * Hangt hij hem ergens anders op, dan hoort de trigger dat via {@link MovedCharges} ({@link #catchUp}). Draagt iemand hem
+ * nog als je drukt (in bereik), of ligt hij op de grond, dan gaat hij daar af.
  * Met een trigger in je hand zie je boven elke lading een bordje (zie client/weapons/TriggerMarkers). Wat hij onthoudt
  * (zijn nummer en waar zijn ladingen zitten, {@link TriggerData}) staat per soort in een eigen component, zodat een EMP
  * Trigger nooit een Remote Frag laat afgaan en andersom.
@@ -114,6 +120,29 @@ public class TriggerItem extends Item {
         return true;
     }
 
+    /**
+     * Hoofdstuk 69: ladingen van deze trigger die iemand verplaatste (zie MovedCharges): de oude plekken eruit, de nieuwe
+     * erbij. Zo staan de bordjes boven je ladingen (TriggerMarkers) weer goed.
+     */
+    public static void catchUp(ServerLevel level, ItemStack stack) {
+        TriggerData data = data(stack);
+        if (data == null || !(stack.getItem() instanceof TriggerItem trigger)) {
+            return;
+        }
+        MovedCharges moved = MovedCharges.get(level.getServer());
+        if (moved.has(data.id())) {
+            stack.set(trigger.component(), moved.apply(data));
+        }
+    }
+
+    /** Elke tick in je inventaris: bijhouden waar je ladingen nu hangen. */
+    @Override
+    public void inventoryTick(ItemStack stack, Level level, Entity holder, int slot, boolean selected) {
+        if (level instanceof ServerLevel server) {
+            catchUp(server, stack);
+        }
+    }
+
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
@@ -145,8 +174,12 @@ public class TriggerItem extends Item {
         }
         level.playSound(null, player.blockPosition(), ModSounds.TRIGGER_CLICK.get(), SoundSource.PLAYERS, 1.0f,
                 trigger.kind == RemoteChargeBlock.Kind.EMP ? 1.3f : 1.0f);
+        catchUp(level, stack);
         TriggerData data = data(stack);
-        if (data == null || data.charges().isEmpty()) {
+        // Hoofdstuk 69: wie een lading van deze trigger nog bij zich heeft (in bereik), of waar hij op de grond ligt: daar
+        // gaat hij af.
+        int loose = data == null ? 0 : goOffLoose(level, player.position(), trigger.kind, data.id(), player.getUUID());
+        if ((data == null || data.charges().isEmpty()) && loose == 0) {
             player.displayClientMessage(Component.translatable(trigger.key("item.imttech.", "none")).withStyle(ChatFormatting.GRAY), true);
             return new Fired(0, 0);
         }
@@ -172,11 +205,76 @@ public class TriggerItem extends Item {
             ready.get(i).goOffIn(1 + i * BETWEEN);
         }
         stack.set(trigger.component(), data.withCharges(kept));
+        int fired = ready.size() + loose;
         Component message = outOfRange > 0
-                ? Component.translatable(trigger.key("item.imttech.", "fired_some"), ready.size(), outOfRange, (int) range())
-                : Component.translatable(trigger.key("item.imttech.", "fired"), ready.size());
-        player.displayClientMessage(message.copy().withStyle(ready.isEmpty() ? ChatFormatting.GRAY : trigger.colour()), true);
-        return new Fired(ready.size(), outOfRange);
+                ? Component.translatable(trigger.key("item.imttech.", "fired_some"), fired, outOfRange, (int) range())
+                : Component.translatable(trigger.key("item.imttech.", "fired"), fired);
+        player.displayClientMessage(message.copy().withStyle(fired == 0 ? ChatFormatting.GRAY : trigger.colour()), true);
+        return new Fired(fired, outOfRange);
+    }
+
+    /**
+     * Hoofdstuk 69: scherpe ladingen van deze trigger die niet aan een muur hangen, binnen bereik van {@code from}: in de
+     * inventaris van een speler (ook aan zijn muis), of los op de grond. Ze gaan meteen af, waar ze zijn. Geeft hoeveel.
+     */
+    private static int goOffLoose(ServerLevel level, Vec3 from, RemoteChargeBlock.Kind kind, UUID id, UUID owner) {
+        double reach = range() * range();
+        int count = 0;
+        for (ServerPlayer carrier : List.copyOf(level.players())) {
+            if (carrier.isSpectator() || carrier.position().distanceToSqr(from) > reach) {
+                continue;
+            }
+            int carried = takeCarried(carrier, kind, id);
+            Vec3 at = new Vec3(carrier.getX(), carrier.getY() + carrier.getBbHeight() * 0.45, carrier.getZ());
+            for (int i = 0; i < carried; i++) {
+                RemoteChargeBlockEntity.goOffLoose(level, at, kind, owner);
+            }
+            count += carried;
+        }
+        double r = range();
+        for (ItemEntity item : level.getEntitiesOfClass(ItemEntity.class,
+                new net.minecraft.world.phys.AABB(from, from).inflate(r), item -> isLiveFor(item.getItem(), kind, id)
+                        && item.position().distanceToSqr(from) <= reach)) {
+            int n = item.getItem().getCount();
+            Vec3 at = item.position().add(0, 0.2, 0);
+            item.discard();
+            for (int i = 0; i < n; i++) {
+                RemoteChargeBlockEntity.goOffLoose(level, at, kind, owner);
+            }
+            count += n;
+        }
+        return count;
+    }
+
+    /** Haalt de scherpe ladingen van deze trigger uit de inventaris van {@code carrier} (en van zijn muis). Geeft hoeveel. */
+    private static int takeCarried(ServerPlayer carrier, RemoteChargeBlock.Kind kind, UUID id) {
+        int count = 0;
+        net.minecraft.world.entity.player.Inventory inventory = carrier.getInventory();
+        for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+            ItemStack stack = inventory.getItem(slot);
+            if (isLiveFor(stack, kind, id)) {
+                count += stack.getCount();
+                inventory.setItem(slot, ItemStack.EMPTY);
+            }
+        }
+        ItemStack carried = carrier.containerMenu.getCarried();
+        if (isLiveFor(carried, kind, id)) {
+            count += carried.getCount();
+            carrier.containerMenu.setCarried(ItemStack.EMPTY);
+        }
+        if (count > 0) {
+            carrier.containerMenu.broadcastChanges();
+        }
+        return count;
+    }
+
+    /** Is dit een scherpe lading van deze soort, aan deze trigger? */
+    private static boolean isLiveFor(ItemStack stack, RemoteChargeBlock.Kind kind, UUID id) {
+        if (!(stack.getItem() instanceof RemoteChargeItem charge) || charge.kind() != kind) {
+            return false;
+        }
+        LiveCharge live = stack.get(ModDataComponents.LIVE_CHARGE.get());
+        return live != null && live.trigger().equals(id);
     }
 
     /** Sneak + rechtsklik: hoeveel ladingen horen erbij, en hoeveel zijn in bereik. */
@@ -184,6 +282,7 @@ public class TriggerItem extends Item {
         if (!(stack.getItem() instanceof TriggerItem trigger)) {
             return;
         }
+        catchUp(level, stack);
         TriggerData data = data(stack);
         int linked = data == null ? 0 : data.charges().size();
         int inRange = 0;

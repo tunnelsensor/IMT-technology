@@ -47,6 +47,24 @@ public class RemoteChargeBlockEntity extends BlockEntity {
         return kind(getBlockState());
     }
 
+    /** Hoofdstuk 69: een scherpe lading die iemand eraf haalde, weer opgehangen: van dezelfde eigenaar, aan dezelfde trigger. */
+    public void restore(LiveCharge live) {
+        owner = live.owner().orElse(null);
+        ownerName = live.ownerName();
+        trigger = live.trigger();
+        setChanged();
+    }
+
+    /**
+     * Minecraft geeft de onderdelen van het item mee aan het blok. LIVE_CHARGE las RemoteChargeItem al (zie restore): hier
+     * zeggen we "gelezen", anders bewaart het blok hem als los onderdeel en zit hij later weer op een item.
+     */
+    @Override
+    protected void applyImplicitComponents(BlockEntity.DataComponentInput input) {
+        super.applyImplicitComponents(input);
+        input.get(com.senne.imttech.registry.ModDataComponents.LIVE_CHARGE.get());
+    }
+
     public void placedBy(@Nullable Player player) {
         if (player != null) {
             owner = player.getUUID();
@@ -120,6 +138,19 @@ public class RemoteChargeBlockEntity extends BlockEntity {
         Emp.blast(level, Vec3.atCenterOf(pos).subtract(normal.scale(0.3)), ImtConfig.Weapons.EMP_RADIUS,
                 Math.max(1, Math.round(ImtConfig.Weapons.EMP_SECONDS * 20)), owner);
         return 0;
+    }
+
+    /**
+     * Een scherpe lading die niet aan een muur hangt (hoofdstuk 69: iemand draagt hem, of hij ligt op de grond) en waarvan
+     * de eigenaar op zijn trigger drukt: hij gaat af waar hij is. Een frag zo sterk als een Sticky Frag, een EMP een gewone
+     * puls.
+     */
+    public static void goOffLoose(ServerLevel level, Vec3 at, RemoteChargeBlock.Kind kind, @Nullable UUID owner) {
+        if (kind == RemoteChargeBlock.Kind.FRAG) {
+            Blast.frag(level, at, net.minecraft.core.BlockPos.containing(at), null, false, "Remote Frag");
+        } else {
+            Emp.blast(level, at, ImtConfig.Weapons.EMP_RADIUS, Math.max(1, Math.round(ImtConfig.Weapons.EMP_SECONDS * 20)), owner);
+        }
     }
 
     @Override

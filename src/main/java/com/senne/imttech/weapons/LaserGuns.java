@@ -227,6 +227,7 @@ public final class LaserGuns {
             }
             EntityHitResult hit = ProjectileUtil.getEntityHitResult(level, player, eye, end, new AABB(eye, end).inflate(1.0),
                     entity -> entity.isAlive() && entity.isPickable() && !entity.isSpectator() && entity != player
+                            && !(entity instanceof GrenadeEntity) // hoofdstuk 69: een granaat is aanklikbaar, maar je schiet erdoor
                             && !player.isPassengerOfSameVehicle(entity), 0.1f);
             LivingEntity target = null;
             if (hit != null) {
@@ -311,7 +312,8 @@ public final class LaserGuns {
                 end = wall.getLocation();
             }
             EntityHitResult hit = ProjectileUtil.getEntityHitResult(level, shooter, from, end, new AABB(from, end).inflate(1.0),
-                    entity -> entity.isAlive() && entity.isPickable() && !entity.isSpectator() && entity != shooter, 0.1f);
+                    entity -> entity.isAlive() && entity.isPickable() && !entity.isSpectator() && entity != shooter
+                            && !(entity instanceof GrenadeEntity), 0.1f);
             LivingEntity target = null;
             if (hit != null) {
                 Entity entity = hit.getEntity();

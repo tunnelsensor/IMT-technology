@@ -176,7 +176,8 @@ public final class GunControl {
         }
         boolean free = mc.screen == null;
         boolean wantAim = free && mc.options.keyUse.isDown() && !reloading() && draw(0) >= 1
-                && !com.senne.imttech.client.armory.ArmoryClient.usesArmory(); // hoofdstuk 67: ophangen of wisselen, niet richten
+                && !com.senne.imttech.client.armory.ArmoryClient.usesArmory() // hoofdstuk 67: ophangen of wisselen, niet richten
+                && !GrenadeGrab.wouldGrab(); // hoofdstuk 69: een granaat oprapen, niet richten
         if (wantAim && player.isSprinting()) {
             player.setSprinting(false);
         }

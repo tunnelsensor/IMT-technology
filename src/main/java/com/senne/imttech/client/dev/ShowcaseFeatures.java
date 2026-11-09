@@ -3382,7 +3382,103 @@ final class ShowcaseFeatures {
                 .tap(0, () -> Minecraft.getInstance().options.keyUse)
                 .pause(60)
                 .onServer(0, player -> player.getInventory().clearContent()));
+
+        // ---------------------------------------------------------------- Granaten terugwerpen (hoofdstuk 69)
+        BlockPos tb = ShowcaseScene.WEAPONS;
+        add("Throwing grenades back", "Hoofdstuk 69. Je hebt een Glock in je hand en een lege holster om; voor je voeten ligt "
+                + "een scherpe EMP-granaat. Rechtsklik erop: let op, de granaat zit nu in je hand (hij glimt), de Glock zit in je "
+                + "holster, en onderaan je scherm telt hij af ('Live EMP Grenade: 4.0 s! Right-click to throw it back'). "
+                + "Rechtsklik: hij vliegt terug naar de robot bij de muur en gaat daar af, met wat er van zijn lont over was. Dan "
+                + "plakt er een Sticky EMP op jou (even van voren bekeken): je eerste rechtsklik trekt hem eraf, en je gooit hem "
+                + "tegen de muur. Tot slot hangt er een Remote Frag van 'Raven' op de muur: sneak + rechtsklik met een lege hand "
+                + "haalt hem eraf ('Taken off, still live: Raven's Frag Trigger can set it off'), en je hangt hem verderop "
+                + "('Hung up, still live'). Raven drukt op zijn trigger: hij gaat af waar jij hem hing.",
+                new Vec3(tb.getX() + 0.5, tb.getY() + 1, tb.getZ() + 0.5), -90, 30, s -> s
+                .onServer(0, ShowcaseScene::buildWeapons)
+                .onServer(0, player -> {
+                    player.getInventory().clearContent();
+                    player.getInventory().setItem(0, com.senne.imttech.guns.FirearmItem.loaded(
+                            com.senne.imttech.guns.FirearmType.GLOCK_19, com.senne.imttech.guns.GunMaterial.STEEL));
+                    com.senne.imttech.guns.Gear.set(player, com.senne.imttech.guns.GearItem.Kind.HOLSTER,
+                            new ItemStack(ModItems.HOLSTER.get()));
+                })
+                .step(0, () -> hotbar(0))
+                .stand(0, tb.getX() + 0.5, tb.getY() + 1, tb.getZ() + 0.5, -90, 30)
+                .onServer(10, player -> {
+                    var ball = new com.senne.imttech.weapons.RollingGrenade(
+                            com.senne.imttech.registry.ModEntities.ROLLING_EMP_GRENADE.get(), player.serverLevel());
+                    ball.setPos(tb.getX() + 2.5, tb.getY() + 1.0, tb.getZ() + 0.5);
+                    ball.arm(130);
+                    player.serverLevel().addFreshEntity(ball);
+                })
+                .lookAt(5, new Vec3(tb.getX() + 2.5, tb.getY() + 1.15, tb.getZ() + 0.5))
+                .pause(40)
+                .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                .pause(50)
+                // Terug, met een boogje over de robot heen.
+                .lookAt(0, new Vec3(tb.getX() + 7.5, tb.getY() + 3.4, tb.getZ() - 1.5))
+                .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                .pause(80)
+                // Een sticky plakt op jou.
+                .onServer(0, player -> {
+                    var sticky = new com.senne.imttech.weapons.StickyGrenade(
+                            com.senne.imttech.registry.ModEntities.STICKY_EMP_GRENADE.get(), player.serverLevel());
+                    sticky.setPos(player.getX() + 3, player.getY() + 1.0, player.getZ());
+                    sticky.shoot(-1, 0.05, 0, 0.8f, 0);
+                    player.serverLevel().addFreshEntity(sticky);
+                })
+                .onServer(8, player -> player.serverLevel().getEntitiesOfClass(com.senne.imttech.weapons.StickyGrenade.class,
+                        player.getBoundingBox().inflate(4)).forEach(sticky -> sticky.arm(120)))
+                .camera(0, net.minecraft.client.CameraType.THIRD_PERSON_FRONT)
+                .pause(40)
+                .camera(0, net.minecraft.client.CameraType.FIRST_PERSON)
+                .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                .pause(40)
+                .lookAt(0, new Vec3(tb.getX() + 10.0, tb.getY() + 3.0, tb.getZ() + 2.5))
+                .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                .pause(60)
+                // Een Remote Frag van Raven op de muur: eraf, en verderop weer op.
+                .onServer(0, player -> {
+                    var level = player.serverLevel();
+                    BlockPos frag = tb.offset(9, 2, 2);
+                    level.setBlockAndUpdate(frag, ModBlocks.REMOTE_FRAG.get().defaultBlockState()
+                            .setValue(com.senne.imttech.weapons.RemoteChargeBlock.FACING, net.minecraft.core.Direction.WEST));
+                    if (level.getBlockEntity(frag) instanceof com.senne.imttech.weapons.RemoteChargeBlockEntity charge) {
+                        charge.restore(new com.senne.imttech.weapons.LiveCharge(RAVEN_TRIGGER, java.util.Optional.empty(), "Raven",
+                                java.util.Optional.empty()));
+                    }
+                })
+                .stand(0, tb.getX() + 7.5, tb.getY() + 1, tb.getZ() + 2.5, -90, 10)
+                .lookAt(5, new Vec3(tb.getX() + 9.85, tb.getY() + 2.5, tb.getZ() + 2.5))
+                .pause(30)
+                // Eerst sluipen, dan mikken (sluipen zet je ogen lager).
+                .key(0, () -> Minecraft.getInstance().options.keyShift, true)
+                .lookAt(5, new Vec3(tb.getX() + 9.85, tb.getY() + 2.5, tb.getZ() + 2.5))
+                .tap(2, () -> Minecraft.getInstance().options.keyUse)
+                .key(5, () -> Minecraft.getInstance().options.keyShift, false)
+                .pause(60)
+                .stand(0, tb.getX() + 8.0, tb.getY() + 1, tb.getZ() - 4.5, -90, 10)
+                .lookAt(5, new Vec3(tb.getX() + 10.0, tb.getY() + 2.5, tb.getZ() - 4.5))
+                .pause(20)
+                .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                .pause(60)
+                // Ver weg, en Raven drukt op zijn Frag Trigger (die van de Remote Frag hoort nu waar hij hangt).
+                .stand(0, tb.getX() - 2.5, tb.getY() + 1, tb.getZ() + 0.5, -100, 5)
+                .onServer(30, player -> {
+                    ItemStack trigger = new ItemStack(ModItems.FRAG_TRIGGER.get());
+                    trigger.set(com.senne.imttech.registry.ModDataComponents.FRAG_TRIGGER.get(),
+                            new com.senne.imttech.weapons.TriggerData(RAVEN_TRIGGER, List.of()));
+                    com.senne.imttech.weapons.TriggerItem.fire(player.serverLevel(), player, trigger);
+                })
+                .pause(80)
+                .onServer(0, player -> {
+                    player.getInventory().clearContent();
+                    com.senne.imttech.guns.Gear.set(player, com.senne.imttech.guns.GearItem.Kind.HOLSTER, ItemStack.EMPTY);
+                }));
     }
+
+    /** Hoofdstuk 69: de Frag Trigger van "Raven" in de showcase (altijd hetzelfde nummer). */
+    static final java.util.UUID RAVEN_TRIGGER = java.util.UUID.nameUUIDFromBytes("imttech-showcase-raven-frag-trigger".getBytes());
 
     /** Hoofdstuk 67: het veldje van de armory (zie VisualCheck.buildArmoryAt). */
     static final BlockPos ARMORY_YARD = new BlockPos(-130, -61, 330);

@@ -135,6 +135,9 @@ public class ImtTechClient {
         // De lasergeweren: bediening, inzoomen, langzamer lopen, het geweer in je beeld, de bouten en de HUD.
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.weapons.GunControl::onClientTick);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.weapons.GunControl::onInteraction);
+        // Hoofdstuk 69: een granaat oprapen gaat voor alles (ook met een geweer in je hand).
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGHEST,
+                com.senne.imttech.client.weapons.GrenadeGrab::onInteraction);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.weapons.GunControl::onMovementInput);
         NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST,
                 com.senne.imttech.client.weapons.GunControl::onComputeFov);

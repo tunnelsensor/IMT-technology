@@ -111,6 +111,29 @@ public class RollingGrenade extends GrenadeEntity {
         return kind() == Kind.EMP || kind() == Kind.FRAG;
     }
 
+    // ================================================================ Oppakken (hoofdstuk 69)
+
+    /** Een smokebom die al rookt, raap je niet meer op (de rook blijft waar hij begon). */
+    @Override
+    public boolean canBePickedUp() {
+        return super.canBePickedUp() && !isSmoking();
+    }
+
+    /** Hij als item: dezelfde soort granaat, een smokebom met zijn kleur. */
+    @Override
+    public net.minecraft.world.item.ItemStack asItem() {
+        net.minecraft.world.item.ItemStack stack = new net.minecraft.world.item.ItemStack(switch (kind()) {
+            case EMP -> com.senne.imttech.registry.ModItems.EMP_GRENADE.get();
+            case FRAG -> com.senne.imttech.registry.ModItems.FRAG_GRENADE.get();
+            case SMOKE -> com.senne.imttech.registry.ModItems.SMOKE_GRENADE.get();
+            case FLASH -> com.senne.imttech.registry.ModItems.FLASHBANG.get();
+        });
+        if (smokeColor() != null) {
+            stack.set(com.senne.imttech.registry.ModDataComponents.SMOKE_COLOR.get(), smokeColor());
+        }
+        return stack;
+    }
+
     // ================================================================ De rook
 
     /** De kleur van de rook, of null = grijs. */

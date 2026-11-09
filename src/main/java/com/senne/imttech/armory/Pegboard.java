@@ -88,6 +88,10 @@ public final class Pegboard {
         if (MagazineItem.typeOf(stack) != null || stack.is(ModItems.ENERGY_CELL.get())) {
             return new int[]{1, 3};
         }
+        // Hoofdstuk 69: geen scherpe (opgeraapte) granaat of lading: aan de wand zou zijn lont stilstaan.
+        if (GrenadeItem.isLive(stack) || RemoteChargeItem.isLive(stack)) {
+            return null;
+        }
         if (stack.getItem() instanceof GrenadeItem || stack.getItem() instanceof RemoteChargeItem) {
             return new int[]{2, 2};
         }

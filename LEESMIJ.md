@@ -185,12 +185,12 @@ Elk item dat meer doet dan in een recept gaan, krijgt een animatie die laat zien
   **wijs je een blok aan**, dan zie je hoe het heet. Heeft een item meer animaties, dan blader je met de
   pijltjes bovenaan. **Esc** brengt je terug naar je inventaris, met alles nog zoals het was. In je eigen
   wereld staat het spel stil terwijl je kijkt.
-- **Alles is er** (52 van de 52), per tabblad:
+- **Alles is er** (53 van de 53), per tabblad:
   - *Equipment*: de bril, het harnas (minder schade, vliegen, landen, de laser cannon), de mini-raketten, de
     drones van je arsenaal en de Illusion Jammer.
   - *Weapons*: de lasergeweren, lasergeweren uit onderdelen, de Ion Blaster, EMP-granaten, fraggranaten, rook en
-    de flashbang, de Remote EMP en Remote Frag, de Glock 19, de Gunsmith Table, de Reloading Bench, de holster,
-    de pouches en de slings, en de armory (het Pegboard en de Ammo Box).
+    de flashbang, de Remote EMP en Remote Frag, granaten terugwerpen (en ladingen verplaatsen), de Glock 19, de
+    Gunsmith Table, de Reloading Bench, de holster, de pouches en de slings, en de armory (het Pegboard en de Ammo Box).
   - *Power*: de Power Battery, stroom maken (zonnepaneel en warmtegenerator), stroomkabels, netwerkkabels met PoE en
     de switch, en de stroomkast.
   - *Interior*: de holotafel, de harnas-werkbank met zijn upgrades, barsten herstellen (Repair Paste, de Crusher en
@@ -1204,8 +1204,10 @@ je **Frag Trigger**.
   na vier frags op dezelfde plek, de beveiligingskern na acht. Wat niet breekt krijgt **barsten** (de volgende klap
   telt erbij op). Op obsidiaan zie je die barsten bijna niet. Een andere Remote Frag in de klap gaat ook af.
 - **Barsten** blijven tot je ze herstelt: zie hieronder.
-- **Ontmantelen**: een Remote Frag krijg je er alleen met een **schaar** af (rechtsklik): hij valt eruit, en jij hebt
-  hem. Met je hand krijg je hem er niet af.
+- **Ontmantelen**: met een **schaar** (rechtsklik) knip je de draad door: hij valt eruit, en jij hebt hem. Kapotslaan
+  kan niet. Met **sneak + rechtsklik met een lege hand** haal je hem eraf terwijl hij **scherp** blijft (hoofdstuk 69):
+  hij blijft van wie hem plakte en aan diens trigger. Hang hem ergens anders op (bij de aanvaller bijvoorbeeld) en zijn
+  eigen knop laat hem daar afgaan. Maar drukt hij terwijl jij hem nog bij je hebt, dan gaat hij bij jou af.
 - **Alarm**: plakt iemand een Remote Frag op jouw zone, dan zegt I.M.T waar (niet wie), en jij en je vrienden zien
   een knipperend rood bordje "FRAG!" tot hij weg is. Hoeveel er ontploft is, staat in het logboek van je kern. Was je
   offline, dan vertelt I.M.T het als je weer inlogt.
@@ -1870,11 +1872,28 @@ tegen een vloer, muur of plafond (ook in de zone van een ander) en laat hem afga
 zoals de Remote EMP met zijn trigger: plak je hem met de trigger bij je, dan hoort hij erbij (anders: rechtsklik met de
 trigger erop); **rechtsklik** = al zijn Remote Frags tot 128 blokken ver gaan af, kort na elkaar; **sneak +
 rechtsklik** = hoeveel er bij hem horen. Met de trigger in je hand zie je rode bordjes "FRAG" boven je ladingen. Hij is
-zo sterk als een Sticky Frag (één blok steen per frag), en net als C4 vroeger: met je hand krijg je hem er niet af,
-alleen met een **schaar**, en op de zone van een ander gaat het **alarm** af. Een EMP Trigger laat nooit een Remote Frag
+zo sterk als een Sticky Frag (één blok steen per frag), en net als C4 vroeger: kapotslaan kan niet, een **schaar**
+knipt de draad door, en op de zone van een ander gaat het **alarm** af. Met sneak + een lege hand haal je hem eraf
+terwijl hij scherp blijft (zie "Een Remote EMP of Remote Frag verplaatsen" hieronder). Een EMP Trigger laat nooit een Remote Frag
 afgaan, en andersom. Recept: een Sticky Frag Grenade, een redstonefakkel en een koperstaaf = een Remote Frag; de Frag
 Trigger maak je van een bliksemafleider, ijzer, een Computer Chip en een stenen knop (het recept van de oude detonator).
 C4 en detonators uit een oude wereld worden vanzelf Remote Frags en Frag Triggers.
+
+**Granaten oprapen en teruggooien** (hoofdstuk 69). Ligt er een scherpe granaat bij je (een bal, een sticky op een muur,
+of een sticky op een speler, robot of drone)? **Rechtsklik erop**, wat je ook vasthoudt (ook een geweer): hij zit in je
+hand. Wat je vasthield, gaat in je holster, een sling-vakje of een pouch als het daar past, anders valt het op de grond.
+**De lont loopt door**: de granaat glimt, piept, en onderaan je scherm staat hoeveel seconden hij nog heeft ("Live EMP
+Grenade: 1.6 s!"). Rechtsklik gooit hem terug met de rest van zijn lont, **Q** laat hem vallen (dan rolt of plakt hij
+weer), en wacht je te lang, dan gaat hij bij jou af. Plakt er een sticky op **jou**, dan trekt je eerste rechtsklik hem
+eraf. Een smokebom die al rookt raap je niet op. Een scherpe granaat past niet in je pouch, op een Pegboard of in een
+shulkerdoos; in een kist blijft hij scherp (wie hem eruit haalt, krijgt hem meteen af).
+
+**Een Remote EMP of Remote Frag verplaatsen** (hoofdstuk 69). **Sneak + rechtsklik met een lege hand** haalt hem eraf
+("Live Remote Frag"). Hij blijft **scherp** en van zijn eigenaar, aan diens trigger: hang je hem ergens anders op, dan
+weet die trigger waar hij nu hangt, en drukt de eigenaar, dan gaat hij af waar **jij** hem ophing. Heb je hem nog bij
+je (of ligt hij op de grond) als hij drukt, en ben je in bereik, dan gaat hij daar af. Wil je hem zelf houden: hang hem
+op en knip de draad door met een schaar (een Remote Frag), of trek een Remote EMP eraf door hem kapot te slaan. Haalt
+iemand een Remote Frag van jouw zone, dan verdwijnt het rode bordje, staat het in het logboek, en hoort de eigenaar het.
 
 **De Smoke Grenade (een bol).** Na 2 seconden sist hij en groeit er een wolk van 4,5 blokken die 18 seconden blijft.
 De rook gaat **niet door blokken**: hij stroomt om muren heen en blijft binnen, glas en een dichte deur houden hem

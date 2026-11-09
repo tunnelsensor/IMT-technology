@@ -2151,6 +2151,90 @@ public final class VisualCheck {
             t.onServer(0, VisualCheck::removeSmokeGrenades);
         }
 
+        // --- Hoofdstuk 69: granaten oprapen en teruggooien, een sticky van je af trekken, een Remote Frag verhangen.
+        // Alles met de echte toetsen: rechtsklik (met een Glock in je hand, die anders zou richten) en sneak.
+        if (want("throwback")) {
+            double gx = WEAPON_YARD.getX(), gy = WEAPON_YARD.getY(), gz = WEAPON_YARD.getZ();
+            t.command(0, "gamemode survival @a");
+            t.onServer(0, VisualCheck::buildWeaponYard);
+            t.onServer(0, player -> {
+                // Zonder de raketturret: in survival schiet die op jou (en duwt je weg van de granaat).
+                player.serverLevel().setBlockAndUpdate(WEAPON_YARD.offset(5, 1, 3), Blocks.AIR.defaultBlockState());
+                player.setHealth(player.getMaxHealth());
+                player.getInventory().clearContent();
+                player.getInventory().setItem(0, com.senne.imttech.guns.FirearmItem.loaded(
+                        com.senne.imttech.guns.FirearmType.GLOCK_19, com.senne.imttech.guns.GunMaterial.STEEL));
+                com.senne.imttech.guns.Gear.set(player, com.senne.imttech.guns.GearItem.Kind.HOLSTER,
+                        new ItemStack(ModItems.HOLSTER.get()));
+            });
+            t.step(0, () -> selectSlot(0));
+            t.stand(20, gx + 0.5, gy + 1, gz + 0.5, -90, 30);
+            // Een EMP-bal rolt voor je voeten (de lont: 5 seconden, zodat er tijd is voor de foto's).
+            t.onServer(0, player -> {
+                var ball = new com.senne.imttech.weapons.RollingGrenade(ModEntities.ROLLING_EMP_GRENADE.get(), player.serverLevel());
+                ball.setPos(gx + 2.5, gy + 1.0, gz + 0.5);
+                ball.arm(100);
+                player.serverLevel().addFreshEntity(ball);
+            });
+            t.lookAt(10, new Vec3(gx + 2.5, gy + 1.15, gz + 0.5));
+            t.shot(4, "tb01_grenade_at_your_feet");
+            t.tap(0, () -> Minecraft.getInstance().options.keyUse);
+            t.shot(8, "tb02_live_grenade_in_hand");
+            t.camera(0, CameraType.THIRD_PERSON_FRONT);
+            t.shot(6, "tb03_glock_in_holster");
+            t.camera(0, CameraType.FIRST_PERSON);
+            // Terug, naar de muur bij de robot.
+            t.look(0, -90, -8);
+            t.tap(4, () -> Minecraft.getInstance().options.keyUse);
+            t.shot(6, "tb04_thrown_back");
+            t.waitUntil(120, () -> Minecraft.getInstance().level != null && Minecraft.getInstance().level
+                    .getEntitiesOfClass(com.senne.imttech.weapons.RollingGrenade.class,
+                            new net.minecraft.world.phys.AABB(WEAPON_YARD).inflate(16)).isEmpty());
+            t.shot(3, "tb05_emp_at_the_robot");
+            // Een sticky plakt op jou; je eerste rechtsklik trekt hem eraf.
+            t.onServer(30, player -> {
+                var sticky = new com.senne.imttech.weapons.StickyGrenade(ModEntities.STICKY_EMP_GRENADE.get(), player.serverLevel());
+                sticky.setPos(player.getX() + 3, player.getY() + 1.0, player.getZ());
+                sticky.shoot(-1, 0.05, 0, 0.8f, 0);
+                player.serverLevel().addFreshEntity(sticky);
+            });
+            t.onServer(8, player -> player.serverLevel().getEntitiesOfClass(com.senne.imttech.weapons.StickyGrenade.class,
+                    player.getBoundingBox().inflate(4)).forEach(sticky -> sticky.arm(100)));
+            t.camera(0, CameraType.THIRD_PERSON_FRONT);
+            t.shot(4, "tb06_sticky_on_you");
+            t.camera(0, CameraType.FIRST_PERSON);
+            t.tap(2, () -> Minecraft.getInstance().options.keyUse);
+            t.shot(8, "tb07_sticky_pulled_off");
+            t.look(0, -90, -8);
+            t.tap(2, () -> Minecraft.getInstance().options.keyUse);
+            t.shot(6, "tb08_sticky_thrown");
+            // Een Remote Frag van iemand anders (Raven) op de muur: sneak + rechtsklik met een lege hand, en hij hangt nu
+            // op de vloer, nog altijd aan de trigger van Raven.
+            t.onServer(40, player -> {
+                ServerLevel level = player.serverLevel();
+                BlockPos frag = WEAPON_YARD.offset(6, 2, 2);
+                level.setBlockAndUpdate(frag, ModBlocks.REMOTE_FRAG.get().defaultBlockState()
+                        .setValue(com.senne.imttech.weapons.RemoteChargeBlock.FACING, Direction.WEST));
+                if (level.getBlockEntity(frag) instanceof com.senne.imttech.weapons.RemoteChargeBlockEntity entity) {
+                    entity.restore(new com.senne.imttech.weapons.LiveCharge(UUID.randomUUID(), java.util.Optional.empty(), "Raven",
+                            java.util.Optional.empty()));
+                }
+            });
+            t.stand(0, gx + 4.5, gy + 1, gz + 2.5, -90, 10);
+            t.step(0, () -> selectSlot(0));
+            t.lookAt(10, new Vec3(gx + 6.5, gy + 2.5, gz + 2.5));
+            t.shot(4, "tb09_remote_frag_on_your_wall");
+            // Eerst sluipen, dan mikken: sluipen zet je ogen lager (anders zakt het kruisje onder de lading, op de muur).
+            t.key(0, () -> Minecraft.getInstance().options.keyShift, true);
+            t.lookAt(4, new Vec3(gx + 6.85, gy + 2.5, gz + 2.5));
+            t.tap(2, () -> Minecraft.getInstance().options.keyUse);
+            t.key(4, () -> Minecraft.getInstance().options.keyShift, false);
+            t.shot(4, "tb10_remote_frag_taken_live");
+            t.lookAt(0, new Vec3(gx + 3.5, gy + 1.0, gz + 2.5));
+            t.tap(4, () -> Minecraft.getInstance().options.keyUse);
+            t.shot(6, "tb11_remote_frag_hung_elsewhere");
+        }
+
         // --- De schermmuur (19 oktober): de monitoren zonder camera, het instelscherm, het live scherm, en wat er misgaat
         if (want("camerawall")) {
             BlockPos core = CAMERA_WALL;

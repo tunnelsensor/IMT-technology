@@ -106,6 +106,27 @@ public final class BlastAlarm {
         }
     }
 
+    /**
+     * Hoofdstuk 69: met sneak + lege hand van de muur gehaald (nog scherp). De markering gaat weg (hij hangt daar niet
+     * meer), het logboek zegt het, en de eigenaar hoort het (als iemand anders het deed).
+     */
+    public static void takenOff(ServerLevel level, BlockPos pos, RemoteChargeBlockEntity charge, ServerPlayer by) {
+        ZoneData.Zone zone = Zones.activeNear(level, pos, NEAR);
+        if (zone != null) {
+            if (charge.alerted()) {
+                marker(level, zone, pos, false);
+            }
+            log(level, zone, "Remote Frag at " + xyz(pos) + " taken off by " + by.getGameProfile().getName());
+        }
+        if (charge.owner() != null && !charge.owner().equals(by.getUUID())) {
+            ServerPlayer placer = level.getServer().getPlayerList().getPlayer(charge.owner());
+            if (placer != null) {
+                ImtServer.send(placer, Component.translatable("zone.imttech.frag.your_taken", pos.getX(), pos.getY(), pos.getZ()),
+                        ImtMessagePayload.Level.WARNING);
+            }
+        }
+    }
+
     // ================================================================ Wie het hoort
 
     /** I.M.T zegt het tegen de eigenaar en zijn vrienden die online zijn. */

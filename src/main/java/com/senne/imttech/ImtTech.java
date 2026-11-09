@@ -324,6 +324,10 @@ public class ImtTech {
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.breach.BlastAlarm::onServerTick);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.breach.BlastAlarm::onServerStopped);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.weapons.RemoteChargeBlock::onLeftClick);
+        // Hoofdstuk 69: sneak + lege hand haalt een Remote EMP of Remote Frag eraf (nog scherp), en een opgeraapte
+        // granaat aan je muis telt ook af.
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.weapons.RemoteChargeBlock::onRightClick);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.weapons.GrenadePickup::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.ZoneSync::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.ZoneSync::onServerStopped);
         // Fase 11: rayshields schuiven open en dicht in plaats van in één klap aan te gaan

@@ -6,9 +6,14 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
@@ -21,6 +26,9 @@ import net.minecraft.world.phys.Vec3;
  * De lont telt in ticks van de granaat zelf ({@code tickCount}): {@code FUSE_END} is de tick waarop hij afgaat, -1 =
  * hij is (nog) niet op scherp gezet (een sticky die nog vliegt, of een smokebom die al rookt). Die gaat ook naar je
  * spel, voor het knipperen.
+ *
+ * Hoofdstuk 69 (jouw wens: "granaten oppakken en teruggooien"): staat hij op scherp, dan kun je hem aanklikken. Een
+ * rechtsklik erop, wat je ook vasthoudt, legt hem in je hand (zie {@link GrenadePickup}); de lont loopt door.
  */
 public abstract class GrenadeEntity extends Projectile {
     private static final EntityDataAccessor<Integer> FUSE_END =
@@ -61,8 +69,8 @@ public abstract class GrenadeEntity extends Projectile {
         return true;
     }
 
-    /** Om de hoeveel ticks hij piept: eerst rustig, op het laatst heel snel. */
-    private static int beepInterval(int left) {
+    /** Om de hoeveel ticks hij piept: eerst rustig, op het laatst heel snel. (Ook in je hand, zie GrenadeItem.) */
+    static int beepInterval(int left) {
         return left > 30 ? 10 : left > 14 ? 5 : 2;
     }
 
@@ -130,6 +138,55 @@ public abstract class GrenadeEntity extends Projectile {
         discard();
         com.senne.imttech.breach.Blast.frag(level, bang, net.minecraft.core.BlockPos.containing(bang), this, false, "Frag grenade");
     }
+
+    // ================================================================ Oppakken (hoofdstuk 69)
+
+    /**
+     * Kun je hem nu oprapen? Alleen als hij op scherp staat (een sticky die nog vliegt niet, een smokebom die al rookt
+     * ook niet: die rook blijft waar hij begon).
+     */
+    public boolean canBePickedUp() {
+        return isAlive() && isArmed();
+    }
+
+    /** Aanklikbaar (voor je kruisje) zolang je hem kunt oprapen. */
+    @Override
+    public boolean isPickable() {
+        return canBePickedUp();
+    }
+
+    /** Een beetje groter om aan te klikken dan hij is: zo klik je een rollende bol niet zo snel mis. */
+    @Override
+    public float getPickRadius() {
+        return 0.15f;
+    }
+
+    /** Kogels, raketten en pijlen vliegen er gewoon langs (aanklikbaar zijn betekent niet dat je hem kunt raken). */
+    @Override
+    public boolean canBeHitByProjectile() {
+        return false;
+    }
+
+    /** Linksklik doet niets (geen slaan). */
+    @Override
+    public boolean isAttackable() {
+        return false;
+    }
+
+    /** Rechtsklik erop: oprapen, in je hand (wat je vasthield gaat in je holster of sling, anders op de grond). */
+    @Override
+    public InteractionResult interact(Player player, InteractionHand hand) {
+        if (hand != InteractionHand.MAIN_HAND || !canBePickedUp() || player.isSpectator()) {
+            return InteractionResult.PASS;
+        }
+        if (player instanceof ServerPlayer serverPlayer) {
+            GrenadePickup.pickUp(serverPlayer, this);
+        }
+        return InteractionResult.sidedSuccess(level().isClientSide);
+    }
+
+    /** Hij als item, zoals hij in je hand komt (de lont nog niet erop: dat doet GrenadeItem.live). */
+    public abstract ItemStack asItem();
 
     // ================================================================ Opslaan
 

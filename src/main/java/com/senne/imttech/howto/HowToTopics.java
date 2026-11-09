@@ -65,6 +65,10 @@ public final class HowToTopics {
                     ModItems.FLASHBANG),
             topic("remote_charges", "weapons", "Remote EMP and Remote Frag", GrenadeScenes::remotes, ModItems.REMOTE_EMP,
                     ModItems.EMP_TRIGGER, ModItems.REMOTE_FRAG, ModItems.FRAG_TRIGGER),
+            // Hoofdstuk 69: oprapen en teruggooien, en ladingen verplaatsen (bij elke granaat en lading, na hun eigen uitleg).
+            topic("grenade_throwback", "weapons", "Throwing grenades back", GrenadeScenes::throwback, ModItems.EMP_GRENADE,
+                    ModItems.STICKY_EMP_GRENADE, ModItems.FRAG_GRENADE, ModItems.STICKY_FRAG_GRENADE, ModItems.SMOKE_GRENADE,
+                    ModItems.FLASHBANG, ModItems.REMOTE_EMP, ModItems.REMOTE_FRAG),
             topic("glock", "weapons", "Glock 19", WeaponScenes::glock, ModItems.GLOCK_19, ModItems.GLOCK_19_MAGAZINE, ModItems.ROUND_9MM),
             topicItems("gunsmith", "weapons", "Gunsmith Table", WeaponScenes::gunsmith,
                     () -> concat(Arrays.stream(GunPart.values()).map(part -> (Item) ModItems.gunPart(part)).toList(),

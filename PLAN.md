@@ -22,13 +22,13 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 461 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 467 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
 **Publiceren:** klaar voor CurseForge onder de MIT-licentie (17 oktober): de beschrijving, het logo, de
 changelog en een stappenplan staan in `publish/` (begin bij `publish/HOE-PUBLICEREN.md`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 120 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 121 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -5909,6 +5909,95 @@ even groot als de sticky's".
       sticky hangt, de antenne steekt zo'n pixel boven de rechthoek uit. Op de voorbeeldwand hangt de Remote EMP weer op
       de rij van de sticky's, de Remote Frag erboven en de Ion Blaster een gaatje hoger. Op `ar03b_grenades_close`: de
       kussens van de twee sticky's en van de Remote EMP op dezelfde lijn.
+
+### 69. Granaten oprapen en teruggooien, ladingen verplaatsen (9 november)
+
+Jouw vraag: "Kun je zorgen dat je granades kunt oppakken en teruggooien/plaatsen, bijvoorbeeld iemand gooit een emp maar
+jij gooit die terug of er hangt een remote frag op je base en jij hangt die gewoon ergens anders".
+
+**Jouw antwoorden:**
+- **De lont loopt door** als je een scherpe granaat opraapt (zoals in CoD): je hebt de rest van zijn tijd (een bal 3 s
+  na het gooien, een sticky 2 s na het plakken). Te lang vast = hij gaat bij jou af.
+- Een **sticky** mag je ook **van een wezen** trekken: van een muur, de vloer of het plafond, maar ook van een speler, een
+  robot, een drone of jezelf.
+- Een **Remote EMP of Remote Frag** haal je eraf met **sneak + rechtsklik met een lege hand**. Hij blijft **scherp, van de
+  eigenaar en aan diens trigger**: drukt die, dan gaat hij af waar jij hem ophing, of in jouw inventaris als je hem nog
+  draagt en in bereik bent. De **schaar** blijft "onschadelijk maken" (dan is hij van jou).
+- **Oprapen = rechtsklik erop, wat je ook vasthoudt** (ook een geweer). De granaat komt in je hand; wat je vasthield
+  **valt op de grond**, tenzij het in je **holster of sling** past: dan gaat het daarheen (jouw eigen antwoord).
+
+**Mijn invulling** (zeg het als je het anders wilt):
+- Zoals bij trekken uit het wiel (hoofdstuk 52) gaat ook een granaat, magazijn of cel die je vasthield terug in zijn
+  pouch als die plek heeft (`Gear.intoHand`, dezelfde regel).
+- Een opgeraapte granaat heet **"Live EMP Grenade"**, **glimt**, **piept** in je inventaris (steeds sneller, zoals op de
+  grond) en zegt onderaan je scherm hoeveel seconden hij nog heeft ("Live EMP Grenade: 1.6 s! Right-click to throw it
+  back", goud, de laatste 0,7 s rood). **Rechtsklik** gooit hem met de rest van zijn lont, **Q** laat hem vallen (dan
+  rolt of plakt hij weer als granaat), **wacht je te lang** dan valt hij uit je hand en gaat hij bij jou af. Ook aan je
+  muis (met een scherm open) telt hij af.
+- Een scherpe granaat past **niet in je granaatpouch, op een Pegboard, in een bundel of shulkerdoos** (daar zou zijn lont
+  stilstaan). In een **kist** blijft hij scherp: wie hem eruit haalt, krijgt hem meteen af.
+- Een **smokebom die al rookt** raap je niet op (de rook blijft waar hij begon). Een sticky die nog **vliegt** ook niet
+  (hij staat pas op scherp als hij plakt).
+- Een **sticky die op jou plakt** kun je niet aankijken: zolang er een op je zit, trekt je **eerste rechtsklik** hem eraf.
+- Een granaat is nu **aanklikbaar**, maar **kogels, raketten, lasers en de Ion Blaster** vliegen er gewoon langs, en
+  linksklik doet niets.
+- Een opgeraapte granaat is **altijd op als je hem gooit, ook in creative** (anders bleef hij in je hand en ging hij daar
+  af).
+- Een scherpe lading die je **draagt** gaat af als de eigenaar drukt (in bereik van zijn trigger, 128 blokken); ook een
+  die **op de grond** ligt. In een kist of shulkerdoos niet (daar komt het signaal niet).
+- De trigger van de eigenaar **hoort waar zijn lading nu hangt** (de bordjes boven je ladingen kloppen weer), ook als hij
+  offline was: dat onthoudt de wereld (`MovedCharges`).
+- Hangt iemand hem op de **zone van een ander**, dan gaat het alarm daar af (zoals altijd; van de eigenaar uit gezien). Haalt
+  iemand hem eraf, dan gaat de **rode markering weg**, het **logboek** zegt "taken off by ...", en de eigenaar hoort
+  "Your Remote Frag at ... was taken off. It still listens to your trigger.".
+- Een lading die **al afgaat** (iemand drukte net) haal je er niet meer af. Een lading die bij **geen trigger** hoort,
+  is gewoon een losse (niet scherp).
+
+- [x] **Oprapen** — `weapons/GrenadeEntity`: een granaat die op scherp staat is aanklikbaar (`isPickable`, een iets
+      grotere klikrand), en `interact` raapt hem op (`GrenadePickup.pickUp`): het item (`asItem`: de juiste soort, een
+      smokebom met zijn kleur) krijgt het component `LIVE_FUSE` (de speltijd waarop hij afgaat) en komt via
+      `Gear.intoHand` in je hand. `canBeHitByProjectile` = nee, `isAttackable` = nee; `LaserGuns` en de Ion Blaster
+      slaan granaten over.
+- [x] **Rechtsklik, wat je ook vasthoudt** — `client/weapons/GrenadeGrab` kijkt als eerste (EventPriority.HIGHEST) naar
+      de rechtermuisknop: kijk je naar een scherpe granaat (of zit er een sticky op jou), dan stuurt hij de klik op dat
+      wezen naar de server en gebeurt er verder niets (anders zou een geweer richten). `GunControl` en `FirearmControl`
+      richten dan ook niet.
+- [x] **De scherpe granaat** — `GrenadeItem`: `inventoryTick` (piepen, aftellen onderaan je scherm, afgaan bij jou via
+      `release`), `onEntityItemUpdate` (gevallen = weer een granaat), `isFoil` (glimt), `canFitInsideContainerItems`,
+      de naam "Live ..." en een regel in de tooltip. `use` gooit hem met de rest van zijn lont. `GearItem` (pouch) en
+      `Pegboard` weigeren hem.
+- [x] **Ladingen verplaatsen** — `RemoteChargeBlock.useWithoutItem`: sneak + lege hand = `takeOff` (het component
+      `LIVE_CHARGE`: trigger, eigenaar, naam en waar hij hing; `LiveCharge`). `onRightClick` zegt alleen "gebruik het
+      blok toch" als je in je andere hand iets hebt (zoals bij de Ammo Box). `RemoteChargeItem` hangt een scherpe weer op
+      met dezelfde eigenaar en trigger (`RemoteChargeBlockEntity.restore`) en zegt het tegen `MovedCharges` (opgeslagen
+      in de wereld: per trigger "weg van daar, nu hier"). `TriggerItem.catchUp` neemt dat over (elke tick in de
+      inventaris van de eigenaar, en bij drukken); `TriggerItem.fire` laat ook gedragen en losliggende scherpe ladingen
+      afgaan (`RemoteChargeBlockEntity.goOffLoose`). `BlastAlarm.takenOff`: markering weg, logboek, de eigenaar hoort het.
+- [x] **Teksten** — tooltips ("Thrown at you? Right-click it to pick it up and throw it back", "Sneak + right-click with
+      an empty hand takes it off, still live", "Live: Raven's Frag Trigger sets it off, even in your pocket"), de
+      meldingen bij eraf halen en ophangen, en de hint bij linksklik op een Remote Frag.
+- [x] **How it works** — onderwerp 53, "Throwing grenades back" (tabblad Weapons, 69 s, `GrenadeScenes.throwback`): een
+      vreemde gooit een EMP-granaat, jij raapt hem op (je Glock gaat in je holster) en gooit hem terug (hun robot valt
+      neer); een sticky op jou trek je eraf en gooi je op hun robot; een Remote Frag op jouw muur haal je eraf, je hangt
+      hem op hun muur, en hun eigen knop blaast die open. Het hoort bij elke granaat en lading (na hun eigen uitleg).
+      In "Remote EMP and Remote Frag" zegt het laatste hoofdstukje nu ook "sneak + right-click with an empty hand takes
+      it off live". Eerst stond de vreemde precies voor het gat in zijn muur; nu staan hij en zijn robot opzij en hangt
+      de lading aan het linkeruiteinde.
+- [x] **Tests** — `ThrowbackGameTests` (6): oprapen houdt de lont (geen nieuwe), de steen valt, niet in de pouch of op
+      het Pegboard, terug met de rest van de lont; de Glock gaat in de holster; te lang vast = afgaan bij jou (de robot
+      naast je valt), laten vallen = weer een granaat met de rest van zijn lont; een sticky van een robot trekken en tegen
+      een muur gooien (een smokebom die rookt raap je niet op); een Remote Frag eraf (via de echte klik van de server),
+      ophangen (niet aan de trigger van de verdediger), de trigger van de aanvaller weet waar hij hangt en blaast die muur
+      open; een gedragen Remote EMP gaat af in de rugzak. 467 tests, groen (twee keer).
+- [x] **Bekeken in het spel** — `-Ponly=throwback` (tb01 tot tb11), met de echte toetsen: rechtsklik met een Glock in je
+      hand raapt de granaat op ("Live EMP Grenade: 4.0 s!", de Glock zat daarna in de holster), terug: de robot ligt; een
+      sticky op jou (van voren bekeken), eraf, tegen de muur; een Remote Frag van "Raven": eraf ("Taken off, still live:
+      Raven's Frag Trigger can set it off") en op de vloer ("Hung up, still live"). Twee dingen die ik zo vond: de klik
+      op een Remote Frag werd in je spel geannuleerd, en dan stuurt NeoForge hem niet naar de server (de tests klikten op
+      de server en zagen dat niet); nu doet het blok het zelf (`useWithoutItem`). En in de rondleiding mikte de speler
+      voor hij ging sluipen: sluipen zet je ogen lager, het kruisje zakte onder de lading (de muur kreeg de klik). In het
+      echt mik je terwijl je sluipt; de rondleiding doet het nu ook zo. `-Ponly=howtoall,howto:grenade_throwback`: de
+      animatie per hoofdstukje. Showcase **121** ("Throwing grenades back"). LEESMIJ aangepast.
 
 ## Nog nooit in het spel bekeken
 

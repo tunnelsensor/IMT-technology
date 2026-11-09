@@ -442,12 +442,194 @@ public final class GrenadeScenes {
         s.crack(blasted.above(), 6);
         s.idle(20);
 
-        s.chapter("Only with shears");
-        s.text(130, HowToSceneBuilder.face(blasted, Direction.SOUTH), Side.RIGHT,
-                "As strong as a Sticky Frag: one block of stone per frag. You can't pull a Remote Frag off by hand, only with"
-                        + " *shears*, and in someone else's zone it sets off the *alarm*. An EMP Trigger never sets off a"
-                        + " Remote Frag, and the other way round.");
+        s.chapter("Shears and the alarm");
+        s.text(140, HowToSceneBuilder.face(blasted, Direction.SOUTH), Side.RIGHT,
+                "As strong as a Sticky Frag: one block of stone per frag. You can't break a Remote Frag: *shears* cut the"
+                        + " wire, *sneak + right-click with an empty hand* takes it off live. In someone else's zone it sets off"
+                        + " the *alarm*. An EMP Trigger never sets off a Remote Frag, and the other way round.");
+        s.idle(145);
+        return List.of(s.build());
+    }
+
+    // ================================================================ Terugwerpen (hoofdstuk 69)
+
+    /**
+     * Granaten oprapen en teruggooien, en een Remote Frag verhangen (hoofdstuk 69, jouw wens: "iemand gooit een EMP maar
+     * jij gooit die terug, of er hangt een remote frag op je base en jij hangt die gewoon ergens anders"). Een vreemde gooit
+     * een EMP-granaat, jij raapt hem op (je Glock gaat in je holster) en gooit hem terug; een sticky op jou trek je eraf en
+     * gooit hem op hun robot; een Remote Frag op jouw muur haal je eraf met sneak + lege hand en hang je op hun muur, en
+     * hun eigen knop blaast die open.
+     */
+    public static List<HowToScene> throwback() {
+        HowToSceneBuilder s = new HowToSceneBuilder("grenade_throwback", "Throwing grenades back").plate(8, 6).height(3);
+        Vec3 you = new Vec3(6.0, 1.0, 4.0);
+        // Hun robot links van hen, zodat het linkeruiteinde van hun muur (waar straks de Remote Frag hangt) vrij in beeld is.
+        Vec3 them = new Vec3(1.2, 1.0, 3.0);
+        Vec3 robot = new Vec3(0.4, 1.0, 2.5);
+        float youAim = RobotScenes.yawTo(you, them);
+        float themAim = RobotScenes.yawTo(them, you);
+        float robotYaw = RobotScenes.yawTo(robot, you);
+        CompoundTag guard = RobotScenes.robot(RobotStyle.COMMANDO, RobotScenes.board("scan", "", "laser"), true);
+        ItemStack glock = WeaponScenes.loadedGlock();
+        List<ItemStack> holsterEmpty = List.of(WeaponScenes.holster(), ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY,
+                ItemStack.EMPTY);
+        List<ItemStack> holsterFull = List.of(WeaponScenes.holster(glock), ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY,
+                ItemStack.EMPTY);
+        s.idle(6);
+        Map<BlockPos, BlockState> walls = new LinkedHashMap<>(wall(0, 2, 0, 2));
+        walls.putAll(wall(5, 7, 0, 2));
+        s.place(walls, HowToSceneBuilder.DROP);
+        s.idle(8);
+        s.actor("robot", ModEntities.GUARD_ROBOT.get(), HowToSceneBuilder.UNTIL_END, 0, robotYaw, guard, robot);
+        s.stranger("them", "Intruder", HowToSceneBuilder.UNTIL_END, 0, themAim,
+                Map.of(EquipmentSlot.MAINHAND, new ItemStack(ModItems.EMP_GRENADE.get(), 3)), them);
+        s.player("you", HowToSceneBuilder.UNTIL_END, 0, youAim, Map.of(EquipmentSlot.MAINHAND, glock), holsterEmpty, you);
+        s.idle(10);
+
+        s.chapter("Catch it");
+        s.text(110, you.add(0, 2.1, 0), Side.LEFT,
+                "Someone throws a live grenade at you? *Right-click it*, whatever you're holding (a gun too): it's in your hand"
+                        + " at once. *The fuse keeps running*, so be quick.");
+        s.idle(115);
+        int fuse = Math.round(ImtConfig.Weapons.ROLLING_FUSE_SECONDS * 20);
+        int flight = 20;
+        Vec3 land = new Vec3(5.2, 1.0, 3.3);
+        CompoundTag incoming = new CompoundTag();
+        incoming.putInt("FuseLeft", fuse);
+        s.actor("grenade", ModEntities.ROLLING_EMP_GRENADE.get(), flight + 8, flight, 0.0f, incoming,
+                then(arc(WeaponScenes.muzzle(them, themAim), new Vec3(4.7, 1.0, 3.0), 1.3), new Vec3(5.0, 1.25, 3.15), land));
+        s.sound(SoundEvents.SNOWBALL_THROW, 0.4f, 0.7f);
+        s.idle(flight);
+        s.sound(ModSounds.EMP_GRENADE_BEEP.get(), 0.25f, 1.0f);
+        s.idle(4);
+        s.rightClick(land.add(0, 0.2, 0), glock);
+        s.idle(4);
+        ItemStack liveEmp = new ItemStack(ModItems.EMP_GRENADE.get());
+        liveEmp.set(ModDataComponents.LIVE_FUSE.get(), 0L); // glimt, zoals een opgeraapte granaat
+        s.player("you", HowToSceneBuilder.UNTIL_END, 0, youAim, Map.of(EquipmentSlot.MAINHAND, liveEmp), holsterFull, you);
+        s.sound(SoundEvents.ITEM_PICKUP, 0.5f, 0.8f);
+        s.sound(ModSounds.EMP_GRENADE_BEEP.get(), 0.25f, 1.0f);
+        s.idle(6);
+
+        s.chapter("Throw it back");
+        s.player("you", HowToSceneBuilder.UNTIL_END, 0, youAim, Map.of(), holsterFull, you);
+        Vec3 there = new Vec3(1.0, 1.0, 1.9);
+        lob(s, "back", ModEntities.ROLLING_EMP_GRENADE.get(), new CompoundTag(), 14, Math.max(20, fuse - flight - 14),
+                arc(WeaponScenes.muzzle(you, youAim), there, 1.0));
+        s.pulse(18, there.add(0, 0.4, 0), (float) ImtConfig.Weapons.EMP_RADIUS, EMP_BLUE);
+        s.sound(ModSounds.EMP_BLAST.get(), 0.5f, 1.0f);
+        s.actor("robot", ModEntities.GUARD_ROBOT.get(), HowToSceneBuilder.UNTIL_END, 0, robotYaw, RobotScenes.down(guard), robot);
+        s.idle(8);
+        s.text(130, there.add(0, 1.6, 0), Side.RIGHT,
+                "Right-click throws it back with what's left of the fuse: their robot is out. Hold it too long and it goes off"
+                        + " in your hand; *Q* drops it, and it rolls again.");
         s.idle(135);
+
+        s.chapter("What you held");
+        s.text(140, you.add(0, 2.1, 0), Side.LEFT,
+                "Your Glock went into your *holster* (a rifle with a sling goes onto your *sling*, a grenade into your pouch);"
+                        + " anything else drops to the ground. A live grenade glows and beeps, and the bottom of your screen"
+                        + " counts down. It doesn't fit in a pouch or on a pegboard.");
+        s.idle(145);
+
+        s.chapter("Stickies too");
+        s.actor("robot", ModEntities.GUARD_ROBOT.get(), HowToSceneBuilder.UNTIL_END, 0, robotYaw, guard, robot);
+        s.sound(ModSounds.ROBOT_POWER_ON.get(), 0.4f, 1.0f);
+        s.stranger("them", "Intruder", HowToSceneBuilder.UNTIL_END, 0, themAim,
+                Map.of(EquipmentSlot.MAINHAND, new ItemStack(ModItems.STICKY_EMP_GRENADE.get(), 3)), them);
+        s.idle(20);
+        int stickyFuse = Math.round(ImtConfig.Weapons.STICKY_FUSE_SECONDS * 20);
+        int stickFlight = 14;
+        Vec3 chest = you.add(WeaponScenes.ahead(youAim).scale(0.3)).add(0, 1.2, 0);
+        CompoundTag sticking = new CompoundTag();
+        sticking.putInt("FuseLeft", stickyFuse + stickFlight);
+        s.actor("sticky", ModEntities.STICKY_EMP_GRENADE.get(), stickFlight + 10, stickFlight, 0.0f, sticking,
+                arc(WeaponScenes.muzzle(them, themAim), chest, 0.8));
+        s.sound(SoundEvents.SNOWBALL_THROW, 0.4f, 0.7f);
+        s.idle(stickFlight);
+        s.sound(ModSounds.EMP_GRENADE_STICK.get(), 0.5f, 1.0f);
+        s.idle(4);
+        s.rightClick(chest, ItemStack.EMPTY);
+        s.idle(6);
+        ItemStack liveSticky = new ItemStack(ModItems.STICKY_EMP_GRENADE.get());
+        liveSticky.set(ModDataComponents.LIVE_FUSE.get(), 0L);
+        s.player("you", HowToSceneBuilder.UNTIL_END, 0, youAim, Map.of(EquipmentSlot.MAINHAND, liveSticky), holsterFull, you);
+        s.sound(SoundEvents.ITEM_PICKUP, 0.5f, 0.8f);
+        s.idle(6);
+        s.player("you", HowToSceneBuilder.UNTIL_END, 0, youAim, Map.of(), holsterFull, you);
+        Vec3 robotChest = robot.add(WeaponScenes.ahead(robotYaw).scale(0.3)).add(0, 1.2, 0);
+        lob(s, "sticky_back", ModEntities.STICKY_EMP_GRENADE.get(), new CompoundTag(), 12, Math.max(16, stickyFuse - 16),
+                arc(WeaponScenes.muzzle(you, youAim), robotChest, 0.7));
+        s.pulse(18, robotChest, (float) ImtConfig.Weapons.EMP_RADIUS, EMP_BLUE);
+        s.sound(ModSounds.EMP_BLAST.get(), 0.5f, 1.0f);
+        s.actor("robot", ModEntities.GUARD_ROBOT.get(), HowToSceneBuilder.UNTIL_END, 0, robotYaw, RobotScenes.down(guard), robot);
+        s.idle(8);
+        s.text(140, robot.add(0, 2.2, 0), Side.RIGHT,
+                "Stickies come off too: off a wall, the floor, a robot, a drone or another player. One stuck on *you*? Your"
+                        + " first right-click pulls it off.");
+        s.idle(145);
+
+        s.chapter("Move a Remote Frag");
+        s.actor("robot", ModEntities.GUARD_ROBOT.get(), HowToSceneBuilder.UNTIL_END, 0, robotYaw, guard, robot);
+        BlockPos onYours = new BlockPos(6, 1, 1);
+        s.place(onYours, charge(ModBlocks.REMOTE_FRAG.get(), AttachFace.WALL, Direction.SOUTH));
+        s.sound(ModSounds.EMP_GRENADE_STICK.get(), 0.5f, 0.8f);
+        ItemStack fragTrigger = new ItemStack(ModItems.FRAG_TRIGGER.get());
+        s.stranger("them", "Intruder", HowToSceneBuilder.UNTIL_END, 0, themAim, Map.of(EquipmentSlot.MAINHAND, fragTrigger), them);
+        s.text(100, Vec3.atCenterOf(onYours).add(0, 0.6, 0), Side.RIGHT,
+                "Someone hung a *Remote Frag* on your wall, and holds its Frag Trigger.");
+        s.idle(105);
+        Vec3 atYours = new Vec3(6.2, 1.0, 2.3);
+        s.player("you", HowToSceneBuilder.UNTIL_END, 24, 180.0f, Map.of(), holsterFull, you, atYours);
+        s.idle(26);
+        CompoundTag crouch = new CompoundTag();
+        crouch.putBoolean("Crouch", true);
+        s.person("you", crouch, 20, 0, 180.0f, Map.of(), holsterFull, atYours);
+        s.sneakRightClick(HowToSceneBuilder.center(onYours), ItemStack.EMPTY);
+        s.idle(10);
+        s.clear(onYours);
+        ItemStack liveFrag = new ItemStack(ModItems.REMOTE_FRAG.get());
+        liveFrag.set(ModDataComponents.LIVE_CHARGE.get(), new com.senne.imttech.weapons.LiveCharge(new java.util.UUID(0, 0),
+                java.util.Optional.empty(), "Intruder", java.util.Optional.empty()));
+        s.sound(ModSounds.EMP_GRENADE_STICK.get(), 0.4f, 1.4f);
+        s.idle(10);
+        s.player("you", HowToSceneBuilder.UNTIL_END, 0, 180.0f, Map.of(EquipmentSlot.MAINHAND, liveFrag), holsterFull, atYours);
+        s.text(140, atYours.add(0, 2.1, 0), Side.RIGHT,
+                "*Sneak + right-click with an empty hand* takes it off (a Remote EMP too). It stays *live* and still belongs to"
+                        + " their trigger: if they press while you carry it, it goes off in your pocket.");
+        s.idle(145);
+        BlockPos onTheirs = new BlockPos(0, 1, 1);
+        Vec3 atTheirs = new Vec3(1.3, 1.0, 1.9);
+        float hangYaw = RobotScenes.yawTo(atTheirs, HowToSceneBuilder.center(onTheirs));
+        s.player("you", HowToSceneBuilder.UNTIL_END, 40, hangYaw, Map.of(EquipmentSlot.MAINHAND, liveFrag), holsterFull,
+                atYours, new Vec3(3.8, 1.0, 2.4), atTheirs);
+        s.idle(42);
+        s.rightClick(HowToSceneBuilder.face(onTheirs.north(), Direction.SOUTH), liveFrag);
+        s.idle(8);
+        s.place(onTheirs, charge(ModBlocks.REMOTE_FRAG.get(), AttachFace.WALL, Direction.SOUTH));
+        s.sound(ModSounds.EMP_GRENADE_STICK.get(), 0.5f, 0.8f);
+        s.player("you", HowToSceneBuilder.UNTIL_END, 0, hangYaw, Map.of(), holsterFull, atTheirs);
+        s.text(110, Vec3.atCenterOf(onTheirs).add(0, 0.6, 0), Side.RIGHT,
+                "Hang it somewhere else, on their own wall for instance. Their trigger knows where it hangs now.");
+        s.idle(115);
+        s.player("you", HowToSceneBuilder.UNTIL_END, 40, youAim, Map.of(), holsterFull, atTheirs, new Vec3(3.8, 1.0, 3.2), you);
+        s.idle(42);
+
+        s.chapter("Their own button");
+        s.sound(ModSounds.TRIGGER_CLICK.get(), 0.6f, 1.0f);
+        s.idle(6);
+        BlockPos blasted = onTheirs.north();
+        s.clear(onTheirs);
+        s.pulse(12, HowToSceneBuilder.face(blasted, Direction.SOUTH), 1.8f, BLAST);
+        s.sound(SoundEvents.GENERIC_EXPLODE.value(), 0.4f, 1.0f);
+        s.clear(blasted);
+        s.crack(blasted.east(), 6);
+        s.crack(blasted.above(), 6);
+        s.idle(10);
+        s.text(140, HowToSceneBuilder.face(blasted, Direction.SOUTH), Side.RIGHT,
+                "They press their Frag Trigger: it goes off where *you* hung it. *Shears* cut the wire instead: then it's a"
+                        + " plain Remote Frag, and yours.");
+        s.idle(145);
         return List.of(s.build());
     }
 }

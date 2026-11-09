@@ -2,10 +2,12 @@ package com.senne.imttech.weapons;
 
 import com.senne.imttech.breach.BlastAlarm;
 import com.senne.imttech.config.ImtConfig;
+import com.senne.imttech.registry.ModDataComponents;
 import com.senne.imttech.registry.ModSounds;
 import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.GlobalPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
@@ -21,6 +23,10 @@ import org.jetbrains.annotations.Nullable;
  * De Remote EMP en de Remote Frag als item (hoofdstuk 35): plak hem tegen een vloer, muur of plafond, ook in de zone
  * van een ander (een lading mag altijd, anders kun je nergens binnen). Heb je een trigger van dezelfde soort bij je, dan
  * hoort hij meteen bij die trigger. Een Remote Frag op de zone van een ander laat het alarm afgaan (zie BlastAlarm).
+ *
+ * Hoofdstuk 69: haalde iemand hem met sneak + lege hand van een muur, dan is hij nog scherp (het component LIVE_CHARGE,
+ * zie {@link LiveCharge}). Hang je zo'n lading op, dan blijft hij van zijn eigenaar en aan diens trigger (jouw keuze),
+ * ook als jij zelf een trigger bij je hebt. Die trigger hoort waar hij nu hangt (zie {@link MovedCharges}).
  */
 public class RemoteChargeItem extends BlockItem {
     private final RemoteChargeBlock charge;
@@ -34,14 +40,41 @@ public class RemoteChargeItem extends BlockItem {
         return charge.kind();
     }
 
+    /** Is dit een lading die iemand eraf haalde terwijl hij nog scherp was (hoofdstuk 69)? */
+    public static boolean isLive(ItemStack stack) {
+        return stack.getItem() instanceof RemoteChargeItem && stack.has(ModDataComponents.LIVE_CHARGE.get());
+    }
+
+    /** Een scherpe lading glimt, net als een opgeraapte granaat. */
+    @Override
+    public boolean isFoil(ItemStack stack) {
+        return isLive(stack) || super.isFoil(stack);
+    }
+
+    @Override
+    public Component getName(ItemStack stack) {
+        Component name = super.getName(stack);
+        return isLive(stack) ? Component.translatable("item.imttech.live", name) : name;
+    }
+
     /** Net geplakt: wie het deed, meteen koppelen aan de trigger die je bij je hebt, en (een frag) het alarm. */
     @Override
     protected boolean updateCustomBlockEntityTag(BlockPos pos, Level level, @Nullable Player player, ItemStack stack, BlockState state) {
         boolean changed = super.updateCustomBlockEntityTag(pos, level, player, stack, state);
         if (level instanceof ServerLevel serverLevel && level.getBlockEntity(pos) instanceof RemoteChargeBlockEntity placed) {
-            placed.placedBy(player);
             level.playSound(null, pos, ModSounds.EMP_GRENADE_STICK.get(), SoundSource.BLOCKS, 0.8f, 0.9f);
-            if (player != null) {
+            LiveCharge live = stack.get(ModDataComponents.LIVE_CHARGE.get());
+            if (live != null) {
+                // Hoofdstuk 69: nog scherp. Hij blijft van zijn eigenaar en aan diens trigger; die hoort waar hij nu hangt.
+                placed.restore(live);
+                MovedCharges.get(serverLevel.getServer()).moved(live.trigger(), live.from().orElse(null),
+                        GlobalPos.of(level.dimension(), pos.immutable()));
+                if (player != null) {
+                    player.displayClientMessage(Component.translatable(charge.key("still_live"),
+                            live.ownerName().isEmpty() ? "?" : live.ownerName()).withStyle(ChatFormatting.GOLD), true);
+                }
+            } else if (player != null) {
+                placed.placedBy(player);
                 ItemStack trigger = TriggerItem.find(player, kind());
                 Component message;
                 if (trigger == null) {
@@ -63,6 +96,12 @@ public class RemoteChargeItem extends BlockItem {
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+        LiveCharge live = stack.get(ModDataComponents.LIVE_CHARGE.get());
+        if (live != null) {
+            tooltip.add(Component.translatable(kind() == RemoteChargeBlock.Kind.FRAG ? "tooltip.imttech.remote_frag.live"
+                    : "tooltip.imttech.remote_emp.live", live.ownerName().isEmpty() ? "?" : live.ownerName())
+                    .withStyle(ChatFormatting.RED));
+        }
         if (kind() == RemoteChargeBlock.Kind.FRAG) {
             tooltip.add(Component.translatable("tooltip.imttech.remote_frag").withStyle(ChatFormatting.GRAY));
             tooltip.add(Component.translatable("tooltip.imttech.frag_grenade.what").withStyle(ChatFormatting.RED));
@@ -71,6 +110,7 @@ public class RemoteChargeItem extends BlockItem {
             tooltip.add(Component.translatable("tooltip.imttech.remote_emp").withStyle(ChatFormatting.GRAY));
             tooltip.add(Component.translatable("tooltip.imttech.emp_grenade.what", (int) ImtConfig.Weapons.EMP_RADIUS,
                     Math.round(ImtConfig.Weapons.EMP_SECONDS)).withStyle(ChatFormatting.DARK_AQUA));
+            tooltip.add(Component.translatable("tooltip.imttech.remote_emp.take").withStyle(ChatFormatting.DARK_GRAY));
         }
     }
 }

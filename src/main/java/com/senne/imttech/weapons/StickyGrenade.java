@@ -234,6 +234,16 @@ public class StickyGrenade extends GrenadeEntity {
         return isStuck() ? position().add(normal().scale(0.15)) : super.blastCenter();
     }
 
+    /**
+     * Hij als item (hoofdstuk 69): een Sticky EMP of Sticky Frag. Je trekt hem van een muur, een vloer of een plafond,
+     * maar ook van een speler, een robot, een drone of jezelf (jouw keuze: "ook van wezens").
+     */
+    @Override
+    public net.minecraft.world.item.ItemStack asItem() {
+        return new net.minecraft.world.item.ItemStack(isFrag() ? com.senne.imttech.registry.ModItems.STICKY_FRAG_GRENADE.get()
+                : com.senne.imttech.registry.ModItems.STICKY_EMP_GRENADE.get());
+    }
+
     /** Is dit de frag-versie (een klap in plaats van een EMP)? */
     public boolean isFrag() {
         return getType() == ModEntities.STICKY_FRAG_GRENADE.get();

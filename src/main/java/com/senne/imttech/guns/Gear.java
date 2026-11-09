@@ -264,9 +264,10 @@ public final class Gear {
     /**
      * Dit item in je gekozen vakje. Wat daar lag gaat in zijn eigen plek als dat kan (jouw keuze: "tenzij het een ander
      * gun is dat je kunt holsteren of wegdraaien met de sling"; mijn invulling: ook een granaat, magazijn of cel gaat
-     * terug in zijn pouch), anders valt het op de grond.
+     * terug in zijn pouch), anders valt het op de grond. Hoofdstuk 69: ook een granaat die je opraapt, komt zo in je
+     * hand (zie weapons/GrenadePickup).
      */
-    private static void intoHand(ServerPlayer player, ItemStack stack) {
+    public static void intoHand(ServerPlayer player, ItemStack stack) {
         Inventory inventory = player.getInventory();
         ItemStack held = inventory.getItem(inventory.selected);
         if (!held.isEmpty() && !stow(player, held.copy())) {

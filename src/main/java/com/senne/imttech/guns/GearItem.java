@@ -48,7 +48,8 @@ public class GearItem extends Item {
                 // Sinds hoofdstuk 55 ook het laserpistool (een pistool tegelijk, jouw keuze).
                 case HOLSTER -> FirearmItem.typeOf(stack) != null
                         || com.senne.imttech.weapons.LaserGunItem.typeOf(stack) == com.senne.imttech.weapons.GunType.PISTOL;
-                case GRENADE_POUCH -> stack.getItem() instanceof GrenadeItem;
+                // Hoofdstuk 69: geen scherpe granaat (in de pouch zou zijn lont stilstaan).
+                case GRENADE_POUCH -> stack.getItem() instanceof GrenadeItem && !GrenadeItem.isLive(stack);
                 // Sinds hoofdstuk 55 ook energiecellen (het magazijn van een lasergeweer).
                 case MAG_POUCH -> MagazineItem.typeOf(stack) != null || stack.getItem() instanceof com.senne.imttech.weapons.EnergyCellItem;
             };
