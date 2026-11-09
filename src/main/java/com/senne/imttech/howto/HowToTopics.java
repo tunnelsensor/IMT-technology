@@ -73,6 +73,8 @@ public final class HowToTopics {
                     ModItems.BULLET_9MM, ModItems.ROUND_9MM),
             topic("gear", "weapons", "Holster, pouches and slings", WeaponScenes::gear, ModItems.HOLSTER, ModItems.GRENADE_POUCH,
                     ModItems.MAG_POUCH, ModItems.GUN_SLING),
+            topic("armory", "weapons", "Armory: pegboard and ammo box", com.senne.imttech.howto.scenes.ArmoryScenes::armory,
+                    ModItems.PEGBOARD, ModItems.AMMO_BOX),
             // ------------------------------------------------------------ Power
             topic("power_battery", "power", "Power Battery", PowerScenes::battery, ModItems.BATTERY_CASING, ModItems.BATTERY_GLASS,
                     ModItems.BATTERY_CELL, ModItems.BATTERY_PORT),

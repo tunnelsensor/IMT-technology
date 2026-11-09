@@ -105,6 +105,9 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.MAG_POUCH.get());
                 output.accept(ModItems.GUNSMITH_TABLE.get());
                 output.accept(ModItems.RELOADING_BENCH.get());
+                // De armory (hoofdstuk 67): het Pegboard en de Ammo Box.
+                output.accept(ModItems.PEGBOARD.get());
+                output.accept(ModItems.AMMO_BOX.get());
                 // De onderdelen van de lasergeweren (hoofdstuk 55), per geweer in titanium en netherite, de sling en de werkbank.
                 for (com.senne.imttech.weapons.GunType type : com.senne.imttech.weapons.GunType.values()) {
                     for (com.senne.imttech.weapons.LaserPart part : com.senne.imttech.weapons.LaserPart.wearing()) {

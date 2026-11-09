@@ -186,9 +186,21 @@ public final class FirearmHud implements LayeredDraw.Layer {
         g.pose().popPose();
         Component name = magazine.getHoverName();
         g.drawString(font, name, right - font.width(name), bottom - 38, argb(0.9f, GOLD), true);
-        Component hint = Component.translatable(MagazineItem.isFull(magazine) ? "hud.imttech.magazine.full"
-                : loose == 0 ? "hud.imttech.magazine.no_rounds" : "hud.imttech.magazine.load", loose);
-        g.drawString(font, hint, right - font.width(hint), bottom - 6, argb(0.8f, loose == 0 ? RED : WHITE), true);
+        // Hoofdstuk 67: kijk je naar een Ammo Box met patronen, dan laad je daaruit (rechtsklik inhouden).
+        int inBox = com.senne.imttech.client.armory.ArmoryClient.roundsInBox();
+        Component hint;
+        boolean bad;
+        if (MagazineItem.isFull(magazine)) {
+            hint = Component.translatable("hud.imttech.magazine.full");
+            bad = false;
+        } else if (inBox > 0) {
+            hint = Component.translatable("hud.imttech.magazine.load_box", inBox);
+            bad = false;
+        } else {
+            hint = Component.translatable(loose == 0 ? "hud.imttech.magazine.no_rounds" : "hud.imttech.magazine.load", loose);
+            bad = loose == 0;
+        }
+        g.drawString(font, hint, right - font.width(hint), bottom - 6, argb(0.8f, bad ? RED : WHITE), true);
         float progress = FirearmControl.action(pt);
         if (FirearmControl.action() == Firearms.ActionKind.LOAD_ROUND && progress >= 0) {
             int barW = 70;

@@ -185,12 +185,12 @@ Elk item dat meer doet dan in een recept gaan, krijgt een animatie die laat zien
   **wijs je een blok aan**, dan zie je hoe het heet. Heeft een item meer animaties, dan blader je met de
   pijltjes bovenaan. **Esc** brengt je terug naar je inventaris, met alles nog zoals het was. In je eigen
   wereld staat het spel stil terwijl je kijkt.
-- **Alles is er** (51 van de 51), per tabblad:
+- **Alles is er** (52 van de 52), per tabblad:
   - *Equipment*: de bril, het harnas (minder schade, vliegen, landen, de laser cannon), de mini-raketten, de
     drones van je arsenaal en de Illusion Jammer.
   - *Weapons*: de lasergeweren, lasergeweren uit onderdelen, de Ion Blaster, EMP-granaten, fraggranaten, rook en
-    de flashbang, de Remote EMP en Remote Frag, de Glock 19, de Gunsmith Table, de Reloading Bench, en de holster,
-    de pouches en de slings.
+    de flashbang, de Remote EMP en Remote Frag, de Glock 19, de Gunsmith Table, de Reloading Bench, de holster,
+    de pouches en de slings, en de armory (het Pegboard en de Ammo Box).
   - *Power*: de Power Battery, stroom maken (zonnepaneel en warmtegenerator), stroomkabels, netwerkkabels met PoE en
     de switch, en de stroomkast.
   - *Interior*: de holotafel, de harnas-werkbank met zijn upgrades, barsten herstellen (Repair Paste, de Crusher en
@@ -2077,6 +2077,48 @@ ze tellen op. Reload maakt het wisselen van een cel korter, Recoil control de te
 de Glock (een laser heeft geen storingen en geen magazijn). Schieten, raken, iemand doodschieten met een laser, een cel
 wisselen en trekken geven ervaring, net als bij de Glock.
 
+### De armory: het Pegboard en de Ammo Box
+Jouw wens (hoofdstuk 67): al je wapens mooi aan de muur hangen, en munitiekisten waar je zonder scherm munitie in en uit
+klikt. De getallen staan onder `[armory]`.
+
+**Het Pegboard** (4 per recept: 4 stalen staven en 5 ijzerklompjes, om en om). Een dun stalen paneel met gaatjes: zet het
+tegen een muur (klik je op de vloer, dan kijkt het naar jou). Panelen naast en boven elkaar worden **één wand**. Elk paneel
+heeft 8 x 8 gaatjes, en alles klikt vast op dat raster.
+- **Rechtsklik met een wapen**: het hangt waar je klikt, met zijn midden op je klik; past het daar niet, dan op het
+  dichtstbijzijnde vrije plekje (tot 2 gaatjes ernaast), anders "No room here". Houd je iets vast dat erop mag en kijk je
+  naar een paneel, dan zie je een **blauw kader** waar het komt (rood: geen plek).
+- Wat erop mag: de **Glock 19** en de vier **lasergeweren** (met alles erin: onderdelen, slijtage, magazijn of cel, de
+  Nether Star en de sling; je ziet ze ook zo hangen), **magazijnen** en **energiecellen**, alle **granaten**, de Remote EMP
+  en Remote Frag met hun **triggers**, de **holster**, de **pouches**, de **Gun Sling** en de **Ion Blaster**.
+- Hoe groot (in gaatjes): sniper 10 x 3, rifle 8 x 3, shotgun 7 x 3, laserpistool en Ion Blaster 4 x 4, Glock 4 x 3,
+  magazijn en cel 1 x 3, trigger 1 x 4, granaat, Remote EMP/Frag en pouch 2 x 2, holster 2 x 3, sling 3 x 3. Een sniper
+  past dus niet op één paneel, wel over twee naast elkaar: een wapen mag over de panelen rechts en boven hangen.
+- **Rechtsklik met een lege hand** op wat hangt: je pakt het (in je hand), precies zoals het was. Je ziet een **wit
+  kader** om wat je zou pakken.
+- **Sneak + rechtsklik met een lege hand**: het draait: loop naar links (je ziet de linkerkant), naar rechts, naar beneden,
+  naar boven. Een stand die niet past wordt overgeslagen (een sniper op één rij panelen gaat dus van links naar rechts en
+  weer terug).
+- **Iedereen** mag eraan (jouw keuze, zoals een item frame). Breek je een paneel af, dan valt wat erop hing eraf, ook wat
+  van een paneel ernaast over dit paneel hing.
+
+**De Ammo Box** (2 ijzer, een hendel en 5 stalen staven). Een olijfgroene munitiekist op de grond. **Eén soort per kist**:
+9mm-patronen, hulzen, kogelpunten, Glock-magazijnen of energiecellen; wat je er als eerste in doet, bepaalt de soort, en is
+hij weer leeg, dan mag er iets anders in. Op het **etiket** staan een plaatje en het aantal (rood als hij vol is). Er passen
+1024 losse patronen, hulzen of kogelpunten in (`ammoBoxLoose`) of 12 magazijnen of cellen (`ammoBoxPieces`).
+- **Rechtsklik met spullen**: de stapel in je hand erin. **Sneak + rechtsklik**: alles van die soort uit je inventaris.
+- **Rechtsklik met een lege hand**: een stapel eruit (of één magazijn of cel: de volste). **Sneak + rechtsklik**: er één
+  uit. Het komt in je inventaris, niet in je hand, zodat je kunt blijven klikken (anders stopte de volgende klik het er
+  meteen weer in).
+- **Een magazijn laden**: houd **rechtsklik ingedrukt** met een magazijn op een kist patronen: patroon na patroon, net zo
+  snel als met R (dezelfde animatie en ervaring). De HUD zegt "Hold right-click: 237 in box". Met **sneak** gaan ze er
+  patroon na patroon uit, terug in de kist.
+- **Wisselen**: een **lasergeweer** op een kist cellen: je cel gaat erin en de volste cel komt in je geweer (zo lang als
+  herladen uit je pouch). Een **Glock** op een kist magazijnen doet hetzelfde met je magazijn. Ligt er niets voller in,
+  dan "No fuller cell in this box".
+- Een magazijn of cel op een **lege** kist gaat er zelf in (dan wordt het een kist magazijnen of cellen).
+- **Afbreken**: alles blijft erin, zoals een shulkerdoos; de tooltip zegt wat erin zit ("240 9mm Round inside (1024 max)",
+  bij magazijnen hoeveel patronen erin zitten, bij cellen hoe vol ze gemiddeld zijn). Lege kisten stapelen weer.
+
 ### Prestaties (advancements)
 De mod heeft een eigen prestatieboom die je door het spel leidt, van je eerste computerchip tot
 vliegen met het harnas. Open je prestaties (standaard **L**) en kijk bij **Biebia's Industries**.
@@ -2410,7 +2452,7 @@ showcase en staat hij bij NIEUW.
   `laser`, `bridge`, `commands`, `illusion`, `power`, `dome`, `models`, `tower`, `crash`, `raven`,
   `rockets`, `turrets`, `menu`, `bunker`, `missile`, `padscreen`, `cabinet`, `security`, `hack`, `os`, `cameras`, `towercams`,
   `racks`, `keycards`, `logic`, `lab`, `bypass`, `light`, `network`, `camerawall`, `glock`, `gear`, `skills`,
-  `laserparts`, `sling`; meerdere met komma's). Op een ander
+  `laserparts`, `sling`, `armory`; meerdere met komma's). Op een ander
   schermformaat: `-Psize=1600x900`.
 - **Logo**: `python tools/generate_logo.py` maakt het logo in de modlijst
   (`src/main/resources/imttech_logo.png`) en het projectplaatje voor CurseForge

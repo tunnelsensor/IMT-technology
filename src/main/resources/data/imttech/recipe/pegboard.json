@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "S": {
+      "item": "imttech:steel_ingot"
+    },
+    "N": {
+      "tag": "c:nuggets/iron"
+    }
+  },
+  "pattern": [
+    "NSN",
+    "SNS",
+    "NSN"
+  ],
+  "result": {
+    "id": "imttech:pegboard",
+    "count": 4
+  }
+}

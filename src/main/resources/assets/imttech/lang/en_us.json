@@ -1978,5 +1978,21 @@
   "screen.imttech.howto.button": "How it works",
   "screen.imttech.howto.button.info": "Every topic, with animations",
   "screen.imttech.howto.index.planned": "*%s* - no animation yet",
-  "screen.imttech.howto.index.count": "%s of %s with an animation"
+  "screen.imttech.howto.index.count": "%s of %s with an animation",
+  "block.imttech.pegboard": "Pegboard",
+  "block.imttech.ammo_box": "Ammo Box",
+  "armory.imttech.pegboard.no_room": "No room here: the item needs more pegboard around it.",
+  "armory.imttech.pegboard.no_room_turn": "No room to turn it here.",
+  "armory.imttech.box.wrong_sort": "This box holds %s. Empty it first for something else.",
+  "armory.imttech.box.empty": "The ammo box is empty.",
+  "armory.imttech.box.full": "The ammo box is full (%s).",
+  "armory.imttech.box.put": "Put %s %s in: %s / %s",
+  "armory.imttech.box.took": "Took %s %s: %s / %s left",
+  "armory.imttech.box.no_fuller_magazine": "No fuller magazine in this box.",
+  "armory.imttech.box.no_fuller_cell": "No fuller cell in this box.",
+  "armory.imttech.box.tooltip": "%s %s inside (%s max)",
+  "armory.imttech.box.tooltip_empty": "Empty: holds one sort of ammo",
+  "armory.imttech.box.tooltip_rounds": "%s rounds in the magazines",
+  "armory.imttech.box.tooltip_charge": "Cells %s%% charged on average",
+  "hud.imttech.magazine.load_box": "Hold right-click: %s in box"
 }

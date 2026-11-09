@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "imttech:block/pegboard"
+  },
+  "facing=east": {
+   "model": "imttech:block/pegboard",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "imttech:block/pegboard",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "imttech:block/pegboard",
+   "y": 270
+  }
+ }
+}

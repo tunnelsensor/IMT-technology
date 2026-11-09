@@ -209,7 +209,8 @@ public final class FirearmControl {
             return;
         }
 
-        boolean wantAim = free && mc.options.keyUse.isDown() && action == null && drawn(0) >= 1;
+        boolean wantAim = free && mc.options.keyUse.isDown() && action == null && drawn(0) >= 1
+                && !com.senne.imttech.client.armory.ArmoryClient.usesArmory(); // hoofdstuk 67: ophangen of wisselen, niet richten
         if (wantAim && player.isSprinting()) {
             player.setSprinting(false);
         }
@@ -384,6 +385,10 @@ public final class FirearmControl {
     /** Met een pistool in je hand: linkerklik slaat niet, rechterklik gebruikt niets (het is richten). */
     public static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {
         if (held == null || event.isPickBlock()) {
+            return;
+        }
+        // Hoofdstuk 67: rechtsklik op een Pegboard (ophangen) of een Ammo Box (wisselen) mag door.
+        if (event.isUseItem() && com.senne.imttech.client.armory.ArmoryClient.usesArmory()) {
             return;
         }
         event.setCanceled(true);

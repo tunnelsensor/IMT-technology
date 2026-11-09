@@ -565,4 +565,22 @@ public final class ModBlocks {
                     .strength(4.0f, 6.0f)
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.METAL));
+
+    /** Hoofdstuk 67: het Pegboard, een stalen paneel met gaatjes aan de muur waar je je wapens en uitrusting aan hangt. */
+    public static final DeferredBlock<com.senne.imttech.armory.PegboardBlock> PEGBOARD = BLOCKS.registerBlock(
+            "pegboard", com.senne.imttech.armory.PegboardBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(1.5f, 4.0f)
+                    .noOcclusion()
+                    .sound(SoundType.METAL));
+
+    /** Hoofdstuk 67: de Ammo Box, een stalen munitiekist (één soort per kist, in en uit met klikken). */
+    public static final DeferredBlock<com.senne.imttech.armory.AmmoBoxBlock> AMMO_BOX = BLOCKS.registerBlock(
+            "ammo_box", com.senne.imttech.armory.AmmoBoxBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_GREEN)
+                    .strength(2.0f, 6.0f)
+                    .noOcclusion()
+                    .sound(SoundType.METAL));
 }

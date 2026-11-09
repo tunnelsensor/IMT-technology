@@ -84,6 +84,8 @@ public final class LaserGuns {
 
     /** Het "vakje" dat zegt: niet wisselen maar alleen de cel eruit (R zonder pouch, of U; hoofdstuk 57). */
     public static final int EJECT = -1;
+    /** Het "vakje" dat zegt: de cel komt uit een Ammo Box (hoofdstuk 67, een lasergeweer op een doos cellen). */
+    public static final int FROM_BOX = -2;
 
     /**
      * Iemand die aan het herladen is: in welk vakje zijn geweer zit, uit welk vakje van zijn magazijnpouch de cel komt
@@ -406,6 +408,21 @@ public final class LaserGuns {
         return true;
     }
 
+    /**
+     * Hoofdstuk 67: een lasergeweer op een Ammo Box met cellen. Net zo lang als herladen uit je pouch; daarna komt de
+     * volste cel uit de doos in je geweer en je oude cel in de doos (armory/AmmoBoxes.finishCellSwap). Of er een
+     * vollere cel in de doos ligt, keek AmmoBoxes al na.
+     */
+    public static boolean startReloadFromBox(ServerPlayer player) {
+        ItemStack gun = player.getMainHandItem();
+        GunType type = LaserGunItem.typeOf(gun);
+        if (type == null || isReloading(player) || Firearms.isBusy(player)) {
+            return false;
+        }
+        begin(player, type, FROM_BOX, reloadTicks(player, gun));
+        return true;
+    }
+
     /** Het wisselen of lossen begint: onthouden, het geluid van de cel eruit, en jouw spel hoort hoe lang het duurt. */
     private static void begin(ServerPlayer player, GunType type, int pouch, int ticks) {
         ServerLevel level = player.serverLevel();
@@ -496,6 +513,10 @@ public final class LaserGuns {
      */
     private static void finishReload(ServerPlayer player, int pouch) {
         ItemStack gun = player.getMainHandItem();
+        if (pouch == FROM_BOX) {
+            com.senne.imttech.armory.AmmoBoxes.finishCellSwap(player, gun);
+            return;
+        }
         float old = LaserGunItem.cell(gun);
         if (pouch < 0) {
             if (old >= 0) {

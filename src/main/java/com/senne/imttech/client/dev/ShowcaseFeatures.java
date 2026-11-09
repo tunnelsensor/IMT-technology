@@ -3324,7 +3324,68 @@ final class ShowcaseFeatures {
                 .close(0)
                 .close(5)
                 .onServer(0, player -> player.getInventory().clearContent()));
+
+        // ---------------------------------------------------------------- De armory (hoofdstuk 67)
+        BlockPos ay = ARMORY_YARD;
+        add("Armory: Pegboard and Ammo Box", "Hoofdstuk 67. Een wand van 5 x 2 Pegboards vol wapens (sniper, rifle, shotgun, "
+                + "Glock, laserpistool, magazijnen, cellen, granaten, holster, pouches, sling, triggers, Ion Blaster) en vier Ammo "
+                + "Boxes ervoor: patronen, hulzen, magazijnen en cellen, met op het etiket een plaatje en het aantal. Let op: met de "
+                + "rifle in je hand een blauw kader op het vrije paneel rechts (daar komt hij), rechtsklik: hij hangt. Met een lege "
+                + "hand een wit kader om de rifle; sneak + rechtsklik: hij draait (loop naar rechts), rechtsklik: hij is weer in je "
+                + "hand. Dan een leeg magazijn op de kist met patronen: rechtsklik ingedrukt houden laadt patroon na patroon (de "
+                + "kist telt af, de HUD zegt 'Hold right-click: ... in box'). Met een lege hand komt er een stapel patronen uit "
+                + "(in je inventaris, niet in je hand), en met de stapel in je hand gaat hij er weer in.",
+                GameType.SURVIVAL, new Vec3(ay.getX() + 0.5, ay.getY() + 1, ay.getZ() - 0.5), 0, 10, s -> s
+                .onServer(0, player -> VisualCheck.buildArmoryAt(player.serverLevel(), ay))
+                .onServer(0, player -> {
+                    player.getInventory().clearContent();
+                    ItemStack rifle = com.senne.imttech.weapons.LaserGunItem.complete(com.senne.imttech.weapons.GunType.RIFLE,
+                            com.senne.imttech.guns.GunMaterial.NETHERITE);
+                    player.getInventory().setItem(0, rifle);
+                    player.getInventory().setItem(2, com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.GLOCK_19, 0));
+                })
+                .stand(0, ay.getX() + 0.5, ay.getY() + 1, ay.getZ() - 0.5, 0, 10)
+                .step(0, () -> hotbar(1))
+                .lookAt(0, new Vec3(ay.getX() + 0.5, ay.getY() + 2.6, ay.getZ() + 3.9))
+                .pause(80)
+                // De rifle op het vrije paneel rechts.
+                .stand(0, ay.getX() - 1.5, ay.getY() + 1, ay.getZ() + 1.4, 0, 0)
+                .step(0, () -> hotbar(0))
+                .lookAt(0, new Vec3(ay.getX() - 1.5, ay.getY() + 2.95, ay.getZ() + 3.9))
+                .pause(50)
+                .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                .pause(40)
+                // Lege hand: draaien en weer pakken.
+                .step(0, () -> hotbar(1))
+                .pause(30)
+                .key(0, () -> Minecraft.getInstance().options.keyShift, true)
+                .tap(5, () -> Minecraft.getInstance().options.keyUse)
+                .key(5, () -> Minecraft.getInstance().options.keyShift, false)
+                .pause(40)
+                .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                .pause(40)
+                // Een leeg magazijn op de kist met patronen: rechtsklik inhouden.
+                .stand(0, ay.getX() + 1.5, ay.getY() + 1, ay.getZ() + 0.2, 0, 0)
+                .step(0, () -> hotbar(2))
+                .lookAt(0, new Vec3(ay.getX() + 1.5, ay.getY() + 1.3, ay.getZ() + 2.5))
+                .pause(20)
+                .key(0, () -> Minecraft.getInstance().options.keyUse, true)
+                .pause(80)
+                .key(0, () -> Minecraft.getInstance().options.keyUse, false)
+                .pause(30)
+                // Lege hand: een stapel eruit; met de stapel in je hand weer erin.
+                .step(0, () -> hotbar(3))
+                .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                .pause(40)
+                // De stapel kwam in het eerste lege vakje: vakje 0 (in vakje 1 zit de rifle weer).
+                .step(0, () -> hotbar(0))
+                .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                .pause(60)
+                .onServer(0, player -> player.getInventory().clearContent()));
     }
+
+    /** Hoofdstuk 67: het veldje van de armory (zie VisualCheck.buildArmoryAt). */
+    static final BlockPos ARMORY_YARD = new BlockPos(-130, -61, 330);
 
     /** Hoofdstuk 55: een Laser Workbench met een half gebouwde rifle erop, naast {@code stand} (tussen de twee banken van de Glock). */
     static void buildLaserBench(ServerPlayer player, BlockPos stand) {

@@ -22,13 +22,13 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 455 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 461 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
 **Publiceren:** klaar voor CurseForge onder de MIT-licentie (17 oktober): de beschrijving, het logo, de
 changelog en een stappenplan staan in `publish/` (begin bij `publish/HOE-PUBLICEREN.md`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 115 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 120 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -5797,6 +5797,86 @@ per tijd); blokken tellen (de app Zones) en RAM/SSD in Monitor blijven zoals ze 
       (kort als het niet past). Daar liep ook "Upgrades: lay the glasses on the Suit Workbench" buiten het scherm; nu
       "Upgrades: on the Suit Workbench". Het knopje van de koepel paste niet in de rondleiding zonder koepel; die zet ze
       nu eerst neer.
+
+### 67. De armory: het Pegboard en de Ammo Box (9 november)
+
+Jouw vraag: "Kun je een armory items maken zodat je al de guns mooi op de muren kunt hangen, ook wil ik ammoboxens waar je
+mee kunt interacten om ammo in en uit te doen zonder een GUI dus door te klikken of schiftklikken. Vragen stel ze dan."
+
+**Jouw antwoorden** (twee rondes vragen):
+- Het rek aan de muur is een **gaatjesbord** (Pegboard): je hangt een wapen waar je klikt, vastgeklikt op een raster, en
+  panelen naast elkaar worden één wand (een sniper kan over twee panelen hangen).
+- Erop mag: **alle wapens** (de Glock en de vier lasergeweren, met alles erin), **magazijnen en cellen**, **granaten** (ook
+  de Remote EMP/Frag en hun triggers) en **holster, pouches en sling**.
+- **Iedereen** mag eraan (zoals een item frame).
+- In een Ammo Box: **9mm-patronen, hulzen en kogelpunten, Glock-magazijnen en energiecellen**, en dan **één soort per kist**
+  (wat er als eerste in gaat; leeg = weer vrij), met een plaatje en het aantal op de voorkant.
+- Klikken: **rechtsklik** met spullen = de stapel erin, **sneak + rechtsklik** = alles van die soort uit je inventaris;
+  **lege hand** = een stapel eruit (of één magazijn/cel), **sneak + lege hand** = er één uit.
+- **Rechtsklik inhouden met een magazijn** op een kist patronen = patroon na patroon laden, zo snel als R; een
+  **lasergeweer op een kist cellen** = je cel wisselen voor de volste.
+- **Afgebroken houdt hij zijn inhoud** (zoals een shulkerdoos), en de tooltip zegt wat erin zit.
+
+**Mijn invulling** (zeg het als je het anders wilt):
+- Het raster heeft **8 x 8 gaatjes per paneel** (om de 2 pixels). De maten in gaatjes: sniper 10 x 3, rifle 8 x 3, shotgun
+  7 x 3, laserpistool 4 x 4, Glock 4 x 3, magazijn en cel 1 x 3, trigger 1 x 4, granaat, Remote EMP/Frag en pouch 2 x 2,
+  holster 2 x 3, sling 3 x 3. De **Ion Blaster** mag er ook op (4 x 4): het is een wapen.
+- Een wapen komt met zijn **midden op je klik**; past het niet, dan het dichtstbijzijnde plekje tot 2 gaatjes ernaast. Een
+  **blauw kader** laat zien waar het komt (rood: geen plek), een **wit kader** wat je met een lege hand zou pakken.
+- **Sneak + rechtsklik met een lege hand draait** wat hangt (loop naar links, rechts, beneden, boven); een stand die niet past
+  wordt overgeslagen. Pakken gaat in je hand.
+- Wat je uit een **kist** neemt komt in je inventaris, **niet in je hand** (anders stopte de volgende rechtsklik het er
+  meteen weer in, met de stapel in je hand).
+- **Sneak + rechtsklik inhouden met een magazijn** op een kist patronen: patroon na patroon terug in de kist. Een **Glock op
+  een kist magazijnen** wisselt je magazijn voor het volste, zoals een lasergeweer met cellen.
+- Een kist neemt **1024** losse patronen, hulzen of kogelpunten (`[armory] ammoBoxLoose`, een echte munitiekist houdt er
+  zo'n 1000) of **12** magazijnen of cellen (`ammoBoxPieces`). Hooguit 16 kisten op een stapel; lege kisten stapelen met
+  nieuwe.
+- Recepten: **4 Pegboards** uit 4 stalen staven en 5 ijzerklompjes (om en om), een **Ammo Box** uit 2 ijzer, een hendel
+  (de sluiting) en 5 stalen staven. Beide met een houweel.
+- De panelen zijn **lichtgrijs** staal met donkere gaatjes: op een donker paneel vielen de zwarte Glock en magazijnen weg.
+
+- [x] **Het Pegboard** — `armory/PegboardBlock`, `PegboardBlockEntity` (wat erop hangt: het item, zijn gaatje linksonder op
+      dit paneel en hoe het hangt) en `Pegboard` (het raster over de hele wand: waar iets past, wat er over een gaatje
+      hangt, waar je kijkt). Een paneel van 1 pixel dik; de wapens hangen 1,7 pixel van de muur aan stalen haakjes.
+      Waar je klikt rekent het uit op de diepte van de wapens (anders klikte je schuin van opzij een beetje naast). Breek
+      je een paneel af, dan valt wat erop hing eraf, ook wat van een paneel links of onder erover hing.
+- [x] **De wapens zoals ze zijn** — `client/armory/PegboardRenderer`: een Glock uit zijn onderdelen (in hun materiaal, met
+      het magazijn als het erin zit), een lasergeweer uit zijn onderdelen (met de Nether Star, de sling en de cel), de rest
+      het gewone 3D-model. Elk model wordt gemeten (eenmalig per stand) en zo groot getekend als in zijn rechthoek past; een
+      magazijn staat rechtop (in zijn model staat het schuin, zoals in de greep), een opgerolde sling op zijn kant.
+- [x] **De Ammo Box** — `armory/AmmoBoxBlock`, `AmmoBoxBlockEntity` (één soort, stapels van 64 of losse stukken) en
+      `AmmoBoxes` (wat elke klik doet, op de server en in je spel hetzelfde). Laden en wisselen gebruiken de echte
+      handelingen: een patroon laden is LOAD_ROUND van de Glock met de kist als bron (`Firearms.FROM_BOX`), een magazijn
+      wisselen is RELOAD_POUCH met de kist (`Firearms.BOX_SLOT`), een cel wisselen het herladen van een lasergeweer
+      (`LaserGuns.FROM_BOX`); dus dezelfde tijden, animaties en ervaring. Minecraft herhaalt een rechtsklik op een blok
+      elke 4 ticks zolang je hem inhoudt: zo wordt inhouden patroon na patroon. Sneak + rechtsklik met iets in je hand
+      slaat Minecraft normaal over (dan zet je een blok ernaast): voor een Ammo Box zegt `AmmoBoxes.onRightClickBlock`
+      "gebruik het blok toch" als wat je vasthoudt iets met de kist te maken heeft. Afbreken: de inhoud gaat mee als
+      `minecraft:container` (loot table: copy_components). Het etiket tekent `client/armory/AmmoBoxRenderer`.
+- [x] **Met een wapen in je hand** — een pistool of lasergeweer maakt van rechtsklik "richten" en gebruikte dan geen blokken
+      (FirearmControl, GunControl). Doet een rechtsklik iets met een Pegboard of Ammo Box, dan richt je nu niet en mag de
+      klik door (`ArmoryClient.usesArmory`). De HUD van een magazijn zei bij een kist "No 9mm Rounds in your inventory"
+      (rood); kijk je naar een kist patronen, dan nu "Hold right-click: 237 in box". Hulzen oprapen (rechtsklik op de
+      grond) gebeurt niet als je op een armory-blok klikt.
+- [x] **Modellen** — `tools/generate_armory_models.py` (eigenaar van alles wat het schrijft): het paneel, het haakje, en de
+      kist (olijfgroen staal met een rood-gouden streep, een hengsel op het deksel, een sluiting opzij, twee scharnieren
+      en een etiket).
+- [x] **How it works** — onderwerp 52, "Armory: pegboard and ammo box" (tabblad Weapons, 58 s, `ArmoryScenes`): de
+      panelen op een muur, een rifle en een sniper over twee panelen ophangen, de rest erbij, de Glock draaien en pakken,
+      de kist vullen (een stapel, dan alles), een stapel eruit, een magazijn laden (de kist telt af), wisselen, en
+      afbreken. Eerst stond de wand schuin en klein in beeld; nu een wand van 2 x 2 in het midden, bijna recht van voren.
+- [x] **Tests** — `ArmoryGameTests` (6): één soort per kist, erin en eruit (ook sneak, en vol is vol); de inhoud blijft bij
+      afbreken en komt terug bij neerzetten (een lege kist stapelt); een magazijn patroon na patroon laden en terug
+      (zonder patronen in je inventaris); cellen en magazijnen wisselen voor de volste (en niet voor een legere); ophangen
+      op het raster (een sniper niet op één paneel, wel over twee; niets over elkaar; draaien); pakken en draaien door
+      iemand die ernaar kijkt (precies hetzelfde item terug), en een paneel weghalen laat een rifle vallen. In een eerste
+      ronde draaide de sniper "door de rand heen": de volgende stand is "loop naar rechts", en die past wel; de test was
+      fout, en draaien slaat nu standen over die niet passen. 461 tests, groen.
+- [x] **Bekeken in het spel** — `-Ponly=armory`: een wand van 5 x 2 panelen vol (`ArmoryDisplay`), vier kisten (240
+      patronen, 57 hulzen, 5 magazijnen, 4 cellen), het blauwe kader met een rifle, ophangen, het witte kader, draaien, en
+      rechtsklik inhouden met een leeg magazijn (in 2 seconden 8 patronen, de kist telt af). Showcase **120** ("Armory:
+      Pegboard and Ammo Box"). LEESMIJ aangepast.
 
 ## Nog nooit in het spel bekeken
 

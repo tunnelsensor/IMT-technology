@@ -86,6 +86,13 @@ public final class Firearms {
     /** Het extra getal bij DRAW (hoofdstuk 55): uit de holster, of van je sling (dat duurt langer). */
     public static final int DRAW_FROM_HOLSTER = 0;
     public static final int DRAW_FROM_SLING = 1;
+    /**
+     * Het extra getal bij LOAD_ROUND en UNLOAD_ROUND (hoofdstuk 67): de patroon komt uit een Ammo Box (of gaat erin),
+     * niet uit je inventaris. Welke doos onthoudt armory/AmmoBoxes.
+     */
+    public static final int FROM_BOX = 1;
+    /** Het extra getal bij RELOAD_POUCH (hoofdstuk 67): het magazijn komt uit een Ammo Box, niet uit een vakje van je pouch. */
+    public static final int BOX_SLOT = -2;
 
     /** Een handeling die bezig is: wat, in welk vakje het item zit waarmee je bezig bent, iets extra, en wanneer klaar. */
     private record Action(ActionKind kind, int slot, int arg, long done) {}
@@ -297,8 +304,11 @@ public final class Firearms {
         return started;
     }
 
-    /** Een handeling beginnen met het item in het gekozen vakje; jouw spel hoort hoe lang het duurt. */
-    static boolean start(ServerPlayer player, ActionKind kind, int slot, int arg, @Nullable ItemStack gun) {
+    /**
+     * Een handeling beginnen met het item in het gekozen vakje; jouw spel hoort hoe lang het duurt. Sinds hoofdstuk 67
+     * ook vanuit een Ammo Box (armory/AmmoBoxes), met {@link #FROM_BOX} of {@link #BOX_SLOT} als extra getal.
+     */
+    public static boolean start(ServerPlayer player, ActionKind kind, int slot, int arg, @Nullable ItemStack gun) {
         if (ACTIONS.containsKey(player.getUUID())) {
             return false;
         }
@@ -577,19 +587,30 @@ public final class Firearms {
                 }
             }
             case LOAD_ROUND -> {
-                if (!MagazineItem.isFull(held) && takeRound(player)) {
+                // Hoofdstuk 67: uit een Ammo Box (rechtsklik inhouden met een magazijn), of uit je inventaris (R).
+                boolean fromBox = action.arg() == FROM_BOX;
+                if (!MagazineItem.isFull(held) && (fromBox ? com.senne.imttech.armory.AmmoBoxes.takeRound(player) : takeRound(player))) {
                     MagazineItem.setRounds(held, MagazineItem.rounds(held) + 1);
                     sound(player, ModSounds.GLOCK_ROUND_LOAD.get(), 0.7f);
                     GunSkillHooks.roundLoaded(player);
                 }
             }
-            case RELOAD_POUCH -> GunGearHooks.finishPouchReload(player, held, action.arg());
+            case RELOAD_POUCH -> {
+                if (action.arg() == BOX_SLOT) {
+                    com.senne.imttech.armory.AmmoBoxes.finishMagSwap(player, held); // hoofdstuk 67: uit een Ammo Box
+                } else {
+                    GunGearHooks.finishPouchReload(player, held, action.arg());
+                }
+            }
             case DRAW -> GunSkillHooks.drawn(player, held);
             case UNLOAD_ROUND -> {
                 int rounds = MagazineItem.rounds(held);
                 if (rounds > 0) {
                     MagazineItem.setRounds(held, rounds - 1);
-                    give(player, new ItemStack(ModItems.ROUND_9MM.get()));
+                    // Hoofdstuk 67: met sneak op een Ammo Box gaat de patroon terug in de doos (is die vol, dan in je inventaris).
+                    if (action.arg() != FROM_BOX || !com.senne.imttech.armory.AmmoBoxes.putRound(player)) {
+                        give(player, new ItemStack(ModItems.ROUND_9MM.get()));
+                    }
                     sound(player, ModSounds.GLOCK_ROUND_LOAD.get(), 0.6f);
                 }
             }
@@ -624,6 +645,11 @@ public final class Firearms {
         }
         ItemStack held = player.getMainHandItem();
         if (!held.isEmpty() && !held.is(ModItems.CASING_9MM.get())) {
+            return;
+        }
+        // Hoofdstuk 67: een klik op een Ammo Box of Pegboard is voor dat blok (hulzen erin, iets pakken), niet om op te rapen.
+        if (player.level().getBlockEntity(event.getPos()) instanceof com.senne.imttech.armory.AmmoBoxBlockEntity
+                || player.level().getBlockEntity(event.getPos()) instanceof com.senne.imttech.armory.PegboardBlockEntity) {
             return;
         }
         int picked = pickUpCasings(player, event.getHitVec().getLocation());

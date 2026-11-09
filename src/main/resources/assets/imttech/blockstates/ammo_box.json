@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "imttech:block/ammo_box"
+  },
+  "facing=east": {
+   "model": "imttech:block/ammo_box",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "imttech:block/ammo_box",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "imttech:block/ammo_box",
+   "y": 270
+  }
+ }
+}

@@ -572,4 +572,13 @@ public final class ModItems {
     /** Hoofdstuk 55: de Laser Workbench (een lasergeweer in elkaar slepen, de Nether Star en de sling erin). */
     public static final DeferredItem<BlockItem> LASER_WORKBENCH = ITEMS.registerSimpleBlockItem("laser_workbench",
             ModBlocks.LASER_WORKBENCH, new Item.Properties().rarity(Rarity.RARE));
+
+    // ================================================================ De armory (hoofdstuk 67)
+
+    /** Hoofdstuk 67: het Pegboard (wapens en uitrusting aan de muur hangen). */
+    public static final DeferredItem<BlockItem> PEGBOARD = ITEMS.registerSimpleBlockItem("pegboard",
+            ModBlocks.PEGBOARD, new Item.Properties());
+    /** Hoofdstuk 67: de Ammo Box. Afgebroken houdt hij zijn inhoud (zoals een shulkerdoos), dus hooguit 16 op een stapel. */
+    public static final DeferredItem<BlockItem> AMMO_BOX = ITEMS.registerSimpleBlockItem("ammo_box",
+            ModBlocks.AMMO_BOX, new Item.Properties().stacksTo(16));
 }

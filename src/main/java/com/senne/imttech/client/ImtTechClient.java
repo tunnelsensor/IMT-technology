@@ -61,6 +61,7 @@ public class ImtTechClient {
         modEventBus.addListener(com.senne.imttech.client.weapons.WeaponModels::registerExtensions);
         // De vuurwapens (hoofdstuk 52): de losse onderdelen van de Glock 19, het plaatje per materiaal, twee handen.
         modEventBus.addListener(com.senne.imttech.client.guns.FirearmModels::register);
+        modEventBus.addListener(com.senne.imttech.client.armory.PegboardRenderer::register);
         modEventBus.addListener(com.senne.imttech.client.guns.FirearmModels::registerProperties);
         modEventBus.addListener(com.senne.imttech.client.weapons.WeaponModels::registerProperties);
         modEventBus.addListener(com.senne.imttech.client.guns.FirearmModels::registerExtensions);
@@ -228,6 +229,9 @@ public class ImtTechClient {
         event.registerBlockEntityRenderer(ModBlockEntities.CAMERA_MONITOR.get(), com.senne.imttech.client.os.camera.CameraWallRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.SUIT_WORKBENCH.get(),
                 com.senne.imttech.client.workbench.SuitHologramRenderer::new);
+        // De armory (hoofdstuk 67): wat aan een Pegboard hangt, en het etiket van een Ammo Box.
+        event.registerBlockEntityRenderer(ModBlockEntities.PEGBOARD.get(), com.senne.imttech.client.armory.PegboardRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.AMMO_BOX.get(), com.senne.imttech.client.armory.AmmoBoxRenderer::new);
     }
 
     private static void registerLayerDefinitions(EntityRenderersEvent.RegisterLayerDefinitions event) {

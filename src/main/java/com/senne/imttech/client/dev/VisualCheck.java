@@ -2578,6 +2578,62 @@ public final class VisualCheck {
             t.step(0, () -> com.senne.imttech.client.ImtClientConfig.setPowerUnit(com.senne.imttech.client.PowerUnit.TICK));
         }
 
+        // --- Hoofdstuk 67: de armory. Een wand van 5 x 2 Pegboards vol wapens, magazijnen, cellen, granaten en
+        // uitrusting, met vier Ammo Boxes ervoor (patronen, hulzen, magazijnen, cellen). Dan: het kader als je een
+        // rifle vasthoudt (waar hij komt), ophangen met een rechtsklik, het witte kader met een lege hand, draaien met
+        // sneak, en een magazijn laden door rechtsklik in te houden op de kist met patronen.
+        if (want("armory")) {
+            t.command(0, "gamemode survival @a");
+            t.onServer(0, VisualCheck::buildArmory);
+            t.onServer(0, player -> {
+                player.getInventory().clearContent();
+                ItemStack rifle = com.senne.imttech.weapons.LaserGunItem.complete(com.senne.imttech.weapons.GunType.RIFLE,
+                        com.senne.imttech.guns.GunMaterial.NETHERITE);
+                player.getInventory().setItem(0, rifle);
+                player.getInventory().setItem(2, com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.GLOCK_19, 0));
+            });
+            // De wand: x van ARMORY - 2 tot + 3, y van + 2 tot + 4, de voorkant van de panelen op z + 3,94.
+            double wx = ARMORY.getX(), wy = ARMORY.getY(), wz = ARMORY.getZ();
+            t.stand(20, wx + 0.5, wy + 1, wz - 0.5, 0, 0);
+            t.step(0, () -> selectSlot(1));
+            t.lookAt(0, new Vec3(wx + 0.5, wy + 2.6, wz + 3.9));
+            t.shot(30, "ar01_wall");
+            t.stand(0, wx + 2.0, wy + 1, wz + 1.3, 0, 0);
+            t.lookAt(0, new Vec3(wx + 2.0, wy + 2.9, wz + 3.9));
+            t.shot(25, "ar02_wall_left_close");
+            t.stand(0, wx - 0.3, wy + 1, wz + 1.3, 0, 0);
+            t.lookAt(0, new Vec3(wx - 0.3, wy + 2.9, wz + 3.9));
+            t.shot(25, "ar03_wall_right_close");
+            t.stand(0, wx + 0.0, wy + 1, wz + 0.2, 0, 0);
+            t.lookAt(0, new Vec3(wx + 0.0, wy + 1.3, wz + 2.3));
+            t.shot(25, "ar04_ammo_boxes");
+            // Met een rifle in je hand naar het vrije paneel rechts: het kader zegt waar hij komt.
+            t.stand(0, wx - 1.5, wy + 1, wz + 1.4, 0, 0);
+            t.step(0, () -> selectSlot(0));
+            t.lookAt(0, new Vec3(wx - 1.5, wy + 2.95, wz + 3.9));
+            t.shot(25, "ar05_preview_rifle");
+            t.tap(0, () -> Minecraft.getInstance().options.keyUse);
+            t.shot(15, "ar06_rifle_hung");
+            // Een lege hand op de rifle: een wit kader. Dan sneak + rechtsklik: hij draait (loop naar rechts).
+            t.step(0, () -> selectSlot(1));
+            t.shot(10, "ar07_hover_empty_hand");
+            t.key(0, () -> Minecraft.getInstance().options.keyShift, true);
+            t.tap(5, () -> Minecraft.getInstance().options.keyUse);
+            t.key(5, () -> Minecraft.getInstance().options.keyShift, false);
+            t.shot(15, "ar08_rifle_turned");
+            // Een leeg magazijn op de kist met patronen: rechtsklik ingedrukt houden = patroon na patroon.
+            t.stand(0, wx + 1.5, wy + 1, wz + 0.2, 0, 0);
+            t.step(0, () -> selectSlot(2));
+            t.lookAt(0, new Vec3(wx + 1.5, wy + 1.3, wz + 2.5));
+            t.key(10, () -> Minecraft.getInstance().options.keyUse, true);
+            t.shot(30, "ar09_loading_magazine");
+            t.step(40, () -> ImtTech.LOGGER.info("[dev] armory: magazine has {} rounds after holding right-click",
+                    com.senne.imttech.guns.MagazineItem.rounds(Minecraft.getInstance().player.getMainHandItem())));
+            t.key(0, () -> Minecraft.getInstance().options.keyUse, false);
+            t.shot(10, "ar10_magazine_loaded");
+            t.command(0, "gamemode creative @a");
+        }
+
         // --- Satellietraketten: eentje die valt en inslaat (precisie), en een bombardement
         if (want("missile")) {
             BlockPos aim = new BlockPos(30, -60, -30); // op een lege plek, ver van de heuvel
@@ -5009,6 +5065,31 @@ public final class VisualCheck {
         for (int[] spot : spots) {
             DevWorld.spawnStill(level, EntityType.HUSK, GUN_RANGE.offset(spot[0], 1, spot[1]), 180);
         }
+    }
+
+    /** De armory (hoofdstuk 67): een muur met Pegboards en Ammo Boxes ervoor. */
+    private static final BlockPos ARMORY = new BlockPos(-220, -61, -200);
+
+    /**
+     * Een vloer van gladde steen, een muur van stenen bakstenen (4 blokken verder, naar het zuiden) met 5 x 2 Pegboards
+     * die naar het noorden kijken, vol wapens en uitrusting, en vier Ammo Boxes op de grond ervoor.
+     */
+    private static void buildArmory(ServerPlayer player) {
+        buildArmoryAt(player.serverLevel(), ARMORY);
+    }
+
+    /** Hetzelfde op een andere plek ({@code origin} = de vloer; ook voor de showcase). */
+    static void buildArmoryAt(ServerLevel level, BlockPos origin) {
+        for (BlockPos pos : BlockPos.betweenClosed(origin.offset(-6, 1, -6), origin.offset(6, 6, 6))) {
+            level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+        }
+        for (BlockPos pos : BlockPos.betweenClosed(origin.offset(-6, 0, -6), origin.offset(6, 0, 6))) {
+            level.setBlockAndUpdate(pos, Blocks.SMOOTH_STONE.defaultBlockState());
+        }
+        for (BlockPos pos : BlockPos.betweenClosed(origin.offset(-4, 1, 4), origin.offset(4, 4, 4))) {
+            level.setBlockAndUpdate(pos, Blocks.STONE_BRICKS.defaultBlockState());
+        }
+        com.senne.imttech.armory.ArmoryDisplay.build(level, origin.offset(2, 2, 3), origin.offset(1, 1, 2));
     }
 
     /** Het veldje voor de wapens (hoofdstuk 35). */

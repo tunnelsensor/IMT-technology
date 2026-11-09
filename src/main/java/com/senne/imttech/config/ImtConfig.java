@@ -2334,4 +2334,18 @@ public final class ImtConfig {
         @Tunable(value = "Magazines (or energy cells) that fit in a Magazine Pouch", min = 1, max = 9)
         public static float MAG_POUCH_SIZE = 6.0f;
     }
+
+    // =============================================================================================== Armory
+
+    @Section("The armory (chapter 67): the Pegboard on the wall for your weapons and gear, and the Ammo Box")
+    public static final class Armory {
+        private Armory() {}
+
+        /** Zoveel losse patronen, hulzen of kogelpunten passen in één Ammo Box (een echte munitiekist: zo'n 1000 patronen). */
+        @Tunable(value = "Loose rounds, casings or bullets that fit in one Ammo Box", min = 1, max = 6_400)
+        public static float AMMO_BOX_LOOSE = 1024.0f;
+        /** Zoveel magazijnen of energiecellen passen in één Ammo Box (die stapelen niet, elk houdt zijn eigen inhoud). */
+        @Tunable(value = "Magazines or energy cells that fit in one Ammo Box", min = 1, max = 64)
+        public static float AMMO_BOX_PIECES = 12.0f;
+    }
 }

@@ -38,6 +38,8 @@
     "imttech:training_goal",
     "imttech:training_end",
     "imttech:gunsmith_table",
-    "imttech:laser_workbench"
+    "imttech:laser_workbench",
+    "imttech:pegboard",
+    "imttech:ammo_box"
   ]
 }

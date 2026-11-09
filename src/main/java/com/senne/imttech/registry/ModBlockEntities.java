@@ -224,4 +224,16 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("laser_workbench",
                     () -> new BlockEntityType<>(com.senne.imttech.weapons.LaserWorkbenchBlockEntity::new,
                             java.util.Set.of(ModBlocks.LASER_WORKBENCH.get()), null));
+
+    /** Hoofdstuk 67: het Pegboard (wat erop hangt). */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.armory.PegboardBlockEntity>> PEGBOARD =
+            BLOCK_ENTITIES.register("pegboard",
+                    () -> new BlockEntityType<>(com.senne.imttech.armory.PegboardBlockEntity::new,
+                            java.util.Set.of(ModBlocks.PEGBOARD.get()), null));
+
+    /** Hoofdstuk 67: de Ammo Box (wat erin zit). */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.armory.AmmoBoxBlockEntity>> AMMO_BOX =
+            BLOCK_ENTITIES.register("ammo_box",
+                    () -> new BlockEntityType<>(com.senne.imttech.armory.AmmoBoxBlockEntity::new,
+                            java.util.Set.of(ModBlocks.AMMO_BOX.get()), null));
 }

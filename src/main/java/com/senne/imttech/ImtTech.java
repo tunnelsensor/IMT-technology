@@ -217,6 +217,11 @@ public class ImtTech {
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.guns.Firearms::onServerTick);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.guns.Firearms::onLoggedOut);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.guns.Firearms::onRightClickBlock);
+        // De armory (hoofdstuk 67): sneak + rechtsklik op een Ammo Box of Pegboard, en wie weggaat vergeten.
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.armory.AmmoBoxes::onRightClickBlock);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.armory.AmmoBoxes::onLoggedOut);
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->
+                com.senne.imttech.armory.AmmoBoxes.clear());
         // Hoofdstuk 52 (stap 2): wat je draagt valt op de grond als je doodgaat (zonder keepInventory).
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.guns.Gear::onDeath);
         // Hoofdstuk 52 (stap 3): iemand doodschieten geeft ervaring.
