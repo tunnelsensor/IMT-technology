@@ -97,7 +97,7 @@ public final class SuitRockets {
         }
         if (!ImtData.tryUseEnergy(glasses, ImtConfig.Suit.ROCKET_COST)) {
             ImtServer.send(player, Component.translatable("imt.imttech.msg.not_enough_energy",
-                    com.senne.imttech.config.Numbers.text(ImtConfig.Suit.ROCKET_COST)), ImtMessagePayload.Level.WARNING);
+                    com.senne.imttech.config.Numbers.amount(player, ImtConfig.Suit.ROCKET_COST)), ImtMessagePayload.Level.WARNING);
             return;
         }
 

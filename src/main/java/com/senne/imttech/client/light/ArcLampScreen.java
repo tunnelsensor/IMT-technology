@@ -101,9 +101,11 @@ public class ArcLampScreen extends Screen {
 
         addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> onClose())
                 .bounds(left + PANEL_W - MARGIN - DONE_W, footerY(), DONE_W, 20).build());
-        // Links van Done: stroom per tick, seconde, minuut of uur.
+        // Links van Done: stroom per tick, seconde, minuut of uur, en daarlinks hoe grote getallen eruitzien (hoofdstuk 66).
         addRenderableWidget(com.senne.imttech.client.PowerUnit.button(
                 left + PANEL_W - MARGIN - DONE_W - 4 - 50, footerY(), 50, 20));
+        addRenderableWidget(com.senne.imttech.client.PowerUnit.styleButton(
+                left + PANEL_W - MARGIN - DONE_W - 4 - 50 - 4 - 50, footerY(), 50, 20));
     }
 
     /** Een min-knop links en een plus-knop rechts van een schuifje. */

@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 454 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 455 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -5752,6 +5752,51 @@ achter je hoofd (of ervoor), dus zag je door de kijker je eigen hoofd, 4 keer in
       tests, groen (in een eerste ronde ging bij `glock_chamber_and_magazine_math` schot 6 niet af: de Glock-tests van
       de batch "guns" lopen tegelijk, en een test die eerder klaar was zette met `restore()` de kans op storingen terug
       voor deze test schoot; niets met de kijker te maken, de tweede ronde was helemaal groen).
+
+### 66. Grote getallen: 5 000, 5.000 of 5k (9 november)
+
+Jouw vraag: "Kun je zorgen dat bij het displayen van eenheden zoals 5000 FE je de optie hebt of scheiding met spatie 5 000
+of met punt 5.000 of gebruik grootheden zoals 5k FE of bijvoorbeeld 5000000 -> 5M FE".
+
+**Mijn keuzes:** vijf stijlen, **PLAIN** (5000, zoals vroeger), **SPACE** (5 000, de standaard: leest het makkelijkst en
+is overal hetzelfde), **DOT** (5.000, en dan een komma in kommagetallen: 0,5), **COMMA** (5,000, zoals in het Engels, voor
+wie de mod van CurseForge haalt) en **SHORT** (5k, 1.73M, 3G: drie cijfers die tellen). Het geldt voor stroom (FE en FE
+per tijd); blokken tellen (de app Zones) en RAM/SSD in Monitor blijven zoals ze waren.
+
+- [x] **De stijlen** — `config/NumberStyle`: `format` (hooguit twee cijfers na de komma, zoals `Numbers.text`; kort
+      rondt af naar de volgende eenheid, dus 999 999 wordt "1M" en niet "1000k"), `example` (5000 in die stijl, het
+      opschrift van het knopje) en `spoken` (voor de stem weer gewone cijfers: "1 500" las ze anders als "een vijfhonderd",
+      "5k" wordt "5 thousand"). De spatie is een harde spatie (U+00A0): Minecraft breekt een regel alleen op een gewone
+      spatie, dus "1 728 000 per hour" valt nooit in twee stukken. Minecraft kende die spatie niet (dan nam het een teken
+      uit unifont); `assets/minecraft/font/include/space.json` geeft hem de breedte van een gewone spatie.
+- [x] **Kiezen** — een knopje naast /tick in de generator, de Power Battery, de koepel en de Arc Lamp (er staat 5000 in
+      je stijl op), en G > Information > Numbers (I.M.T zegt daarna "Big numbers now look like 5 000."). Bewaard als
+      `numberStyle` in `imttech-client.toml`.
+- [x] **Overal** — `Numbers.amount`: de schermen van de generator (het getal in het midden, de tooltip, het net ernaast),
+      de Power Battery (STORED; de kop met de maat wordt afgekapt vóór de knopjes), het landingsplatform, het laadstation,
+      de koepel en de Arc Lamp (via `PowerUnit.rate`, dus ook alles per tick/seconde/minuut/uur), het G-menu (kosten en
+      ENERGY), de app Zones, de tooltip van de bril en het lijf van een robot, en de animaties van How it works. Past een
+      getal niet (het midden van de generator, STORED, het landingsplatform), dan kort, zoals het landingsplatform al deed
+      (die eigen `compact` is weg).
+- [x] **Meldingen van de server** — "Not enough energy. Required: 1 500 FE." en "No Battery Cells inside: each cell
+      stores 2 000 000 FE" maakt de server, die jouw instellingen niet kent. Je spel stuurt je stijl bij het inloggen en bij
+      elke wissel (`NumberStylePayload`, protocol 35); de server onthoudt hem per speler tot je uitlogt
+      (`Numbers.amount(player, ...)`). Wie nog niets liet weten, krijgt de standaard. Een onbekende stijl (een nieuwere
+      versie) wordt ook de standaard.
+- [x] **Test** — `number_styles_for_energy`: elke stijl, kommagetallen, een min, afronden in SHORT, de stem, en de server
+      die per speler onthoudt (heen en terug door het netwerk, en een stijl die hij niet kent). LEESMIJ aangepast. 455
+      tests, groen.
+- [x] **Bekeken in het spel** — `-Ponly=numbers`: de generator en de Power Battery in alle vijf stijlen (telkens met
+      een klik op het knopje, zoals een speler), het landingsplatform in alle vijf, het laadstation in drie, het G-menu
+      (Systems en Information) met punten, de koepel en de Arc Lamp met komma's. De harde spatie staat er als een gewone
+      spatie ("6 005 558 / 18 000 000 FE"). Wat ik zag en verbeterde: **Numbers** stond eerst als achtste optie op
+      Systems, en dan lagen de vakjes linksonder en rechtsonder over de hint "Scroll: tab · Release or click: choose"
+      (die staat daar lager, onder de info over de bril); nu staat Numbers op **Information**, bij Cable X-ray en Power
+      flow, en heeft Systems weer zijn zeven. In het **laadstation** liep "I.M.T energy: 10000 / 10000 FE" al rechts
+      buiten het scherm (met spaties nog iets verder): nu het kopje "I.M.T ENERGY (FE)" erboven en de getallen eronder
+      (kort als het niet past). Daar liep ook "Upgrades: lay the glasses on the Suit Workbench" buiten het scherm; nu
+      "Upgrades: on the Suit Workbench". Het knopje van de koepel paste niet in de rondleiding zonder koepel; die zet ze
+      nu eerst neer.
 
 ## Nog nooit in het spel bekeken
 

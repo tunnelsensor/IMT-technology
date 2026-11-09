@@ -55,7 +55,7 @@ public final class Batteries {
             serverPlayer.displayClientMessage(Component.translatable("battery.imttech.no_port").withStyle(ChatFormatting.RED), true);
             return;
         }
-        ModNetwork.sendTo(serverPlayer, stats(serverLevel, port, true));
+        ModNetwork.sendTo(serverPlayer, stats(serverLevel, port, true, serverPlayer));
     }
 
     /** Een scherm vraagt om nieuwe cijfers (elke seconde): sturen als de poort er nog is. */
@@ -65,12 +65,12 @@ public final class Batteries {
             return;
         }
         if (level.getBlockEntity(pos) instanceof BatteryPortBlockEntity port) {
-            ModNetwork.sendTo(player, stats(level, port.master(), false));
+            ModNetwork.sendTo(player, stats(level, port.master(), false, player));
         }
     }
 
-    /** Alles voor het scherm, uit de baas van de batterij. */
-    public static BatteryStatsPayload stats(ServerLevel level, BatteryPortBlockEntity port, boolean open) {
+    /** Alles voor het scherm van {@code viewer}, uit de baas van de batterij. */
+    public static BatteryStatsPayload stats(ServerLevel level, BatteryPortBlockEntity port, boolean open, ServerPlayer viewer) {
         BatteryStructure.Structure structure = port.structure();
         List<BatteryStatsPayload.Entry> generators = new ArrayList<>();
         for (BatteryPortBlockEntity.Use use : port.generators()) {
@@ -80,7 +80,12 @@ public final class Batteries {
         for (BatteryPortBlockEntity.Use use : port.devices()) {
             devices.add(new BatteryStatsPayload.Entry(use.name(), use.count(), use.perTick()));
         }
-        return new BatteryStatsPayload(port.getBlockPos(), open, structure != null, port.problem(),
+        // Geen cellen: erbij hoeveel één cel houdt, zoals deze speler grote getallen wil zien (hoofdstuk 66).
+        String problem = BatteryStructure.NO_CELLS.equals(port.problem())
+                ? port.problem() + ": each cell stores " + com.senne.imttech.config.Numbers.amount(viewer,
+                        com.senne.imttech.config.ImtConfig.Power.BATTERY_CELL_CAPACITY) + " FE"
+                : port.problem();
+        return new BatteryStatsPayload(port.getBlockPos(), open, structure != null, problem,
                 structure == null ? "" : structure.size(), structure == null ? 0 : structure.cells(),
                 port.stored(), port.capacityStored(), port.gridMade(), port.gridUsed(), port.gridMissed(),
                 generators, devices, port.historyMade(), port.historyUsed());

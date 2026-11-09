@@ -275,7 +275,7 @@ public final class ImtSuit {
         }
         if (!ImtData.tryUseEnergy(glasses, ImtConfig.Suit.LASER_CANNON_COST)) {
             ImtServer.send(player, Component.translatable("imt.imttech.msg.not_enough_energy",
-                    com.senne.imttech.config.Numbers.text(ImtConfig.Suit.LASER_CANNON_COST)), ImtMessagePayload.Level.WARNING);
+                    com.senne.imttech.config.Numbers.amount(player, ImtConfig.Suit.LASER_CANNON_COST)), ImtMessagePayload.Level.WARNING);
             return;
         }
 

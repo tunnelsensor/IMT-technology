@@ -2462,6 +2462,122 @@ public final class VisualCheck {
             t.close(0);
         }
 
+        // --- Hoofdstuk 66: hoe grote getallen eruitzien (5000, 5 000, 5.000, 5,000, 5k). De warmtegenerator met holotafels,
+        // de Power Battery, het landingsplatform, het laadstation, het G-menu, de koepel en de Arc Lamp, in elke stijl; de
+        // stijl wisselt met een klik op het knopje naast /tick, zoals een speler dat doet.
+        if (want("numbers")) {
+            BlockPos at = new BlockPos(-8, -60, 4);
+            BlockPos padAt = new BlockPos(-4, -61, -4);
+            BlockPos lampAt = new BlockPos(-12, -60, 8);
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setBlockAndUpdate(at, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+                if (level.getBlockEntity(at) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
+                    generator.setItem(com.senne.imttech.station.ChargerBlockEntity.SLOT_FUEL,
+                            new ItemStack(net.minecraft.world.item.Items.COAL, 8));
+                    generator.fill(45_678);
+                }
+                for (BlockPos table : new BlockPos[] {at.east(), at.west(), at.north()}) {
+                    level.setBlockAndUpdate(table, ModBlocks.HOLO_TABLE.get().defaultBlockState());
+                }
+                level.setBlockAndUpdate(padAt.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+                level.setBlockAndUpdate(padAt, ModBlocks.LANDING_PAD.get().defaultBlockState());
+                if (level.getBlockEntity(padAt.below()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
+                    generator.fill(200_000);
+                }
+                if (level.getBlockEntity(padAt) instanceof com.senne.imttech.suit.LandingPadBlockEntity pad) {
+                    pad.setOwner(player.getUUID());
+                    pad.cells().setItem(0, new ItemStack(ModItems.BATTERY_UPGRADE.get(), 2));
+                }
+                level.setBlockAndUpdate(lampAt, ModBlocks.ARC_LAMP.get().defaultBlockState());
+                buildBatteryYard(player, BATTERY_YARD);
+            });
+            t.step(0, () -> com.senne.imttech.client.ImtClientConfig.setPowerUnit(com.senne.imttech.client.PowerUnit.HOUR));
+            t.step(0, () -> com.senne.imttech.client.ImtClientConfig.setNumberStyle(com.senne.imttech.config.NumberStyle.PLAIN));
+            t.stand(10, at.getX() + 0.5, -60, at.getZ() + 3.5, 180, 25);
+            // De generator (het net meet eerst 6 seconden): elke stijl een foto, het knopje telkens een keer verder.
+            t.onServer(150, player -> {
+                if (player.serverLevel().getBlockEntity(at) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
+                    player.openMenu(generator, buffer -> buffer.writeBoolean(generator.usesFuel()));
+                }
+            });
+            for (com.senne.imttech.config.NumberStyle style : com.senne.imttech.config.NumberStyle.values()) {
+                t.shot(20, "nb01_generator_" + style.name().toLowerCase());
+                t.step(0, VisualCheck::clickNumberStyleButton);
+            }
+            t.close(0);
+            // De Power Battery: de doos met de poorten en cellen (het knopje staat nu weer op PLAIN).
+            BlockPos port = BATTERY_YARD.offset(0, 0, 2);
+            t.view(10, BATTERY_YARD.getX() + 2.5, BATTERY_YARD.getY() + 1.6, BATTERY_YARD.getZ() + 7.5, 180, 5);
+            t.onServer(20, player -> {
+                if (player.serverLevel().getBlockEntity(port) instanceof com.senne.imttech.battery.BatteryPortBlockEntity entity) {
+                    entity.tourHistory();
+                }
+                com.senne.imttech.battery.Batteries.open(player.serverLevel(), port, player);
+            });
+            for (com.senne.imttech.config.NumberStyle style : com.senne.imttech.config.NumberStyle.values()) {
+                t.shot(20, "nb02_battery_" + style.name().toLowerCase());
+                t.step(0, VisualCheck::clickNumberStyleButton);
+            }
+            t.close(0);
+            // Het landingsplatform en het laadstation hebben geen knopje: de stijl uit de instellingen.
+            t.stand(0, padAt.getX() + 0.5, -60, padAt.getZ() + 2.5, 180, 30);
+            for (com.senne.imttech.config.NumberStyle style : com.senne.imttech.config.NumberStyle.values()) {
+                t.step(0, () -> com.senne.imttech.client.ImtClientConfig.setNumberStyle(style));
+                t.onServer(style == com.senne.imttech.config.NumberStyle.PLAIN ? 60 : 5, player -> {
+                    if (player.serverLevel().getBlockEntity(padAt) instanceof com.senne.imttech.suit.LandingPadBlockEntity pad) {
+                        player.openMenu(pad, padAt);
+                    }
+                });
+                t.shot(20, "nb03_pad_" + style.name().toLowerCase());
+                t.close(0);
+            }
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setBlockAndUpdate(padAt.east(3), ModBlocks.CHARGING_STATION.get().defaultBlockState());
+                if (level.getBlockEntity(padAt.east(3)) instanceof com.senne.imttech.station.ChargingStationBlockEntity station) {
+                    ItemStack glasses = DevWorld.ownGlasses(player);
+                    com.senne.imttech.imt.ImtData.setEnergy(glasses, 87_654);
+                    station.setItem(com.senne.imttech.station.ChargingStationBlockEntity.SLOT_GLASSES, glasses);
+                }
+            });
+            for (com.senne.imttech.config.NumberStyle style : new com.senne.imttech.config.NumberStyle[] {
+                    com.senne.imttech.config.NumberStyle.PLAIN, com.senne.imttech.config.NumberStyle.SPACE,
+                    com.senne.imttech.config.NumberStyle.SHORT}) {
+                t.step(0, () -> com.senne.imttech.client.ImtClientConfig.setNumberStyle(style));
+                t.onServer(5, player -> {
+                    if (player.serverLevel().getBlockEntity(padAt.east(3)) instanceof com.senne.imttech.station.ChargingStationBlockEntity station) {
+                        player.openMenu(station);
+                    }
+                });
+                t.shot(20, "nb04_station_" + style.name().toLowerCase());
+                t.close(0);
+            }
+            // Het G-menu in de stijl met punten: Systems (de energie van de bril) en Information (de optie Numbers).
+            t.step(0, () -> com.senne.imttech.client.ImtClientConfig.setNumberStyle(com.senne.imttech.config.NumberStyle.DOT));
+            t.view(0, 0.5, -60, -3.2, 0, 22);
+            t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.SYSTEMS);
+            t.open(20, ImtMenuScreen::new);
+            t.shot(20, "nb05_menu_systems_dot");
+            t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.INFORMATION);
+            t.shot(10, "nb05b_menu_information_dot");
+            t.close(0);
+            t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.COMBAT);
+            // De koepel en de Arc Lamp: de twee knopjes naast elkaar.
+            t.step(0, () -> com.senne.imttech.client.ImtClientConfig.setNumberStyle(com.senne.imttech.config.NumberStyle.COMMA));
+            t.onServer(0, VisualCheck::buildDome);
+            t.open(10, () -> new DomeScreen(DOME));
+            t.shot(20, "nb06_dome_comma");
+            t.close(0);
+            t.stand(0, lampAt.getX() + 0.5, -60, lampAt.getZ() + 3.5, 180, 30);
+            t.onServer(10, player -> com.senne.imttech.light.ArcLamps.open(player, lampAt));
+            t.shot(20, "nb07_lamp_comma");
+            t.close(0);
+            // Terug naar de standaard, zodat de rest van de rondleiding (en de volgende keer) zoals altijd begint.
+            t.step(0, () -> com.senne.imttech.client.ImtClientConfig.setNumberStyle(com.senne.imttech.config.NumberStyle.DEFAULT));
+            t.step(0, () -> com.senne.imttech.client.ImtClientConfig.setPowerUnit(com.senne.imttech.client.PowerUnit.TICK));
+        }
+
         // --- Satellietraketten: eentje die valt en inslaat (precisie), en een bombardement
         if (want("missile")) {
             BlockPos aim = new BlockPos(30, -60, -30); // op een lege plek, ver van de heuvel
@@ -5075,6 +5191,23 @@ public final class VisualCheck {
                 return;
             }
         }
+    }
+
+    /** Klikt op het knopje met de stijl van grote getallen (naast /tick) in het scherm dat open staat (hoofdstuk 66). */
+    private static void clickNumberStyleButton() {
+        if (Minecraft.getInstance().screen == null) {
+            return;
+        }
+        String label = com.senne.imttech.config.NumberStyle.local().example();
+        for (var child : Minecraft.getInstance().screen.children()) {
+            if (child instanceof net.minecraft.client.gui.components.Button button && button.getMessage().getString().equals(label)) {
+                button.onPress();
+                com.senne.imttech.ImtTech.LOGGER.info("[dev] numbers: style {} ({})",
+                        com.senne.imttech.config.NumberStyle.local(), com.senne.imttech.config.NumberStyle.local().example());
+                return;
+            }
+        }
+        com.senne.imttech.ImtTech.LOGGER.warn("[dev] numbers: no style button '{}' on {}", label, Minecraft.getInstance().screen);
     }
 
     private static void crashSite(DevScript t) {

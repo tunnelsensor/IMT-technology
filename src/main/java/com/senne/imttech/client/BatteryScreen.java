@@ -2,6 +2,8 @@ package com.senne.imttech.client;
 
 import com.senne.imttech.client.hud.HudStyle;
 import com.senne.imttech.client.hud.PowerReadout;
+import com.senne.imttech.config.NumberStyle;
+import com.senne.imttech.config.Numbers;
 import com.senne.imttech.network.BatteryRequestPayload;
 import com.senne.imttech.network.BatteryStatsPayload;
 import java.util.List;
@@ -17,8 +19,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
  * de enige plek waar je het hele stroomnet ziet: een zonnepaneel zegt alleen nog wat het zelf maakt.
  *
  * <pre>
- *  POWER BATTERY  5 x 4 x 5, 27 cells                 [/tick]
- *  STORED  [==========      ]  123,456 / 27,000,000 FE (0%)
+ *  POWER BATTERY  5 x 4 x 5, 27 cells         [5 000] [/tick]
+ *  STORED  [==========      ]  123 456 / 27 000 000 FE (0%)
  *  Makes 48 per tick    Uses 31 per tick    Short 0
  *  Enough: 17 per tick to spare                 +--------------+
  *  GENERATORS                                   |   grafiek    |
@@ -60,6 +62,8 @@ public class BatteryScreen extends Screen {
         int x = (width - W) / 2;
         int y = (height - H) / 2;
         addRenderableWidget(PowerUnit.button(x + W - 8 - 34, y + 6, 34, 12));
+        // Links ervan (hoofdstuk 66): hoe grote getallen eruitzien, 5000, 5 000, 5.000, 5,000 of 5k.
+        addRenderableWidget(PowerUnit.styleButton(x + W - 8 - 34 - 4 - 34, y + 6, 34, 12));
     }
 
     /** Elke tick nieuwe cijfers vragen (4 november: zo zie je de opslag echt lopen). */
@@ -91,7 +95,9 @@ public class BatteryScreen extends Screen {
         // Kop: de naam, de maat en de cellen.
         g.drawString(font, Component.translatable("battery.imttech.title").getString().toUpperCase(), x + 8, y + 8, cyan, false);
         String size = stats.formed() ? stats.size() + ", " + stats.cells() + (stats.cells() == 1 ? " cell" : " cells") : "";
-        g.drawString(font, size, x + 8 + font.width("POWER BATTERY") + 8, y + 8, grey, false);
+        // Tot vlak voor de twee knopjes rechtsboven (een grote batterij: "18 x 18 x 18, 4096 cells").
+        int sizeX = x + 8 + font.width("POWER BATTERY") + 8;
+        g.drawString(font, fit(size, x + W - 8 - 34 - 4 - 34 - 6 - sizeX), sizeX, y + 8, grey, false);
         int line = y + 24;
         if (!stats.formed()) {
             // Geen batterij: waarom niet, en hoe het hoort.
@@ -118,7 +124,12 @@ public class BatteryScreen extends Screen {
             g.fillGradient(barX + 1, line, barX + 1 + fill, line + 8, HudStyle.argb(255, 0xFFE07F), HudStyle.argb(255, 0xB56B12));
         }
         line += 12;
-        String stored = String.format("%,d / %,d FE (%d%%)", stats.energy(), stats.capacity(), Math.round(fraction * 100));
+        // Zoals je getallen wilt zien (hoofdstuk 66); past het niet in de breedte van de balk, dan kort ("2.46M / 27M FE").
+        String percent = " FE (" + Math.round(fraction * 100) + "%)";
+        String stored = Numbers.amount(stats.energy()) + " / " + Numbers.amount(stats.capacity()) + percent;
+        if (font.width(stored) > barW) {
+            stored = NumberStyle.SHORT.format(stats.energy()) + " / " + NumberStyle.SHORT.format(stats.capacity()) + percent;
+        }
         g.drawString(font, stored, x + 52, line, white, false);
         line += 14;
         // Links: maakt, gebruikt en tekort, elk op een eigen regel (zo lopen ze nooit over elkaar), en het oordeel.

@@ -155,7 +155,7 @@ toets.
 | **Transport** | Zelf vliegen, autopiloot, vrachtdrone, iemand vervoeren |
 | **Tech** | Redstone-relais, muziek (Spotify), hacken |
 | **Illusion** | Valse muur, nep-leger, onzichtbaar veld, stoppen |
-| **Information** | Ertsen-scan, dreigingsscan, doelwit-analyse, kabel-xray (verborgen kabels zien), zonerand |
+| **Information** | Ertsen-scan, dreigingsscan, doelwit-analyse, kabel-xray (verborgen kabels zien), zonerand, Numbers (hoe grote getallen eruitzien: 5 000, 5.000, 5k...) |
 | **Navigation** | Waypoints, ping, comms |
 | **Systems** | Eigendom overdragen, stem, spraakbesturing, commando's bewerken, spraaktekst, nachtzicht |
 
@@ -2262,7 +2262,7 @@ beveiligingskern, zie "Het datacenter"); zonder luistert ze niet. In creative ho
 | Bestand | Wat |
 |---------|-----|
 | `config/imttech.toml` | **Alle getallen van de mod** (ruim 390), in hoofdstukken: wat mag er (`[rules]`: hacken, zakkenrollen, raids aan/uit), de bril, **alle stroom** (`[power]`: wat elk blok opwekt, opslaat en gebruikt), drones, de satelliet **per upgrade-niveau**, harnas, torentjes, beveiliging, datacenter, granaten en lasers, de Glock 19 (`[guns]`), guard robots, Raven, de bewakers zoals in Hitman (`[guards]`: zien, horen, de radio, het team, lichamen, de sluipaanval), raids... |
-| `config/imttech-client.toml` | Stem, volume, spraaktekst, Spotify Client ID, GPU voor de AI, het zachte zoemen van de rayshields (`rayshieldHumVolume`: 1 = normaal, 2 = dubbel zo hard, 0 = uit), het laadzoemen van de guard robots (`robotHumVolume`, net zo), de rotors van de security drones (`droneRotorVolume`, net zo), de geluidjes in de animaties van How it works (`howToVolume`, net zo), de rand van zones (`zoneBorder`) |
+| `config/imttech-client.toml` | Stem, volume, spraaktekst, Spotify Client ID, GPU voor de AI, hoe stroom en grote getallen eruitzien (`powerUnit`, `numberStyle`), het zachte zoemen van de rayshields (`rayshieldHumVolume`: 1 = normaal, 2 = dubbel zo hard, 0 = uit), het laadzoemen van de guard robots (`robotHumVolume`, net zo), de rotors van de security drones (`droneRotorVolume`, net zo), de geluidjes in de animaties van How it works (`howToVolume`, net zo), de rand van zones (`zoneBorder`) |
 | `config/imttech-voice.json` | Alle spraakcommando's (zelf uit te breiden) |
 | `config/imttech-spotify.json` | Je Spotify-token (niet delen) |
 | `src/main/java/.../config/ImtConfig.java` | De standaardwaarden van al die getallen, met uitleg in het Nederlands, plus een paar vaste getallen die niet in het `.toml`-bestand kunnen |
@@ -2287,6 +2287,16 @@ het neerzetten duurt het even.
 In de schermen van de **generator**, de **koepel** en de **Arc Lamp** zit een knopje **/tick**. Klik erop om
 stroom te zien **per tick, per seconde, per minuut of per uur**. De keuze geldt meteen voor alle schermen
 (ook het verbruik in het G-menu en de app Zones) en blijft bewaard (`powerUnit` in `imttech-client.toml`).
+
+Het knopje **ernaast** (in de generator en de Power Battery links van /tick, in de koepel en de Arc Lamp ook)
+kiest hoe **grote getallen** eruitzien: **5000**, **5 000** (de standaard), **5.000** (dan staat er een
+komma in kommagetallen: 0,5), **5,000** of kort: **5k**, **1.73M**, **3G**. Op het knopje staat 5000 in
+de stijl die je nu hebt. Het kan ook via **G > Information > Numbers**. Het geldt voor alle stroomgetallen:
+de schermen (ook het landingsplatform en het laadstation), de tooltip van de bril, de kosten in het
+G-menu, en ook de meldingen van I.M.T ("Not enough energy. Required: 1 500 FE."): je spel vertelt de
+server welke stijl je hebt, dus op een server ziet iedereen zijn eigen keuze. De stem leest de getallen
+gewoon als getal. Past een getal niet in een scherm, dan staat het er kort (bv. "45.7k"). Bewaard als
+`numberStyle` in `imttech-client.toml` (PLAIN, SPACE, DOT, COMMA of SHORT).
 Let op: verander je een standaardwaarde in `ImtConfig.java`, dan verandert een bestaand
 `imttech.toml` niet mee. Pas dan het `.toml`-bestand aan, of gooi het weg (dan maakt het spel een
 nieuw).

@@ -2,9 +2,12 @@ package com.senne.imttech.gametest;
 
 import com.senne.imttech.ImtTech;
 import com.senne.imttech.config.ImtConfig;
+import com.senne.imttech.config.NumberStyle;
+import com.senne.imttech.config.Numbers;
 import com.senne.imttech.energy.FeBridge;
 import com.senne.imttech.energy.PowerGrid;
 import com.senne.imttech.imt.ImtData;
+import com.senne.imttech.network.NumberStylePayload;
 import com.senne.imttech.registry.ModBlocks;
 import com.senne.imttech.registry.ModDataComponents;
 import com.senne.imttech.registry.ModItems;
@@ -104,5 +107,58 @@ public final class FeGameTests {
         ImtData.setEnergy(full, ImtData.getMaxEnergy(full));
         check(ImtData.getEnergy(full) == Math.round(ImtConfig.Glasses.BASE_CAPACITY), "Een volle bril zou " + ImtConfig.Glasses.BASE_CAPACITY + " FE moeten hebben");
         helper.succeed();
+    }
+
+    /**
+     * Hoofdstuk 66 (jouw wens: "scheiding met spatie 5 000 of met punt 5.000 of gebruik grootheden zoals 5k FE"): elke
+     * stijl zet een getal goed neer (ook kommagetallen, afronden naar de volgende eenheid en een min), de stem krijgt weer
+     * gewone cijfers, en de server onthoudt per speler welke stijl hij koos, ook na een reis door het netwerk.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "fe")
+    public static void number_styles_for_energy(GameTestHelper helper) {
+        String hard = String.valueOf(NumberStyle.HARD_SPACE);
+        same(NumberStyle.PLAIN.format(5000), "5000");
+        same(NumberStyle.SPACE.format(5000), "5" + hard + "000");
+        same(NumberStyle.DOT.format(5000), "5.000");
+        same(NumberStyle.COMMA.format(5000), "5,000");
+        same(NumberStyle.SHORT.format(5000), "5k");
+        same(NumberStyle.SHORT.format(5_000_000), "5M");
+        // Kommagetallen: hooguit twee cijfers erachter; met punten ertussen wordt de komma het teken ervoor.
+        same(NumberStyle.SPACE.format(1_234_567.5), "1" + hard + "234" + hard + "567.5");
+        same(NumberStyle.DOT.format(1_234_567.5), "1.234.567,5");
+        same(NumberStyle.COMMA.format(1_234_567.5), "1,234,567.5");
+        same(NumberStyle.DOT.format(0.35), "0,35");
+        same(NumberStyle.SPACE.format(999), "999");
+        same(NumberStyle.SPACE.format(-1500), "-1" + hard + "500");
+        same(NumberStyle.SPACE.format(-0.001), "0");
+        // Kort: drie cijfers die tellen, en afgerond naar de volgende eenheid (nooit "1000k").
+        same(NumberStyle.SHORT.format(2456), "2.46k");
+        same(NumberStyle.SHORT.format(24_600), "24.6k");
+        same(NumberStyle.SHORT.format(1_728_000), "1.73M");
+        same(NumberStyle.SHORT.format(999_999), "1M");
+        same(NumberStyle.SHORT.format(999.999), "1k");
+        same(NumberStyle.SHORT.format(999.5), "999.5");
+        same(NumberStyle.SHORT.format(3_000_000_000.0), "3G");
+        // De stem leest gewone cijfers.
+        same(NumberStyle.SPACE.spoken("Required: 1" + hard + "500 FE."), "Required: 1500 FE.");
+        same(NumberStyle.DOT.spoken("Uses 1.728.000 per hour, 0,5 per tick"), "Uses 1728000 per hour, 0.5 per tick");
+        same(NumberStyle.COMMA.spoken("1,500 FE"), "1500 FE");
+        same(NumberStyle.SHORT.spoken("5k FE, 2.5M FE"), "5 thousand FE, 2.5 million FE");
+        // De server: per speler, wat zijn spel stuurde (heen en terug door het netwerk); nog niets gehoord = de standaard.
+        net.minecraft.server.level.ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        same(Numbers.amount(player, 5000), NumberStyle.DEFAULT.format(5000));
+        io.netty.buffer.ByteBuf buffer = io.netty.buffer.Unpooled.buffer();
+        NumberStylePayload.STREAM_CODEC.encode(buffer, new NumberStylePayload(NumberStyle.SHORT));
+        NumberStyle.remember(player, NumberStylePayload.STREAM_CODEC.decode(buffer).style());
+        same(Numbers.amount(player, 5_000_000), "5M");
+        net.minecraft.network.codec.ByteBufCodecs.VAR_INT.encode(buffer, 99); // een stijl die deze versie niet kent
+        check(NumberStylePayload.STREAM_CODEC.decode(buffer).style() == NumberStyle.DEFAULT, "Een onbekende stijl zou de standaard moeten worden");
+        NumberStyle.forget(player.getUUID());
+        same(Numbers.amount(player, 5000), NumberStyle.DEFAULT.format(5000));
+        helper.succeed();
+    }
+
+    private static void same(String actual, String expected) {
+        check(actual.equals(expected), "Verwacht '" + expected + "', maar kreeg '" + actual + "'");
     }
 }

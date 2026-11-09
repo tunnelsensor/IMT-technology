@@ -13,7 +13,6 @@ import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.station.HeatGeneratorBlock;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -57,8 +56,9 @@ public final class PowerScenes {
         BlockState cell = ModBlocks.BATTERY_CELL.get().defaultBlockState();
         BlockState port = ModBlocks.BATTERY_PORT.get().defaultBlockState();
         int max = ImtConfig.Power.BATTERY_MAX_SIZE;
-        String capacity = String.format(Locale.ROOT, "%,d", Math.round(ImtConfig.Power.BATTERY_CELL_CAPACITY));
-        String rate = String.format(Locale.ROOT, "%,d", Math.round(ImtConfig.Power.BATTERY_CHARGE_RATE));
+        // Zoals jij grote getallen wilt zien (hoofdstuk 66).
+        String capacity = com.senne.imttech.config.Numbers.amount(Math.round(ImtConfig.Power.BATTERY_CELL_CAPACITY));
+        String rate = com.senne.imttech.config.Numbers.amount(Math.round(ImtConfig.Power.BATTERY_CHARGE_RATE));
 
         HowToSceneBuilder s = new HowToSceneBuilder("power_battery", "Building a Power Battery").plate(9, 9);
         s.idle(12);
@@ -173,8 +173,8 @@ public final class PowerScenes {
      * magma, lava of vuur, en dat een apparaat dat ertegen staat geen kabel nodig heeft.
      */
     public static List<HowToScene> makingPower() {
-        String solar = String.format(Locale.ROOT, "%,d", Math.round(ImtConfig.Power.SOLAR_RATE));
-        String fuel = String.format(Locale.ROOT, "%,d", Math.round(ImtConfig.Power.HEAT_RATE_FUEL));
+        String solar = com.senne.imttech.config.Numbers.amount(Math.round(ImtConfig.Power.SOLAR_RATE));
+        String fuel = com.senne.imttech.config.Numbers.amount(Math.round(ImtConfig.Power.HEAT_RATE_FUEL));
         HowToSceneBuilder s = new HowToSceneBuilder("making_power", "Making power").plate(7, 5);
         s.idle(8);
         s.chapter("Solar panels");

@@ -3,6 +3,8 @@ package com.senne.imttech.client;
 import com.senne.imttech.client.hud.HudStyle;
 import com.senne.imttech.ImtTech;
 import com.senne.imttech.config.ImtConfig;
+import com.senne.imttech.config.NumberStyle;
+import com.senne.imttech.config.Numbers;
 import com.senne.imttech.imt.ImtData;
 import com.senne.imttech.station.ChargingStationMenu;
 import net.minecraft.client.gui.GuiGraphics;
@@ -58,8 +60,17 @@ public class ChargingStationScreen extends AbstractContainerScreen<ChargingStati
         ItemStack glasses = menu.getGlasses();
         int textX = ChargingStationMenu.GLASSES_X + 24;
         if (ImtData.isGlasses(glasses)) {
-            small(g, Component.translatable("screen.imttech.station.glasses_energy", ImtData.getEnergy(glasses),
-                    ImtData.getMaxEnergy(glasses)).getString(), textX, ChargingStationMenu.GLASSES_Y + 2, HudStyle.argb(230, HudStyle.WHITE));
+            // Twee regels (hoofdstuk 66): het kopje erboven, de getallen eronder, zoals je getallen wilt zien. Op één regel liep
+            // "I.M.T energy: 10000 / 10000 FE" rechts buiten het scherm; past het getal nog niet, dan kort ("100k / 100k").
+            small(g, Component.translatable("screen.imttech.station.glasses_label").getString().toUpperCase(), textX,
+                    ChargingStationMenu.GLASSES_Y - 5, dim);
+            int energy = ImtData.getEnergy(glasses);
+            int max = ImtData.getMaxEnergy(glasses);
+            String numbers = Numbers.amount(energy) + " / " + Numbers.amount(max);
+            if (font.width(numbers) * 0.75f > imageWidth - 7 - textX) {
+                numbers = NumberStyle.SHORT.format(energy) + " / " + NumberStyle.SHORT.format(max);
+            }
+            small(g, numbers, textX, ChargingStationMenu.GLASSES_Y + 2, HudStyle.argb(230, HudStyle.WHITE));
             HudStyle.bar(g, textX, ChargingStationMenu.GLASSES_Y + 11, 60, 3, ImtData.getEnergyFraction(glasses), HudStyle.CYAN);
         } else if (glasses.getItem() instanceof com.senne.imttech.weapons.EnergyCellItem) {
             small(g, glasses.getHoverName().getString(), textX, ChargingStationMenu.GLASSES_Y + 2, HudStyle.argb(230, HudStyle.WHITE));
@@ -84,7 +95,7 @@ public class ChargingStationScreen extends AbstractContainerScreen<ChargingStati
         renderTooltip(g, mouseX, mouseY);
         if (isHovering(STATION_BAR_X, STATION_BAR_Y, STATION_BAR_W, STATION_BAR_H, mouseX, mouseY)) {
             g.renderTooltip(font, Component.translatable("screen.imttech.station.energy",
-                    menu.getStationEnergy(), (int) ImtConfig.Power.STATION_CAPACITY), mouseX, mouseY);
+                    Numbers.amount(menu.getStationEnergy()), Numbers.amount(ImtConfig.Power.STATION_CAPACITY)), mouseX, mouseY);
         }
     }
 }

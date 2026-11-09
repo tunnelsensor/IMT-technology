@@ -458,7 +458,7 @@ public final class ImtRedstone {
         }
         if (!ImtData.tryUseEnergy(glasses, ImtConfig.Relays.COST * targets.size())) {
             ImtServer.send(player, Component.translatable("imt.imttech.msg.not_enough_energy",
-                    com.senne.imttech.config.Numbers.text(ImtConfig.Relays.COST * targets.size())), ImtMessagePayload.Level.WARNING);
+                    com.senne.imttech.config.Numbers.amount(player, ImtConfig.Relays.COST * targets.size())), ImtMessagePayload.Level.WARNING);
             return;
         }
         MinecraftServer server = player.getServer();

@@ -245,6 +245,9 @@ public class ImtTech {
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.pickpocket.Pickpocket::onEntityInteract);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.pickpocket.Pickpocket::onServerTick);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.pickpocket.Pickpocket::onPlayerLoggedOut);
+        // Hoofdstuk 66: hoe deze speler grote getallen wil zien, vergeten als hij uitlogt (zijn spel vertelt het opnieuw).
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) ->
+                com.senne.imttech.config.NumberStyle.forget(event.getEntity().getUUID()));
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.pickpocket.Pickpocket::onServerStopped);
         // Handboeien (hoofdstuk 48): elke tick trekken en worstelen; een geboeide speler kan niets met zijn handen.
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.cuffs.Handcuffs::onServerTick);

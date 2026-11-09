@@ -126,7 +126,7 @@ final class ZoneApp {
         g.drawString(font, status, a.x(), a.y() + 1, HudStyle.argb(255, colour), false);
         com.senne.imttech.client.PowerUnit unit = com.senne.imttech.client.PowerUnit.current();
         String info = String.format("%,d blocks · power %s + %s", zone.getLong("volume"),
-                com.senne.imttech.config.Numbers.text(zone.getDouble("coreUpkeep") / 40.0 * unit.ticks()),
+                com.senne.imttech.config.Numbers.amount(zone.getDouble("coreUpkeep") / 40.0 * unit.ticks()),
                 unit.rate(zone.getInt("upkeep") / 40.0).getString());
         g.drawString(font, info, a.x() + a.w() - font.width(info), a.y() + 1, HudStyle.argb(255, OsDraw.GREY), false);
 

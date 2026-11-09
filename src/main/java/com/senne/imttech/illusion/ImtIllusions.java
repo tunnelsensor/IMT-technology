@@ -176,7 +176,7 @@ public final class ImtIllusions {
         // Betalen doen we pas bij het neerzetten, maar genoeg energie moet er nu al zijn.
         if (ImtData.getExactEnergy(glasses) < ImtConfig.Illusions.COST) {
             ImtServer.send(owner, Component.translatable("imt.imttech.msg.not_enough_energy",
-                    com.senne.imttech.config.Numbers.text(ImtConfig.Illusions.COST)), ImtMessagePayload.Level.WARNING);
+                    com.senne.imttech.config.Numbers.amount(owner, ImtConfig.Illusions.COST)), ImtMessagePayload.Level.WARNING);
             return;
         }
         if (kind == IllusionScene.Kind.CLOAK) {
@@ -231,7 +231,7 @@ public final class ImtIllusions {
         if (glasses == null || countOf(owner) >= Math.round(ImtConfig.Illusions.MAX_ACTIVE)
                 || !ImtData.tryUseEnergy(glasses, ImtConfig.Illusions.COST)) {
             ImtServer.send(owner, Component.translatable("imt.imttech.msg.not_enough_energy",
-                    com.senne.imttech.config.Numbers.text(ImtConfig.Illusions.COST)), ImtMessagePayload.Level.WARNING);
+                    com.senne.imttech.config.Numbers.amount(owner, ImtConfig.Illusions.COST)), ImtMessagePayload.Level.WARNING);
             drone.recall(owner.serverLevel());
             return;
         }

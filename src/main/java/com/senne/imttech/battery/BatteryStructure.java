@@ -28,6 +28,9 @@ public final class BatteryStructure {
     /** Zoveel wandblokken volgen we hooguit (een doos van 18 x 18 x 18 heeft er 1736). */
     private static final int MAX_SHELL = 4000;
 
+    /** Wat de poort zegt als er geen cellen in de doos zitten (Batteries.stats zet er de inhoud van een cel achter). */
+    public static final String NO_CELLS = "No Battery Cells inside";
+
     /**
      * Een gevormde batterij.
      *
@@ -150,7 +153,8 @@ public final class BatteryStructure {
             return new Result(null, "No Battery Port in the wall: that is where the cables connect");
         }
         if (cells == 0) {
-            return new Result(null, "No Battery Cells inside: each cell stores " + String.format("%,d", Math.round(ImtConfig.Power.BATTERY_CELL_CAPACITY)) + " FE");
+            // Hoeveel een cel houdt, komt er pas bij als het naar een scherm gaat: in de stijl van wie kijkt (Batteries.stats).
+            return new Result(null, NO_CELLS);
         }
         ports.sort(null);
         return new Result(new Structure(min, max, cells, List.copyOf(ports)), "");

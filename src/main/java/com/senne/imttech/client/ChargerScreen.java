@@ -1,6 +1,8 @@
 package com.senne.imttech.client;
 
 import com.senne.imttech.client.hud.HudStyle;
+import com.senne.imttech.config.NumberStyle;
+import com.senne.imttech.config.Numbers;
 import com.senne.imttech.ImtTech;
 import com.senne.imttech.station.ChargerMenu;
 import com.senne.imttech.client.hud.PowerReadout;
@@ -61,6 +63,8 @@ public class ChargerScreen extends AbstractContainerScreen<ChargerMenu> {
         super.init();
         // Rechtsboven: per tick, per seconde, per minuut of per uur (geldt voor alle stroomschermen).
         addRenderableWidget(PowerUnit.button(leftPos + imageWidth - 7 - 34, topPos + 4, 34, 12));
+        // Links ervan (hoofdstuk 66): hoe grote getallen eruitzien, 5000, 5 000, 5.000, 5,000 of 5k.
+        addRenderableWidget(PowerUnit.styleButton(leftPos + imageWidth - 7 - 34 - 4 - 34, topPos + 4, 34, 12));
     }
 
     @Override
@@ -120,8 +124,8 @@ public class ChargerScreen extends AbstractContainerScreen<ChargerMenu> {
         // Sinds hoofdstuk 47 (jouw keuze) zie je het hele net alleen nog in de Power Battery; hier alleen dit apparaat.
         if (overBuffer(mouseX, mouseY)) {
             g.renderComponentTooltip(font, List.<Component>of(
-                    Component.translatable("screen.imttech.charger.stored", menu.getEnergy(), capacity()),
-                    Component.translatable("screen.imttech.charger.total", menu.getTotalProduced()),
+                    Component.translatable("screen.imttech.charger.stored", Numbers.amount(menu.getEnergy()), Numbers.amount(capacity())),
+                    Component.translatable("screen.imttech.charger.total", Numbers.amount(menu.getTotalProduced())),
                     status()), mouseX, mouseY);
         }
     }
@@ -156,7 +160,7 @@ public class ChargerScreen extends AbstractContainerScreen<ChargerMenu> {
             add(lines, colours, Component.translatable("screen.imttech.grid.sources", menu.gridSources()), grey);
             add(lines, colours, Component.translatable("screen.imttech.grid.makes", unit.rate(made)), white);
             add(lines, colours, Component.translatable("screen.imttech.grid.uses", unit.rate(used)), white);
-            add(lines, colours, Component.translatable("screen.imttech.grid.stored", stored, room), white);
+            add(lines, colours, Component.translatable("screen.imttech.grid.stored", Numbers.amount(stored), Numbers.amount(room)), white);
             // Het oordeel: komt er een apparaat tekort, haalt het net meer weg dan erbij komt, of is het genoeg?
             Component verdict;
             int colour;
@@ -236,12 +240,24 @@ public class ChargerScreen extends AbstractContainerScreen<ChargerMenu> {
         int dim = HudStyle.argb(170, HudStyle.ORANGE);
         int value = HudStyle.argb(240, HudStyle.WHITE);
         smallCentred(g, Component.translatable("screen.imttech.charger.label_stored").getString().toUpperCase(), STATS_CX, 16, dim);
-        g.drawCenteredString(font, menu.getEnergy() + " / " + capacity(), STATS_CX, 25, value);
+        // Zoals je getallen wilt zien (hoofdstuk 66). Past het niet tussen de balk en het brandstofvakje, dan kort ("45k").
+        g.drawCenteredString(font, fitted(Numbers.amount(menu.getEnergy()) + " / " + Numbers.amount(capacity()),
+                NumberStyle.SHORT.format(menu.getEnergy()) + " / " + NumberStyle.SHORT.format(capacity())), STATS_CX, 25, value);
         smallCentred(g, Component.translatable("screen.imttech.charger.label_total").getString().toUpperCase(), STATS_CX, 42, dim);
-        g.drawCenteredString(font, String.valueOf(menu.getTotalProduced()), STATS_CX, 51, value);
+        g.drawCenteredString(font, fitted(Numbers.amount(menu.getTotalProduced()), NumberStyle.SHORT.format(menu.getTotalProduced())),
+                STATS_CX, 51, value);
 
         g.drawString(font, status(), 8, 71, menu.getRate() > 0 ? HudStyle.argb(255, HudStyle.GREEN)
                 : HudStyle.argb(200, HudStyle.ORANGE), false);
+    }
+
+    /**
+     * Het getal zoals je het wilt zien, of de korte vorm als het niet past tussen de balk links en het brandstofvakje rechts
+     * (gecentreerd op STATS_CX, dus aan beide kanten even veel plek).
+     */
+    private String fitted(String full, String shortened) {
+        int room = 2 * Math.min(STATS_CX - (BUFFER_BAR_X + BUFFER_BAR_W + 4), ChargerMenu.FUEL_X - 4 - STATS_CX);
+        return font.width(full) <= room ? full : shortened;
     }
 
     /** Kleine tekst (75%), links uitgelijnd. */

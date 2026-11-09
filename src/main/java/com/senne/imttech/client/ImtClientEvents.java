@@ -267,6 +267,16 @@ public final class ImtClientEvents {
         toggleSetting(ImtClientConfig.POWER_FLOW, "screen.imttech.menu.power_flow");
     }
 
+    /**
+     * De volgende stijl voor grote getallen (G > Information > Numbers, hoofdstuk 66): 5000, 5 000, 5.000, 5,000, 5k. Het menu
+     * gaat dicht als je kiest, dus I.M.T zegt hoe ze er nu uitzien.
+     */
+    public static void nextNumberStyle() {
+        ImtClientConfig.setNumberStyle(com.senne.imttech.config.NumberStyle.local().next());
+        ImtClientState.addNotification(Component.translatable("imt.imttech.msg.numbers",
+                com.senne.imttech.config.NumberStyle.local().example()), ImtMessagePayload.Level.INFO);
+    }
+
     /** Zet een instelling van je eigen spel om; I.M.T meldt het, net als bij de kabel-xray. */
     private static void toggleSetting(net.neoforged.neoforge.common.ModConfigSpec.BooleanValue value, String name) {
         if (!ImtClientState.authorized) {

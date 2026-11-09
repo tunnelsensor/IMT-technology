@@ -37,6 +37,10 @@ public class ImtTechClient {
     public ImtTechClient(IEventBus modEventBus, ModContainer container) {
         // Instellingen voor jouw eigen spel (bv. welk HUD-tabblad open staat).
         container.registerConfig(ModConfig.Type.CLIENT, ImtClientConfig.SPEC);
+        // Hoofdstuk 66: grote getallen op jouw scherm in jouw stijl (5 000, 5.000, 5k...), en de server hoort het bij het inloggen.
+        com.senne.imttech.config.NumberStyle.useLocal(ImtClientConfig::numberStyle);
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent.LoggingIn event) ->
+                ImtClientConfig.sendNumberStyle());
         // Sluit het spel af? Dan ook de achtergrondprogramma's van I.M.T stoppen (stem en AI).
         Runtime.getRuntime().addShutdownHook(new Thread(VoiceControl::shutdown, "I.M.T shutdown"));
 

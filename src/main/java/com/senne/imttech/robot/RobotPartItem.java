@@ -45,7 +45,7 @@ public class RobotPartItem extends Item {
             case HEAD -> Component.translatable("tooltip.imttech.robot_part.head",
                     whole(parts.scanRange()), whole(parts.scanAngle()));
             case BODY -> Component.translatable("tooltip.imttech.robot_part.body",
-                    whole(parts.health()), whole(parts.armor()), whole(parts.battery()));
+                    whole(parts.health()), whole(parts.armor()), com.senne.imttech.config.Numbers.amount(Math.round(parts.battery())));
             case ARMS -> Component.translatable("tooltip.imttech.robot_part.arms",
                     String.format(Locale.ROOT, "%.1f", parts.fireInterval() / 20.0));
             case LEGS -> Component.translatable("tooltip.imttech.robot_part.legs",

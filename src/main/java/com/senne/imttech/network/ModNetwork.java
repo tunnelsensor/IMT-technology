@@ -28,7 +28,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "34";
+    private static final String PROTOCOL_VERSION = "35";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -419,6 +419,12 @@ public final class ModNetwork {
         registrar.playToServer(BatteryRequestPayload.TYPE, BatteryRequestPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) {
                 com.senne.imttech.battery.Batteries.refresh(player, payload.pos());
+            }
+        });
+        // Hoofdstuk 66: zo wil deze speler grote getallen zien (5 000, 5.000, 5k...), ook in meldingen van de server.
+        registrar.playToServer(NumberStylePayload.TYPE, NumberStylePayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                com.senne.imttech.config.NumberStyle.remember(player, payload.style());
             }
         });
         // Een EMP-granaat ging af (hoofdstuk 35): de bol van licht.

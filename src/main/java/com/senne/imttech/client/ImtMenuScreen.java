@@ -72,7 +72,7 @@ public class ImtMenuScreen extends Screen {
             new Option(Component.translatable(ImtAction.LASER_CANNON.translationKey()),
                     glasses -> LaserCannonControl.isArmed()
                             ? new Status(Component.translatable("screen.imttech.on"), HudStyle.GREEN)
-                            : new Status(Component.translatable("screen.imttech.cost", Numbers.text(ImtConfig.Suit.LASER_CANNON_COST)), GREY),
+                            : new Status(Component.translatable("screen.imttech.cost", Numbers.amount(ImtConfig.Suit.LASER_CANNON_COST)), GREY),
                     LaserCannonControl::toggle),
             action(ImtAction.ROCKETS),
             action(ImtAction.TOGGLE_SHIELD));
@@ -152,7 +152,13 @@ public class ImtMenuScreen extends Screen {
                     glasses -> ImtClientConfig.zoneBorder()
                             ? new Status(Component.translatable("screen.imttech.on"), HudStyle.GREEN)
                             : new Status(Component.translatable("screen.imttech.off"), GREY),
-                    ImtClientEvents::toggleZoneBorder));
+                    ImtClientEvents::toggleZoneBorder),
+            // Hoofdstuk 66: hoe grote getallen eruitzien (5000, 5 000, 5.000, 5,000, 5k). Een instelling van je eigen spel;
+            // de server hoort het wel, voor zijn meldingen. Hier en niet op Systems: daar staat onder het midden de info
+            // over de bril, en met een achtste optie lagen de vakjes linksonder en rechtsonder over de hint.
+            new Option(Component.translatable("screen.imttech.menu.numbers"),
+                    glasses -> new Status(Component.literal(com.senne.imttech.config.NumberStyle.local().example()), HudStyle.CYAN),
+                    ImtClientEvents::nextNumberStyle));
 
     private static final List<Option> NAVIGATION = List.of(
             open("screen.imttech.menu.navigation", HudStyle.CYAN, NavigationScreen::new),
@@ -349,7 +355,7 @@ public class ImtMenuScreen extends Screen {
         }
         int energy = ImtData.getEnergy(glasses);
         double drain = PowerReadout.drainPerSecond(glasses);
-        lines.add(Component.translatable("hud.imttech.sys.energy", energy, ImtData.getMaxEnergy(glasses)));
+        lines.add(Component.translatable("hud.imttech.sys.energy", Numbers.amount(energy), Numbers.amount(ImtData.getMaxEnergy(glasses))));
         lines.add(Component.translatable("hud.imttech.sys.drain", PowerUnit.current().rate(drain / 20.0),
                 PowerReadout.timeLeft(energy, drain)));
         ImtOwner owner = ImtData.getOwner(glasses);
@@ -385,7 +391,7 @@ public class ImtMenuScreen extends Screen {
             case CARGO_DRONE, CARRY_ENTITY ->
                     costOrCooldown(ImtConfig.Transport.COST, ImtClientState.cooldown(ImtCooldown.TRANSPORT));
             case ILLUSION_WALL, ILLUSION_ARMY, ILLUSION_CLOAK ->
-                    new Status(Component.translatable("screen.imttech.cost", Numbers.text(ImtConfig.Illusions.COST)), HudStyle.CYAN);
+                    new Status(Component.translatable("screen.imttech.cost", Numbers.amount(ImtConfig.Illusions.COST)), HudStyle.CYAN);
             case ILLUSION_STOP -> com.senne.imttech.client.illusion.IllusionRenderer.count() > 0
                     ? new Status(Component.translatable("screen.imttech.illusion.count",
                             com.senne.imttech.client.illusion.IllusionRenderer.count()), HudStyle.ORANGE)
@@ -419,7 +425,7 @@ public class ImtMenuScreen extends Screen {
             }
             case DRONE_CAMERA -> DroneCamera.isActive()
                     ? new Status(Component.translatable("screen.imttech.menu.return"), HudStyle.ORANGE)
-                    : new Status(Component.translatable("screen.imttech.cost", Numbers.text(ImtConfig.Recon.SCOUT_COST)), HudStyle.CYAN);
+                    : new Status(Component.translatable("screen.imttech.cost", Numbers.amount(ImtConfig.Recon.SCOUT_COST)), HudStyle.CYAN);
             case AUTHORIZE_TRANSFER -> {
                 ImtOwner owner = glasses.isEmpty() ? null : ImtData.getOwner(glasses);
                 boolean pending = owner != null && owner.transferPending();
@@ -452,7 +458,7 @@ public class ImtMenuScreen extends Screen {
         int seconds = ImtClientState.secondsLeft(cooldownTicks);
         return seconds > 0
                 ? new Status(Component.literal(seconds + "s"), HudStyle.ORANGE)
-                : new Status(Component.translatable("screen.imttech.cost", Numbers.text(cost)), HudStyle.CYAN);
+                : new Status(Component.translatable("screen.imttech.cost", Numbers.amount(cost)), HudStyle.CYAN);
     }
 
     // ---------------------------------------------------------------- Waar wijst de muis?

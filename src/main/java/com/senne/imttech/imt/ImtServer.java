@@ -894,7 +894,7 @@ public final class ImtServer {
         }
         if (ImtData.getExactEnergy(glasses) < ImtConfig.Recon.SCOUT_COST) {
             send(player, Component.translatable("imt.imttech.msg.not_enough_energy",
-                    Numbers.text(ImtConfig.Recon.SCOUT_COST)), ImtMessagePayload.Level.WARNING);
+                    Numbers.amount(player, ImtConfig.Recon.SCOUT_COST)), ImtMessagePayload.Level.WARNING);
             return;
         }
         if (!requireDrone(player)) {
@@ -1070,7 +1070,7 @@ public final class ImtServer {
     /** Probeert energie te betalen. Zo niet, dan krijgt de speler een melding. */
     private static boolean payEnergy(ServerPlayer player, ItemStack glasses, double cost) {
         if (!ImtData.tryUseEnergy(glasses, cost)) {
-            send(player, Component.translatable("imt.imttech.msg.not_enough_energy", Numbers.text(cost)),
+            send(player, Component.translatable("imt.imttech.msg.not_enough_energy", Numbers.amount(player, cost)),
                     ImtMessagePayload.Level.WARNING);
             return false;
         }

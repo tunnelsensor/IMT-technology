@@ -60,7 +60,9 @@ public class ImtGlassesItem extends ArmorItem {
         int energy = ImtData.getEnergy(stack);
         int max = ImtData.getMaxEnergy(stack);
         int percent = Mth.floor(100.0f * energy / max);
-        tooltip.add(Component.translatable("tooltip.imttech.energy", energy, max, percent).withStyle(ChatFormatting.AQUA));
+        // Zoals jij grote getallen wilt zien (hoofdstuk 66): een tooltip staat altijd op jouw eigen scherm.
+        tooltip.add(Component.translatable("tooltip.imttech.energy", com.senne.imttech.config.Numbers.amount(energy),
+                com.senne.imttech.config.Numbers.amount(max), percent).withStyle(ChatFormatting.AQUA));
 
         ImtUpgrades upgrades = ImtData.getUpgrades(stack);
         tooltip.add(Component.translatable("tooltip.imttech.upgrade.battery", upgrades.battery(), Math.round(ImtConfig.Glasses.MAX_BATTERY_UPGRADES)).withStyle(ChatFormatting.DARK_GRAY));

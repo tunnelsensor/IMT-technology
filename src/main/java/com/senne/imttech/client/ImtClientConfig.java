@@ -159,7 +159,38 @@ public final class ImtClientConfig {
             .comment("How screens show power: per TICK, SECOND, MINUTE or HOUR (the /tick button in the power screens)")
             .defineEnum("powerUnit", PowerUnit.TICK);
 
+    /**
+     * Hoe grote getallen (stroom in FE) eruitzien: 5000, 5 000, 5.000, 5,000 of 5k (hoofdstuk 66, het knopje naast /tick
+     * en G > Information > Numbers). Geldt ook voor de meldingen van I.M.T: je spel vertelt de server je keuze.
+     */
+    public static final ModConfigSpec.EnumValue<com.senne.imttech.config.NumberStyle> NUMBER_STYLE = BUILDER
+            .comment("How big numbers (power in FE) look: PLAIN (5000), SPACE (5 000), DOT (5.000), COMMA (5,000) or SHORT (5k, 5M)."
+                    + " The second button next to /tick in the power screens, or G > Information > Numbers.")
+            .defineEnum("numberStyle", com.senne.imttech.config.NumberStyle.DEFAULT);
+
     public static final ModConfigSpec SPEC = BUILDER.build();
+
+    /** Hoe grote getallen eruitzien (zolang de instellingen nog niet geladen zijn: de standaard). */
+    public static com.senne.imttech.config.NumberStyle numberStyle() {
+        return SPEC.isLoaded() ? NUMBER_STYLE.get() : com.senne.imttech.config.NumberStyle.DEFAULT;
+    }
+
+    /** Kiest een andere stijl voor grote getallen, bewaart de keuze en vertelt het de server (voor zijn meldingen). */
+    public static void setNumberStyle(com.senne.imttech.config.NumberStyle style) {
+        if (SPEC.isLoaded()) {
+            NUMBER_STYLE.set(style);
+            SPEC.save();
+        }
+        sendNumberStyle();
+    }
+
+    /** Vertelt de server hoe jij grote getallen wilt zien (bij het inloggen en bij elke wissel). */
+    public static void sendNumberStyle() {
+        if (net.minecraft.client.Minecraft.getInstance().getConnection() != null) {
+            net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                    new com.senne.imttech.network.NumberStylePayload(numberStyle()));
+        }
+    }
 
     /** In welke tijd de schermen stroom laten zien (zolang de instellingen nog niet geladen zijn: per tick). */
     public static PowerUnit powerUnit() {

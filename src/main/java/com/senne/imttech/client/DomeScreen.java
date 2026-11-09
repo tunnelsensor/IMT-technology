@@ -114,8 +114,9 @@ public class DomeScreen extends Screen {
 
         addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> onClose())
                 .bounds(left + PANEL_W - MARGIN - 80, top + PANEL_H - 28, 80, 20).build());
-        // Boven Done: stroom per tick, seconde, minuut of uur.
-        addRenderableWidget(PowerUnit.button(left + PANEL_W - MARGIN - 80, top + PANEL_H - 52, 80, 20));
+        // Boven Done: hoe grote getallen eruitzien (hoofdstuk 66: 5 000, 5.000, 5k...) en stroom per tick, seconde, minuut of uur.
+        addRenderableWidget(PowerUnit.styleButton(left + PANEL_W - MARGIN - 80, top + PANEL_H - 52, 38, 20));
+        addRenderableWidget(PowerUnit.button(left + PANEL_W - MARGIN - 38, top + PANEL_H - 52, 38, 20));
     }
 
     private void stepper(int row, boolean canDown, boolean canUp, Runnable down, Runnable up) {

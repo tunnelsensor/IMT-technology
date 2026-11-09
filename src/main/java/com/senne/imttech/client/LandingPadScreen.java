@@ -3,6 +3,8 @@ package com.senne.imttech.client;
 import com.senne.imttech.ImtTech;
 import com.senne.imttech.client.hud.HudStyle;
 import com.senne.imttech.config.ImtConfig;
+import com.senne.imttech.config.NumberStyle;
+import com.senne.imttech.config.Numbers;
 import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.suit.LandingPadBlockEntity;
 import com.senne.imttech.suit.LandingPadMenu;
@@ -100,15 +102,17 @@ public class LandingPadScreen extends AbstractContainerScreen<LandingPadMenu> {
         int dim = HudStyle.argb(150, HudStyle.ORANGE);
         int value = HudStyle.argb(230, HudStyle.WHITE);
 
-        // Boven de batterij: hoeveel erin zit. Past het hele getal niet naast het woord BATTERY (een grote batterij met cellen:
-        // "BATTERY2456 / 400000" plakte aan elkaar, gezien op een plaatje van How it works), dan korter: "2.5k / 400k".
+        // Boven de batterij: hoeveel erin zit, zoals je getallen wilt zien (hoofdstuk 66). Past het hele getal niet naast het
+        // woord BATTERY (een grote batterij met cellen: "BATTERY2456 / 400000" plakte aan elkaar, gezien op een plaatje van
+        // How it works), dan korter: "2.46k / 400k".
         String label = Component.translatable("screen.imttech.landing_pad.battery").getString();
         small(g, label, BAT_X, BAT_Y - 7, dim);
-        String stored = Component.translatable("screen.imttech.landing_pad.stored", menu.energy(), menu.capacity()).getString();
+        String stored = Component.translatable("screen.imttech.landing_pad.stored",
+                Numbers.amount(menu.energy()), Numbers.amount(menu.capacity())).getString();
         int room = BAT_W - (int) Math.ceil(font.width(label) * 0.75f) - 4;
         if (font.width(stored) * 0.75f > room) {
-            stored = Component.translatable("screen.imttech.landing_pad.stored", compact(menu.energy()), compact(menu.capacity()))
-                    .getString();
+            stored = Component.translatable("screen.imttech.landing_pad.stored",
+                    NumberStyle.SHORT.format(menu.energy()), NumberStyle.SHORT.format(menu.capacity())).getString();
         }
         small(g, stored, BAT_X + BAT_W - (int) Math.ceil(font.width(stored) * 0.75f), BAT_Y - 7, value);
         // Het percentage midden in de batterij.
@@ -123,14 +127,14 @@ public class LandingPadScreen extends AbstractContainerScreen<LandingPadMenu> {
         // Rechts: het net, het vullen en het opladen.
         int rowY = 20;
         stat(g, "screen.imttech.landing_pad.label_grid",
-                menu.grid() > 0 ? String.valueOf(menu.grid()) : Component.translatable("screen.imttech.landing_pad.no_grid").getString(),
+                menu.grid() > 0 ? Numbers.amount(menu.grid()) : Component.translatable("screen.imttech.landing_pad.no_grid").getString(),
                 rowY, menu.grid() > 0 ? value : HudStyle.argb(230, HudStyle.RED));
         stat(g, "screen.imttech.landing_pad.label_filling",
                 menu.energy() >= menu.capacity() ? Component.translatable("screen.imttech.landing_pad.full").getString()
-                        : Component.translatable("screen.imttech.landing_pad.per_second", menu.filled()).getString(),
+                        : Component.translatable("screen.imttech.landing_pad.per_second", Numbers.amount(menu.filled())).getString(),
                 rowY + 16, value);
         stat(g, "screen.imttech.landing_pad.label_charging",
-                menu.charged() > 0 ? Component.translatable("screen.imttech.landing_pad.per_second", menu.charged()).getString()
+                menu.charged() > 0 ? Component.translatable("screen.imttech.landing_pad.per_second", Numbers.amount(menu.charged())).getString()
                         : Component.translatable("screen.imttech.landing_pad.off_pad").getString(),
                 rowY + 32, menu.charged() > 0 ? HudStyle.argb(255, HudStyle.GREEN) : HudStyle.argb(170, HudStyle.WHITE));
 
@@ -160,22 +164,8 @@ public class LandingPadScreen extends AbstractContainerScreen<LandingPadMenu> {
         int cy = topPos + LandingPadMenu.CELLS_Y;
         if (menu.cellsItem().isEmpty() && mouseX >= cx && mouseX < cx + 16 && mouseY >= cy && mouseY < cy + 16) {
             g.renderTooltip(font, Component.translatable("screen.imttech.landing_pad.cells_tooltip",
-                    (int) ImtConfig.Power.PAD_BATTERY_PER_CELL, LandingPadBlockEntity.MAX_CELLS), mouseX, mouseY);
+                    Numbers.amount(ImtConfig.Power.PAD_BATTERY_PER_CELL), LandingPadBlockEntity.MAX_CELLS), mouseX, mouseY);
         }
-    }
-
-    /** Een groot getal kort: 2456 = "2.5k", 400000 = "400k", 1500000 = "1.5M". */
-    static String compact(long value) {
-        if (value >= 1_000_000) {
-            return String.format(java.util.Locale.ROOT, "%.1fM", value / 1_000_000.0).replace(".0M", "M");
-        }
-        if (value >= 10_000) {
-            return Math.round(value / 1000.0) + "k";
-        }
-        if (value >= 1_000) {
-            return String.format(java.util.Locale.ROOT, "%.1fk", value / 1000.0).replace(".0k", "k");
-        }
-        return String.valueOf(value);
     }
 
     /** Kleine tekst (75%), links uitgelijnd. */

@@ -141,10 +141,11 @@ public final class ImtSpeech {
 
     /**
      * Maakt een melding klaar om uit te spreken: "I.M.T" wordt "I M T" (dan spelt de stem de drie
-     * letters, en een punt erachter blijft het einde van de zin), tekens als › weg.
+     * letters, en een punt erachter blijft het einde van de zin), tekens als › weg. Grote getallen zoals jij
+     * ze laat zien ("1 500", "1.500", "5k", hoofdstuk 66) worden weer gewone cijfers, die leest de stem goed.
      */
     static String speakable(String text) {
-        return text.replace("I.M.T", "I M T")
+        return com.senne.imttech.config.NumberStyle.local().spoken(text).replace("I.M.T", "I M T")
                 .replaceAll("§.", "")            // kleurcodes van Minecraft
                 .replaceAll("[›»«·|]", ", ")
                 .replaceAll("\\s+", " ")
