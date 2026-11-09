@@ -1,5 +1,6 @@
 package com.senne.imttech.client.armory;
 
+import com.google.common.base.Suppliers;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import com.senne.imttech.ImtTech;
@@ -13,10 +14,14 @@ import com.senne.imttech.guns.GunPart;
 import com.senne.imttech.guns.GunParts;
 import com.senne.imttech.guns.MagazineItem;
 import com.senne.imttech.guns.PartState;
+import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.weapons.GunSlingItem;
 import com.senne.imttech.weapons.LaserGunItem;
+import com.senne.imttech.weapons.RemoteChargeBlock;
+import com.senne.imttech.weapons.RemoteChargeItem;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -50,6 +55,7 @@ import org.joml.Vector3f;
  * sling en de cel). De rest (granaten, pouches...) is het gewone 3D-model van het item.
  *
  * Elk wapen wordt zo groot getekend als in zijn rechthoek past: we meten het model (eenmalig per stand) en schalen het.
+ * De Remote EMP en Remote Frag krijgen de grootte van hun sticky (zie {@link #sizedLike}).
  *
  * Houd je iets vast dat erop mag en kijk je naar het paneel, dan zie je een kader waar het komt (rood: geen plek).
  * Met een lege hand krijgt het wapen waar je naar kijkt een wit kader.
@@ -103,9 +109,16 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
         BakedModel model = mc.getItemRenderer().getModel(stack, level, null, 0);
         Quaternionf turn = rotation(stack, model, hung.turn());
         AABB box = bounds(model, turn, hung.turn(), stack);
-        double sx = box.getXsize() * 16, sy = box.getYsize() * 16, sz = box.getZsize() * 16;
-        float scale = (float) Math.min(1.3, Math.min(w / Math.max(0.01, sx), h / Math.max(0.01, sy)) * 0.9);
-        float depth = (float) (sz * scale);
+        // Hoe groot: zo groot als in de rechthoek past, of (de Remote EMP en Remote Frag) zo groot als hun sticky.
+        ItemStack like = sizedLike(stack);
+        AABB fit = box;
+        if (like != stack) {
+            BakedModel likeModel = mc.getItemRenderer().getModel(like, level, null, 0);
+            fit = bounds(likeModel, rotation(like, likeModel, hung.turn()), hung.turn(), like);
+        }
+        double fx = fit.getXsize() * 16, fy = fit.getYsize() * 16;
+        float scale = (float) Math.min(1.3, Math.min(w / Math.max(0.01, fx), h / Math.max(0.01, fy)) * 0.9);
+        float depth = (float) (box.getZsize() * 16 * scale);
 
         // De haakjes: van het paneel tot net achter het wapen.
         float pegLength = Pegboard.BACK - Pegboard.THICKNESS + Math.min(depth * 0.5f, 1.2f);
@@ -182,6 +195,23 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
         }
         return q;
     }
+
+    /**
+     * Het item waarvan dit item de grootte krijgt (meestal zichzelf). Jouw wens (9 november): de Remote EMP en Remote
+     * Frag even groot als de Sticky EMP en de Sticky Frag. Ze hebben dezelfde halve bol, maar hun antenne maakt ze hoger,
+     * en zo groot als in hun 2 x 2 gaatjes past werden ze zo'n 11 % kleiner dan de sticky ernaast. Met de schaal van de
+     * sticky is de bol even groot, en de antenne past dan net in dezelfde rechthoek (4,05 van de 4 pixels).
+     */
+    private static ItemStack sizedLike(ItemStack stack) {
+        if (stack.getItem() instanceof RemoteChargeItem remote) {
+            return remote.kind() == RemoteChargeBlock.Kind.FRAG ? STICKY_FRAG.get() : STICKY_EMP.get();
+        }
+        return stack;
+    }
+
+    /** Een Sticky EMP en een Sticky Frag om de grootte van te meten (één keer gemaakt, niet elk beeld een nieuwe). */
+    private static final Supplier<ItemStack> STICKY_EMP = Suppliers.memoize(() -> new ItemStack(ModItems.STICKY_EMP_GRENADE.get()));
+    private static final Supplier<ItemStack> STICKY_FRAG = Suppliers.memoize(() -> new ItemStack(ModItems.STICKY_FRAG_GRENADE.get()));
 
     /** De doos om het model na het draaien (eenmalig gemeten per model en stand). */
     private static AABB bounds(BakedModel model, Quaternionf turn, Pegboard.Turn which, ItemStack stack) {

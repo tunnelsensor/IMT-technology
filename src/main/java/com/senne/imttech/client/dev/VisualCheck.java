@@ -2604,6 +2604,11 @@ public final class VisualCheck {
             t.stand(0, wx - 0.3, wy + 1, wz + 1.3, 0, 0);
             t.lookAt(0, new Vec3(wx - 0.3, wy + 2.9, wz + 3.9));
             t.shot(25, "ar03_wall_right_close");
+            // De onderste rij van dichterbij (hoofdstuk 68): links de Sticky EMP en Sticky Frag, rechts de Remote EMP en
+            // Remote Frag, even groot.
+            t.stand(0, wx + 0.4, wy + 1, wz + 1.6, 0, 0);
+            t.lookAt(0, new Vec3(wx + 0.4, wy + 2.45, wz + 3.9));
+            t.shot(25, "ar03b_grenades_close");
             t.stand(0, wx + 0.0, wy + 1, wz + 0.2, 0, 0);
             t.lookAt(0, new Vec3(wx + 0.0, wy + 1.3, wz + 2.3));
             t.shot(25, "ar04_ammo_boxes");

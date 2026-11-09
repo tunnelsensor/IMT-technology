@@ -5893,6 +5893,13 @@ even groot als de sticky's".
       antenne bovenaan uit hun vakje. Nu precies 15 pixels hoog in het midden (`TRIGGER_SIZE`, schaal 1,04 en 1,06).
 - [x] **Bekeken in het spel** — `-Ponly=creative`: op het wapentabblad passen alle vier in hun vakje, en de Remote EMP en
       Remote Frag zijn even groot als de Sticky EMP en de Sticky Frag. In je hand, op de grond en als blok niets veranderd.
+- [x] **Ook op het Pegboard** (jouw vraag: "Zorg dat die ook even groot zijn bij het armory board gedeelte") —
+      `PegboardRenderer.sizedLike`: het Pegboard tekent elk item zo groot als in zijn rechthoek past, en door hun antenne
+      werden de Remote EMP en Remote Frag zo'n 11 % kleiner dan de sticky's (ook 2 x 2 gaatjes). Nu krijgen ze de schaal
+      van hun sticky: de bol is even groot, en de antenne past net in dezelfde rechthoek (4,05 van de 4 pixels). De
+      rechthoek zelf bleef 2 x 2, dus waar iets past veranderde niet. De voorbeeldwand (`ArmoryDisplay`) heeft nu ook een
+      Remote Frag, boven de Remote EMP met een gaatje ertussen. Bekeken met `-Ponly=armory` en een nieuw plaatje van
+      dichtbij (`ar03b_grenades_close`): de sticky's links en de remotes rechts, allebei even breed.
 
 ## Nog nooit in het spel bekeken
 
