@@ -1,5 +1,6 @@
 {
  "parent": "imttech:block/remote_emp",
+ "gui_light": "front",
  "display": {
   "gui": {
    "rotation": [
@@ -8,14 +9,14 @@
     0
    ],
    "translation": [
-    0,
-    3.5,
-    0
+    -0.0,
+    5.42,
+    4.45
    ],
    "scale": [
-    1.7,
-    1.7,
-    1.7
+    1.25,
+    1.25,
+    1.25
    ]
   },
   "ground": {
@@ -47,9 +48,9 @@
     0
    ],
    "scale": [
-    1.7,
-    1.7,
-    1.7
+    1.25,
+    1.25,
+    1.25
    ]
   },
   "head": {

@@ -5878,6 +5878,22 @@ mee kunt interacten om ammo in en uit te doen zonder een GUI dus door te klikken
       rechtsklik inhouden met een leeg magazijn (in 2 seconden 8 patronen, de kist telt af). Showcase **120** ("Armory:
       Pegboard and Ammo Box"). LEESMIJ aangepast.
 
+### 68. De Remote EMP, de Remote Frag en hun triggers in hun vakje (9 november)
+
+Jouw vraag (met een screenshot van het wapentabblad): "als je kijkt naar de 4 remote items (de emp en de frag met hun
+afstandsbedieningen) dan zie je dat die texture er wat uitvalt, kun je dat oplossen aub, maak de remote frag en emp ook
+even groot als de sticky's".
+
+- [x] **Remote EMP en Remote Frag** — `tools/generate_weapon_models.py` (`remote_charge`): in je inventaris en in een
+      lijstje nu schaal 1,25 zoals de sticky's (was 1,7), met hetzelfde licht van voren (`gui_light: front`; als blok
+      kreeg hij het licht van opzij). Zijn kussen ligt onderaan het blok (y = 0) en zijn antenne steekt omhoog: de
+      verschuiving wordt nu uitgerekend (`model_display.gui`), zodat het hele ding met antenne in het midden van zijn
+      vakje staat. Vroeger stak hij er onderaan en met zijn antenne bovenaan uit.
+- [x] **De triggers** — `trigger_display`: met de antenne erbij zijn ze bijna 15 pixels hoog, en op schaal 1,25 stak de
+      antenne bovenaan uit hun vakje. Nu precies 15 pixels hoog in het midden (`TRIGGER_SIZE`, schaal 1,04 en 1,06).
+- [x] **Bekeken in het spel** — `-Ponly=creative`: op het wapentabblad passen alle vier in hun vakje, en de Remote EMP en
+      Remote Frag zijn even groot als de Sticky EMP en de Sticky Frag. In je hand, op de grond en als blok niets veranderd.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het

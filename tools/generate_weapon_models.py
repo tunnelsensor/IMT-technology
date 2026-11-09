@@ -465,9 +465,14 @@ def remote_charge(name, shell, ring, light):
     block = {"parent": "minecraft:block/block", "ambientocclusion": False,
              "textures": {"0": TEXTURE, "particle": TEXTURE}, "elements": elements}
     write(f"block/{name}.json", block)
-    disp = display(1.7, (0, 3.5, 0), 0.7, 0.7, gui_rotation=(30, -135, 0), third=((0, 0, 0), (0, 3, 1)),
+    # In je inventaris (en in een lijstje) even groot als de sticky (schaal 1,25, dezelfde kijkhoek en hetzelfde licht
+    # van voren), en met de antenne erbij precies in het midden van zijn vakje. Vroeger was hij 1,7 groot en stak hij
+    # onderaan en met zijn antenne bovenaan uit zijn vakje (9 november).
+    gui_rotation = (30, -135, 0)
+    disp = display(1.25, (0, 0, 0), 0.7, 0.7, gui_rotation=gui_rotation, third=((0, 0, 0), (0, 3, 1)),
                    first=((10, -30, 0), (0, 3, -2)), first_scale=0.45)
-    write(f"item/{name}.json", {"parent": f"imttech:block/{name}", "display": disp})
+    disp["gui"] = md.gui(elements, gui_rotation, scale=1.25)
+    write(f"item/{name}.json", {"parent": f"imttech:block/{name}", "gui_light": "front", "display": disp})
     # De blockstate: op de vloer rechtop, tegen een muur 90 graden gekanteld, aan het plafond ondersteboven.
     variants = {}
     for face, x in (("floor", 0), ("wall", 90), ("ceiling", 180)):
@@ -511,9 +516,23 @@ def emp_trigger():
         box((8.7, 11.5, 7.8), (9.3, 15.0, 8.4), "steel"),
         box((8.6, 15.0, 7.7), (9.4, 15.6, 8.5), "glow", glow=True),
     ]
-    disp = display(1.25, (0, 0, 0), 0.6, 0.6, gui_rotation=(20, 160, 0), third=((0, 180, 0), (0, 3, 1)),
+    write("item/emp_trigger.json", item_model(elements, trigger_display(elements)))
+
+
+def trigger_display(elements):
+    """
+    De houdingen van een trigger. In je inventaris precies in zijn vakje, met de antenne erbij: op een vaste schaal van
+    1,25 stak de antenne bovenaan uit zijn vakje (9 november).
+    """
+    gui_rotation = (20, 160, 0)
+    disp = display(1.25, (0, 0, 0), 0.6, 0.6, gui_rotation=gui_rotation, third=((0, 180, 0), (0, 3, 1)),
                    first=((0, 160, 0), (0, 3, -2)), first_scale=0.5)
-    write("item/emp_trigger.json", item_model(elements, disp))
+    disp["gui"] = md.gui(elements, gui_rotation, size=TRIGGER_SIZE)
+    return disp
+
+
+# Hoe hoog een trigger in zijn vakje van 16 pixels mag worden (de antenne meegeteld).
+TRIGGER_SIZE = 15.0
 
 
 def frag_trigger():
@@ -549,9 +568,7 @@ def frag_trigger():
         box((8.95, 10.85, 7.95), (9.25, 12.1, 8.25), "steel", rot=("x", -22.5, (9.1, 10.85, 8.1))),
         box((7.3, 10.5, 8.3), (7.9, 10.75, 8.9), "glow_red", glow=True),
     ]
-    disp = display(1.25, (0, 0, 0), 0.6, 0.6, gui_rotation=(20, 160, 0), third=((0, 180, 0), (0, 3, 1)),
-                   first=((0, 160, 0), (0, 3, -2)), first_scale=0.5)
-    write("item/frag_trigger.json", item_model(elements, disp))
+    write("item/frag_trigger.json", item_model(elements, trigger_display(elements)))
 
 
 # ---------------------------------------------------------------- De energiecel
