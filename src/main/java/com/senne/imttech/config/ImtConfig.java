@@ -2233,6 +2233,14 @@ public final class ImtConfig {
         /** Tot zo ver van waar je klikt raap je hulzen op (blokken). */
         @Tunable(value = "How far from where you right-click casings are picked up (blocks)", min = 0.5, max = 8)
         public static float CASING_PICKUP_RADIUS = 1.5f;
+        /**
+         * Hoofdstuk 76 (jouw wens: "van 1 gunpowder krijg je 10 ... met 1 gunpowder 10 9mm bullets"): zoveel Crushed
+         * Gunpowder maakt de Crusher van één buskruit. Elke 9mm-patroon op de Reloading Bench neemt er één, dus dit is ook
+         * hoeveel patronen je uit één buskruit haalt.
+         */
+        @Tunable(value = "Crushed Gunpowder the Crusher makes from one gunpowder. Every 9mm round takes one, so this is also "
+                + "the rounds you get from one gunpowder", min = 1, max = 64)
+        public static float CRUSHED_PER_GUNPOWDER = 10.0f;
 
         // ------------------------------------------------------------------------- De materialen (volgorde: polymeer, staal, titanium, netherite)
         /** Zoveel procent kans per schot dat een onderdeel van dit materiaal één punt slijt (van de 100). Netherite: alleen laseronderdelen (hoofdstuk 55). */

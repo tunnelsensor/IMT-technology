@@ -3,7 +3,9 @@ package com.senne.imttech.repair;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.senne.imttech.energy.PowerConnectable;
+import com.senne.imttech.guns.CrushedGunpowderItem;
 import com.senne.imttech.registry.ModItems;
+import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -14,6 +16,7 @@ import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -27,17 +30,19 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.BlockHitResult;
+import net.neoforged.neoforge.common.Tags;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Een machine voor gebarsten blokken (hoofdstuk 11, jouw keuze: "twee machines op stroom"). Elk heeft
  * een vakje erin, een vakje eruit en een balkje hoe ver hij is (zie {@link CrackMachineBlockEntity}):
  * <ul>
- *   <li>de <b>Crusher</b> maakt van een gebarsten blok poeder;</li>
+ *   <li>de <b>Crusher</b> maakt van een gebarsten blok poeder, en (hoofdstuk 76) van één buskruit 10
+ *       <b>Crushed Gunpowder</b> voor de Reloading Bench (zie {@link com.senne.imttech.guns.CrushedGunpowderItem});</li>
  *   <li>de <b>Compactor</b> perst dat poeder tot een volledig nieuw, sterk blok (jouw wens: "die kun
  *       je compacten tot een volledig nieuwe sterke blok").</li>
  * </ul>
- * Telkens één op één: 1 gebarsten blok = 1 poeder = 1 nieuw blok (mijn invulling).
+ * Telkens één op één: 1 gebarsten blok = 1 poeder = 1 nieuw blok (mijn invulling). Alleen buskruit geeft er meer.
  * Ze werken op netstroom (via kabels, of direct tegen een generator aan) en trechters kunnen erin
  * doen (van boven of opzij) en eruit halen (van onder), zoals bij een oven. De voorkant kijkt naar wie
  * hem neerzet, en verandert als hij werkt.
@@ -52,7 +57,7 @@ public class CrackMachineBlock extends HorizontalDirectionalBlock implements Ent
 
     /** Welke machine het is, en wat hij van wat maakt. */
     public enum Kind implements StringRepresentable {
-        /** Gebarsten blok -> poeder van hetzelfde blok. */
+        /** Gebarsten blok -> poeder van hetzelfde blok; buskruit -> 10 Crushed Gunpowder (hoofdstuk 76). */
         CRUSHER("crusher"),
         /** Poeder -> een nieuw blok (zonder barsten, nooit geplamuurd). */
         COMPACTOR("compactor");
@@ -70,6 +75,12 @@ public class CrackMachineBlock extends HorizontalDirectionalBlock implements Ent
 
         /** Wat deze machine maakt van één {@code input}, of EMPTY als hij er niets mee kan. */
         public ItemStack convert(ItemStack input) {
+            // Hoofdstuk 76: de Crusher maalt één buskruit fijn tot 10 Crushed Gunpowder (het getal staat in de config).
+            // Elk buskruit telt, ook dat van een andere mod (de tag c:gunpowders, zoals in de recepten van de granaten).
+            // Crushed Gunpowder zelf zit niet in die tag, dus dat neemt hij niet nog eens aan.
+            if (this == CRUSHER && input.is(Tags.Items.GUNPOWDERS)) {
+                return new ItemStack(ModItems.CRUSHED_GUNPOWDER.get(), CrushedGunpowderItem.perGunpowder());
+            }
             Block block = FromBlockItem.block(input);
             if (block == null) {
                 return ItemStack.EMPTY;
@@ -90,10 +101,15 @@ public class CrackMachineBlock extends HorizontalDirectionalBlock implements Ent
         }
 
         /**
-         * Het geluid als er een voorwerp van {@code block} klaar is: het blok dat breekt (Crusher) of dat
-         * neergezet wordt (Compactor). Zo klinkt glas anders dan steen.
+         * Het geluid als er een voorwerp van {@code input} klaar is: het blok dat breekt (Crusher) of dat
+         * neergezet wordt (Compactor). Zo klinkt glas anders dan steen. Buskruit knerpt zacht, zoals zand
+         * (hoofdstuk 76). Null als het nergens van komt (dan geen geluid).
          */
-        public SoundEvent doneSound(Block block) {
+        public @Nullable SoundEvent doneSound(ItemStack input) {
+            Block block = FromBlockItem.block(input);
+            if (block == null) {
+                return input.is(Tags.Items.GUNPOWDERS) ? SoundEvents.SAND_BREAK : null;
+            }
             net.minecraft.world.level.block.SoundType sound = block.defaultBlockState().getSoundType();
             return switch (this) {
                 case CRUSHER -> sound.getBreakSound();
@@ -101,11 +117,15 @@ public class CrackMachineBlock extends HorizontalDirectionalBlock implements Ent
             };
         }
 
-        /** Een voorbeeld van wat erin hoort (vaag in het lege vakje van het scherm). */
-        public ItemStack example() {
+        /**
+         * Voorbeelden van wat erin hoort: het scherm toont ze om de beurt vaag in het lege vakje. De Crusher
+         * neemt een gebarsten blok of (hoofdstuk 76) buskruit.
+         */
+        public List<ItemStack> examples() {
             return switch (this) {
-                case CRUSHER -> FromBlockItem.of(ModItems.CRACKED_BLOCK.get(), Blocks.STONE_BRICKS, 1);
-                case COMPACTOR -> FromBlockItem.of(ModItems.BLOCK_POWDER.get(), Blocks.STONE_BRICKS, 1);
+                case CRUSHER -> List.of(FromBlockItem.of(ModItems.CRACKED_BLOCK.get(), Blocks.STONE_BRICKS, 1),
+                        new ItemStack(Items.GUNPOWDER));
+                case COMPACTOR -> List.of(FromBlockItem.of(ModItems.BLOCK_POWDER.get(), Blocks.STONE_BRICKS, 1));
             };
         }
     }

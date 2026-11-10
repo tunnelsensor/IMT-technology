@@ -3638,6 +3638,35 @@ public final class VisualCheck {
             t.step(0, () -> Minecraft.getInstance().player.getInventory().selected = 1);
             t.lookAt(5, new Vec3(r.getX() + 1.5, r.getY() + 0.2, r.getZ() + 2.0));
             t.shot(20, "r03_cracked_in_hand");
+            // Hoofdstuk 76: buskruit in de Crusher, Crushed Gunpowder eruit (en wat in je inventaris, met zijn tooltip),
+            // en daarna leeg: het vage voorbeeld (om de beurt een gebarsten blok en buskruit) en de regel onderaan.
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(r) instanceof com.senne.imttech.repair.CrackMachineBlockEntity machine) {
+                    machine.setItem(com.senne.imttech.repair.CrackMachineBlockEntity.SLOT_IN,
+                            new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.GUNPOWDER, 3));
+                    machine.setItem(com.senne.imttech.repair.CrackMachineBlockEntity.SLOT_OUT,
+                            new net.minecraft.world.item.ItemStack(ModItems.CRUSHED_GUNPOWDER.get(), 20));
+                    player.getInventory().setItem(9, new net.minecraft.world.item.ItemStack(ModItems.CRUSHED_GUNPOWDER.get(), 40));
+                    player.openMenu(machine, buf -> buf.writeVarInt(machine.kind().ordinal()));
+                }
+            });
+            // De muis op het eerste vakje van je inventaris (8, 84 in het scherm), dan staat de tooltip in beeld. Vlak voor
+            // de foto: beweegt de echte muis intussen, dan zet Minecraft hem daar weer neer.
+            t.step(20, () -> {
+                if (Minecraft.getInstance().screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> screen) {
+                    HowToTour.mouseTo(screen.getGuiLeft() + 16, screen.getGuiTop() + 92);
+                }
+            });
+            t.shot(3, "r05_crusher_gunpowder");
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(r) instanceof com.senne.imttech.repair.CrackMachineBlockEntity machine) {
+                    machine.clearContent();
+                }
+            });
+            t.step(5, () -> HowToTour.mouseTo(1, 1));
+            t.shot(10, "r06_crusher_empty_a");
+            t.shot(30, "r06_crusher_empty_b");
+            t.close(5);
         }
 
         // --- De Block Reinforcer (hoofdstuk 44): het linker kwartsmuurtje is verstevigd (een randje door je
@@ -3745,6 +3774,22 @@ public final class VisualCheck {
             t.close(5);
             t.onServer(5, player -> ShowcaseFeatures.openBench(player, g.offset(-2, 0, 2)));
             t.shot(25, "gl19_reloading_bench");
+            t.close(5);
+            // Hoofdstuk 76: de bank leeg (de regel onderaan, op twee regels) met de muis op het lege derde vakje (de tooltip
+            // "Crushed Gunpowder (Crusher: 1 gunpowder = 10)").
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(g.offset(-2, 0, 2)) instanceof com.senne.imttech.guns.ReloadingBenchBlockEntity bench) {
+                    bench.items().clearContent();
+                }
+                ShowcaseFeatures.openBench(player, g.offset(-2, 0, 2));
+            });
+            t.step(20, () -> {
+                if (Minecraft.getInstance().screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> screen) {
+                    HowToTour.mouseTo(screen.getGuiLeft() + com.senne.imttech.guns.ReloadingBenchMenu.POWDER_X + 8,
+                            screen.getGuiTop() + com.senne.imttech.guns.ReloadingBenchMenu.INPUT_Y + 8);
+                }
+            });
+            t.shot(3, "gl19b_reloading_bench_empty");
             t.close(5);
             t.step(5, () -> selectSlot(0));
             t.stand(5, stand.x, stand.y, stand.z, 0, 2);

@@ -513,12 +513,15 @@ public final class ModItems {
         return GLOCK_19_MAGAZINE.get();
     }
 
-    /** Hoofdstuk 52: een 9mm-patroon (huls + kogelpunt + buskruit, geperst op de Reloading Bench). */
+    /** Hoofdstuk 52: een 9mm-patroon (huls + kogelpunt + Crushed Gunpowder sinds hoofdstuk 76, geperst op de Reloading Bench). */
     public static final DeferredItem<Item> ROUND_9MM = ITEMS.registerSimpleItem("round_9mm", new Item.Properties());
     /** Een lege huls: springt bij elk schot uit het pistool; oprapen met rechtsklik op de grond. */
     public static final DeferredItem<Item> CASING_9MM = ITEMS.registerSimpleItem("casing_9mm", new Item.Properties());
     /** De kogelpunt (koper om lood). */
     public static final DeferredItem<Item> BULLET_9MM = ITEMS.registerSimpleItem("bullet_9mm", new Item.Properties());
+    /** Hoofdstuk 76: fijngemalen buskruit uit de Crusher (1 buskruit = 10), één per 9mm-patroon op de Reloading Bench. */
+    public static final DeferredItem<com.senne.imttech.guns.CrushedGunpowderItem> CRUSHED_GUNPOWDER = ITEMS.registerItem(
+            "crushed_gunpowder", com.senne.imttech.guns.CrushedGunpowderItem::new, new Item.Properties());
 
     /** Hoofdstuk 52: de materialen. Staal en titanium smelt je uit een blend; polymeer maak je van slijm en kool. */
     public static final DeferredItem<Item> STEEL_BLEND = ITEMS.registerSimpleItem("steel_blend", new Item.Properties());

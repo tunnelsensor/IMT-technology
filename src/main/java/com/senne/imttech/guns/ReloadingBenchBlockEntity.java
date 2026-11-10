@@ -15,14 +15,18 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * De binnenkant van de Reloading Bench (hoofdstuk 52): drie vakjes, een huls, een kogelpunt en buskruit. Eén van elk
- * geeft één 9mm-patroon (zie ReloadingBenchMenu).
+ * De binnenkant van de Reloading Bench (hoofdstuk 52): drie vakjes, een huls, een kogelpunt en Crushed Gunpowder. Eén
+ * van elk geeft één 9mm-patroon (zie ReloadingBenchMenu).
+ *
+ * Hoofdstuk 76 (jouw wens: "voor kogels te maken heb je nu crushed gunpowder nodig"): gewoon buskruit past niet meer in
+ * het derde vakje; dat gaat eerst door de Crusher, die er 10 Crushed Gunpowder van maakt (zie CrushedGunpowderItem).
+ * Zo is één buskruit tien patronen. Lag er in een oude wereld nog buskruit in dat vakje, dan kun je het er gewoon uit
+ * halen (en door de Crusher halen).
  */
 public class ReloadingBenchBlockEntity extends BlockEntity implements MenuProvider {
     public static final int SLOT_CASING = 0;
@@ -61,7 +65,7 @@ public class ReloadingBenchBlockEntity extends BlockEntity implements MenuProvid
         return switch (slot) {
             case SLOT_CASING -> stack.is(ModItems.CASING_9MM.get());
             case SLOT_BULLET -> stack.is(ModItems.BULLET_9MM.get());
-            case SLOT_POWDER -> stack.is(Items.GUNPOWDER);
+            case SLOT_POWDER -> stack.is(ModItems.CRUSHED_GUNPOWDER.get());
             default -> false;
         };
     }

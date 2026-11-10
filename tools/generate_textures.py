@@ -1214,6 +1214,52 @@ def block_powder_item():
     save(im, "item/block_powder.png")
 
 
+def crushed_gunpowder_item():
+    """
+    Crushed Gunpowder (hoofdstuk 76): een hoopje fijngemalen buskruit, zoals zand dat uit een trechter valt: smal en rond
+    bovenaan, breed onderaan. Donker grafietgrijs (echt buskruit is zwartgrijs en glimt een beetje), licht van links
+    boven en schaduw rechts, met een paar glinsteringen. Fijner en gladder dan het grove buskruit van Minecraft zelf, en
+    puntiger en donkerder dan het poeder van een blok (een ronde bult in de kleur van het blok).
+
+    Alleen dit plaatje maken (niet het hele script, zie het begin van dit bestand):
+        python -c "import sys; sys.path.insert(0, 'tools'); import generate_textures as g; g.crushed_gunpowder_item()"
+    """
+    import random
+    r = random.Random(76)
+    edge = (24, 26, 30, 255)
+    # Van licht (links boven) naar donker (rechts onder).
+    shades = [(132, 137, 147, 255), (108, 113, 122, 255), (88, 92, 101, 255), (70, 74, 81, 255), (54, 57, 63, 255),
+              (42, 44, 50, 255)]
+    glint = (190, 196, 208, 255)
+    im = img(16, 16)
+    top, bottom = 3, 13
+    rows = {}
+    for y in range(top, bottom + 1):
+        # Hoe breed het hoopje op deze rij is: smal bovenaan, snel breder, en onderaan bijna de hele breedte.
+        f = (y - top) / (bottom - top)
+        half = 1.0 + 5.6 * f ** 0.55
+        left, right = round(7.5 - half), round(7.5 + half)
+        rows[y] = (left, right)
+        for x in range(left, right + 1):
+            # Links lichter, rechts donkerder, onderaan wat donkerder, en een beetje ruis voor de fijne korrels.
+            u = (x - 7.5) / half
+            shade = 1.5 + 2.6 * u + 1.0 * f + r.uniform(-0.45, 0.45)
+            im.putpixel((x, y), shades[max(0, min(len(shades) - 1, round(shade)))])
+    # Een donkere rand: de bovenste rij, en links en rechts op elke rij (wat boven niet bedekt is ook).
+    for y, (left, right) in rows.items():
+        above = rows.get(y - 1)
+        for x in range(left, right + 1):
+            if x in (left, right) or above is None or not (above[0] <= x <= above[1]):
+                im.putpixel((x, y), edge)
+    # Onderaan een donkere voet (het hoopje ligt op de grond).
+    left, right = rows[bottom]
+    for x in range(left + 1, right):
+        im.putpixel((x, bottom), shades[5])
+    # Glinsteringen aan de lichte kant.
+    px(im, [(6, 5), (4, 9), (7, 8)], glint)
+    save(im, "item/crushed_gunpowder.png")
+
+
 # --------------------------------------------------------------------- Stroomnet
 
 def cable_textures():
@@ -4159,6 +4205,7 @@ if __name__ == "__main__":
     repair_paste_item()
     crusher_textures()
     block_powder_item()
+    crushed_gunpowder_item()
     compactor_textures()
     arc_lamp_textures()
     light_switch_textures()

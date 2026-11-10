@@ -5,6 +5,8 @@ import com.senne.imttech.breach.Blast;
 import com.senne.imttech.breach.CrackData;
 import com.senne.imttech.breach.Cracks;
 import com.senne.imttech.config.ImtConfig;
+import com.senne.imttech.guns.CrushedGunpowderItem;
+import com.senne.imttech.guns.ReloadingBenchBlockEntity;
 import com.senne.imttech.registry.ModBlocks;
 import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.repair.CrackMachineBlock;
@@ -22,6 +24,7 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -416,6 +419,36 @@ public final class CrackGameTests {
         });
     }
 
+    /**
+     * Hoofdstuk 76 (jouw wens: "van 1 gunpowder krijg je 10 ... met 1 gunpowder 10 9mm bullets"): twee buskruit in de
+     * Crusher; na vijf seconden liggen er 10 Crushed Gunpowder (het getal uit de config) in het vakje eruit en zit er nog
+     * één buskruit in. Met dat poeder, en genoeg hulzen en kogelpunten, pers je op de Reloading Bench precies zoveel
+     * patronen. Crushed Gunpowder zelf neemt de Crusher niet nog eens aan, en de Compactor neemt geen buskruit.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "cracks")
+    public static void crusher_crushes_gunpowder(GameTestHelper helper) {
+        CrackMachineBlockEntity crusher = crusher(helper, new BlockPos(6, 2, 6), true);
+        CrackMachineBlockEntity compactor = machine(helper, ModBlocks.COMPACTOR.get(), new BlockPos(10, 2, 6), false);
+        int per = CrushedGunpowderItem.perGunpowder();
+        check(!crusher.canPlaceItem(CrackMachineBlockEntity.SLOT_IN, new ItemStack(ModItems.CRUSHED_GUNPOWDER.get())),
+                "De Crusher neemt Crushed Gunpowder aan (dan maalde hij het eindeloos fijner)");
+        check(!compactor.canPlaceItem(CrackMachineBlockEntity.SLOT_IN, new ItemStack(Items.GUNPOWDER)), "De Compactor neemt buskruit aan");
+        crusher.setItem(CrackMachineBlockEntity.SLOT_IN, new ItemStack(Items.GUNPOWDER, 2));
+        helper.runAfterDelay(Math.round(ImtConfig.Repair.MACHINE_TICKS) + 5, () -> {
+            ItemStack out = crusher.getItem(CrackMachineBlockEntity.SLOT_OUT);
+            check(out.is(ModItems.CRUSHED_GUNPOWDER.get()) && out.getCount() == per,
+                    "Na vijf seconden zouden er " + per + " Crushed Gunpowder uit moeten komen, niet " + out);
+            check(crusher.getItem(CrackMachineBlockEntity.SLOT_IN).getCount() == 1, "Er zou nog één buskruit in moeten zitten");
+            SimpleContainer bench = new SimpleContainer(ReloadingBenchBlockEntity.SIZE);
+            bench.setItem(ReloadingBenchBlockEntity.SLOT_CASING, new ItemStack(ModItems.CASING_9MM.get(), 64));
+            bench.setItem(ReloadingBenchBlockEntity.SLOT_BULLET, new ItemStack(ModItems.BULLET_9MM.get(), 64));
+            bench.setItem(ReloadingBenchBlockEntity.SLOT_POWDER, out.copy());
+            check(ReloadingBenchBlockEntity.pressable(bench) == per,
+                    "Met het poeder van één buskruit pers je " + ReloadingBenchBlockEntity.pressable(bench) + " patronen, niet " + per);
+            helper.succeed();
+        });
+    }
+
     // ================================================================ Stap 3: de Compactor
 
     /**
@@ -432,7 +465,7 @@ public final class CrackGameTests {
         check(!compactor.canPlaceItem(CrackMachineBlockEntity.SLOT_IN, cracked)
                 && compactor.canPlaceItem(CrackMachineBlockEntity.SLOT_IN, powder), "De Compactor zou alleen poeder moeten aannemen");
         check(!crusher.canPlaceItem(CrackMachineBlockEntity.SLOT_IN, powder)
-                && crusher.canPlaceItem(CrackMachineBlockEntity.SLOT_IN, cracked), "De Crusher zou alleen gebarsten blokken moeten aannemen");
+                && crusher.canPlaceItem(CrackMachineBlockEntity.SLOT_IN, cracked), "De Crusher zou gebarsten blokken moeten aannemen, geen poeder");
         compactor.setItem(CrackMachineBlockEntity.SLOT_IN, powder);
         helper.runAfterDelay(Math.round(ImtConfig.Repair.MACHINE_TICKS) + 5, () -> {
             ItemStack out = compactor.getItem(CrackMachineBlockEntity.SLOT_OUT);

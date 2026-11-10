@@ -8,10 +8,13 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.particles.BlockParticleOption;
+import net.minecraft.core.particles.ItemParticleOption;
+import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.WorldlyContainer;
@@ -26,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * De binnenkant van een Crusher of Compactor (hoofdstuk 11): een vakje erin, een vakje eruit, en hoe
- * ver hij is.
+ * ver hij is. Sinds hoofdstuk 76 maalt de Crusher ook buskruit (1 erin = 10 Crushed Gunpowder eruit).
  *
  * Zolang er iets in zit waar hij iets mee kan, er plaats is in het vakje eruit en er stroom is, werkt
  * hij: {@link ImtConfig.Power#CRUSHER_COMPACTOR} stroom per tick, {@link ImtConfig.Repair#MACHINE_TICKS} ticks
@@ -127,7 +130,8 @@ public class CrackMachineBlockEntity extends BaseContainerBlockEntity implements
             effects(level, pos, input);
             if (progress >= Math.round(ImtConfig.Repair.MACHINE_TICKS)) {
                 progress = 0;
-                Block block = FromBlockItem.block(input);
+                // Het geluid nu al kiezen: na shrink kan het vakje leeg zijn, en dan weet je niet meer wat erin zat.
+                SoundEvent done = kind().doneSound(input);
                 input.shrink(1);
                 ItemStack out = items.get(SLOT_OUT);
                 if (out.isEmpty()) {
@@ -135,8 +139,8 @@ public class CrackMachineBlockEntity extends BaseContainerBlockEntity implements
                 } else {
                     out.grow(result.getCount());
                 }
-                if (block != null) {
-                    level.playSound(null, pos, kind().doneSound(block), SoundSource.BLOCKS, 0.3f, 0.9f + level.random.nextFloat() * 0.2f);
+                if (done != null) {
+                    level.playSound(null, pos, done, SoundSource.BLOCKS, 0.3f, 0.9f + level.random.nextFloat() * 0.2f);
                 }
             }
             setChanged();
@@ -159,15 +163,19 @@ public class CrackMachineBlockEntity extends BaseContainerBlockEntity implements
                 && out.getCount() + result.getCount() <= out.getMaxStackSize();
     }
 
-    /** Terwijl hij werkt: af en toe een stil geluidje, en wat stof van het blok bovenuit. */
+    /**
+     * Terwijl hij werkt: af en toe een stil geluidje, en wat stof bovenuit: van het blok, of (hoofdstuk 76) grijze
+     * korrels buskruit.
+     */
     private void effects(ServerLevel level, BlockPos pos, ItemStack input) {
         if (progress % 20 == 1) {
             level.playSound(null, pos, kind().workSound(), SoundSource.BLOCKS, 0.08f, 0.8f + level.random.nextFloat() * 0.2f);
         }
-        Block block = FromBlockItem.block(input);
-        if (block != null && progress % 8 == 0) {
-            level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, block.defaultBlockState()),
-                    pos.getX() + 0.5, pos.getY() + 1.02, pos.getZ() + 0.5, 2, 0.2, 0.0, 0.2, 0.02);
+        if (progress % 8 == 0 && !input.isEmpty()) {
+            Block block = FromBlockItem.block(input);
+            ParticleOptions dust = block != null ? new BlockParticleOption(ParticleTypes.BLOCK, block.defaultBlockState())
+                    : new ItemParticleOption(ParticleTypes.ITEM, input.copyWithCount(1));
+            level.sendParticles(dust, pos.getX() + 0.5, pos.getY() + 1.02, pos.getZ() + 0.5, 2, 0.2, 0.0, 0.2, 0.02);
         }
     }
 

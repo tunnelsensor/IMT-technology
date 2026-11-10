@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 493 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 494 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -6318,6 +6318,59 @@ En daarna: "maak ook een gamerule die deze raiddrones aan en uit laat togglen".
       werden, en dan bleef het hangen op "Saving worlds" (dat was de rondleiding, niet de drones). De showcase "Raid
       drones" eindigt nu met het wegvliegen (`ImtRaids.callOff`, zonder echt dood te gaan; geen nieuw nummer).
 - [x] LEESMIJ (Raiddrones) bijgewerkt.
+
+### 76. Crushed Gunpowder: één buskruit is tien patronen (10 november)
+
+Jouw wens: "Voeg een recepie toe via de crusher: crushed gunpowder, van 1 gunpowder krijg je 10, voor kogels te maken
+heb je nu crushed gunpowder nodig dat betekend dus dat je met 1 gunpowder 10 9mm bullets kunt maken."
+
+**Mijn invulling** (zeg het als je het anders wilt):
+- De **Crusher** neemt nu ook **buskruit** aan (met de hand, shift-klik, of een trechter van boven of opzij) en doet er
+  even lang over als over een gebarsten blok (5 seconden, 40 FE per tick). Eruit komen **10 Crushed Gunpowder**.
+  Elk buskruit telt, ook dat van een andere mod (de tag `c:gunpowders`, zoals in de recepten van de granaten). Het getal
+  staat in de config: `[guns] crushedPerGunpowder = 10` (1 tot 64, meer past niet op één stapel).
+- De **Reloading Bench** neemt in het derde vakje alleen nog **Crushed Gunpowder**, één per patroon; gewoon buskruit past
+  daar niet meer. Lag er in een bestaande wereld nog buskruit in dat vakje, dan haal je het er gewoon uit (en door de
+  Crusher).
+- Crushed Gunpowder gaat niet nog eens door de Crusher, en de Compactor maakt er geen buskruit van terug.
+- Alleen de **patronen** veranderen: granaten, flashbangs, rookgranaten, raketmunitie, Robot Ammo en het raketpakket
+  blijven gewoon buskruit gebruiken.
+- Het **icoontje**: een glad, puntig hoopje donkergrijs poeder met een paar glinsteringen, zodat je het niet verwart met
+  het grove buskruit van Minecraft of het ronde, lichte poeder van een blok. De tooltip: "One per 9mm round on the
+  Reloading Bench." en "A Crusher makes 10 from one gunpowder."
+- **De Crusher**: in het lege vakje staat om de beurt een gebarsten blok en buskruit (vaag), en onderaan "Cracked blocks
+  or gunpowder." (de oude zin met "or gunpowder" erbij was te lang voor het scherm). Terwijl hij buskruit maalt, stuiven
+  er grijze korrels bovenuit, en als het klaar is knerpt het zacht, zoals zand.
+- **De Reloading Bench**: de tooltip van het lege derde vakje zegt "Crushed Gunpowder (Crusher: 1 gunpowder = 10)", en
+  de regel onderaan "Put a casing, a bullet and crushed gunpowder in." Die past niet op één regel, dus nu op twee (een
+  te lange regel gaat vanzelf naar een tweede, nooit meer over de rand).
+- Geen nieuwe showcase: in showcase 113 ("Glock 19: parts, magazines and casings") ligt op de Reloading Bench nu
+  Crushed Gunpowder.
+
+- [x] **Crushed Gunpowder** — `guns/CrushedGunpowderItem` (de tooltip, en `perGunpowder()`: het getal uit de config),
+      `ModItems.CRUSHED_GUNPOWDER`, in het creative-tabblad na de kogelpunten. Icoon: `crushed_gunpowder_item` in
+      `tools/generate_textures.py` (alleen die functie gedraaid).
+- [x] **De Crusher** — `CrackMachineBlock.Kind.convert` (buskruit), `doneSound(ItemStack)` en `examples()`;
+      `CrackMachineBlockEntity` (stof en geluid van buskruit); `CrackMachineScreen` (de voorbeelden om de beurt).
+- [x] **De Reloading Bench** — `ReloadingBenchBlockEntity.fits`; `ReloadingBenchScreen` (de tooltip, en de regel onderaan
+      op twee regels als hij te lang is).
+- [x] **Tests** — één nieuwe (`crusher_crushes_gunpowder`: twee buskruit erin, na vijf seconden 10 Crushed Gunpowder eruit
+      en nog één buskruit erin; daarmee pers je precies 10 patronen; Crushed Gunpowder neemt de Crusher niet aan,
+      buskruit de Compactor niet). `reloading_bench_presses_rounds` perst nu met Crushed Gunpowder, en gewoon buskruit
+      past niet meer in het derde vakje.
+- [x] **How it works** (Reloading Bench) — "A round" toont Crushed Gunpowder, en een nieuw hoofdstukje "Crushed
+      Gunpowder": een Crusher naast een warmtegenerator maalt een buskruit, en er verschijnen er 10 op een rij voor de
+      machines. Daarna gaan de Crusher en de generator weer weg, zodat de hoofdstukjes over de bank er zijn zoals
+      voorheen. Het plaatje van de bank is opnieuw gemaakt (`-Ponly=howtopics`; de andere plaatjes die dat ook opnieuw
+      maakte, heb ik teruggezet). W op Crushed Gunpowder opent deze animatie.
+- [x] **Bekeken** met `-Ponly=repair` (r05: buskruit erin, Crushed Gunpowder eruit, en de tooltip; r06: leeg, met het
+      voorbeeld om de beurt), `-Ponly=glock` (gl19, en gl19b: de lege bank, de regel op twee regels en de tooltip van het
+      derde vakje) en `-Ponly=howtoall,howto:reloading`. Wat ik zo vond: het rijtje van 10 zag je eerst amper (klein en
+      donker, eerst op de grond en daarna tegen de donkere achtergrond; nu groter, boven het platform voor de machines),
+      en in het laatste hoofdstukje stond de tekst half over de Crusher (nu gaat die eerst weg). In r05 kwam de tooltip er
+      de eerste keer niet op: tussen de muis verzetten en de foto zat een seconde, en dan zet Minecraft de muis terug
+      waar de echte muis staat zodra die beweegt (mijn vermoeden). Nu neemt hij de foto vlak erna, en toen stond hij er wel.
+- [x] LEESMIJ (Barsten herstellen, Patronen en de Reloading Bench) bijgewerkt.
 
 ## Nog nooit in het spel bekeken
 

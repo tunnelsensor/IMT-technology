@@ -4,6 +4,8 @@ import com.senne.imttech.ImtTech;
 import com.senne.imttech.client.hud.HudStyle;
 import com.senne.imttech.repair.CrackMachineBlockEntity;
 import com.senne.imttech.repair.CrackMachineMenu;
+import java.util.List;
+import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
@@ -50,9 +52,18 @@ public class CrackMachineScreen extends AbstractContainerScreen<CrackMachineMenu
         g.blit(TEXTURE, x, y, 0, 0, imageWidth, imageHeight, 256, 256);
 
         slot(g, x + CrackMachineMenu.IN_X, y + CrackMachineMenu.IN_Y,
-                menu.input().isEmpty() ? menu.kind().example() : ItemStack.EMPTY);
+                menu.input().isEmpty() ? example() : ItemStack.EMPTY);
         slot(g, x + CrackMachineMenu.OUT_X, y + CrackMachineMenu.OUT_Y, ItemStack.EMPTY);
         arrow(g, x + ARROW_X, y + ARROW_Y, menu.progress());
+    }
+
+    /**
+     * Het vage voorbeeld in het lege vakje erin: elke anderhalve seconde het volgende (bij de Crusher een gebarsten blok
+     * en dan buskruit, hoofdstuk 76), zodat je ziet wat hij allemaal aanneemt.
+     */
+    private ItemStack example() {
+        List<ItemStack> examples = menu.kind().examples();
+        return examples.get((int) (Util.getMillis() / 1500 % examples.size()));
     }
 
     /** Een pijl naar rechts: een balk en een punt, die van links naar rechts blauw vol loopt. */

@@ -15,7 +15,7 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Het menu van de Reloading Bench (hoofdstuk 52): drie vakjes (huls, kogelpunt, buskruit) en rechts de pers met het
+ * Het menu van de Reloading Bench (hoofdstuk 52): drie vakjes (huls, kogelpunt, Crushed Gunpowder) en rechts de pers met het
  * resultaat. Zolang er van alle drie iets ligt, ligt er één 9mm-patroon klaar; pak je hem, dan gaat er van elk één af
  * en ligt de volgende klaar. Shift-klik op het resultaat perst er zoveel als er in passen.
  */

@@ -334,17 +334,23 @@ public final class GunGameTests {
         helper.succeed();
     }
 
-    /** De Reloading Bench (jouw wens): een huls, een kogelpunt en buskruit geven één 9mm-patroon per keer. */
+    /**
+     * De Reloading Bench (jouw wens): een huls, een kogelpunt en Crushed Gunpowder geven één 9mm-patroon per keer. Sinds
+     * hoofdstuk 76 past gewoon buskruit niet meer (dat gaat eerst door de Crusher).
+     */
     @GameTest(template = ARENA, timeoutTicks = 100, batch = "guns")
     public static void reloading_bench_presses_rounds(GameTestHelper helper) {
         BlockPos at = new BlockPos(4, 2, 4);
         helper.setBlock(at, ModBlocks.RELOADING_BENCH.get());
         ReloadingBenchBlockEntity bench = (ReloadingBenchBlockEntity) helper.getBlockEntity(at);
         ServerPlayer player = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(4, 2, 6), "reloader");
-        check(!ReloadingBenchBlockEntity.fits(ReloadingBenchBlockEntity.SLOT_CASING, new ItemStack(Items.GUNPOWDER)), "Buskruit past in het hulsvakje");
+        check(!ReloadingBenchBlockEntity.fits(ReloadingBenchBlockEntity.SLOT_CASING, new ItemStack(ModItems.CRUSHED_GUNPOWDER.get())),
+                "Crushed Gunpowder past in het hulsvakje");
+        check(!ReloadingBenchBlockEntity.fits(ReloadingBenchBlockEntity.SLOT_POWDER, new ItemStack(Items.GUNPOWDER)),
+                "Gewoon buskruit past nog in het buskruitvakje (dat moet eerst door de Crusher)");
         bench.items().setItem(ReloadingBenchBlockEntity.SLOT_CASING, new ItemStack(ModItems.CASING_9MM.get(), 3));
         bench.items().setItem(ReloadingBenchBlockEntity.SLOT_BULLET, new ItemStack(ModItems.BULLET_9MM.get(), 2));
-        bench.items().setItem(ReloadingBenchBlockEntity.SLOT_POWDER, new ItemStack(Items.GUNPOWDER, 5));
+        bench.items().setItem(ReloadingBenchBlockEntity.SLOT_POWDER, new ItemStack(ModItems.CRUSHED_GUNPOWDER.get(), 5));
         ReloadingBenchMenu menu = new ReloadingBenchMenu(1, player.getInventory(), bench.items());
         check(menu.getSlot(ReloadingBenchMenu.RESULT_SLOT).getItem().is(ModItems.ROUND_9MM.get()), "Er ligt geen patroon klaar");
         check(!menu.quickMoveStack(player, ReloadingBenchMenu.RESULT_SLOT).isEmpty(), "De eerste patroon kon niet gepakt worden");

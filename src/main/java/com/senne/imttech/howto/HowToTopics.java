@@ -74,7 +74,7 @@ public final class HowToTopics {
                     () -> concat(Arrays.stream(GunPart.values()).map(part -> (Item) ModItems.gunPart(part)).toList(),
                             List.of(ModItems.GUNSMITH_TABLE.get()))),
             topic("reloading", "weapons", "Reloading Bench", WeaponScenes::reloading, ModItems.RELOADING_BENCH, ModItems.CASING_9MM,
-                    ModItems.BULLET_9MM, ModItems.ROUND_9MM),
+                    ModItems.BULLET_9MM, ModItems.CRUSHED_GUNPOWDER, ModItems.ROUND_9MM),
             topic("gear", "weapons", "Holster, pouches and slings", WeaponScenes::gear, ModItems.HOLSTER, ModItems.GRENADE_POUCH,
                     ModItems.MAG_POUCH, ModItems.GUN_SLING),
             topic("armory", "weapons", "Armory: pegboard and ammo box", com.senne.imttech.howto.scenes.ArmoryScenes::armory,

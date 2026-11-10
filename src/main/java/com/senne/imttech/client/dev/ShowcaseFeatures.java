@@ -3004,8 +3004,8 @@ final class ShowcaseFeatures {
                 + "elke R duwt er een patroon in, en U (unload, hoofdstuk 54) haalt er weer een uit. Je kijkt naar de hulzen op "
                 + "de grond en raapt ze op met rechtsklik. Tot slot de Gunsmith Table (een pistool van een frame, slede en "
                 + "trekker; links je losse onderdelen om erin te slepen; wat ontbreekt staat gestippeld ernaast, en wat onder "
-                + "de slede zit kun je pas pakken als die eraf is) en de Reloading Bench (huls + kogelpunt + buskruit = een "
-                + "9mm-patroon).",
+                + "de slede zit kun je pas pakken als die eraf is) en de Reloading Bench (huls + kogelpunt + Crushed Gunpowder = "
+                + "een 9mm-patroon; dat poeder maakt een Crusher, 10 uit één buskruit, hoofdstuk 76).",
                 stand, 90, 4, s -> s
                 .onServer(0, ShowcaseScene::buildWeapons)
                 .onServer(0, player -> buildGunBenches(player, w.above()))
@@ -4020,7 +4020,7 @@ final class ShowcaseFeatures {
         if (level.getBlockEntity(bench) instanceof com.senne.imttech.guns.ReloadingBenchBlockEntity reloading) {
             reloading.items().setItem(0, new ItemStack(ModItems.CASING_9MM.get(), 12));
             reloading.items().setItem(1, new ItemStack(ModItems.BULLET_9MM.get(), 9));
-            reloading.items().setItem(2, new ItemStack(net.minecraft.world.item.Items.GUNPOWDER, 20));
+            reloading.items().setItem(2, new ItemStack(ModItems.CRUSHED_GUNPOWDER.get(), 20));
         }
     }
 

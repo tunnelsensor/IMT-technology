@@ -1250,11 +1250,12 @@ Van een gebarsten blok maak je weer een nieuw blok, met twee machines op netstro
 direct tegen een generator). Elk heeft een vakje erin, een vakje eruit en een pijl die vol loopt:
 
 - De **Crusher** (ijzer, een slijpsteen, een computerchip en een zuiger) maakt van een gebarsten blok
-  **poeder** in de kleur van het blok.
+  **poeder** in de kleur van het blok. Hij maalt ook **buskruit**: 1 buskruit = 10 **Crushed Gunpowder**, voor de
+  9mm-patronen op de Reloading Bench (zie "Patronen en de Reloading Bench").
 - De **Compactor** (ijzer, een aambeeld, twee zuigers en een computerchip) perst dat poeder tot een
   **volledig nieuw blok** van hetzelfde soort, zonder barsten en weer helemaal sterk.
 
-Allebei doen ze 5 seconden over één blok en gebruiken ze dan 4 stroom per tick. Trechters doen er van
+Allebei doen ze 5 seconden over één blok en gebruiken ze dan 40 FE per tick. Trechters doen er van
 boven of opzij iets in en halen het er van onder uit, zoals bij een oven. Alle getallen staan in
 `config/imttech.toml` onder `[repair]` (de stroom van de machines onder `[power]`).
 
@@ -1988,8 +1989,11 @@ niet bij (eerst de slede eraf, zoals bij een echte Glock). Scrollen op de tafel 
 kantelt het. "Take the pistol" neemt het mee; een pistool uit je inventaris sleep je op de tafel om het te repareren.
 
 **Patronen en de Reloading Bench.** Een **9mm Round** pers je op de **Reloading Bench** (ijzer, planken en een werkbank)
-uit een **9mm Casing** (koper: 8 per staaf), een **9mm Bullet** (2 ijzerklompjes: 4 kogelpunten) en **buskruit**: één
-per keer, shift-klik voor een stapel. Bij elk schot springt de **huls** rechts uit het pistool en blijft hij liggen
+uit een **9mm Casing** (koper: 8 per staaf), een **9mm Bullet** (2 ijzerklompjes: 4 kogelpunten) en **Crushed
+Gunpowder**: één per keer, shift-klik voor een stapel. Gewoon buskruit past daar niet: dat maal je eerst fijn in een
+**Crusher** (op netstroom, 5 seconden per buskruit, zie "Barsten herstellen"). **1 buskruit = 10 Crushed Gunpowder**,
+dus met één buskruit pers je 10 patronen. Het getal staat in de config: `[guns] crushedPerGunpowder`.
+Bij elk schot springt de **huls** rechts uit het pistool en blijft hij liggen
 (10 minuten); **rechtsklik op de grond** vlak bij de hulzen (met een lege hand of hulzen in je hand) raapt ze op, en
 dan pers je er weer patronen van.
 

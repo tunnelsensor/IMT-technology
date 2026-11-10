@@ -2,18 +2,22 @@ package com.senne.imttech.client.guns;
 
 import com.senne.imttech.ImtTech;
 import com.senne.imttech.client.hud.HudStyle;
+import com.senne.imttech.guns.CrushedGunpowderItem;
 import com.senne.imttech.guns.ReloadingBenchBlockEntity;
 import com.senne.imttech.guns.ReloadingBenchMenu;
+import java.util.List;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 
 /**
- * Het scherm van de Reloading Bench (hoofdstuk 52): drie vakjes op een rij (huls, kogelpunt, buskruit), een pijl naar
- * de pers, en het vakje met de patroon die klaarligt. Onder de vakjes staat hoeveel je er nog kunt persen.
+ * Het scherm van de Reloading Bench (hoofdstuk 52): drie vakjes op een rij (huls, kogelpunt, en sinds hoofdstuk 76
+ * Crushed Gunpowder), een pijl naar de pers, en het vakje met de patroon die klaarligt. Onder de vakjes staat hoeveel je
+ * er nog kunt persen.
  */
 public class ReloadingBenchScreen extends AbstractContainerScreen<ReloadingBenchMenu> {
     private static final ResourceLocation TEXTURE =
@@ -63,10 +67,16 @@ public class ReloadingBenchScreen extends AbstractContainerScreen<ReloadingBench
         int count = ReloadingBenchBlockEntity.pressable(menu.items());
         Component line = count == 0 ? Component.translatable("screen.imttech.reloading_bench.need")
                 : Component.translatable("screen.imttech.reloading_bench.ready", count);
+        // Te lang voor één regel (sinds hoofdstuk 76 staat er "crushed gunpowder"): dan op twee regels, nooit over de rand.
+        int left = ReloadingBenchMenu.CASING_X - 4;
+        List<FormattedCharSequence> lines = font.split(line, Math.round((imageWidth - left - 8) / 0.75f));
+        int colour = HudStyle.argb(220, count == 0 ? HudStyle.WHITE : HudStyle.GREEN);
         g.pose().pushPose();
-        g.pose().translate(ReloadingBenchMenu.CASING_X - 4, ReloadingBenchMenu.INPUT_Y + 22, 0);
+        g.pose().translate(left, ReloadingBenchMenu.INPUT_Y + 22, 0);
         g.pose().scale(0.75f, 0.75f, 1);
-        g.drawString(font, line, 0, 0, HudStyle.argb(220, count == 0 ? HudStyle.WHITE : HudStyle.GREEN), false);
+        for (int i = 0; i < lines.size(); i++) {
+            g.drawString(font, lines.get(i), 0, i * 9, colour, false);
+        }
         g.pose().popPose();
     }
 
@@ -91,7 +101,8 @@ public class ReloadingBenchScreen extends AbstractContainerScreen<ReloadingBench
             String what = switch (slot.index) {
                 case ReloadingBenchBlockEntity.SLOT_CASING -> "9mm Casing";
                 case ReloadingBenchBlockEntity.SLOT_BULLET -> "9mm Bullet";
-                case ReloadingBenchBlockEntity.SLOT_POWDER -> "Gunpowder";
+                case ReloadingBenchBlockEntity.SLOT_POWDER -> "Crushed Gunpowder (Crusher: 1 gunpowder = "
+                        + CrushedGunpowderItem.perGunpowder() + ")";
                 default -> "The pressed 9mm Round comes here (shift-click for a stack)";
             };
             g.renderTooltip(font, Component.literal(what), mouseX, mouseY);

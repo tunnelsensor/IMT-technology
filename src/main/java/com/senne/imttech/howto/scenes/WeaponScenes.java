@@ -1,6 +1,7 @@
 package com.senne.imttech.howto.scenes;
 
 import com.senne.imttech.config.ImtConfig;
+import com.senne.imttech.guns.CrushedGunpowderItem;
 import com.senne.imttech.guns.FirearmItem;
 import com.senne.imttech.guns.FirearmType;
 import com.senne.imttech.guns.GearItem;
@@ -15,6 +16,7 @@ import com.senne.imttech.registry.ModBlocks;
 import com.senne.imttech.registry.ModEntities;
 import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.registry.ModSounds;
+import com.senne.imttech.repair.CrackMachineBlock;
 import com.senne.imttech.robot.RobotStyle;
 import com.senne.imttech.weapons.EnergyCellItem;
 import com.senne.imttech.weapons.GunType;
@@ -116,6 +118,11 @@ public final class WeaponScenes {
 
     static BlockState bench(net.minecraft.world.level.block.Block block, Direction facing) {
         return block.defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, facing);
+    }
+
+    /** Een Crusher met zijn voorkant naar je toe (zoals de bank), stil of bezig (dan draait zijn voorkant). */
+    static BlockState crusher(boolean working) {
+        return bench(ModBlocks.CRUSHER.get(), Direction.SOUTH).setValue(CrackMachineBlock.WORKING, working);
     }
 
     /** Voorwerpen naast elkaar op een rij dwars door het beeld (op hoogte {@code y}), rond {@code middle}. */
@@ -519,20 +526,55 @@ public final class WeaponScenes {
 
     // ================================================================ De Reloading Bench
 
-    /** De Reloading Bench: een patroon uit een huls, een kogelpunt en buskruit (het scherm als plaatje), en je hulzen terug. */
+    /**
+     * De Reloading Bench: een patroon uit een huls, een kogelpunt en Crushed Gunpowder, dat buskruit uit de Crusher
+     * (hoofdstuk 76: 1 buskruit = 10), het scherm als plaatje, en je hulzen terug.
+     */
     public static List<HowToScene> reloading() {
         HowToSceneBuilder s = new HowToSceneBuilder("reloading", "Reloading Bench").plate(5, 5).height(3);
         BlockPos bench = new BlockPos(2, 1, 1);
         s.idle(6);
         s.chapter("A round");
         row(s, 120, new Vec3(2.5, 1.6, 2.6), 0.9f, 1.3f, List.of(new ItemStack(ModItems.CASING_9MM.get()),
-                new ItemStack(ModItems.BULLET_9MM.get()), new ItemStack(Items.GUNPOWDER)));
+                new ItemStack(ModItems.BULLET_9MM.get()), new ItemStack(ModItems.CRUSHED_GUNPOWDER.get())));
         s.text(115, null, Side.RIGHT,
                 "A *9mm Round* is a *9mm Casing* (copper: 8 per ingot), a *9mm Bullet* (2 iron nuggets: 4 bullets) and"
-                        + " *gunpowder*.");
+                        + " *Crushed Gunpowder*.");
         s.idle(60);
         s.item(60, new Vec3(2.5, 2.3, 2.6), new ItemStack(ModItems.ROUND_9MM.get()), 1.5f);
         s.idle(60);
+
+        // Hoofdstuk 76: het buskruit gaat eerst door een Crusher (op stroom van de warmtegenerator links ernaast). Aan het
+        // eind van dit hoofdstukje gaan ze weer weg, zodat de volgende hoofdstukjes over de bank er zijn zoals voorheen.
+        s.chapter("Crushed Gunpowder");
+        BlockPos generator = new BlockPos(0, 1, 1);
+        BlockPos crusher = new BlockPos(1, 1, 1);
+        s.place(generator, PowerScenes.heat(Direction.SOUTH));
+        s.idle(4);
+        s.place(crusher, crusher(false));
+        s.idle(10);
+        int machine = Math.round(ImtConfig.Repair.MACHINE_TICKS);
+        int crushed = CrushedGunpowderItem.perGunpowder();
+        Vec3 above = HowToSceneBuilder.top(crusher).add(0, 0.45, 0);
+        s.item(machine / 2, above, new ItemStack(Items.GUNPOWDER), 0.5f);
+        s.change(crusher, crusher(true));
+        s.text(machine / 2 + 80, HowToSceneBuilder.top(crusher).add(0, 0.6, 0), Side.RIGHT,
+                "Plain gunpowder goes through a *Crusher* first (on mains power, %s seconds): one gunpowder gives *%s Crushed"
+                        + " Gunpowder*, so one gunpowder is %s rounds.",
+                HowToSceneBuilder.number(machine / 20.0), crushed, crushed);
+        s.idle(machine / 2);
+        s.change(crusher, crusher(false));
+        s.sound(SoundEvents.SAND_BREAK, 0.4f, 1.0f);
+        // Wat eruit komt: een rijtje dat voor de blokken boven het platform zweeft, onder de tekst (hooguit 10, anders past
+        // het niet in beeld). Boven het platform, want het donkere poeder zie je amper tegen de donkere achtergrond. Elk
+        // verschijnt 3 ticks na het vorige en blijft 55 ticks, dus het laatste is weg voor de bank komt.
+        List<ItemStack> out = new ArrayList<>();
+        for (int i = 0; i < Math.min(crushed, 10); i++) {
+            out.add(new ItemStack(ModItems.CRUSHED_GUNPOWDER.get()));
+        }
+        row(s, 55, new Vec3(2.2, 1.4, 4.0), 0.4f, 0.4f, out);
+        s.idle(85 - 3 * out.size());
+        s.clear(generator, crusher);
 
         s.chapter("The Reloading Bench");
         s.place(bench, bench(ModBlocks.RELOADING_BENCH.get(), Direction.SOUTH));
@@ -540,7 +582,7 @@ public final class WeaponScenes {
         s.rightClick(HowToSceneBuilder.face(bench, Direction.SOUTH), ItemStack.EMPTY);
         s.idle(14);
         s.picture(140, "reloading_bench", 176, 166,
-                s.arrow(0.32f, 0.26f, "Casing, bullet and gunpowder"),
+                s.arrow(0.32f, 0.26f, "Casing, bullet and crushed gunpowder"),
                 s.arrow(0.83f, 0.26f, "Your round: one at a time, or shift-click for a stack"));
         s.idle(145);
 
