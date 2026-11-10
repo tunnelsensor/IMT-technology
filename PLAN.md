@@ -6031,8 +6031,8 @@ backpacks zijn. Vragen of voorstellen stel ze dan."
   **"Alles terug"** (3 s stilstaan; wat niet past blijft in het lichaam).
 
 **Mijn invulling** (zeg het als je het anders wilt):
-- De rugzaktoets is **Shift + B**: B is al de Ore Scan van de bril. Met Shift erbij botsen ze niet (NeoForge kijkt eerst
-  naar toetsen met Shift en laat de Ore Scan dan met rust). Aan te passen in Opties > Besturing.
+- De rugzaktoets was eerst **Shift + B**, omdat B de Ore Scan van de bril was. Sinds hoofdstuk 73 (jouw wens) staan de
+  snelacties van de bril standaard op geen toets, en is de rugzak gewoon **B**. Aan te passen in Opties > Besturing.
 - Het rugvakje staat in je inventaris **rechts naast de twee sling-vakjes** (onder het craftraster).
 - De recepten: Assault Pack = 6 leer, een touw, een kist, een ijzerstaaf; Patrol Pack = 2 polymeer, 3 leer, een touw, een
   kist, 2 stalen staven; Rucksack = 2 titanium, 2 polymeer, 2 stalen staven, een touw, een kist, een leer.
@@ -6107,7 +6107,7 @@ backpacks zijn. Vragen of voorstellen stel ze dan."
       vult zichzelf aan), `back`/`setBack`, klikken; `CuriosGear`: het slot "back". Config `[backpacks]`. In jouw spel
       (`client/backpack/`): `BackpackScreen` (de sorteerknop, doorlopen zoals het wiel), `BackpackLayer` (op je rug, de
       banden; het geweer van je rug-sling schuift naar achteren, `GearLayer`), `BackpackRenderer` (neergezet),
-      `BackpackClient` (de kleur, camo, Shift + B, het balkje van de rits). `GearSlotsOverlay` (het rugvakje),
+      `BackpackClient` (de kleur, camo, de rugzaktoets, het balkje van de rits). `GearSlotsOverlay` (het rugvakje),
       `GearWheelScreen` (de knop Backpack), `HowToHover`. Modellen en plaatjes uit `tools/generate_backpack_models.py`
       (ook de banden: `models/backpack/straps.json`, `hip_belt.json`), het ritsgeluid uit `generate_sounds.py`
       (`backpack_zip`). Zes nieuwe tests (`BackpackGameTests`): de rits (halverwege nog dicht, wie beweegt stopt, daarna
