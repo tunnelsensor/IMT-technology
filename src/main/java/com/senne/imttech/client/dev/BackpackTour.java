@@ -341,14 +341,99 @@ final class BackpackTour {
         t.camera(0, CameraType.THIRD_PERSON_BACK);
         t.shot(10, "pk35_theft_caught_glowing");
         t.camera(0, CameraType.FIRST_PERSON);
+        t.onServer(0, player -> player.removeEffect(net.minecraft.world.effect.MobEffects.GLOWING));
+
+        // Stap 4: het lichaam van een speler. Lotte (met harnas, een zwaard en haar rugzak) gaat dood: haar lichaam ligt op
+        // haar buik, de rugzak bovenop. De hints (op de rugzak, op het lichaam), het doorzoek-scherm, en dan je eigen lichaam
+        // met de knop "Everything back".
+        t.command(0, "gamerule keepInventory false");
         t.onServer(0, player -> {
-            player.removeEffect(net.minecraft.world.effect.MobEffects.GLOWING);
             ServerPlayer victim = player.getServer().getPlayerList().getPlayerByName("Lotte");
-            if (victim != null) {
-                victim.teleportTo(player.serverLevel(), victim.getX(), victim.getY() - 40, victim.getZ(), 0, 0);
+            if (victim == null) {
+                return;
+            }
+            victim.teleportTo(player.serverLevel(), lotte.getX() + 0.5, lotte.getY(), lotte.getZ() + 0.5, 150, 0);
+            victim.getInventory().setItem(0, new ItemStack(Items.IRON_SWORD));
+            victim.getInventory().setItem(12, new ItemStack(Items.DIAMOND, 9));
+            victim.getInventory().setItem(30, new ItemStack(Items.BREAD, 14));
+            victim.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, new ItemStack(Items.IRON_HELMET));
+            victim.setItemSlot(net.minecraft.world.entity.EquipmentSlot.CHEST, new ItemStack(Items.IRON_CHESTPLATE));
+            victim.setItemSlot(net.minecraft.world.entity.EquipmentSlot.OFFHAND, new ItemStack(Items.SHIELD));
+            Gear.set(victim, com.senne.imttech.guns.GearItem.Kind.HOLSTER, new ItemStack(com.senne.imttech.registry.ModItems.HOLSTER.get()));
+            victim.hurt(victim.damageSources().fellOutOfWorld(), 1000);
+        });
+        t.stand(10, lotte.getX() + 2.5, lotte.getY(), lotte.getZ() - 1.2, 60, 35);
+        t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+        t.shot(15, "pk36_body_on_the_ground");
+        t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+        t.stand(0, lotte.getX() + 0.5, lotte.getY(), lotte.getZ() - 1.4, 0, 0);
+        t.lookAt(5, new Vec3(lotte.getX() + 0.5 - 0.1, lotte.getY() + 0.35, lotte.getZ() + 0.5 + 0.15));
+        t.shot(8, "pk37_body_hint_pack");
+        t.lookAt(0, new Vec3(lotte.getX() + 0.5 + 0.3, lotte.getY() + 0.3, lotte.getZ() + 0.5 - 0.5));
+        t.shot(8, "pk38_body_hint_search");
+        t.onServer(0, player -> {
+            com.senne.imttech.body.PlayerBodyEntity body = bodyNear(player);
+            if (body != null) {
+                com.senne.imttech.body.BodyMenu.open(player, body);
             }
         });
+        t.step(5, () -> HowToTour.mouseTo(2, 2));
+        t.shot(8, "pk39_body_search_screen");
+        t.close(0);
+        // Je eigen lichaam (zoals na doodgaan), met de knop "Everything back".
+        t.onServer(0, player -> {
+            com.senne.imttech.body.PlayerBodyEntity old = bodyNear(player);
+            if (old != null) {
+                old.discard();
+            }
+            wear(player, BackpackItem.Size.ASSAULT, -1, false);
+            Gear.setBack(player, ItemStack.EMPTY);
+            com.senne.imttech.body.PlayerBodyEntity body = com.senne.imttech.backpack.BackpackRegistry.PLAYER_BODY.get().create(player.serverLevel());
+            if (body == null) {
+                return;
+            }
+            body.moveTo(lotte.getX() + 0.5, lotte.getY(), lotte.getZ() + 0.5, 30, 0);
+            body.setOwner(player.getUUID(), player.getGameProfile().getName());
+            body.loot().setItem(0, com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.GLOCK_19,
+                    com.senne.imttech.guns.GunMaterial.STEEL));
+            body.loot().setItem(1, new ItemStack(Items.IRON_PICKAXE));
+            body.loot().setItem(15, new ItemStack(Items.COBBLESTONE, 48));
+            body.loot().setItem(com.senne.imttech.body.PlayerBodyEntity.ARMOR + 2, new ItemStack(Items.IRON_CHESTPLATE));
+            body.loot().setItem(com.senne.imttech.body.PlayerBodyEntity.ARMOR + 1, new ItemStack(Items.IRON_LEGGINGS));
+            body.loot().setItem(com.senne.imttech.body.PlayerBodyEntity.GEAR + 2, new ItemStack(com.senne.imttech.registry.ModItems.MAG_POUCH.get()));
+            body.setPack(withPouches(loaded(BackpackItem.Size.PATROL, -2)));
+            player.serverLevel().addFreshEntity(body);
+            com.senne.imttech.body.BodyMenu.open(player, body);
+        });
+        t.step(5, () -> HowToTour.mouseTo(2, 2));
+        t.shot(8, "pk40_own_body_everything_back");
+        t.onServer(0, player -> {
+            if (player.containerMenu instanceof com.senne.imttech.body.BodyMenu menu && menu.body() != null) {
+                com.senne.imttech.body.PlayerBodies.startRestore(player, menu.body());
+            }
+        });
+        t.shot(30, "pk41_putting_everything_back");
+        t.step(40, () -> { });
+        t.camera(0, CameraType.THIRD_PERSON_FRONT);
+        t.shot(10, "pk42_everything_back");
+        t.camera(0, CameraType.FIRST_PERSON);
+        t.onServer(0, player -> {
+            com.senne.imttech.body.PlayerBodyEntity old = bodyNear(player);
+            if (old != null) {
+                old.discard();
+            }
+            player.getInventory().clearContent();
+            Gear.setBack(player, ItemStack.EMPTY);
+        });
         t.command(10, "gamemode creative @a");
+    }
+
+    /** Het lichaam het dichtst bij deze speler (binnen 8 blokken), of null. */
+    static com.senne.imttech.body.PlayerBodyEntity bodyNear(ServerPlayer player) {
+        java.util.List<com.senne.imttech.body.PlayerBodyEntity> bodies = player.serverLevel().getEntitiesOfClass(
+                com.senne.imttech.body.PlayerBodyEntity.class, player.getBoundingBox().inflate(8));
+        bodies.sort(java.util.Comparator.comparingDouble(player::distanceToSqr));
+        return bodies.isEmpty() ? null : bodies.getFirst();
     }
 
     /** Een klik (oppakken of neerleggen) op dit vakje van het open scherm, zoals met je muis. */

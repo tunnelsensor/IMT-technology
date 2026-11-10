@@ -132,6 +132,48 @@ public abstract class BackpackPlace {
         }
     }
 
+    // ================================================================ Op een lichaam (stap 4)
+
+    public static BackpackPlace body(com.senne.imttech.body.PlayerBodyEntity body, ServerPlayer viewer) {
+        return new Body(body, viewer);
+    }
+
+    /** De rugzak op de rug van een lichaam: iedereen mag erin (wie het lichaam vindt). */
+    public static final class Body extends BackpackPlace {
+        private final com.senne.imttech.body.PlayerBodyEntity body;
+        private final ServerPlayer viewer;
+
+        Body(com.senne.imttech.body.PlayerBodyEntity body, ServerPlayer viewer) {
+            this.body = body;
+            this.viewer = viewer;
+        }
+
+        @Override
+        public ItemStack get() {
+            return body.isRemoved() ? ItemStack.EMPTY : body.pack();
+        }
+
+        @Override
+        public void set(ItemStack pack) {
+            body.setPack(pack);
+        }
+
+        @Override
+        public boolean reachable(ServerPlayer who) {
+            return who == viewer && who.isAlive() && who.level() == body.level() && who.distanceTo(body) <= 5;
+        }
+
+        @Override
+        public Vec3 position() {
+            return body.position().add(0, 0.4, 0);
+        }
+
+        @Override
+        public Component title() {
+            return Component.translatable("backpack.imttech.theft_title", body.ownerName(), get().getHoverName());
+        }
+    }
+
     // ================================================================ In je hand
 
     public static BackpackPlace hand(ServerPlayer player, InteractionHand hand) {

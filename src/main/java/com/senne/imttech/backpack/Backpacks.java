@@ -37,6 +37,9 @@ public final class Backpacks {
         BackpackRegistry.register(modEventBus);
         modEventBus.addListener(Backpacks::registerPayloads);
         NeoForge.EVENT_BUS.addListener(BackpackTheft::onEntityInteractSpecific);
+        // Stap 4: het lichaam van een speler. Als allerlaatste bij doodgaan (een mod die je nog redt, gaat voor).
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST, com.senne.imttech.body.PlayerBodies::onDeath);
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST, com.senne.imttech.body.PlayerBodies::onDrops);
         NeoForge.EVENT_BUS.addListener((ServerTickEvent.Post event) -> {
             BackpackZip.tick(event.getServer());
             BackpackTheft.tick(event.getServer());
@@ -44,6 +47,7 @@ public final class Backpacks {
             boolean dumpTick = event.getServer().getTickCount() % 4 == 0;
             for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
                 updateSpeed(player);
+                com.senne.imttech.body.PlayerBodies.track(player);
                 if (dumpTick) {
                     Molle.tickDump(player);
                 }
@@ -54,6 +58,7 @@ public final class Backpacks {
             BackpackInventory.clear();
             Molle.clear();
             BackpackTheft.clear();
+            com.senne.imttech.body.PlayerBodies.clear();
         });
     }
 
@@ -64,12 +69,17 @@ public final class Backpacks {
                 switch (payload.action()) {
                     case BackpackActionPayload.OPEN_WORN -> openWorn(player);
                     case BackpackActionPayload.SORT -> sort(player);
+                    case BackpackActionPayload.RESTORE_BODY -> {
+                        if (player.containerMenu instanceof com.senne.imttech.body.BodyMenu menu && menu.body() != null) {
+                            com.senne.imttech.body.PlayerBodies.startRestore(player, menu.body());
+                        }
+                    }
                     default -> { }
                 }
             }
         });
         registrar.playToClient(BackpackZipPayload.TYPE, BackpackZipPayload.STREAM_CODEC,
-                (payload, context) -> com.senne.imttech.client.backpack.BackpackClient.zip(payload.ticks()));
+                (payload, context) -> com.senne.imttech.client.backpack.BackpackClient.zip(payload.ticks(), payload.label()));
         registrar.playToClient(BackpackTheftPayload.TYPE, BackpackTheftPayload.STREAM_CODEC,
                 (payload, context) -> com.senne.imttech.client.backpack.BackpackClient.theftMeter(payload.meter()));
     }

@@ -158,8 +158,11 @@ public class RaidDroneEntity extends Monster implements com.senne.imttech.weapon
 
         LivingEntity target = getTarget();
         if (target == null || !target.isAlive() || distanceToSqr(target) > ImtConfig.Raids.GIVE_UP_RANGE * ImtConfig.Raids.GIVE_UP_RANGE) {
-            Player nearest = level.getNearestPlayer(this, ImtConfig.Raids.FIND_RANGE);
-            target = nearest != null && !nearest.isCreative() && !nearest.isSpectator() ? nearest : raidTarget(level);
+            // Hoofdstuk 72: een dode speler (in zijn doodscherm; zijn lichaam ligt er) is geen doelwit, anders bleef hij
+            // daarop wachten en kwam hij nooit voor wie nog leeft.
+            Player nearest = level.getNearestPlayer(getX(), getY(), getZ(), ImtConfig.Raids.FIND_RANGE,
+                    entity -> entity.isAlive() && entity instanceof Player player && !player.isCreative() && !player.isSpectator());
+            target = nearest != null ? nearest : raidTarget(level);
             setTarget(target);
         }
         if (target == null) {

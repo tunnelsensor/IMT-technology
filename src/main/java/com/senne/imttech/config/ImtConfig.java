@@ -2405,5 +2405,19 @@ public final class ImtConfig {
         /** Zo hard klinkt de rits als je van achteren openritst (je eigen rugzak: 0,7). */
         @Tunable(value = "How loud the zip is when you unzip someone else's backpack from behind (your own: 0.7)", min = 0, max = 1)
         public static float THEFT_ZIP_VOLUME = 0.35f;
+
+        // Stap 4: het lichaam van een speler.
+        /** Laat een speler die doodgaat (zonder keepInventory) een lichaam achter met al zijn spullen (anders vallen ze op de grond)? */
+        @Tunable("Does a player who dies (without keepInventory) leave a body with all their things (otherwise they drop on the ground)")
+        public static boolean PLAYER_BODIES = true;
+        /** Na zoveel minuten verdwijnt een lichaam (en valt wat erin zat op de grond); 0 = nooit (jouw keuze: tot het leeg is). */
+        @Tunable(value = "Minutes after which a player body disappears and drops what is left (0 = never, it stays until empty)", min = 0, max = 100_000)
+        public static float BODY_MINUTES = 0.0f;
+        /** Zo lang (seconden) duurt het om de rugzak van een lichaam af te halen (stilstaan). */
+        @Tunable(value = "Seconds it takes to take the backpack off a body (stand still)", min = 0, max = 30)
+        public static float BODY_TAKE_PACK_SECONDS = 3.0f;
+        /** Zo lang (seconden) duurt "Everything back" bij je eigen lichaam (stilstaan). */
+        @Tunable(value = "Seconds 'Everything back' takes at your own body (stand still)", min = 0, max = 30)
+        public static float BODY_RESTORE_SECONDS = 3.0f;
     }
 }

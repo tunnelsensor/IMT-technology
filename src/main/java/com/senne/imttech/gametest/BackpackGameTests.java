@@ -443,6 +443,9 @@ public final class BackpackGameTests {
         check(Gear.drawGrenade(player, com.senne.imttech.weapons.GrenadeItem.Kind.EMP.ordinal()), "Trekken uit de MOLLE-granaatpouch lukte niet");
         check(player.getMainHandItem().is(ModItems.EMP_GRENADE.get()), "De granaat kwam niet in je hand");
         ModItems.EMP_GRENADE.get().use(helper.getLevel(), player, InteractionHand.MAIN_HAND);
+        // De gegooide granaat meteen weg: anders gaat hij na zijn lont af bij een andere test (een EMP stoort drones).
+        helper.getLevel().getEntitiesOfClass(com.senne.imttech.weapons.GrenadeEntity.class, player.getBoundingBox().inflate(6))
+                .forEach(net.minecraft.world.entity.Entity::discard);
         check(player.getMainHandItem().is(ModItems.EMP_GRENADE.get()), "De volgende granaat kwam niet uit de MOLLE-pouch");
         check(com.senne.imttech.backpack.MolleItem.filled(BackpackItem.molle(Gear.back(player)).getFirst()) == 0,
                 "De MOLLE-granaatpouch hoort nu leeg te zijn");
@@ -629,6 +632,188 @@ public final class BackpackGameTests {
         helper.runAfterDelay(3, () -> {
             check(!(thief.containerMenu instanceof BackpackMenu), "Het slachtoffer liep weg, maar het scherm staat nog open");
             check(!thief.hasEffect(net.minecraft.world.effect.MobEffects.GLOWING), "Weglopen is geen betrapt");
+            helper.succeed();
+        });
+    }
+
+    // ================================================================ Stap 4: het lichaam van een speler
+
+    /** Het lichaam bij deze speler (binnen 4 blokken), of null. */
+    private static com.senne.imttech.body.PlayerBodyEntity bodyNear(GameTestHelper helper, ServerPlayer player) {
+        List<com.senne.imttech.body.PlayerBodyEntity> bodies = helper.getLevel().getEntitiesOfClass(
+                com.senne.imttech.body.PlayerBodyEntity.class, player.getBoundingBox().inflate(4));
+        return bodies.isEmpty() ? null : bodies.getFirst();
+    }
+
+    /** Een lichaam van {@code owner} op deze plek, met dit erin (vakje, item, vakje, item, ...). */
+    private static com.senne.imttech.body.PlayerBodyEntity body(GameTestHelper helper, ServerPlayer owner, BlockPos at, Object... slotsAndItems) {
+        com.senne.imttech.body.PlayerBodyEntity body = BackpackRegistry.PLAYER_BODY.get().create(helper.getLevel());
+        Vec3 pos = helper.absoluteVec(Vec3.atBottomCenterOf(at));
+        body.moveTo(pos.x, pos.y, pos.z, 0, 0);
+        body.setOwner(owner.getUUID(), owner.getGameProfile().getName());
+        for (int i = 0; i + 1 < slotsAndItems.length; i += 2) {
+            body.loot().setItem((Integer) slotsAndItems[i], (ItemStack) slotsAndItems[i + 1]);
+        }
+        helper.getLevel().addFreshEntity(body);
+        return body;
+    }
+
+    /**
+     * Doodgaan zonder keepInventory: een lichaam met alles op zijn plek (werkbalk, inventaris, harnas, andere hand, holster),
+     * de rugzak apart op zijn rug; een zwaard met de vloek van verdwijnen verdwijnt, en er valt niets op de grond.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "bodies")
+    public static void player_death_leaves_a_body_with_everything(GameTestHelper helper) {
+        check(!Gear.curios(), "Deze test is voor zonder Curios");
+        var keep = helper.getLevel().getGameRules().getRule(net.minecraft.world.level.GameRules.RULE_KEEPINVENTORY);
+        boolean kept = keep.get();
+        keep.set(false, helper.getLevel().getServer());
+        try {
+            floor(helper, new BlockPos(3, 2, 3));
+            ServerPlayer player = player(helper, "body-dier", new BlockPos(3, 2, 3));
+            player.getInventory().setItem(0, new ItemStack(Items.IRON_SWORD));
+            player.getInventory().setItem(20, new ItemStack(Items.DIAMOND, 7));
+            ItemStack cursed = new ItemStack(Items.GOLDEN_SWORD);
+            cursed.enchant(helper.getLevel().registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT)
+                    .getOrThrow(net.minecraft.world.item.enchantment.Enchantments.VANISHING_CURSE), 1);
+            player.getInventory().setItem(5, cursed);
+            player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.CHEST, new ItemStack(Items.IRON_CHESTPLATE));
+            player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.OFFHAND, new ItemStack(Items.SHIELD));
+            ItemStack holster = new ItemStack(ModItems.HOLSTER.get());
+            com.senne.imttech.guns.GearItem.setContents(holster, List.of(com.senne.imttech.guns.FirearmItem.loaded(
+                    com.senne.imttech.guns.FirearmType.GLOCK_19, com.senne.imttech.guns.GunMaterial.STEEL)));
+            Gear.set(player, com.senne.imttech.guns.GearItem.Kind.HOLSTER, holster);
+            Gear.setBack(player, pack(BackpackItem.Size.ASSAULT, new ItemStack(Items.GOLD_INGOT, 3)));
+            player.hurt(player.damageSources().fellOutOfWorld(), 1000);
+            check(!player.isAlive(), "De speler ging niet dood");
+            com.senne.imttech.body.PlayerBodyEntity body = bodyNear(helper, player);
+            check(body != null, "Er ligt geen lichaam");
+            check(body.isOwner(player) && body.ownerName().equals("body-dier"), "Het lichaam is niet van de speler");
+            check(body.loot().getItem(0).is(Items.IRON_SWORD), "Het zwaard ligt niet in vakje 0 (de werkbalk)");
+            check(body.loot().getItem(20).is(Items.DIAMOND) && body.loot().getItem(20).getCount() == 7, "De diamanten liggen niet in vakje 20");
+            check(body.loot().getItem(5).isEmpty(), "Het zwaard met de vloek van verdwijnen zit in het lichaam");
+            check(body.loot().getItem(com.senne.imttech.body.PlayerBodyEntity.ARMOR + 2).is(Items.IRON_CHESTPLATE), "Het harnas ligt niet op zijn plek");
+            check(body.loot().getItem(com.senne.imttech.body.PlayerBodyEntity.OFFHAND).is(Items.SHIELD), "Het schild ligt niet op zijn plek");
+            check(com.senne.imttech.guns.GearItem.kindOf(body.loot().getItem(com.senne.imttech.body.PlayerBodyEntity.GEAR))
+                    == com.senne.imttech.guns.GearItem.Kind.HOLSTER, "De holster ligt niet op zijn plek");
+            check(BackpackItem.sizeOf(body.pack()) == BackpackItem.Size.ASSAULT
+                    && BackpackItem.contents(body.pack()).getFirst().is(Items.GOLD_INGOT), "De rugzak ligt niet (met inhoud) op zijn rug");
+            check(Gear.back(player).isEmpty() && player.getInventory().isEmpty(), "De dode speler heeft nog spullen");
+            check(helper.getLevel().getEntitiesOfClass(ItemEntity.class, helper.getBounds().inflate(3)).isEmpty(), "Er viel toch iets op de grond");
+            body.discard();
+            // De dode testspeler weg (anders mikt een raiddrone van een test ernaast nog op hem).
+            helper.getLevel().getServer().getPlayerList().remove(player);
+        } finally {
+            keep.set(kept, helper.getLevel().getServer());
+        }
+        helper.succeed();
+    }
+
+    /** Met keepInventory geen lichaam: je houdt alles, zoals altijd. */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "bodies")
+    public static void keep_inventory_leaves_no_body(GameTestHelper helper) {
+        var keep = helper.getLevel().getGameRules().getRule(net.minecraft.world.level.GameRules.RULE_KEEPINVENTORY);
+        boolean kept = keep.get();
+        keep.set(true, helper.getLevel().getServer());
+        try {
+            ServerPlayer player = player(helper, "body-keeper", new BlockPos(3, 2, 3));
+            player.getInventory().setItem(0, new ItemStack(Items.IRON_SWORD));
+            player.hurt(player.damageSources().fellOutOfWorld(), 1000);
+            check(bodyNear(helper, player) == null, "Met keepInventory kwam er toch een lichaam");
+            helper.getLevel().getServer().getPlayerList().remove(player);
+        } finally {
+            keep.set(kept, helper.getLevel().getServer());
+        }
+        helper.succeed();
+    }
+
+    /**
+     * "Everything back" (de eigenaar): alles terug op zijn plek (borstplaat aan, holster om, rugzak op je rug, de diamanten
+     * in vakje 20); vakje 0 en je hoofd (de bril) zijn bezet, dus het zwaard en de helm blijven in het lichaam. Een ander mag
+     * de knop niet gebruiken.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "bodies")
+    public static void body_everything_back_restores_slots(GameTestHelper helper) {
+        check(!Gear.curios(), "Deze test is voor zonder Curios");
+        ServerPlayer owner = player(helper, "body-owner", new BlockPos(3, 2, 3));
+        ServerPlayer stranger = player(helper, "body-stranger", new BlockPos(5, 2, 3));
+        com.senne.imttech.body.PlayerBodyEntity body = body(helper, owner, new BlockPos(3, 2, 4),
+                0, new ItemStack(Items.IRON_SWORD), 20, new ItemStack(Items.DIAMOND, 7),
+                com.senne.imttech.body.PlayerBodyEntity.ARMOR + 2, new ItemStack(Items.IRON_CHESTPLATE),
+                com.senne.imttech.body.PlayerBodyEntity.ARMOR + 3, new ItemStack(Items.IRON_HELMET),
+                com.senne.imttech.body.PlayerBodyEntity.GEAR, new ItemStack(ModItems.HOLSTER.get()),
+                com.senne.imttech.body.PlayerBodyEntity.EXTRA, new ItemStack(Items.ARROW, 16));
+        body.setPack(pack(BackpackItem.Size.PATROL));
+        owner.getInventory().setItem(0, new ItemStack(Items.STONE));
+        check(!com.senne.imttech.body.PlayerBodies.startRestore(stranger, body), "Een ander kon \"Everything back\" gebruiken");
+        com.senne.imttech.body.PlayerBodies.restore(owner, body);
+        check(owner.getInventory().getItem(20).is(Items.DIAMOND), "De diamanten kwamen niet terug in vakje 20");
+        check(owner.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.CHEST).is(Items.IRON_CHESTPLATE), "De borstplaat ging niet terug aan");
+        // De testspeler draagt de I.M.T-bril op zijn hoofd: daar past de helm niet, dus die blijft in het lichaam.
+        check(body.loot().getItem(com.senne.imttech.body.PlayerBodyEntity.ARMOR + 3).is(Items.IRON_HELMET),
+                "Je hoofd was bezet (de bril), maar de helm verdween uit het lichaam");
+        check(com.senne.imttech.guns.GearItem.kindOf(Gear.get(owner, com.senne.imttech.guns.GearItem.Kind.HOLSTER))
+                == com.senne.imttech.guns.GearItem.Kind.HOLSTER, "De holster ging niet terug om");
+        check(BackpackItem.sizeOf(Gear.back(owner)) == BackpackItem.Size.PATROL && !body.hasPack(), "De rugzak ging niet terug op je rug");
+        check(owner.getInventory().countItem(Items.ARROW) == 16, "De pijlen (van een andere mod) kwamen niet in je inventaris");
+        check(owner.getInventory().getItem(0).is(Items.STONE) && body.loot().getItem(0).is(Items.IRON_SWORD),
+                "Vakje 0 was bezet: het zwaard hoort in het lichaam te blijven");
+        helper.succeed();
+    }
+
+    /**
+     * De rugzak van een lichaam: rechtsklik op de rugzak ritst hem open (iedereen mag erin); sneak + rechtsklik haalt hem
+     * eraf (3 s), op je rug. Een klik lager (zijn benen) is het lichaam, niet de rugzak.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "bodies")
+    public static void body_backpack_zip_and_take(GameTestHelper helper) {
+        check(!Gear.curios(), "Deze test is voor zonder Curios");
+        ServerPlayer owner = player(helper, "body-pack-owner", new BlockPos(1, 2, 1));
+        ServerPlayer finder = player(helper, "body-finder", new BlockPos(3, 2, 2));
+        com.senne.imttech.body.PlayerBodyEntity body = body(helper, owner, new BlockPos(3, 2, 4));
+        body.setPack(pack(BackpackItem.Size.RUCKSACK, new ItemStack(Items.EMERALD, 4)));
+        check(body.onPack(new Vec3(0, 0.4, 0.2)), "Een klik op zijn rug telt niet als de rugzak");
+        check(!body.onPack(new Vec3(0, 0.4, -0.55)), "Een klik op zijn benen telt als de rugzak");
+        // Rechtsklik op de rugzak (zoals Minecraft het stuurt, met de plek): de rits.
+        body.interactAt(finder, new Vec3(0, 0.4, 0.2), InteractionHand.MAIN_HAND);
+        check(BackpackZip.busy(finder), "Rechtsklik op de rugzak begon geen rits");
+        helper.runAfterDelay(zipTicks() + 3, () -> {
+            check(finder.containerMenu instanceof BackpackMenu, "Na de rits staat de rugzak van het lichaam niet open");
+            BackpackMenu menu = (BackpackMenu) finder.containerMenu;
+            menu.clicked(0, 0, net.minecraft.world.inventory.ClickType.QUICK_MOVE, finder);
+            check(finder.getInventory().countItem(Items.EMERALD) == 4, "De smaragden kwamen niet uit de rugzak van het lichaam");
+            check(BackpackItem.contents(body.pack()).getFirst().isEmpty(), "De smaragden zitten nog in de rugzak van het lichaam");
+            finder.closeContainer();
+            finder.setShiftKeyDown(true);
+            body.interactAt(finder, new Vec3(0, 0.4, 0.2), InteractionHand.MAIN_HAND);
+            finder.setShiftKeyDown(false);
+            check(BackpackZip.busy(finder), "Sneak + rechtsklik op de rugzak begon niet (3 s eraf halen)");
+        });
+        int take = zipTicks() + 3 + Math.round(ImtConfig.Backpacks.BODY_TAKE_PACK_SECONDS * 20) + 4;
+        helper.runAfterDelay(take, () -> {
+            check(!body.hasPack(), "De rugzak ligt nog op het lichaam");
+            check(BackpackItem.sizeOf(Gear.back(finder)) == BackpackItem.Size.RUCKSACK, "De rugzak van het lichaam is niet op je (lege) rug");
+            body.discard();
+            helper.succeed();
+        });
+    }
+
+    /** Doorzoeken: eruit halen mag, erin leggen niet; en een leeg lichaam verdwijnt vanzelf. */
+    @GameTest(template = ARENA, timeoutTicks = 80, batch = "bodies")
+    public static void empty_body_disappears(GameTestHelper helper) {
+        ServerPlayer owner = player(helper, "body-empty-owner", new BlockPos(1, 2, 1));
+        ServerPlayer looter = player(helper, "body-looter", new BlockPos(3, 2, 2));
+        com.senne.imttech.body.PlayerBodyEntity body = body(helper, owner, new BlockPos(3, 2, 4), 9, new ItemStack(Items.APPLE, 3));
+        com.senne.imttech.body.BodyMenu.open(looter, body);
+        check(looter.containerMenu instanceof com.senne.imttech.body.BodyMenu, "Het lichaam ging niet open");
+        com.senne.imttech.body.BodyMenu menu = (com.senne.imttech.body.BodyMenu) looter.containerMenu;
+        check(!menu.getSlot(0).mayPlace(new ItemStack(Items.STONE)), "Je kon iets in het lichaam leggen");
+        // Vakje 9 van het lichaam staat in rij 1, het eerste vakje: slot 9 van het menu.
+        menu.quickMoveStack(looter, 9);
+        check(looter.getInventory().countItem(Items.APPLE) == 3, "De appels kwamen niet uit het lichaam");
+        looter.closeContainer();
+        helper.runAfterDelay(30, () -> {
+            check(body.isRemoved(), "Het lege lichaam ligt er nog");
             helper.succeed();
         });
     }

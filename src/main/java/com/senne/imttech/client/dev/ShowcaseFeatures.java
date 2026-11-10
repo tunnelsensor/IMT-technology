@@ -3640,6 +3640,123 @@ final class ShowcaseFeatures {
                         victim.teleportTo(player.serverLevel(), victim.getX(), victim.getY() - 40, victim.getZ(), 0, 0);
                     }
                 }));
+        add("Player bodies", "Hoofdstuk 72, stap 4. Lotte staat voor je, met een helm, een borstplaat, een zwaard, diamanten en haar "
+                + "rugzak. Ze valt dood: er valt niets op de grond, maar er ligt een lichaam, op haar buik, met haar harnas aan en "
+                + "haar rugzak bovenop. Kijk je naar de rugzak, dan zegt de hint \"Right-click: open the backpack. Sneak: take it "
+                + "(3 s)\"; op het lichaam \"Right-click: search Lotte's body\". Je doorzoekt het lichaam: bovenaan haar harnas, "
+                + "schild en holster, eronder haar inventaris op dezelfde plekken als bij haar. Je haalt de diamanten eruit. Dan "
+                + "rits je haar rugzak open en kijk je erin, en met sneak + rechtsklik haal je hem eraf (3 s stilstaan): nu draag "
+                + "jij hem. Tot slot je eigen lichaam (zoals na doodgaan): in het scherm staat rechtsboven \"Everything back\"; "
+                + "na 3 s stilstaan zit alles weer op zijn plek (je harnas aan, je Glock en je houweel in je werkbalk).",
+                GameType.SURVIVAL, new Vec3(packs.getX() + 0.5, packs.getY() + 1, packs.getZ() - 4), 0, 20, s -> s
+                .command(0, "gamerule keepInventory false")
+                .onServer(0, player -> {
+                    BackpackTour.buildYard(player.serverLevel(), packs);
+                    player.getInventory().clearContent();
+                    com.senne.imttech.guns.Gear.setBack(player, ItemStack.EMPTY);
+                    ServerPlayer victim = DevWorld.fakePlayerAt(player.serverLevel(), "Lotte", packs.offset(0, 1, -2));
+                    if (!victim.isAlive()) {
+                        victim.setHealth(victim.getMaxHealth());
+                    }
+                    victim.teleportTo(player.serverLevel(), packs.getX() + 0.5, packs.getY() + 1, packs.getZ() - 1.5, 180, 0);
+                    victim.getInventory().setItem(0, new ItemStack(net.minecraft.world.item.Items.IRON_SWORD));
+                    victim.getInventory().setItem(12, new ItemStack(net.minecraft.world.item.Items.DIAMOND, 9));
+                    victim.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, new ItemStack(net.minecraft.world.item.Items.IRON_HELMET));
+                    victim.setItemSlot(net.minecraft.world.entity.EquipmentSlot.CHEST, new ItemStack(net.minecraft.world.item.Items.IRON_CHESTPLATE));
+                    com.senne.imttech.guns.Gear.setBack(victim, BackpackTour.withPouches(BackpackTour.loaded(
+                            com.senne.imttech.backpack.BackpackItem.Size.PATROL, 0x6B5A3A)));
+                })
+                .lookAt(0, new Vec3(packs.getX() + 0.5, packs.getY() + 1.6, packs.getZ() - 1.5))
+                .pause(50)
+                .onServer(0, player -> {
+                    ServerPlayer victim = player.getServer().getPlayerList().getPlayerByName("Lotte");
+                    if (victim != null) {
+                        victim.hurt(victim.damageSources().fellOutOfWorld(), 1000);
+                    }
+                })
+                .pause(40)
+                .stand(0, packs.getX() + 0.5, packs.getY() + 1, packs.getZ() - 3.4, 0, 0)
+                .lookAt(5, new Vec3(packs.getX() + 0.4, packs.getY() + 1.4, packs.getZ() - 1.3))
+                .pause(50)
+                .lookAt(0, new Vec3(packs.getX() + 0.8, packs.getY() + 1.3, packs.getZ() - 2.0))
+                .pause(50)
+                // Doorzoeken, en de diamanten eruit (vakje 12 van het lichaam staat in rij 1, het vierde: slot 12).
+                .onServer(0, player -> {
+                    com.senne.imttech.body.PlayerBodyEntity body = BackpackTour.bodyNear(player);
+                    if (body != null) {
+                        com.senne.imttech.body.BodyMenu.open(player, body);
+                    }
+                })
+                .pause(60)
+                .step(0, () -> theftQuickMove(12))
+                .pause(40)
+                .close(10)
+                // De rugzak openritsen en erin kijken, en hem dan eraf halen.
+                .onServer(0, player -> {
+                    com.senne.imttech.body.PlayerBodyEntity body = BackpackTour.bodyNear(player);
+                    if (body != null) {
+                        com.senne.imttech.backpack.BackpackZip.start(player, com.senne.imttech.backpack.BackpackPlace.body(body, player));
+                    }
+                })
+                .waitUntil(60, () -> Minecraft.getInstance().screen instanceof com.senne.imttech.client.backpack.BackpackScreen)
+                .pause(50)
+                .close(10)
+                .onServer(0, player -> {
+                    com.senne.imttech.body.PlayerBodyEntity body = BackpackTour.bodyNear(player);
+                    if (body != null) {
+                        com.senne.imttech.body.PlayerBodies.takePack(player, body);
+                    }
+                })
+                .pause(80)
+                .camera(0, CameraType.THIRD_PERSON_BACK)
+                .pause(40)
+                .camera(0, CameraType.FIRST_PERSON)
+                // Je eigen lichaam, met "Everything back".
+                .onServer(0, player -> {
+                    com.senne.imttech.body.PlayerBodyEntity old = BackpackTour.bodyNear(player);
+                    if (old != null) {
+                        old.discard();
+                    }
+                    player.getInventory().clearContent();
+                    com.senne.imttech.guns.Gear.setBack(player, ItemStack.EMPTY);
+                    com.senne.imttech.body.PlayerBodyEntity body = com.senne.imttech.backpack.BackpackRegistry.PLAYER_BODY.get().create(player.serverLevel());
+                    if (body == null) {
+                        return;
+                    }
+                    body.moveTo(packs.getX() + 0.5, packs.getY() + 1, packs.getZ() - 1.5, 30, 0);
+                    body.setOwner(player.getUUID(), player.getGameProfile().getName());
+                    body.loot().setItem(0, com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.GLOCK_19,
+                            com.senne.imttech.guns.GunMaterial.STEEL));
+                    body.loot().setItem(1, new ItemStack(net.minecraft.world.item.Items.IRON_PICKAXE));
+                    body.loot().setItem(com.senne.imttech.body.PlayerBodyEntity.ARMOR + 2, new ItemStack(net.minecraft.world.item.Items.IRON_CHESTPLATE));
+                    body.setPack(BackpackTour.withPouches(BackpackTour.loaded(com.senne.imttech.backpack.BackpackItem.Size.ASSAULT, -1)));
+                    player.serverLevel().addFreshEntity(body);
+                    com.senne.imttech.body.BodyMenu.open(player, body);
+                })
+                .pause(70)
+                .onServer(0, player -> {
+                    if (player.containerMenu instanceof com.senne.imttech.body.BodyMenu menu && menu.body() != null) {
+                        com.senne.imttech.body.PlayerBodies.startRestore(player, menu.body());
+                    }
+                })
+                .pause(100)
+                .onServer(0, player -> {
+                    com.senne.imttech.body.PlayerBodyEntity old = BackpackTour.bodyNear(player);
+                    if (old != null) {
+                        old.discard();
+                    }
+                    player.getInventory().clearContent();
+                    com.senne.imttech.guns.Gear.setBack(player, ItemStack.EMPTY);
+                }));
+    }
+
+    /** Hoofdstuk 72, stap 4: shift-klik op dit vakje van het open scherm (een lichaam doorzoeken), zoals met je muis. */
+    static void theftQuickMove(int slot) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null && mc.gameMode != null && mc.screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> screen) {
+            mc.gameMode.handleInventoryMouseClick(screen.getMenu().containerId, slot, 0,
+                    net.minecraft.world.inventory.ClickType.QUICK_MOVE, mc.player);
+        }
     }
 
     /** Hoofdstuk 72, stap 3: een klik (oppakken of neerleggen) op dit vakje van het open rugzakscherm, zoals met je muis. */

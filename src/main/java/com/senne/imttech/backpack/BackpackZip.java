@@ -23,20 +23,27 @@ import net.neoforged.neoforge.network.payload.AdvancedOpenScreenPayload;
  * (BackpackZipPayload, client/backpack/BackpackClient).
  *
  * Dat geldt voor elke rugzak: op je rug, in je hand, neergezet, en (stap 3 en 4) die van een ander of van een lichaam.
+ *
+ * Stap 4: hetzelfde stilstaan met een balkje voor andere dingen die even duren ({@link #startTimed}): de rugzak van een
+ * lichaam afhalen, en "Alles terug" bij je eigen lichaam.
  */
 public final class BackpackZip {
     private BackpackZip() {}
 
     private static final class Job {
-        final BackpackPlace place;
         final Vec3 start;
         final int total;
+        /** Kan het nog (de rugzak is er nog, je kunt er nog bij)? */
+        final java.util.function.BooleanSupplier stillOk;
+        /** Wat er gebeurt als het balkje vol is. */
+        final Runnable finish;
         int left;
 
-        Job(BackpackPlace place, Vec3 start, int total) {
-            this.place = place;
+        Job(Vec3 start, int total, java.util.function.BooleanSupplier stillOk, Runnable finish) {
             this.start = start;
             this.total = total;
+            this.stillOk = stillOk;
+            this.finish = finish;
             this.left = total;
         }
     }
@@ -56,13 +63,32 @@ public final class BackpackZip {
         if (ticks <= 0) {
             return open(player, place);
         }
-        JOBS.put(player.getUUID(), new Job(place, player.position(), ticks));
-        ModNetwork.sendTo(player, new BackpackZipPayload(ticks));
+        JOBS.put(player.getUUID(), new Job(player.position(), ticks,
+                () -> BackpackItem.isBackpack(place.get()) && place.reachable(player), () -> open(player, place)));
+        ModNetwork.sendTo(player, new BackpackZipPayload(ticks, "backpack.imttech.unzipping"));
         Vec3 at = place.position();
         // Van achteren (stap 3) rits je zachter, maar hij kan het nog horen.
         float volume = place instanceof BackpackPlace.Theft ? ImtConfig.Backpacks.THEFT_ZIP_VOLUME : 0.7f;
         player.serverLevel().playSound(null, at.x, at.y, at.z, ModSounds.BACKPACK_ZIP.get(), SoundSource.PLAYERS, volume,
                 0.95f + player.getRandom().nextFloat() * 0.1f);
+        return true;
+    }
+
+    /**
+     * Stap 4: iets anders dat even duurt, met hetzelfde balkje en dezelfde regel (stilstaan): {@code ticks} lang, met deze
+     * tekst (een vertaalsleutel) onder je vizier; {@code stillOk} wordt elke tick gevraagd (nee = stoppen), en daarna
+     * gebeurt {@code finish}. Geeft false als je al met iets bezig bent.
+     */
+    public static boolean startTimed(ServerPlayer player, int ticks, String label, java.util.function.BooleanSupplier stillOk, Runnable finish) {
+        if (JOBS.containsKey(player.getUUID()) || !stillOk.getAsBoolean()) {
+            return false;
+        }
+        if (ticks <= 0) {
+            finish.run();
+            return true;
+        }
+        JOBS.put(player.getUUID(), new Job(player.position(), ticks, stillOk, finish));
+        ModNetwork.sendTo(player, new BackpackZipPayload(ticks, label));
         return true;
     }
 
@@ -74,7 +100,7 @@ public final class BackpackZip {
     /** Stoppen (je bewoog, of de rugzak is weg). */
     public static void cancel(ServerPlayer player, Component why) {
         if (JOBS.remove(player.getUUID()) != null) {
-            ModNetwork.sendTo(player, new BackpackZipPayload(0));
+            ModNetwork.sendTo(player, new BackpackZipPayload(0, ""));
             if (why != null) {
                 player.displayClientMessage(why.copy().withStyle(ChatFormatting.RED), true);
             }
@@ -99,19 +125,19 @@ public final class BackpackZip {
             double moved = Math.sqrt(Math.pow(player.getX() - job.start.x, 2) + Math.pow(player.getZ() - job.start.z, 2));
             if (moved > ImtConfig.Backpacks.ZIP_MOVE_TOLERANCE || Math.abs(player.getY() - job.start.y) > 0.6) {
                 why = Component.translatable("backpack.imttech.hold_still");
-            } else if (!BackpackItem.isBackpack(job.place.get()) || !job.place.reachable(player)) {
+            } else if (!job.stillOk.getAsBoolean()) {
                 why = Component.translatable("backpack.imttech.gone");
             }
             if (why != null) {
                 it.remove();
-                ModNetwork.sendTo(player, new BackpackZipPayload(0));
+                ModNetwork.sendTo(player, new BackpackZipPayload(0, ""));
                 player.displayClientMessage(why.copy().withStyle(ChatFormatting.RED), true);
                 continue;
             }
             if (--job.left <= 0) {
                 it.remove();
-                ModNetwork.sendTo(player, new BackpackZipPayload(0));
-                open(player, job.place);
+                ModNetwork.sendTo(player, new BackpackZipPayload(0, ""));
+                job.finish.run();
             }
         }
     }

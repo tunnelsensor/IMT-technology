@@ -48,6 +48,8 @@ public final class BackpackClient {
     /** De rits: zoveel ticks in totaal (0 = geen rits bezig), en wanneer hij begon (speltijd). */
     private static int zipTotal;
     private static long zipStart;
+    /** Wat er onder het balkje staat (een vertaalsleutel): "Unzipping...", of (stap 4) iets anders dat even duurt. */
+    private static String zipLabel = "backpack.imttech.unzipping";
     /** Stap 3: de meter "NOTICED" als je in de rugzak van een ander zit (0 tot 1). */
     private static float theftMeter;
 
@@ -57,9 +59,12 @@ public final class BackpackClient {
         modEventBus.addListener((RegisterMenuScreensEvent event) -> {
             event.register(BackpackRegistry.BACKPACK_MENU.get(), BackpackScreen::new);
             event.register(BackpackRegistry.MOLLE_MENU.get(), MolleScreen::new);
+            event.register(BackpackRegistry.BODY_MENU.get(), com.senne.imttech.client.body.BodyScreen::new);
         });
-        modEventBus.addListener((EntityRenderersEvent.RegisterRenderers event) ->
-                event.registerBlockEntityRenderer(BackpackRegistry.BACKPACK_BLOCK_ENTITY.get(), BackpackRenderer::new));
+        modEventBus.addListener((EntityRenderersEvent.RegisterRenderers event) -> {
+            event.registerBlockEntityRenderer(BackpackRegistry.BACKPACK_BLOCK_ENTITY.get(), BackpackRenderer::new);
+            event.registerEntityRenderer(BackpackRegistry.PLAYER_BODY.get(), com.senne.imttech.client.body.PlayerBodyRenderer::new);
+        });
         modEventBus.addListener(BackpackLayer::addLayers);
         modEventBus.addListener(BackpackLayer::registerModels);
         modEventBus.addListener(BackpackClient::registerColours);
@@ -124,9 +129,12 @@ public final class BackpackClient {
     }
 
     /** Van de server: de rits begint ({@code ticks} lang) of stopt (0). */
-    public static void zip(int ticks) {
+    public static void zip(int ticks, String label) {
         Minecraft mc = Minecraft.getInstance();
         zipTotal = ticks;
+        if (label != null && !label.isEmpty()) {
+            zipLabel = label;
+        }
         zipStart = mc.level == null ? 0 : mc.level.getGameTime();
     }
 
@@ -165,7 +173,7 @@ public final class BackpackClient {
         Font font = mc.font;
         int cx = g.guiWidth() / 2;
         int y = g.guiHeight() / 2 + 14;
-        Component text = Component.translatable("backpack.imttech.unzipping");
+        Component text = Component.translatable(zipLabel);
         g.drawString(font, text, cx - font.width(text) / 2, y, HudStyle.argb(230, HudStyle.WHITE), true);
         int width = 64;
         g.fill(cx - width / 2 - 1, y + 11, cx + width / 2 + 1, y + 16, HudStyle.argb(200, 0x0E1116));
@@ -178,8 +186,20 @@ public final class BackpackClient {
      */
     private static void theftHint(GuiGraphics g, Minecraft mc) {
         LocalPlayer player = mc.player;
-        if (player == null || mc.screen != null || !(mc.hitResult instanceof net.minecraft.world.phys.EntityHitResult hit)
-                || !(hit.getEntity() instanceof net.minecraft.world.entity.player.Player victim)) {
+        if (player == null || mc.screen != null || !(mc.hitResult instanceof net.minecraft.world.phys.EntityHitResult hit)) {
+            return;
+        }
+        // Stap 4: een lichaam: wat je klik doet (op de rugzak, of op het lichaam).
+        if (hit.getEntity() instanceof com.senne.imttech.body.PlayerBodyEntity body) {
+            net.minecraft.world.phys.Vec3 local = hit.getLocation().subtract(body.position());
+            Component text = body.aimsAtPack(player, local)
+                    ? Component.translatable("body.imttech.hint_pack", Math.round(com.senne.imttech.config.ImtConfig.Backpacks.BODY_TAKE_PACK_SECONDS))
+                    : Component.translatable("body.imttech.hint_search", body.ownerName());
+            g.drawString(mc.font, text, g.guiWidth() / 2 - mc.font.width(text) / 2, g.guiHeight() / 2 + 14,
+                    HudStyle.argb(230, HudStyle.WHITE), true);
+            return;
+        }
+        if (!(hit.getEntity() instanceof net.minecraft.world.entity.player.Player victim)) {
             return;
         }
         net.minecraft.world.phys.Vec3 local = hit.getLocation().subtract(victim.position());

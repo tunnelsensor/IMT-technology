@@ -2903,7 +2903,11 @@ public final class ImtTechGameTests {
         }
         helper.succeedWhen(() -> {
             if (drone.getTarget() != owner) {
-                throw new GameTestAssertException("De raiddrone komt niet voor jou (hij begon buiten de basis)");
+                net.minecraft.world.entity.LivingEntity other = drone.getTarget();
+                throw new GameTestAssertException("De raiddrone komt niet voor jou (hij begon buiten de basis)"
+                        + (com.senne.imttech.weapons.Emp.isJammed(drone) ? " (hij is gestoord door een EMP)" : "")
+                        + (other == null ? ": hij heeft geen doelwit" : ": hij gaat voor " + other.getName().getString()
+                        + " op " + Math.round(drone.distanceTo(other)) + " blokken (jij: " + Math.round(drone.distanceTo(owner)) + ")"));
             }
             core.setZoneBoxes(List.of());
             drone.discard();

@@ -2062,5 +2062,16 @@
   "backpack.imttech.theft_victim": "%s is going through your backpack!",
   "backpack.imttech.theft_caught": "%s noticed you!",
   "backpack.imttech.theft_hint": "Right-click: open %s's backpack",
-  "screen.imttech.backpack.noticed": "NOTICED"
+  "screen.imttech.backpack.noticed": "NOTICED",
+  "entity.imttech.player_body": "Player Body",
+  "body.imttech.title": "%s's body",
+  "body.imttech.everything_back": "Everything back",
+  "body.imttech.everything_back_hint": "Put everything back where it was (%s s, stand still). What doesn't fit stays here",
+  "body.imttech.taking_pack": "Taking the backpack...",
+  "body.imttech.restoring": "Putting everything back...",
+  "body.imttech.took_pack": "%s is yours now",
+  "body.imttech.restored_all": "Everything is back (%s things)",
+  "body.imttech.restored_some": "%s things back; the rest did not fit and stays in your body",
+  "body.imttech.hint_search": "Right-click: search %s's body. Sneak: drag it",
+  "body.imttech.hint_pack": "Right-click: open the backpack. Sneak: take it (%s s)"
 }

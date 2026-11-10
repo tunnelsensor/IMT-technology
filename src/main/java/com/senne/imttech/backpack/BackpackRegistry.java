@@ -41,6 +41,8 @@ public final class BackpackRegistry {
             DeferredRegister.createDataComponents(Registries.DATA_COMPONENT_TYPE, ImtTech.MODID);
     public static final DeferredRegister<RecipeSerializer<?>> RECIPES =
             DeferredRegister.create(Registries.RECIPE_SERIALIZER, ImtTech.MODID);
+    public static final DeferredRegister<net.minecraft.world.entity.EntityType<?>> ENTITIES =
+            DeferredRegister.create(Registries.ENTITY_TYPE, ImtTech.MODID);
 
     // ================================================================ De rugzakken
 
@@ -102,6 +104,23 @@ public final class BackpackRegistry {
     /** Het scherm van een open rugzak (zie BackpackMenu). */
     public static final DeferredHolder<MenuType<?>, MenuType<BackpackMenu>> BACKPACK_MENU =
             MENUS.register("backpack", () -> IMenuTypeExtension.create(BackpackMenu::new));
+    /** Stap 4: een lichaam doorzoeken (zie body/BodyMenu). */
+    public static final DeferredHolder<MenuType<?>, MenuType<com.senne.imttech.body.BodyMenu>> BODY_MENU =
+            MENUS.register("player_body", () -> IMenuTypeExtension.create(com.senne.imttech.body.BodyMenu::new));
+
+    /**
+     * Stap 4: het lichaam van een speler (body/PlayerBodyEntity): 1,4 breed en 0,75 hoog (het ligt plat, met de rugzak
+     * bovenop: die moet je ook kunnen aanklikken), brandt niet, en blijft zichtbaar tot 10 chunks ver.
+     */
+    public static final DeferredHolder<net.minecraft.world.entity.EntityType<?>, net.minecraft.world.entity.EntityType<com.senne.imttech.body.PlayerBodyEntity>> PLAYER_BODY =
+            ENTITIES.register("player_body", () -> net.minecraft.world.entity.EntityType.Builder
+                    .of(com.senne.imttech.body.PlayerBodyEntity::new, net.minecraft.world.entity.MobCategory.MISC)
+                    .sized(1.4f, 0.75f)
+                    .eyeHeight(0.3f)
+                    .fireImmune()
+                    .clientTrackingRange(10)
+                    .build("player_body"));
+
     /** Stap 2: het scherm van een open MOLLE-pouch (zie MolleMenu). */
     public static final DeferredHolder<MenuType<?>, MenuType<MolleMenu>> MOLLE_MENU =
             MENUS.register("molle_pouch", () -> IMenuTypeExtension.create(MolleMenu::new));
@@ -144,5 +163,8 @@ public final class BackpackRegistry {
         MENUS.register(modEventBus);
         COMPONENTS.register(modEventBus);
         RECIPES.register(modEventBus);
+        ENTITIES.register(modEventBus);
+        modEventBus.addListener((net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent event) ->
+                event.put(PLAYER_BODY.get(), com.senne.imttech.body.PlayerBodyEntity.createAttributes().build()));
     }
 }

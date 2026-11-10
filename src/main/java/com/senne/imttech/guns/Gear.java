@@ -551,9 +551,12 @@ public final class Gear {
         sound(player, ModSounds.HOLSTER_DRAW.get(), 0.5f);
     }
 
-    /** Doodgaan zonder keepInventory: wat je droeg valt op de grond. */
+    /**
+     * Doodgaan zonder keepInventory: wat je droeg valt op de grond. Sinds hoofdstuk 72 (stap 4) gaat het in je lichaam
+     * (body/PlayerBodies), tenzij dat uit staat in de config.
+     */
     public static void onDeath(LivingDeathEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player) || curios()) {
+        if (!(event.getEntity() instanceof ServerPlayer player) || curios() || com.senne.imttech.body.PlayerBodies.enabled()) {
             return;
         }
         if (player.serverLevel().getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)) {

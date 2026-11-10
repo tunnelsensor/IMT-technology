@@ -2196,6 +2196,24 @@ op, en je moet even wachten voor je het bij hem weer mag proberen (dezelfde geta
 Loopt hij weg, of sta je niet meer achter hem, dan gaat je scherm gewoon dicht. Uitzetten kan met `stealAllowed` onder
 `[backpacks]`.
 
+**Het lichaam van een speler** (stap 4). Ga je dood (zonder keepInventory), dan valt er niets op de grond: er blijft een
+**lichaam** liggen, op zijn buik, met je huid, je harnas aan en je rugzak bovenop. Erin zit alles wat je had, elk ding op
+zijn eigen plek: je inventaris en werkbalk, je harnas, je andere hand, je holster, pouches en geweren op je slings. Spullen
+met de vloek van verdwijnen verdwijnen, zoals altijd; ervaring valt als bolletjes. Viel je in de void, dan ligt het lichaam
+waar je het laatst op de grond stond. Het blijft liggen **tot het leeg is** (ook als iedereen weggaat; wil je dat het na een
+tijd verdwijnt: `bodyMinutes`), en je moet het **zelf terugvinden**: geen coördinaten, geen markering.
+- **Rechtsklik op het lichaam**: doorzoeken. Iedereen mag eruit halen (erin leggen kan niet). Bovenaan het harnas, de andere
+  hand, de holster, de pouches en de geweren; eronder de inventaris op dezelfde plekken. **Sneak + rechtsklik**: meeslepen,
+  zoals een Raven-soldaat.
+- **Rechtsklik op de rugzak** (het bovenste stuk van zijn rug): openritsen, zoals elke rugzak. **Sneak + rechtsklik op de
+  rugzak**: hem eraf halen (3 s stilstaan, `bodyTakePackSeconds`); hij gaat op je rug als die leeg is, anders in je
+  inventaris. Kijk je naar een lichaam, dan zegt een hint onder je vizier wat je klik doet.
+- **Je eigen lichaam** heeft in het scherm de knop **Everything back**: na 3 s stilstaan (`bodyRestoreSeconds`) zit alles
+  weer op zijn plek (je harnas aan, je holster en pouches om, je rugzak op je rug, je werkbalk zoals hij was). Ligt er al
+  iets op een plek, dan blijft dat ding in het lichaam.
+- Een leeg lichaam verdwijnt vanzelf. Uitzetten kan met `playerBodies` onder `[backpacks]` (dan vallen je spullen weer op
+  de grond).
+
 **Verven** in de crafting table, zoals leren harnas: de rugzak met een of meer kleurstoffen (ook gemengd, bijvoorbeeld rood
 + geel = oranje). Nieuw is hij olijfgroen. **Bruin + lichtgroen + groen** (elk één) maakt **camo**: een eigen patroon,
 geen mengkleur. Een camo-rugzak met een andere kleurstof wordt weer gewoon die kleur. Wat erin zit blijft.
