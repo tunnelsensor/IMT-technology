@@ -48,6 +48,10 @@ import org.jetbrains.annotations.Nullable;
  * van de zone gaat af). Zit zijn doelwit in een zone, dan gooit hij ook <b>EMP-granaten</b> op de torentjes en
  * laserzenders van die kern, zodra hij er vrij zicht op heeft. En hij onthoudt wie hij kwam halen: de raid begint
  * buiten de basis (zie ImtRaids), verder weg dan hij gewoon kijkt.
+ *
+ * Hoofdstuk 75 (playtest: "als je niks meer hebt is je spul terug krijgen moeilijk. Zorg dat ze na je 1x te killen
+ * verdwijnen"): ga je dood, dan vliegt elke raiddrone die voor jou kwam of op jou schoot weg, de lucht in, en is hij weg
+ * (zie {@link #leave} en ImtRaids.onPlayerDeath). Zo kun je je lichaam gewoon gaan halen.
  */
 public class RaidDroneEntity extends Monster implements com.senne.imttech.weapons.EmpTarget {
     /** De duik uit de lucht (in een boog naar zijn plek), of null als hij niet (meer) duikt. */
@@ -62,6 +66,15 @@ public class RaidDroneEntity extends Monster implements com.senne.imttech.weapon
     private int empCooldown;
     /** Tot zo ver blijft hij zoeken naar wie hij kwam halen (een basis kan groot zijn). */
     private static final double RAID_FOLLOW_RANGE = 600.0;
+    /** Hoofdstuk 75: hij heeft je gedood en vliegt weg (zie {@link #leave}). */
+    private boolean leaving;
+    /** De boog omhoog waarlangs hij wegvliegt; null tot hij echt opstijgt (een EMP houdt hem eerst nog aan de grond). */
+    private @Nullable SkyDive exit;
+    /** Waar hij vandaan wegvliegt: van deze plek af (waar je stierf), zodat de golf uit elkaar waaiert. */
+    private @Nullable Vec3 leaveFrom;
+    /** Hooguit zo lang (ticks) duurt het wegvliegen; daarna is hij hoe dan ook weg. */
+    private static final int MAX_LEAVE_TICKS = 200;
+    private int leaveTicks;
 
     public RaidDroneEntity(EntityType<? extends RaidDroneEntity> type, Level level) {
         super(type, level);
@@ -96,6 +109,25 @@ public class RaidDroneEntity extends Monster implements com.senne.imttech.weapon
 
     public @Nullable UUID raidTargetId() {
         return raidTarget;
+    }
+
+    /**
+     * Hoofdstuk 75: zijn werk zit erop (hij doodde je, of je ging dood terwijl hij voor jou kwam). Hij schiet niet meer,
+     * stijgt op en vliegt in een boog de lucht in, weg van {@code from} (waar je stierf); boven is hij weg, zonder buit
+     * en zonder ervaring. Ligt hij plat door een EMP, dan vertrekt hij zodra hij weer kan.
+     */
+    public void leave(Vec3 from) {
+        if (leaving) {
+            return;
+        }
+        leaving = true;
+        leaveFrom = from;
+        dive = null;
+        setTarget(null);
+    }
+
+    public boolean isLeaving() {
+        return leaving;
     }
 
     /** Wie hij kwam halen, als die nog in deze wereld is, niet in creative, en niet te ver weg; anders null. */
@@ -144,11 +176,20 @@ public class RaidDroneEntity extends Monster implements com.senne.imttech.weapon
         if (empCooldown > 0) {
             empCooldown--;
         }
+        // Hoofdstuk 75: /gamerule imttechRaidDrones false: dan vliegen ze allemaal weg (weg van wie ze op de korrel hadden).
+        if (!leaving && !level.getGameRules().getBoolean(ModGameRules.RAID_DRONES)) {
+            LivingEntity hunted = getTarget();
+            leave(hunted != null ? hunted.position() : position());
+        }
         // Uitgeschakeld door een EMP-granaat (hoofdstuk 35): naar de grond zakken en daar stil blijven liggen.
         if (com.senne.imttech.weapons.Emp.isJammed(this)) {
             setTarget(null);
             getNavigation().stop();
             setDeltaMovement(onGround() ? Vec3.ZERO : getDeltaMovement().multiply(0.7, 0.98, 0.7).add(0, -0.08, 0));
+            return;
+        }
+        if (leaving) {
+            flyAway(level);
             return;
         }
         if (isDiving()) {
@@ -160,7 +201,7 @@ public class RaidDroneEntity extends Monster implements com.senne.imttech.weapon
         if (target == null || !target.isAlive() || distanceToSqr(target) > ImtConfig.Raids.GIVE_UP_RANGE * ImtConfig.Raids.GIVE_UP_RANGE) {
             // Hoofdstuk 72: een dode speler (in zijn doodscherm; zijn lichaam ligt er) is geen doelwit, anders bleef hij
             // daarop wachten en kwam hij nooit voor wie nog leeft.
-            Player nearest = level.getNearestPlayer(getX(), getY(), getZ(), ImtConfig.Raids.FIND_RANGE,
+            Player nearest = level.getNearestPlayer(getX(), getY(), getZ(), ImtConfig.Raids.SPOT_RANGE,
                     entity -> entity.isAlive() && entity instanceof Player player && !player.isCreative() && !player.isSpectator());
             target = nearest != null ? nearest : raidTarget(level);
             setTarget(target);
@@ -188,7 +229,7 @@ public class RaidDroneEntity extends Monster implements com.senne.imttech.weapon
         boolean canSee = getSensing().hasLineOfSight(target);
         if (!canSee) {
             moveControl.setWantedPosition(eye.x, eye.y + 1.0, eye.z, 1.0);
-        } else if (distance > ImtConfig.Raids.ATTACK_RANGE) {
+        } else if (distance > ImtConfig.Raids.SHOOT_RANGE) {
             moveControl.setWantedPosition(spot.x, spot.y, spot.z, 1.0);
         } else {
             // Binnen bereik: langzaam om hem heen cirkelen, zodat hij lastig te raken is.
@@ -206,7 +247,7 @@ public class RaidDroneEntity extends Monster implements com.senne.imttech.weapon
             empCooldown = empDefences(level, target) ? Math.round(ImtConfig.Raids.EMP_INTERVAL) : 40;
         }
 
-        if (canSee && distance <= ImtConfig.Raids.ATTACK_RANGE && fireCooldown <= 0) {
+        if (canSee && distance <= ImtConfig.Raids.SHOOT_RANGE && fireCooldown <= 0) {
             fireLaser(level, target);
             fireCooldown = Math.round(ImtConfig.Raids.FIRE_INTERVAL);
         } else if (!canSee && breakCooldown <= 0) {
@@ -343,6 +384,31 @@ public class RaidDroneEntity extends Monster implements com.senne.imttech.weapon
         }
     }
 
+    /**
+     * Hoofdstuk 75: één tick van het wegvliegen. De eerste tick kiest hij de boog: van hier schuin omhoog, weg van waar
+     * je stierf, zo hoog als er vrije lucht is (tot ARRIVAL_HEIGHT, de hoogte waar een raid vandaan komt; zie
+     * ImtDrones.arcStart). Boven, tegen een plafond (in een grot), of na MAX_LEAVE_TICKS: weg.
+     */
+    private void flyAway(ServerLevel level) {
+        if (exit == null) {
+            Vec3 away = leaveFrom == null ? Vec3.ZERO : position().subtract(leaveFrom);
+            double angle = away.horizontalDistanceSqr() > 0.01 ? Math.atan2(away.z, away.x)
+                    : random.nextDouble() * Math.PI * 2;
+            Vec3 high = com.senne.imttech.drone.ImtDrones.arcStart(level, position(), angle,
+                    Math.round(ImtConfig.Raids.ARRIVAL_HEIGHT));
+            exit = SkyDive.takeoff(position(), high);
+            playSound(ModSounds.DRONE_RECALL.get(), 1.0f, 0.8f);
+        }
+        leaveTicks++;
+        setDeltaMovement(exit.next().subtract(position()));
+        hasImpulse = true;
+        level.sendParticles(ParticleTypes.SMOKE, getX(), getY() + 0.2, getZ(), 2, 0.05, 0.05, 0.05, 0.01);
+        if (exit.done() || leaveTicks > 3 && (horizontalCollision || verticalCollision) || leaveTicks >= MAX_LEAVE_TICKS) {
+            level.sendParticles(ParticleTypes.CLOUD, getX(), getY() + 0.3, getZ(), 12, 0.3, 0.3, 0.3, 0.05);
+            discard(); // weg: geen buit, geen ervaring (dat krijg je alleen als je hem neerschiet)
+        }
+    }
+
     // ---------------------------------------------------------------- Gedrag als wezen
 
     /** Raiddrones doen elkaar geen pijn. */
@@ -381,6 +447,9 @@ public class RaidDroneEntity extends Monster implements com.senne.imttech.weapon
         if (raidTarget != null) {
             tag.putUUID("RaidTarget", raidTarget);
         }
+        if (leaving) {
+            tag.putBoolean("Leaving", true); // na het laden vliegt hij gewoon verder weg (een nieuwe boog vanaf waar hij is)
+        }
     }
 
     @Override
@@ -388,6 +457,7 @@ public class RaidDroneEntity extends Monster implements com.senne.imttech.weapon
         super.readAdditionalSaveData(tag);
         fireCooldown = tag.getInt("Fire");
         raidTarget = tag.hasUUID("RaidTarget") ? tag.getUUID("RaidTarget") : null;
+        leaving = tag.getBoolean("Leaving");
     }
 
     /**

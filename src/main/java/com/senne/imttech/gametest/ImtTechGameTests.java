@@ -3007,6 +3007,79 @@ public final class ImtTechGameTests {
     }
 
     /**
+     * Hoofdstuk 75 (playtest: "Zorg dat ze na je 1x te killen verdwijnen"): ga je dood, dan vliegt de drone die voor jou
+     * kwam weg, en ook een drone die zomaar op jou schoot; ze stijgen op en zijn dan weg, zonder ervaring of buit. Een
+     * drone die voor iemand anders kwam (en op die ander mikt), blijft. Een eigen groep: zo mikt geen drone van een
+     * raidtest ernaast op deze spelers.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 300, batch = "raids_leave")
+    public static void raid_drones_leave_after_killing_you(GameTestHelper helper) {
+        ImtRaids.clear();
+        ServerPlayer victim = makeSurvivalOwner(helper, new BlockPos(12, 3, 12), "raid-victim");
+        ServerPlayer bystander = makeSurvivalOwner(helper, new BlockPos(3, 3, 3), "raid-bystander");
+        bystander.getAbilities().invulnerable = true; // zijn drone schiet op hem; hij moet de hele test blijven leven
+        RaidDroneEntity mine = RaidDroneEntity.spawn(helper.getLevel(),
+                helper.absoluteVec(new Vec3(18.5, 8, 12.5)), helper.absoluteVec(new Vec3(18.5, 8, 12.5)));
+        RaidDroneEntity stray = RaidDroneEntity.spawn(helper.getLevel(),
+                helper.absoluteVec(new Vec3(12.5, 8, 18.5)), helper.absoluteVec(new Vec3(12.5, 8, 18.5)));
+        RaidDroneEntity theirs = RaidDroneEntity.spawn(helper.getLevel(),
+                helper.absoluteVec(new Vec3(3.5, 8, 6.5)), helper.absoluteVec(new Vec3(3.5, 8, 6.5)));
+        if (mine == null || stray == null || theirs == null) {
+            throw new GameTestAssertException("Er verschenen niet drie raiddrones");
+        }
+        mine.setRaidTarget(victim);
+        mine.setTarget(victim);
+        stray.setTarget(victim); // kwam voor niemand, maar schiet op jou
+        theirs.setRaidTarget(bystander);
+        theirs.setTarget(bystander);
+        double[] highest = {Double.NEGATIVE_INFINITY};
+        double[] diedAt = {0};
+        // Na 70 ticks: een speler die net binnenkomt, is de eerste 60 ticks onkwetsbaar (behalve voor uit de wereld vallen).
+        helper.runAfterDelay(70, () -> {
+            diedAt[0] = mine.getY();
+            victim.hurt(com.senne.imttech.registry.ModDamageTypes.droneLaser(helper.getLevel(), mine, mine), 1000);
+            if (victim.isAlive()) {
+                throw new GameTestAssertException("De speler ging niet dood");
+            }
+            if (!mine.isLeaving()) {
+                throw new GameTestAssertException("De drone die voor jou kwam, vliegt niet weg nu je dood bent");
+            }
+            if (!stray.isLeaving()) {
+                throw new GameTestAssertException("De drone die op jou schoot, vliegt niet weg nu je dood bent");
+            }
+            if (theirs.isLeaving()) {
+                throw new GameTestAssertException("De drone die voor een ander kwam, vliegt ook weg");
+            }
+        });
+        helper.onEachTick(() -> {
+            if (!mine.isRemoved()) {
+                highest[0] = Math.max(highest[0], mine.getY());
+            }
+        });
+        helper.succeedWhen(() -> {
+            if (!mine.isRemoved() || !stray.isRemoved()) {
+                throw new GameTestAssertException("De raiddrones zijn nog niet weg");
+            }
+            if (highest[0] < diedAt[0] + 2) {
+                throw new GameTestAssertException("De drone verdween zonder op te stijgen (hoogste punt "
+                        + Math.round(highest[0] - diedAt[0]) + " blokken boven waar hij was)");
+            }
+            if (!theirs.isAlive() || theirs.isLeaving() || theirs.getTarget() != bystander) {
+                throw new GameTestAssertException("De drone die voor de ander kwam, jaagt niet meer op die ander");
+            }
+            if (!helper.getLevel().getEntitiesOfClass(net.minecraft.world.entity.ExperienceOrb.class,
+                    helper.getBounds().inflate(4)).isEmpty()) {
+                throw new GameTestAssertException("Een weggevlogen raiddrone liet ervaring achter");
+            }
+            theirs.discard();
+            helper.getLevel().getEntitiesOfClass(com.senne.imttech.body.PlayerBodyEntity.class,
+                    helper.getBounds().inflate(4)).forEach(net.minecraft.world.entity.Entity::discard);
+            helper.getLevel().getServer().getPlayerList().remove(victim);
+            helper.getLevel().getServer().getPlayerList().remove(bystander);
+        });
+    }
+
+    /**
      * Met de gamerule aan breekt een raiddrone zich een weg naar je toe als je je verstopt.
      *
      * De speler zit dicht ingemetseld, zodat de drone hem nooit kan zien en wel moet slopen.
@@ -3047,6 +3120,45 @@ public final class ImtTechGameTests {
                 helper.assertBlockPresent(Blocks.STONE, pos);
             }
             helper.succeed();
+        });
+    }
+
+    /**
+     * Hoofdstuk 75 (jouw wens: "maak ook een gamerule die deze raiddrones aan en uit laat togglen"): met
+     * {@code /gamerule imttechRaidDrones false} vertrekt een raiddrone die al vloog (hij stijgt op en is weg), en er komt
+     * geen nieuwe golf. Een eigen groep: de regel geldt voor de hele wereld.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 300, batch = "raids_rule_off")
+    public static void raid_drones_gamerule_off(GameTestHelper helper) {
+        ImtRaids.clear();
+        ServerPlayer owner = makeSurvivalOwner(helper, new BlockPos(12, 3, 12), "raid-rule");
+        owner.getAbilities().invulnerable = true; // de drone schiet op hem tot de regel uit gaat
+        Vec3 where = helper.absoluteVec(new Vec3(12.5, 8, 18.5));
+        RaidDroneEntity drone = RaidDroneEntity.spawn(helper.getLevel(), where, where);
+        if (drone == null) {
+            throw new GameTestAssertException("De raiddrone verscheen niet");
+        }
+        drone.setRaidTarget(owner);
+        drone.setTarget(owner);
+        var rule = helper.getLevel().getGameRules().getRule(ModGameRules.RAID_DRONES);
+        rule.set(false, helper.getLevel().getServer());
+        int spawned = ImtRaids.startRaid(owner, 2);
+        // Na een paar ticks (de drone kijkt elke tick naar de regel): eerst de regel terug aan, zodat een mislukte test de
+        // rest niet meesleept, dan pas controleren.
+        helper.runAfterDelay(3, () -> {
+            rule.set(true, helper.getLevel().getServer());
+            if (spawned != 0) {
+                throw new GameTestAssertException("Met de regel uit kwamen er toch " + spawned + " raiddrones");
+            }
+            if (!drone.isLeaving()) {
+                throw new GameTestAssertException("Met de regel uit vliegt de raiddrone niet weg");
+            }
+        });
+        helper.succeedWhen(() -> {
+            if (!drone.isRemoved()) {
+                throw new GameTestAssertException("De raiddrone is nog niet weg");
+            }
+            helper.getLevel().getServer().getPlayerList().remove(owner);
         });
     }
 

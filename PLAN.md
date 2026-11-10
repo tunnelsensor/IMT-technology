@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 491 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 493 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -6270,6 +6270,54 @@ met veel dreun en een galm van een seconde; hun mechanische geluiden zijn helder
 - [ ] **Nog door jou te beluisteren** — ik kan geen geluid horen: ik heb de geluiden gemeten en als spectrogram
       vergeleken met die van TACZ (de verhoudingen kloppen), maar of ze echt goed klinken moet jij zeggen. Zeg welk geluid
       te dof, te schel, te luid of te lang is, dan stel ik het bij.
+
+### 75. Raiddrones minder vervelend: kleiner bereik, en weg na je dood (10 november)
+
+Jouw playtest (met anderen): "de raiddrones zijn heel irritant, ze kunnen van een te grote range jou zien en aanvallen +
+als je niks meer hebt is je spul terug krijgen moeilijk. Zorg dat ze na je 1x te killen verdwijnen."
+
+**Jouw antwoord:** het bereik ook kleiner: **schieten tot 12 blokken** (was 18), **spelers opmerken tot 24** (was 48).
+En daarna: "maak ook een gamerule die deze raiddrones aan en uit laat togglen".
+
+**Mijn invulling** (zeg het als je het anders wilt):
+- **Elke dood telt**, niet alleen een laserschot van een drone: val je tijdens een raid van een klif of pakt een zombie
+  je, dan zit je net zo goed zonder spullen. Weg gaan: elke raiddrone die **voor jou kwam** (in elke dimensie) en elke
+  die **op dat moment op jou schoot** (ook een die voor een ander kwam). Een drone die voor een andere speler kwam en op
+  die ander mikte, blijft voor die ander.
+- **Wegvliegen, niet wegflitsen**: de duik waarmee ze komen, maar achterstevoren (`SkyDive.takeoff`): rustig optrekken,
+  schuin omhoog weg van waar je stierf, steeds sneller de lucht in, met het geluid van een drone die je terugroept en een
+  rookspoor; boven (of tegen een plafond in een grot, of na 10 seconden) een wolkje en weg. **Geen buit en geen
+  ervaring**: die krijg je alleen als je er een neerschiet, ook tijdens het wegvliegen. Ligt er een plat door een EMP, dan
+  vertrekt hij zodra hij weer kan. Een drone die wegvloog en in een chunk lag die uitlaadde, vliegt na het laden verder
+  weg (`Leaving` in zijn opslag).
+- **In de chat** (die zie je ook op het doodscherm; de melding van de bril niet, want die ligt in je lichaam): "The raid
+  drones got what they came for and are pulling out. Go get your things."
+- **Nieuwe namen in de config**: `shootRange` (was `attackRange`) en `spotRange` (was `findRange`) onder `[raids]`.
+  Een configbestand houdt zijn oude getallen, ook als de standaard in de code verandert; met een nieuwe naam krijgt elk
+  bestaand bestand (ook dat van je CurseForge-instance) meteen 12 en 24. De oude regels laat NeoForge vallen. Wie het
+  bereik zelf had veranderd, moet dat opnieuw doen.
+- Ze merken je tot 24 blokken nog steeds **ook achter een muur** op, en wie ze **kwamen halen** blijven ze zoeken (tot
+  600 blokken, hoofdstuk 54): het opmerken gaat over andere spelers in de buurt. Ze cirkelen op zo'n 7 blokken om je
+  heen, dus 12 blokken schieten is genoeg om je te raken terwijl ze cirkelen.
+- **De gamerule** heet `imttechRaidDrones` (standaard `true`, naast `imttechRaidGriefing`). Uit: geen golf meer (niet
+  vanzelf, niet bij de toren, niet bij een wrak, ook `ImtRaids.startRaid` niet), en elke raiddrone die al vliegt, stijgt
+  op en vertrekt zoals na je dood. Weer aan: de klok begint opnieuw (zoals na een herstart), anders kwam er meteen een golf
+  die al lang "te laat" was. `rules.raidsEnabled` in de config blijft bestaan (voor elke wereld tegelijk); allebei moeten
+  aan staan.
+
+- [x] **Weg na je dood** — `ImtRaids.onPlayerDeath` (als allerlaatste op `LivingDeathEvent`, net als het lichaam: redt
+      een andere mod je nog, dan blijven ze), `RaidDroneEntity.leave` en `flyAway`, `SkyDive.takeoff`. Eén nieuwe test
+      (`raid_drones_leave_after_killing_you`, een eigen groep): de drone die voor jou kwam en een die op jou schoot vliegen
+      op en zijn weg, zonder ervaring; de drone van een andere speler jaagt nog op die ander.
+- [x] **Kleiner bereik** — `ImtConfig.Raids.SHOOT_RANGE` 12 en `SPOT_RANGE` 24; ook in `run/config` en `run-visual/config`.
+- [x] **Gamerule `imttechRaidDrones`** — `ModGameRules.RAID_DRONES` en `raidsOn`; de drone kijkt elke tick. Eén nieuwe test
+      (`raid_drones_gamerule_off`, een eigen groep: met de regel uit vertrekt een drone die al vloog en komt er geen golf).
+- [x] **Bekeken** met `-Ponly=raidleave` (rl01 tot rl05): drie drones hangen voor je, trekken rustig op, stijgen schuin
+      weg met een rookspoor, en zijn dan weg ("0 van de 3 raiddrones nog in de wereld" in de log). De rondleiding wacht
+      eerst tot de verse plek echt draait: anders stonden de drones stil en sloot het spel af terwijl er nog chunks gemaakt
+      werden, en dan bleef het hangen op "Saving worlds" (dat was de rondleiding, niet de drones). De showcase "Raid
+      drones" eindigt nu met het wegvliegen (`ImtRaids.callOff`, zonder echt dood te gaan; geen nieuw nummer).
+- [x] LEESMIJ (Raiddrones) bijgewerkt.
 
 ## Nog nooit in het spel bekeken
 

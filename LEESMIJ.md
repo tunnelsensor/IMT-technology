@@ -525,6 +525,17 @@ zone**, dan breken ze die niet zomaar: op een blok van de zone gooien ze een **s
 zone gaat af), en op je torentjes en laserzenders **EMP-granaten** zodra ze er vrij zicht op hebben
 (`breachInterval`, `empInterval`, `deviceReach`).
 
+Sinds 10 november (playtest) zijn ze minder vervelend. Ze schieten tot **12 blokken** ver (was 18) en merken een
+speler op tot **24 blokken** (was 48), onder `[raids]` als `shootRange` en `spotRange` (nieuwe namen, zodat ook een
+bestaand configbestand de nieuwe getallen krijgt). En **ga je dood, dan is de raid voorbij**: elke raiddrone die voor
+jou kwam of op jou schoot, stijgt op, vliegt de lucht in en is weg (zonder buit of ervaring; die krijg je alleen als je
+hem neerschiet). In de chat staat "The raid drones got what they came for and are pulling out", en je kunt je lichaam
+gewoon gaan halen. Drones die voor een andere speler kwamen en op die ander mikten, blijven voor die ander.
+
+- **Raids aan of uit per wereld**: `/gamerule imttechRaidDrones false`. Dan komt er geen golf meer (niet vanzelf, niet
+  bij de toren, niet bij een wrak), en raiddrones die al vliegen, stijgen op en vertrekken. Met `true` weer aan; de klok
+  begint dan opnieuw, dus er komt niet meteen een golf. (`rules.raidsEnabled` in de config zet ze voor elke wereld uit.)
+
 - **Vanzelf**: standaard elke 20 tot 45 minuten, zolang je de bril op hebt.
 - **Omdat je erom vroeg**: sloop je in een Biebia's Industries Tower, dan trek je aandacht. Doe je dat te
   vaak, dan komen ze meteen (bij het eerste blok krijg je een waarschuwing).

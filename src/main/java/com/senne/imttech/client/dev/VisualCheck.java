@@ -3908,6 +3908,30 @@ public final class VisualCheck {
             BackpackTour.walk(t);
         }
 
+        // --- Raiddrones vliegen weg na je dood (hoofdstuk 75): drie drones voor je (je bent in creative, dus ze laten je
+        // met rust), dan leave() alsof je net stierf; de boog omhoog in een paar shots.
+        if (want("raidleave")) {
+            Vec3 at = Vec3.atBottomCenterOf(RAID_LEAVE);
+            t.stand(20, at.x, at.y, at.z, 180, -12);
+            // Een verse plek: eerst wachten tot de wereld daar echt draait (anders staan de drones stil, en sluit het spel
+            // af terwijl er nog chunks gemaakt worden; dan bleef het hangen op "Saving worlds").
+            t.waitUntil(600, () -> raidLeaveTicking(RAID_LEAVE.offset(0, 0, -24)));
+            t.pause(40);
+            t.onServer(0, player -> raidLeaveDrones(player, at));
+            t.shot(30, "rl01_drones_hovering");
+            t.onServer(0, player -> raidLeaveStart(player, at));
+            t.shot(6, "rl02_taking_off");
+            t.shot(8, "rl03_climbing");
+            t.look(0, 180, -55);
+            t.shot(6, "rl04_up_and_away");
+            t.shot(40, "rl05_gone");
+            t.step(0, () -> ImtTech.LOGGER.info("[dev] raidleave: {} van de 3 raiddrones nog in de wereld (0 verwacht)",
+                    RAID_LEAVERS.stream().filter(id -> Minecraft.getInstance().level != null
+                            && java.util.stream.StreamSupport.stream(Minecraft.getInstance().level.entitiesForRendering().spliterator(), false)
+                            .anyMatch(e -> e.getUUID().equals(id))).count()));
+            t.pause(40);
+        }
+
         // --- Holster, slings en cellen (hoofdstuk 55): de sling-vakjes in je inventaris, het wiel met je geweren, trekken van je
         // rug (de Glock gaat in de holster), de cellen in de pouch kiezen, en in derde persoon de geweren op je rug en borst.
         if (want("sling")) {
@@ -6101,6 +6125,37 @@ public final class VisualCheck {
         player.setItemSlot(EquipmentSlot.CHEST, new ItemStack(ModItems.TECH_CHESTPLATE.get()));
         player.setItemSlot(EquipmentSlot.LEGS, new ItemStack(ModItems.TECH_LEGGINGS.get()));
         player.setItemSlot(EquipmentSlot.FEET, new ItemStack(ModItems.TECH_BOOTS.get()));
+    }
+
+    /** Hoofdstuk 75 (-Ponly=raidleave): een open plek, ver van de rest. */
+    private static final BlockPos RAID_LEAVE = new BlockPos(-260, -60, 420);
+    private static final List<UUID> RAID_LEAVERS = new java.util.ArrayList<>();
+
+    /** Draait de wereld op deze plek al helemaal (wezens bewegen er)? Alleen voor de rondleiding: kijkt vanaf de client. */
+    private static boolean raidLeaveTicking(BlockPos pos) {
+        net.minecraft.client.server.IntegratedServer server = Minecraft.getInstance().getSingleplayerServer();
+        return server != null && server.overworld().isPositionEntityTicking(pos);
+    }
+
+    /** Drie raiddrones op een rij voor je, iets boven ooghoogte. */
+    private static void raidLeaveDrones(ServerPlayer player, Vec3 at) {
+        RAID_LEAVERS.clear();
+        for (int i = -1; i <= 1; i++) {
+            Vec3 spot = at.add(i * 3.5, 3.5, -8 - Math.abs(i) * 1.5);
+            com.senne.imttech.raid.RaidDroneEntity drone = com.senne.imttech.raid.RaidDroneEntity.spawn(player.serverLevel(), spot, spot);
+            if (drone != null) {
+                RAID_LEAVERS.add(drone.getUUID());
+            }
+        }
+    }
+
+    /** Alsof je hier net stierf: ze vliegen weg, van jou af. */
+    private static void raidLeaveStart(ServerPlayer player, Vec3 at) {
+        for (UUID id : RAID_LEAVERS) {
+            if (player.serverLevel().getEntity(id) instanceof com.senne.imttech.raid.RaidDroneEntity drone) {
+                drone.leave(at);
+            }
+        }
     }
 
     private static void spawnDrones(ServerPlayer player) {

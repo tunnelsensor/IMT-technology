@@ -1044,13 +1044,18 @@ final class ShowcaseFeatures {
         add("Raid drones", "Vijandige drones (donker, oranje lampjes) duiken uit de lucht, cirkelen "
                 + "om je heen en schieten. Ze komen vanzelf als je de bril draagt. Hoofdstuk 54: een raid begint altijd "
                 + "buiten een basis (een beveiligingskern met haar zone), en in een beschermde zone breken ze niet zomaar "
-                + "in: ze gooien sticky frags op je muren (het alarm gaat af) en EMP's op je torentjes en laserzenders.",
+                + "in: ze gooien sticky frags op je muren (het alarm gaat af) en EMP's op je torentjes en laserzenders. "
+                + "Hoofdstuk 75: ze schieten tot 12 blokken en merken je op tot 24, en ga je dood, dan is de raid voorbij: "
+                + "op het eind stijgen ze op en vliegen ze weg alsof je net stierf (hier zonder echt dood te gaan).",
                 GameType.SURVIVAL,
                 start, 180, -20, s -> s
                 .onServer(10, player -> ImtRaids.startRaid(player, 3))
                 .pause(120)
                 .look(0, 0, -10)
-                .pause(160));
+                .pause(160)
+                .onServer(0, ImtRaids::callOff)
+                .look(0, 0, -45)
+                .pause(80));
 
         add("Raven soldiers", "Nieuwe vijanden: Raven-soldaten, die de Biebia's Industries-bunker bewaken. Zwart tactisch "
                 + "pak met vest, magazijntasjes, een radio op de rug en een vizier op de helm. Sinds hoofdstuk 54 dragen ze de "

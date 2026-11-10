@@ -26,6 +26,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
@@ -49,6 +50,9 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
  * Sinds hoofdstuk 54 (jouw notitie) begint een raid altijd <b>buiten een basis</b>: een basis is een beveiligingskern
  * met zijn zone (of, zonder zone, BASE_SIZE blokken rondom de kern), en de drones komen minstens BASE_MARGIN blokken
  * daarbuiten aan. Zit je in een beschermde zone, dan moeten ze eerst door je verdediging heen: zie RaidDroneEntity.
+ *
+ * Sinds hoofdstuk 75 (playtest) is een raid voorbij als je doodgaat: de drones die voor jou kwamen (en elke andere die op
+ * jou schoot) vliegen weg, zodat je je spullen kunt gaan halen. Zie {@link #onPlayerDeath}.
  */
 public final class ImtRaids {
     private ImtRaids() {}
@@ -97,11 +101,14 @@ public final class ImtRaids {
     // ================================================================ Elke paar seconden
 
     public static void onServerTick(ServerTickEvent.Post event) {
-        if (!ImtConfig.Rules.RAIDS_ENABLED) {
-            return;
-        }
         long now = event.getServer().overworld().getGameTime();
         if (now % CHECK_INTERVAL != 0) {
+            return;
+        }
+        if (!ModGameRules.raidsOn(event.getServer().overworld())) {
+            // Hoofdstuk 75: uit (config of /gamerule imttechRaidDrones false). Alles vergeten, zodat de klok opnieuw begint
+            // als ze weer aan gaan: anders kwam er meteen een golf die al lang "te laat" was.
+            WATCHED.clear();
             return;
         }
         for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
@@ -152,10 +159,10 @@ public final class ImtRaids {
      * komen ze kijken.
      */
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
-        if (!ImtConfig.Rules.RAIDS_ENABLED || !(event.getPlayer() instanceof ServerPlayer player)) {
+        if (!(event.getPlayer() instanceof ServerPlayer player)) {
             return;
         }
-        if (player.isCreative() || !(player.level() instanceof ServerLevel level)) {
+        if (player.isCreative() || !(player.level() instanceof ServerLevel level) || !ModGameRules.raidsOn(level)) {
             return;
         }
         // Er is geen opzoeking op naam, dus vragen we het per structuur: is dit de Biebia's Industries Tower?
@@ -183,6 +190,9 @@ public final class ImtRaids {
     /** Stuurt een golf raiddrones op deze speler af. Geeft terug hoeveel er echt kwamen. */
     public static int startRaid(ServerPlayer player, int count) {
         ServerLevel level = player.serverLevel();
+        if (!level.getGameRules().getBoolean(ModGameRules.RAID_DRONES)) {
+            return 0; // hoofdstuk 75: /gamerule imttechRaidDrones false
+        }
         List<ZoneBox> bases = basesNear(level, player.blockPosition());
         int spawned = 0;
         for (int i = 0; i < count; i++) {
@@ -207,6 +217,46 @@ public final class ImtRaids {
                     com.senne.imttech.registry.ModSounds.IMT_ALERT.get(), SoundSource.PLAYERS, 1.0f, 0.6f);
         }
         return spawned;
+    }
+
+    // ================================================================ Je gaat dood (hoofdstuk 75)
+
+    /**
+     * Hoofdstuk 75 (playtest: "als je niks meer hebt is je spul terug krijgen moeilijk. Zorg dat ze na je 1x te killen
+     * verdwijnen"): ga je dood, dan vliegt elke raiddrone weg die voor jou kwam (in elke dimensie) of die op dat moment
+     * op jou schoot. Een drone die voor een ander kwam en jou niet op de korrel had, blijft voor die ander.
+     *
+     * Als (bijna) allerlaatste geluisterd, net als het lichaam (PlayerBodies.onDeath): redt een andere mod je nog (en
+     * zegt die dat je niet doodgaat), dan komt het hier niet aan en blijven ze gewoon.
+     */
+    public static void onPlayerDeath(LivingDeathEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player) || player.isSpectator()) {
+            return;
+        }
+        if (callOff(player) > 0) {
+            // In de chat (die zie je ook op het doodscherm); de melding van de bril zou je niet zien, die ligt in je lichaam.
+            player.sendSystemMessage(Component.translatable("raid.imttech.msg.pulling_out")
+                    .withStyle(net.minecraft.ChatFormatting.GRAY));
+        }
+    }
+
+    /**
+     * De raid op deze speler is voorbij: elke raiddrone die voor hem kwam (in elke dimensie) of die nu op hem schiet,
+     * vliegt weg (RaidDroneEntity.leave), weg van waar hij staat. Geeft terug hoeveel er vertrokken. Ook voor de showcase.
+     */
+    public static int callOff(ServerPlayer player) {
+        UUID id = player.getUUID();
+        int leaving = 0;
+        for (ServerLevel level : player.server.getAllLevels()) {
+            boolean here = level == player.serverLevel();
+            for (RaidDroneEntity drone : level.getEntities(com.senne.imttech.registry.ModEntities.RAID_DRONE.get(),
+                    drone -> drone.isAlive() && !drone.isLeaving()
+                            && (id.equals(drone.raidTargetId()) || here && drone.getTarget() == player))) {
+                drone.leave(here ? player.position() : drone.position());
+                leaving++;
+            }
+        }
+        return leaving;
     }
 
     // ================================================================ Buiten de basis (hoofdstuk 54)

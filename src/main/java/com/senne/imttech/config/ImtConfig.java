@@ -2005,12 +2005,16 @@ public final class ImtConfig {
         public static float XP_REWARD = 8.0f;
 
         // ------------------------------------------------------------------------- Jagen
-        /** Tot hoe ver hij schiet. */
-        @Tunable("How far a raid drone shoots (blocks)")
-        public static double ATTACK_RANGE = 18.0;
-        /** Tot hoe ver hij een doelwit zoekt... */
-        @Tunable("How far a raid drone looks for a target (blocks)")
-        public static double FIND_RANGE = 48.0;
+        /**
+         * Tot hoe ver hij schiet. Hoofdstuk 75 (playtest: "ze kunnen van een te grote range jou zien en aanvallen"): 12, was
+         * 18. De naam in het bestand is ook nieuw (shootRange, was attackRange), zodat elk bestaand configbestand meteen
+         * het nieuwe getal krijgt; een oud getal onder de oude naam laat NeoForge gewoon vallen.
+         */
+        @Tunable("How far a raid drone shoots (blocks). It circles about 7 blocks from you, so keep this above 8")
+        public static double SHOOT_RANGE = 12.0;
+        /** Tot hoe ver hij een speler opmerkt (ook achter een muur)... Hoofdstuk 75: 24, was 48 (en heette findRange). */
+        @Tunable("How far a raid drone spots a player to go after (blocks)")
+        public static double SPOT_RANGE = 24.0;
         /** ...en verder dan dit geeft hij zijn doelwit op. */
         @Tunable("Further away than this a raid drone gives up its target (blocks)")
         public static double GIVE_UP_RANGE = 80.0;

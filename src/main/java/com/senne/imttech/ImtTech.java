@@ -205,6 +205,8 @@ public class ImtTech {
         NeoForge.EVENT_BUS.addListener(ImtRaids::onServerTick);
         NeoForge.EVENT_BUS.addListener(ImtRaids::onBlockBreak);
         NeoForge.EVENT_BUS.addListener(ImtRaids::onServerStopped);
+        // Hoofdstuk 75: ga je dood, dan vliegen de raiddrones weg (als allerlaatste, net als het lichaam).
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST, ImtRaids::onPlayerDeath);
 
         // Fase 15: het harnas
         // Wapens (hoofdstuk 35): pulsen van EMP-granaten die voorbij zijn vergeten.

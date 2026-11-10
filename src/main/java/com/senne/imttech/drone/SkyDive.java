@@ -23,10 +23,26 @@ public final class SkyDive {
     private final Vec3 to;
     private final int ticks;
     private int age;
+    /** Hoofdstuk 75: achterstevoren over de boog (van {@code to} terug naar {@code from}), traag beginnend: opstijgen. */
+    private final boolean backwards;
 
     public SkyDive(Vec3 from, Vec3 to) {
+        this(from, to, false);
+    }
+
+    /**
+     * Hoofdstuk 75: dezelfde boog als een duik van {@code high} naar {@code ground}, maar achterstevoren: rustig optrekken
+     * vanaf {@code ground}, schuin omhoog, en dan steeds sneller de lucht in tot {@code high}. Zo vliegt een raiddrone weg
+     * nadat hij je gedood heeft.
+     */
+    public static SkyDive takeoff(Vec3 ground, Vec3 high) {
+        return new SkyDive(high, ground, true);
+    }
+
+    private SkyDive(Vec3 from, Vec3 to, boolean backwards) {
         this.from = from;
         this.to = to;
+        this.backwards = backwards;
         Vec3 sideways = new Vec3(from.x - to.x, 0, from.z - to.z);
         double height = Math.max(0, from.y - to.y);
         // Het buigpunt: 40% van de weg opzij, en ongeveer even hoog als dat opzij is. Dan komt
@@ -44,7 +60,9 @@ public final class SkyDive {
     /** Zet één tick verder en geeft de plek waar de drone nu hoort te zijn. */
     public Vec3 next() {
         age = Math.min(ticks, age + 1);
-        return at(ease(age / (double) ticks));
+        double u = age / (double) ticks;
+        // Opstijgen: traag beginnen en op het laatst hard, dus de tijd andersom (u * u * u) en de boog terug (1 - ...).
+        return backwards ? at(1 - u * u * u) : at(ease(u));
     }
 
     public boolean done() {
