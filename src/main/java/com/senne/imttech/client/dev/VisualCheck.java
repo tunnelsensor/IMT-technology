@@ -823,9 +823,10 @@ public final class VisualCheck {
                     }
                 }
             });
-            t.step(10, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.THREAT_SCAN.getKey()));
+            // De dreigingsscan heeft sinds 2026-11-10 standaard geen toets meer: wat de toets (of G > Information) zou doen.
+            t.step(10, () -> com.senne.imttech.client.ImtClientEvents.sendAction(ImtAction.TOGGLE_THREAT_SCAN));
             t.shot(30, "31_threat_arrows");
-            t.step(0, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.THREAT_SCAN.getKey()));
+            t.step(0, () -> com.senne.imttech.client.ImtClientEvents.sendAction(ImtAction.TOGGLE_THREAT_SCAN));
             t.command(5, "kill @e[tag=imt_visual_threat]");
         }
 

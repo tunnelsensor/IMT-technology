@@ -140,7 +140,7 @@ public final class BackpackScenes {
         s.meter(30, you.add(0, 2.4, 0), "Unzipping", 0.0f, 1.0f, ORANGE);
         s.idle(32);
         s.text(140, you.add(0, 2.1, 0), Side.LEFT,
-                "*Shift + B* (or the Alt wheel) unzips it: *1.5 s*, and you must stand still. While it's open you walk at 40 %."
+                "[B] (or the Alt wheel) unzips it: *1.5 s*, and you must stand still. While it's open you walk at 40 %."
                         + " The *SORT* button lines everything up. In your hand: right-click.");
         s.idle(145);
 

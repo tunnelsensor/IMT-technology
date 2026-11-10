@@ -68,12 +68,13 @@ bunkers to raid.
 
 ## Controls
 
-**G** opens the round I.M.T menu (scroll for the next tab). A few of the other keys: **V** zoom,
-**N** night vision, **B** ore scan, **H** threat detection, **R** mark a target, **J** drone
-swarm, **K** / **P** / **C** satellite, **M** navigation, **O** comms, **Z** push-to-talk.
-Change them all in Options > Controls > I.M.T. While you wear working glasses, **P** and **L**
-belong to I.M.T (vanilla's social interactions and advancements screens stay closed);
-**C** and **X** are also vanilla's creative toolbar keys, so rebind one of them if you use those.
+**G** opens the round I.M.T menu (scroll for the next tab). Every quick action of the glasses is
+in there: ore scan, threat detection, night vision, marking targets, the drone swarm, the three
+satellite strikes, navigation, comms and the rest. They have no key by default, so your keyboard
+stays free for other mods; bind the ones you use a lot in Options > Controls > I.M.T. Keys that
+are bound: **V** zoom (hold), **Z** push-to-talk (hold), **B** open your backpack, **Left Alt**
+quickdraw wheel (hold), **F6** gun skills, and **R** / **U** / **H** reload, unload and inspect
+while you hold a gun.
 
 ## Requirements
 

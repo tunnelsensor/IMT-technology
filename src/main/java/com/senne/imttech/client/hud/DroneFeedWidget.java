@@ -82,8 +82,13 @@ public final class DroneFeedWidget implements HudWidget {
         g.drawString(c.font, Component.translatable("hud.imttech.drone_altitude", Math.round(drone.getY())),
                 x, y, argb(200, WHITE), true);
 
-        // Uitleg onderaan: hoe je vliegt, en (tijdens het richten) hoe je neerzet of annuleert.
-        g.drawCenteredString(c.font, Component.translatable(aiming ? "hud.imttech.illusion_aim_controls"
-                : "hud.imttech.drone_controls"), cx, h - 34, argb(200, WHITE));
+        // Uitleg onderaan: hoe je vliegt, en (tijdens het richten) hoe je neerzet of annuleert. Terug naar jezelf: de toets van
+        // de drone-camera als je er een koos, anders (de standaard sinds 2026-11-10) G > Recon.
+        net.minecraft.client.KeyMapping camera = com.senne.imttech.client.ImtKeys.DRONE_CAMERA;
+        Component back = camera.isUnbound()
+                ? Component.translatable("hud.imttech.drone_return_menu", com.senne.imttech.client.ImtKeys.MENU.getTranslatedKeyMessage())
+                : camera.getTranslatedKeyMessage();
+        g.drawCenteredString(c.font, aiming ? Component.translatable("hud.imttech.illusion_aim_controls")
+                : Component.translatable("hud.imttech.drone_controls", back), cx, h - 34, argb(200, WHITE));
     }
 }

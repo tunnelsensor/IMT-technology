@@ -162,7 +162,7 @@ public final class SuitScenes {
         WeaponScenes.husk(s, "husk2", 10, 0, target);
         s.idle(10);
         s.text(110, you.add(0, 2.0, 0), Side.LEFT,
-                "[I] turns the *laser cannon* on (it needs the chestplate): your attack button fires, held down once a second."
+                "G > Combat turns the *laser cannon* on (it needs the chestplate): your attack button fires, held down once a second."
                         + " It hits everything in its path, up to %s blocks, and pushes it away.",
                 HowToSceneBuilder.number(ImtConfig.Suit.LASER_CANNON_RANGE));
         Vec3 palm = WeaponScenes.muzzle(you, aim);
@@ -257,7 +257,7 @@ public final class SuitScenes {
         }
         s.idle(20);
         s.text(80, you.add(0, 2.0, 0), Side.LEFT,
-                "[X] (or G > Combat, or say \"fire rockets\"): a salvo of %s rockets from both tubes.", salvo);
+                "G > Combat (or say \"fire rockets\"): a salvo of %s rockets from both tubes.", salvo);
         s.idle(30);
         Vec3 ahead = WeaponScenes.ahead(yaw);
         Vec3 right = WeaponScenes.right(yaw);
@@ -276,7 +276,7 @@ public final class SuitScenes {
         // Een eigen hoofdstukje voor de uitleg: zo valt de foto van het salvo-hoofdstukje midden in het salvo.
         s.chapter("Where they fly");
         s.text(110, you.add(0, 2.0, 0), Side.LEFT,
-                "Left and right in turn, they fan out and turn to your marked targets ([R]), else to what you look at, else to"
+                "Left and right in turn, they fan out and turn to your marked targets (G > Drones), else to what you look at, else to"
                         + " where you look. They never break blocks, and never hit you, your team or your drones.");
         s.idle(115);
 
@@ -384,8 +384,8 @@ public final class SuitScenes {
         }
         s.idle(in - 12);
         s.text(110, husk.add(0, 2.4, 0), Side.LEFT,
-                "They dive from high up (%s blocks above you) and fly back up when they're done. [J] sends a swarm at your"
-                        + " marked targets, [L] one drone after one target.", HowToSceneBuilder.number(ImtConfig.Drones.ORBIT_HEIGHT));
+                "They dive from high up (%s blocks above you) and fly back up when they're done. G > Drones sends a swarm at"
+                        + " your marked targets, or one drone after one target.", HowToSceneBuilder.number(ImtConfig.Drones.ORBIT_HEIGHT));
         for (int shot = 0; shot < 6; shot++) {
             Vec3 from = spots[shot % spots.length];
             s.beam(4, from, husk.add(0, 1.2, 0), DRONE_RED);

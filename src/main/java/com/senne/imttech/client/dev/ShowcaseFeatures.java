@@ -725,7 +725,7 @@ final class ShowcaseFeatures {
                 .step(5, ImtClientEvents::markLookTarget)
                 .look(15, 180, -5)
                 .camera(0, CameraType.THIRD_PERSON_BACK)
-                .step(10, () -> KeyMapping.click(ImtKeys.ROCKETS.getKey()))
+                .step(10, () -> ImtClientEvents.sendAction(ImtAction.ROCKETS)) // geen standaardtoets meer (2026-11-10)
                 .pause(70)
                 .camera(0, CameraType.FIRST_PERSON)
                 .pause(30));

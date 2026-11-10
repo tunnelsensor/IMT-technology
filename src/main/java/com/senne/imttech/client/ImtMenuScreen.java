@@ -87,8 +87,16 @@ public class ImtMenuScreen extends Screen {
             open("screen.imttech.menu.satellite", HudStyle.ORANGE, SatelliteScreen::new),
             open("screen.imttech.menu.arsenal", HudStyle.CYAN, ArsenalScreen::new));
 
-    /** Tabblad Drones: aanvallen en beschermen. */
+    /**
+     * Tabblad Drones: aanvallen en beschermen. Sinds 2026-11-10 ook markeren (dat had alleen een toets, R, en die staat nu
+     * standaard op geen toets): het wezen in je vizier, want het menu laat je gewoon blijven kijken waar je keek.
+     */
     private static final List<Option> DRONES = List.of(
+            new Option(Component.translatable("screen.imttech.menu.mark"),
+                    glasses -> ImtClientState.lookTarget != null
+                            ? new Status(ImtClientState.lookTarget.getName(), HudStyle.ORANGE)
+                            : new Status(Component.translatable("screen.imttech.hack.look"), GREY),
+                    ImtClientEvents::markLookTarget),
             action(ImtAction.LAUNCH_DRONES),
             action(ImtAction.DRONE_STRIKE),
             action(ImtAction.TOGGLE_GUARD_DRONES),

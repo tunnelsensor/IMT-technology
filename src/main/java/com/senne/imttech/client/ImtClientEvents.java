@@ -119,10 +119,12 @@ public final class ImtClientEvents {
      * dan slikken we de klik van Minecraft in, vóór Minecraft hem zelf verwerkt (deze "Pre"-tick
      * komt eerder dan de toetsen van Minecraft).
      *
-     * Hetzelfde voor L: in gewoon Minecraft de Advancements, bij ons standaard één drone sturen. Zonder
-     * dit opende L allebei tegelijk (NeoForge laat elke binding op een toets afgaan).
+     * Hetzelfde voor L: in gewoon Minecraft de Advancements, bij ons (als je hem daar zelf op zet; tot 2026-11-10 de
+     * standaard) één drone sturen. Zonder dit opende L allebei tegelijk (NeoForge laat elke binding op een toets afgaan).
      */
     public static void onClientTickPre(ClientTickEvent.Pre event) {
+        // Eén keer: de toetsen van vóór 2026-11-10 omzetten (snelacties zonder toets, rugzak op B).
+        ImtKeys.migrateOnce();
         Minecraft mc = Minecraft.getInstance();
         if (ImtClientState.operational && mc.screen == null) {
             swallowVanilla(ImtKeys.SATELLITE_BOMBARDMENT, mc.options.keySocialInteractions);
@@ -132,7 +134,8 @@ public final class ImtClientEvents {
 
     /** Zit onze toets op dezelfde toets als die van Minecraft, dan gooien we de klik van Minecraft weg. */
     private static void swallowVanilla(net.minecraft.client.KeyMapping ours, net.minecraft.client.KeyMapping vanilla) {
-        if (ours.getKey().equals(vanilla.getKey())) {
+        // Sinds 2026-11-10 staan deze standaard op geen toets: dan is er niets om in te slikken.
+        if (!ours.isUnbound() && ours.getKey().equals(vanilla.getKey())) {
             while (vanilla.consumeClick()) {
                 // de klik weggooien
             }

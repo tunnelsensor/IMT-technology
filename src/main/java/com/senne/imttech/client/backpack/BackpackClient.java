@@ -35,15 +35,15 @@ import net.neoforged.neoforge.network.PacketDistributor;
  * De rugzakken in jouw spel (hoofdstuk 72): het scherm, het tekenen (op je rug, neergezet), de kleur, de rugzaktoets en
  * het balkje van de rits.
  *
- * <b>De rugzaktoets</b> is standaard <b>Shift + B</b> (aan te passen in Opties > Besturing). Je koos "B", maar B is al de
- * Ore Scan van de bril; met Shift erbij botsen ze niet (NeoForge kijkt eerst naar toetsen met Shift, en gaat dan niet ook
- * nog de Ore Scan af). Sluipen tijdens het ritsen mag: je moet alleen stilstaan.
+ * <b>De rugzaktoets</b> is standaard <b>B</b> (aan te passen in Opties > Besturing), zoals je eerst koos. Eerst was het
+ * Shift + B, omdat B de Ore Scan van de bril was; sinds 2026-11-10 staan de snelacties van de bril standaard op geen toets
+ * (zie ImtKeys), dus B is vrij. Sluipen tijdens het ritsen mag: je moet alleen stilstaan.
  */
 public final class BackpackClient {
     private BackpackClient() {}
 
     public static final KeyMapping OPEN_BACKPACK = new KeyMapping("key.imttech.open_backpack", KeyConflictContext.IN_GAME,
-            KeyModifier.SHIFT, InputConstants.Type.KEYSYM, InputConstants.KEY_B, ImtKeys.CATEGORY);
+            KeyModifier.NONE, InputConstants.Type.KEYSYM, InputConstants.KEY_B, ImtKeys.CATEGORY);
 
     /** De rits: zoveel ticks in totaal (0 = geen rits bezig), en wanneer hij begon (speltijd). */
     private static int zipTotal;

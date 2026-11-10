@@ -3,10 +3,14 @@ package com.senne.imttech.client;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.InputConstants.Type;
 import com.senne.imttech.ImtTech;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.settings.KeyConflictContext;
+import net.neoforged.neoforge.client.settings.KeyModifier;
 
 /**
  * De sneltoetsen van I.M.T. Je kunt ze in het spel veranderen via
@@ -14,6 +18,11 @@ import net.neoforged.neoforge.client.settings.KeyConflictContext;
  *
  * Let op: de standaardtoetsen zijn plekken op het toetsenbord (QWERTY-namen).
  * Op een AZERTY-toetsenbord staan ze dus op dezelfde plek, niet op dezelfde letter.
+ *
+ * Sinds 2026-11-10 (jouw wens): de snelacties van de bril (ore scan, satelliet, drones, ping, comms...) staan standaard
+ * op GEEN toets. Ze staan allemaal ook in het G-menu, en zo blijven er letters vrij voor andere dingen (de rugzak staat nu
+ * gewoon op B). Wie ze toch op een toets wil, kiest er zelf een in Opties > Besturing > I.M.T. Spellen die nog de oude
+ * toetsen hadden, zet {@link #migrateOnce()} één keer om.
  */
 public final class ImtKeys {
     private ImtKeys() {}
@@ -21,58 +30,69 @@ public final class ImtKeys {
     /** De naam van het kopje in Opties > Besturing (zie de taalbestanden). */
     public static final String CATEGORY = "key.categories.imttech";
 
+    /** "Geen toets" (standaard voor de snelacties hieronder). */
+    private static final int NONE = InputConstants.UNKNOWN.getValue();
+
     /**
      * Tikken = I.M.T-menu linksboven openen (met tabbladen), nog eens tikken = sluiten.
      * Ingedrukt houden, een optie aanwijzen en loslaten kiest die optie meteen.
      */
     public static final KeyMapping MENU = key("menu", InputConstants.KEY_G);
-    /** Ingedrukt houden = inzoomen. */
+    /** Ingedrukt houden = inzoomen (vasthouden kan niet vanuit een menu, dus die houdt zijn toets). */
     public static final KeyMapping ZOOM = key("zoom", InputConstants.KEY_V);
-    public static final KeyMapping NIGHT_VISION = key("night_vision", InputConstants.KEY_N);
-    public static final KeyMapping ORE_SCAN = key("ore_scan", InputConstants.KEY_B);
-    public static final KeyMapping THREAT_SCAN = key("threat_scan", InputConstants.KEY_H);
+    // De snelacties: standaard geen toets (G-menu, zie boven). Tussen haakjes de oude toets.
+    /** G > Systems (was N). */
+    public static final KeyMapping NIGHT_VISION = key("night_vision", NONE);
+    /** G > Information (was B). */
+    public static final KeyMapping ORE_SCAN = key("ore_scan", NONE);
+    /** G > Information (was H). */
+    public static final KeyMapping THREAT_SCAN = key("threat_scan", NONE);
     // Fase 2
-    /** Markeer (of ontmarkeer) het wezen waar je naar kijkt. */
-    public static final KeyMapping MARK_TARGET = key("mark_target", InputConstants.KEY_R);
-    public static final KeyMapping LAUNCH_DRONES = key("launch_drones", InputConstants.KEY_J);
+    /** Markeer (of ontmarkeer) het wezen waar je naar kijkt. G > Drones (was R). */
+    public static final KeyMapping MARK_TARGET = key("mark_target", NONE);
+    /** G > Drones (was J). */
+    public static final KeyMapping LAUNCH_DRONES = key("launch_drones", NONE);
     /**
-     * De satelliet: elke aanval een eigen toets die meteen vuurt (geen standen meer).
-     * K = precisieraket, P = bombardement, C = schuivende laser (1x = begin, 2x = eind).
-     * P en C doen in gewoon Minecraft ook iets kleins (sociale interacties, creative-werkbalk
-     * opslaan); met een werkende bril op zijn ze van I.M.T (zie ImtClientEvents).
+     * De satelliet: elke aanval een eigen toets die meteen vuurt (geen standen meer). G > Satellite & Arsenal (was K =
+     * precisieraket, P = bombardement, C = schuivende laser, 1x = begin, 2x = eind). Zet je het bombardement zelf op P,
+     * dan is P met een werkende bril op van I.M.T en niet van Minecraft (zie ImtClientEvents).
      */
-    public static final KeyMapping SATELLITE = key("satellite", InputConstants.KEY_K);
-    public static final KeyMapping SATELLITE_BOMBARDMENT = key("satellite_bombardment", InputConstants.KEY_P);
-    public static final KeyMapping SATELLITE_SWEEP = key("satellite_sweep", InputConstants.KEY_C);
+    public static final KeyMapping SATELLITE = key("satellite", NONE);
+    public static final KeyMapping SATELLITE_BOMBARDMENT = key("satellite_bombardment", NONE);
+    public static final KeyMapping SATELLITE_SWEEP = key("satellite_sweep", NONE);
     // Fase 3
-    public static final KeyMapping DRONE_CAMERA = key("drone_camera", InputConstants.KEY_Y);
-    public static final KeyMapping NAVIGATION = key("navigation", InputConstants.KEY_M);
-    public static final KeyMapping PING = key("ping", InputConstants.KEY_U);
-    public static final KeyMapping COMMS = key("comms", InputConstants.KEY_O);
+    /** G > Recon drones (was Y). */
+    public static final KeyMapping DRONE_CAMERA = key("drone_camera", NONE);
+    /** G > Navigation (was M). */
+    public static final KeyMapping NAVIGATION = key("navigation", NONE);
+    /** G > Navigation (was U). */
+    public static final KeyMapping PING = key("ping", NONE);
+    /** G > Navigation (was O). */
+    public static final KeyMapping COMMS = key("comms", NONE);
     // Fase 5
-    /** Stuur EEN drone op het doelwit waar je naar kijkt. */
-    public static final KeyMapping DRONE_STRIKE = key("drone_strike", InputConstants.KEY_L);
-    /** Stuur een spionagedrone op wie je aankijkt (of roep hem terug). */
-    public static final KeyMapping SPY_DRONE = key("spy_drone", InputConstants.KEY_PERIOD);
-    /** Alles afbreken: drones terug, satelliet uit, escorte uit, markeringen weg. */
-    public static final KeyMapping STAND_DOWN = key("stand_down", InputConstants.KEY_COMMA);
+    /** Stuur EEN drone op het doelwit waar je naar kijkt. G > Drones (was L). */
+    public static final KeyMapping DRONE_STRIKE = key("drone_strike", NONE);
+    /** Stuur een spionagedrone op wie je aankijkt (of roep hem terug). G > Recon drones (was punt). */
+    public static final KeyMapping SPY_DRONE = key("spy_drone", NONE);
+    /** Alles afbreken: drones terug, satelliet uit, escorte uit, markeringen weg. G > Drones (was komma). */
+    public static final KeyMapping STAND_DOWN = key("stand_down", NONE);
     // Fase 9
-    /** Het redstone-scherm openen (al je relais, per groep). */
-    public static final KeyMapping REDSTONE = key("redstone", InputConstants.KEY_APOSTROPHE);
+    /** Het redstone-scherm openen (al je relais, per groep). G > Tech (was apostrof). */
+    public static final KeyMapping REDSTONE = key("redstone", NONE);
     // Fase 10
-    /** De speler waar je naar kijkt hacken (of de hack stoppen). */
-    public static final KeyMapping HACK = key("hack", InputConstants.KEY_SEMICOLON);
+    /** De speler waar je naar kijkt hacken (of de hack stoppen). G > Tech (was puntkomma). */
+    public static final KeyMapping HACK = key("hack", NONE);
 
-    /** Fase 15: een laserkanonschot uit je handpalm (je moet de borstplaat dragen). */
-    public static final KeyMapping LASER_CANNON = key("laser_cannon", InputConstants.KEY_I);
-    /** Een salvo mini-raketten (hele harnas + raketpakket op de borstplaat). */
-    public static final KeyMapping ROCKETS = key("rockets", InputConstants.KEY_X);
+    /** Fase 15: een laserkanonschot uit je handpalm (je moet de borstplaat dragen). G > Combat (was I). */
+    public static final KeyMapping LASER_CANNON = key("laser_cannon", NONE);
+    /** Een salvo mini-raketten (hele harnas + raketpakket op de borstplaat). G > Combat (was X). */
+    public static final KeyMapping ROCKETS = key("rockets", NONE);
     // Fase 4
     /** Ingedrukt houden = I.M.T luistert naar een (Engels) spraakcommando; loslaten = uitvoeren. */
     public static final KeyMapping PUSH_TO_TALK = key("push_to_talk", InputConstants.KEY_Z);
     /**
-     * Kabel-xray aan/uit (verborgen kabels door muren heen zien). Standaard zit hij op GEEN toets
-     * (bijna alle letters zijn al bezet); kies er zelf een in Opties > Besturing, of gebruik G > Information.
+     * Kabel-xray aan/uit (verborgen kabels door muren heen zien). Standaard zit hij op GEEN toets, net als de
+     * snelacties hierboven; kies er zelf een in Opties > Besturing, of gebruik G > Information.
      */
     public static final KeyMapping CABLE_XRAY = key("cable_xray", InputConstants.UNKNOWN.getValue());
     /**
@@ -191,5 +211,75 @@ public final class ImtKeys {
         event.register(OPEN_GRENADE_POUCH);
         event.register(OPEN_MAG_POUCH);
         event.register(HOW_IT_WORKS);
+    }
+
+    // ---------------------------------------------------------------- De oude toetsen omzetten (2026-11-10)
+
+    /** Al gekeken in deze speelsessie? */
+    private static boolean migrated;
+
+    /**
+     * Eén keer per spel: zet de toetsen van vóór 2026-11-10 om naar de nieuwe indeling. Minecraft onthoudt elke toets in
+     * options.txt, dus wie de mod al had, hield anders de oude letters (B bleef de ore scan, de rugzak Shift + B). Alleen een
+     * toets die nog op zijn OUDE standaard staat gaat om; heb je er zelf een andere letter op gezet, dan blijft die. Daarna
+     * staat in imttech-client.toml {@code keyLayout = 2}, zodat het niet nog eens gebeurt (zet je daarna zelf B op de ore
+     * scan, dan blijft dat zo). Wordt elke tick aangeroepen (ImtClientEvents), maar doet maar één keer iets.
+     */
+    public static void migrateOnce() {
+        if (migrated || !ImtClientConfig.SPEC.isLoaded()) {
+            return;
+        }
+        migrated = true;
+        if (ImtClientConfig.KEY_LAYOUT.get() >= 2) {
+            return;
+        }
+        // De snelacties en hun oude standaardtoets.
+        Map<KeyMapping, Integer> old = new LinkedHashMap<>();
+        old.put(NIGHT_VISION, InputConstants.KEY_N);
+        old.put(ORE_SCAN, InputConstants.KEY_B);
+        old.put(THREAT_SCAN, InputConstants.KEY_H);
+        old.put(MARK_TARGET, InputConstants.KEY_R);
+        old.put(LAUNCH_DRONES, InputConstants.KEY_J);
+        old.put(SATELLITE, InputConstants.KEY_K);
+        old.put(SATELLITE_BOMBARDMENT, InputConstants.KEY_P);
+        old.put(SATELLITE_SWEEP, InputConstants.KEY_C);
+        old.put(DRONE_CAMERA, InputConstants.KEY_Y);
+        old.put(NAVIGATION, InputConstants.KEY_M);
+        old.put(PING, InputConstants.KEY_U);
+        old.put(COMMS, InputConstants.KEY_O);
+        old.put(DRONE_STRIKE, InputConstants.KEY_L);
+        old.put(SPY_DRONE, InputConstants.KEY_PERIOD);
+        old.put(STAND_DOWN, InputConstants.KEY_COMMA);
+        old.put(REDSTONE, InputConstants.KEY_APOSTROPHE);
+        old.put(HACK, InputConstants.KEY_SEMICOLON);
+        old.put(LASER_CANNON, InputConstants.KEY_I);
+        old.put(ROCKETS, InputConstants.KEY_X);
+        int changed = 0;
+        for (Map.Entry<KeyMapping, Integer> entry : old.entrySet()) {
+            KeyMapping mapping = entry.getKey();
+            if (on(mapping, KeyModifier.NONE, entry.getValue())) {
+                mapping.setKeyModifierAndCode(KeyModifier.NONE, InputConstants.UNKNOWN);
+                changed++;
+            }
+        }
+        // De rugzak: van Shift + B naar gewoon B.
+        KeyMapping backpack = com.senne.imttech.client.backpack.BackpackClient.OPEN_BACKPACK;
+        if (on(backpack, KeyModifier.SHIFT, InputConstants.KEY_B)) {
+            backpack.setKeyModifierAndCode(KeyModifier.NONE, Type.KEYSYM.getOrCreate(InputConstants.KEY_B));
+            changed++;
+        }
+        if (changed > 0) {
+            // Minecraft zoekt toetsen op in een eigen lijst: die opnieuw opbouwen, en options.txt meteen bewaren.
+            KeyMapping.resetMapping();
+            Minecraft.getInstance().options.save();
+            ImtTech.LOGGER.info("[keys] {} I.M.T-toetsen naar de nieuwe indeling gezet (snelacties zonder toets, rugzak op B)", changed);
+        }
+        ImtClientConfig.KEY_LAYOUT.set(2);
+        ImtClientConfig.SPEC.save();
+    }
+
+    /** Staat deze toets op precies deze toets (met deze Shift/Ctrl/Alt erbij)? */
+    private static boolean on(KeyMapping mapping, KeyModifier modifier, int key) {
+        return mapping.getKeyModifier() == modifier && mapping.getKey().equals(Type.KEYSYM.getOrCreate(key));
     }
 }

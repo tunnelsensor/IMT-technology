@@ -112,34 +112,38 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (445 automati
 
 | Toets | Wat het doet |
 |-------|--------------|
-| **G** | Het ronde I.M.T-menu (scrollen = ander tabblad) |
+| **G** | Het ronde I.M.T-menu (scrollen = ander tabblad): hier zitten alle snelacties van de bril |
 | **V** | Inzoomen (vasthouden) |
-| **N** | Nachtzicht aan/uit |
-| **B** | Ertsen-scan |
-| **H** | Vijanden door muren aan/uit |
-| **R** | Doelwit markeren waar je naar kijkt |
-| **J** | Zwerm aanvalsdrones |
-| **L** | Eén drone op één doelwit |
-| **K** | Satelliet: precisieraket |
-| **P** | Satelliet: bombardement |
-| **C** | Satelliet: schuivende laser (1x = begin, 2x = eind) |
-| **,** | Stand down: alle aanvallen afbreken |
-| **.** | Spionagedrone sturen / terugroepen |
-| **;** | Speler hacken waar je naar kijkt |
-| **'** | Redstone-scherm (al je relais) |
-| **Y** | Drone-camera (verkenner) |
-| **M** | Navigatie / waypoints |
-| **U** | Ping plaatsen (met een pistool of magazijn in je hand: **unload**, zie "Vuurwapens") |
-| **O** | Comms (berichten naar andere I.M.T-dragers) |
 | **Z** | Spraaktoets: ingedrukt houden en praten |
-| **I** | Laser cannon aan/uit (met de borstplaat aan); vuren met de aanvalsknop |
-| **X** | Salvo mini-raketten (hele harnas + raketpakket) |
+| **B** | Je rugzak openen (zie "Militaire rugzakken") |
+| **Linker Alt** | Het wiel om snel te trekken (vasthouden) |
+| **F6** | De skilltree van je vuurwapens |
+| **R / U / H** (met een geweer of magazijn in je hand) | Herladen / unload / bekijken (zie "Vuurwapens") |
 | **W** (vasthouden, in een scherm, met je muis op een item) | How it works: de animatie van dat item |
 
-Alle toetsen kun je aanpassen: **Opties > Besturing > I.M.T** Daar staan ook "Cable X-ray
-on/off" (verborgen kabels door muren heen zien), "Zone border on/off" (de rand van je zones), "Gun
-skills", en de quickdraws en pouches van de vuurwapens ("Quickdraw: pistol", "Quickdraw: grenade",
-"Open the holster", "Open the grenade pouch", "Open the magazine pouch"), allemaal standaard zonder
+**De snelacties van de bril hebben standaard geen toets** (sinds 2026-11-10, zo blijven er letters vrij
+voor andere dingen). Je doet ze via het G-menu, of je zet ze zelf op een toets in **Opties > Besturing >
+I.M.T**:
+
+| Snelactie | In het G-menu | Vroeger |
+|-----------|---------------|---------|
+| Nachtzicht aan/uit | Systems | N |
+| Ertsen-scan | Information | B |
+| Vijanden door muren aan/uit | Information | H |
+| Doelwit markeren waar je naar kijkt | Drones (Mark target) | R |
+| Zwerm aanvalsdrones / één drone op één doelwit | Drones | J / L |
+| Satelliet: precisieraket / bombardement / schuivende laser | Satellite & Arsenal | K / P / C |
+| Stand down: alle aanvallen afbreken | Drones | , |
+| Spionagedrone sturen / terugroepen, drone-camera | Recon drones | . / Y |
+| Speler hacken, redstone-scherm | Tech | ; / ' |
+| Navigatie, ping plaatsen, comms | Navigation | M / U / O |
+| Laser cannon aan/uit, salvo mini-raketten | Combat | I / X |
+
+Had je de mod al, dan zet hij je oude toetsen bij het eerste opstarten één keer om (alleen de toetsen
+die nog op hun oude letter stonden; zelf gekozen toetsen blijven). In Opties > Besturing > I.M.T staan
+ook "Cable X-ray on/off" (verborgen kabels door muren heen zien), "Zone border on/off" (de rand van je
+zones), en de quickdraws en pouches van de vuurwapens ("Quickdraw: pistol", "Quickdraw: grenade",
+"Open the holster", "Open the grenade pouch", "Open the magazine pouch"), ook allemaal standaard zonder
 toets.
 
 ---
@@ -150,7 +154,7 @@ toets.
 |---------|--------------|
 | **Combat** | Laser cannon, mini-raketten, rayshield |
 | **Satellite & Arsenal** | Precisieraket, bombardement, schuivende laser (kiezen = meteen vuren), satellietscherm (upgrades), arsenaal |
-| **Drones** | Zwerm, één drone, escorte, escortevorm, stand down, markeringen wissen |
+| **Drones** | Doelwit markeren (wat in je vizier staat), zwerm, één drone, escorte, escortevorm, stand down, markeringen wissen |
 | **Recon drones** | Drone-camera, spionagedrone, meekijken, rapport |
 | **Transport** | Zelf vliegen, autopiloot, vrachtdrone, iemand vervoeren |
 | **Tech** | Redstone-relais, muziek (Spotify), hacken |
@@ -250,8 +254,8 @@ Hoe hoog precies staat in `config/imttech.toml` (`drones.orbitHeight`). Hoeveel 
 zwerm passen staat daar ook (standaard zwerm 16 en escorte 8) — maar je arsenaal bepaalt
 hoeveel het er echt worden.
 
-- **Zwerm** (J): valt je gemarkeerde doelwitten aan, of verdedigt je.
-- **Eén drone** (L): goedkoop, jaagt op één doelwit tot het dood is.
+- **Zwerm**: valt je gemarkeerde doelwitten aan, of verdedigt je.
+- **Eén drone**: goedkoop, jaagt op één doelwit tot het dood is.
 - **Escorte**: vliegt met je mee en schiet op wat jou aanvalt. Met **G > Drones > Formation**
   kies je de vorm: **Orbit** (rondcirkelen), **Shield** (een snel draaiende ring dicht om je
   heen: wat op je af komt, raakt eerst een drone), **Arrow** (een V schuin boven en achter je)
@@ -271,21 +275,22 @@ naar jouw spel).
 - **Vrachtdrone**: leegt de kist waar je naar kijkt en brengt alles naar je waypoint.
 - **Iemand vervoeren**: pakt een speler (alleen met PvP aan), dier of monster op.
 
-### Satelliet (K, P en C)
-Drie aanvallen, elk met een eigen toets die meteen vuurt (geen standen om in te stellen). Ook in
-**G > Satellite & Arsenal** staan ze elk apart; wat nog op slot zit, staat er als LOCKED.
-- **Precisieraket (K)** — een echte raket die uit de ruimte neerkomt: veel schade, **geen**
+### Satelliet
+Drie aanvallen, elk apart in **G > Satellite & Arsenal**: kiezen = meteen vuren (geen standen om in te
+stellen); wat nog op slot zit, staat er als LOCKED. Je kunt ze ook elk op een eigen toets zetten
+(Opties > Besturing > I.M.T; standaard geen toets, vroeger K, P en C).
+- **Precisieraket** — een echte raket die uit de ruimte neerkomt: veel schade, **geen**
   blokschade. Heb je vanaf het begin.
-- **Bombardement (P)** — een regen van raketten rond het doel, met flinke kraters. Eerst vrijspelen.
-- **Schuivende laser (C)** — een streep die over de grond kruipt, van een begin- naar een eindpunt
-  dat jij kiest: kijk naar het begin en druk **C** (daar komt een markering), kijk naar het eind
-  en druk nog eens **C** (in het menu: twee keer Sweeping laser; ertussen staat er PICK END
-  onder). Een beginpunt blijft een halve minuut bewaard, of tot je K of P gebruikt. Eerst vrijspelen.
+- **Bombardement** — een regen van raketten rond het doel, met flinke kraters. Eerst vrijspelen.
+- **Schuivende laser** — een streep die over de grond kruipt, van een begin- naar een eindpunt
+  dat jij kiest: kijk naar het begin en kies **Sweeping laser** (daar komt een markering), kijk naar
+  het eind en kies hem nog eens (ertussen staat er PICK END onder). Een beginpunt blijft een halve
+  minuut bewaard, of tot je een van de andere twee gebruikt. Eerst vrijspelen.
 Eerst verschijnt een rode richtstraal; de raket vertrekt zo dat hij inslaat als het aftellen op
 nul staat (je hoort hem aankomen). Hij volgt bewegende doelwitten (lock-on), richt tot 500
 blokken, en je kunt ook op je waypoint of je laatste ping mikken. Bij de inslag komt er een
-schokgolf en schudt je beeld. P en C doen in gewoon Minecraft ook iets kleins (sociale
-interacties, creative-werkbalk opslaan); met een werkende bril op is P van I.M.T
+schokgolf en schudt je beeld. Zet je het bombardement zelf op P (in gewoon Minecraft "sociale
+interacties"), dan is P met een werkende bril op van I.M.T
 
 **Upgraden** doe je in het satellietscherm (G > Satellite & Arsenal > Satellite). Zes onderdelen, elk tot
 niveau 10: de drie aanvallen (vrijspelen, dan sterker), opladen (kortere wachttijd), kracht (meer
@@ -323,7 +328,7 @@ hele **groep**. Met je stem: *"zet de voordeur aan"*, *"doe de val uit"*, *"geef
   elke groep te halen. Met **New group**, **Rename** en **Delete** bovenaan doe je de rest (een
   groep weggooien laat wat erin zat een laag omhoog schuiven).
 
-  Het redstone-scherm (toets **'**) toont alles als een boom, met per groep **ON**, **OFF** en
+  Het redstone-scherm (G > Tech) toont alles als een boom, met per groep **ON**, **OFF** en
   **PULSE**; onderaan staat waar je groepen instelt. In het scherm van een relais zie je onder
   **Group** in welke groep het zit. (Tot 14 oktober waren dit tags; een oude wereld houdt van elk
   relais de eerste tag als groep.)
@@ -603,7 +608,7 @@ Raven-soldaten) binnen zicht, dan draait hij erheen en blijft hij erop schieten 
   als jouw buit.
 - **Uitzetten**: een redstone-signaal (een hendel, of een I.M.T-relais ernaast) zet hem
   uit; de loop hangt dan omlaag. I.M.T kan hem ook zelf schakelen: hij staat in je
-  redstone-lijst (toets **'**) onder **Turrets**, en werkt ook met je stem.
+  redstone-lijst (G > Tech) onder **Turrets**, en werkt ook met je stem.
 - **Hoe staat hij ervoor?** Klik rechts met een lege hand: aan/uit, stroom en raketten. Met
   shift haal je de raketten eruit.
 
@@ -624,7 +629,7 @@ Bijvoorbeeld: generatoren aan de achterkant, torentjes links, lasers rechts.
 - **Rechtsklik** opent het deurtje (iedereen die ervoor staat, kan schakelen). Per kant zie je
   een lampje, of er iets aan hangt ("wired"), en de schakelaar.
 - **Link to I.M.T** (alleen de eigenaar: wie hem neerzette, of in een Biebia's Industries Tower wie de
-  toren hackte) zet de zes schakelaars in je redstone-lijst (toets **'**), onder **Power
+  toren hackte) zet de zes schakelaars in je redstone-lijst (G > Tech), onder **Power
   cabinets**, zodat je ze op afstand of met je stem schakelt ("turn off cabinet 1 left").
 - In de Biebia's Industries Tower en de Biebia's Industries-bunker staat er een op een goed bewaakte plek.
 
@@ -809,7 +814,7 @@ tussen twee kabeleinden in). **Rechtsklik** zet hem om:
   andere, krijgt geen stroom meer uit wat ervoor hangt.
 
 Let op: de schakelaar moet *in* de kabel zitten. Staat hij naast de kabel, dan loopt de stroom er
-gewoon langs. Wie hem neerzet, vindt hem ook in de redstone-lijst van I.M.T (toets **'**, als
+gewoon langs. Wie hem neerzet, vindt hem ook in de redstone-lijst van I.M.T (G > Tech, als
 "Light switch 1"), zodat je je lichten op afstand aan en uit zet. De getallen staan in
 `config/imttech.toml` onder `[lights]` (`arcLampMaxLevel` is het hoogste lichtniveau dat je
 kunt kiezen, tussen 15 en 128); wat een lamp aan stroom gebruikt staat onder `[power]`.
@@ -1919,7 +1924,7 @@ Bediening zoals TACZ:
 | rechtsklik met een cel in je hand | de cel in het lasergeweer in je werkbalk dat er geen heeft |
 | H | het geweer bekijken |
 
-R, U en H doen alleen dit met een geweer in je hand; anders doen ze wat ze altijd deden (markeren, de ping, dreigingsscan). Je kunt
+R, U en H doen alleen dit met een geweer in je hand; zonder geweer doen ze niets (tenzij je er zelf een snelactie van de bril op zette, zoals vroeger markeren, de ping en de dreigingsscan). Je kunt
 ze veranderen in Opties > Besturing > I.M.T. Sprinten laat het geweer zakken, en schieten stopt je sprint. Een schot in
 het hoofd doet 1,5 keer zoveel; spelers raak je alleen met PvP aan.
 
@@ -2159,7 +2164,7 @@ hem op je rug, de banden over je borst. Een geweer op je rug (sling) hangt over 
 onder je vizier; beweeg je, dan stopt de rits ("Hold still to unzip the backpack"). Daarna staat zijn scherm open, met een
 **sorteerknop** (SORT: gelijke stapels samen, alles op een rij). Met de rugzak open **loop je traag** door (40 % van je
 snelheid, `openWalkSpeed`): W, A, S en D werken, springen en sprinten niet (Shift heb je nodig voor shift-klikken).
-- **Op je rug**: de rugzaktoets, standaard **Shift + B** (B is al de Ore Scan van de bril), of de knop **Backpack** in het
+- **Op je rug**: de rugzaktoets, standaard **B**, of de knop **Backpack** in het
   wiel (linker Alt).
 - **In je hand**: rechtsklik. Het vakje met de open rugzak zit dan op slot.
 - **Neerzetten**: **sneak + rechtsklik op de grond**. Dan staat hij rechtop, de MOLLE-banden naar jou. **Iedereen** opent
@@ -2266,7 +2271,7 @@ Met de bril op en energie erin:
   buitenaf zie je geen loopbeweging: wie vooruit vliegt, helt voorover tot bijna liggend, met
   de benen recht, en de vlammen wijzen dan langs je lichaam naar achteren.
 - **Landen**: de laarzen vangen elke val tot 40 blokken helemaal op.
-- **Laser cannon** (toets **I**, of G > Combat): zet de laser cannon **aan of uit**. Staat hij aan,
+- **Laser cannon** (G > Combat): zet de laser cannon **aan of uit**. Staat hij aan,
   dan is je aanvalsknop (linkermuisknop) de laser cannon: klikken vuurt, ingedrukt houden vuurt
   elke seconde. Slaan en blokken breken gaat dan niet; zet hem uit om weer te hakken. Rond je
   vizier staat een ring die na elk schot weer volloopt. Een stoot raakt alles op zijn weg en
@@ -2274,13 +2279,13 @@ Met de bril op en energie erin:
   reactor) en het kost 200 energie per stoot. Met een lege hand zie je je arm omhoog gaan,
   de hand geknikt met een gloeiende handpalm; bij een schot flitst hij op en slaat je arm
   terug. Anderen zien je arm vooruit wijzen en je handpalm oplichten als je schiet.
-- **Mini-raketten** (toets **X**, G > Combat, of zeg "fire rockets"): een salvo van zes
+- **Mini-raketten** (G > Combat, of zeg "fire rockets"): een salvo van zes
   raketten uit twee buizen op je rug. Daarvoor heb je een **raketpakket** nodig: craft het met
   een **Raven-onderdeel** in het midden, een computerchip eronder, buskruit en ijzer. Trek de
   borstplaat aan en klik rechts met het pakket in je hand; dan zit het vast op DIE borstplaat
   (de tooltip zegt "Rocket pack installed") en zie je de buizen op je rug. De raketten gaan
   om de beurt links en rechts weg, waaieren uit en draaien dan naar hun doel: je
-  **gemarkeerde doelwitten** (R; ze worden verdeeld), anders **wat je aankijkt**, anders de
+  **gemarkeerde doelwitten** (G > Drones > Mark target; ze worden verdeeld), anders **wat je aankijkt**, anders de
   **plek waar je kijkt**. Ze ontploffen zonder blokken te slopen en raken jou, je team en je
   drones nooit. Je hebt het hele harnas nodig; een salvo kost 900 energie en daarna moet het
   pakket 12 seconden herladen (links in de HUD: ROCKETS). Munitie is er niet. Meer raketten of

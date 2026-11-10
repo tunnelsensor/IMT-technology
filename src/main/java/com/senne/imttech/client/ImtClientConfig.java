@@ -168,6 +168,16 @@ public final class ImtClientConfig {
                     + " The second button next to /tick in the power screens, or G > Information > Numbers.")
             .defineEnum("numberStyle", com.senne.imttech.config.NumberStyle.DEFAULT);
 
+    /**
+     * Welke toetsindeling dit spel al heeft (zie ImtKeys.migrateOnce): 1 = de oude (vóór 2026-11-10, de snelacties op een
+     * letter en de rugzak op Shift + B), 2 = de nieuwe (snelacties zonder toets, de rugzak op B). Een nieuw bestand begint
+     * op 1; bij het eerste opstarten zet ImtKeys de oude toetsen om en schrijft hier 2.
+     */
+    public static final ModConfigSpec.IntValue KEY_LAYOUT = BUILDER
+            .comment("Internal: which I.M.T key layout this game already has (2 = glasses quick actions without a default key,"
+                    + " backpack on B). Set by the mod; leave it alone.")
+            .defineInRange("keyLayout", 1, 1, 2);
+
     public static final ModConfigSpec SPEC = BUILDER.build();
 
     /** Hoe grote getallen eruitzien (zolang de instellingen nog niet geladen zijn: de standaard). */

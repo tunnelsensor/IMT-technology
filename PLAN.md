@@ -6182,6 +6182,32 @@ backpacks zijn. Vragen of voorstellen stel ze dan."
       het zwarte uniform van een Raven-soldaat amper (nu antracietgrijs), en in de animatie lag het lichaam half achter het
       tekstvak (nu gedraaid, met een olijfgroene rugzak). Showcase 127 ("Backpacks on the pegboard, Raven packs").
 
+### 73. Snelacties van de bril zonder standaardtoets, de rugzak op B (10 november)
+
+Jouw wens: "Verander dat al de quick dingen zoals ore scan, satelliet... standaard geen instelling hebben, zo heb je meer
+knoppen voor andere dingen; zo kan rugzak standaard op B staan."
+
+- [x] **Geen standaardtoets meer voor de snelacties** — `ImtKeys`: nachtzicht (was N), ore scan (B), dreigingsscan (H),
+      markeren (R), zwerm (J), één drone (L), de drie satellietaanvallen (K, P, C), drone-camera (Y), navigatie (M), ping
+      (U), comms (O), spionagedrone (.), stand down (,), redstone-scherm ('), hacken (;), laser cannon (I) en mini-raketten
+      (X) staan standaard op geen toets. Ze staan allemaal in het G-menu en je kunt ze nog steeds zelf op een toets zetten
+      (Opties > Besturing > I.M.T). Hun toets houden: het G-menu, zoom (V) en de spraaktoets (Z) (vasthouden kan niet uit
+      een menu), het wiel (linker Alt), de skilltree (F6), de geweertoetsen R, U en H (alleen met een geweer in je hand) en
+      How it works (W in een scherm).
+- [x] **De rugzak op B** — `BackpackClient.OPEN_BACKPACK`: gewoon B (was Shift + B).
+- [x] **Markeren in het G-menu** — markeren had alleen een toets, dus nu staat **Mark target** vooraan in G > Drones:
+      het markeert wat in je vizier staat (het menu laat je blijven kijken waar je keek); eronder staat de naam van wat je
+      aankijkt, of "look at someone".
+- [x] **Je oude toetsen gaan één keer om** — Minecraft onthoudt elke toets in options.txt, dus wie de mod al had hield
+      anders B = ore scan en Shift + B voor de rugzak. `ImtKeys.migrateOnce` (bij de eerste tick) zet elke snelactie die
+      nog op zijn **oude** letter staat op geen toets, en de rugzak van Shift + B naar B; zelf gekozen toetsen blijven. Daarna
+      staat `keyLayout = 2` in `imttech-client.toml` en gebeurt het nooit meer.
+- [x] **Teksten** — de drone-camera zei onderaan "Y: return"; nu de toets als je er een koos, anders "G > Recon: return"
+      (`DroneFeedWidget`). How it works: de laser cannon, de mini-raketten, de drones en de rugzak noemen het G-menu (of
+      [B]) in plaats van de oude letters. LEESMIJ: de toetsentabel (hoofdstuk 3) met een tabel "snelactie, waar in het
+      G-menu, vroeger", en de oude letters elders eruit. De rondleidingen (`VisualCheck` dreigingsscan, `ShowcaseFeatures`
+      raketten) drukten de oude toets in; die sturen nu de actie zelf (een lege toets indrukken drukt alle lege toetsen in).
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
