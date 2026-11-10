@@ -22,13 +22,13 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 479 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 483 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
 **Publiceren:** klaar voor CurseForge onder de MIT-licentie (17 oktober): de beschrijving, het logo, de
 changelog en een stappenplan staan in `publish/` (begin bij `publish/HOE-PUBLICEREN.md`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 123 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 124 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -6069,6 +6069,13 @@ backpacks zijn. Vragen of voorstellen stel ze dan."
 - Het wiel had zoveel knoppen dat ze van je scherm vielen: alle knoppen naast de ring zijn nu **compact** (een vierkantje met
   het item en het getal, in kolommen); wat het is lees je in het midden als je hem aanwijst (zoals de tegels). De genees-items
   uit je IFAK staan ook als knopje, niet op de ring (die zat vol).
+- **Van achteren** (stap 3): hetzelfde gebaar als zakkenrollen (sluipen, lege hand, rechtsklik van achteren), maar **op zijn
+  rugzak**: de bovenste helft van zijn lijf (onder 55 % van zijn lengte is het zakkenrollen). Kijk je zo naar zijn rugzak,
+  dan staat de hint onder je vizier. De rits klinkt zachter (`theftZipVolume` 0,35, je eigen rugzak 0,7). Elke greep vult de
+  meter met 0,18 (`theftNoisePerTake`; shift-klik dubbel, een MOLLE-pouch eraf driedubbel), hij zakt 0,1 per seconde
+  (`theftNoiseDecay`). Betrapt bij een volle meter of als hij je ziet (hetzelfde "zien" als bij zakkenrollen); de
+  afstanden, het oplichten (10 s) en de wachttijd (30 s) zijn die van zakkenrollen. Wat je al aan je muis had, houd je ook
+  als je betrapt wordt (je had het al gepakt). Geen sorteerknop in de rugzak van een ander.
 
 - [x] **Stap 1: de drie rugzakken** — `backpack/` (eigen registratie: `BackpackRegistry`): `BackpackItem` (de maten,
       `minecraft:container` voor de inhoud, `mayHold`), `BackpackPlace` (op je rug, in je hand, neergezet),
@@ -6110,8 +6117,17 @@ backpacks zijn. Vragen of voorstellen stel ze dan."
       R). Wat ik zo vond: de knoppen van het wiel vielen van je scherm en de IFAK-tegels lagen over de geweren (nu compact en
       als knopjes), de derde plek van de Patrol Pack verdween tegen zijn voorzak (nu erboven), en in het scherm van een pouch
       stond "or its own key" (een MOLLE-pouch heeft geen eigen toets). Showcase 124 ("MOLLE pouches").
-- [ ] **Stap 3: van achteren openen en stelen** — sluipen achter iemand, de rits, het scherm met de meter (zoals
-      zakkenrollen); merkt hij het, dan hoort hij het.
+- [x] **Stap 3: van achteren openen en stelen** — `backpack/BackpackTheft` (beginnen via `EntityInteractSpecific`: die
+      geeft ook waar je op zijn lijf klikte; de meter, betrapt, de wachttijd), `BackpackPlace.Theft` (zijn rugzak, dezelfde
+      als `Worn`: kijkt hij zelf ook, dan delen ze de inhoud; dicht als hij wegloopt of je niet meer achter hem staat),
+      `BackpackTheftPayload` (de meter naar de dief), `BackpackMenu.theft` (elke greep = `BackpackTheft.noise`). In jouw
+      spel: de hint onder je vizier, de meter links in `BackpackScreen`, en `BackpackClient` houdt de gewone klik tegen als
+      je op een rugzak klikt (de klik met de plek op zijn lijf ging al naar de server; anders begon ook het zakkenrollen).
+      Config `stealAllowed`, `theftNoisePerTake`, `theftNoiseDecay`, `theftZipVolume`. Vier nieuwe tests (eigen batch
+      `backpacks_theft`, want ze zetten de rits even op 0): van voren niet, van achteren met de echte klik pas na de rits,
+      de diamanten zijn weg uit zijn rugzak; te veel grijpen = betrapt (oplichten, wachttijd); omdraaien = betrapt;
+      weglopen = dicht zonder betrapt. Bekeken met `-Ponly=backpack` (pk30 tot pk35: de hint achter Lotte, de rits, haar
+      scherm met de meter, de meter na drie grepen, ze draait zich om). Showcase 125 ("Opening a backpack from behind").
 - [ ] **Stap 4: het lichaam van een speler** — doodgaan laat een lichaam achter met al je spullen (de rugzak apart),
       blijft tot het leeg is, sneak + rechtsklik op de rugzak haalt hem eraf (3 s), de knop "Alles terug" voor de eigenaar.
 - [ ] **Stap 5: Pegboard, Raven-soldaten, How it works** — rugzakken op het Pegboard (na hoofdstuk 71), Raven-soldaten met

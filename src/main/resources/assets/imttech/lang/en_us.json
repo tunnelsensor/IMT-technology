@@ -2054,5 +2054,13 @@
   "molle.imttech.no_pouch": "There is no pouch there",
   "molle.imttech.ifak_empty": "Nothing left there in your IFAK",
   "molle.imttech.ifak_used": "%s from your IFAK",
-  "screen.imttech.molle.hint_close": "On your backpack: open it from the Alt wheel, no zip needed"
+  "screen.imttech.molle.hint_close": "On your backpack: open it from the Alt wheel, no zip needed",
+  "backpack.imttech.theft_title": "%s's %s",
+  "backpack.imttech.not_behind": "Get behind %s to open their backpack",
+  "backpack.imttech.theft_wait": "Wait %s s before you try %s's backpack again",
+  "backpack.imttech.theft_disabled": "Taking things out of other players' backpacks is switched off here",
+  "backpack.imttech.theft_victim": "%s is going through your backpack!",
+  "backpack.imttech.theft_caught": "%s noticed you!",
+  "backpack.imttech.theft_hint": "Right-click: open %s's backpack",
+  "screen.imttech.backpack.noticed": "NOTICED"
 }

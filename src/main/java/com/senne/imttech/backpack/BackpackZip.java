@@ -59,7 +59,9 @@ public final class BackpackZip {
         JOBS.put(player.getUUID(), new Job(place, player.position(), ticks));
         ModNetwork.sendTo(player, new BackpackZipPayload(ticks));
         Vec3 at = place.position();
-        player.serverLevel().playSound(null, at.x, at.y, at.z, ModSounds.BACKPACK_ZIP.get(), SoundSource.PLAYERS, 0.7f,
+        // Van achteren (stap 3) rits je zachter, maar hij kan het nog horen.
+        float volume = place instanceof BackpackPlace.Theft ? ImtConfig.Backpacks.THEFT_ZIP_VOLUME : 0.7f;
+        player.serverLevel().playSound(null, at.x, at.y, at.z, ModSounds.BACKPACK_ZIP.get(), SoundSource.PLAYERS, volume,
                 0.95f + player.getRandom().nextFloat() * 0.1f);
         return true;
     }
@@ -122,12 +124,14 @@ public final class BackpackZip {
         }
         BackpackItem.Size size = inventory.size();
         int locked = place.lockedSlot(player);
+        boolean theft = place instanceof BackpackPlace.Theft;
         SimpleMenuProvider provider = new SimpleMenuProvider(
-                (id, playerInventory, p) -> new BackpackMenu(id, playerInventory, size, inventory, locked), place.title());
+                (id, playerInventory, p) -> new BackpackMenu(id, playerInventory, size, inventory, locked, theft), place.title());
         if (player.connection != null && player.connection.hasChannel(AdvancedOpenScreenPayload.TYPE)) {
             player.openMenu(provider, buf -> {
                 buf.writeVarInt(size.ordinal());
                 buf.writeVarInt(locked);
+                buf.writeBoolean(theft);
             });
         } else {
             // Een nep-speler (de automatische tests) heeft geen spel om de maat naar te sturen: gewoon openen.

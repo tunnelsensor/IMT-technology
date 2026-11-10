@@ -48,6 +48,8 @@ public final class BackpackClient {
     /** De rits: zoveel ticks in totaal (0 = geen rits bezig), en wanneer hij begon (speltijd). */
     private static int zipTotal;
     private static long zipStart;
+    /** Stap 3: de meter "NOTICED" als je in de rugzak van een ander zit (0 tot 1). */
+    private static float theftMeter;
 
     /** Bij het opstarten (ImtTechClient). */
     public static void register(IEventBus modEventBus) {
@@ -64,6 +66,7 @@ public final class BackpackClient {
         modEventBus.addListener(BackpackClient::registerProperties);
         NeoForge.EVENT_BUS.addListener(BackpackClient::onClientTick);
         NeoForge.EVENT_BUS.addListener(BackpackClient::onRenderGui);
+        NeoForge.EVENT_BUS.addListener(BackpackClient::onInteractSpecific);
     }
 
     /** De stof in zijn kleur (tintindex 0): wat je erop verfde, of olijfgroen. De band en de gespen niet. */
@@ -93,6 +96,33 @@ public final class BackpackClient {
         });
     }
 
+    /** Van de server (stap 3): hoe vol de meter is als je in de rugzak van een ander zit (-1 = betrapt). */
+    public static void theftMeter(float meter) {
+        theftMeter = Math.max(0, meter);
+    }
+
+    /** De meter, voor het scherm van de rugzak. */
+    public static float theftMeter() {
+        return theftMeter;
+    }
+
+    /**
+     * Stap 3: sluip je met een lege hand achter iemand en rechtsklik je op zijn rugzak, dan rits je die open (de server doet
+     * dat, BackpackTheft). Jouw spel stuurt die klik met de plek op zijn lijf al naar de server voor dit gebeurt; hier houden
+     * we alleen de gewone klik daarna tegen, anders begon ook het zakkenrollen.
+     */
+    private static void onInteractSpecific(net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.EntityInteractSpecific event) {
+        if (!event.getLevel().isClientSide() || event.getHand() != net.minecraft.world.InteractionHand.MAIN_HAND
+                || !(event.getTarget() instanceof net.minecraft.world.entity.player.Player victim)) {
+            return;
+        }
+        if (com.senne.imttech.backpack.BackpackTheft.aimsAtPack(event.getEntity(), victim, event.getLocalPos())) {
+            theftMeter = 0;
+            event.setCanceled(true);
+            event.setCancellationResult(net.minecraft.world.InteractionResult.SUCCESS);
+        }
+    }
+
     /** Van de server: de rits begint ({@code ticks} lang) of stopt (0). */
     public static void zip(int ticks) {
         Minecraft mc = Minecraft.getInstance();
@@ -120,10 +150,14 @@ public final class BackpackClient {
         }
     }
 
-    /** Het balkje van de rits, onder je vizier: "Unzipping" en hoe ver hij is. */
+    /** Het balkje van de rits, onder je vizier: "Unzipping" en hoe ver hij is. Of (stap 3) de hint bij een rugzak van een ander. */
     private static void onRenderGui(RenderGuiEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
-        if (zipTotal <= 0 || mc.level == null || mc.options.hideGui) {
+        if (mc.level == null || mc.options.hideGui) {
+            return;
+        }
+        if (zipTotal <= 0) {
+            theftHint(event.getGuiGraphics(), mc);
             return;
         }
         float done = Math.min(1, (mc.level.getGameTime() - zipStart + event.getPartialTick().getGameTimeDeltaPartialTick(false)) / zipTotal);
@@ -136,6 +170,27 @@ public final class BackpackClient {
         int width = 64;
         g.fill(cx - width / 2 - 1, y + 11, cx + width / 2 + 1, y + 16, HudStyle.argb(200, 0x0E1116));
         HudStyle.bar(g, cx - width / 2, y + 12, width, 3, done, HudStyle.ORANGE);
+    }
+
+    /**
+     * Stap 3: kijk je (sluipend, met een lege hand, van achteren, dichtbij) naar de rugzak van een ander, dan staat onder je
+     * vizier "Right-click: open ...'s backpack".
+     */
+    private static void theftHint(GuiGraphics g, Minecraft mc) {
+        LocalPlayer player = mc.player;
+        if (player == null || mc.screen != null || !(mc.hitResult instanceof net.minecraft.world.phys.EntityHitResult hit)
+                || !(hit.getEntity() instanceof net.minecraft.world.entity.player.Player victim)) {
+            return;
+        }
+        net.minecraft.world.phys.Vec3 local = hit.getLocation().subtract(victim.position());
+        if (!com.senne.imttech.backpack.BackpackTheft.aimsAtPack(player, victim, local)
+                || !com.senne.imttech.backpack.BackpackTheft.behind(victim, player)
+                || player.distanceTo(victim) > com.senne.imttech.config.ImtConfig.Bypass.PICKPOCKET_REACH) {
+            return;
+        }
+        Component text = Component.translatable("backpack.imttech.theft_hint", victim.getDisplayName());
+        Font font = mc.font;
+        g.drawString(font, text, g.guiWidth() / 2 - font.width(text) / 2, g.guiHeight() / 2 + 14, HudStyle.argb(230, HudStyle.ORANGE), true);
     }
 
     /** Is er nu een rits bezig (voor de showcase)? */

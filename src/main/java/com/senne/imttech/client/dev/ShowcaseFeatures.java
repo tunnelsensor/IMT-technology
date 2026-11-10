@@ -3582,6 +3582,73 @@ final class ShowcaseFeatures {
                     player.getInventory().clearContent();
                     com.senne.imttech.guns.Gear.setBack(player, ItemStack.EMPTY);
                 }));
+        add("Opening a backpack from behind", "Hoofdstuk 72, stap 3. Lotte staat met haar rug naar je toe, met een bruine Patrol "
+                + "Pack. Jij sluipt achter haar met een lege hand; kijk je naar haar rugzak, dan staat onder je vizier \"Right-click: "
+                + "open Lotte's backpack\" (op haar heupen zou het zakkenrollen zijn). Je rits hem open: zachter dan je eigen "
+                + "rugzak, maar ze kan het horen. Dan haar scherm, met links de meter NOTICED. Je pakt een paar dingen: bij elke "
+                + "greep loopt de meter op, en als je even niets doet zakt hij weer. Dan draait ze zich om en ziet je: betrapt. "
+                + "Jouw scherm gaat dicht, zij krijgt een melding met je naam, en jij licht een tijdje op (zie je van achteren in "
+                + "derde persoon).",
+                GameType.SURVIVAL, new Vec3(packs.getX() + 0.5, packs.getY() + 1, packs.getZ() - 0.2), 180, 15, s -> s
+                .onServer(0, player -> BackpackTour.buildYard(player.serverLevel(), packs))
+                .onServer(0, player -> {
+                    player.getInventory().clearContent();
+                    player.removeEffect(net.minecraft.world.effect.MobEffects.GLOWING);
+                    ServerPlayer victim = DevWorld.fakePlayerAt(player.serverLevel(), "Lotte", packs.offset(0, 1, -2));
+                    victim.teleportTo(player.serverLevel(), packs.getX() + 0.5, packs.getY() + 1, packs.getZ() - 1.5, 180, 0);
+                    victim.setYHeadRot(180);
+                    com.senne.imttech.guns.Gear.setBack(victim, BackpackTour.withPouches(BackpackTour.loaded(
+                            com.senne.imttech.backpack.BackpackItem.Size.PATROL, 0x6B5A3A)));
+                })
+                .stand(0, packs.getX() + 0.5, packs.getY() + 1, packs.getZ() + 0.3, 180, 15)
+                .key(0, () -> Minecraft.getInstance().options.keyShift, true)
+                .lookAt(10, new Vec3(packs.getX() + 0.5, packs.getY() + 2.2, packs.getZ() - 1.4))
+                .pause(70)
+                .onServer(0, player -> {
+                    ServerPlayer victim = player.getServer().getPlayerList().getPlayerByName("Lotte");
+                    if (victim != null) {
+                        com.senne.imttech.backpack.BackpackTheft.tryStart(player, victim);
+                    }
+                })
+                .waitUntil(60, () -> Minecraft.getInstance().screen instanceof com.senne.imttech.client.backpack.BackpackScreen)
+                .key(0, () -> Minecraft.getInstance().options.keyShift, false)
+                .pause(50)
+                .step(0, () -> theftClick(0))
+                .pause(15)
+                .step(0, () -> theftClick(27 + 3 + 0))
+                .pause(15)
+                .step(0, () -> theftClick(1))
+                .pause(15)
+                .step(0, () -> theftClick(27 + 3 + 1))
+                .pause(60)
+                .onServer(0, player -> {
+                    ServerPlayer victim = player.getServer().getPlayerList().getPlayerByName("Lotte");
+                    if (victim != null) {
+                        victim.teleportTo(player.serverLevel(), victim.getX(), victim.getY(), victim.getZ(), 0, 0);
+                        victim.setYHeadRot(0);
+                    }
+                })
+                .pause(50)
+                .camera(0, CameraType.THIRD_PERSON_BACK)
+                .pause(60)
+                .camera(0, CameraType.FIRST_PERSON)
+                .onServer(0, player -> {
+                    player.removeEffect(net.minecraft.world.effect.MobEffects.GLOWING);
+                    player.getInventory().clearContent();
+                    ServerPlayer victim = player.getServer().getPlayerList().getPlayerByName("Lotte");
+                    if (victim != null) {
+                        victim.teleportTo(player.serverLevel(), victim.getX(), victim.getY() - 40, victim.getZ(), 0, 0);
+                    }
+                }));
+    }
+
+    /** Hoofdstuk 72, stap 3: een klik (oppakken of neerleggen) op dit vakje van het open rugzakscherm, zoals met je muis. */
+    static void theftClick(int slot) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null && mc.gameMode != null && mc.screen instanceof com.senne.imttech.client.backpack.BackpackScreen screen) {
+            mc.gameMode.handleInventoryMouseClick(screen.getMenu().containerId, slot, 0,
+                    net.minecraft.world.inventory.ClickType.PICKUP, mc.player);
+        }
     }
 
     /** Hoofdstuk 69: de Frag Trigger van "Raven" in de showcase (altijd hetzelfde nummer). */

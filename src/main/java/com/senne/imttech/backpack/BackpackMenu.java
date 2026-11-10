@@ -32,17 +32,20 @@ public class BackpackMenu extends AbstractContainerMenu {
     private final Container container;
     private final int lockedSlot;
     private final Player player;
+    /** Stap 3: dit is de rugzak van een ander, van achteren geopend (dan loopt de meter, zie BackpackTheft). */
+    private final boolean theft;
 
     /** Op de client: de maat en het vakje op slot komen van de server mee. */
     public BackpackMenu(int containerId, Inventory inventory, RegistryFriendlyByteBuf extra) {
         this(containerId, inventory, BackpackItem.Size.values()[Math.floorMod(extra.readVarInt(), BackpackItem.Size.values().length)],
-                null, extra.readVarInt());
+                null, extra.readVarInt(), extra.readBoolean());
     }
 
     /** Op de server: met de echte (gedeelde) inhoud. */
-    public BackpackMenu(int containerId, Inventory inventory, BackpackItem.Size size, BackpackInventory open, int lockedSlot) {
+    public BackpackMenu(int containerId, Inventory inventory, BackpackItem.Size size, BackpackInventory open, int lockedSlot, boolean theft) {
         super(BackpackRegistry.BACKPACK_MENU.get(), containerId);
         this.size = size;
+        this.theft = theft;
         this.container = open == null ? new SimpleContainer(size.slots() + size.molle) : open;
         this.lockedSlot = lockedSlot;
         this.player = inventory.player;
@@ -71,6 +74,11 @@ public class BackpackMenu extends AbstractContainerMenu {
 
     public BackpackItem.Size size() {
         return size;
+    }
+
+    /** Is dit de rugzak van een ander, van achteren geopend? */
+    public boolean theft() {
+        return theft;
     }
 
     /** Het eerste vakje van je inventaris in dit menu (na de rugzak en zijn MOLLE-plekken). */
@@ -136,6 +144,12 @@ public class BackpackMenu extends AbstractContainerMenu {
             return;
         }
         super.clicked(slotId, button, clickType, player);
+        // Stap 3: een greep in de rugzak van een ander maakt geluid (de meter). Een hele stapel (shift-klik) dubbel, een
+        // MOLLE-pouch eraf driedubbel.
+        if (theft && player instanceof net.minecraft.server.level.ServerPlayer thief && slotId >= 0 && slotId < inventoryStart()) {
+            float times = slotId >= size.slots() ? 3 : clickType == net.minecraft.world.inventory.ClickType.QUICK_MOVE ? 2 : 1;
+            BackpackTheft.noise(thief, times);
+        }
     }
 
     @Override

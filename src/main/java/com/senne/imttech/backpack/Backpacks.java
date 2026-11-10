@@ -36,8 +36,10 @@ public final class Backpacks {
     public static void register(IEventBus modEventBus) {
         BackpackRegistry.register(modEventBus);
         modEventBus.addListener(Backpacks::registerPayloads);
+        NeoForge.EVENT_BUS.addListener(BackpackTheft::onEntityInteractSpecific);
         NeoForge.EVENT_BUS.addListener((ServerTickEvent.Post event) -> {
             BackpackZip.tick(event.getServer());
+            BackpackTheft.tick(event.getServer());
             // Elke speler, ook de nep-spelers van de tests (bij hen komt er geen PlayerTickEvent: die loopt via hun verbinding).
             boolean dumpTick = event.getServer().getTickCount() % 4 == 0;
             for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
@@ -51,6 +53,7 @@ public final class Backpacks {
             BackpackZip.clear();
             BackpackInventory.clear();
             Molle.clear();
+            BackpackTheft.clear();
         });
     }
 
@@ -67,6 +70,8 @@ public final class Backpacks {
         });
         registrar.playToClient(BackpackZipPayload.TYPE, BackpackZipPayload.STREAM_CODEC,
                 (payload, context) -> com.senne.imttech.client.backpack.BackpackClient.zip(payload.ticks()));
+        registrar.playToClient(BackpackTheftPayload.TYPE, BackpackTheftPayload.STREAM_CODEC,
+                (payload, context) -> com.senne.imttech.client.backpack.BackpackClient.theftMeter(payload.meter()));
     }
 
     /** De rugzak op je rug openritsen (de rugzaktoets, of de knop in het wiel). */

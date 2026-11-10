@@ -22,6 +22,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.DyedItemColor;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import org.lwjgl.glfw.GLFW;
 
 /**
@@ -297,7 +298,65 @@ final class BackpackTour {
         t.shot(10, "pk29_reload_from_molle_pouch");
         t.close(5);
         t.onServer(0, player -> player.getInventory().setItem(0, ItemStack.EMPTY));
+
+        // Stap 3: van achteren. "Lotte" (een nep-speler) staat met haar rug naar je toe, met een Patrol Pack met pouches.
+        // Jij sluipt achter haar met een lege hand: de hint; dan de rits (zachter), het scherm met de meter, een paar keer
+        // grijpen (de meter loopt op), en dan draait ze zich om: betrapt.
+        BlockPos lotte = o.offset(0, 1, -2);
+        t.onServer(0, player -> {
+            wear(player, BackpackItem.Size.ASSAULT, -1, false);
+            ServerPlayer victim = DevWorld.fakePlayerAt(player.serverLevel(), "Lotte", lotte);
+            victim.teleportTo(player.serverLevel(), lotte.getX() + 0.5, lotte.getY(), lotte.getZ() + 0.5, 180, 0);
+            victim.setYHeadRot(180);
+            Gear.setBack(victim, withPouches(loaded(BackpackItem.Size.PATROL, 0x6B5A3A)));
+            player.removeEffect(net.minecraft.world.effect.MobEffects.GLOWING);
+        });
+        t.stand(10, lotte.getX() + 0.5, lotte.getY(), lotte.getZ() + 1.8, 180, 15);
+        t.key(0, () -> Minecraft.getInstance().options.keyShift, true);
+        t.lookAt(10, new Vec3(lotte.getX() + 0.5, lotte.getY() + 1.2, lotte.getZ() + 0.6));
+        t.shot(10, "pk30_theft_hint");
+        t.onServer(0, player -> {
+            ServerPlayer victim = player.getServer().getPlayerList().getPlayerByName("Lotte");
+            if (victim != null) {
+                com.senne.imttech.backpack.BackpackTheft.tryStart(player, victim);
+            }
+        });
+        t.shot(12, "pk31_theft_unzipping");
+        t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof BackpackScreen);
+        t.key(0, () -> Minecraft.getInstance().options.keyShift, false);
+        t.step(0, () -> HowToTour.mouseTo(2, 2));
+        t.shot(8, "pk32_theft_screen");
+        for (int slot : new int[] {0, 9, 1}) {
+            t.step(3, () -> clickSlot(slot));
+        }
+        t.shot(3, "pk33_theft_meter_rising");
+        t.onServer(0, player -> {
+            ServerPlayer victim = player.getServer().getPlayerList().getPlayerByName("Lotte");
+            if (victim != null) {
+                victim.teleportTo(player.serverLevel(), victim.getX(), victim.getY(), victim.getZ(), 0, 0);
+                victim.setYHeadRot(0);
+            }
+        });
+        t.shot(8, "pk34_theft_caught");
+        t.camera(0, CameraType.THIRD_PERSON_BACK);
+        t.shot(10, "pk35_theft_caught_glowing");
+        t.camera(0, CameraType.FIRST_PERSON);
+        t.onServer(0, player -> {
+            player.removeEffect(net.minecraft.world.effect.MobEffects.GLOWING);
+            ServerPlayer victim = player.getServer().getPlayerList().getPlayerByName("Lotte");
+            if (victim != null) {
+                victim.teleportTo(player.serverLevel(), victim.getX(), victim.getY() - 40, victim.getZ(), 0, 0);
+            }
+        });
         t.command(10, "gamemode creative @a");
+    }
+
+    /** Een klik (oppakken of neerleggen) op dit vakje van het open scherm, zoals met je muis. */
+    private static void clickSlot(int slot) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null && mc.gameMode != null && mc.screen instanceof BackpackScreen screen) {
+            mc.gameMode.handleInventoryMouseClick(screen.getMenu().containerId, slot, 0, net.minecraft.world.inventory.ClickType.PICKUP, mc.player);
+        }
     }
 
     /** De speler met deze rugzak (en eventueel geweren), van achteren en van voren gefotografeerd. */

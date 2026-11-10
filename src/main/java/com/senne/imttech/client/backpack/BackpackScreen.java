@@ -94,6 +94,24 @@ public class BackpackScreen extends AbstractContainerScreen<BackpackMenu> {
                 g.pose().popPose();
             }
         }
+        // Stap 3: de rugzak van een ander: links de meter "NOTICED" (en geen sorteerknop).
+        if (menu.theft()) {
+            int mx = x - 22;
+            int top = y + 14;
+            int height = imageHeight - 28;
+            g.fill(mx, y, mx + 18, y + imageHeight, HudStyle.argb(245, PANEL));
+            g.renderOutline(mx, y, 18, imageHeight, HudStyle.argb(255, FRAME));
+            float meter = BackpackClient.theftMeter();
+            int filled = Math.round(height * meter);
+            int colour = meter > 0.7f ? HudStyle.RED : meter > 0.4f ? HudStyle.ORANGE : HudStyle.GREEN;
+            g.fill(mx + 4, top, mx + 14, top + height, HudStyle.argb(255, SLOT));
+            g.fill(mx + 4, top + height - filled, mx + 14, top + height, HudStyle.argb(230, colour));
+            for (int i = 1; i < 10; i++) {
+                int ty = top + height * i / 10;
+                g.fill(mx + 4, ty, mx + 14, ty + 1, HudStyle.argb(200, PANEL));
+            }
+            return;
+        }
         // De sorteerknop.
         int[] sort = sortButton();
         boolean hover = over(sort, mouseX, mouseY);
@@ -117,9 +135,18 @@ public class BackpackScreen extends AbstractContainerScreen<BackpackMenu> {
             }
         }
         String count = filled + " / " + menu.size().slots();
-        int countX = imageWidth - 8 - SORT_W - 6 - font.width(count);
+        int countX = imageWidth - 8 - (menu.theft() ? 0 : SORT_W + 6) - font.width(count);
         g.drawString(font, count, countX, titleLabelY, HudStyle.argb(200, HudStyle.WHITE), false);
         g.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, HudStyle.argb(170, HudStyle.WHITE), false);
+        if (menu.theft()) {
+            // Boven de meter: "NOTICED", klein en gedraaid langs de meter.
+            g.pose().pushPose();
+            g.pose().translate(-13, 5, 0);
+            g.pose().scale(0.55f, 0.55f, 1);
+            Component noticed = Component.translatable("screen.imttech.backpack.noticed");
+            g.drawString(font, noticed, -font.width(noticed) / 2, 0, HudStyle.argb(230, HudStyle.RED), false);
+            g.pose().popPose();
+        }
         // Boven de MOLLE-strook: "MOLLE", klein.
         g.pose().pushPose();
         g.pose().translate(BackpackMenu.MOLLE_X + 9, 7, 0);
@@ -142,7 +169,7 @@ public class BackpackScreen extends AbstractContainerScreen<BackpackMenu> {
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
         Slot hovered = getSlotUnderMouse();
-        if (over(sortButton(), mouseX, mouseY)) {
+        if (!menu.theft() && over(sortButton(), mouseX, mouseY)) {
             g.renderTooltip(font, Component.translatable("screen.imttech.backpack.sort_hint"), mouseX, mouseY);
         } else if (hovered != null && !hovered.hasItem() && hovered.index >= menu.size().slots() && hovered.index < menu.inventoryStart()
                 && menu.getCarried().isEmpty()) {
@@ -163,7 +190,7 @@ public class BackpackScreen extends AbstractContainerScreen<BackpackMenu> {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0 && over(sortButton(), mouseX, mouseY)) {
+        if (button == 0 && !menu.theft() && over(sortButton(), mouseX, mouseY)) {
             PacketDistributor.sendToServer(new BackpackActionPayload(BackpackActionPayload.SORT, 0));
             if (minecraft != null && minecraft.player != null) {
                 minecraft.player.playSound(net.minecraft.sounds.SoundEvents.ARMOR_EQUIP_LEATHER.value(), 0.5f, 1.3f);

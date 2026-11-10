@@ -80,6 +80,58 @@ public abstract class BackpackPlace {
         }
     }
 
+    // ================================================================ Van achteren (stap 3)
+
+    public static BackpackPlace theft(ServerPlayer victim, ServerPlayer thief) {
+        return new Theft(victim, thief);
+    }
+
+    /**
+     * De rugzak op de rug van {@code victim}, geopend door {@code thief} van achteren (BackpackTheft). Dezelfde rugzak als
+     * {@link Worn}: hebben ze hem allebei open, dan zien ze hetzelfde. Loopt het slachtoffer weg, of staat de dief niet meer
+     * achter hem, dan gaat het scherm dicht.
+     */
+    public static final class Theft extends BackpackPlace {
+        private final ServerPlayer victim;
+        private final ServerPlayer thief;
+
+        Theft(ServerPlayer victim, ServerPlayer thief) {
+            this.victim = victim;
+            this.thief = thief;
+        }
+
+        public ServerPlayer victim() {
+            return victim;
+        }
+
+        @Override
+        public ItemStack get() {
+            return victim.isRemoved() ? ItemStack.EMPTY : Gear.back(victim);
+        }
+
+        @Override
+        public void set(ItemStack pack) {
+            Gear.setBack(victim, pack);
+        }
+
+        @Override
+        public boolean reachable(ServerPlayer viewer) {
+            return viewer == thief && victim.isAlive() && !victim.isRemoved() && thief.isAlive() && thief.level() == victim.level()
+                    && thief.distanceTo(victim) <= com.senne.imttech.config.ImtConfig.Bypass.POCKET_LEAVE
+                    && BackpackTheft.stillBehind(victim, thief);
+        }
+
+        @Override
+        public Vec3 position() {
+            return victim.position().add(0, 1.2, 0);
+        }
+
+        @Override
+        public Component title() {
+            return Component.translatable("backpack.imttech.theft_title", victim.getDisplayName(), get().getHoverName());
+        }
+    }
+
     // ================================================================ In je hand
 
     public static BackpackPlace hand(ServerPlayer player, InteractionHand hand) {

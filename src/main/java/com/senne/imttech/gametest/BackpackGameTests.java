@@ -501,4 +501,135 @@ public final class BackpackGameTests {
         check(!com.senne.imttech.backpack.MolleItem.Kind.IFAK.accepts(new ItemStack(Items.BREAD)), "Brood past in een IFAK");
         helper.succeed();
     }
+
+    // ================================================================ Stap 3: van achteren openen
+
+    /** Zet {@code who} op deze plek, kijkend naar {@code yaw} (0 = zuid, +z). */
+    private static void place(GameTestHelper helper, ServerPlayer who, double x, double z, float yaw) {
+        Vec3 at = helper.absoluteVec(new Vec3(x, 2, z));
+        who.teleportTo(at.x, at.y, at.z);
+        who.setYRot(yaw);
+        who.yRotO = yaw;
+        who.setYHeadRot(yaw);
+        who.setXRot(0);
+        who.xRotO = 0;
+    }
+
+    /** Een slachtoffer met een volle Patrol Pack, kijkend naar het zuiden, en een dief (sluipend, lege hand). */
+    private static ServerPlayer[] victimAndThief(GameTestHelper helper, String name) {
+        ServerPlayer victim = player(helper, name + "-victim", new BlockPos(3, 2, 4));
+        ServerPlayer thief = player(helper, name + "-thief", new BlockPos(3, 2, 2));
+        check(Gear.setBack(victim, pack(BackpackItem.Size.PATROL, new ItemStack(Items.DIAMOND, 5), new ItemStack(Items.BREAD, 10))),
+                "De rugzak ging niet op de rug van het slachtoffer");
+        place(helper, victim, 3.5, 4.5, 0);
+        place(helper, thief, 3.5, 3.3, 0);
+        thief.setShiftKeyDown(true);
+        return new ServerPlayer[]{victim, thief};
+    }
+
+    /**
+     * Van achteren: klik op zijn rugzak (de bovenste helft van zijn lijf; lager is zakkenrollen), dan de rits, en pas daarna
+     * het scherm (met de meter). Wat je eruit haalt is weg uit zijn rugzak. Van voren lukt het niet.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "backpacks_theft")
+    public static void backpack_theft_from_behind_after_the_zip(GameTestHelper helper) {
+        check(!Gear.curios(), "Deze test is voor zonder Curios");
+        ServerPlayer[] both = victimAndThief(helper, "theft-a");
+        ServerPlayer victim = both[0];
+        ServerPlayer thief = both[1];
+        check(!com.senne.imttech.backpack.BackpackTheft.aimsAtPack(thief, victim, new Vec3(0, 0.8, -0.3)),
+                "Een klik op zijn heupen telt als de rugzak (daar is het zakkenrollen)");
+        // Van voren: niet.
+        place(helper, thief, 3.5, 5.7, 180);
+        check(!com.senne.imttech.backpack.BackpackTheft.tryStart(thief, victim), "Van voren ging de rugzak open");
+        // Van achteren, met de echte klik (op zijn rug, met de plek op zijn lijf): de rits begint.
+        place(helper, thief, 3.5, 3.3, 0);
+        net.neoforged.neoforge.common.CommonHooks.onInteractEntityAt(thief, victim, new Vec3(0, 1.4, -0.3), InteractionHand.MAIN_HAND);
+        check(BackpackZip.busy(thief), "Van achteren begon de rits niet");
+        check(!(thief.containerMenu instanceof BackpackMenu), "Het scherm ging meteen open, zonder rits");
+        helper.runAfterDelay(zipTicks() + 3, () -> {
+            check(thief.containerMenu instanceof BackpackMenu menu && menu.theft(), "Na de rits stond het scherm van de dief niet open");
+            BackpackMenu menu = (BackpackMenu) thief.containerMenu;
+            menu.clicked(0, 0, net.minecraft.world.inventory.ClickType.PICKUP, thief);
+            check(menu.getCarried().is(Items.DIAMOND), "De dief heeft de diamanten niet vast");
+            check(BackpackItem.contents(Gear.back(victim)).getFirst().isEmpty(), "De diamanten zitten nog in de rugzak van het slachtoffer");
+            check(com.senne.imttech.backpack.BackpackTheft.meter(thief) > 0, "De meter liep niet op");
+            menu.clicked(menu.inventoryStart(), 0, net.minecraft.world.inventory.ClickType.PICKUP, thief);
+            thief.closeContainer();
+            check(thief.getInventory().countItem(Items.DIAMOND) == 5, "De diamanten zitten niet in de inventaris van de dief");
+            check(!thief.hasEffect(net.minecraft.world.effect.MobEffects.GLOWING), "Eén greep was al betrapt");
+            helper.succeed();
+        });
+    }
+
+    /** Te veel grijpen: de meter loopt vol, het slachtoffer hoort het, de dief licht op, en hij moet even wachten. */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "backpacks_theft")
+    public static void backpack_theft_noise_gets_you_caught(GameTestHelper helper) {
+        check(!Gear.curios(), "Deze test is voor zonder Curios");
+        float zip = ImtConfig.Backpacks.ZIP_SECONDS;
+        ImtConfig.Backpacks.ZIP_SECONDS = 0;
+        try {
+            ServerPlayer[] both = victimAndThief(helper, "theft-b");
+            ServerPlayer victim = both[0];
+            ServerPlayer thief = both[1];
+            check(com.senne.imttech.backpack.BackpackTheft.tryStart(thief, victim), "Van achteren lukte het niet");
+            check(thief.containerMenu instanceof BackpackMenu menu && menu.theft(), "Het scherm van de dief staat niet open");
+            BackpackMenu menu = (BackpackMenu) thief.containerMenu;
+            for (int i = 0; i < 8 && thief.containerMenu == menu; i++) {
+                menu.clicked(2 + i, 0, net.minecraft.world.inventory.ClickType.PICKUP, thief);
+            }
+            check(!(thief.containerMenu instanceof BackpackMenu), "Na een volle meter staat het scherm nog open");
+            check(thief.hasEffect(net.minecraft.world.effect.MobEffects.GLOWING), "De betrapte dief licht niet op");
+            check(!com.senne.imttech.backpack.BackpackTheft.tryStart(thief, victim), "Meteen opnieuw mocht (er hoort een wachttijd)");
+        } finally {
+            ImtConfig.Backpacks.ZIP_SECONDS = zip;
+        }
+        helper.succeed();
+    }
+
+    /** Het slachtoffer draait zich om en ziet de dief: betrapt (ook met een lege meter). */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "backpacks_theft")
+    public static void backpack_theft_turning_around_catches_the_thief(GameTestHelper helper) {
+        check(!Gear.curios(), "Deze test is voor zonder Curios");
+        float zip = ImtConfig.Backpacks.ZIP_SECONDS;
+        ImtConfig.Backpacks.ZIP_SECONDS = 0;
+        ServerPlayer[] both;
+        try {
+            both = victimAndThief(helper, "theft-c");
+            check(com.senne.imttech.backpack.BackpackTheft.tryStart(both[1], both[0]), "Van achteren lukte het niet");
+        } finally {
+            ImtConfig.Backpacks.ZIP_SECONDS = zip;
+        }
+        ServerPlayer victim = both[0];
+        ServerPlayer thief = both[1];
+        place(helper, victim, 3.5, 4.5, 180);
+        helper.runAfterDelay(3, () -> {
+            check(!(thief.containerMenu instanceof BackpackMenu), "Het slachtoffer zag de dief, maar het scherm staat nog open");
+            check(thief.hasEffect(net.minecraft.world.effect.MobEffects.GLOWING), "Gezien = betrapt, maar de dief licht niet op");
+            helper.succeed();
+        });
+    }
+
+    /** Het slachtoffer loopt weg: het scherm van de dief gaat dicht, zonder betrapt. */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "backpacks_theft")
+    public static void backpack_theft_victim_walks_away(GameTestHelper helper) {
+        check(!Gear.curios(), "Deze test is voor zonder Curios");
+        float zip = ImtConfig.Backpacks.ZIP_SECONDS;
+        ImtConfig.Backpacks.ZIP_SECONDS = 0;
+        ServerPlayer[] both;
+        try {
+            both = victimAndThief(helper, "theft-d");
+            check(com.senne.imttech.backpack.BackpackTheft.tryStart(both[1], both[0]), "Van achteren lukte het niet");
+        } finally {
+            ImtConfig.Backpacks.ZIP_SECONDS = zip;
+        }
+        ServerPlayer victim = both[0];
+        ServerPlayer thief = both[1];
+        place(helper, victim, 3.5, 10.5, 0);
+        helper.runAfterDelay(3, () -> {
+            check(!(thief.containerMenu instanceof BackpackMenu), "Het slachtoffer liep weg, maar het scherm staat nog open");
+            check(!thief.hasEffect(net.minecraft.world.effect.MobEffects.GLOWING), "Weglopen is geen betrapt");
+            helper.succeed();
+        });
+    }
 }

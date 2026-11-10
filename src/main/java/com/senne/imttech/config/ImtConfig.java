@@ -2391,5 +2391,19 @@ public final class ImtConfig {
         /** Zoveel vakjes heeft een utility pouch. */
         @Tunable(value = "Slots in one Utility Pouch", min = 1, max = 9)
         public static float UTILITY_POUCH_SIZE = 4.0f;
+
+        // Stap 3: een rugzak van achteren openen (de afstanden, het oplichten en de wachttijd zijn die van zakkenrollen, [bypass]).
+        /** Mag je de rugzak van een andere speler van achteren openen en eruit stelen? */
+        @Tunable("May players open other players' backpacks from behind and take things out")
+        public static boolean STEAL_ALLOWED = true;
+        /** Zoveel vult elke greep in de rugzak van een ander de meter (1 = vol: hij merkt het). */
+        @Tunable(value = "How much each grab in someone else's backpack fills the noticed meter (1 = full: caught)", min = 0, max = 1)
+        public static float THEFT_NOISE_PER_TAKE = 0.18f;
+        /** Zoveel zakt de meter per seconde als je niets pakt. */
+        @Tunable(value = "How much the noticed meter drops per second while you take nothing", min = 0, max = 1)
+        public static float THEFT_NOISE_DECAY = 0.1f;
+        /** Zo hard klinkt de rits als je van achteren openritst (je eigen rugzak: 0,7). */
+        @Tunable(value = "How loud the zip is when you unzip someone else's backpack from behind (your own: 0.7)", min = 0, max = 1)
+        public static float THEFT_ZIP_VOLUME = 0.35f;
     }
 }

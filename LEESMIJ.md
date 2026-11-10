@@ -2186,6 +2186,16 @@ Een losse pouch vul je met rechtsklik in je hand. Verven kan zoals de rugzak.
 - **Utility Pouch** (4 vakjes): voor wat dan ook, behalve dozen en volle pouches. Recept: 4 leer, een ijzerklompje en een
   touw.
 
+**Van achteren openen** (stap 3). Sluip met een **lege hand** achter iemand die een rugzak draagt en **rechtsklik op zijn
+rugzak** (de bovenste helft van zijn lijf; op zijn heupen is het zakkenrollen). Kijk je zo naar zijn rugzak, dan staat er
+onder je vizier "Right-click: open ...'s backpack". Je ritst hem open (stilstaan, en zachter dan je eigen rugzak, maar hij
+kan het horen). In zijn scherm staat links de meter **NOTICED**: elke greep in zijn rugzak laat hem oplopen (een hele
+stapel met shift-klik dubbel, een MOLLE-pouch eraf driedubbel), en als je even niets doet zakt hij weer. **Vol**, of hij
+**draait zich om en ziet je**: betrapt. Dan gaat je scherm dicht, hij krijgt een melding met je naam, jij licht een tijdje
+op, en je moet even wachten voor je het bij hem weer mag proberen (dezelfde getallen als zakkenrollen, onder `[bypass]`).
+Loopt hij weg, of sta je niet meer achter hem, dan gaat je scherm gewoon dicht. Uitzetten kan met `stealAllowed` onder
+`[backpacks]`.
+
 **Verven** in de crafting table, zoals leren harnas: de rugzak met een of meer kleurstoffen (ook gemengd, bijvoorbeeld rood
 + geel = oranje). Nieuw is hij olijfgroen. **Bruin + lichtgroen + groen** (elk één) maakt **camo**: een eigen patroon,
 geen mengkleur. Een camo-rugzak met een andere kleurstof wordt weer gewoon die kleur. Wat erin zit blijft.
