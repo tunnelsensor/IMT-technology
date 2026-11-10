@@ -24,7 +24,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
  * Het scherm van een open rugzak (hoofdstuk 72): bovenaan de vakjes van de rugzak, eronder je inventaris, in de donkere
- * stijl van de mod. Rechtsboven de sorteerknop (jouw keuze).
+ * stijl van de mod. Rechtsboven de sorteerknop (jouw keuze). Stap 2: rechts naast het scherm een strook met de
+ * MOLLE-plekken, waar je pouches aan de rugzak hangt (een vaag plaatje van een pouch in een lege plek).
  *
  * Met de rugzak open <b>kun je traag doorlopen</b> (jouw keuze bij "openen kost tijd": "zolang hij open is, loop je
  * traag"): de server maakt je trager (Backpacks.onPlayerTick), en dit scherm laat de looptoetsen (vooruit, achteruit,
@@ -75,6 +76,24 @@ public class BackpackScreen extends AbstractContainerScreen<BackpackMenu> {
             g.fill(sx - 1, sy - 1, sx + 17, sy + 17, HudStyle.argb(255, SLOT));
             g.renderOutline(sx - 1, sy - 1, 18, 18, HudStyle.argb(255, FRAME));
         }
+        // Stap 2: de strook met de MOLLE-plekken, rechts naast het scherm.
+        int molle = menu.size().molle;
+        int sx0 = x + BackpackMenu.MOLLE_X - 6;
+        int sy1 = y + BackpackMenu.PACK_Y + molle * 18 + 5;
+        g.fill(sx0, y, sx0 + 30, sy1, HudStyle.argb(245, PANEL));
+        g.renderOutline(sx0, y, 30, sy1 - y, HudStyle.argb(255, FRAME));
+        for (int i = 0; i < molle; i++) {
+            Slot slot = menu.getSlot(menu.size().slots() + i);
+            if (!slot.hasItem()) {
+                int px = x + slot.x;
+                int py = y + slot.y;
+                g.renderFakeItem(new net.minecraft.world.item.ItemStack(com.senne.imttech.backpack.BackpackRegistry.UTILITY_POUCH.get()), px, py);
+                g.pose().pushPose();
+                g.pose().translate(0, 0, 200);
+                g.fill(px, py, px + 16, py + 16, HudStyle.argb(180, SLOT));
+                g.pose().popPose();
+            }
+        }
         // De sorteerknop.
         int[] sort = sortButton();
         boolean hover = over(sort, mouseX, mouseY);
@@ -101,13 +120,33 @@ public class BackpackScreen extends AbstractContainerScreen<BackpackMenu> {
         int countX = imageWidth - 8 - SORT_W - 6 - font.width(count);
         g.drawString(font, count, countX, titleLabelY, HudStyle.argb(200, HudStyle.WHITE), false);
         g.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, HudStyle.argb(170, HudStyle.WHITE), false);
+        // Boven de MOLLE-strook: "MOLLE", klein.
+        g.pose().pushPose();
+        g.pose().translate(BackpackMenu.MOLLE_X + 9, 7, 0);
+        g.pose().scale(0.6f, 0.6f, 1);
+        Component molle = Component.translatable("screen.imttech.backpack.molle");
+        g.drawString(font, molle, -font.width(molle) / 2, 0, HudStyle.argb(220, HudStyle.ORANGE), false);
+        g.pose().popPose();
+    }
+
+    /** Stap 2: een klik op de MOLLE-strook (buiten het scherm zelf) is geen klik "ernaast" (dan viel wat je vasthoudt). */
+    @Override
+    protected boolean hasClickedOutside(double mouseX, double mouseY, int guiLeft, int guiTop, int button) {
+        int sx0 = guiLeft + BackpackMenu.MOLLE_X - 6;
+        int sy1 = guiTop + BackpackMenu.PACK_Y + menu.size().molle * 18 + 5;
+        boolean inStrip = mouseX >= sx0 && mouseX < sx0 + 30 && mouseY >= guiTop && mouseY < sy1;
+        return !inStrip && super.hasClickedOutside(mouseX, mouseY, guiLeft, guiTop, button);
     }
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
+        Slot hovered = getSlotUnderMouse();
         if (over(sortButton(), mouseX, mouseY)) {
             g.renderTooltip(font, Component.translatable("screen.imttech.backpack.sort_hint"), mouseX, mouseY);
+        } else if (hovered != null && !hovered.hasItem() && hovered.index >= menu.size().slots() && hovered.index < menu.inventoryStart()
+                && menu.getCarried().isEmpty()) {
+            g.renderTooltip(font, Component.translatable("screen.imttech.backpack.molle_hint"), mouseX, mouseY);
         } else {
             renderTooltip(g, mouseX, mouseY);
         }

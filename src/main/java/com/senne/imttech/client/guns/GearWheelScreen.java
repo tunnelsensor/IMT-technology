@@ -58,6 +58,8 @@ import org.lwjgl.glfw.GLFW;
  * Minecraft zelf ook alleen in het spel tellen, dus zolang het wiel open is gelden die overal ({@link #letMovementThrough}).
  */
 public class GearWheelScreen extends Screen {
+    /** Een knop naast de ring (hoofdstuk 72: compact, een vierkantje met het item en het getal). */
+    private static final int BUTTON = 24;
     /** De tegels op de ring: 36 px, met het item er twee keer zo groot (32 px) in. */
     private static final int TILE = 36;
     private static final int ICON = 32;
@@ -287,7 +289,8 @@ public class GearWheelScreen extends Screen {
         // Links: elke soort granaat uit je pouch, met hoeveel.
         Map<GrenadeItem.Kind, Integer> counts = new EnumMap<>(GrenadeItem.Kind.class);
         Map<GrenadeItem.Kind, ItemStack> icons = new EnumMap<>(GrenadeItem.Kind.class);
-        for (ItemStack stack : Gear.contents(player, GearItem.Kind.GRENADE_POUCH)) {
+        // Hoofdstuk 72, stap 2: ook de granaten in je MOLLE-granaatpouches.
+        for (ItemStack stack : com.senne.imttech.backpack.Molle.grenades(player)) {
             if (stack.getItem() instanceof GrenadeItem grenade) {
                 counts.merge(grenade.kind(), stack.getCount(), Integer::sum);
                 icons.putIfAbsent(grenade.kind(), stack);
@@ -334,6 +337,56 @@ public class GearWheelScreen extends Screen {
                             Component.translatable("screen.imttech.wheel.filled", filled, packSize.slots())),
                     filled + "/" + packSize.slots(), HudStyle.argb(255, HudStyle.WHITE), true, Gear.ACTION_OPEN_BACKPACK, 0, -1));
         }
+        // Hoofdstuk 72, stap 2: elke MOLLE-pouch op je rugzak openen (zonder rits), en de genees-items uit je IFAK (een knop
+        // per soort, met hoeveel): aanwijzen en loslaten = meteen gebruiken. Ook knoppen, want de ring zit vol.
+        List<ItemStack> molle = com.senne.imttech.backpack.Molle.worn(player);
+        List<Option> ifak = new ArrayList<>();
+        List<ItemStack> ifakItems = new ArrayList<>();
+        List<Integer> ifakCounts = new ArrayList<>();
+        List<Integer> ifakArgs = new ArrayList<>();
+        for (int i = 0; i < molle.size(); i++) {
+            ItemStack pouch = molle.get(i);
+            com.senne.imttech.backpack.MolleItem.Kind kind = com.senne.imttech.backpack.MolleItem.kindOf(pouch);
+            if (kind == null) {
+                continue;
+            }
+            int filled = com.senne.imttech.backpack.MolleItem.filled(pouch);
+            options.add(new Option(pouch, kind.text(),
+                    lines(Component.translatable("screen.imttech.wheel.open", kind.text()),
+                            Component.translatable("screen.imttech.wheel.filled", filled, kind.size())),
+                    filled + "/" + kind.size(), HudStyle.argb(255, HudStyle.WHITE), true, Gear.ACTION_OPEN_MOLLE, i, -1));
+            if (kind != com.senne.imttech.backpack.MolleItem.Kind.IFAK) {
+                continue;
+            }
+            List<ItemStack> contents = com.senne.imttech.backpack.MolleItem.contents(pouch);
+            for (int slot = 0; slot < contents.size(); slot++) {
+                ItemStack item = contents.get(slot);
+                if (!com.senne.imttech.backpack.MolleItem.healing(item)) {
+                    continue;
+                }
+                int group = -1;
+                for (int g = 0; g < ifakItems.size() && group < 0; g++) {
+                    if (ItemStack.isSameItemSameComponents(ifakItems.get(g), item)) {
+                        group = g;
+                    }
+                }
+                if (group < 0) {
+                    ifakItems.add(item);
+                    ifakCounts.add(item.getCount());
+                    ifakArgs.add(i * 16 + slot);
+                } else {
+                    ifakCounts.set(group, ifakCounts.get(group) + item.getCount());
+                }
+            }
+        }
+        for (int g = 0; g < ifakItems.size(); g++) {
+            ItemStack item = ifakItems.get(g);
+            ifak.add(new Option(item, item.getHoverName(),
+                    lines(Component.translatable("screen.imttech.wheel.ifak_use"),
+                            Component.translatable("screen.imttech.wheel.count", ifakCounts.get(g))),
+                    String.valueOf(ifakCounts.get(g)), HudStyle.argb(255, HudStyle.GREEN), true, Gear.ACTION_USE_IFAK, ifakArgs.get(g), -1));
+        }
+        options.addAll(ifak);
         layout();
     }
 
@@ -366,22 +419,29 @@ public class GearWheelScreen extends Screen {
                 option.h = TILE;
             }
         }
-        // De knoppen: onder elkaar, rechts naast de ring (eronder past niet op een klein scherm, boven de werkbalk).
+        // De knoppen rechts naast de ring (eronder past niet op een klein scherm, boven de werkbalk). Sinds hoofdstuk 72
+        // (stap 2: de rugzak, zijn MOLLE-pouches en de IFAK) zijn het er zoveel dat ze compact zijn, zoals de tegels: een
+        // vierkantje met het item en het getal; wat het is lees je in het midden als je hem aanwijst. In kolommen van zoveel
+        // als er onder elkaar passen.
         int count = 0;
         for (Option option : options) {
             if (!option.onRing()) {
-                option.w = 22 + font.width(option.name) + (option.badge == null ? 0 : font.width(option.badge) + 4) + 6;
-                option.h = 20;
+                option.w = BUTTON;
+                option.h = BUTTON;
                 count++;
             }
         }
-        int x = cx + radius + TILE / 2 + 10;
-        int y = cy - (count * 20 + Math.max(0, count - 1) * 4) / 2;
+        int rows = Math.max(1, Math.min(count, (height - 40) / (BUTTON + 3)));
+        rows = Math.min(rows, Math.max(4, (count + 2) / 3));
+        int shown = Math.min(count, rows);
+        int x0 = cx + radius + TILE / 2 + 10;
+        int y0 = cy - (shown * BUTTON + Math.max(0, shown - 1) * 3) / 2;
+        int i = 0;
         for (Option option : options) {
             if (!option.onRing()) {
-                option.x = x;
-                option.y = y;
-                y += option.h + 4;
+                option.x = x0 + (i / rows) * (BUTTON + 3);
+                option.y = y0 + (i % rows) * (BUTTON + 3);
+                i++;
             }
         }
     }
@@ -483,19 +543,21 @@ public class GearWheelScreen extends Screen {
         g.pose().popPose();
     }
 
-    /** Een knop naast de ring: het item klein, de naam, en het getal erachter. */
+    /**
+     * Een knop naast de ring (sinds hoofdstuk 72 compact): een vierkantje met het item en het getal klein rechtsonder; de
+     * naam en wat hij doet staan in het midden zodra je hem aanwijst.
+     */
     private void button(GuiGraphics g, Option o, boolean hot) {
         g.fill(o.x, o.y, o.x + o.w, o.y + o.h, HudStyle.argb(hot ? 240 : 205, PANEL));
         g.renderOutline(o.x, o.y, o.w, o.h, hot ? HudStyle.argb(255, HudStyle.CYAN) : HudStyle.argb(190, HudStyle.ORANGE));
-        g.renderItem(o.icon, o.x + 2, o.y + 2);
-        int tx = o.x + 22;
-        g.pose().pushPose();
-        g.pose().translate(0, 0, 200);
-        g.drawString(font, o.name, tx, o.y + 6, HudStyle.argb(255, hot ? HudStyle.CYAN : HudStyle.WHITE), false);
+        g.renderItem(o.icon, o.x + (o.w - 16) / 2, o.y + (o.h - 16) / 2 - 2);
         if (o.badge != null) {
-            g.drawString(font, o.badge, tx + font.width(o.name) + 4, o.y + 6, o.badgeColour, false);
+            g.pose().pushPose();
+            g.pose().translate(o.x + o.w - 1, o.y + o.h - 6, 200);
+            g.pose().scale(0.6f, 0.6f, 1);
+            g.drawString(font, o.badge, -font.width(o.badge), 0, o.badgeColour, true);
+            g.pose().popPose();
         }
-        g.pose().popPose();
     }
 
     /** Een rand van 1 px zonder de hoekpixels. */

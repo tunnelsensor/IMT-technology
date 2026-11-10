@@ -60,6 +60,30 @@ public final class BackpackRegistry {
         };
     }
 
+    // ================================================================ De MOLLE-pouches (stap 2)
+
+    public static final DeferredItem<MolleItem> MOLLE_MAG_POUCH = ITEMS.registerItem("molle_mag_pouch",
+            properties -> new MolleItem(properties, MolleItem.Kind.MAG), new Item.Properties());
+    public static final DeferredItem<MolleItem> MOLLE_GRENADE_POUCH = ITEMS.registerItem("molle_grenade_pouch",
+            properties -> new MolleItem(properties, MolleItem.Kind.GRENADE), new Item.Properties());
+    public static final DeferredItem<MolleItem> DUMP_POUCH = ITEMS.registerItem("molle_dump_pouch",
+            properties -> new MolleItem(properties, MolleItem.Kind.DUMP), new Item.Properties());
+    public static final DeferredItem<MolleItem> IFAK = ITEMS.registerItem("ifak",
+            properties -> new MolleItem(properties, MolleItem.Kind.IFAK), new Item.Properties());
+    public static final DeferredItem<MolleItem> UTILITY_POUCH = ITEMS.registerItem("utility_pouch",
+            properties -> new MolleItem(properties, MolleItem.Kind.UTILITY), new Item.Properties());
+
+    /** De MOLLE-pouch van deze soort. */
+    public static MolleItem molle(MolleItem.Kind kind) {
+        return switch (kind) {
+            case MAG -> MOLLE_MAG_POUCH.get();
+            case GRENADE -> MOLLE_GRENADE_POUCH.get();
+            case DUMP -> DUMP_POUCH.get();
+            case IFAK -> IFAK.get();
+            case UTILITY -> UTILITY_POUCH.get();
+        };
+    }
+
     // ================================================================ Een neergezette rugzak
 
     /** Het blok (geen item: je zet een rugzak neer met sneak + rechtsklik, zie BackpackItem.useOn). */
@@ -78,6 +102,9 @@ public final class BackpackRegistry {
     /** Het scherm van een open rugzak (zie BackpackMenu). */
     public static final DeferredHolder<MenuType<?>, MenuType<BackpackMenu>> BACKPACK_MENU =
             MENUS.register("backpack", () -> IMenuTypeExtension.create(BackpackMenu::new));
+    /** Stap 2: het scherm van een open MOLLE-pouch (zie MolleMenu). */
+    public static final DeferredHolder<MenuType<?>, MenuType<MolleMenu>> MOLLE_MENU =
+            MENUS.register("molle_pouch", () -> IMenuTypeExtension.create(MolleMenu::new));
 
     // ================================================================ Data components
 
@@ -96,6 +123,12 @@ public final class BackpackRegistry {
             COMPONENTS.registerComponentType("pack_id", builder -> builder
                     .persistent(UUIDUtil.CODEC)
                     .networkSynchronized(UUIDUtil.STREAM_CODEC));
+
+    /** Stap 2: de MOLLE-pouches aan de buitenkant van een rugzak (zoveel plekken als de maat heeft; leeg = geen pouch). */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.imttech.guns.GearContents>> MOLLE =
+            COMPONENTS.registerComponentType("molle", builder -> builder
+                    .persistent(com.senne.imttech.guns.GearContents.CODEC)
+                    .networkSynchronized(com.senne.imttech.guns.GearContents.STREAM_CODEC));
 
     // ================================================================ Recepten
 

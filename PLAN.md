@@ -22,13 +22,13 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 473 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 479 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
 **Publiceren:** klaar voor CurseForge onder de MIT-licentie (17 oktober): de beschrijving, het logo, de
 changelog en een stappenplan staan in `publish/` (begin bij `publish/HOE-PUBLICEREN.md`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 122 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 123 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -6052,6 +6052,23 @@ backpacks zijn. Vragen of voorstellen stel ze dan."
   vakjes achteraan.
 - Op je rug zit de bovenkant van de rugzak op je schouders; van voren zie je de **schouderbanden over je borst** met een
   borstband, en bij de Rucksack ook een **heupband**. Met een borstplaat zit alles een pixel verder naar buiten.
+- **MOLLE-pouches** (stap 2): eigen items; je hangt ze aan de rugzak in zijn scherm (een strook rechts). De plekken: Assault
+  Pack op elke zijkant, Patrol Pack ook op de voorkant boven zijn voorzak, Rucksack ook op elk van zijn twee voorzakken.
+  Zoveel past erin: magazijnpouch 3, granaatpouch 2, dump pouch 2 stapels (128 hulzen), IFAK 3, utility pouch 4 (allemaal
+  in `[backpacks]`).
+- Eerst je heup-pouch, dan de MOLLE-pouches: R toont ze in die volgorde, trekken en aanvoeren pakken eerst uit je heup, en
+  wegsteken (of een uitgeworpen magazijn) gaat eerst in je heup-pouch en pas als die vol is (of je er geen draagt) in een
+  MOLLE-pouch.
+- De dump pouch raapt elke 0,2 s de hulzen binnen 3 blokken op (van iedereen, niet alleen de jouwe), niet terwijl je een
+  pouch open hebt. De IFAK neemt gouden appels (ook de betoverde) en drankjes die je drinkt; uit het wiel gebruik je er een
+  **meteen** (geen eettijd), daarna 1 s wachten. Een volle pouch of holster mag niet in een rugzak (een lege wel), anders
+  stop je 36 volle utility pouches in een Rucksack.
+- Recepten (net als de heup-pouches van leer, touw en ijzerklompjes): magazijnpouch 2 touw + klompje + 3 leer, granaatpouch 2
+  klompjes + touw + 3 leer, dump pouch 4 leer + touw, IFAK 2 touw + rode kleurstof + 3 leer, utility pouch 4 leer + klompje
+  + touw. Verven zoals de rugzak.
+- Het wiel had zoveel knoppen dat ze van je scherm vielen: alle knoppen naast de ring zijn nu **compact** (een vierkantje met
+  het item en het getal, in kolommen); wat het is lees je in het midden als je hem aanwijst (zoals de tegels). De genees-items
+  uit je IFAK staan ook als knopje, niet op de ring (die zat vol).
 
 - [x] **Stap 1: de drie rugzakken** — `backpack/` (eigen registratie: `BackpackRegistry`): `BackpackItem` (de maten,
       `minecraft:container` voor de inhoud, `mayHold`), `BackpackPlace` (op je rug, in je hand, neergezet),
@@ -6076,9 +6093,23 @@ backpacks zijn. Vragen of voorstellen stel ze dan."
       1,71 met hem open = 40 %). Wat ik zo vond: van voren zag je eerst niets van de rugzak (nu de banden over je borst),
       in eerste persoon was hij veel te groot (nu op 0,3), de MOLLE-banden vielen weg in de kleur (nu donkerder), en de
       testserver crashte op een bericht naar een nep-speler (nu `ModNetwork.sendTo`). Showcase 123 ("Military backpacks").
-- [ ] **Stap 2: MOLLE-pouches** — de dump pouch, de MOLLE-magazijnpouch en -granaatpouch, de IFAK en de utility pouch:
-      vastmaken in het scherm van de rugzak, op de rugzak getekend, openen via het wiel zonder rits, R en de granaatpouch
-      pakken eruit, de dump pouch raapt hulzen op, de IFAK via het wiel.
+- [x] **Stap 2: MOLLE-pouches** — `backpack/MolleItem` (de vijf soorten, wat erin past; de inhoud in GEAR_CONTENTS, zoals de
+      heup-pouches), `Molle` (de pouches op je rug, `magazines`/`grenades`: je heup-pouch en de MOLLE-pouches als één
+      rijtje, `store`, openen zonder rits, de dump pouch, de IFAK; alles via `setWorn`, en staat de rugzak open, dan via die
+      open inhoud), `MolleMenu` (het scherm van een pouch; de pouch op je rug krijgt een nummer, zodat het scherm dichtgaat
+      als iemand hem eraf haalt). `BackpackInventory` en `BackpackMenu`: de MOLLE-plekken achter de vakjes (component
+      `imttech:molle`). `Gear` (trekken, aanvoeren, herladen, uitwerpen en wegsteken met de MOLLE-pouches erbij),
+      `GunGearClient`, `MagPickerScreen`, `GunHud` en `LaserGuns` (de cellen) lezen het rijtje. In jouw spel: `MolleScreen`,
+      de strook in `BackpackScreen` (een klik daar is geen klik ernaast), `BackpackLayer.renderPouches` (op je rug en
+      neergezet), kleur en camo, en in `GearWheelScreen` een knop per pouch en per genees-item (de knoppen nu compact).
+      Modellen in `generate_backpack_models.py` (de pouches kijken naar voren met hun achterkant in het midden; de IFAK met
+      een rood kruis). Zes nieuwe tests: een pouch aan de rugzak hangen (shift-klik, een volle niet in de rugzak), openen
+      zonder rits, R uit de MOLLE-magazijnpouch (en uitwerpen erin), trekken en aanvoeren uit de MOLLE-granaatpouch, de dump
+      pouch (3 hulzen bij je voeten wel, een op 9 blokken niet), de IFAK (een gouden appel, en meteen nog eens mag niet).
+      Bekeken met `-Ponly=backpack` (pk21 tot pk29: de strook, een open IFAK, de pouches op elke maat, neergezet, het wiel,
+      R). Wat ik zo vond: de knoppen van het wiel vielen van je scherm en de IFAK-tegels lagen over de geweren (nu compact en
+      als knopjes), de derde plek van de Patrol Pack verdween tegen zijn voorzak (nu erboven), en in het scherm van een pouch
+      stond "or its own key" (een MOLLE-pouch heeft geen eigen toets). Showcase 124 ("MOLLE pouches").
 - [ ] **Stap 3: van achteren openen en stelen** — sluipen achter iemand, de rits, het scherm met de meter (zoals
       zakkenrollen); merkt hij het, dan hoort hij het.
 - [ ] **Stap 4: het lichaam van een speler** — doodgaan laat een lichaam achter met al je spullen (de rugzak apart),

@@ -34,7 +34,7 @@ public final class GunGearClient {
     /** Zoveel magazijnen (met patronen) voor dit pistool zitten er in je magazijnpouch. */
     public static int magazinesInPouch(LocalPlayer player, FirearmType type) {
         int count = 0;
-        for (ItemStack stack : Gear.contents(player, GearItem.Kind.MAG_POUCH)) {
+        for (ItemStack stack : com.senne.imttech.backpack.Molle.magazines(player)) {
             if (MagazineItem.typeOf(stack) == type && MagazineItem.rounds(stack) > 0) {
                 count++;
             }
@@ -58,7 +58,7 @@ public final class GunGearClient {
     /** Zoveel cellen in je magazijnpouch zijn voller dan {@code current} (de cel in het geweer; -1 = geen). */
     public static int cellsInPouch(LocalPlayer player, float current) {
         int count = 0;
-        for (ItemStack stack : Gear.contents(player, GearItem.Kind.MAG_POUCH)) {
+        for (ItemStack stack : com.senne.imttech.backpack.Molle.magazines(player)) {
             if (stack.is(ModItems.ENERGY_CELL.get()) && EnergyCellItem.charge(stack) >= Math.max(0.001f, current + 0.001f)) {
                 count++;
             }

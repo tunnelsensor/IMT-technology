@@ -39,13 +39,18 @@ public final class Backpacks {
         NeoForge.EVENT_BUS.addListener((ServerTickEvent.Post event) -> {
             BackpackZip.tick(event.getServer());
             // Elke speler, ook de nep-spelers van de tests (bij hen komt er geen PlayerTickEvent: die loopt via hun verbinding).
+            boolean dumpTick = event.getServer().getTickCount() % 4 == 0;
             for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
                 updateSpeed(player);
+                if (dumpTick) {
+                    Molle.tickDump(player);
+                }
             }
         });
         NeoForge.EVENT_BUS.addListener((ServerStoppedEvent event) -> {
             BackpackZip.clear();
             BackpackInventory.clear();
+            Molle.clear();
         });
     }
 

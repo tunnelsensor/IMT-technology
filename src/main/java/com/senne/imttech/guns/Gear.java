@@ -61,6 +61,10 @@ public final class Gear {
     public static final int ACTION_DRAW_SLING = 4;
     /** Hoofdstuk 72: de rugzak op je rug openritsen (zie backpack/Backpacks.openWorn). */
     public static final int ACTION_OPEN_BACKPACK = 5;
+    /** Hoofdstuk 72, stap 2: de MOLLE-pouch op deze plek van je rugzak openen (zonder rits). */
+    public static final int ACTION_OPEN_MOLLE = 6;
+    /** Hoofdstuk 72, stap 2: een genees-item uit je IFAK gebruiken (arg = plek * 16 + vakje). */
+    public static final int ACTION_USE_IFAK = 7;
 
     /** Zoveel sling-vakjes draag je (jouw keuze: twee, een op je rug en een voor je borst). */
     public static final int SLINGS = 2;
@@ -188,7 +192,8 @@ public final class Gear {
 
     /** Kun je dit wegsteken: in een sling-vakje, of in een holster of pouch? */
     public static boolean canStow(Player player, ItemStack stack) {
-        return (slingAccepts(stack) && freeSling(player) >= 0) || roomFor(player, stack) != null;
+        return (slingAccepts(stack) && freeSling(player) >= 0) || roomFor(player, stack) != null
+                || com.senne.imttech.backpack.Molle.roomFor(player, stack) != null;
     }
 
     /** Waar het heen zou gaan, voor op het wiel ("into the Holster", "onto your sling"), of null. */
@@ -197,7 +202,12 @@ public final class Gear {
             return Component.translatable("screen.imttech.wheel.onto_sling");
         }
         GearItem.Kind kind = roomFor(player, stack);
-        return kind == null ? null : Component.translatable("screen.imttech.wheel.into", kind.text());
+        if (kind == null) {
+            // Hoofdstuk 72, stap 2: anders in een MOLLE-pouch op je rugzak.
+            com.senne.imttech.backpack.MolleItem.Kind molle = com.senne.imttech.backpack.Molle.roomFor(player, stack);
+            return molle == null ? null : Component.translatable("screen.imttech.wheel.into", molle.text());
+        }
+        return Component.translatable("screen.imttech.wheel.into", kind.text());
     }
 
     /** Het vakje waar dit item in kan (eerst bij dezelfde soort erbij, dan een leeg vakje), of -1. */
@@ -270,12 +280,13 @@ public final class Gear {
         if (kindOrdinal < 0 || kindOrdinal >= kinds.length) {
             return false;
         }
-        List<ItemStack> pouch = contents(player, GearItem.Kind.GRENADE_POUCH);
+        // Hoofdstuk 72, stap 2: je granaatpouch en daarna je MOLLE-granaatpouches.
+        List<ItemStack> pouch = com.senne.imttech.backpack.Molle.grenades(player);
         for (int i = 0; i < pouch.size(); i++) {
             ItemStack stack = pouch.get(i);
             if (stack.getItem() instanceof GrenadeItem grenade && grenade.kind() == kinds[kindOrdinal]) {
                 pouch.set(i, ItemStack.EMPTY);
-                setContents(player, GearItem.Kind.GRENADE_POUCH, pouch);
+                com.senne.imttech.backpack.Molle.setGrenades(player, pouch);
                 intoHand(player, stack);
                 sound(player, ModSounds.HOLSTER_DRAW.get(), 0.6f);
                 return true;
@@ -311,7 +322,8 @@ public final class Gear {
         }
         GearItem.Kind kind = roomFor(player, stack);
         if (kind == null) {
-            return false;
+            // Hoofdstuk 72, stap 2: anders in een MOLLE-pouch op je rugzak.
+            return com.senne.imttech.backpack.Molle.store(player, stack);
         }
         int index = freeIndex(player, kind, stack);
         List<ItemStack> contents = contents(player, kind);
@@ -365,15 +377,17 @@ public final class Gear {
                     ? "gear.imttech.needs_sling" : "gear.imttech.does_not_fit"));
             return false;
         }
-        if (get(player, kind).isEmpty()) {
-            tell(player, Component.translatable("gear.imttech.not_wearing", kind.text()));
+        if (get(player, kind).isEmpty() || freeIndex(player, kind, held) < 0) {
+            // Hoofdstuk 72, stap 2: geen heup-pouch (of hij is vol): dan een MOLLE-pouch op je rugzak.
+            if (com.senne.imttech.backpack.Molle.store(player, held.copy())) {
+                inventory.setItem(inventory.selected, ItemStack.EMPTY);
+                sound(player, ModSounds.HOLSTER_DRAW.get(), 0.6f);
+                return true;
+            }
+            tell(player, Component.translatable(get(player, kind).isEmpty() ? "gear.imttech.not_wearing" : "gear.imttech.full", kind.text()));
             return false;
         }
         int index = freeIndex(player, kind, held);
-        if (index < 0) {
-            tell(player, Component.translatable("gear.imttech.full", kind.text()));
-            return false;
-        }
         List<ItemStack> contents = contents(player, kind);
         ItemStack inside = contents.get(index);
         if (inside.isEmpty()) {
@@ -396,12 +410,12 @@ public final class Gear {
         if (hand != InteractionHand.MAIN_HAND || !player.getMainHandItem().isEmpty()) {
             return;
         }
-        List<ItemStack> pouch = contents(player, GearItem.Kind.GRENADE_POUCH);
+        List<ItemStack> pouch = com.senne.imttech.backpack.Molle.grenades(player);
         for (int i = 0; i < pouch.size(); i++) {
             ItemStack stack = pouch.get(i);
             if (stack.getItem() == item) {
                 pouch.set(i, ItemStack.EMPTY);
-                setContents(player, GearItem.Kind.GRENADE_POUCH, pouch);
+                com.senne.imttech.backpack.Molle.setGrenades(player, pouch);
                 player.getInventory().setItem(player.getInventory().selected, stack);
                 return;
             }
@@ -453,7 +467,8 @@ public final class Gear {
     public static boolean storeMagazine(ServerPlayer player, ItemStack magazine) {
         int index = freeIndex(player, GearItem.Kind.MAG_POUCH, magazine);
         if (index < 0) {
-            return false;
+            // Hoofdstuk 72, stap 2: anders in een MOLLE-magazijnpouch op je rugzak.
+            return com.senne.imttech.backpack.Molle.store(player, magazine);
         }
         List<ItemStack> pouch = contents(player, GearItem.Kind.MAG_POUCH);
         pouch.set(index, magazine);
@@ -468,7 +483,8 @@ public final class Gear {
         if (type == null || Firearms.isBusy(player) || FirearmItem.jam(gun) != FirearmItem.JAM_NONE) {
             return false;
         }
-        List<ItemStack> pouch = contents(player, GearItem.Kind.MAG_POUCH);
+        // Hoofdstuk 72, stap 2: de vakjes van je magazijnpouch en daarna die van je MOLLE-magazijnpouches.
+        List<ItemStack> pouch = com.senne.imttech.backpack.Molle.magazines(player);
         if (index < 0 || index >= pouch.size() || MagazineItem.typeOf(pouch.get(index)) != type) {
             tell(player, Component.translatable("gear.imttech.no_magazine_there"));
             return false;
@@ -480,7 +496,7 @@ public final class Gear {
     /** Het herladen uit de pouch is klaar: wisselen (het oude magazijn komt in het vakje van het nieuwe). */
     public static void finishPouchReload(ServerPlayer player, ItemStack gun, int index) {
         FirearmType type = FirearmItem.typeOf(gun);
-        List<ItemStack> pouch = contents(player, GearItem.Kind.MAG_POUCH);
+        List<ItemStack> pouch = com.senne.imttech.backpack.Molle.magazines(player);
         if (type == null || index < 0 || index >= pouch.size() || MagazineItem.typeOf(pouch.get(index)) != type) {
             return;
         }
@@ -488,7 +504,7 @@ public final class Gear {
         ItemStack old = FirearmItem.magazine(gun);
         FirearmItem.setMagazine(gun, fresh);
         pouch.set(index, old);
-        setContents(player, GearItem.Kind.MAG_POUCH, pouch);
+        com.senne.imttech.backpack.Molle.setMagazines(player, pouch);
         sound(player, ModSounds.GLOCK_MAG_IN.get(), 0.8f);
         GunSkillHooks.reloaded(player, gun);
     }

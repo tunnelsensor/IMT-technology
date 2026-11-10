@@ -98,7 +98,7 @@ public class BackpackItem extends Item {
     /**
      * Mag dit in een rugzak? Geen rugzak, geen shulkerdoos, en niets anders dat zelf spullen bewaart (een bundel, een
      * Ammo Box): anders stop je dozen in dozen in dozen, en dat is precies wat te OP is (jouw keuze). Een holster of pouch
-     * mag wel: die zijn klein.
+     * mag alleen leeg (stap 2: anders stop je 36 volle utility pouches in een Rucksack).
      */
     public static boolean mayHold(ItemStack stack) {
         if (stack.isEmpty()) {
@@ -108,6 +108,10 @@ public class BackpackItem extends Item {
             return false;
         }
         if (Block.byItem(stack.getItem()) instanceof ShulkerBoxBlock) {
+            return false;
+        }
+        com.senne.imttech.guns.GearContents inside = stack.get(com.senne.imttech.registry.ModDataComponents.GEAR_CONTENTS.get());
+        if (inside != null && !inside.isEmpty()) {
             return false;
         }
         return !stack.has(DataComponents.CONTAINER) && !stack.has(DataComponents.BUNDLE_CONTENTS);
@@ -148,6 +152,29 @@ public class BackpackItem extends Item {
             pack.set(DataComponents.CONTAINER, ItemContainerContents.fromItems(sized));
         } else {
             pack.remove(DataComponents.CONTAINER);
+        }
+    }
+
+    /** Stap 2: de MOLLE-pouches aan deze rugzak, precies zoveel als hij plekken heeft (leeg = geen pouch; kopieën). */
+    public static List<ItemStack> molle(ItemStack pack) {
+        Size size = sizeOf(pack);
+        if (size == null) {
+            return List.of();
+        }
+        com.senne.imttech.guns.GearContents stored = pack.get(BackpackRegistry.MOLLE.get());
+        return com.senne.imttech.guns.GearContents.sized(stored == null ? List.of() : stored.stacks(), size.molle).mutable();
+    }
+
+    public static void setMolle(ItemStack pack, List<ItemStack> pouches) {
+        Size size = sizeOf(pack);
+        if (size == null) {
+            return;
+        }
+        com.senne.imttech.guns.GearContents sized = com.senne.imttech.guns.GearContents.sized(pouches, size.molle);
+        if (sized.isEmpty()) {
+            pack.remove(BackpackRegistry.MOLLE.get());
+        } else {
+            pack.set(BackpackRegistry.MOLLE.get(), sized);
         }
     }
 
@@ -221,6 +248,12 @@ public class BackpackItem extends Item {
         tooltip.add(Component.translatable("tooltip.imttech.backpack.size", size.slots(), size.molle).withStyle(ChatFormatting.GRAY));
         if (camo(stack)) {
             tooltip.add(Component.translatable("tooltip.imttech.backpack.camo").withStyle(ChatFormatting.DARK_GREEN));
+        }
+        for (ItemStack pouch : molle(stack)) {
+            if (!pouch.isEmpty()) {
+                tooltip.add(Component.translatable("tooltip.imttech.backpack.pouch", pouch.getHoverName(), MolleItem.filled(pouch))
+                        .withStyle(ChatFormatting.DARK_AQUA));
+            }
         }
         List<ItemStack> contents = contents(stack);
         int shown = 0;

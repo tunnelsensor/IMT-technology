@@ -16,6 +16,10 @@ import net.minecraft.world.item.ItemStack;
  * Hebben twee mensen dezelfde rugzak open (twee spelers bij een neergezette rugzak, of in stap 3 jij en een dief), dan
  * delen ze <b>deze ene</b> inhoud, net als bij een kist: wat de een pakt, verdwijnt bij de ander. Daarvoor krijgt elke
  * rugzak een eigen nummer (BackpackRegistry.PACK_ID) en houden we per nummer bij welke inhoud er open is.
+ *
+ * Stap 2: achter de vakjes van de rugzak komen zijn MOLLE-plekken (2, 3 of 4): daar hangt een MOLLE-pouch, of niets.
+ * Wie aan een pouch iets verandert terwijl de rugzak open is (de dump pouch raapt hulzen op, R pakt een magazijn), doet
+ * dat via deze inhoud ({@link #findOpen}), anders zou het scherm het straks weer overschrijven.
  */
 public class BackpackInventory extends SimpleContainer {
     /** Wat er nu open is, per rugzaknummer. */
@@ -28,14 +32,17 @@ public class BackpackInventory extends SimpleContainer {
     /** Bezig met inladen (dan schrijven we niet terug). */
     private boolean loading;
 
-    private BackpackInventory(BackpackPlace place, UUID id, BackpackItem.Size size, List<ItemStack> contents) {
-        super(size.slots());
+    private BackpackInventory(BackpackPlace place, UUID id, BackpackItem.Size size, List<ItemStack> contents, List<ItemStack> molle) {
+        super(size.slots() + size.molle);
         this.place = place;
         this.id = id;
         this.size = size;
         loading = true;
         for (int i = 0; i < contents.size() && i < size.slots(); i++) {
             setItem(i, contents.get(i));
+        }
+        for (int i = 0; i < molle.size() && i < size.molle; i++) {
+            setItem(size.slots() + i, molle.get(i));
         }
         loading = false;
     }
@@ -61,9 +68,21 @@ public class BackpackInventory extends SimpleContainer {
         if (open != null && open.valid()) {
             return open;
         }
-        open = new BackpackInventory(place, id, size, BackpackItem.contents(pack));
+        open = new BackpackInventory(place, id, size, BackpackItem.contents(pack), BackpackItem.molle(pack));
         OPEN.put(id, open);
         return open;
+    }
+
+    /** De inhoud die nu open is voor deze rugzak (bij iemand), of null. */
+    public static BackpackInventory findOpen(ItemStack pack) {
+        UUID id = pack.get(BackpackRegistry.PACK_ID.get());
+        BackpackInventory open = id == null ? null : OPEN.get(id);
+        return open != null && open.valid() ? open : null;
+    }
+
+    /** Het vakje van MOLLE-plek {@code index} in deze inhoud. */
+    public int molleSlot(int index) {
+        return size.slots() + index;
     }
 
     /** Alles vergeten (de server stopt). */
@@ -93,6 +112,9 @@ public class BackpackInventory extends SimpleContainer {
 
     @Override
     public boolean canPlaceItem(int slot, ItemStack stack) {
+        if (slot >= size.slots()) {
+            return stack.isEmpty() || stack.getItem() instanceof MolleItem;
+        }
         return BackpackItem.mayHold(stack);
     }
 
@@ -103,11 +125,16 @@ public class BackpackInventory extends SimpleContainer {
             return;
         }
         ItemStack pack = place.get().copy();
-        List<ItemStack> contents = new ArrayList<>(getContainerSize());
-        for (int i = 0; i < getContainerSize(); i++) {
+        List<ItemStack> contents = new ArrayList<>(size.slots());
+        for (int i = 0; i < size.slots(); i++) {
             contents.add(getItem(i).copy());
         }
+        List<ItemStack> molle = new ArrayList<>(size.molle);
+        for (int i = 0; i < size.molle; i++) {
+            molle.add(getItem(size.slots() + i).copy());
+        }
         BackpackItem.setContents(pack, contents);
+        BackpackItem.setMolle(pack, molle);
         place.set(pack);
     }
 
@@ -137,7 +164,7 @@ public class BackpackInventory extends SimpleContainer {
      */
     public void sort() {
         List<ItemStack> merged = new ArrayList<>();
-        for (int i = 0; i < getContainerSize(); i++) {
+        for (int i = 0; i < size.slots(); i++) {
             ItemStack stack = getItem(i).copy();
             if (stack.isEmpty()) {
                 continue;
@@ -162,7 +189,7 @@ public class BackpackInventory extends SimpleContainer {
             return byName != 0 ? byName : Integer.compare(b.getCount(), a.getCount());
         });
         loading = true;
-        for (int i = 0; i < getContainerSize(); i++) {
+        for (int i = 0; i < size.slots(); i++) {
             setItem(i, i < merged.size() ? merged.get(i) : ItemStack.EMPTY);
         }
         loading = false;

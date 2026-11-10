@@ -17,11 +17,16 @@ import net.minecraft.world.item.ItemStack;
  *
  * Er mag geen rugzak, shulkerdoos of andere doos in (BackpackItem.mayHold). Open je de rugzak in je hand, dan zit dat
  * vakje van je werkbalk op slot.
+ *
+ * Stap 2: rechts van de vakjes een strook met de MOLLE-plekken (2, 3 of 4, onder elkaar): daar hang je een MOLLE-pouch
+ * aan de rugzak (met zijn inhoud), of haal je hem eraf. Shift-klik met een pouch zet hem eerst op een vrije plek.
  */
 public class BackpackMenu extends AbstractContainerMenu {
     /** Waar de vakjes van de rugzak beginnen (linksboven), zoals het scherm ze tekent. */
     public static final int PACK_X = 8;
     public static final int PACK_Y = 18;
+    /** Stap 2: waar de MOLLE-plekken staan (rechts naast de rugzak, onder elkaar). */
+    public static final int MOLLE_X = 184;
 
     private final BackpackItem.Size size;
     private final Container container;
@@ -38,12 +43,15 @@ public class BackpackMenu extends AbstractContainerMenu {
     public BackpackMenu(int containerId, Inventory inventory, BackpackItem.Size size, BackpackInventory open, int lockedSlot) {
         super(BackpackRegistry.BACKPACK_MENU.get(), containerId);
         this.size = size;
-        this.container = open == null ? new SimpleContainer(size.slots()) : open;
+        this.container = open == null ? new SimpleContainer(size.slots() + size.molle) : open;
         this.lockedSlot = lockedSlot;
         this.player = inventory.player;
         container.startOpen(player);
         for (int i = 0; i < size.slots(); i++) {
             addSlot(new PackSlot(container, i, PACK_X + (i % 9) * 18, PACK_Y + (i / 9) * 18));
+        }
+        for (int i = 0; i < size.molle; i++) {
+            addSlot(new MolleSlot(container, size.slots() + i, MOLLE_X, PACK_Y + i * 18));
         }
         int inventoryY = inventoryY(size);
         for (int row = 0; row < 3; row++) {
@@ -65,6 +73,11 @@ public class BackpackMenu extends AbstractContainerMenu {
         return size;
     }
 
+    /** Het eerste vakje van je inventaris in dit menu (na de rugzak en zijn MOLLE-plekken). */
+    public int inventoryStart() {
+        return size.slots() + size.molle;
+    }
+
     /** De inhoud op de server (of null in jouw spel). */
     public BackpackInventory open() {
         return container instanceof BackpackInventory inventory ? inventory : null;
@@ -79,6 +92,23 @@ public class BackpackMenu extends AbstractContainerMenu {
         @Override
         public boolean mayPlace(ItemStack stack) {
             return BackpackItem.mayHold(stack);
+        }
+    }
+
+    /** Stap 2: een MOLLE-plek: alleen een MOLLE-pouch, één per plek. */
+    private static final class MolleSlot extends Slot {
+        MolleSlot(Container container, int index, int x, int y) {
+            super(container, index, x, y);
+        }
+
+        @Override
+        public boolean mayPlace(ItemStack stack) {
+            return stack.getItem() instanceof MolleItem;
+        }
+
+        @Override
+        public int getMaxStackSize() {
+            return 1;
         }
     }
 
@@ -117,8 +147,16 @@ public class BackpackMenu extends AbstractContainerMenu {
         ItemStack stack = slot.getItem();
         ItemStack original = stack.copy();
         int pack = size.slots();
-        if (index < pack) {
-            if (!moveItemStackTo(stack, pack, slots.size(), true)) {
+        int inventory = inventoryStart();
+        if (index < inventory) {
+            // Uit de rugzak (of van een MOLLE-plek) naar je inventaris.
+            if (!moveItemStackTo(stack, inventory, slots.size(), true)) {
+                return ItemStack.EMPTY;
+            }
+        } else if (stack.getItem() instanceof MolleItem) {
+            // Een pouch: eerst op een vrije MOLLE-plek, anders (leeg) in de rugzak.
+            if (!moveItemStackTo(stack, pack, inventory, false)
+                    && (!BackpackItem.mayHold(stack) || !moveItemStackTo(stack, 0, pack, false))) {
                 return ItemStack.EMPTY;
             }
         } else if (!BackpackItem.mayHold(stack) || !moveItemStackTo(stack, 0, pack, false)) {

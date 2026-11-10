@@ -50,6 +50,59 @@ final class BackpackTour {
         return stack;
     }
 
+    /** Stap 2: een MOLLE-pouch van deze soort, met dit erin. */
+    static ItemStack pouch(com.senne.imttech.backpack.MolleItem.Kind kind, ItemStack... inside) {
+        ItemStack stack = new ItemStack(BackpackRegistry.molle(kind));
+        com.senne.imttech.backpack.MolleItem.setContents(stack, List.of(inside));
+        return stack;
+    }
+
+    /**
+     * Stap 2: dezelfde rugzak met pouches op al zijn MOLLE-plekken: een Assault Pack een dump pouch en een IFAK, een Patrol
+     * Pack een MOLLE-magazijnpouch, een MOLLE-granaatpouch en een utility pouch, een Rucksack die vier. In de kleur van de
+     * rugzak (camo: camo).
+     */
+    static ItemStack withPouches(ItemStack pack) {
+        BackpackItem.Size size = BackpackItem.sizeOf(pack);
+        List<ItemStack> pouches = new ArrayList<>();
+        ItemStack mags = pouch(com.senne.imttech.backpack.MolleItem.Kind.MAG,
+                com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.GLOCK_19, 15),
+                com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.GLOCK_19, 11));
+        ItemStack grenades = pouch(com.senne.imttech.backpack.MolleItem.Kind.GRENADE,
+                new ItemStack(com.senne.imttech.registry.ModItems.FRAG_GRENADE.get()), new ItemStack(com.senne.imttech.registry.ModItems.EMP_GRENADE.get()));
+        ItemStack ifak = pouch(com.senne.imttech.backpack.MolleItem.Kind.IFAK, new ItemStack(Items.GOLDEN_APPLE, 2),
+                net.minecraft.world.item.alchemy.PotionContents.createItemStack(Items.POTION, net.minecraft.world.item.alchemy.Potions.HEALING));
+        ItemStack dump = pouch(com.senne.imttech.backpack.MolleItem.Kind.DUMP, new ItemStack(com.senne.imttech.registry.ModItems.CASING_9MM.get(), 23));
+        ItemStack utility = pouch(com.senne.imttech.backpack.MolleItem.Kind.UTILITY, new ItemStack(Items.SHEARS), new ItemStack(Items.TORCH, 12));
+        switch (size) {
+            case ASSAULT -> {
+                pouches.add(dump);
+                pouches.add(ifak);
+            }
+            case PATROL -> {
+                pouches.add(mags);
+                pouches.add(grenades);
+                pouches.add(utility);
+            }
+            case RUCKSACK -> {
+                pouches.add(ifak);
+                pouches.add(dump);
+                pouches.add(mags);
+                pouches.add(utility);
+            }
+        }
+        for (ItemStack pouch : pouches) {
+            if (BackpackItem.camo(pack)) {
+                pouch.set(BackpackRegistry.CAMO.get(), true);
+            } else if (pack.has(DataComponents.DYED_COLOR)) {
+                pouch.set(DataComponents.DYED_COLOR, pack.get(DataComponents.DYED_COLOR));
+            }
+        }
+        ItemStack out = pack.copy();
+        BackpackItem.setMolle(out, pouches);
+        return out;
+    }
+
     /** Een volle rugzak om te laten zien: munitie, eten, gereedschap, door elkaar (zodat sorteren iets doet). */
     static ItemStack loaded(BackpackItem.Size size, int colour) {
         List<ItemStack> inside = new ArrayList<>();
@@ -83,9 +136,9 @@ final class BackpackTour {
         for (BlockPos pos : BlockPos.betweenClosed(origin.offset(-5, 1, 5), origin.offset(5, 4, 5))) {
             level.setBlockAndUpdate(pos, Blocks.STONE_BRICKS.defaultBlockState());
         }
-        place(level, origin.offset(-2, 1, 1), pack(BackpackItem.Size.ASSAULT, -1));
-        place(level, origin.offset(0, 1, 1), pack(BackpackItem.Size.PATROL, 0xB02E26));
-        place(level, origin.offset(2, 1, 1), pack(BackpackItem.Size.RUCKSACK, -2));
+        place(level, origin.offset(-2, 1, 1), withPouches(pack(BackpackItem.Size.ASSAULT, -1)));
+        place(level, origin.offset(0, 1, 1), withPouches(pack(BackpackItem.Size.PATROL, 0xB02E26)));
+        place(level, origin.offset(2, 1, 1), withPouches(pack(BackpackItem.Size.RUCKSACK, -2)));
         place(level, origin.offset(-2, 1, 3), pack(BackpackItem.Size.RUCKSACK, 0x3C44AA));
         place(level, origin.offset(0, 1, 3), pack(BackpackItem.Size.ASSAULT, 0x1D1D21));
         place(level, origin.offset(2, 1, 3), pack(BackpackItem.Size.PATROL, 0xD8822B));
@@ -106,9 +159,15 @@ final class BackpackTour {
         if (withGuns) {
             ShowcaseFeatures.giveSlingGear(player);
         } else {
+            // Zonder geweren en heup-pouches: dan zie je de rugzak en zijn MOLLE-pouches.
             player.getInventory().clearContent();
+            Gear.setSling(player, 0, ItemStack.EMPTY);
+            Gear.setSling(player, 1, ItemStack.EMPTY);
+            for (com.senne.imttech.guns.GearItem.Kind kind : com.senne.imttech.guns.GearItem.Kind.values()) {
+                Gear.set(player, kind, ItemStack.EMPTY);
+            }
         }
-        Gear.setBack(player, loaded(size, colour));
+        Gear.setBack(player, withPouches(loaded(size, colour)));
     }
 
     // ================================================================ De rondleiding
@@ -185,6 +244,59 @@ final class BackpackTour {
         t.wheel(10, true);
         t.shot(15, "pk20_wheel_backpack_button");
         t.wheel(2, false);
+
+        // Stap 2: de MOLLE-pouches. Het scherm met de strook, een pouch open, de pouches van dichtbij op de rugzak, en R
+        // met een Glock zonder heup-pouch (de magazijnen komen uit de MOLLE-pouch).
+        t.onServer(0, player -> wear(player, BackpackItem.Size.RUCKSACK, -1, false));
+        t.stand(5, sx, sy, sz, 0, 10);
+        t.onServer(5, Backpacks::openWorn);
+        t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof BackpackScreen);
+        t.step(0, () -> HowToTour.mouseTo(2, 2));
+        t.shot(10, "pk21_screen_with_molle_strip");
+        t.close(0);
+        t.onServer(5, player -> com.senne.imttech.backpack.Molle.openWornPouch(player, 0));
+        t.shot(12, "pk22_ifak_open");
+        t.close(0);
+        t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+        t.step(0, () -> Minecraft.getInstance().options.fov().set(40));
+        t.camera(0, CameraType.THIRD_PERSON_BACK);
+        t.shot(12, "pk23_pouches_on_rucksack_back");
+        t.stand(0, sx, sy, sz, 35, 20);
+        t.shot(12, "pk24_pouches_on_rucksack_side");
+        t.onServer(0, player -> wear(player, BackpackItem.Size.PATROL, 0xB02E26, false));
+        t.stand(5, sx, sy, sz, -35, 15);
+        t.shot(12, "pk25_pouches_on_patrol");
+        t.onServer(0, player -> wear(player, BackpackItem.Size.ASSAULT, -1, false));
+        t.stand(5, sx, sy, sz, 40, 15);
+        t.shot(12, "pk26_pouches_on_assault");
+        t.camera(0, CameraType.FIRST_PERSON);
+        t.stand(0, sx, sy, o.getZ() - 1.4, 0, 30);
+        t.shot(15, "pk27_placed_with_pouches");
+        t.step(0, () -> Minecraft.getInstance().options.fov().set(70));
+        t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+        // Het wiel: de knoppen van de pouches rechts, de IFAK-tegels rechtsonder.
+        t.onServer(0, player -> wear(player, BackpackItem.Size.RUCKSACK, -1, false));
+        t.stand(5, sx, sy, sz, 0, 10);
+        t.wheel(10, true);
+        t.shot(15, "pk28_wheel_molle_and_ifak");
+        t.wheel(2, false);
+        // R met een Glock, zonder heup-pouch: het keuzescherm toont de magazijnen in de MOLLE-pouch.
+        t.onServer(0, player -> {
+            wear(player, BackpackItem.Size.PATROL, -1, false);
+            ItemStack gun = com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.GLOCK_19,
+                    com.senne.imttech.guns.GunMaterial.STEEL);
+            com.senne.imttech.guns.FirearmItem.setMagazine(gun, com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.GLOCK_19, 3));
+            player.getInventory().setItem(0, gun);
+        });
+        t.step(10, () -> {
+            if (Minecraft.getInstance().player != null) {
+                Minecraft.getInstance().player.getInventory().selected = 0;
+            }
+        });
+        t.step(15, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
+        t.shot(10, "pk29_reload_from_molle_pouch");
+        t.close(5);
+        t.onServer(0, player -> player.getInventory().setItem(0, ItemStack.EMPTY));
         t.command(10, "gamemode creative @a");
     }
 

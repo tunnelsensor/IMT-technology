@@ -2368,5 +2368,28 @@ public final class ImtConfig {
         /** Zo ver (blokken) mag je bewegen tijdens de rits voor hij stopt. */
         @Tunable(value = "How far you may move while unzipping before the zip stops (blocks)", min = 0.05, max = 2)
         public static float ZIP_MOVE_TOLERANCE = 0.2f;
+
+        // Stap 2: de MOLLE-pouches aan de buitenkant van een rugzak.
+        /** Zoveel magazijnen of energiecellen passen in een MOLLE-magazijnpouch. */
+        @Tunable(value = "Magazines or energy cells in one MOLLE Mag Pouch", min = 1, max = 9)
+        public static float MOLLE_MAG_SIZE = 3.0f;
+        /** Zoveel granaten (stapels) passen in een MOLLE-granaatpouch. */
+        @Tunable(value = "Grenades (stacks) in one MOLLE Grenade Pouch", min = 1, max = 9)
+        public static float MOLLE_GRENADE_SIZE = 2.0f;
+        /** Zoveel stapels hulzen passen in een dump pouch (een stapel = 64). */
+        @Tunable(value = "Stacks of casings in one Dump Pouch (64 each)", min = 1, max = 9)
+        public static float DUMP_POUCH_SIZE = 2.0f;
+        /** Zo ver (blokken) raapt een dump pouch hulzen op rond je voeten. */
+        @Tunable(value = "How far around you a Dump Pouch picks up casings (blocks)", min = 0.5, max = 8)
+        public static float DUMP_POUCH_RADIUS = 3.0f;
+        /** Zoveel genees-items passen in een IFAK. */
+        @Tunable(value = "Healing items in one IFAK", min = 1, max = 9)
+        public static float IFAK_SIZE = 3.0f;
+        /** Zo lang (seconden) moet je wachten voor je weer iets uit je IFAK gebruikt. */
+        @Tunable(value = "Seconds between two uses of your IFAK from the wheel", min = 0, max = 30)
+        public static float IFAK_COOLDOWN = 1.0f;
+        /** Zoveel vakjes heeft een utility pouch. */
+        @Tunable(value = "Slots in one Utility Pouch", min = 1, max = 9)
+        public static float UTILITY_POUCH_SIZE = 4.0f;
     }
 }

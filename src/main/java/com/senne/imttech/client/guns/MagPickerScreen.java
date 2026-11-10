@@ -65,7 +65,8 @@ public class MagPickerScreen extends Screen {
 
     private List<ItemStack> pouch() {
         LocalPlayer player = Minecraft.getInstance().player;
-        return player == null ? List.of() : Gear.contents(player, GearItem.Kind.MAG_POUCH);
+        // Hoofdstuk 72, stap 2: je magazijnpouch en daarna je MOLLE-magazijnpouches.
+        return player == null ? List.of() : com.senne.imttech.backpack.Molle.magazines(player);
     }
 
     /** Past dit uit de pouch in het wapen in je hand: een magazijn van dit pistool, of een cel? */

@@ -52,8 +52,10 @@ public final class BackpackClient {
     /** Bij het opstarten (ImtTechClient). */
     public static void register(IEventBus modEventBus) {
         modEventBus.addListener((RegisterKeyMappingsEvent event) -> event.register(OPEN_BACKPACK));
-        modEventBus.addListener((RegisterMenuScreensEvent event) ->
-                event.register(BackpackRegistry.BACKPACK_MENU.get(), BackpackScreen::new));
+        modEventBus.addListener((RegisterMenuScreensEvent event) -> {
+            event.register(BackpackRegistry.BACKPACK_MENU.get(), BackpackScreen::new);
+            event.register(BackpackRegistry.MOLLE_MENU.get(), MolleScreen::new);
+        });
         modEventBus.addListener((EntityRenderersEvent.RegisterRenderers event) ->
                 event.registerBlockEntityRenderer(BackpackRegistry.BACKPACK_BLOCK_ENTITY.get(), BackpackRenderer::new));
         modEventBus.addListener(BackpackLayer::addLayers);
@@ -70,6 +72,11 @@ public final class BackpackClient {
             event.register((stack, tintIndex) -> tintIndex == 0 ? FastColor.ARGB32.opaque(BackpackItem.colour(stack)) : -1,
                     BackpackRegistry.item(size));
         }
+        // Stap 2: de MOLLE-pouches ook (nieuw olijfgroen, net als de rugzak).
+        for (com.senne.imttech.backpack.MolleItem.Kind kind : com.senne.imttech.backpack.MolleItem.Kind.values()) {
+            event.register((stack, tintIndex) -> tintIndex == 0 ? FastColor.ARGB32.opaque(BackpackItem.colour(stack)) : -1,
+                    BackpackRegistry.molle(kind));
+        }
     }
 
     /** Camo: het model met het camoplaatje (de override imttech:camo in models/item/assault_pack.json en de andere). */
@@ -77,6 +84,10 @@ public final class BackpackClient {
         event.enqueueWork(() -> {
             for (BackpackItem.Size size : BackpackItem.Size.values()) {
                 ItemProperties.register(BackpackRegistry.item(size), ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "camo"),
+                        (stack, level, entity, seed) -> BackpackItem.camo(stack) ? 1 : 0);
+            }
+            for (com.senne.imttech.backpack.MolleItem.Kind kind : com.senne.imttech.backpack.MolleItem.Kind.values()) {
+                ItemProperties.register(BackpackRegistry.molle(kind), ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "camo"),
                         (stack, level, entity, seed) -> BackpackItem.camo(stack) ? 1 : 0);
             }
         });

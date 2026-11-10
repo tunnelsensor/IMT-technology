@@ -94,7 +94,8 @@ public final class GearControl {
 
     /** De soort van de eerste granaat in je pouch (als nummer), of -1 als hij leeg is. */
     private static int firstGrenadeKind(LocalPlayer player) {
-        for (ItemStack stack : Gear.contents(player, GearItem.Kind.GRENADE_POUCH)) {
+        // Hoofdstuk 72, stap 2: ook de granaten in je MOLLE-granaatpouches.
+        for (ItemStack stack : com.senne.imttech.backpack.Molle.grenades(player)) {
             if (stack.getItem() instanceof GrenadeItem grenade) {
                 return grenade.kind().ordinal();
             }

@@ -3528,6 +3528,60 @@ final class ShowcaseFeatures {
                     player.getInventory().clearContent();
                     com.senne.imttech.guns.Gear.setBack(player, ItemStack.EMPTY);
                 }));
+        add("MOLLE pouches", "Hoofdstuk 72, stap 2. Hetzelfde veldje; op de voorste rij rugzakken hangen nu MOLLE-pouches (een IFAK "
+                + "met een rood kruis, een dump pouch, magazijn-, granaat- en utility pouches). Jij draagt een Rucksack met vier "
+                + "pouches en hebt een Glock in je hand, zonder heup-pouch. Eerst het scherm van de rugzak: rechts de strook "
+                + "MOLLE met de vier pouches. Dan het wiel: rechts kleine knoppen voor de rugzak, elke pouch, en de gouden "
+                + "appel en het drankje uit je IFAK (met hoeveel). Je opent de IFAK zonder rits, en daarna eet je via het wiel "
+                + "meteen een gouden appel (je hartjes worden geel). Dan R: het keuzescherm toont de magazijnen in je "
+                + "MOLLE-magazijnpouch (je draagt geen heup-pouch, dus alleen die), je kiest het volle. Je "
+                + "schiet een paar keer: de hulzen springen eruit en je dump pouch raapt ze vanzelf op. Tot slot van achteren in "
+                + "derde persoon: de pouches op je rugzak.",
+                GameType.SURVIVAL, new Vec3(packs.getX() + 0.5, packs.getY() + 1, packs.getZ() - 3.5), 0, 20, s -> s
+                .onServer(0, player -> BackpackTour.buildYard(player.serverLevel(), packs))
+                .onServer(0, player -> {
+                    BackpackTour.wear(player, com.senne.imttech.backpack.BackpackItem.Size.RUCKSACK, -1, false);
+                    player.setHealth(12);
+                    ItemStack gun = com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.GLOCK_19,
+                            com.senne.imttech.guns.GunMaterial.STEEL);
+                    com.senne.imttech.guns.FirearmItem.setMagazine(gun, com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.GLOCK_19, 2));
+                    player.getInventory().setItem(0, gun);
+                })
+                .step(0, () -> hotbar(0))
+                .lookAt(0, new Vec3(packs.getX() + 0.5, packs.getY() + 1.4, packs.getZ() + 1.5))
+                .pause(60)
+                // Het scherm met de MOLLE-strook.
+                .onServer(0, com.senne.imttech.backpack.Backpacks::openWorn)
+                .waitUntil(60, () -> Minecraft.getInstance().screen instanceof com.senne.imttech.client.backpack.BackpackScreen)
+                .pause(70)
+                .close(10)
+                // Het wiel, de IFAK openen, en een gouden appel uit het wiel.
+                .wheel(0, true)
+                .pause(60)
+                .wheel(0, false)
+                .onServer(5, player -> com.senne.imttech.backpack.Molle.openWornPouch(player, 0))
+                .pause(50)
+                .close(10)
+                .onServer(0, player -> com.senne.imttech.backpack.Molle.useIfak(player, 0, 0))
+                .pause(50)
+                // R: de magazijnen in de MOLLE-pouch.
+                .step(0, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()))
+                .pause(50)
+                .step(0, () -> magPick(0))
+                .pause(40)
+                // Schieten: de dump pouch raapt de hulzen op.
+                .lookAt(0, new Vec3(packs.getX() + 4, packs.getY() + 1.2, packs.getZ() + 4))
+                .tap(5, () -> Minecraft.getInstance().options.keyAttack)
+                .tap(8, () -> Minecraft.getInstance().options.keyAttack)
+                .tap(8, () -> Minecraft.getInstance().options.keyAttack)
+                .pause(50)
+                .camera(0, CameraType.THIRD_PERSON_BACK)
+                .pause(60)
+                .camera(0, CameraType.FIRST_PERSON)
+                .onServer(0, player -> {
+                    player.getInventory().clearContent();
+                    com.senne.imttech.guns.Gear.setBack(player, ItemStack.EMPTY);
+                }));
     }
 
     /** Hoofdstuk 69: de Frag Trigger van "Raven" in de showcase (altijd hetzelfde nummer). */

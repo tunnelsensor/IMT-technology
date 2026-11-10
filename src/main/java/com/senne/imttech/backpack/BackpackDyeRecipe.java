@@ -25,7 +25,7 @@ import net.minecraft.world.level.Level;
  *       eigen patroon (vlekken bruin en donkergroen op lichtgroen).</li>
  *   <li>Een camo-rugzak met een andere kleurstof: weer een gewone kleur (alleen die kleurstof).</li>
  * </ul>
- * De inhoud, de pouches en de rest van de rugzak blijven zoals ze waren.
+ * De inhoud, de pouches en de rest van de rugzak blijven zoals ze waren. Stap 2: een MOLLE-pouch verf je net zo.
  */
 public class BackpackDyeRecipe extends CustomRecipe {
     public BackpackDyeRecipe(CraftingBookCategory category) {
@@ -41,7 +41,7 @@ public class BackpackDyeRecipe extends CustomRecipe {
             if (stack.isEmpty()) {
                 continue;
             }
-            if (BackpackItem.isBackpack(stack)) {
+            if (BackpackItem.isBackpack(stack) || stack.getItem() instanceof MolleItem) {
                 if (!pack.isEmpty()) {
                     return null;
                 }

@@ -33,6 +33,7 @@ public class BackpackRenderer implements BlockEntityRenderer<BackpackBlockEntity
         pose.mulPose(Axis.YP.rotationDegrees(180 - facing.toYRot()));
         Minecraft.getInstance().getItemRenderer().renderStatic(pack, ItemDisplayContext.NONE, light, overlay, pose, buffers,
                 backpack.getLevel(), 0);
+        BackpackLayer.renderPouches(pose, buffers, light, overlay, pack, backpack.getLevel());
         pose.popPose();
     }
 }

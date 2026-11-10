@@ -112,6 +112,9 @@ public final class ModCreativeTabs {
                     camo.set(com.senne.imttech.backpack.BackpackRegistry.CAMO.get(), true);
                     output.accept(camo);
                 }
+                for (com.senne.imttech.backpack.MolleItem.Kind kind : com.senne.imttech.backpack.MolleItem.Kind.values()) {
+                    output.accept(com.senne.imttech.backpack.BackpackRegistry.molle(kind));
+                }
                 output.accept(ModItems.GUNSMITH_TABLE.get());
                 output.accept(ModItems.RELOADING_BENCH.get());
                 // De armory (hoofdstuk 67): het Pegboard en de Ammo Box.

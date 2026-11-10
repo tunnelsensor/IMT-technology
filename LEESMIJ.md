@@ -2166,7 +2166,25 @@ snelheid, `openWalkSpeed`): W, A, S en D werken, springen en sprinten niet (Shif
   open, dan zien ze hetzelfde (wat de een pakt, is bij de ander weg).
 
 **Minder OP dan Sophisticated Backpacks**: geen magneet, compacting, void of stack-upgrades (gewone stapels), en er past
-**geen rugzak, shulkerdoos, bundel of Ammo Box** in (geen dozen in dozen). Een holster of pouch mag wel.
+**geen rugzak, shulkerdoos, bundel of Ammo Box** in (geen dozen in dozen). Een holster of pouch mag er alleen **leeg** in.
+
+**MOLLE-pouches** (stap 2). Aan de MOLLE-banden van een rugzak hang je kleine pouches: de **Assault Pack** heeft 2 plekken
+(op elke zijkant), de **Patrol Pack** 3 (ook een op de voorkant), de **Rucksack** 4 (ook op elke voorzak). Je hangt ze eraan
+in het scherm van de rugzak: de strook **MOLLE** rechts (shift-klik met een pouch zet hem op een vrije plek). Je ziet ze op
+de rugzak hangen. Een pouch op je rug open je **zonder rits**: in het wiel (linker Alt) staat rechts een knopje per pouch.
+Een losse pouch vul je met rechtsklik in je hand. Verven kan zoals de rugzak.
+- **MOLLE Mag Pouch** (3 magazijnen of cellen): R toont de magazijnen in je heup-pouch en daarna die in je MOLLE-pouches;
+  een uitgeworpen magazijn gaat in je heup-pouch, en als die vol is (of je er geen draagt) in de MOLLE-pouch. Recept: 2
+  touw, een ijzerklompje, 3 leer.
+- **MOLLE Grenade Pouch** (2 granaten): het wiel trekt eerst uit je granaatpouch en dan hieruit, en na het gooien komt de
+  volgende vanzelf. Recept: 2 ijzerklompjes, een touw, 3 leer.
+- **Dump Pouch** (2 stapels hulzen): raapt vanzelf de hulzen rond je voeten op (3 blokken, `dumpPouchRadius`), voor de
+  Reloading Bench. Recept: 4 leer en een touw.
+- **IFAK** (3 genees-items: gouden appels en drankjes): in het wiel staat elk genees-item als knopje met hoeveel; aanwijzen
+  en loslaten = meteen gebruiken (de lege fles komt in je inventaris). Daarna een seconde wachten (`ifakCooldown`).
+  Recept: 2 touw, rode kleurstof, 3 leer.
+- **Utility Pouch** (4 vakjes): voor wat dan ook, behalve dozen en volle pouches. Recept: 4 leer, een ijzerklompje en een
+  touw.
 
 **Verven** in de crafting table, zoals leren harnas: de rugzak met een of meer kleurstoffen (ook gemengd, bijvoorbeeld rood
 + geel = oranje). Nieuw is hij olijfgroen. **Bruin + lichtgroen + groen** (elk één) maakt **camo**: een eigen patroon,

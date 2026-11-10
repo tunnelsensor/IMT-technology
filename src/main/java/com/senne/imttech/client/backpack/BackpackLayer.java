@@ -124,8 +124,48 @@ public class BackpackLayer extends RenderLayer<AbstractClientPlayer, PlayerModel
         pose.mulPose(Axis.XP.rotationDegrees(180));
         Minecraft.getInstance().getItemRenderer().renderStatic(pack, ItemDisplayContext.NONE, light, OverlayTexture.NO_OVERLAY,
                 pose, buffers, level, 0);
+        renderPouches(pose, buffers, light, OverlayTexture.NO_OVERLAY, pack, level);
         pose.popPose();
         renderStraps(pose, buffers, light, size, armour);
+    }
+
+    /**
+     * Stap 2: de MOLLE-plekken van elke maat, in de pixels van het model van de rugzak (tools/generate_backpack_models.py):
+     * waar de achterkant van een pouch komt (x, y, z), zijn draaiing (0 = naar voren, 90 = naar links/west, -90 = naar
+     * rechts/oost) en hoe groot hij daar is. Een Assault Pack heeft er een op elke zijkant; een Patrol Pack ook een op de
+     * voorkant boven zijn voorzak; een Rucksack ook een op elk van zijn twee voorzakken.
+     */
+    private static final float[][][] MOLLE_SPOTS = {
+            {{3.7f, 5.0f, 8.0f, 90, 0.72f}, {12.3f, 5.0f, 8.0f, -90, 0.72f}},
+            {{3.2f, 9.2f, 8.0f, 90, 0.68f}, {12.8f, 9.2f, 8.0f, -90, 0.68f}, {8.0f, 9.6f, 5.5f, 0, 0.72f}},
+            {{2.7f, 10.4f, 7.5f, 90, 0.72f}, {13.3f, 10.4f, 7.5f, -90, 0.72f}, {8.0f, 3.6f, 3.2f, 0, 0.95f},
+                    {8.0f, 9.7f, 3.5f, 0, 0.8f}}};
+
+    /**
+     * De MOLLE-pouches van deze rugzak tekenen, met {@code pose} waar ook de rugzak getekend werd (ItemDisplayContext.NONE:
+     * het midden van het model, (8, 8, 8), ligt op {@code pose}). Elke pouch heeft zijn achterkant in (8, 8, 8) van zijn
+     * eigen model (zie tools/generate_backpack_models.py), dus die zetten we op zijn plek.
+     */
+    public static void renderPouches(PoseStack pose, MultiBufferSource buffers, int light, int overlay, ItemStack pack, Level level) {
+        BackpackItem.Size size = BackpackItem.sizeOf(pack);
+        if (size == null) {
+            return;
+        }
+        java.util.List<ItemStack> pouches = BackpackItem.molle(pack);
+        float[][] spots = MOLLE_SPOTS[size.ordinal()];
+        for (int i = 0; i < pouches.size() && i < spots.length; i++) {
+            ItemStack pouch = pouches.get(i);
+            if (pouch.isEmpty()) {
+                continue;
+            }
+            float[] spot = spots[i];
+            pose.pushPose();
+            pose.translate((spot[0] - 8) / 16f, (spot[1] - 8) / 16f, (spot[2] - 8) / 16f);
+            pose.mulPose(Axis.YP.rotationDegrees(spot[3]));
+            pose.scale(spot[4], spot[4], spot[4]);
+            Minecraft.getInstance().getItemRenderer().renderStatic(pouch, ItemDisplayContext.NONE, light, overlay, pose, buffers, level, 0);
+            pose.popPose();
+        }
     }
 
     /**

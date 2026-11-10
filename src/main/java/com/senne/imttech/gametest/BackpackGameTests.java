@@ -110,8 +110,8 @@ public final class BackpackGameTests {
             check(!BackpackZip.busy(mover) && !(mover.containerMenu instanceof BackpackMenu), "De rits van wie wegliep ging toch door");
             check(player.containerMenu instanceof BackpackMenu, "Na de rits stond het scherm niet open");
             BackpackMenu menu = (BackpackMenu) player.containerMenu;
-            check(menu.size() == BackpackItem.Size.ASSAULT && menu.slots.size() == 18 + 36,
-                    "Een Assault Pack heeft 18 vakjes (en je inventaris 36), niet " + (menu.slots.size() - 36));
+            check(menu.size() == BackpackItem.Size.ASSAULT && menu.slots.size() == 18 + 2 + 36,
+                    "Een Assault Pack heeft 18 vakjes en 2 MOLLE-plekken (en je inventaris 36), niet " + (menu.slots.size() - 36));
             menu.getSlot(0).set(new ItemStack(Items.ARROW, 12));
             check(BackpackItem.contents(Gear.back(player)).getFirst().is(Items.ARROW), "Wat je erin legde zit niet in de rugzak op je rug");
         });
@@ -158,7 +158,7 @@ public final class BackpackGameTests {
         BackpackMenu first = (BackpackMenu) owner.containerMenu;
         BackpackMenu second = (BackpackMenu) other.containerMenu;
         check(first.open() != null && first.open() == second.open(), "Twee spelers hebben niet dezelfde inhoud open");
-        check(first.slots.size() == 36 + 36, "Een Rucksack heeft 36 vakjes");
+        check(first.slots.size() == 36 + 4 + 36, "Een Rucksack heeft 36 vakjes en 4 MOLLE-plekken");
         second.getSlot(0).set(ItemStack.EMPTY);
         check(!first.getSlot(0).hasItem(), "Wat de een eruit haalde, ligt bij de ander nog");
         check(BackpackItem.contents(entity.pack()).getFirst().isEmpty(), "Wat eruit ging, zit nog in de rugzak zelf");
@@ -203,7 +203,11 @@ public final class BackpackGameTests {
         check(!BackpackItem.mayHold(box), "Een volle Ammo Box past in een rugzak");
         check(!BackpackItem.mayHold(new ItemStack(Items.BUNDLE)), "Een bundel past in een rugzak");
         check(BackpackItem.mayHold(new ItemStack(Items.COBBLESTONE, 64)), "Gewone blokken passen niet");
-        check(BackpackItem.mayHold(new ItemStack(ModItems.HOLSTER.get())), "Een holster past niet");
+        check(BackpackItem.mayHold(new ItemStack(ModItems.HOLSTER.get())), "Een lege holster past niet");
+        ItemStack fullHolster = new ItemStack(ModItems.HOLSTER.get());
+        com.senne.imttech.guns.GearItem.setContents(fullHolster, List.of(com.senne.imttech.guns.FirearmItem.loaded(
+                com.senne.imttech.guns.FirearmType.GLOCK_19, com.senne.imttech.guns.GunMaterial.STEEL)));
+        check(!BackpackItem.mayHold(fullHolster), "Een holster met een Glock erin past in een rugzak (een volle pouch hoort niet)");
 
         ServerPlayer player = player(helper, "pack-stuffer", new BlockPos(3, 2, 3));
         player.setItemInHand(InteractionHand.MAIN_HAND, pack(BackpackItem.Size.PATROL));
@@ -212,8 +216,8 @@ public final class BackpackGameTests {
         player.getInventory().setItem(7, new ItemStack(Items.IRON_INGOT, 9));
         check(BackpackZip.open(player, BackpackPlace.hand(player, InteractionHand.MAIN_HAND)), "De rugzak in je hand ging niet open");
         BackpackMenu menu = (BackpackMenu) player.containerMenu;
-        int pack = menu.size().slots();
-        // De werkbalk staat achteraan: vakje 5 van je inventaris = slot pack + 27 + 5.
+        int pack = menu.inventoryStart();
+        // De werkbalk staat achteraan: vakje 5 van je inventaris = slot (rugzak + MOLLE) + 27 + 5.
         check(!menu.getSlot(0).mayPlace(new ItemStack(Items.SHULKER_BOX)), "Het vakje neemt een shulkerdoos aan");
         menu.quickMoveStack(player, pack + 27 + 5);
         menu.quickMoveStack(player, pack + 27 + 6);
@@ -329,5 +333,172 @@ public final class BackpackGameTests {
             check(BackpackItem.contents(taken).getFirst().is(Items.GOLD_INGOT), "De inhoud van de afgedane rugzak klopt niet");
             helper.succeed();
         });
+    }
+
+    // ================================================================ Stap 2: de MOLLE-pouches
+
+    private static ItemStack pouch(com.senne.imttech.backpack.MolleItem.Kind kind, ItemStack... inside) {
+        ItemStack stack = new ItemStack(BackpackRegistry.molle(kind));
+        com.senne.imttech.backpack.MolleItem.setContents(stack, List.of(inside));
+        return stack;
+    }
+
+    /** Een rugzak met deze pouches op zijn MOLLE-plekken. */
+    private static ItemStack packWith(BackpackItem.Size size, ItemStack... pouches) {
+        ItemStack pack = pack(size);
+        BackpackItem.setMolle(pack, List.of(pouches));
+        return pack;
+    }
+
+    /**
+     * Een pouch hang je aan de rugzak in zijn scherm: shift-klik zet hem op een vrije MOLLE-plek, met wat erin zat. Een
+     * volle pouch mag niet in de rugzak zelf (wel aan de buitenkant); een gewoon item niet op een MOLLE-plek.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "backpacks")
+    public static void molle_pouch_hangs_on_the_pack(GameTestHelper helper) {
+        check(!Gear.curios(), "Deze test is voor zonder Curios");
+        ServerPlayer player = player(helper, "molle-hanger", new BlockPos(3, 2, 3));
+        check(Gear.setBack(player, pack(BackpackItem.Size.PATROL)), "De rugzak ging niet op je rug");
+        ItemStack utility = pouch(com.senne.imttech.backpack.MolleItem.Kind.UTILITY, new ItemStack(Items.TORCH, 16), new ItemStack(Items.SHEARS));
+        player.getInventory().setItem(4, utility);
+        check(BackpackZip.open(player, BackpackPlace.worn(player)), "De rugzak ging niet open");
+        BackpackMenu menu = (BackpackMenu) player.containerMenu;
+        check(!menu.getSlot(0).mayPlace(utility), "Een volle utility pouch past in de rugzak zelf");
+        check(!menu.getSlot(menu.size().slots()).mayPlace(new ItemStack(Items.TORCH)), "Een fakkel past op een MOLLE-plek");
+        menu.quickMoveStack(player, menu.inventoryStart() + 27 + 4);
+        check(player.getInventory().getItem(4).isEmpty(), "Shift-klik hing de pouch niet aan de rugzak");
+        List<ItemStack> molle = BackpackItem.molle(Gear.back(player));
+        check(com.senne.imttech.backpack.MolleItem.kindOf(molle.get(0)) == com.senne.imttech.backpack.MolleItem.Kind.UTILITY,
+                "De utility pouch hangt niet op de eerste MOLLE-plek");
+        check(com.senne.imttech.backpack.MolleItem.contents(molle.get(0)).get(1).is(Items.SHEARS), "Wat in de pouch zat is weg");
+        player.closeContainer();
+        helper.succeed();
+    }
+
+    /**
+     * Een pouch op je rug open je zonder rits (uit het wiel): het scherm staat meteen open, en wat je erin legt zit in de
+     * pouch op je rugzak.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "backpacks")
+    public static void molle_pouch_opens_without_zip(GameTestHelper helper) {
+        check(!Gear.curios(), "Deze test is voor zonder Curios");
+        ServerPlayer player = player(helper, "molle-opener", new BlockPos(3, 2, 3));
+        check(Gear.setBack(player, packWith(BackpackItem.Size.ASSAULT, ItemStack.EMPTY,
+                pouch(com.senne.imttech.backpack.MolleItem.Kind.UTILITY))), "De rugzak ging niet op je rug");
+        check(!com.senne.imttech.backpack.Molle.openWornPouch(player, 0), "Een lege MOLLE-plek ging open");
+        check(com.senne.imttech.backpack.Molle.openWornPouch(player, 1), "De utility pouch ging niet open");
+        check(player.containerMenu instanceof com.senne.imttech.backpack.MolleMenu, "Het scherm van de pouch staat niet meteen open");
+        check(!BackpackZip.busy(player), "Er liep toch een rits");
+        player.containerMenu.getSlot(2).set(new ItemStack(Items.COMPASS));
+        check(com.senne.imttech.backpack.MolleItem.contents(BackpackItem.molle(Gear.back(player)).get(1)).get(2).is(Items.COMPASS),
+                "Het kompas zit niet in de pouch op je rugzak");
+        player.closeContainer();
+        helper.succeed();
+    }
+
+    /**
+     * R zonder heup-pouch: het magazijn komt uit de MOLLE-magazijnpouch (het rijtje begint dan bij de MOLLE-pouch), en het
+     * oude magazijn komt op zijn plek. Uitwerpen zonder kiezen: in een vrij vakje van de MOLLE-pouch.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "backpacks")
+    public static void molle_mag_pouch_feeds_reload(GameTestHelper helper) {
+        check(!Gear.curios(), "Deze test is voor zonder Curios");
+        float jam = ImtConfig.Guns.JAM_CHANCE;
+        float misfire = ImtConfig.Guns.MISFIRE_CHANCE;
+        ImtConfig.Guns.JAM_CHANCE = 0;
+        ImtConfig.Guns.MISFIRE_CHANCE = 0;
+        try {
+            ServerPlayer player = player(helper, "molle-reloader", new BlockPos(3, 2, 3));
+            ItemStack gun = com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.GLOCK_19,
+                    com.senne.imttech.guns.GunMaterial.STEEL);
+            com.senne.imttech.guns.FirearmItem.setMagazine(gun, com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.GLOCK_19, 2));
+            player.setItemInHand(InteractionHand.MAIN_HAND, gun);
+            check(Gear.setBack(player, packWith(BackpackItem.Size.ASSAULT, pouch(com.senne.imttech.backpack.MolleItem.Kind.MAG,
+                    com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.GLOCK_19, 15)))), "De rugzak ging niet op je rug");
+            check(com.senne.imttech.backpack.Molle.magazines(player).size() == 3, "Het rijtje magazijnen is niet de MOLLE-pouch (3 vakjes)");
+            check(Gear.reloadFromPouch(player, 0), "Herladen uit de MOLLE-pouch begon niet");
+            com.senne.imttech.guns.Firearms.finishNow(player);
+            check(com.senne.imttech.guns.FirearmItem.roundsInMagazine(player.getMainHandItem()) == 15,
+                    "Het magazijn uit de MOLLE-pouch zit niet in het pistool");
+            List<ItemStack> inside = com.senne.imttech.backpack.MolleItem.contents(BackpackItem.molle(Gear.back(player)).getFirst());
+            check(com.senne.imttech.guns.MagazineItem.rounds(inside.getFirst()) == 2, "Het oude magazijn (2) kwam niet in de MOLLE-pouch");
+            check(com.senne.imttech.guns.Firearms.request(player, com.senne.imttech.guns.Firearms.ActionKind.EJECT_MAG, 0), "Uitwerpen begon niet");
+            com.senne.imttech.guns.Firearms.finishNow(player);
+            inside = com.senne.imttech.backpack.MolleItem.contents(BackpackItem.molle(Gear.back(player)).getFirst());
+            check(com.senne.imttech.guns.MagazineItem.rounds(inside.get(1)) == 15, "Het uitgeworpen magazijn kwam niet in de MOLLE-pouch");
+        } finally {
+            ImtConfig.Guns.JAM_CHANCE = jam;
+            ImtConfig.Guns.MISFIRE_CHANCE = misfire;
+        }
+        helper.succeed();
+    }
+
+    /** Zonder granaatpouch: trekken uit de MOLLE-granaatpouch, en na het gooien komt de volgende vanzelf in je hand. */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "backpacks")
+    public static void molle_grenade_pouch_draws_and_feeds(GameTestHelper helper) {
+        check(!Gear.curios(), "Deze test is voor zonder Curios");
+        ServerPlayer player = player(helper, "molle-thrower", new BlockPos(3, 2, 3));
+        check(Gear.setBack(player, packWith(BackpackItem.Size.ASSAULT, pouch(com.senne.imttech.backpack.MolleItem.Kind.GRENADE,
+                new ItemStack(ModItems.EMP_GRENADE.get()), new ItemStack(ModItems.EMP_GRENADE.get())))), "De rugzak ging niet op je rug");
+        check(Gear.drawGrenade(player, com.senne.imttech.weapons.GrenadeItem.Kind.EMP.ordinal()), "Trekken uit de MOLLE-granaatpouch lukte niet");
+        check(player.getMainHandItem().is(ModItems.EMP_GRENADE.get()), "De granaat kwam niet in je hand");
+        ModItems.EMP_GRENADE.get().use(helper.getLevel(), player, InteractionHand.MAIN_HAND);
+        check(player.getMainHandItem().is(ModItems.EMP_GRENADE.get()), "De volgende granaat kwam niet uit de MOLLE-pouch");
+        check(com.senne.imttech.backpack.MolleItem.filled(BackpackItem.molle(Gear.back(player)).getFirst()) == 0,
+                "De MOLLE-granaatpouch hoort nu leeg te zijn");
+        helper.succeed();
+    }
+
+    /** De dump pouch raapt de hulzen rond je voeten op (en niet die verder weg). */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "backpacks")
+    public static void dump_pouch_picks_up_casings(GameTestHelper helper) {
+        check(!Gear.curios(), "Deze test is voor zonder Curios");
+        ServerPlayer player = player(helper, "molle-dumper", new BlockPos(3, 2, 3));
+        check(Gear.setBack(player, packWith(BackpackItem.Size.ASSAULT, pouch(com.senne.imttech.backpack.MolleItem.Kind.DUMP))),
+                "De rugzak ging niet op je rug");
+        List<com.senne.imttech.guns.CasingEntity> near = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            com.senne.imttech.guns.CasingEntity casing = new com.senne.imttech.guns.CasingEntity(
+                    com.senne.imttech.registry.ModEntities.CASING.get(), helper.getLevel());
+            casing.setPos(player.getX() + 0.6 + i * 0.3, player.getY() + 0.1, player.getZ() + 0.4);
+            helper.getLevel().addFreshEntity(casing);
+            near.add(casing);
+        }
+        com.senne.imttech.guns.CasingEntity far = new com.senne.imttech.guns.CasingEntity(
+                com.senne.imttech.registry.ModEntities.CASING.get(), helper.getLevel());
+        far.setPos(player.getX() + 9, player.getY() + 0.1, player.getZ());
+        helper.getLevel().addFreshEntity(far);
+        helper.runAfterDelay(10, () -> {
+            check(near.stream().allMatch(net.minecraft.world.entity.Entity::isRemoved), "De hulzen bij je voeten liggen er nog");
+            check(!far.isRemoved(), "Een huls 9 blokken verder werd ook opgeraapt");
+            ItemStack dump = BackpackItem.molle(Gear.back(player)).getFirst();
+            int casings = 0;
+            for (ItemStack stack : com.senne.imttech.backpack.MolleItem.contents(dump)) {
+                if (stack.is(ModItems.CASING_9MM.get())) {
+                    casings += stack.getCount();
+                }
+            }
+            check(casings == 3, "De dump pouch heeft " + casings + " hulzen, niet 3");
+            far.discard();
+            helper.succeed();
+        });
+    }
+
+    /** De IFAK: een gouden appel uit het wiel geneest meteen (absorptie), en daarna even wachten. */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "backpacks")
+    public static void ifak_heals_and_then_waits(GameTestHelper helper) {
+        check(!Gear.curios(), "Deze test is voor zonder Curios");
+        ServerPlayer player = player(helper, "molle-medic", new BlockPos(3, 2, 3));
+        player.setHealth(8);
+        check(Gear.setBack(player, packWith(BackpackItem.Size.ASSAULT, ItemStack.EMPTY,
+                pouch(com.senne.imttech.backpack.MolleItem.Kind.IFAK, new ItemStack(Items.GOLDEN_APPLE, 2)))), "De rugzak ging niet op je rug");
+        check(com.senne.imttech.backpack.Molle.useIfak(player, 1, 0), "De IFAK werd niet gebruikt");
+        check(player.hasEffect(net.minecraft.world.effect.MobEffects.ABSORPTION)
+                || player.hasEffect(net.minecraft.world.effect.MobEffects.REGENERATION), "De gouden appel gaf geen effect");
+        ItemStack ifak = BackpackItem.molle(Gear.back(player)).get(1);
+        check(com.senne.imttech.backpack.MolleItem.contents(ifak).getFirst().getCount() == 1, "Er ging niet precies 1 appel uit de IFAK");
+        check(!com.senne.imttech.backpack.Molle.useIfak(player, 1, 0), "Meteen nog eens de IFAK gebruiken lukte (er hoort even wachten)");
+        check(!com.senne.imttech.backpack.MolleItem.Kind.IFAK.accepts(new ItemStack(Items.BREAD)), "Brood past in een IFAK");
+        helper.succeed();
     }
 }

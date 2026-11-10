@@ -380,7 +380,7 @@ public final class LaserGuns {
             return false;
         }
         float current = LaserGunItem.cell(gun);
-        List<ItemStack> contents = Gear.contents(player, GearItem.Kind.MAG_POUCH);
+        List<ItemStack> contents = com.senne.imttech.backpack.Molle.magazines(player);
         if (pouch >= contents.size() || !contents.get(pouch).is(ModItems.ENERGY_CELL.get())
                 || EnergyCellItem.charge(contents.get(pouch)) < Math.max(0.001f, current + 0.001f)) {
             tell(player, Component.translatable("gear.imttech.no_cell_there"));
@@ -530,14 +530,14 @@ public final class LaserGuns {
             }
             return;
         }
-        List<ItemStack> contents = Gear.contents(player, GearItem.Kind.MAG_POUCH);
+        List<ItemStack> contents = com.senne.imttech.backpack.Molle.magazines(player);
         if (pouch >= contents.size() || !contents.get(pouch).is(ModItems.ENERGY_CELL.get())) {
             ModNetwork.sendTo(player, new GunReloadPayload(false, -1));
             return;
         }
         float fresh = EnergyCellItem.charge(contents.get(pouch));
         contents.set(pouch, old >= 0 ? EnergyCellItem.withCharge(old) : ItemStack.EMPTY);
-        Gear.setContents(player, GearItem.Kind.MAG_POUCH, contents);
+        com.senne.imttech.backpack.Molle.setMagazines(player, contents);
         LaserGunItem.setCell(gun, fresh);
         player.serverLevel().playSound(player, player.getX(), player.getEyeY(), player.getZ(),
                 ModSounds.LASER_GUN_CELL_IN.get(), SoundSource.PLAYERS, 0.8f, 1.0f);

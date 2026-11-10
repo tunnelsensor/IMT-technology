@@ -125,7 +125,7 @@ public final class GunHud implements LayeredDraw.Layer {
             }
         }
         // En de cellen in je magazijnpouch (hoofdstuk 55).
-        for (ItemStack stack : com.senne.imttech.guns.Gear.contents(player, com.senne.imttech.guns.GearItem.Kind.MAG_POUCH)) {
+        for (ItemStack stack : com.senne.imttech.backpack.Molle.magazines(player)) {
             if (stack.is(ModItems.ENERGY_CELL.get()) && EnergyCellItem.charge(stack) > 0.5f) {
                 cells++;
             }
