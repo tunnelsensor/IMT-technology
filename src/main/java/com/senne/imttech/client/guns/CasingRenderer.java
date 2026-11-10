@@ -15,8 +15,11 @@ import org.joml.Quaternionf;
  * Een lege huls (hoofdstuk 52): het messing buisje, tollend door de lucht en daarna op zijn kant op de grond.
  */
 public class CasingRenderer extends EntityRenderer<CasingEntity> {
-    /** Zo groot is de huls in de wereld (het model is 2,5 pixel lang: een echte huls is 19 mm). */
-    private static final float SCALE = 0.5f;
+    /**
+     * Zo groot is de huls in de wereld. Sinds hoofdstuk 74 is het model op ware grootte naast het pistool (1,5 pixel
+     * lang, 19 mm); 0,85 houdt hem op de grond even groot als vroeger, zodat je hem nog vindt om op te rapen.
+     */
+    private static final float SCALE = 0.85f;
 
     public CasingRenderer(EntityRendererProvider.Context context) {
         super(context);

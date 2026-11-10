@@ -1,147 +1,14 @@
 {
- "gui_light": "front",
+ "loader": "neoforge:obj",
+ "model": "imttech:models/firearm/glock_19/bullet.obj",
+ "automatic_culling": false,
+ "flip_v": false,
+ "emissive_ambient": true,
  "textures": {
-  "0": "imttech:item/firearms",
-  "particle": "imttech:item/firearms"
+  "mag": "imttech:item/glock_19/magazine",
+  "particle": "imttech:item/glock_19/magazine"
  },
- "elements": [
-  {
-   "from": [
-    7.55,
-    7.4,
-    7.55
-   ],
-   "to": [
-    8.45,
-    8.5,
-    8.45
-   ],
-   "faces": {
-    "north": {
-     "uv": [
-      2.08,
-      2.08,
-      3.92,
-      3.92
-     ],
-     "texture": "#0"
-    },
-    "south": {
-     "uv": [
-      2.08,
-      2.08,
-      3.92,
-      3.92
-     ],
-     "texture": "#0"
-    },
-    "east": {
-     "uv": [
-      2.08,
-      2.08,
-      3.92,
-      3.92
-     ],
-     "texture": "#0"
-    },
-    "west": {
-     "uv": [
-      2.08,
-      2.08,
-      3.92,
-      3.92
-     ],
-     "texture": "#0"
-    },
-    "up": {
-     "uv": [
-      2.08,
-      2.08,
-      3.92,
-      3.92
-     ],
-     "texture": "#0"
-    },
-    "down": {
-     "uv": [
-      4.08,
-      2.08,
-      5.92,
-      3.92
-     ],
-     "texture": "#0"
-    }
-   }
-  },
-  {
-   "from": [
-    7.75,
-    8.5,
-    7.75
-   ],
-   "to": [
-    8.25,
-    8.95,
-    8.25
-   ],
-   "faces": {
-    "north": {
-     "uv": [
-      2.08,
-      2.08,
-      3.92,
-      3.92
-     ],
-     "texture": "#0"
-    },
-    "south": {
-     "uv": [
-      2.08,
-      2.08,
-      3.92,
-      3.92
-     ],
-     "texture": "#0"
-    },
-    "east": {
-     "uv": [
-      2.08,
-      2.08,
-      3.92,
-      3.92
-     ],
-     "texture": "#0"
-    },
-    "west": {
-     "uv": [
-      2.08,
-      2.08,
-      3.92,
-      3.92
-     ],
-     "texture": "#0"
-    },
-    "up": {
-     "uv": [
-      2.08,
-      2.08,
-      3.92,
-      3.92
-     ],
-     "texture": "#0"
-    },
-    "down": {
-     "uv": [
-      2.08,
-      2.08,
-      3.92,
-      3.92
-     ],
-     "texture": "#0"
-    }
-   }
-  }
- ],
+ "gui_light": "front",
  "display": {
   "gui": {
    "rotation": [
@@ -151,13 +18,13 @@
    ],
    "translation": [
     0.0,
-    -0.374,
-    0.055
+    0.128,
+    0.501
    ],
    "scale": [
-    3.2,
-    3.2,
-    3.2
+    8.0,
+    8.0,
+    8.0
    ]
   },
   "ground": {
@@ -168,7 +35,7 @@
    ],
    "translation": [
     0.0,
-    1.913,
+    1.978,
     0.0
    ],
    "scale": [
@@ -185,13 +52,13 @@
    ],
    "translation": [
     0.0,
-    -0.374,
-    0.055
+    0.128,
+    0.501
    ],
    "scale": [
-    3.2,
-    3.2,
-    3.2
+    8.0,
+    8.0,
+    8.0
    ]
   },
   "head": {
@@ -219,7 +86,7 @@
    ],
    "translation": [
     0.0,
-    -0.079,
+    -0.02,
     0.0
    ],
    "scale": [
@@ -236,7 +103,7 @@
    ],
    "translation": [
     0.0,
-    -0.079,
+    -0.02,
     0.0
    ],
    "scale": [
@@ -253,7 +120,7 @@
    ],
    "translation": [
     0.0,
-    -0.079,
+    -0.02,
     0.0
    ],
    "scale": [
@@ -270,7 +137,7 @@
    ],
    "translation": [
     0.0,
-    -0.079,
+    -0.02,
     0.0
    ],
    "scale": [

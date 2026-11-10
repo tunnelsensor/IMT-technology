@@ -3796,6 +3796,42 @@ final class ShowcaseFeatures {
                             player.getBoundingBox().inflate(12)).forEach(net.minecraft.world.entity.Entity::discard);
                     player.getInventory().clearContent();
                 }));
+        // ---------------------------------------------------------------- De Glock in de stijl van TACZ (hoofdstuk 74)
+        BlockPos range = ShowcaseScene.WEAPONS;
+        Vec3 aimFrom = new Vec3(range.getX() + 0.5, range.getY() + 1, range.getZ() + 0.5);
+        add("Glock 19 in the style of TACZ", "Hoofdstuk 74. De Glock 19 is een echt 3D-model (nagemeten van een foto van een "
+                + "echte Glock 19 Gen 3) met echte geluiden. Eerst van dichtbij in je hand: links GLOCK 19 / AUSTRIA 9x19 op de "
+                + "slede, de groeven, de keep met de witte U. Dan H: hij draait en je ziet de rechterkant (de uitwerpopening met "
+                + "het blok van de loop, MADE IN AUSTRIA) en de bovenkant. Dan richt je (het witte stipje van de korrel staat "
+                + "in de U) en schiet je drie keer: elk schot is een van drie varianten, de slede slaat terug en de hulzen "
+                + "stuiteren. Dan R: het magazijn valt eruit. Je pakt het magazijn met 4 patronen (een patroon bovenin) en dan "
+                + "het lege (de opvolger bovenin, geen patroon). Tot slot de Glock in derde persoon.",
+                aimFrom, 90, 4, s -> s
+                .onServer(0, ShowcaseScene::buildWeapons)
+                .onServer(0, ShowcaseFeatures::giveGlock)
+                .stand(0, aimFrom.x, aimFrom.y, aimFrom.z, 90, 3)
+                .step(0, () -> hotbar(0))
+                .pause(60)
+                .step(0, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_INSPECT.getKey()))
+                .pause(80)
+                .key(0, () -> Minecraft.getInstance().options.keyUse, true)
+                .pause(25)
+                .key(0, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
+                .key(14, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
+                .key(14, () -> Minecraft.getInstance().options.keyAttack, true).key(2, () -> Minecraft.getInstance().options.keyAttack, false)
+                .key(20, () -> Minecraft.getInstance().options.keyUse, false)
+                .pause(20)
+                .step(0, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()))
+                .pause(40)
+                .step(0, () -> hotbar(1))
+                .pause(50)
+                .step(0, () -> hotbar(3))
+                .pause(50)
+                .step(0, () -> hotbar(0))
+                .camera(10, CameraType.THIRD_PERSON_FRONT)
+                .pause(60)
+                .camera(0, CameraType.FIRST_PERSON)
+                .onServer(0, player -> player.getInventory().clearContent()));
     }
 
     /** Hoofdstuk 72, stap 4: shift-klik op dit vakje van het open scherm (een lichaam doorzoeken), zoals met je muis. */

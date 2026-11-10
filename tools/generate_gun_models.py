@@ -3,23 +3,23 @@ Maakt de 3D-modellen en plaatjes van de vuurwapens (hoofdstuk 52): de Glock 19 e
 materialen), het magazijn, de 9mm-patroon, de huls en de kogelpunt, de holster en de twee pouches, de staven en
 poeders van staal en titanium en de polymeerkorrels, en de twee blokken (de Gunsmith Table en de Reloading Bench).
 
-Hoe het werkt: precies zoals tools/generate_weapon_models.py (de lasergeweren). Elk model is een lijstje doosjes in
-pixels (16 = één blok), elk doosje krijgt een MATERIAAL uit één plaatje van 128 x 128 (textures/item/firearms.png).
-Nieuw hier: een doosje kan per kant een ander materiaal krijgen (faces=...), bijvoorbeeld de voorkant van de slede met
-de twee gaten (de loop en de veerstang).
+De holster, de pouches, de staven en de blokken zijn json-modellen: een lijstje doosjes in pixels (16 = één blok), elk
+doosje krijgt een MATERIAAL uit één plaatje van 128 x 128 (textures/item/firearms.png), zoals
+tools/generate_weapon_models.py (de lasergeweren).
 
-De Glock 19 (jouw keuze: de Umarex Glock 19 van airsoftdoctor.be, een zwarte Gen 3): een vierkante slede met
-schuine groeven achteraan, de uitwerpopening rechts, een wit stipje op de korrel en een witte U op de keep, een
-polymeerframe met een rail onder de loop, een trekkerbeugel met vingersteun, en een greep met vingergroeven. De greep
-staat 22,5 graden schuin (een echte Glock 22). De loop wijst naar -z (het noorden), de greep naar +z. De loop van de
-Glock ligt op x = 8, rond y = 11,7.
+De Glock 19, zijn magazijn en de munitie zijn sinds hoofdstuk 74 een echt 3D-model in de stijl van TACZ: OBJ-bestanden
+met afgeronde randen, een ronde loop, een greep met vingergroeven en een texture met leesbare opschriften. Dat model
+zelf (de vormen, de maten van een foto van een echte Glock 19 Gen 3, de kleuren) staat in tools/glock19_model.py, de
+bouwdoos in tools/gunmesh.py; met tools/preview_obj.py bekijk je het zonder het spel te starten. Dit script schrijft de
+json-bestandjes die Minecraft ervan inlaadt.
 
-Een onderdeel bestaat per materiaal (polymeer, staal, titanium): models/firearm/glock_19/<onderdeel>_<materiaal>.json.
-In je eigen beeld en op de Gunsmith Table tekent de mod ze los (zie client/guns/FirearmRenderer en GunsmithScreen);
-voor je inventaris, je hand in derde persoon en op de grond is er het hele pistool in één bestand (stalen onderdelen,
-models/item/glock_19.json). De losse onderdelen als item (models/item/gun_slide.json enz.) kiezen hun materiaal met
-een "override" (zie client/guns/FirearmModels.registerProperties). Hoe zo een onderdeel in zijn vakje staat rekent
-tools/model_display.py uit (hoofdstuk 59); met tools/preview_item_models.py bekijk je dat zonder het spel te starten.
+Een onderdeel bestaat per materiaal (polymeer, staal, titanium): models/firearm/glock_19/<onderdeel>_<materiaal>.json
+(hetzelfde OBJ-bestand, een ander plaatje). In je eigen beeld en op de Gunsmith Table tekent de mod ze los (zie
+client/guns/FirearmRenderer en GunsmithScreen); voor je inventaris, je hand in derde persoon en op de grond is er het
+hele pistool in één bestand (models/item/glock_19.json: polymeer frame, stalen slede, vol magazijn). De losse
+onderdelen als item (models/item/gun_slide.json enz.) kiezen hun materiaal met een "override" (zie
+client/guns/FirearmModels.registerProperties), het magazijn kiest zo zijn lege model. Hoe zo een onderdeel in zijn
+vakje staat rekent tools/model_display.py uit (hoofdstuk 59).
 
 Draaien (vanuit de hoofdmap):  python tools/generate_gun_models.py
 Het script is eigenaar van alles wat het schrijft; een volledige run is veilig.
@@ -31,6 +31,8 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
+import glock19_model as glock
+import gunmesh as gm
 import model_display as md
 
 ROOT = Path(__file__).resolve().parent.parent / "src" / "main" / "resources"
@@ -261,8 +263,12 @@ def display(gui_scale, gui_translation, hand_scale, ground_scale, gui_rotation=(
     }
 
 
-def gun_display(gui_scale, gui_translation, ground_scale, grip):
-    """De houdingen van een pistool: zoals de lasergeweren (zie generate_weapon_models.gun_display)."""
+def gun_display(points, grip, gui_rotation=(4, -90, 0), ground_scale=0.6):
+    """
+    De houdingen van het hele pistool. In je inventaris de rechterkant (de loop naar rechts, zoals op de foto), een
+    tikje van boven; in je hand (derde persoon) met de greep in je hand, zoals de lasergeweren
+    (generate_weapon_models.gun_display).
+    """
     hand = 0.75
     turn = -17
     a = math.radians(turn)
@@ -270,7 +276,12 @@ def gun_display(gui_scale, gui_translation, ground_scale, grip):
     rx = gx * math.cos(a) + gz * math.sin(a)
     rz = -gx * math.sin(a) + gz * math.cos(a)
     third = ((0, turn, 0), (round(-rx, 2), round(-gy, 2), round(-rz, 2)))
-    return display(gui_scale, gui_translation, hand, ground_scale, gui_rotation=(0, 90, 0), third=third)
+    elements = glock.points_as_elements(points)
+    gui_scale, shift = md.fit(elements, gui_rotation, size=15.6, max_scale=1.2)
+    disp = display(gui_scale, shift, hand, ground_scale, gui_rotation=gui_rotation, third=third)
+    disp["fixed"] = {"rotation": [0, -90, 0], "translation": md.fit(elements, (0, -90, 0), scale=gui_scale)[1],
+                     "scale": [gui_scale] * 3}
+    return disp
 
 
 def centred_display(elements, gui_rotation=md.PART_VIEW, scale=None, size=14.0, max_scale=4.5, hand_scale=0.6,
@@ -292,213 +303,101 @@ def centred_display(elements, gui_rotation=md.PART_VIEW, scale=None, size=14.0, 
     return disp
 
 
-# ---------------------------------------------------------------- De Glock 19
+# ---------------------------------------------------------------- De Glock 19 (hoofdstuk 74: een echt 3D-model)
 
-GRIP = ("x", 22.5, (8, 9.3, 11.0))  # de greep leunt 22,5 graden naar achteren, om dit punt (bovenaan de greep)
-
-PART_MATERIALS = {
-    "frame": {"polymer": "polymer", "steel": "frame_steel", "titanium": "frame_titanium"},
-    "slide": {"steel": "slide_black", "titanium": "titanium"},
-    "barrel": {"steel": "steel", "titanium": "titanium"},
-    "springs": {"steel": "spring", "titanium": "spring_titanium"},
-    "striker": {"steel": "steel", "titanium": "titanium"},
-    "trigger": {"polymer": "polymer", "steel": "steel", "titanium": "titanium"},
-}
+# Het model zelf (de vormen, de maten van de foto, de texture) staat in tools/glock19_model.py; hier schrijven we de
+# json-bestandjes die Minecraft ervan inlaadt.
+GLOCK_TEX = "imttech:item/glock_19/"
+GLOCK_GRIP = (8, 7.8, 11.4)  # waar je hand de greep vasthoudt (derde persoon)
 
 
-def slide(m):
-    """De slede: vierkant, met de uitwerpopening rechts, groeven achteraan, korrel en keep, en de voorkant met gaten."""
-    front = "titanium_front" if m == "titanium" else "slide_front"
-    el = [
-        box((6.85, 10.55, 0.7), (9.15, 12.95, 14.45), m, faces={"north": front}),
-        box((7.1, 12.95, 0.9), (8.9, 13.1, 14.3), m),
-        # Groeven achteraan, aan beide kanten.
-        *[e for z in (11.3, 11.85, 12.4, 12.95, 13.5) for e in both(box((6.8, 10.9, z), (6.86, 12.6, z + 0.22), "port_dark"))],
-        # De uitwerpopening (rechts, bovenaan) met daarin de glimmende loop-hood (zie barrel()).
-        box((8.9, 11.9, 2.7), (9.17, 12.9, 5.3), "port_dark"),
-        box((8.0, 12.9, 2.7), (9.17, 12.97, 5.3), "port_dark"),
-        # De uitwerper.
-        box((9.15, 11.55, 5.4), (9.24, 12.05, 6.6), m),
-        # Korrel met een wit stipje.
-        box((7.75, 13.1, 1.3), (8.25, 13.7, 1.75), m),
-        box((7.85, 13.28, 1.24), (8.15, 13.56, 1.3), "white_dot", glow=True),
-        # Keep: twee palen op een voetje, met een witte U achterop.
-        box((7.0, 13.1, 13.0), (9.0, 13.32, 13.6), m),
-        box((7.0, 13.3, 13.0), (7.55, 13.75, 13.6), m),
-        box((8.45, 13.3, 13.0), (9.0, 13.75, 13.6), m),
-        box((7.06, 13.36, 13.6), (7.5, 13.7, 13.66), "white_dot", glow=True),
-        box((8.5, 13.36, 13.6), (8.94, 13.7, 13.66), "white_dot", glow=True),
-        box((7.06, 13.3, 13.6), (8.94, 13.4, 13.66), "white_dot", glow=True),
-        # Het afdekplaatje achteraan.
-        box((7.1, 10.7, 14.45), (8.9, 12.8, 14.55), "port_dark"),
-        # De opdruk links.
-        box((6.8, 11.3, 6.2), (6.85, 12.2, 10.4), "marking"),
-        # Hoofdstuk 54 (jouw notitie: "het 3D model is nog niet super mooi"): afgeschuinde bovenranden (platte plaatjes
-        # op 45 graden over de trap tussen de slede en het bovenplaatje), een afgeschuinde neus bovenaan vooraan, en de
-        # groef van de sledestop links.
-        *both(box((6.83, 12.98, 0.9), (7.13, 13.06, 14.3), m, rot=("z", 45, (6.98, 13.02, 8)))),
-        box((7.1, 12.9, 0.56), (8.9, 13.0, 0.86), m, rot=("x", 45, (8, 12.95, 0.71))),
-        box((6.8, 11.05, 8.7), (6.86, 11.35, 10.8), "port_dark"),
-    ]
-    return el
+def obj_model(obj, textures, display=None, overrides=None, gui_light="front"):
+    """
+    Een json dat een OBJ-model inlaadt met NeoForge's "obj"-lader. {textures}: de namen uit glock_19.mtl ("gun",
+    "polymer", "steel", "mag") en hun plaatje. Daarna gedraagt het zich als elk ander model (houdingen, overrides).
+    """
+    model = {"loader": "neoforge:obj", "model": f"imttech:models/firearm/glock_19/{obj}.obj",
+             "automatic_culling": False, "flip_v": False, "emissive_ambient": True,
+             "textures": dict(textures, particle=list(textures.values())[0])}
+    if gui_light:
+        model["gui_light"] = gui_light
+    if display:
+        model["display"] = display
+    if overrides:
+        model["overrides"] = overrides
+    return model
 
 
-def barrel(m):
-    """De loop: steekt een stukje uit de voorkant van de slede, en zijn hood glimt in de uitwerpopening."""
-    return [
-        box((7.55, 11.25, 0.3), (8.45, 12.2, 8.6), m),
-        box((7.6, 11.3, 8.6), (8.4, 12.15, 9.6), m),
-        box((9.17, 12.1, 3.0), (9.22, 12.8, 5.0), m),
-        # De monding: een donker gat vooraan (hoofdstuk 54).
-        box((7.72, 11.42, 0.26), (8.28, 12.03, 0.31), "port_dark"),
-    ]
+def euler_xyz(m):
+    """De hoeken (x, y, z) in graden waarmee Minecraft deze draaiing maakt (een houding draait Rx * Ry * Rz)."""
+    b = math.degrees(math.asin(max(-1.0, min(1.0, m[0][2]))))
+    a = math.degrees(math.atan2(-m[1][2], m[2][2]))
+    c = math.degrees(math.atan2(-m[0][1], m[0][0]))
+    return round(a, 2), round(b, 2), round(c, 2)
 
 
-def springs(m):
-    """De terugslagveer op zijn stang: onder de loop, de stang steekt uit het kleine gat vooraan."""
-    return [
-        box((7.75, 10.8, 0.45), (8.25, 11.2, 8.0), m),
-        box((7.6, 10.7, 0.9), (8.4, 11.3, 4.0), m),
-    ]
-
-
-def striker(m):
-    """De slagpin: in de slede, achter de kamer; zijn staartje steekt uit het afdekplaatje."""
-    return [
-        box((7.75, 11.4, 9.7), (8.25, 11.9, 14.2), m),
-        box((7.85, 11.45, 14.55), (8.15, 11.85, 14.7), "port_dark"),
-    ]
-
-
-def frame(m, material_name):
-    """Het frame: de stofkap met de rail, het stuk boven de trekker, de trekkerbeugel en de schuine greep."""
-    grip_side = "polymer_grip" if material_name == "polymer" else m
-    el = [
-        # Stofkap onder de slede, met de rail (drie ribbels en twee randjes).
-        box((6.95, 9.55, 0.95), (9.05, 10.55, 8.3), m),
-        *[box((7.2, 9.2, z), (8.8, 9.55, z + 0.5), m) for z in (2.2, 3.4, 4.6)],
-        *both(box((6.95, 9.0, 1.6), (7.25, 9.55, 5.6), m)),
-        # Boven de trekker, tot de achterkant.
-        box((6.95, 9.3, 8.3), (9.05, 10.55, 14.2), m),
-        # Trekkerbeugel: onderste balk, voorste paal, en de vingersteun vooraan.
-        box((7.55, 7.1, 6.1), (8.45, 7.7, 10.4), m),
-        box((7.55, 7.1, 6.1), (8.45, 9.55, 6.7), m),
-        box((7.5, 7.0, 5.7), (8.5, 7.5, 6.1), m),
-        # De greep, schuin naar achteren.
-        box((6.95, 3.2, 10.5), (9.05, 9.3, 13.4), m, rot=GRIP),
-        *[box((7.1, y, 10.35), (8.9, y + 0.8, 10.5), m, rot=GRIP) for y in (4.1, 5.5, 6.9)],
-        *both(box((6.9, 3.7, 10.9), (6.95, 8.4, 13.1), grip_side, rot=GRIP)),
-        box((6.95, 3.0, 10.5), (9.05, 3.2, 13.4), "port_dark", rot=GRIP),
-        # Sledestop (links) en de demontagehendel (beide kanten).
-        box((6.85, 10.6, 8.9), (6.9, 10.95, 10.6), "port_dark"),
-        *both(box((6.9, 9.7, 6.5), (6.95, 9.95, 8.0), "port_dark")),
-        # Hoofdstuk 54: de magazijnknop (links), de tang achter de greep (de "beavertail"), de lip onderaan de greep (de
-        # magazijnmond), de pennen van het sluitblok (beide kanten), en een schuin hoekje vooraan onder de trekkerbeugel.
-        box((6.82, 8.15, 10.3), (6.95, 8.75, 10.9), "port_dark"),
-        box((7.1, 8.3, 13.0), (8.9, 9.3, 14.4), m),
-        box((6.8, 3.1, 10.35), (9.2, 3.5, 13.55), m, rot=GRIP),
-        *both(box((6.9, 9.75, 9.25), (6.94, 10.05, 9.55), "port_dark")),
-        *both(box((6.9, 9.75, 12.7), (6.94, 10.05, 13.0), "port_dark")),
-        box((7.55, 6.95, 5.95), (8.45, 7.25, 6.45), m, rot=("x", 45, (8, 7.1, 6.2))),
-    ]
-    return el
-
-
-def trigger(m):
-    """De trekker met het veiligheidslipje erin."""
-    return [
-        box((7.7, 7.8, 8.6), (8.3, 9.3, 9.05), m),
-        box((7.9, 8.0, 8.5), (8.1, 8.9, 8.6), "steel"),
-    ]
-
-
-def magazine():
-    """Het magazijn: een polymeer doos in de greep, de bodemplaat die eronder uitsteekt, een patroon bovenin."""
-    return [
-        box((7.2, 3.25, 10.85), (8.8, 9.0, 13.05), "polymer", rot=GRIP),
-        box((6.85, 2.55, 10.4), (9.15, 3.25, 13.6), "polymer", rot=GRIP),
-        box((7.5, 9.0, 11.2), (8.5, 9.35, 12.6), "brass", rot=GRIP),
-        *[box((7.8, y, 13.05), (8.2, y + 0.35, 13.1), "brass", rot=GRIP) for y in (4.3, 5.4, 6.5, 7.6)],
-    ]
-
-
-PARTS = {"frame": frame, "slide": slide, "barrel": barrel, "springs": springs, "striker": striker, "trigger": trigger}
-
-
-def part_elements(part, material_name):
-    m = PART_MATERIALS[part][material_name]
-    if part == "frame":
-        return frame(m, material_name)
-    return PARTS[part](m)
-
-
-GLOCK_GRIP = (8, 6.2, 12.4)
+def magazine_display(points):
+    """
+    Het magazijn in je inventaris: rechtop (niet schuin zoals in de greep) en een beetje gedraaid, zodat je de getallen
+    achterop ziet.
+    """
+    view = gm.rot_x(10) @ gm.rot_y(-72) @ gm.rot_x(glock.GRIP_ANGLE)
+    rotation = euler_xyz(view)
+    return centred_display(glock.points_as_elements(points), gui_rotation=rotation, size=14.5, max_scale=2.2,
+                           hand_scale=0.55, ground_scale=0.45)
 
 
 def glock_19():
-    """Alle onderdelen per materiaal, het magazijn, en het hele pistool als item (in staal, met magazijn)."""
-    for part, materials_of in PART_MATERIALS.items():
-        for material_name in materials_of:
-            write(f"models/firearm/glock_19/{part}_{material_name}.json", part_model(part_elements(part, material_name)))
-    write("models/firearm/glock_19/magazine.json", part_model(magazine()))
-    whole = []
-    for part in PARTS:
-        whole += part_elements(part, "steel")
-    whole += magazine()
-    write("models/item/glock_19.json", item_model(whole, gun_display(1.0, (0, 0.5, 0), 0.6, GLOCK_GRIP)))
-    # Het magazijn als item: op zijn kant in je inventaris.
-    disp = centred_display(magazine(), gui_rotation=(0, 90, 0), scale=1.6)
-    write("models/item/glock_19_magazine.json", item_model(magazine(), disp))
+    """
+    De Glock 19: elk onderdeel als OBJ (models/firearm/glock_19/*.obj), drie plaatjes (polymeer, staal, titanium), het
+    magazijn (vol en leeg) en de munitie met hun eigen plaatje, en de json-bestandjes voor elk onderdeel per materiaal,
+    het hele pistool als item, het magazijn als item en de losse onderdelen als item.
+    """
+    parts, mags, ammo_meshes, gun_islands, mag_islands = glock.build()
+    glock.write_textures(ASSETS, gun_islands, mag_islands)
+    counts = glock.write_objs(ASSETS, parts, mags, ammo_meshes)
+    print("vlakken per model:", counts)
+    for part, materials_of in glock.PART_MATERIALS.items():
+        for material in materials_of:
+            write(f"models/firearm/glock_19/{part}_{material}.json",
+                  obj_model(part, {"gun": GLOCK_TEX + material}, gui_light=None))
+    for name in ("magazine", "magazine_empty"):
+        write(f"models/firearm/glock_19/{name}.json", obj_model(name, {"mag": GLOCK_TEX + "magazine"}, gui_light=None))
+    whole = [p for m in parts.values() for p in m.points()] + mags["magazine"].points()
+    write("models/item/glock_19.json", obj_model(
+        "whole", {"polymer": GLOCK_TEX + "polymer", "steel": GLOCK_TEX + "steel", "mag": GLOCK_TEX + "magazine"},
+        display=gun_display(whole, GLOCK_GRIP)))
+    mag_disp = magazine_display(mags["magazine"].points())
+    write("models/item/glock_19_magazine_empty.json",
+          obj_model("magazine_empty", {"mag": GLOCK_TEX + "magazine"}, display=mag_disp))
+    write("models/item/glock_19_magazine.json", obj_model(
+        "magazine", {"mag": GLOCK_TEX + "magazine"}, display=mag_disp,
+        overrides=[{"predicate": {"imttech:empty": 1}, "model": "imttech:item/glock_19_magazine_empty"}]))
     # De losse onderdelen als item, met een override per materiaal (0 = polymeer, 1 = staal, 2 = titanium): schuin
     # van rechtsboven (model_display.PART_VIEW) en zo groot als er in het vakje past (hoofdstuk 59).
-    for part, materials_of in PART_MATERIALS.items():
+    for part, materials_of in glock.PART_MATERIALS.items():
+        disp = centred_display(glock.points_as_elements(parts[part].points()))
         overrides = []
-        for index, material_name in enumerate(("polymer", "steel", "titanium")):
-            if material_name not in materials_of:
+        for index, material in enumerate(("polymer", "steel", "titanium")):
+            if material not in materials_of:
                 continue
-            elements = part_elements(part, material_name)
-            write(f"models/item/gun_{part}_{material_name}.json", item_model(elements, centred_display(elements)))
-            overrides.append({"predicate": {"imttech:material": index}, "model": f"imttech:item/gun_{part}_{material_name}"})
-        base = part_elements(part, "steel")
-        write(f"models/item/gun_{part}.json", item_model(base, centred_display(base), overrides))
-
-
-# ---------------------------------------------------------------- Munitie
-
-def round_9mm():
-    """Een 9mm-patroon: een messing huls met een koperen kogelpunt, rechtop."""
-    return [
-        box((7.3, 6.3, 7.3), (8.7, 6.55, 8.7), "brass"),
-        box((7.4, 6.55, 7.4), (8.6, 9.0, 8.6), "brass"),
-        box((7.55, 9.0, 7.55), (8.45, 9.9, 8.45), "copper"),
-        box((7.75, 9.9, 7.75), (8.25, 10.3, 8.25), "copper"),
-    ]
-
-
-def casing_9mm():
-    """Een lege huls: de messing buis, van boven open (donker)."""
-    return [
-        box((7.3, 6.3, 7.3), (8.7, 6.55, 8.7), "brass"),
-        box((7.4, 6.55, 7.4), (8.6, 9.0, 8.6), "brass", faces={"up": "port_dark"}),
-    ]
-
-
-def bullet_9mm():
-    """De kogelpunt alleen: koper met een loden voet."""
-    return [
-        box((7.55, 7.4, 7.55), (8.45, 8.5, 8.45), "copper", faces={"down": "lead"}),
-        box((7.75, 8.5, 7.75), (8.25, 8.95, 8.25), "copper"),
-    ]
-
-
-def ammo():
+            write(f"models/item/gun_{part}_{material}.json", obj_model(part, {"gun": GLOCK_TEX + material}, display=disp))
+            overrides.append({"predicate": {"imttech:material": index}, "model": f"imttech:item/gun_{part}_{material}"})
+        write(f"models/item/gun_{part}.json", obj_model(part, {"gun": GLOCK_TEX + "steel"}, display=disp,
+                                                       overrides=overrides))
+    # Munitie: de patroon, de huls en de kogel als item, en de losse modellen voor in je hand en op de grond
+    # (FirearmRenderer, CasingRenderer).
     small = dict(gui_rotation=(20, -35, 0), hand_scale=0.45, ground_scale=0.5)
-    write("models/item/round_9mm.json", item_model(round_9mm(), centred_display(round_9mm(), scale=2.6, **small)))
-    write("models/item/casing_9mm.json", item_model(casing_9mm(), centred_display(casing_9mm(), scale=2.6, **small)))
-    write("models/item/bullet_9mm.json", item_model(bullet_9mm(), centred_display(bullet_9mm(), scale=3.2, **small)))
-    # De huls op de grond (zie client/guns/CasingRenderer) gebruikt het losse model.
-    write("models/firearm/casing.json", part_model(casing_9mm()))
-    write("models/firearm/round.json", part_model(round_9mm()))
+    for item, obj, max_scale in (("round_9mm", "round", 5.5), ("casing_9mm", "casing", 6.5),
+                                 ("bullet_9mm", "bullet", 8.0)):
+        disp = centred_display(glock.points_as_elements(ammo_meshes[obj].points()), size=12.5, max_scale=max_scale,
+                               **small)
+        write(f"models/item/{item}.json", obj_model(obj, {"mag": GLOCK_TEX + "magazine"}, display=disp))
+    for obj in ("casing", "round"):
+        write(f"models/firearm/{obj}.json", obj_model(obj, {"mag": GLOCK_TEX + "magazine"}, gui_light=None))
+    # De maten voor FirearmRig (Java): de doos om elk onderdeel.
+    for name, (lo, hi) in glock.rig(parts, mags).items():
+        print(f"  {name:9s} van {[round(float(v), 2) for v in lo]} tot {[round(float(v), 2) for v in hi]}")
 
 
 # ---------------------------------------------------------------- Holster en pouches (hoofdstuk 52, stap 2)
@@ -816,7 +715,6 @@ def laser_workbench():
 def main():
     materials()
     glock_19()
-    ammo()
     gear()
     resources()
     gunsmith_table()

@@ -3,7 +3,6 @@ package com.senne.imttech.raven;
 import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.drone.DroneEntity;
 import com.senne.imttech.registry.ModItems;
-import com.senne.imttech.registry.ModSounds;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -506,7 +505,8 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
             Vec3 direction = com.senne.imttech.weapons.LaserGuns.scatter(look, Math.toRadians(ImtConfig.Raven.SPREAD), random);
             com.senne.imttech.guns.BulletEntity.shoot(level, this, com.senne.imttech.guns.FirearmType.GLOCK_19,
                     ImtConfig.Raven.LASER_DAMAGE, direction);
-            level.playSound(null, getX(), getEyeY(), getZ(), ModSounds.GLOCK_FIRE.get(), SoundSource.HOSTILE, 1.0f,
+            // Hoofdstuk 74: dichtbij het schot, verder weg het doffe schot van ver (zie Firearms.shotSound).
+            com.senne.imttech.guns.Firearms.shotSound(level, this, getX(), getEyeY(), getZ(), SoundSource.HOSTILE,
                     0.9f + random.nextFloat() * 0.1f);
             com.senne.imttech.guns.CasingEntity.eject(level, this);
             return;

@@ -1,0 +1,19 @@
+# De materialen van de Glock 19 (hoofdstuk 74). "#gun" enz. zijn namen uit de json ("textures"), zodat een
+# onderdeel per materiaal een ander plaatje kan krijgen. Ka 1 1 1 = gloeit (de witte vizierpunten).
+newmtl gun
+map_Kd #gun
+newmtl glow
+map_Kd #gun
+Ka 1 1 1
+newmtl polymer
+map_Kd #polymer
+newmtl polymer_glow
+map_Kd #polymer
+Ka 1 1 1
+newmtl steel
+map_Kd #steel
+newmtl steel_glow
+map_Kd #steel
+Ka 1 1 1
+newmtl mag
+map_Kd #mag

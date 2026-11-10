@@ -1947,6 +1947,16 @@ glas, redstone en Computer Chips (de sniper ook met een diamant en een verrekijk
 Jouw wens (hoofdstuk 52): echte, realistische vuurwapens, te beginnen met één pistool: de **Glock 19** (de zwarte Gen 3,
 zoals de Umarex van de airsoftwinkel). Alle getallen staan in `config/imttech.toml` onder `[guns]`.
 
+**Het model en de geluiden (hoofdstuk 74, in de stijl van TACZ).** De Glock is een echt 3D-model, nagemeten van een foto
+van een echte Glock 19 Gen 3: afgeronde randen, een ronde loop, de uitwerpopening met het blok van de loop erin, zeven
+groeven achteraan, vingergroeven en het korreltje op de greep, de rail met zijn gleuf, de slide stop, de slide lock, de
+pinnen en de magazijnknop, en opschriften die je kunt lezen (GLOCK 19 / AUSTRIA 9x19 links op de slede, MADE IN AUSTRIA
+rechts op het frame). Het magazijn heeft een stalen rand met lipjes, gaatjes met getallen achterop en een patroon
+bovenin; **een leeg magazijn ziet er leeg uit**. De patronen en hulzen zijn op ware grootte. De geluiden zijn opnieuw
+gemaakt: drie varianten van het schot, een slede die je hoort grijpen, schuren en naar voren slaan, een eigen geluid
+voor de slide stop, magazijn eruit en erin, en hulzen die stuiteren. Een schot hoor je tot 32 blokken zelf en tot 128
+blokken ver als een doffe knal met echo's.
+
 **Zes onderdelen, drie materialen.** Een Glock bestaat uit een **frame** (met de greep), een **slede**, een **loop**, de
 **veren** (de terugslagveer op zijn stang), een **slagpin** (een Glock heeft geen hamer) en een **trekker**. Elk
 onderdeel maak je aan de gewone werkbank van **polymeer** (alleen het frame en de trekker, zoals bij de echte Glock),
@@ -2540,8 +2550,11 @@ showcase en staat hij bij NIEUW.
   zonnepaneel en de warmtegenerator (een lijstje doosjes per model).
 - **Wapenmodellen**: `python tools/generate_weapon_models.py` (granaten, lasergeweren en hun onderdelen) en
   `python tools/generate_gun_models.py` (de Glock, munitie, holster, pouches, de banken). Hoe een los onderdeel in zijn
-  vakje staat rekent `tools/model_display.py` uit; `python tools/preview_item_models.py --out preview.png "gun_*"`
-  laat de iconen zien zonder het spel te starten.
+  vakje staat rekent `tools/model_display.py` uit; `python tools/preview_item_models.py --out preview.png "laser_*"`
+  laat de iconen zien zonder het spel te starten. De Glock, zijn magazijn en de munitie zijn sinds hoofdstuk 74
+  OBJ-modellen: het model zelf staat in `tools/glock19_model.py` (de maten van de foto, de vormen, de kleuren), de
+  bouwdoos in `tools/gunmesh.py`, en `python tools/preview_obj.py --out glock.png models/item/glock_19.json` tekent
+  het vanuit zes hoeken zonder het spel te starten (`--views left,top,fp`, of `--crop` om in te zoomen).
 - **De toren verbouwen**: `python tools/generate_structure.py`, of bouw hem in het spel met een
   structuurblok en sla hem op als `imttech:biebia_tower`.
 - **Het satellietwrak verbouwen**: `python tools/generate_crash_site.py` (of in het spel opslaan
@@ -2576,7 +2589,9 @@ showcase en staat hij bij NIEUW.
   (`publish/avatar-400.png`) opnieuw, met de bril uit de textures.
 - **Geluiden**: `python tools/generate_sounds.py` maakt de eigen geluiden (laser cannon,
   stuwraketten, rayshields) opnieuw. Eenmalig nodig: `pip install numpy scipy soundfile` (op deze
-  pc heeft `py -3.12` ze al: `py -3.12 tools/generate_sounds.py rayshield_hum`).
+  pc heeft `py -3.12` ze al: `py -3.12 tools/generate_sounds.py rayshield_hum`). De geluiden van de Glock (hoofdstuk 74)
+  zijn nagebouwd zoals ze in het echt ontstaan (tikken op metaal en polymeer, schuiven, galm) en vergeleken met die van
+  TACZ: `py -3.12 tools/generate_sounds.py glock_fire glock_fire_2 glock_fire_3 glock_fire_far glock_slide`.
 
 ---
 

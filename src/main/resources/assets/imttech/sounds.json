@@ -475,7 +475,25 @@
     "subtitle": "subtitles.imttech.glock.fire",
     "sounds": [
       {
-        "name": "imttech:glock_fire"
+        "name": "imttech:glock_fire",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "imttech:glock_fire_2",
+        "attenuation_distance": 32
+      },
+      {
+        "name": "imttech:glock_fire_3",
+        "attenuation_distance": 32
+      }
+    ]
+  },
+  "glock.fire_far": {
+    "subtitle": "subtitles.imttech.glock.fire_far",
+    "sounds": [
+      {
+        "name": "imttech:glock_fire_far",
+        "attenuation_distance": 128
       }
     ]
   },
@@ -492,6 +510,14 @@
     "sounds": [
       {
         "name": "imttech:glock_slide"
+      }
+    ]
+  },
+  "glock.slide_release": {
+    "subtitle": "subtitles.imttech.glock.slide_release",
+    "sounds": [
+      {
+        "name": "imttech:glock_slide_release"
       }
     ]
   },
@@ -532,6 +558,12 @@
     "sounds": [
       {
         "name": "imttech:casing_tink"
+      },
+      {
+        "name": "imttech:casing_tink_2"
+      },
+      {
+        "name": "imttech:casing_tink_3"
       }
     ]
   },

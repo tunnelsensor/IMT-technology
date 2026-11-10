@@ -974,86 +974,309 @@ def laser_gun_aim():
 
 
 
-# ---------------------------------------------------------------- De vuurwapens (hoofdstuk 52)
+# ---------------------------------------------------------------- De vuurwapens (hoofdstuk 52, opnieuw in hoofdstuk 74)
+#
+# Hoofdstuk 74 (jouw wens: "die stijl van realisme en ook de sounds wil ik", zoals TACZ). Echte opnames hebben we niet,
+# dus bouwen we de geluiden na zoals ze in het echt ontstaan. Wat ik van de TACZ-geluiden van hun Glock 17 heb gemeten
+# (alleen gemeten, niets gekopieerd): een schot is een cluster harde knallen in de eerste 80 ms over het hele spectrum
+# (veel laag-midden rond 150-500 Hz en scherp gesis boven 6 kHz), na 35 ms al 20 dB zachter, met daarna een lage galm van
+# een seconde; de klikken van het mechaniek zijn helder (vooral 2 tot 16 kHz) en heel kort (20 dB weg in 20 tot 40 ms).
+# De oude geluiden van hoofdstuk 52 zaten rond 1 tot 4 kHz en klonken daardoor dof.
+#
+# De bouwstenen:
+# - impact: een tik op metaal of polymeer (een ruisstootje van 1 ms dat een paar trillingen van het onderdeel aanslaat);
+# - scrape: schuiven (de slede, een magazijn in de greep): gefilterde ruis met kleine haakjes erin;
+# - room: galm (vroege echo's van de grond en een muur, en een staart waarin de hoge tonen eerst wegsterven);
+# - gunshot: een schot uit al die stukken.
+# Elk geluid heeft zijn eigen vaste "toeval" (seed), zodat het elke keer precies hetzelfde wordt, ook als je maar één
+# geluid opnieuw maakt.
+
+def highpass(sound, cutoff, order=2):
+    sos = signal.butter(order, cutoff, btype="highpass", fs=RATE, output="sos")
+    return signal.sosfilt(sos, sound)
+
+
+def impact(r, duration, modes, snap=1.0, snap_from=2500, snap_speed=1400, thud=0.0, thud_hz=500, thud_speed=70):
+    """
+    Een tik: een ruisstootje van een milliseconde (de "snap", alles boven snap_from Hz) dat een paar trillingen van het
+    onderdeel aanslaat. modes = [(frequentie in Hz, hoe snel hij wegsterft, sterkte)]: staal zingt lang en hoog,
+    polymeer kort en lager. thud: een doffe klap eronder (het lijf van het pistool, je hand).
+    """
+    n = int(RATE * duration)
+    t = np.arange(n) / RATE
+    burst = r.uniform(-1, 1, n) * np.exp(-t * snap_speed)
+    out = highpass(burst, snap_from) * snap
+    attack = 1 - np.exp(-t * 6000)
+    # Een echt stuk metaal heeft niet één zuivere toon: elke trilling krijgt twee buren die iets anders klinken en
+    # sneller wegsterven, en een beetje ruis op zijn sterkte. Anders klinkt een klik als een belletje.
+    shimmer = 1 + 0.35 * lowpass(r.uniform(-1, 1, n), 900)
+    for f, speed, amp in modes:
+        for k, (df, ds, da) in enumerate(((1.0, 1.6, 1.0), (r.uniform(1.04, 1.08), 2.6, 0.45),
+                                          (r.uniform(0.91, 0.95), 3.2, 0.35))):
+            g = f * df * r.uniform(0.97, 1.03)
+            out = out + amp * da * np.sin(2 * np.pi * g * t + r.uniform(0, 2 * np.pi)) * np.exp(-t * speed * ds) \
+                * attack * shimmer
+    if thud:
+        body = lowpass(r.uniform(-1, 1, n), thud_hz) * np.exp(-t * thud_speed)
+        out = out + body * thud * 2.5
+    return out
+
+
+def scrape(r, duration, low, high, ticks=350, grit=0.6, shape=None):
+    """
+    Schuiven: ruis door een bandfilter (low..high Hz), met kleine haakjes erin (het blijft even hangen en schiet dan
+    door: "stick-slip"), en een omhullende shape(0..1) (standaard zacht op en zacht af).
+    """
+    n = int(RATE * duration)
+    t = np.arange(n) / RATE
+    hiss = bandpass(r.uniform(-1, 1, n), low, high)
+    clicks = np.zeros(n)
+    count = int(r.poisson(ticks * duration))
+    clicks[r.integers(0, n, count)] = r.uniform(-1, 1, count)
+    clicks = bandpass(clicks, low, min(high * 1.3, RATE / 2 - 500)) * 6
+    env = shape(t / duration) if shape else np.sin(np.pi * t / duration) ** 0.7
+    return (hiss * (1 - grit) + clicks * grit) * env
+
+
+def room(sound, r, length=1.2, mix=0.35, early=((0.009, 0.45), (0.017, 0.3), (0.031, 0.22), (0.048, 0.15)),
+         bright=2500, low=1200):
+    """
+    Galm: een paar vroege echo's (de grond, een muur dichtbij; elk een beetje doffer) en een staart die in {length}
+    seconden wegsterft, waarin de hoge tonen sneller verdwijnen dan de lage (zoals buiten of in een grote hal).
+    """
+    n = int(RATE * length)
+    t = np.arange(n) / RATE
+    base = r.uniform(-1, 1, n)
+    low_tail = lowpass(base, low) * np.exp(-t * 6.9 / length)
+    high_tail = bandpass(base, low, bright) * np.exp(-t * 6.9 / (length * 0.35))
+    ir = (low_tail * 1.2 + high_tail * 0.8) * 0.06 * (1 - np.exp(-t * 400))
+    for delay, gain in early:
+        k = int(delay * RATE)
+        echo = lowpass(r.uniform(-1, 1, 64) * np.exp(-np.arange(64) / 9.0), 6000)
+        echo[0] += 1.0
+        ir[k:k + 64] += gain * echo[: max(0, min(64, n - k))]
+    wet = signal.fftconvolve(sound, ir)
+    out = np.zeros(len(sound) + n)
+    out[:len(sound)] += sound
+    out[:len(wet)] += wet[:len(out)] * mix
+    return out
+
+
+def finish_hard(sound, peak=0.9, fade_out=0.04):
+    """Zoals finish, maar zonder de zachte aanzet van 5 ms: die zou de krak van een schot of een klik afvlakken."""
+    sound = np.tanh(sound * 1.4)
+    sound = sound / np.max(np.abs(sound)) * peak
+    n_out = max(1, int(RATE * fade_out))
+    sound[-n_out:] *= np.linspace(1, 0, n_out)
+    sound[:8] *= np.linspace(0, 1, 8)
+    return sound.astype(np.float32)
+
+
+def gunshot(seed, far=False):
+    """
+    Een 9mm-schot, uit vijf stukken:
+    1. de krak: de drukgolf uit de loop (een paar samples heel hard, daarna gesis boven 1 kHz, weg in 3 ms);
+    2. de klap: het lijf van de knal, laag-midden met een resonantie rond 200 Hz, weg in 30 ms;
+    3. de dreun: een lage toon die van 110 naar 40 Hz zakt (wat je in je borst voelt);
+    4. het mechaniek: de slede die na 5 ms tegen zijn aanslag klapt en na 55 ms weer naar voren slaat;
+    5. de galm: echo's van de grond en een staart van ruim een seconde.
+    Ver weg (far=True, zoals de "3p"-geluiden van TACZ) hoor je alleen de lage tonen, later en met veel meer galm.
+    """
+    r = np.random.default_rng(seed)
+    total = np.zeros(int(RATE * 0.6))
+    cn = int(RATE * 0.03)
+    tc = np.arange(cn) / RATE
+    crack = r.uniform(-1, 1, cn) * np.exp(-tc * 420)
+    crack[:4] += np.array([1.0, -0.85, 0.55, -0.3]) * 3.0
+    crack = highpass(crack, 900)
+    bn = int(RATE * 0.35)
+    tb = np.arange(bn) / RATE
+    wide = r.uniform(-1, 1, bn)
+    # De klap over het hele spectrum, met het meeste laag-midden (zoals een opname: 150-500 Hz is het lijf).
+    # De verhoudingen zoals in een echte opname (gemeten aan TACZ): ongeveer 40 % dreun onder 150 Hz, 10 % lijf
+    # (150-500), 13 % midden, 19 % 2-6 kHz en 14 % gesis daarboven.
+    blast = (bandpass(wide, 150, 500) * 4.0 + bandpass(wide, 500, 2000) * 2.0 + bandpass(wide, 2000, 6000) * 1.5
+             + bandpass(wide, 6000, 16000) * 0.8) * np.exp(-tb * 42) * (1 - np.exp(-tb * 4000))
+    sizzle = highpass(r.uniform(-1, 1, bn), 6000) * np.exp(-tb * 75)
+    b, a = signal.iirpeak(200 + r.uniform(-20, 20), 3.0, fs=RATE)
+    body = signal.lfilter(b, a, r.uniform(-1, 1, bn) * np.exp(-tb * 55))
+    thump = np.sin(sweep(95, 45, 0.25)) * np.exp(-seconds(0.25) * 30)
+    if not far:
+        place(total, crack * 1.0, 0.0005)
+        place(total, blast * 1.0, 0.0008)
+        place(total, sizzle * 0.5, 0.0008)
+        place(total, body * 3.0, 0.0008)
+        place(total, thump * 0.85, 0.0005)
+        place(total, impact(r, 0.07, [(3300, 110, 0.5), (5200, 150, 0.35), (7900, 190, 0.25)], snap=0.6) * 0.3, 0.005)
+        place(total, impact(r, 0.1, [(2800, 85, 0.6), (4400, 110, 0.4), (8100, 160, 0.25)], snap=0.8, thud=0.2) * 0.35,
+              0.055 + r.uniform(-0.004, 0.004))
+        # Vroege echo's maken de "tros" knallen in de eerste 80 ms; de staart is zacht, kort en vrij helder (TACZ: 40 dB
+        # weg na een kwart seconde).
+        out = room(total, r, length=0.9, mix=0.14, bright=6000, low=2000,
+                   early=((0.006, 0.55), (0.014, 0.42), (0.026, 0.33), (0.041, 0.24), (0.063, 0.17)))
+        out = highpass(out, 35)
+        return finish_hard(out / np.max(np.abs(out)) * 1.2, peak=0.95, fade_out=0.15)
+    # Van ver (TACZ "3p": 63 % dreun, 20 % lijf, weinig hoog): geen krak en geen mechaniek, de dreun langer, en meer
+    # galm met late echo's.
+    place(total, lowpass(blast, 2500) * 1.0, 0.0)
+    place(total, body * 4.0, 0.0)
+    place(total, np.sin(sweep(85, 40, 0.4)) * np.exp(-seconds(0.4) * 18) * 0.6, 0.0)
+    out = room(total, r, length=1.6, mix=0.3, bright=2400, low=900,
+               early=((0.04, 0.5), (0.09, 0.38), (0.16, 0.28), (0.25, 0.2)))
+    out = highpass(lowpass(out, 3500), 30)
+    return finish_hard(out / np.max(np.abs(out)) * 1.2, peak=0.75, fade_out=0.3)
+
 
 def glock_fire():
-    """
-    Een 9mm-schot: een snoeiharde, korte knal. Een scherpe krak (hoge ruis die meteen wegvalt), een vollere klap
-    eronder, een diepe dreun, en een korte staart van galm.
-    """
-    total = np.zeros(int(RATE * 0.6))
-    place(total, bandpass(noise(0.05), 1500, 9000) * decay(0.05, 90) * 1.6, 0.0)
-    place(total, bandpass(noise(0.18), 300, 3000) * decay(0.18, 28) * 1.0, 0.0)
-    place(total, np.sin(sweep(140, 45, 0.25)) * decay(0.25, 14) * 0.9, 0.0)
-    place(total, bandpass(noise(0.45), 500, 4000) * decay(0.45, 9) * 0.25, 0.02)
-    return finish(total, peak=0.85)
+    """Een schot met de Glock. Drie varianten (glock_fire, _2, _3): Minecraft kiest er telkens één."""
+    return gunshot(7401)
+
+
+def glock_fire_2():
+    return gunshot(7402)
+
+
+def glock_fire_3():
+    return gunshot(7403)
+
+
+def glock_fire_far():
+    """Een schot van ver weg (spelers op meer dan 12 blokken horen dit, tot 128 blokken ver)."""
+    return gunshot(7404, far=True)
 
 
 def glock_dry():
-    """Een droge klik: de slagpin slaat, maar er gebeurt niets."""
-    total = np.zeros(int(RATE * 0.12))
-    place(total, metal_tap(0.06, [2600, 4100], 90) * 0.9, 0.0)
-    place(total, np.sin(sweep(1400, 900, 0.04)) * decay(0.04, 60) * 0.15, 0.005)
-    return finish(total, peak=0.45)
+    """
+    Een droge klik: de trekker gaat door (een zacht polymeer tikje), en de slagpin schiet naar voren en klapt (een
+    helder stalen klikje met een korte naklank), maar er knalt niets.
+    """
+    r = np.random.default_rng(7410)
+    total = np.zeros(int(RATE * 0.2))
+    place(total, impact(r, 0.04, [(1900, 260, 0.3), (3700, 300, 0.2)], snap=0.35, snap_from=1500), 0.0)
+    place(total, impact(r, 0.12, [(4300, 90, 0.45), (6900, 120, 0.35), (9800, 170, 0.2)], snap=1.0, thud=0.15,
+                        thud_hz=900), 0.022)
+    return finish_hard(total, peak=0.55)
 
 
-def slide_rack(total, at, forward_gain=1.0):
-    """De slede: een schraapje naar achteren, een klak, en even later de klak naar voren."""
-    scrape = bandpass(noise(0.12), 800, 3000) * np.sin(np.linspace(0, np.pi, int(RATE * 0.12))) * 0.35
-    place(total, scrape, at)
-    place(total, metal_tap(0.05, [1200, 2100, 3400], 70) * 0.8, at + 0.11)
-    place(total, metal_tap(0.06, [900, 1600, 2800], 55) * 1.1 * forward_gain, at + 0.3)
-    place(total, bandpass(noise(0.05), 400, 2000) * decay(0.05, 50) * 0.4 * forward_gain, at + 0.3)
+def slam(r, gain=1.0):
+    """De slede die naar voren slaat: de hardste, helderste klap van het mechaniek, met een doffe tik van het frame."""
+    return impact(r, 0.16, [(3100, 70, 0.6), (5300, 90, 0.5), (8200, 120, 0.4), (11800, 170, 0.3)], snap=1.6,
+                  snap_from=3000, thud=0.3, thud_hz=700) * gain
+
+
+def rack(r, total, at):
+    """
+    De slede met de hand naar achteren trekken en loslaten (de "charge" van TACZ heeft er ook vier tikken in): je hand
+    pakt de slede, hij schuift naar achteren (schuren), tikt tegen zijn aanslag, en als je loslaat schiet hij terug en
+    slaat hij met een harde, heldere klap naar voren, met een klein natikje.
+    """
+    place(total, impact(r, 0.03, [(2400, 300, 0.2)], snap=0.25, snap_from=1500), at)
+    back = scrape(r, 0.085, 2800, 14000, ticks=500, grit=0.55, shape=lambda x: np.sin(np.pi * x) ** 0.5 * (0.4 + 0.6 * x))
+    place(total, back * 0.5, at + 0.02)
+    place(total, impact(r, 0.07, [(3100, 120, 0.45), (5600, 160, 0.3), (8800, 220, 0.2)], snap=0.8) * 0.7, at + 0.105)
+    place(total, scrape(r, 0.035, 2500, 12000, ticks=700, grit=0.6) * 0.35, at + 0.19)
+    place(total, slam(r), at + 0.225)
+    place(total, impact(r, 0.05, [(5100, 200, 0.2)], snap=0.3) * 0.4, at + 0.29)
     return total
 
 
 def glock_slide():
-    """De slede naar achteren en weer naar voren."""
+    """De slede naar achteren en weer naar voren (een patroon in de kamer, een patroon eruit)."""
+    r = np.random.default_rng(7420)
     total = np.zeros(int(RATE * 0.5))
-    slide_rack(total, 0.0)
-    return finish(total, peak=0.6)
+    rack(r, total, 0.0)
+    return finish_hard(total, peak=0.7)
+
+
+def glock_slide_release():
+    """De slide stop omlaag (de slede stond open na het laatste schot): het tikje van de hendel en de klap naar voren."""
+    r = np.random.default_rng(7425)
+    total = np.zeros(int(RATE * 0.35))
+    place(total, impact(r, 0.03, [(3500, 260, 0.3)], snap=0.4), 0.0)
+    place(total, scrape(r, 0.03, 2500, 12000, ticks=700, grit=0.6) * 0.35, 0.025)
+    place(total, slam(r), 0.05)
+    return finish_hard(total, peak=0.7)
 
 
 def glock_mag_out():
-    """Het magazijn: een klik op de knop, het schuift eruit, en een zachte plof."""
-    total = np.zeros(int(RATE * 0.4))
-    place(total, metal_tap(0.04, [2200, 3300], 100) * 0.8, 0.0)
-    place(total, bandpass(noise(0.1), 400, 2000) * decay(0.1, 20) * 0.4, 0.04)
-    place(total, np.sin(sweep(220, 120, 0.08)) * decay(0.08, 30) * 0.5, 0.25)
-    return finish(total, peak=0.5)
+    """
+    Het magazijn eruit: de knop klikt (staal en polymeer), het magazijn glijdt uit de greep (polymeer langs polymeer,
+    met een paar haakjes) en tikt tegen je hand.
+    """
+    r = np.random.default_rng(7430)
+    total = np.zeros(int(RATE * 0.45))
+    place(total, impact(r, 0.05, [(2900, 180, 0.4), (5300, 240, 0.25)], snap=0.9, thud=0.15), 0.0)
+    out = scrape(r, 0.14, 900, 9000, ticks=260, grit=0.5, shape=lambda x: (1 - x) ** 1.5 * np.minimum(1, x * 12))
+    place(total, out * 0.55, 0.03)
+    place(total, impact(r, 0.08, [(1300, 140, 0.4), (2600, 180, 0.3)], snap=0.4, snap_from=1200, thud=0.35,
+                        thud_hz=600) * 0.6, 0.21)
+    return finish_hard(total, peak=0.6)
 
 
 def glock_mag_in():
-    """Het magazijn erin: een duw en een stevige klak."""
-    total = np.zeros(int(RATE * 0.3))
-    place(total, bandpass(noise(0.08), 500, 2500) * np.sin(np.linspace(0, np.pi, int(RATE * 0.08))) * 0.4, 0.0)
-    place(total, metal_tap(0.06, [900, 1500, 2400], 60) * 1.2, 0.06)
-    return finish(total, peak=0.6)
+    """
+    Het magazijn erin: het glijdt de greep in (schuren dat harder wordt) en klikt vast: een harde, heldere klik van de
+    magazijnknop met een doffe tik van het polymeer, en een klein natikje.
+    """
+    r = np.random.default_rng(7440)
+    total = np.zeros(int(RATE * 0.4))
+    place(total, scrape(r, 0.11, 900, 8000, ticks=300, grit=0.5, shape=lambda x: np.minimum(1, x * 1.4) ** 2) * 0.45, 0.0)
+    place(total, impact(r, 0.12, [(3400, 95, 0.55), (5800, 130, 0.4), (8600, 190, 0.25)], snap=1.4, thud=0.5,
+                        thud_hz=650), 0.11)
+    place(total, impact(r, 0.05, [(4700, 220, 0.2)], snap=0.35) * 0.35, 0.17)
+    return finish_hard(total, peak=0.72)
 
 
 def glock_round_load():
-    """Een patroon die in het magazijn klikt: een klein, helder tikje."""
-    total = np.zeros(int(RATE * 0.1))
-    place(total, metal_tap(0.03, [3200, 4800], 140) * 0.8, 0.0)
-    place(total, np.sin(sweep(900, 600, 0.03)) * decay(0.03, 80) * 0.2, 0.01)
-    return finish(total, peak=0.4)
+    """Een patroon in het magazijn duwen: messing schuift over de stalen lipjes en klikt eronder."""
+    r = np.random.default_rng(7450)
+    total = np.zeros(int(RATE * 0.16))
+    place(total, scrape(r, 0.05, 2500, 12000, ticks=600, grit=0.6) * 0.35, 0.0)
+    place(total, impact(r, 0.09, [(5200, 120, 0.45), (7900, 160, 0.3), (11200, 220, 0.2)], snap=0.9, thud=0.1,
+                        thud_hz=1200), 0.045)
+    return finish_hard(total, peak=0.45)
 
 
 def glock_tap_rack():
-    """Een tap-rack: een klap met de hand op het magazijn, dan de slede naar achteren en naar voren."""
-    total = np.zeros(int(RATE * 0.75))
-    place(total, lowpass(noise(0.05), 1200) * decay(0.05, 60) * 1.4, 0.0)
-    place(total, metal_tap(0.04, [700, 1100], 80) * 0.5, 0.0)
-    slide_rack(total, 0.25)
-    return finish(total, peak=0.65)
+    """Een tap-rack: een klap met je handpalm tegen de bodemplaat (dof, met een polymeer klik), dan de slede."""
+    r = np.random.default_rng(7460)
+    total = np.zeros(int(RATE * 0.8))
+    place(total, impact(r, 0.08, [(900, 90, 0.3), (2100, 160, 0.3)], snap=0.6, snap_from=1000, thud=1.0, thud_hz=500,
+                        thud_speed=45), 0.0)
+    rack(r, total, 0.26)
+    return finish_hard(total, peak=0.7)
+
+
+def casing(seed, bounces):
+    """
+    Een lege huls die op de grond valt: een messing buisje zingt hoog (een paar ongelijke tonen tussen 3 en 12 kHz) bij
+    elke stuiter, steeds zachter en sneller na elkaar, met op het eind wat gerammel.
+    """
+    r = np.random.default_rng(seed)
+    total = np.zeros(int(RATE * 0.6))
+    at, gain, gap = 0.0, 1.0, r.uniform(0.09, 0.13)
+    pitch = r.uniform(0.92, 1.08)
+    for _ in range(bounces):
+        modes = [(3150 * pitch, 26, 0.35), (5900 * pitch, 34, 0.5), (8700 * pitch, 48, 0.4), (11800 * pitch, 70, 0.25)]
+        place(total, impact(r, 0.3, modes, snap=0.6) * gain, at)
+        at += gap
+        gap *= r.uniform(0.55, 0.7)
+        gain *= r.uniform(0.45, 0.6)
+    place(total, scrape(r, 0.06, 3000, 12000, ticks=500, grit=0.7) * 0.12, at)
+    return finish_hard(total, peak=0.45, fade_out=0.08)
 
 
 def casing_tink():
-    """Een huls die op de grond valt: twee hoge tinkjes, de tweede zachter."""
-    total = np.zeros(int(RATE * 0.25))
-    place(total, metal_tap(0.08, [5200, 7800, 9900], 60), 0.0)
-    place(total, metal_tap(0.06, [5600, 8300], 70) * 0.5, 0.08)
-    return finish(total, peak=0.4)
+    """Een huls die op de grond valt. Drie varianten (casing_tink, _2, _3) met een andere toon en aantal stuiters."""
+    return casing(7470, 3)
+
+
+def casing_tink_2():
+    return casing(7471, 4)
+
+
+def casing_tink_3():
+    return casing(7472, 2)
 
 
 def bullet_impact():
@@ -1067,12 +1290,16 @@ def bullet_impact():
 
 
 def holster_draw():
-    """Een pistool uit een leren holster: een zoef van leer en een klikje van de sluiting."""
-    total = np.zeros(int(RATE * 0.3))
-    swish = bandpass(noise(0.18), 300, 2200) * np.sin(np.linspace(0, np.pi, int(RATE * 0.18))) * 0.6
-    place(total, swish, 0.0)
-    place(total, metal_tap(0.03, [1800, 2600], 120) * 0.5, 0.12)
-    return finish(total, peak=0.45)
+    """
+    Een pistool uit de holster trekken (hoofdstuk 74, opnieuw): leer of kunststof dat langs het pistool schuurt, een
+    klikje als het loskomt, en je hand die de greep goed vastpakt.
+    """
+    r = np.random.default_rng(7480)
+    total = np.zeros(int(RATE * 0.45))
+    place(total, scrape(r, 0.2, 500, 6000, ticks=180, grit=0.35, shape=lambda x: np.sin(np.pi * x) ** 1.5) * 0.5, 0.0)
+    place(total, impact(r, 0.05, [(2600, 200, 0.3), (4800, 260, 0.2)], snap=0.6, thud=0.2), 0.16)
+    place(total, impact(r, 0.06, [(1100, 150, 0.2)], snap=0.2, snap_from=900, thud=0.4, thud_hz=400), 0.27)
+    return finish_hard(total, peak=0.5)
 
 
 def backpack_zip():
@@ -1156,13 +1383,19 @@ SOUNDS = {
     "laser_gun_cycle": laser_gun_cycle,
     "laser_gun_aim": laser_gun_aim,
     "glock_fire": glock_fire,
+    "glock_fire_2": glock_fire_2,
+    "glock_fire_3": glock_fire_3,
+    "glock_fire_far": glock_fire_far,
     "glock_dry": glock_dry,
     "glock_slide": glock_slide,
+    "glock_slide_release": glock_slide_release,
     "glock_mag_out": glock_mag_out,
     "glock_mag_in": glock_mag_in,
     "glock_round_load": glock_round_load,
     "glock_tap_rack": glock_tap_rack,
     "casing_tink": casing_tink,
+    "casing_tink_2": casing_tink_2,
+    "casing_tink_3": casing_tink_3,
     "bullet_impact": bullet_impact,
     "holster_draw": holster_draw,
     "backpack_zip": backpack_zip,
@@ -1185,7 +1418,10 @@ def main():
     for name in wanted:
         make = SOUNDS[name]
         path = OUT / f"{name}.ogg"
-        sf.write(path, make(), RATE, format="OGG", subtype="VORBIS")
+        # Hoofdstuk 74: de vuurwapens met een hogere kwaliteit (compression_level 0,15 = Vorbis-kwaliteit 0,85), anders
+        # vervaagt de scherpe aanzet van een schot of een klik; de rest zoals altijd (dezelfde bestanden als vroeger).
+        hifi = name.startswith(("glock_", "casing_", "holster_"))
+        sf.write(path, make(), RATE, format="OGG", subtype="VORBIS", compression_level=0.15 if hifi else None)
         print(f"{path.relative_to(OUT.parent.parent.parent.parent.parent.parent)}  ({path.stat().st_size // 1024} KB)")
 
 

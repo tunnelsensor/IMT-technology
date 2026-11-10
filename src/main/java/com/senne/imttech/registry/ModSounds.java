@@ -120,12 +120,16 @@ public final class ModSounds {
     /** De bol stuitert: een metalen tik. */
     public static final DeferredHolder<SoundEvent, SoundEvent> EMP_GRENADE_BOUNCE = register("emp_grenade.bounce");
 
-    /** Hoofdstuk 52: de Glock 19. Een scherpe knal... */
+    /** Hoofdstuk 52: de Glock 19. Een scherpe knal (sinds hoofdstuk 74 drie varianten, tot 32 blokken ver)... */
     public static final DeferredHolder<SoundEvent, SoundEvent> GLOCK_FIRE = register("glock.fire");
+    /** ...hetzelfde schot van ver weg (hoofdstuk 74): dof, met galm, tot 128 blokken (zie Firearms.shotSound)... */
+    public static final DeferredHolder<SoundEvent, SoundEvent> GLOCK_FIRE_FAR = register("glock.fire_far");
     /** ...een droge klik (leeg, een ketser, een storing)... */
     public static final DeferredHolder<SoundEvent, SoundEvent> GLOCK_DRY = register("glock.dry");
     /** ...de slede die naar achteren en weer naar voren gaat... */
     public static final DeferredHolder<SoundEvent, SoundEvent> GLOCK_SLIDE = register("glock.slide");
+    /** ...de slide stop omlaag: de slede slaat naar voren (hoofdstuk 74)... */
+    public static final DeferredHolder<SoundEvent, SoundEvent> GLOCK_SLIDE_RELEASE = register("glock.slide_release");
     /** ...het magazijn dat eruit valt en erin wordt geduwd... */
     public static final DeferredHolder<SoundEvent, SoundEvent> GLOCK_MAG_OUT = register("glock.mag_out");
     public static final DeferredHolder<SoundEvent, SoundEvent> GLOCK_MAG_IN = register("glock.mag_in");

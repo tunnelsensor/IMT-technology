@@ -442,4 +442,21 @@ public final class GunGameTests {
         restore();
         helper.succeed();
     }
+
+    /**
+     * Hoofdstuk 74: een schot hoor je verder dan 16 blokken. Dichtbij het schot zelf, vanaf 12 blokken ook het doffe schot
+     * van ver (tussen 12 en 32 lopen ze in elkaar over), tot 128 blokken; verder niets meer. Een leeg magazijn ziet er leeg
+     * uit (het model kiest dat met de eigenschap "empty").
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "guns")
+    public static void shot_is_heard_near_and_far(GameTestHelper helper) {
+        check(Firearms.shotLayers(5) == Firearms.SHOT_LAYER_NEAR, "Op 5 blokken hoor je alleen het schot van dichtbij");
+        check(Firearms.shotLayers(20) == (Firearms.SHOT_LAYER_NEAR | Firearms.SHOT_LAYER_FAR),
+                "Op 20 blokken lopen het schot van dichtbij en van ver in elkaar over");
+        check(Firearms.shotLayers(60) == Firearms.SHOT_LAYER_FAR, "Op 60 blokken hoor je alleen het schot van ver");
+        check(Firearms.shotLayers(200) == 0, "Op 200 blokken hoor je niets meer");
+        check(MagazineItem.rounds(MagazineItem.of(FirearmType.GLOCK_19, 0)) == 0
+                && MagazineItem.rounds(MagazineItem.of(FirearmType.GLOCK_19, 15)) == 15, "Een magazijn onthoudt zijn patronen niet");
+        helper.succeed();
+    }
 }

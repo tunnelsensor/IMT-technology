@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 490 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 491 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -6207,6 +6207,69 @@ knoppen voor andere dingen; zo kan rugzak standaard op B staan."
       [B]) in plaats van de oude letters. LEESMIJ: de toetsentabel (hoofdstuk 3) met een tabel "snelactie, waar in het
       G-menu, vroeger", en de oude letters elders eruit. De rondleidingen (`VisualCheck` dreigingsscan, `ShowcaseFeatures`
       raketten) drukten de oude toets in; die sturen nu de actie zelf (een lege toets indrukken drukt alle lege toetsen in).
+
+### 74. De Glock in de stijl van TACZ: een echt model, een gedetailleerd magazijn en echte geluiden (10 november)
+
+Jouw wens: "Kijk eens naar het glock model, dit is nog niet super mooi, kijk eens hoe dat bij tacz is, die stijl van
+realisme en ook de sounds wil ik. Kopieer niet letterlijk van daar maar haal daar inspiratie. Ook het glock mag is niet
+super gedetailleerd, doe dat in dezelfde stijl als tacz mags (ze hebben daar geen items voor, enkel animatie)."
+
+Wat ik bij TACZ heb bekeken (in je CurseForge-instance "Guns & Tanks", alleen gemeten en bekeken, niets gekopieerd):
+hun Glock 17 is 264 kleine doosjes (142 schuin), een texture van 8 texels per pixel met vlakke donkergrijze tinten en
+lichtere randjes, het magazijn 12 doosjes plus de patronen. Hun schot is een cluster harde knallen in de eerste 80 ms
+met veel dreun en een galm van een seconde; hun mechanische geluiden zijn helder (2 tot 16 kHz) en kort.
+
+- [x] **Een echt 3D-model** — Minecrafts eigen json-modellen laten alleen hoeken van 22,5 en 45 graden toe, om één as.
+      Daarom zijn de Glock, het magazijn en de munitie nu **OBJ-modellen** (NeoForge laadt die in en bakt ze tot een
+      gewoon item-model, dus de holster, het Pegboard, de Gunsmith Table en How it works blijven werken). De omtrek is
+      nagemeten van een foto van een echte Glock 19 Gen 3 (Wikimedia Commons, "Glock 19 (transparent background)"), de
+      breedtes komen uit de maten van Glock. Het frame bestaat uit vijf stukken met hun eigen breedte (het lijf met de
+      beavertail, de greep met drie vingergroeven en de duimsteun, de trekkerbeugel, de stofkap met de rail, zijn groef
+      en de dwarsgleuf), met afgeronde randen. De slede: een afgeronde neus, afgeschuinde bovenranden, de uitwerpopening
+      (rechts en bovenop, met het blok van de loop erin en een donker randje), zeven echte groeven achteraan, de
+      extractor, de korrel met een wit stipje en de keep met een witte U (allebei gloeiend). Verder: een ronde loop met een
+      boring, de terugslagveer op zijn stang (het puntje zie je vooraan), de slagpin met zijn veer, een gebogen trekker
+      met het veiligheidslipje, de slide stop (links), de slide lock (beide kanten) in zijn ovale uitsparing, drie stalen
+      pinnen en de magazijnknop (links; rechts zie je zijn platte uiteinde).
+- [x] **De texture schildert het script zelf** — 16 texels per pixel (twee keer TACZ), met het korreltje van de greep,
+      dwarse groefjes op de voor- en achterkant, lichtere afgesleten randen, en tekst die je kunt lezen: GLOCK 19 /
+      AUSTRIA 9x19 links op de slede, MADE IN AUSTRIA / GLOCK, INC., SMYRNA, GA. en de patenten rechts op het frame, 9x19
+      op het blok van de loop. Elk onderdeel heeft drie plaatjes met dezelfde indeling (polymeer, staal, titanium).
+- [x] **Het magazijn** — een polymeer lijf dat bovenaan smaller wordt (twee rijen patronen worden er één), een stalen
+      rand met lipjes, de bodemplaat met een lip vooraan, gaatjes met 15 / 12 / 10 / 8 / 5 achterop, de inkeping voor de
+      magazijnknop vooraan, en bovenin een patroon (messing huls met slaghoedje, koperen kogel). **Leeg ziet het er leeg
+      uit**: de opvolger in plaats van een patroon, in je inventaris, in je hand, in je magazijnpouch en als het uit het
+      pistool valt (`FirearmModels.magazine(stack)`, de eigenschap `imttech:empty`).
+- [x] **De munitie op ware grootte** — een patroon is nu 29,7 mm naast het pistool (vroeger bijna twee keer te groot), met
+      de rand, de groef voor de extractor en een ronde kogelpunt; de huls is van binnen donker. Een huls op de grond
+      tekent `CasingRenderer` 0,85 keer zo groot (was 0,5), zodat je hem even goed terugvindt als vroeger.
+- [x] **Een fout in het oude model** — de greep helde de verkeerde kant op: een json-doosje dat 22,5 graden om x draait
+      zet zijn onderkant naar de loop toe, niet naar achteren. Het nieuwe model helt naar achteren zoals op de foto, en
+      het magazijn ook; `FirearmRig.magazineUpright()` zet het in je hand en in de pouch rechtop (ze rekenden elk met de
+      oude, verkeerde hoek).
+- [x] **In je hand** — `FirearmRig` heeft de maten van het nieuwe model (greep, steun, vizierlijn: de witte stip van de
+      korrel staat in de U van de keep, de loop, de uitwerpopening, de dozen voor de Gunsmith Table). Bij het magazijn
+      eruit gaat je linkerhand onder de greep (vroeger naar de knop, en dan stond je arm voor het pistool), de slede pak je
+      bij de groeven, bekijken (H) draait de rechterkant naar je toe (de uitwerpopening, MADE IN AUSTRIA), en de patroon
+      die je in een magazijn duwt ligt met de punt naar voren.
+- [x] **Echte geluiden** — `tools/generate_sounds.py` bouwt ze na zoals ze ontstaan: tikken op metaal en polymeer (een
+      ruisstootje dat de trillingen van het onderdeel aanslaat), schuiven met kleine haakjes, en galm met vroege echo's.
+      Het schot: een krak, een klap over het hele spectrum, een dreun, de slede die tegen zijn aanslag en weer naar voren
+      slaat, en de galm; de energieverdeling ligt dicht bij die van TACZ (46 / 12 / 8 / 17 / 16 % tegen 43 / 11 / 13 / 19 /
+      14 % in 20-150 / 150-500 / 500-2000 / 2000-6000 / 6000+ Hz, en 40 dB zachter na 0,25 s tegen 0,23 s). **Drie varianten**
+      van het schot (Minecraft kiest er telkens één), de slede (grijpen, schuren, aanslag, de klap naar voren), een eigen
+      **slide release** (de slide stop: alleen de klap naar voren), magazijn eruit en erin, een patroon laden, droog klikken,
+      tap-rack, de holster, en **drie varianten** van een huls die stuitert. Hogere OGG-kwaliteit voor deze geluiden.
+- [x] **Een schot van ver** — vroeger hoorde je een Glock maar tot 16 blokken. Nu, zoals de "3p"-geluiden van TACZ: tot
+      32 blokken het schot zelf en vanaf 12 tot 128 blokken een dof schot van ver met late echo's (ertussen lopen ze in
+      elkaar over; `Firearms.shotSound`, ook voor de Raven-soldaten met een Glock). Eén nieuwe test.
+- [x] **Gereedschap** — `tools/gunmesh.py` (de bouwdoos: platen uit een omtrek met afgeronde randen, buizen,
+      omwentelingslichamen, tekstplaatjes, de texture-indeling, OBJ schrijven), `tools/glock19_model.py` (de Glock zelf) en
+      `tools/preview_obj.py` (bekijk een OBJ-model zonder het spel te starten). `python tools/generate_gun_models.py`
+      maakt alles opnieuw.
+- [ ] **Nog door jou te beluisteren** — ik kan geen geluid horen: ik heb de geluiden gemeten en als spectrogram
+      vergeleken met die van TACZ (de verhoudingen kloppen), maar of ze echt goed klinken moet jij zeggen. Zeg welk geluid
+      te dof, te schel, te luid of te lang is, dan stel ik het bij.
 
 ## Nog nooit in het spel bekeken
 

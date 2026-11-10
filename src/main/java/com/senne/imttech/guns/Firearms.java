@@ -164,8 +164,8 @@ public final class Firearms {
         float damage = type.damage() * parts.materialOf(GunPart.BARREL).damageFactor();
         damage *= 1 - 0.2f * Math.min(1, parts.wornFactor(GunPart.BARREL) / Math.max(0.01f, ImtConfig.Guns.WORN_JAM_FACTOR));
         BulletEntity.shoot(level, player, type, damage, direction);
-        level.playSound(player, player.getX(), player.getEyeY(), player.getZ(), ModSounds.GLOCK_FIRE.get(), SoundSource.PLAYERS,
-                1.0f, 0.95f + random.nextFloat() * 0.1f);
+        shotSound(level, player, player.getX(), player.getEyeY(), player.getZ(), SoundSource.PLAYERS,
+                0.95f + random.nextFloat() * 0.1f);
         // Hoofdstuk 60: de bewakers horen het (door de hele bunker).
         com.senne.imttech.raven.Noises.make(level, player.position(), com.senne.imttech.config.ImtConfig.Guards.NOISE_GLOCK,
                 com.senne.imttech.raven.Noises.Kind.SHOT, player);
@@ -502,7 +502,8 @@ public final class Firearms {
                 tickAction(player, action);
             } else if (FirearmItem.typeOf(held) != null && needsSlideRelease(held)) {
                 // De slede staat open en er zit een vol magazijn in: loslaten (de eerste patroon gaat in de kamer).
-                sound(player, ModSounds.GLOCK_SLIDE.get(), 0.8f);
+                // Hoofdstuk 74: het eigen geluid van de slide stop (alleen de klap naar voren, niet heen en weer).
+                sound(player, ModSounds.GLOCK_SLIDE_RELEASE.get(), 0.85f);
                 start(player, ActionKind.SLIDE_RELEASE, player.getInventory().selected, 0, held);
             }
         }
@@ -629,6 +630,55 @@ public final class Firearms {
         if (!player.getInventory().add(stack)) {
             player.drop(stack, false);
         }
+    }
+
+    /** Tot zo ver hoor je het schot van dichtbij (blokken; daarna sterft het weg, zie attenuation_distance in sounds.json). */
+    public static final double SHOT_NEAR = 32;
+    /** Vanaf zo ver hoor je ook het schot van ver weg (dof, met galm), tot {@link #SHOT_FAR} blokken. */
+    public static final double SHOT_FAR_FROM = 12;
+    public static final double SHOT_FAR = 128;
+
+    /**
+     * Het geluid van een schot voor iedereen behalve de schutter (die hoort het al in zijn eigen spel), zoals de "3p"-
+     * geluiden van TACZ (hoofdstuk 74). Vroeger hoorde je een Glock maar tot 16 blokken ver. Nu: tot 32 blokken het
+     * schot van dichtbij, en vanaf 12 tot 128 blokken het schot van ver weg (tussen 12 en 32 lopen ze in elkaar over).
+     * Minecraft laat elk geluid zelf zachter worden met de afstand.
+     */
+    public static void shotSound(net.minecraft.world.level.Level level, @Nullable Entity shooter, double x, double y, double z,
+                                 SoundSource source, float pitch) {
+        if (!(level instanceof ServerLevel server)) {
+            return;
+        }
+        long seed = server.getRandom().nextLong();
+        for (ServerPlayer listener : server.players()) {
+            if (listener == shooter) {
+                continue;
+            }
+            int layers = shotLayers(Math.sqrt(listener.distanceToSqr(x, y, z)));
+            if ((layers & SHOT_LAYER_NEAR) != 0) {
+                listener.connection.send(new net.minecraft.network.protocol.game.ClientboundSoundPacket(ModSounds.GLOCK_FIRE,
+                        source, x, y, z, 1.0f, pitch, seed));
+            }
+            if ((layers & SHOT_LAYER_FAR) != 0) {
+                listener.connection.send(new net.minecraft.network.protocol.game.ClientboundSoundPacket(ModSounds.GLOCK_FIRE_FAR,
+                        source, x, y, z, 1.0f, pitch, seed));
+            }
+        }
+    }
+
+    public static final int SHOT_LAYER_NEAR = 1;
+    public static final int SHOT_LAYER_FAR = 2;
+
+    /** Welke schotgeluiden je op deze afstand (blokken) hoort: dichtbij, van ver, allebei (12 tot 32 blokken) of geen. */
+    public static int shotLayers(double distance) {
+        int layers = 0;
+        if (distance < SHOT_NEAR) {
+            layers |= SHOT_LAYER_NEAR;
+        }
+        if (distance >= SHOT_FAR_FROM && distance < SHOT_FAR) {
+            layers |= SHOT_LAYER_FAR;
+        }
+        return layers;
     }
 
     private static void sound(ServerPlayer player, SoundEvent sound, float volume) {

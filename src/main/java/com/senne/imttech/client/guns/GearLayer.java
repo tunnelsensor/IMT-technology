@@ -27,7 +27,6 @@ import net.minecraft.client.resources.PlayerSkin;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
-import org.joml.Matrix4f;
 
 /**
  * Wat je draagt, op je lijf (hoofdstuk 52, stap 2): de holster op je rechterheup (met het pistool erin, de loop naar
@@ -196,15 +195,11 @@ public final class GearLayer extends RenderLayer<AbstractClientPlayer, PlayerMod
                 pose.pushPose();
                 pose.translate(at[0] / 16f, at[1] / 16f, at[2] / 16f);
                 pose.scale(MAG_SCALE / 16f, MAG_SCALE / 16f, MAG_SCALE / 16f);
-                // Het magazijn staat in zijn model schuin (zoals in de greep, om (8, 9.3, 11)); hier rechtop, met de voet
-                // van zijn bodemplaat op de voet van het vakje.
-                pose.mulPose(new Matrix4f()
-                        .translate(-8, -2.55f, -12.0f)
-                        .translate(8, 9.3f, 11.0f)
-                        .rotateX((float) Math.toRadians(-22.5))
-                        .translate(-8, -9.3f, -11.0f));
+                // Het magazijn staat in zijn model schuin (zoals in de greep); hier rechtop, met het midden van zijn
+                // bodemplaat op de voet van het vakje (FirearmRig.magazineUpright, hoofdstuk 74). Leeg = leeg getekend.
+                pose.mulPose(FirearmRig.magazineUpright());
                 pose.scale(16, 16, 16);
-                FirearmModels.render(pose, buffers, FirearmModels.magazine(type), light, OverlayTexture.NO_OVERLAY);
+                FirearmModels.render(pose, buffers, FirearmModels.magazine(stack), light, OverlayTexture.NO_OVERLAY);
                 pose.popPose();
             } else if (stack.is(ModItems.ENERGY_CELL.get())) {
                 // Een energiecel: rechtop in het vakje, de gouden kap boven de rand uit.
