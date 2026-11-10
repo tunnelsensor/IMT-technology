@@ -103,6 +103,15 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.HOLSTER.get());
                 output.accept(ModItems.GRENADE_POUCH.get());
                 output.accept(ModItems.MAG_POUCH.get());
+                // De rugzakken (hoofdstuk 72): olijfgroen, en elk ook in camo.
+                for (com.senne.imttech.backpack.BackpackItem.Size size : com.senne.imttech.backpack.BackpackItem.Size.values()) {
+                    output.accept(com.senne.imttech.backpack.BackpackRegistry.item(size));
+                }
+                for (com.senne.imttech.backpack.BackpackItem.Size size : com.senne.imttech.backpack.BackpackItem.Size.values()) {
+                    net.minecraft.world.item.ItemStack camo = new net.minecraft.world.item.ItemStack(com.senne.imttech.backpack.BackpackRegistry.item(size));
+                    camo.set(com.senne.imttech.backpack.BackpackRegistry.CAMO.get(), true);
+                    output.accept(camo);
+                }
                 output.accept(ModItems.GUNSMITH_TABLE.get());
                 output.accept(ModItems.RELOADING_BENCH.get());
                 // De armory (hoofdstuk 67): het Pegboard en de Ammo Box.

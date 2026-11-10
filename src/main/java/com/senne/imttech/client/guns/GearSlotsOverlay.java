@@ -20,7 +20,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
  * De eigen vakjes in je inventaris (hoofdstuk 52, stap 2, jouw wens: "als je die mod (Curios) niet hebt, in een slot
  * dat mijn mod toevoegt"): rechts van je poppetje, onder elkaar: de holster, de granaatpouch en de magazijnpouch; en
  * sinds hoofdstuk 55 de twee <b>sling-vakjes</b> (een geweer met sling op je rug, een voor je borst) in een rij onder
- * het craftraster, naast het vakje van je andere hand. Ze zijn geen echte vakjes van het inventarisscherm (dat is van
+ * het craftraster, naast het vakje van je andere hand, en daarnaast (hoofdstuk 72) het vakje van je <b>rugzak</b>. Ze zijn geen echte vakjes van het inventarisscherm (dat is van
  * Minecraft), maar we tekenen ze erbij en vangen de klik: wat je aan je muis hebt gaat erin, wat erin zat komt aan je
  * muis (zie Gear.click). Met Curios erbij zie je ze niet: dan zitten ze in de Curios-slots.
  */
@@ -38,8 +38,12 @@ public final class GearSlotsOverlay {
         return screen instanceof InventoryScreen && !Gear.curios();
     }
 
-    /** De linkerbovenhoek van vakje {@code index} (0-2 naast je harnas, 3-4 de slings), op het scherm. */
+    /** De linkerbovenhoek van vakje {@code index} (0-2 naast je harnas, 3-4 de slings, 5 je rugzak), op het scherm. */
     private static int[] at(InventoryScreen screen, int index) {
+        if (index == Gear.BACK) {
+            // Hoofdstuk 72: je rugzak, rechts naast de twee slings.
+            return new int[]{screen.getGuiLeft() + SLING_X + Gear.SLINGS * STEP, screen.getGuiTop() + SLING_Y};
+        }
         if (index < GearItem.Kind.values().length) {
             return new int[]{screen.getGuiLeft() + X, screen.getGuiTop() + Y + index * STEP};
         }
@@ -53,6 +57,9 @@ public final class GearSlotsOverlay {
 
     /** Wat er in dit vakje hoort, als vaag plaatje in een leeg vakje. */
     private static ItemStack ghost(int index) {
+        if (index == Gear.BACK) {
+            return new ItemStack(com.senne.imttech.backpack.BackpackRegistry.ASSAULT_PACK.get());
+        }
         if (index >= GearItem.Kind.values().length) {
             return new ItemStack(ModItems.LASER_RIFLE.get());
         }
@@ -64,6 +71,9 @@ public final class GearSlotsOverlay {
     }
 
     private static ItemStack worn(LocalPlayer player, int index) {
+        if (index == Gear.BACK) {
+            return Gear.back(player);
+        }
         if (index >= GearItem.Kind.values().length) {
             return Gear.sling(player, index - GearItem.Kind.values().length);
         }
@@ -71,6 +81,9 @@ public final class GearSlotsOverlay {
     }
 
     private static Component slotName(int index) {
+        if (index == Gear.BACK) {
+            return Component.translatable("screen.imttech.gear_slot.back");
+        }
         if (index >= GearItem.Kind.values().length) {
             return Component.translatable("screen.imttech.gear_slot." + (index == GearItem.Kind.values().length ? "sling_back" : "sling_chest"));
         }
@@ -105,7 +118,8 @@ public final class GearSlotsOverlay {
                 g.pose().popPose();
             } else {
                 g.renderItem(worn, x0 + 1, y + 1);
-                int filled = GearItem.kindOf(worn) == null ? 0 : GearItem.filled(worn);
+                int filled = GearItem.kindOf(worn) != null ? GearItem.filled(worn)
+                        : com.senne.imttech.backpack.BackpackItem.isBackpack(worn) ? com.senne.imttech.backpack.BackpackItem.filled(worn) : 0;
                 if (filled > 0) {
                     g.pose().pushPose();
                     g.pose().translate(x0 + 12, y + 11, 200);

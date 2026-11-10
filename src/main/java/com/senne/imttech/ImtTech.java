@@ -82,6 +82,8 @@ public class ImtTech {
         ModMenus.MENUS.register(modEventBus);
         ModAttachments.ATTACHMENTS.register(modEventBus);
         ModCreativeTabs.TABS.register(modEventBus);
+        // Hoofdstuk 72: de militaire rugzakken (eigen lijsten, berichten en gebeurtenissen, zie backpack/Backpacks).
+        com.senne.imttech.backpack.Backpacks.register(modEventBus);
 
         modEventBus.addListener(ModEntities::registerAttributes);
         // Een trechter kan raketten in een Biebia's Industries-torentje doen.
@@ -134,6 +136,7 @@ public class ImtTech {
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.SkillGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.GuardGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.HowToGameTests.class));
+        modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.BackpackGameTests.class));
         // Controle van de wereldgeneratie (alleen met "gradlew runStructureCheck").
         com.senne.imttech.gametest.StructureCheck.registerIfEnabled();
 

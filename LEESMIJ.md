@@ -2138,6 +2138,40 @@ hij weer leeg, dan mag er iets anders in. Op het **etiket** staan een plaatje en
 - **Afbreken**: alles blijft erin, zoals een shulkerdoos; de tooltip zegt wat erin zit ("240 9mm Round inside (1024 max)",
   bij magazijnen hoeveel patronen erin zitten, bij cellen hoe vol ze gemiddeld zijn). Lege kisten stapelen weer.
 
+### Militaire rugzakken
+Jouw wens (hoofdstuk 72): rugzakken zoals Sophisticated Backpacks, maar minder OP en militair. De getallen staan onder
+`[backpacks]`.
+
+**Drie maten.** Elk heeft MOLLE-banden op de voorkant (rijen band om pouches aan te hangen, zie stap 2 in PLAN.md), een
+klep, een handvat, schouderbanden en zwarte gespen.
+- **Assault Pack**: klein, **18 vakjes**. Recept: 6 leer, een touw, een kist en een ijzerstaaf.
+- **Patrol Pack**: **27 vakjes** (zo groot als een kist), met twee zijzakken. Recept: 2 polymeer, 3 leer, een touw, een
+  kist en 2 stalen staven.
+- **Rucksack**: **36 vakjes**, op een titanium frame, met een slaapmat bovenop en een heupband. Recept: 2 titanium, 2
+  polymeer, 2 stalen staven, een touw, een kist en een leer.
+
+**Dragen.** In het vakje **Back** in je inventaris (rechts naast de twee sling-vakjes; met Curios het slot "back"). Je ziet
+hem op je rug, de banden over je borst. Een geweer op je rug (sling) hangt over de rugzak heen.
+
+**Openen kost tijd** (jouw keuze): eerst rits je hem open, **anderhalve seconde stilstaan** (`zipSeconds`), met een balkje
+onder je vizier; beweeg je, dan stopt de rits ("Hold still to unzip the backpack"). Daarna staat zijn scherm open, met een
+**sorteerknop** (SORT: gelijke stapels samen, alles op een rij). Met de rugzak open **loop je traag** door (40 % van je
+snelheid, `openWalkSpeed`): W, A, S en D werken, springen en sprinten niet (Shift heb je nodig voor shift-klikken).
+- **Op je rug**: de rugzaktoets, standaard **Shift + B** (B is al de Ore Scan van de bril), of de knop **Backpack** in het
+  wiel (linker Alt).
+- **In je hand**: rechtsklik. Het vakje met de open rugzak zit dan op slot.
+- **Neerzetten**: **sneak + rechtsklik op de grond**. Dan staat hij rechtop, de MOLLE-banden naar jou. **Iedereen** opent
+  hem met rechtsklik (ook dan met de rits). **Sneak + rechtsklik met een lege hand** pakt hem op: op je rug als die leeg
+  is, anders in je inventaris. Kapotmaken: hij valt eraf met alles erin (ook in creative). Hebben twee mensen hem tegelijk
+  open, dan zien ze hetzelfde (wat de een pakt, is bij de ander weg).
+
+**Minder OP dan Sophisticated Backpacks**: geen magneet, compacting, void of stack-upgrades (gewone stapels), en er past
+**geen rugzak, shulkerdoos, bundel of Ammo Box** in (geen dozen in dozen). Een holster of pouch mag wel.
+
+**Verven** in de crafting table, zoals leren harnas: de rugzak met een of meer kleurstoffen (ook gemengd, bijvoorbeeld rood
++ geel = oranje). Nieuw is hij olijfgroen. **Bruin + lichtgroen + groen** (elk één) maakt **camo**: een eigen patroon,
+geen mengkleur. Een camo-rugzak met een andere kleurstof wordt weer gewoon die kleur. Wat erin zit blijft.
+
 ### Prestaties (advancements)
 De mod heeft een eigen prestatieboom die je door het spel leidt, van je eerste computerchip tot
 vliegen met het harnas. Open je prestaties (standaard **L**) en kijk bij **Biebia's Industries**.
@@ -2322,7 +2356,7 @@ beveiligingskern, zie "Het datacenter"); zonder luistert ze niet. In creative ho
 
 | Bestand | Wat |
 |---------|-----|
-| `config/imttech.toml` | **Alle getallen van de mod** (ruim 390), in hoofdstukken: wat mag er (`[rules]`: hacken, zakkenrollen, raids aan/uit), de bril, **alle stroom** (`[power]`: wat elk blok opwekt, opslaat en gebruikt), drones, de satelliet **per upgrade-niveau**, harnas, torentjes, beveiliging, datacenter, granaten en lasers, de Glock 19 (`[guns]`), guard robots, Raven, de bewakers zoals in Hitman (`[guards]`: zien, horen, de radio, het team, lichamen, de sluipaanval), raids... |
+| `config/imttech.toml` | **Alle getallen van de mod** (ruim 390), in hoofdstukken: wat mag er (`[rules]`: hacken, zakkenrollen, raids aan/uit), de bril, **alle stroom** (`[power]`: wat elk blok opwekt, opslaat en gebruikt), drones, de satelliet **per upgrade-niveau**, harnas, torentjes, beveiliging, datacenter, granaten en lasers, de Glock 19 (`[guns]`), guard robots, Raven, de bewakers zoals in Hitman (`[guards]`: zien, horen, de radio, het team, lichamen, de sluipaanval), de rugzakken (`[backpacks]`: de rits, traag lopen met de rugzak open), raids... |
 | `config/imttech-client.toml` | Stem, volume, spraaktekst, Spotify Client ID, GPU voor de AI, hoe stroom en grote getallen eruitzien (`powerUnit`, `numberStyle`), het zachte zoemen van de rayshields (`rayshieldHumVolume`: 1 = normaal, 2 = dubbel zo hard, 0 = uit), het laadzoemen van de guard robots (`robotHumVolume`, net zo), de rotors van de security drones (`droneRotorVolume`, net zo), de geluidjes in de animaties van How it works (`howToVolume`, net zo), de rand van zones (`zoneBorder`) |
 | `config/imttech-voice.json` | Alle spraakcommando's (zelf uit te breiden) |
 | `config/imttech-spotify.json` | Je Spotify-token (niet delen) |

@@ -3898,6 +3898,15 @@ public final class VisualCheck {
             t.command(0, "gamemode creative @a");
         }
 
+        // --- De militaire rugzakken (hoofdstuk 72): neergezet, op je rug, het rugvakje, de rits en het scherm (BackpackTour).
+        if (want("backpack")) {
+            BackpackTour.tour(t);
+        }
+        // --- Doorlopen met een open rugzak, met echte toetsen; de afstanden staan in de log ("[dev] backpackwalk").
+        if (want("backpackwalk")) {
+            BackpackTour.walk(t);
+        }
+
         // --- Holster, slings en cellen (hoofdstuk 55): de sling-vakjes in je inventaris, het wiel met je geweren, trekken van je
         // rug (de Glock gaat in de holster), de cellen in de pouch kiezen, en in derde persoon de geweren op je rug en borst.
         if (want("sling")) {

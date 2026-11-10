@@ -1,0 +1,677 @@
+{
+ "textures": {
+  "fabric": "imttech:item/backpack/fabric_camo",
+  "molle": "imttech:item/backpack/molle_camo",
+  "webbing": "imttech:item/backpack/webbing",
+  "buckle": "imttech:item/backpack/buckle",
+  "cross": "imttech:item/backpack/cross",
+  "particle": "imttech:item/backpack/particle"
+ },
+ "elements": [
+  {
+   "from": [
+    5.2,
+    5.8,
+    5.6
+   ],
+   "to": [
+    7.8,
+    9.2,
+    8.0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      5.2,
+      6.8,
+      7.8,
+      10.2
+     ],
+     "texture": "#molle"
+    },
+    "south": {
+     "uv": [
+      5.2,
+      6.8,
+      7.8,
+      10.2
+     ],
+     "texture": "#fabric"
+    },
+    "east": {
+     "uv": [
+      5.6,
+      6.8,
+      8.0,
+      10.2
+     ],
+     "texture": "#fabric"
+    },
+    "west": {
+     "uv": [
+      5.6,
+      6.8,
+      8.0,
+      10.2
+     ],
+     "texture": "#fabric"
+    },
+    "up": {
+     "uv": [
+      5.2,
+      5.6,
+      7.8,
+      8.0
+     ],
+     "texture": "#fabric"
+    },
+    "down": {
+     "uv": [
+      5.2,
+      5.6,
+      7.8,
+      8.0
+     ],
+     "texture": "#fabric"
+    }
+   }
+  },
+  {
+   "from": [
+    5.25,
+    9.1,
+    5.45
+   ],
+   "to": [
+    7.75,
+    9.65,
+    8.0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      5.25,
+      6.35,
+      7.75,
+      6.9
+     ],
+     "texture": "#fabric"
+    },
+    "south": {
+     "uv": [
+      5.25,
+      6.35,
+      7.75,
+      6.9
+     ],
+     "texture": "#fabric"
+    },
+    "east": {
+     "uv": [
+      5.45,
+      6.35,
+      8.0,
+      6.9
+     ],
+     "texture": "#fabric"
+    },
+    "west": {
+     "uv": [
+      5.45,
+      6.35,
+      8.0,
+      6.9
+     ],
+     "texture": "#fabric"
+    },
+    "up": {
+     "uv": [
+      5.25,
+      5.45,
+      7.75,
+      8.0
+     ],
+     "texture": "#fabric"
+    },
+    "down": {
+     "uv": [
+      5.25,
+      5.45,
+      7.75,
+      8.0
+     ],
+     "texture": "#fabric"
+    }
+   }
+  },
+  {
+   "from": [
+    5.25,
+    8.1,
+    5.25
+   ],
+   "to": [
+    7.75,
+    9.55,
+    5.45
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      5.25,
+      6.45,
+      7.75,
+      7.9
+     ],
+     "texture": "#fabric"
+    },
+    "south": {
+     "uv": [
+      5.25,
+      6.45,
+      7.75,
+      7.9
+     ],
+     "texture": "#fabric"
+    },
+    "east": {
+     "uv": [
+      5.25,
+      6.45,
+      5.45,
+      7.9
+     ],
+     "texture": "#fabric"
+    },
+    "west": {
+     "uv": [
+      5.25,
+      6.45,
+      5.45,
+      7.9
+     ],
+     "texture": "#fabric"
+    },
+    "up": {
+     "uv": [
+      5.25,
+      5.25,
+      7.75,
+      5.45
+     ],
+     "texture": "#fabric"
+    },
+    "down": {
+     "uv": [
+      5.25,
+      5.25,
+      7.75,
+      5.45
+     ],
+     "texture": "#fabric"
+    }
+   }
+  },
+  {
+   "from": [
+    6.1,
+    7.3,
+    5.15
+   ],
+   "to": [
+    6.9,
+    8.3,
+    5.4
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      6.1,
+      7.7,
+      6.9,
+      8.7
+     ],
+     "texture": "#buckle"
+    },
+    "south": {
+     "uv": [
+      6.1,
+      7.7,
+      6.9,
+      8.7
+     ],
+     "texture": "#buckle"
+    },
+    "east": {
+     "uv": [
+      5.15,
+      7.7,
+      5.4,
+      8.7
+     ],
+     "texture": "#buckle"
+    },
+    "west": {
+     "uv": [
+      5.15,
+      7.7,
+      5.4,
+      8.7
+     ],
+     "texture": "#buckle"
+    },
+    "up": {
+     "uv": [
+      6.1,
+      5.15,
+      6.9,
+      5.4
+     ],
+     "texture": "#buckle"
+    },
+    "down": {
+     "uv": [
+      6.1,
+      5.15,
+      6.9,
+      5.4
+     ],
+     "texture": "#buckle"
+    }
+   }
+  },
+  {
+   "from": [
+    8.2,
+    5.8,
+    5.6
+   ],
+   "to": [
+    10.8,
+    9.2,
+    8.0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      8.2,
+      6.8,
+      10.8,
+      10.2
+     ],
+     "texture": "#molle"
+    },
+    "south": {
+     "uv": [
+      8.2,
+      6.8,
+      10.8,
+      10.2
+     ],
+     "texture": "#fabric"
+    },
+    "east": {
+     "uv": [
+      5.6,
+      6.8,
+      8.0,
+      10.2
+     ],
+     "texture": "#fabric"
+    },
+    "west": {
+     "uv": [
+      5.6,
+      6.8,
+      8.0,
+      10.2
+     ],
+     "texture": "#fabric"
+    },
+    "up": {
+     "uv": [
+      8.2,
+      5.6,
+      10.8,
+      8.0
+     ],
+     "texture": "#fabric"
+    },
+    "down": {
+     "uv": [
+      8.2,
+      5.6,
+      10.8,
+      8.0
+     ],
+     "texture": "#fabric"
+    }
+   }
+  },
+  {
+   "from": [
+    8.25,
+    9.1,
+    5.45
+   ],
+   "to": [
+    10.75,
+    9.65,
+    8.0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      8.25,
+      6.35,
+      10.75,
+      6.9
+     ],
+     "texture": "#fabric"
+    },
+    "south": {
+     "uv": [
+      8.25,
+      6.35,
+      10.75,
+      6.9
+     ],
+     "texture": "#fabric"
+    },
+    "east": {
+     "uv": [
+      5.45,
+      6.35,
+      8.0,
+      6.9
+     ],
+     "texture": "#fabric"
+    },
+    "west": {
+     "uv": [
+      5.45,
+      6.35,
+      8.0,
+      6.9
+     ],
+     "texture": "#fabric"
+    },
+    "up": {
+     "uv": [
+      8.25,
+      5.45,
+      10.75,
+      8.0
+     ],
+     "texture": "#fabric"
+    },
+    "down": {
+     "uv": [
+      8.25,
+      5.45,
+      10.75,
+      8.0
+     ],
+     "texture": "#fabric"
+    }
+   }
+  },
+  {
+   "from": [
+    8.25,
+    8.1,
+    5.25
+   ],
+   "to": [
+    10.75,
+    9.55,
+    5.45
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      8.25,
+      6.45,
+      10.75,
+      7.9
+     ],
+     "texture": "#fabric"
+    },
+    "south": {
+     "uv": [
+      8.25,
+      6.45,
+      10.75,
+      7.9
+     ],
+     "texture": "#fabric"
+    },
+    "east": {
+     "uv": [
+      5.25,
+      6.45,
+      5.45,
+      7.9
+     ],
+     "texture": "#fabric"
+    },
+    "west": {
+     "uv": [
+      5.25,
+      6.45,
+      5.45,
+      7.9
+     ],
+     "texture": "#fabric"
+    },
+    "up": {
+     "uv": [
+      8.25,
+      5.25,
+      10.75,
+      5.45
+     ],
+     "texture": "#fabric"
+    },
+    "down": {
+     "uv": [
+      8.25,
+      5.25,
+      10.75,
+      5.45
+     ],
+     "texture": "#fabric"
+    }
+   }
+  },
+  {
+   "from": [
+    9.1,
+    7.3,
+    5.15
+   ],
+   "to": [
+    9.9,
+    8.3,
+    5.4
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      9.1,
+      7.7,
+      9.9,
+      8.7
+     ],
+     "texture": "#buckle"
+    },
+    "south": {
+     "uv": [
+      9.1,
+      7.7,
+      9.9,
+      8.7
+     ],
+     "texture": "#buckle"
+    },
+    "east": {
+     "uv": [
+      5.15,
+      7.7,
+      5.4,
+      8.7
+     ],
+     "texture": "#buckle"
+    },
+    "west": {
+     "uv": [
+      5.15,
+      7.7,
+      5.4,
+      8.7
+     ],
+     "texture": "#buckle"
+    },
+    "up": {
+     "uv": [
+      9.1,
+      5.15,
+      9.9,
+      5.4
+     ],
+     "texture": "#buckle"
+    },
+    "down": {
+     "uv": [
+      9.1,
+      5.15,
+      9.9,
+      5.4
+     ],
+     "texture": "#buckle"
+    }
+   }
+  }
+ ],
+ "display": {
+  "gui": {
+   "rotation": [
+    22,
+    200,
+    0
+   ],
+   "translation": [
+    -0.944,
+    1.437,
+    -2.256
+   ],
+   "scale": [
+    2.112,
+    2.112,
+    2.112
+   ]
+  },
+  "fixed": {
+   "rotation": [
+    0,
+    180,
+    0
+   ],
+   "translation": [
+    0,
+    0,
+    0
+   ],
+   "scale": [
+    1.2,
+    1.2,
+    1.2
+   ]
+  },
+  "ground": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    0,
+    2,
+    0
+   ],
+   "scale": [
+    0.8,
+    0.8,
+    0.8
+   ]
+  },
+  "thirdperson_righthand": {
+   "rotation": [
+    0,
+    90,
+    0
+   ],
+   "translation": [
+    0,
+    1,
+    1
+   ],
+   "scale": [
+    0.7,
+    0.7,
+    0.7
+   ]
+  },
+  "thirdperson_lefthand": {
+   "rotation": [
+    0,
+    90,
+    0
+   ],
+   "translation": [
+    0,
+    1,
+    1
+   ],
+   "scale": [
+    0.7,
+    0.7,
+    0.7
+   ]
+  },
+  "firstperson_righthand": {
+   "rotation": [
+    0,
+    160,
+    0
+   ],
+   "translation": [
+    1,
+    2,
+    0
+   ],
+   "scale": [
+    0.8,
+    0.8,
+    0.8
+   ]
+  },
+  "firstperson_lefthand": {
+   "rotation": [
+    0,
+    160,
+    0
+   ],
+   "translation": [
+    1,
+    2,
+    0
+   ],
+   "scale": [
+    0.8,
+    0.8,
+    0.8
+   ]
+  }
+ }
+}

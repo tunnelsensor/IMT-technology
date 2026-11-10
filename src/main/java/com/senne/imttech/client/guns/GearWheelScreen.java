@@ -42,7 +42,8 @@ import org.lwjgl.glfw.GLFW;
  * plek: bovenaan je pistool uit de holster, rechts je geweren op je slings (rug, borst), links elke soort granaat uit je
  * pouch, onderaan "wegsteken" (een pijltje omlaag op wat je vasthoudt). Op een tegel staat alleen het item, twee keer zo
  * groot, met een getal (schoten, hoeveel granaten). Wat de tegel is en wat er gebeurt lees je in het midden zodra je hem
- * aanwijst. Rechts naast de ring staan twee knoppen voor wat geen quickdraw is: een pouch openen (de skilltree staat er
+ * aanwijst. Rechts naast de ring staan knoppen voor wat geen quickdraw is: een pouch openen, je rugzak openritsen
+ * (hoofdstuk 72) (de skilltree staat er
  * niet, die open je alleen met zijn toets, F6). Schuif je muis naar een tegel en laat Alt los: gekozen (een tegel
  * aanklikken kan ook; rechtsklik of Esc annuleert). Het wiel staat er <b>alleen zolang je Alt vasthoudt</b> (jouw keuze:
  * niet aan en uit te zetten); laat je los zonder iets aan te wijzen, dan gaat het gewoon dicht.
@@ -322,6 +323,16 @@ public class GearWheelScreen extends Screen {
                                 Component.translatable("screen.imttech.wheel.filled", filled, kind.size())),
                         filled + "/" + kind.size(), HudStyle.argb(255, HudStyle.WHITE), true, Gear.ACTION_OPEN, kind.ordinal(), -1));
             }
+        }
+        // Hoofdstuk 72: de rugzak op je rug openritsen (1,5 s stilstaan).
+        ItemStack pack = Gear.back(player);
+        com.senne.imttech.backpack.BackpackItem.Size packSize = com.senne.imttech.backpack.BackpackItem.sizeOf(pack);
+        if (packSize != null) {
+            int filled = com.senne.imttech.backpack.BackpackItem.filled(pack);
+            options.add(new Option(pack, Component.translatable("screen.imttech.wheel.backpack"),
+                    lines(Component.translatable("screen.imttech.wheel.unzip", pack.getHoverName()),
+                            Component.translatable("screen.imttech.wheel.filled", filled, packSize.slots())),
+                    filled + "/" + packSize.slots(), HudStyle.argb(255, HudStyle.WHITE), true, Gear.ACTION_OPEN_BACKPACK, 0, -1));
         }
         layout();
     }

@@ -312,6 +312,7 @@ public final class ModNetwork {
                     case com.senne.imttech.guns.Gear.ACTION_HOLSTER -> com.senne.imttech.guns.Gear.holsterHand(player);
                     case com.senne.imttech.guns.Gear.ACTION_OPEN -> com.senne.imttech.guns.Gear.openPouch(player, payload.arg());
                     case com.senne.imttech.guns.Gear.ACTION_DRAW_SLING -> com.senne.imttech.guns.Gear.drawSling(player, payload.arg());
+                    case com.senne.imttech.guns.Gear.ACTION_OPEN_BACKPACK -> com.senne.imttech.backpack.Backpacks.openWorn(player);
                     default -> { }
                 }
             }

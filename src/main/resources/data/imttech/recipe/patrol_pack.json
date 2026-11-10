@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "P": {
+      "item": "imttech:polymer"
+    },
+    "S": {
+      "item": "minecraft:string"
+    },
+    "L": {
+      "item": "minecraft:leather"
+    },
+    "C": {
+      "tag": "c:chests/wooden"
+    },
+    "E": {
+      "item": "imttech:steel_ingot"
+    }
+  },
+  "pattern": [
+    "PSP",
+    "LCL",
+    "ELE"
+  ],
+  "result": {
+    "id": "imttech:patrol_pack",
+    "count": 1
+  }
+}

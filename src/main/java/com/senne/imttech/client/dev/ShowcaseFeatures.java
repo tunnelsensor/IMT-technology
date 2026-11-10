@@ -3475,6 +3475,59 @@ final class ShowcaseFeatures {
                     player.getInventory().clearContent();
                     com.senne.imttech.guns.Gear.set(player, com.senne.imttech.guns.GearItem.Kind.HOLSTER, ItemStack.EMPTY);
                 }));
+
+        // ---------------------------------------------------------------- De militaire rugzakken (hoofdstuk 72)
+        BlockPos packs = BackpackTour.YARD;
+        add("Military backpacks", "Hoofdstuk 72, stap 1. Een veldje met zes neergezette rugzakken: voor de drie maten (een "
+                + "olijfgroene Assault Pack, een rode Patrol Pack en een Rucksack in camo), achter een blauwe Rucksack, een "
+                + "zwarte Assault Pack en een oranje Patrol Pack (rood + geel gemengd). Jij draagt een olijfgroene Patrol Pack "
+                + "vol spullen. Eerst rits je hem open (anderhalve seconde stilstaan, met een balkje onder je vizier en het "
+                + "geluid van een rits); dan staat zijn scherm open, met de sorteerknop rechtsboven: alles schuift netjes op "
+                + "een rij. Dan van achteren en van voren in derde persoon: de rugzak op je rug, de banden over je borst. Je "
+                + "pakt een Assault Pack in je hand en zet hem met sneak + rechtsklik op de grond; sneak + rechtsklik met een "
+                + "lege hand pakt hem weer op (je rug is vol, dus in je inventaris). Tot slot het wiel (linker Alt) met de "
+                + "knop Backpack rechts.",
+                GameType.SURVIVAL, new Vec3(packs.getX() + 0.5, packs.getY() + 1, packs.getZ() - 3.5), 0, 20, s -> s
+                .onServer(0, player -> BackpackTour.buildYard(player.serverLevel(), packs))
+                .onServer(0, player -> BackpackTour.wear(player, com.senne.imttech.backpack.BackpackItem.Size.PATROL, -1, false))
+                .lookAt(0, new Vec3(packs.getX() + 0.5, packs.getY() + 1.4, packs.getZ() + 2))
+                .pause(70)
+                // Openritsen, het scherm, sorteren.
+                .onServer(0, com.senne.imttech.backpack.Backpacks::openWorn)
+                .waitUntil(60, () -> Minecraft.getInstance().screen instanceof com.senne.imttech.client.backpack.BackpackScreen)
+                .pause(60)
+                .onServer(0, com.senne.imttech.backpack.Backpacks::sort)
+                .pause(60)
+                .close(10)
+                // Van achteren en van voren.
+                .camera(0, CameraType.THIRD_PERSON_BACK)
+                .pause(50)
+                .camera(0, CameraType.THIRD_PERSON_FRONT)
+                .pause(50)
+                .camera(0, CameraType.FIRST_PERSON)
+                // Een Assault Pack neerzetten en oppakken.
+                .onServer(0, player -> player.getInventory().setItem(0, BackpackTour.pack(com.senne.imttech.backpack.BackpackItem.Size.ASSAULT, -1)))
+                .step(0, () -> hotbar(0))
+                .stand(0, packs.getX() + 0.5, packs.getY() + 1, packs.getZ() - 3.5, 0, 0)
+                .lookAt(0, new Vec3(packs.getX() + 0.5, packs.getY() + 1, packs.getZ() - 1.5))
+                .pause(30)
+                .key(0, () -> Minecraft.getInstance().options.keyShift, true)
+                .lookAt(5, new Vec3(packs.getX() + 0.5, packs.getY() + 1, packs.getZ() - 1.5))
+                .tap(2, () -> Minecraft.getInstance().options.keyUse)
+                .pause(40)
+                .lookAt(0, new Vec3(packs.getX() + 0.5, packs.getY() + 1.3, packs.getZ() - 1.5))
+                .tap(2, () -> Minecraft.getInstance().options.keyUse)
+                .key(5, () -> Minecraft.getInstance().options.keyShift, false)
+                .pause(40)
+                // Het wiel met de rugzakknop.
+                .wheel(0, true)
+                .pause(60)
+                .wheel(0, false)
+                .pause(10)
+                .onServer(0, player -> {
+                    player.getInventory().clearContent();
+                    com.senne.imttech.guns.Gear.setBack(player, ItemStack.EMPTY);
+                }));
     }
 
     /** Hoofdstuk 69: de Frag Trigger van "Raven" in de showcase (altijd hetzelfde nummer). */

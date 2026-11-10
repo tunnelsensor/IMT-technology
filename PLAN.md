@@ -22,13 +22,13 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 467 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 473 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
 **Publiceren:** klaar voor CurseForge onder de MIT-licentie (17 oktober): de beschrijving, het logo, de
 changelog en een stappenplan staan in `publish/` (begin bij `publish/HOE-PUBLICEREN.md`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 121 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 122 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -5998,6 +5998,93 @@ jij gooit die terug of er hangt een remote frag op je base en jij hangt die gewo
       voor hij ging sluipen: sluipen zet je ogen lager, het kruisje zakte onder de lading (de muur kreeg de klik). In het
       echt mik je terwijl je sluipt; de rondleiding doet het nu ook zo. `-Ponly=howtoall,howto:grenade_throwback`: de
       animatie per hoofdstukje. Showcase **121** ("Throwing grenades back"). LEESMIJ aangepast.
+
+### 72. Militaire rugzakken, MOLLE-pouches en het lichaam van een speler (9 en 10 november)
+
+Jouw vraag: "Kun je backpacks zoals sophisticated backpacks toevoegen maar dan minder OP. Het moeten zo militaire tacticle
+backpacks zijn. Vragen of voorstellen stel ze dan."
+
+**Jouw antwoorden** (vier rondes vragen):
+- **Drie maten**: een **Assault Pack** (18 vakjes), een **Patrol Pack** (27) en een **Rucksack** (36), elk een eigen item
+  met een eigen model op je rug.
+- **Minder OP**: **openen kost tijd** (de rits, stilstaan, en met de rugzak open loop je traag), **geen gekke upgrades**
+  (geen magneet, compacting, void of stack-upgrades; geen rugzak of shulkerdoos erin), en een ander kan je rugzak **van
+  achteren openen** en eruit stelen (met een meter zoals bij zakkenrollen). Gewicht (trager lopen met een volle rugzak)
+  koos je niet.
+- **MOLLE-pouches** aan de buitenkant, alle vier die ik voorstelde: een **dump pouch** (raapt je hulzen op), een
+  **MOLLE-magazijnpouch / -granaatpouch** (als je heup-pouch leeg is, pakt R of de granaatpouch hieruit), een **IFAK**
+  (3 genees-items, snel te gebruiken met het wiel) en een **utility pouch** (4 snelle vakjes). Bereikbaar zonder de rits.
+- Een **eigen rugvakje** ("Back" naast je harnas, of het Curios-slot "back"); je rug-sling blijft, het geweer hangt over
+  de rugzak.
+- **Openen**: de rugzaktoets of het wiel als je hem draagt, rechtsklik in je hand; **sneak + rechtsklik op de grond** zet
+  hem neer als blok, en dan opent **iedereen** hem met rechtsklik.
+- **Oplopend duur**: de Assault Pack vroeg (leer, touw, ijzer), de Patrol Pack halverwege (plus polymeer en staal), de
+  Rucksack laat (plus een titanium frame).
+- **Kleur**: "16 kleuren van Minecraft + combineren van deze kleuren zoals leather armor + preset camokleuren die je maakt
+  van bruin, licht en donker groen, dit is dan een kleur op zich".
+- **Extra's**: op het **Pegboard**, **Raven-soldaten** dragen soms een Assault Pack met buit, een **sorteerknop**.
+- **Het lichaam van een speler** (jouw eigen extra): "als je als speler dood gaat laat je ook een body achter zoals de
+  soldiers, je kunt dan deze body leeghalen, de rugzak is dan een apart deel van deze body om leeg te halen. Je kunt als
+  speler je eigen lichaam weer zoeken en looten of andere mensen kunnen je body looten." Het lichaam blijft **tot het leeg
+  is** (een getal in de config als je wil dat het verdwijnt); je moet het **zelf terugvinden** (geen coördinaten, geen
+  markering); **sneak + rechtsklik op de rugzak** haalt de hele rugzak eraf (3 s stilstaan); de eigenaar heeft een knop
+  **"Alles terug"** (3 s stilstaan; wat niet past blijft in het lichaam).
+
+**Mijn invulling** (zeg het als je het anders wilt):
+- De rugzaktoets is **Shift + B**: B is al de Ore Scan van de bril. Met Shift erbij botsen ze niet (NeoForge kijkt eerst
+  naar toetsen met Shift en laat de Ore Scan dan met rust). Aan te passen in Opties > Besturing.
+- Het rugvakje staat in je inventaris **rechts naast de twee sling-vakjes** (onder het craftraster).
+- De recepten: Assault Pack = 6 leer, een touw, een kist, een ijzerstaaf; Patrol Pack = 2 polymeer, 3 leer, een touw, een
+  kist, 2 stalen staven; Rucksack = 2 titanium, 2 polymeer, 2 stalen staven, een touw, een kist, een leer.
+- Een nieuwe rugzak is **olijfgroen**. "Geen dozen in dozen" geldt voor alles wat zelf spullen bewaart: een rugzak, een
+  shulkerdoos, een bundel en een (volle) Ammo Box. Een holster of pouch mag wel.
+- De rits duurt 1,5 s (`zipSeconds`), je mag 0,2 blok bewegen (`zipMoveTolerance`). Je hoort hem, en wie bij je staat ook.
+- Met de rugzak open loop je met **W, A, S en D** op 40 % (`openWalkSpeed`); springen, sluipen en sprinten gaan niet door
+  (Shift heb je nodig voor shift-klikken). Omdat W dan lopen is, gaat "How it works" (ook W) in dat scherm niet open
+  terwijl je loopt.
+- Een neergezette rugzak staat alleen op iets stevigs (gaat de vloer weg, dan valt hij eraf als item). Kapot = de rugzak
+  valt eraf met alles erin, **ook in creative** (zoals een volle shulkerdoos). Oppakken (sneak + lege hand): op je rug als
+  die leeg is, anders in je inventaris.
+- Hebben twee mensen dezelfde rugzak open, dan delen ze **één inhoud**, zoals bij een kist. Gaat de rugzak ergens anders
+  heen terwijl hij open is (je doet hem af, iemand pakt hem op), dan gaat het scherm dicht: zo komt er niets dubbel. Elke
+  rugzak krijgt daarvoor een eigen nummer (`pack_id`) zodra iemand hem opent.
+- Sorteren: gelijke stapels samen, en dan op de naam van het item (eerst de spullen van I.M.T, dan die van Minecraft); lege
+  vakjes achteraan.
+- Op je rug zit de bovenkant van de rugzak op je schouders; van voren zie je de **schouderbanden over je borst** met een
+  borstband, en bij de Rucksack ook een **heupband**. Met een borstplaat zit alles een pixel verder naar buiten.
+
+- [x] **Stap 1: de drie rugzakken** — `backpack/` (eigen registratie: `BackpackRegistry`): `BackpackItem` (de maten,
+      `minecraft:container` voor de inhoud, `mayHold`), `BackpackPlace` (op je rug, in je hand, neergezet),
+      `BackpackInventory` (de gedeelde inhoud per `pack_id`, sorteren), `BackpackMenu`, `BackpackZip` (de rits; met de
+      nep-spelers van de tests geen berichten en een gewoon scherm), `BackpackBlock` + `BackpackBlockEntity` (neergezet,
+      oppakken, kapot), `BackpackDyeRecipe` (mengen zoals leer, met een eigen rekensom: Minecrafts eigen mengfunctie
+      werkt alleen voor "dyeable", en dan zou ook het verfrecept van leer op de rugzak werken; plus camo), `Backpacks`
+      (traag lopen in de server-tick, zodat het ook voor de nep-spelers van de tests werkt; de berichten),
+      `BackpackActionPayload` en `BackpackZipPayload`. `Gear`: het vakje `BACK` (index 5 in de attachment, een oude wereld
+      vult zichzelf aan), `back`/`setBack`, klikken; `CuriosGear`: het slot "back". Config `[backpacks]`. In jouw spel
+      (`client/backpack/`): `BackpackScreen` (de sorteerknop, doorlopen zoals het wiel), `BackpackLayer` (op je rug, de
+      banden; het geweer van je rug-sling schuift naar achteren, `GearLayer`), `BackpackRenderer` (neergezet),
+      `BackpackClient` (de kleur, camo, Shift + B, het balkje van de rits). `GearSlotsOverlay` (het rugvakje),
+      `GearWheelScreen` (de knop Backpack), `HowToHover`. Modellen en plaatjes uit `tools/generate_backpack_models.py`
+      (ook de banden: `models/backpack/straps.json`, `hip_belt.json`), het ritsgeluid uit `generate_sounds.py`
+      (`backpack_zip`). Zes nieuwe tests (`BackpackGameTests`): de rits (halverwege nog dicht, wie beweegt stopt, daarna
+      open, traag lopen, weer gewoon na het sluiten), neerzetten en delen en kapot en oppakken, geen dozen in dozen (ook met
+      shift-klik, en het vakje van je hand op slot), verven en camo (en alleen dit recept past), sorteren, het rugvakje (en
+      het scherm gaat dicht als de rugzak weg is). Bekeken in het spel met `-Ponly=backpack` (pk01 tot pk20: neergezet in
+      zes kleuren, het rugvakje, het creative-menu, van achteren en van voren, met een geweer erover, de rits, het scherm,
+      sorteren, in je hand, het wiel) en `-Ponly=backpackwalk` (met echte toetsen: 4,27 blokken in 1 s met de rugzak dicht,
+      1,71 met hem open = 40 %). Wat ik zo vond: van voren zag je eerst niets van de rugzak (nu de banden over je borst),
+      in eerste persoon was hij veel te groot (nu op 0,3), de MOLLE-banden vielen weg in de kleur (nu donkerder), en de
+      testserver crashte op een bericht naar een nep-speler (nu `ModNetwork.sendTo`). Showcase 123 ("Military backpacks").
+- [ ] **Stap 2: MOLLE-pouches** — de dump pouch, de MOLLE-magazijnpouch en -granaatpouch, de IFAK en de utility pouch:
+      vastmaken in het scherm van de rugzak, op de rugzak getekend, openen via het wiel zonder rits, R en de granaatpouch
+      pakken eruit, de dump pouch raapt hulzen op, de IFAK via het wiel.
+- [ ] **Stap 3: van achteren openen en stelen** — sluipen achter iemand, de rits, het scherm met de meter (zoals
+      zakkenrollen); merkt hij het, dan hoort hij het.
+- [ ] **Stap 4: het lichaam van een speler** — doodgaan laat een lichaam achter met al je spullen (de rugzak apart),
+      blijft tot het leeg is, sneak + rechtsklik op de rugzak haalt hem eraf (3 s), de knop "Alles terug" voor de eigenaar.
+- [ ] **Stap 5: Pegboard, Raven-soldaten, How it works** — rugzakken op het Pegboard (na hoofdstuk 71), Raven-soldaten met
+      een Assault Pack vol buit, en de animaties.
 
 ## Nog nooit in het spel bekeken
 

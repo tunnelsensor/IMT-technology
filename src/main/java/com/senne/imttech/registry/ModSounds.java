@@ -138,6 +138,8 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> BULLET_IMPACT = register("bullet.impact");
     /** Een pistool uit de holster trekken (stap 2). */
     public static final DeferredHolder<SoundEvent, SoundEvent> HOLSTER_DRAW = register("holster.draw");
+    /** Hoofdstuk 72: een rugzak openritsen (de rits duurt 1,5 s, zie backpack/BackpackZip). */
+    public static final DeferredHolder<SoundEvent, SoundEvent> BACKPACK_ZIP = register("backpack.zip");
 
     private static DeferredHolder<SoundEvent, SoundEvent> register(String name) {
         return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, name)));

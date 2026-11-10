@@ -1,0 +1,351 @@
+{
+ "textures": {
+  "fabric": "imttech:item/backpack/fabric",
+  "molle": "imttech:item/backpack/molle",
+  "webbing": "imttech:item/backpack/webbing",
+  "buckle": "imttech:item/backpack/buckle",
+  "cross": "imttech:item/backpack/cross",
+  "particle": "imttech:item/backpack/particle"
+ },
+ "elements": [
+  {
+   "from": [
+    5.5,
+    5.4,
+    5.8
+   ],
+   "to": [
+    10.5,
+    10.0,
+    8.0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      5.5,
+      6.0,
+      10.5,
+      10.6
+     ],
+     "texture": "#molle",
+     "tintindex": 0
+    },
+    "south": {
+     "uv": [
+      5.5,
+      6.0,
+      10.5,
+      10.6
+     ],
+     "texture": "#fabric",
+     "tintindex": 0
+    },
+    "east": {
+     "uv": [
+      5.8,
+      6.0,
+      8.0,
+      10.6
+     ],
+     "texture": "#fabric",
+     "tintindex": 0
+    },
+    "west": {
+     "uv": [
+      5.8,
+      6.0,
+      8.0,
+      10.6
+     ],
+     "texture": "#fabric",
+     "tintindex": 0
+    },
+    "up": {
+     "uv": [
+      5.5,
+      5.8,
+      10.5,
+      8.0
+     ],
+     "texture": "#fabric",
+     "tintindex": 0
+    },
+    "down": {
+     "uv": [
+      5.5,
+      5.8,
+      10.5,
+      8.0
+     ],
+     "texture": "#fabric",
+     "tintindex": 0
+    }
+   }
+  },
+  {
+   "from": [
+    5.4,
+    9.6,
+    5.7
+   ],
+   "to": [
+    10.6,
+    10.1,
+    8.0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      5.4,
+      5.9,
+      10.6,
+      6.4
+     ],
+     "texture": "#webbing"
+    },
+    "south": {
+     "uv": [
+      5.4,
+      5.9,
+      10.6,
+      6.4
+     ],
+     "texture": "#webbing"
+    },
+    "east": {
+     "uv": [
+      5.7,
+      5.9,
+      8.0,
+      6.4
+     ],
+     "texture": "#webbing"
+    },
+    "west": {
+     "uv": [
+      5.7,
+      5.9,
+      8.0,
+      6.4
+     ],
+     "texture": "#webbing"
+    },
+    "up": {
+     "uv": [
+      5.4,
+      5.7,
+      10.6,
+      8.0
+     ],
+     "texture": "#webbing"
+    },
+    "down": {
+     "uv": [
+      5.4,
+      5.7,
+      10.6,
+      8.0
+     ],
+     "texture": "#webbing"
+    }
+   }
+  },
+  {
+   "from": [
+    9.2,
+    9.0,
+    5.4
+   ],
+   "to": [
+    9.8,
+    9.8,
+    5.7
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      9.2,
+      6.2,
+      9.8,
+      7.0
+     ],
+     "texture": "#buckle"
+    },
+    "south": {
+     "uv": [
+      9.2,
+      6.2,
+      9.8,
+      7.0
+     ],
+     "texture": "#buckle"
+    },
+    "east": {
+     "uv": [
+      5.4,
+      6.2,
+      5.7,
+      7.0
+     ],
+     "texture": "#buckle"
+    },
+    "west": {
+     "uv": [
+      5.4,
+      6.2,
+      5.7,
+      7.0
+     ],
+     "texture": "#buckle"
+    },
+    "up": {
+     "uv": [
+      9.2,
+      5.4,
+      9.8,
+      5.7
+     ],
+     "texture": "#buckle"
+    },
+    "down": {
+     "uv": [
+      9.2,
+      5.4,
+      9.8,
+      5.7
+     ],
+     "texture": "#buckle"
+    }
+   }
+  }
+ ],
+ "display": {
+  "gui": {
+   "rotation": [
+    22,
+    200,
+    0
+   ],
+   "translation": [
+    -0.884,
+    1.376,
+    -2.077
+   ],
+   "scale": [
+    2.247,
+    2.247,
+    2.247
+   ]
+  },
+  "fixed": {
+   "rotation": [
+    0,
+    180,
+    0
+   ],
+   "translation": [
+    0,
+    0,
+    0
+   ],
+   "scale": [
+    1.2,
+    1.2,
+    1.2
+   ]
+  },
+  "ground": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    0,
+    2,
+    0
+   ],
+   "scale": [
+    0.8,
+    0.8,
+    0.8
+   ]
+  },
+  "thirdperson_righthand": {
+   "rotation": [
+    0,
+    90,
+    0
+   ],
+   "translation": [
+    0,
+    1,
+    1
+   ],
+   "scale": [
+    0.7,
+    0.7,
+    0.7
+   ]
+  },
+  "thirdperson_lefthand": {
+   "rotation": [
+    0,
+    90,
+    0
+   ],
+   "translation": [
+    0,
+    1,
+    1
+   ],
+   "scale": [
+    0.7,
+    0.7,
+    0.7
+   ]
+  },
+  "firstperson_righthand": {
+   "rotation": [
+    0,
+    160,
+    0
+   ],
+   "translation": [
+    1,
+    2,
+    0
+   ],
+   "scale": [
+    0.8,
+    0.8,
+    0.8
+   ]
+  },
+  "firstperson_lefthand": {
+   "rotation": [
+    0,
+    160,
+    0
+   ],
+   "translation": [
+    1,
+    2,
+    0
+   ],
+   "scale": [
+    0.8,
+    0.8,
+    0.8
+   ]
+  }
+ },
+ "overrides": [
+  {
+   "predicate": {
+    "imttech:camo": 1
+   },
+   "model": "imttech:item/backpack/utility_pouch_camo"
+  }
+ ]
+}

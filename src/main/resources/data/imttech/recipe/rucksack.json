@@ -1,0 +1,33 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "T": {
+      "item": "imttech:titanium_ingot"
+    },
+    "S": {
+      "item": "minecraft:string"
+    },
+    "P": {
+      "item": "imttech:polymer"
+    },
+    "C": {
+      "tag": "c:chests/wooden"
+    },
+    "E": {
+      "item": "imttech:steel_ingot"
+    },
+    "L": {
+      "item": "minecraft:leather"
+    }
+  },
+  "pattern": [
+    "TST",
+    "PCP",
+    "ELE"
+  ],
+  "result": {
+    "id": "imttech:rucksack",
+    "count": 1
+  }
+}

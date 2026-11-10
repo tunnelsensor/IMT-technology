@@ -2348,4 +2348,25 @@ public final class ImtConfig {
         @Tunable(value = "Magazines or energy cells that fit in one Ammo Box", min = 1, max = 64)
         public static float AMMO_BOX_PIECES = 12.0f;
     }
+
+    // =============================================================================================== Backpacks
+
+    /** Hoofdstuk 72: de militaire rugzakken (de Assault Pack, de Patrol Pack en de Rucksack). */
+    @Section("Backpacks (chapter 72): the Assault Pack, Patrol Pack and Rucksack, their zip, MOLLE pouches, stealing from behind, and player bodies")
+    public static final class Backpacks {
+        private Backpacks() {}
+
+        /**
+         * Zo lang duurt het openritsen van een rugzak (jouw keuze: "openen kost tijd"), op je rug, in je hand, op de grond
+         * of van iemand anders. Je moet stilstaan; beweeg je, dan stopt de rits.
+         */
+        @Tunable(value = "Seconds it takes to unzip a backpack (you must stand still)", min = 0, max = 10)
+        public static float ZIP_SECONDS = 1.5f;
+        /** Zo snel loop je met een open rugzak (1 = gewoon, 0,4 = 40 % van je snelheid). */
+        @Tunable(value = "How fast you walk while a backpack is open (1 = normal speed)", min = 0, max = 1)
+        public static float OPEN_WALK_SPEED = 0.4f;
+        /** Zo ver (blokken) mag je bewegen tijdens de rits voor hij stopt. */
+        @Tunable(value = "How far you may move while unzipping before the zip stops (blocks)", min = 0.05, max = 2)
+        public static float ZIP_MOVE_TOLERANCE = 0.2f;
+    }
 }

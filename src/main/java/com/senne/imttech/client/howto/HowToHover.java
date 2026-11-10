@@ -89,7 +89,9 @@ public final class HowToHover {
         }
         boolean hovering = screen != null && !(screen instanceof HowToScreen) && !(screen instanceof HowToIndexScreen)
                 && Util.getMillis() - hoveredAt < 150 && !hovered.isEmpty() && HowToTopics.has(hovered.getItem())
-                && !typing(screen);
+                && !typing(screen)
+                // Hoofdstuk 72: met een rugzak open kun je doorlopen; W is dan lopen, geen How it works.
+                && !(screen instanceof com.senne.imttech.client.backpack.BackpackScreen backpack && backpack.walking());
         if (waitForRelease || !hovering) {
             reset();
             return;

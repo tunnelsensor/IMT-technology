@@ -59,11 +59,18 @@ public final class Gear {
     public static final int ACTION_OPEN = 3;
     /** Hoofdstuk 55: het geweer uit dit sling-vakje (0 = je rug, 1 = je borst) trekken. */
     public static final int ACTION_DRAW_SLING = 4;
+    /** Hoofdstuk 72: de rugzak op je rug openritsen (zie backpack/Backpacks.openWorn). */
+    public static final int ACTION_OPEN_BACKPACK = 5;
 
     /** Zoveel sling-vakjes draag je (jouw keuze: twee, een op je rug en een voor je borst). */
     public static final int SLINGS = 2;
-    /** Zoveel vakjes heeft de attachment: de drie van GearItem.Kind, en dan de slings. */
-    public static final int SLOTS = GearItem.Kind.values().length + SLINGS;
+    /**
+     * Hoofdstuk 72: het vakje van je rugzak ("Back", jouw keuze: een eigen rugvakje naast je harnas), na de slings. Een
+     * oude wereld zonder dit vakje vult het rijtje vanzelf aan (GearContents.sized).
+     */
+    public static final int BACK = GearItem.Kind.values().length + SLINGS;
+    /** Zoveel vakjes heeft de attachment: de drie van GearItem.Kind, dan de slings, dan je rugzak. */
+    public static final int SLOTS = BACK + 1;
 
     private static Boolean curiosLoaded;
 
@@ -119,6 +126,23 @@ public final class Gear {
             return CuriosGear.setSling(player, index, stack);
         }
         setSlot(player, GearItem.Kind.values().length + index, stack);
+        return true;
+    }
+
+    /** De rugzak op je rug (een kopie), of leeg (hoofdstuk 72). */
+    public static ItemStack back(Player player) {
+        if (curios()) {
+            return CuriosGear.back(player);
+        }
+        return player.getData(ModAttachments.GEAR).get(BACK);
+    }
+
+    /** Deze rugzak (of leeg) op je rug. Geeft false als dat niet kan (Curios zonder slot "back"). */
+    public static boolean setBack(Player player, ItemStack stack) {
+        if (curios()) {
+            return CuriosGear.setBack(player, stack);
+        }
+        setSlot(player, BACK, stack);
         return true;
     }
 
@@ -473,7 +497,8 @@ public final class Gear {
 
     /**
      * Een klik op een van de eigen vakjes (zie GearClickPayload): de drie naast je harnas (holster, granaatpouch,
-     * magazijnpouch; {@code index} 0-2) of de twee sling-vakjes onder het craftraster (3 en 4). Wat je aan je muis hebt
+     * magazijnpouch; {@code index} 0-2), de twee sling-vakjes onder het craftraster (3 en 4) of (hoofdstuk 72) je rugzak
+     * ernaast (5). Wat je aan je muis hebt
      * gaat erin, wat erin zat komt aan je muis (of ze wisselen). In een sling-vakje past alleen een geweer met een sling.
      */
     public static void click(ServerPlayer player, int index) {
@@ -485,9 +510,12 @@ public final class Gear {
             return;
         }
         ItemStack carried = menu.getCarried();
-        boolean sling = index >= GearItem.Kind.values().length;
-        ItemStack worn = sling ? sling(player, index - GearItem.Kind.values().length) : get(player, GearItem.Kind.values()[index]);
-        boolean fits = sling ? slingAccepts(carried) : GearItem.kindOf(carried) == GearItem.Kind.values()[index];
+        boolean back = index == BACK;
+        boolean sling = !back && index >= GearItem.Kind.values().length;
+        ItemStack worn = back ? back(player) : sling ? sling(player, index - GearItem.Kind.values().length)
+                : get(player, GearItem.Kind.values()[index]);
+        boolean fits = back ? com.senne.imttech.backpack.BackpackItem.isBackpack(carried)
+                : sling ? slingAccepts(carried) : GearItem.kindOf(carried) == GearItem.Kind.values()[index];
         if (carried.isEmpty()) {
             if (worn.isEmpty()) {
                 return;

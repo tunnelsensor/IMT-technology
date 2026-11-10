@@ -550,5 +550,13 @@
         "name": "imttech:holster_draw"
       }
     ]
+  },
+  "backpack.zip": {
+    "subtitle": "subtitles.imttech.backpack.zip",
+    "sounds": [
+      {
+        "name": "imttech:backpack_zip"
+      }
+    ]
   }
 }

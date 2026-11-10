@@ -1075,6 +1075,26 @@ def holster_draw():
     return finish(total, peak=0.45)
 
 
+def backpack_zip():
+    """
+    Hoofdstuk 72: een rugzak openritsen. Een rits is een rij tandjes die een voor een loskomen: korte tikjes ruis,
+    steeds sneller na elkaar en iets hoger, met een zacht gesis van de stof eronder. Ruim een seconde, net zo lang als
+    de rits duurt (de mod laat hem 1,5 s lopen).
+    """
+    duration = 1.25
+    total = np.zeros(int(RATE * duration))
+    t = 0.04
+    gap = 0.034
+    while t < duration - 0.08:
+        tick = bandpass(noise(0.012), 2200, 7000) * decay(0.012, 260)
+        place(total, tick * (0.55 + 0.25 * rng.random()), t)
+        t += gap * (0.75 + 0.5 * rng.random())
+        gap = max(0.012, gap * 0.985)
+    cloth = bandpass(noise(duration), 500, 2400) * np.sin(np.linspace(0, np.pi, int(RATE * duration))) * 0.18
+    total = mix(total, cloth)
+    return finish(total, peak=0.5)
+
+
 SOUNDS = {
     "imt_boot": imt_boot,
     "imt_blip": imt_blip,
@@ -1145,6 +1165,7 @@ SOUNDS = {
     "casing_tink": casing_tink,
     "bullet_impact": bullet_impact,
     "holster_draw": holster_draw,
+    "backpack_zip": backpack_zip,
 }
 
 

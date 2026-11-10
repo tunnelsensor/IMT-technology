@@ -98,10 +98,11 @@ public final class GearLayer extends RenderLayer<AbstractClientPlayer, PlayerMod
             renderMagPouch(pose, buffers, light, player, magazines);
         }
         if (!back.isEmpty()) {
-            renderSlung(pose, buffers, light, back, true);
+            // Hoofdstuk 72: met een rugzak hangt het geweer over de rugzak heen (jouw keuze).
+            renderSlung(pose, buffers, light, back, true, com.senne.imttech.client.backpack.BackpackLayer.slingShift(player));
         }
         if (!chest.isEmpty()) {
-            renderSlung(pose, buffers, light, chest, false);
+            renderSlung(pose, buffers, light, chest, false, 0);
         }
         pose.popPose();
     }
@@ -223,7 +224,7 @@ public final class GearLayer extends RenderLayer<AbstractClientPlayer, PlayerMod
      * Een geweer uit een sling-vakje (hoofdstuk 55): schuin over je rug (de loop linksboven, de kolf rechtsonder) of
      * voor je borst (gespiegeld), met zijn sling eraan, en een leren band over je schouder, voor en achter.
      */
-    private static void renderSlung(PoseStack pose, MultiBufferSource buffers, int light, ItemStack gun, boolean back) {
+    private static void renderSlung(PoseStack pose, MultiBufferSource buffers, int light, ItemStack gun, boolean back, float shift) {
         float side = back ? 1 : -1;
         // De band over je schouder: van de ene schouder schuin naar de andere heup, aan beide kanten van je lijf.
         for (float z : new float[]{-0.215f, 0.215f}) {
@@ -236,7 +237,7 @@ public final class GearLayer extends RenderLayer<AbstractClientPlayer, PlayerMod
         }
         // Het geweer: plat tegen je rug (of borst), schuin.
         pose.pushPose();
-        pose.translate(0, 0.36, 0.265 * side);
+        pose.translate(0, 0.36, 0.265 * side + shift);
         pose.mulPose(Axis.ZP.rotationDegrees(180 - 40 * side));
         pose.mulPose(Axis.YP.rotationDegrees(90 * side));
         pose.scale(SLING_SCALE, SLING_SCALE, SLING_SCALE);
