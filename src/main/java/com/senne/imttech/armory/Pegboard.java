@@ -104,6 +104,18 @@ public final class Pegboard {
         if (stack.getItem() instanceof GunSlingItem) {
             return new int[]{3, 3};
         }
+        // Hoofdstuk 72, stap 5 (jouw keuze): de rugzakken (met hun pouches) en de losse MOLLE-pouches.
+        com.senne.imttech.backpack.BackpackItem.Size pack = com.senne.imttech.backpack.BackpackItem.sizeOf(stack);
+        if (pack != null) {
+            return switch (pack) {
+                case ASSAULT -> new int[]{5, 6};
+                case PATROL -> new int[]{6, 7};
+                case RUCKSACK -> new int[]{7, 9};
+            };
+        }
+        if (stack.getItem() instanceof com.senne.imttech.backpack.MolleItem) {
+            return new int[]{3, 3};
+        }
         if (stack.is(ModItems.ION_BLASTER.get())) {
             return new int[]{4, 4};
         }

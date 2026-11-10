@@ -2112,6 +2112,8 @@ heeft 8 x 8 gaatjes, en alles klikt vast op dat raster.
 - Hoe groot (in gaatjes): sniper 10 x 3, rifle 8 x 3, shotgun 7 x 3, laserpistool en Ion Blaster 4 x 4, Glock 4 x 3,
   magazijn en cel 1 x 3, trigger 1 x 4, granaat, Remote EMP/Frag en pouch 2 x 2, holster 2 x 3, sling 3 x 3. Een sniper
   past dus niet op één paneel, wel over twee naast elkaar: een wapen mag over de panelen rechts en boven hangen.
+- Sinds hoofdstuk 72 ook de **rugzakken** (met de banden naar je toe en hun MOLLE-pouches erop; wat erin zit blijft
+  erin): Assault Pack 5 x 6, Patrol Pack 6 x 7, Rucksack 7 x 9; en de losse **MOLLE-pouches** 3 x 3.
 - **Rechtsklik met een lege hand** op wat hangt: je pakt het (in je hand), precies zoals het was. Je ziet een **wit
   kader** om wat je zou pakken.
 - **Sneak + rechtsklik met een lege hand**: het draait: loop naar links (je ziet de linkerkant), naar rechts, naar beneden,
@@ -2217,6 +2219,17 @@ tijd verdwijnt: `bodyMinutes`), en je moet het **zelf terugvinden**: geen coörd
 **Verven** in de crafting table, zoals leren harnas: de rugzak met een of meer kleurstoffen (ook gemengd, bijvoorbeeld rood
 + geel = oranje). Nieuw is hij olijfgroen. **Bruin + lichtgroen + groen** (elk één) maakt **camo**: een eigen patroon,
 geen mengkleur. Een camo-rugzak met een andere kleurstof wordt weer gewoon die kleur. Wat erin zit blijft.
+
+**Op het Pegboard** (stap 5). Een rugzak hangt op een Pegboard zoals een wapen (rechtsklik ermee op het paneel), met de
+banden naar je toe en zijn MOLLE-pouches erop; wat erin zit blijft erin. Een Assault Pack neemt 5 x 6 gaatjes, een Patrol
+Pack 6 x 7, een Rucksack 7 x 9, en een losse MOLLE-pouch 3 x 3.
+
+**Raven-soldaten** (stap 5) dragen soms (35 %, `ravenPackChance`) een antracietgrijze Assault Pack. Valt zo'n soldaat, dan
+zit zijn rugzak in zijn lichaam, vol buit: patronen (en soms een magazijn), of een energiecel als hij een lasergeweer had,
+eten, en soms een onderdeel van een Glock of fakkels.
+
+**How it works**: houd W op een rugzak of een pouch (in je inventaris): "Military backpacks" (de maten, dragen, de rits,
+neerzetten, kleuren, van achteren openen en het lichaam) en "MOLLE pouches" (elke pouch).
 
 ### Prestaties (advancements)
 De mod heeft een eigen prestatieboom die je door het spel leidt, van je eerste computerchip tot

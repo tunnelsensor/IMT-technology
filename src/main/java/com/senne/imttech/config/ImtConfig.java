@@ -2419,5 +2419,10 @@ public final class ImtConfig {
         /** Zo lang (seconden) duurt "Everything back" bij je eigen lichaam (stilstaan). */
         @Tunable(value = "Seconds 'Everything back' takes at your own body (stand still)", min = 0, max = 30)
         public static float BODY_RESTORE_SECONDS = 3.0f;
+
+        // Stap 5: de Raven-soldaten.
+        /** Zoveel kans (0 tot 1) heeft een Raven-soldaat op een antracietgrijze Assault Pack vol buit. */
+        @Tunable(value = "Chance (0 to 1) that a Raven soldier carries a charcoal Assault Pack full of loot", min = 0, max = 1)
+        public static float RAVEN_PACK_CHANCE = 0.35f;
     }
 }

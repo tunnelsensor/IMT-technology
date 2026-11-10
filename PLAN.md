@@ -22,13 +22,13 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 488 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 490 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
 **Publiceren:** klaar voor CurseForge onder de MIT-licentie (17 oktober): de beschrijving, het logo, de
 changelog en een stappenplan staan in `publish/` (begin bij `publish/HOE-PUBLICEREN.md`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 125 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 126 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -6084,6 +6084,17 @@ backpacks zijn. Vragen of voorstellen stel ze dan."
   (de plek die Minecraft geeft is de bovenkant van de doos, en die ligt dichter bij je dan de rugzak die je ziet). Sneak + rechtsklik op het lichaam sleept het mee, zoals een Raven-soldaat. "Everything back" doet
   eerst het scherm dicht (dan zie je het balkje), en wat niet past blijft liggen. Wat andere mods laten vallen (met Curios ook
   de holster, pouches en rugzak) gaat in de laatste 8 vakjes. Een leeg lichaam verdwijnt met een wolkje.
+- **Op het Pegboard** (stap 5): een Assault Pack neemt 5 x 6 gaatjes, een Patrol Pack 6 x 7, een Rucksack 7 x 9, een losse
+  MOLLE-pouch 3 x 3. Ze hangen met hun voorkant (de MOLLE-banden) naar je toe, een rugzak met zijn pouches erop, en wat erin
+  zit blijft erin. Draaien (sneak + rechtsklik) legt hem op zijn zij, zoals de rest; naar links en naar rechts zijn voor een
+  rugzak hetzelfde.
+- **Raven-soldaten** (stap 5): 35 % (`ravenPackChance`) krijgt bij het verschijnen een Assault Pack, **antracietgrijs** (zwart
+  zag je op hun zwarte uniform amper). Valt hij, dan zit de rugzak met de rest van wat hij laat vallen in zijn lichaam, vol
+  buit over de vakjes verspreid: 12 tot 32 patronen 9 mm en 40 % kans op een Glock-magazijn (had hij een lasergeweer: een
+  energiecel), brood of gebakken vlees, 15 % kans op een stalen onderdeel van een Glock en 30 % op fakkels.
+- **How it works** (stap 5): twee onderwerpen bij de wapens, na de armory: "Military backpacks" (zeven hoofdstukjes, 1:00: de
+  drie maten, op je rug, de rits, neerzetten, kleuren, van achteren, het lichaam) en "MOLLE pouches" (zes, 0:40: ophangen en
+  elke pouch apart). Je opent ze met W op een rugzak of een pouch.
 
 - [x] **Stap 1: de drie rugzakken** — `backpack/` (eigen registratie: `BackpackRegistry`): `BackpackItem` (de maten,
       `minecraft:container` voor de inhoud, `mayHold`), `BackpackPlace` (op je rug, in je hand, neergezet),
@@ -6156,8 +6167,20 @@ backpacks zijn. Vragen of voorstellen stel ze dan."
       (`RaidDroneEntity`). De test `raid_starts_outside_a_base` viel een paar keer om met "hij heeft geen doelwit"; hij zegt
       nu ook op wie de drone wel mikt, of dat hij gestoord is door een EMP (mijn vermoeden: een EMP van een test ernaast; de
       granaattest van de MOLLE-pouch ruimt zijn gegooide EMP nu meteen op). Showcase 126 ("Player bodies").
-- [ ] **Stap 5: Pegboard, Raven-soldaten, How it works** — rugzakken op het Pegboard (na hoofdstuk 71), Raven-soldaten met
-      een Assault Pack vol buit, en de animaties.
+- [x] **Stap 5: Pegboard, Raven-soldaten, How it works** — `Pegboard.size` (de maten van de rugzakken en pouches) en
+      `PegboardRenderer` (een rugzak of pouch met zijn voorkant naar je toe, een rugzak met zijn pouches erop via
+      `BackpackLayer.renderPouches`): mijn enige regels in die twee bestanden; het werk van hoofdstuk 70 en 71 van de andere
+      sessie zit er ook in, maar niet in mijn commit. `backpack/RavenPacks` (de rugzak en de buit), `RavenSoldierEntity` (de
+      rugzak als gesynchroniseerd item, bewaard als "Pack"; de kans bij het verschijnen; vol buit in `dropCustomDeathLoot`,
+      zodat hij met de rest in zijn lichaam komt), `RavenSoldierRenderer` (een laag met de rugzak, zoals bij een speler). How
+      it works: `howto/scenes/BackpackScenes` (de twee animaties), `HowToTopics`, `SceneLife` (een speler in een animatie
+      draagt nu ook een rugzak: de zesde plek in `worn`), `HowToGameTests` (zes plekken uitrusting mag nu). Twee nieuwe tests:
+      een Raven-soldaat met een rugzak valt (de rugzak zit in zijn lichaam, met minstens twee stapels buit), en rugzakken en
+      pouches op het Pegboard (de maten, en een Assault Pack met brood erin hangt). Bekeken met `-Ponly=backpack` (pk43 tot
+      pk46: de wand, de soldaat van achteren, zijn lichaam met de rugzak, de buit in je hand) en
+      `-Ponly=howtoall,howto:backpacks` en `howto:molle_pouches` (elk hoofdstukje). Wat ik zo vond: de zwarte rugzak zag je op
+      het zwarte uniform van een Raven-soldaat amper (nu antracietgrijs), en in de animatie lag het lichaam half achter het
+      tekstvak (nu gedraaid, met een olijfgroene rugzak). Showcase 127 ("Backpacks on the pegboard, Raven packs").
 
 ## Nog nooit in het spel bekeken
 

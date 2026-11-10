@@ -79,6 +79,14 @@ public final class HowToTopics {
                     ModItems.MAG_POUCH, ModItems.GUN_SLING),
             topic("armory", "weapons", "Armory: pegboard and ammo box", com.senne.imttech.howto.scenes.ArmoryScenes::armory,
                     ModItems.PEGBOARD, ModItems.AMMO_BOX),
+            // Hoofdstuk 72: de militaire rugzakken (en van achteren openen, en het lichaam van een speler), en de MOLLE-pouches.
+            topic("backpacks", "weapons", "Military backpacks", com.senne.imttech.howto.scenes.BackpackScenes::backpacks,
+                    com.senne.imttech.backpack.BackpackRegistry.ASSAULT_PACK, com.senne.imttech.backpack.BackpackRegistry.PATROL_PACK,
+                    com.senne.imttech.backpack.BackpackRegistry.RUCKSACK),
+            topic("molle_pouches", "weapons", "MOLLE pouches", com.senne.imttech.howto.scenes.BackpackScenes::molle,
+                    com.senne.imttech.backpack.BackpackRegistry.MOLLE_MAG_POUCH, com.senne.imttech.backpack.BackpackRegistry.MOLLE_GRENADE_POUCH,
+                    com.senne.imttech.backpack.BackpackRegistry.DUMP_POUCH, com.senne.imttech.backpack.BackpackRegistry.IFAK,
+                    com.senne.imttech.backpack.BackpackRegistry.UTILITY_POUCH),
             // ------------------------------------------------------------ Power
             topic("power_battery", "power", "Power Battery", PowerScenes::battery, ModItems.BATTERY_CASING, ModItems.BATTERY_GLASS,
                     ModItems.BATTERY_CELL, ModItems.BATTERY_PORT),

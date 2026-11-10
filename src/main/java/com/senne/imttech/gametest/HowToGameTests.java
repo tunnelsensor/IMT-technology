@@ -136,7 +136,9 @@ public final class HowToGameTests {
                         case HowToCue.Smoke smoke -> check(!smoke.cells().isEmpty(),
                                 name + ": rook zonder plek (begint de wolk in een blok?)");
                         case HowToCue.Crack crack -> check(crack.stage() >= -1 && crack.stage() <= 9, name + ": barsten " + crack.stage());
-                        case HowToCue.Actor actor -> check(actor.worn().size() <= 5, name + ": te veel uitrusting voor " + actor.key());
+                        // De holster, de twee pouches, de twee slings en (hoofdstuk 72) de rugzak: zoveel vakjes als Gear heeft.
+                        case HowToCue.Actor actor -> check(actor.worn().size() <= com.senne.imttech.guns.Gear.SLOTS,
+                                name + ": te veel uitrusting voor " + actor.key());
                         default -> {
                         }
                     }

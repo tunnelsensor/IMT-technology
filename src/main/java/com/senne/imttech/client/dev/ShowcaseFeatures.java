@@ -3748,6 +3748,54 @@ final class ShowcaseFeatures {
                     player.getInventory().clearContent();
                     com.senne.imttech.guns.Gear.setBack(player, ItemStack.EMPTY);
                 }));
+        add("Backpacks on the pegboard, Raven packs", "Hoofdstuk 72, stap 5. Achter het veldje hangt een wand van zes Pegboards: "
+                + "links een olijfgroene Assault Pack, in het midden een Patrol Pack in camo, rechts een blauwe Rucksack, elk met "
+                + "zijn MOLLE-pouches erop en met de banden naar je toe; eronder de vijf losse pouches (magazijnen, granaten, dump "
+                + "pouch, IFAK, utility). Je loopt naar de Rucksack toe. Dan een Raven-soldaat met zijn rug naar je toe: hij "
+                + "draagt een antracietgrijze Assault Pack. Hij valt, en in zijn lichaam (rechtsklik) zit zijn rugzak. Je haalt "
+                + "hem eruit (shift-klik), neemt hem in je hand en ritst hem open: patronen of een energiecel, eten, en soms een "
+                + "magazijn, een onderdeel van een Glock of fakkels. Tot slot How it works van de Assault Pack: de animatie "
+                + "\"Military backpacks\" (de MOLLE-pouches hebben er ook een).",
+                GameType.SURVIVAL, new Vec3(packs.getX() + 0.5, packs.getY() + 1, packs.getZ() + 1.2), 0, 8, s -> s
+                .onServer(0, player -> {
+                    BackpackTour.buildYard(player.serverLevel(), packs);
+                    BackpackTour.buildPegboard(player.serverLevel(), packs);
+                    player.getInventory().clearContent();
+                    com.senne.imttech.guns.Gear.setBack(player, ItemStack.EMPTY);
+                })
+                .pause(100)
+                // Van dichtbij: de Rucksack met zijn vier pouches (het derde paneel, rechts).
+                .stand(0, packs.getX() - 0.45, packs.getY() + 1, packs.getZ() + 2.8, 0, 0)
+                .lookAt(0, new Vec3(packs.getX() - 0.45, packs.getY() + 2.3, packs.getZ() + 4.9))
+                .pause(70)
+                // Een Raven-soldaat met zijn rug naar je toe; hij valt, en je doorzoekt zijn lichaam.
+                .onServer(0, player -> BackpackTour.spawnPackedRaven(player.serverLevel(), packs.getX() + 3.5, packs.getY() + 1,
+                        packs.getZ() - 2.5))
+                .stand(10, packs.getX() + 3.5, packs.getY() + 1, packs.getZ() + 0.5, 180, 15)
+                .pause(70)
+                .onServer(0, BackpackTour::dropRavens)
+                .pause(30)
+                .stand(0, packs.getX() + 3.5, packs.getY() + 1, packs.getZ() - 0.8, 180, 55)
+                .pause(30)
+                .onServer(0, BackpackTour::searchRavenBody)
+                .pause(60)
+                .step(0, BackpackTour::takePackFromScreen)
+                .pause(30)
+                .close(10)
+                .onServer(0, BackpackTour::unzipPackInHand)
+                .waitUntil(60, () -> Minecraft.getInstance().screen instanceof com.senne.imttech.client.backpack.BackpackScreen)
+                .pause(90)
+                .close(10)
+                // How it works, zoals W op de rugzak in je inventaris.
+                .step(0, () -> com.senne.imttech.client.howto.HowToScreen.open(
+                        new ItemStack(com.senne.imttech.backpack.BackpackRegistry.ASSAULT_PACK.get())))
+                .pause(300)
+                .close(10)
+                .onServer(0, player -> {
+                    player.serverLevel().getEntitiesOfClass(com.senne.imttech.raven.RavenBodyEntity.class,
+                            player.getBoundingBox().inflate(12)).forEach(net.minecraft.world.entity.Entity::discard);
+                    player.getInventory().clearContent();
+                }));
     }
 
     /** Hoofdstuk 72, stap 4: shift-klik op dit vakje van het open scherm (een lichaam doorzoeken), zoals met je muis. */

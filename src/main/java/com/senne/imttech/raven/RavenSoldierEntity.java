@@ -58,6 +58,8 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
     private static final EntityDataAccessor<Byte> ALERT = SynchedEntityData.defineId(RavenSoldierEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Byte> SUSPICION = SynchedEntityData.defineId(RavenSoldierEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Integer> SUSPECT = SynchedEntityData.defineId(RavenSoldierEntity.class, EntityDataSerializers.INT);
+    /** Hoofdstuk 72, stap 5: de rugzak op zijn rug (soms een antracietgrijze Assault Pack), ook in jouw spel om hem te tekenen. */
+    private static final EntityDataAccessor<ItemStack> PACK = SynchedEntityData.defineId(RavenSoldierEntity.class, EntityDataSerializers.ITEM_STACK);
     /**
      * 8 november: een sluipaanval (Takedown) is een korte worsteling. Wie hem vastheeft (het nummer van de speler, -1 =
      * niemand) en hoe lang het duurt (ticks, 0 = niemand heeft hem vast); je spel tekent er de animatie mee
@@ -149,6 +151,16 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
         builder.define(SUSPECT, -1);
         builder.define(TAKEDOWN_BY, -1);
         builder.define(TAKEDOWN_LENGTH, 0);
+        builder.define(PACK, ItemStack.EMPTY);
+    }
+
+    /** Hoofdstuk 72, stap 5: de rugzak op zijn rug, of leeg. */
+    public ItemStack pack() {
+        return entityData.get(PACK);
+    }
+
+    public void setPack(ItemStack pack) {
+        entityData.set(PACK, pack.copy());
     }
 
     // ================================================================ Zijn zintuigen (hoofdstuk 60)
@@ -354,6 +366,12 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
     @Override
     protected void dropCustomDeathLoot(ServerLevel level, net.minecraft.world.damagesource.DamageSource source, boolean recentlyHit) {
         super.dropCustomDeathLoot(level, source, recentlyHit);
+        // Hoofdstuk 72, stap 5: zijn rugzak, vol buit (die komt met de rest in zijn lichaam, zie Bodies).
+        if (!pack().isEmpty()) {
+            boolean laser = com.senne.imttech.weapons.LaserGunItem.typeOf(getMainHandItem()) != null;
+            spawnAtLocation(com.senne.imttech.backpack.RavenPacks.filled(pack(), getRandom(), laser));
+            setPack(ItemStack.EMPTY);
+        }
         if (keycardGuard) {
             ItemStack card = com.senne.imttech.structures.TowerGuards.staffCard(level, blockPosition());
             if (!card.isEmpty()) {
@@ -419,6 +437,9 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
         tag.putString("Callsign", callsign);
         tag.putBoolean("Backup", backup);
         tag.putBoolean("Leaving", leaving);
+        if (!pack().isEmpty()) {
+            tag.put("Pack", pack().save(registryAccess()));
+        }
         if (post != null) {
             tag.putLong("Post", post.asLong());
         }
@@ -437,6 +458,7 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
         callsign = tag.getString("Callsign");
         backup = tag.getBoolean("Backup");
         leaving = tag.getBoolean("Leaving");
+        setPack(tag.contains("Pack") ? ItemStack.parseOptional(registryAccess(), tag.getCompound("Pack")) : ItemStack.EMPTY);
         post = tag.contains("Post") ? net.minecraft.core.BlockPos.of(tag.getLong("Post")) : null;
         route = tag.contains("Route")
                 ? java.util.Arrays.stream(tag.getLongArray("Route")).mapToObj(net.minecraft.core.BlockPos::of).toList()
@@ -453,6 +475,10 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
         }
         if (callsign.isEmpty()) {
             callsign = "BB-" + (1000 + level.getRandom().nextInt(9000));
+        }
+        // Hoofdstuk 72, stap 5 (jouw keuze): soms een antracietgrijze Assault Pack op zijn rug.
+        if (pack().isEmpty() && level.getRandom().nextFloat() < ImtConfig.Backpacks.RAVEN_PACK_CHANCE) {
+            setPack(com.senne.imttech.backpack.RavenPacks.pack());
         }
         return result;
     }

@@ -817,4 +817,53 @@ public final class BackpackGameTests {
             helper.succeed();
         });
     }
+
+    // ================================================================ Stap 5: Raven-soldaten en het Pegboard
+
+    /** Een Raven-soldaat met een Assault Pack valt: de rugzak zit vol buit in zijn lichaam. */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "bodies")
+    public static void raven_soldier_pack_goes_into_his_body(GameTestHelper helper) {
+        floor(helper, new BlockPos(3, 2, 3));
+        com.senne.imttech.raven.RavenSoldierEntity soldier = helper.spawn(com.senne.imttech.registry.ModEntities.RAVEN_SOLDIER.get(),
+                new BlockPos(3, 2, 3));
+        soldier.setPack(com.senne.imttech.backpack.RavenPacks.pack());
+        soldier.kill();
+        helper.succeedWhen(() -> {
+            List<com.senne.imttech.raven.RavenBodyEntity> bodies = helper.getLevel().getEntitiesOfClass(
+                    com.senne.imttech.raven.RavenBodyEntity.class, helper.getBounds().inflate(2));
+            check(!bodies.isEmpty(), "De soldaat liet geen lichaam achter");
+            ItemStack found = ItemStack.EMPTY;
+            for (int i = 0; i < bodies.getFirst().loot().getContainerSize(); i++) {
+                if (BackpackItem.isBackpack(bodies.getFirst().loot().getItem(i))) {
+                    found = bodies.getFirst().loot().getItem(i);
+                }
+            }
+            check(BackpackItem.sizeOf(found) == BackpackItem.Size.ASSAULT, "Zijn Assault Pack zit niet in zijn lichaam");
+            check(BackpackItem.filled(found) >= 2, "Zijn rugzak is (bijna) leeg: " + BackpackItem.filled(found) + " stapels buit");
+            bodies.getFirst().discard();
+        });
+    }
+
+    /** Rugzakken en MOLLE-pouches mogen op het Pegboard (jouw keuze), met hun eigen maat in gaatjes. */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "backpacks")
+    public static void backpacks_hang_on_the_pegboard(GameTestHelper helper) {
+        int[] assault = com.senne.imttech.armory.Pegboard.size(pack(BackpackItem.Size.ASSAULT));
+        int[] rucksack = com.senne.imttech.armory.Pegboard.size(pack(BackpackItem.Size.RUCKSACK));
+        check(assault != null && assault[0] == 5 && assault[1] == 6, "Een Assault Pack is geen 5 x 6 gaatjes");
+        check(rucksack != null && rucksack[0] == 7 && rucksack[1] == 9, "Een Rucksack is geen 7 x 9 gaatjes");
+        check(com.senne.imttech.armory.Pegboard.hangable(new ItemStack(BackpackRegistry.IFAK.get())), "Een IFAK mag niet op het Pegboard");
+        BlockPos board = new BlockPos(3, 2, 4);
+        helper.setBlock(board.south(), Blocks.STONE);
+        helper.setBlock(board, com.senne.imttech.registry.ModBlocks.PEGBOARD.get().defaultBlockState()
+                .setValue(com.senne.imttech.armory.PegboardBlock.FACING, Direction.NORTH));
+        helper.setBlock(board.above(), com.senne.imttech.registry.ModBlocks.PEGBOARD.get().defaultBlockState()
+                .setValue(com.senne.imttech.armory.PegboardBlock.FACING, Direction.NORTH));
+        BlockPos abs = helper.absolutePos(board);
+        double cu = com.senne.imttech.armory.Pegboard.column(abs, Direction.NORTH) * com.senne.imttech.armory.Pegboard.CELLS + 1 + 2.5;
+        double cv = abs.getY() * com.senne.imttech.armory.Pegboard.CELLS + 1 + 3;
+        check(com.senne.imttech.armory.PegboardBlock.hangAt(null, helper.getLevel(), abs, Direction.NORTH, cu, cv,
+                pack(BackpackItem.Size.ASSAULT, new ItemStack(Items.BREAD, 3)), com.senne.imttech.armory.Pegboard.Turn.LEFT),
+                "Een Assault Pack hing niet op het Pegboard");
+        helper.succeed();
+    }
 }

@@ -425,7 +425,140 @@ final class BackpackTour {
             player.getInventory().clearContent();
             Gear.setBack(player, ItemStack.EMPTY);
         });
+
+        // Stap 5: een wand van Pegboards met de drie rugzakken (met hun pouches) en losse pouches, en een Raven-soldaat met
+        // zijn antracietgrijze Assault Pack (van achteren). Hij valt: zijn rugzak zit vol buit in zijn lichaam; je haalt hem
+        // eruit en ritst hem open in je hand.
+        t.onServer(0, player -> buildPegboard(player.serverLevel(), o));
+        t.stand(10, o.getX() + 0.5, o.getY() + 1, o.getZ() + 1.2, 0, 8);
+        t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+        t.shot(20, "pk43_pegboard_backpacks");
+        t.onServer(0, player -> spawnPackedRaven(player.serverLevel(), o.getX() + 3.5, o.getY() + 1, o.getZ() - 2.5));
+        t.stand(10, o.getX() + 3.5, o.getY() + 1, o.getZ() + 0.5, 180, 15);
+        t.shot(20, "pk44_raven_soldier_with_pack");
+        t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+        t.onServer(0, BackpackTour::dropRavens);
+        t.stand(30, o.getX() + 3.5, o.getY() + 1, o.getZ() - 0.8, 180, 55);
+        t.onServer(0, BackpackTour::searchRavenBody);
+        t.shot(20, "pk45_raven_body_with_pack");
+        t.step(0, BackpackTour::takePackFromScreen);
+        t.close(10);
+        t.onServer(0, BackpackTour::unzipPackInHand);
+        t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof BackpackScreen);
+        t.shot(10, "pk46_raven_pack_loot");
+        t.close(10);
+        t.onServer(0, player -> {
+            player.serverLevel().getEntitiesOfClass(com.senne.imttech.raven.RavenBodyEntity.class, player.getBoundingBox().inflate(10))
+                    .forEach(net.minecraft.world.entity.Entity::discard);
+            player.getInventory().clearContent();
+        });
         t.command(10, "gamemode creative @a");
+    }
+
+    /** Stap 5: een Raven-soldaat die stilstaat met zijn rug naar het zuiden, met zijn antracietgrijze Assault Pack en een Glock. */
+    static void spawnPackedRaven(ServerLevel level, double x, double y, double z) {
+        com.senne.imttech.raven.RavenSoldierEntity soldier = com.senne.imttech.registry.ModEntities.RAVEN_SOLDIER.get().create(level);
+        if (soldier == null) {
+            return;
+        }
+        soldier.moveTo(x, y, z, 180, 0);
+        soldier.setYHeadRot(180);
+        soldier.setYBodyRot(180);
+        soldier.setNoAi(true);
+        soldier.setPersistenceRequired();
+        soldier.setPack(com.senne.imttech.backpack.RavenPacks.pack());
+        soldier.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, com.senne.imttech.guns.FirearmItem.loaded(
+                com.senne.imttech.guns.FirearmType.GLOCK_19, com.senne.imttech.guns.GunMaterial.STEEL));
+        level.addFreshEntity(soldier);
+    }
+
+    /** Stap 5: de Raven-soldaten bij je vallen (hun lichaam blijft liggen, met hun rugzak erin). */
+    static void dropRavens(ServerPlayer player) {
+        player.serverLevel().getEntitiesOfClass(com.senne.imttech.raven.RavenSoldierEntity.class, player.getBoundingBox().inflate(10),
+                net.minecraft.world.entity.Entity::isAlive).forEach(net.minecraft.world.entity.LivingEntity::kill);
+    }
+
+    /** Stap 5: het dichtstbijzijnde Raven-lichaam doorzoeken, zoals een rechtsklik erop. */
+    static void searchRavenBody(ServerPlayer player) {
+        com.senne.imttech.raven.RavenBodyEntity nearest = null;
+        for (com.senne.imttech.raven.RavenBodyEntity body : player.serverLevel().getEntitiesOfClass(
+                com.senne.imttech.raven.RavenBodyEntity.class, player.getBoundingBox().inflate(10))) {
+            if (nearest == null || body.distanceToSqr(player) < nearest.distanceToSqr(player)) {
+                nearest = body;
+            }
+        }
+        if (nearest != null) {
+            nearest.interact(player, net.minecraft.world.InteractionHand.MAIN_HAND);
+        }
+    }
+
+    /** Stap 5: shift-klik op de eerste rugzak in het open scherm (een lichaam), zoals met je muis: hij gaat naar je inventaris. */
+    static void takePackFromScreen() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.gameMode == null
+                || !(mc.screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> screen)) {
+            return;
+        }
+        net.minecraft.world.inventory.AbstractContainerMenu menu = screen.getMenu();
+        for (int i = 0; i < Math.min(9, menu.slots.size()); i++) {
+            if (BackpackItem.isBackpack(menu.getSlot(i).getItem())) {
+                mc.gameMode.handleInventoryMouseClick(menu.containerId, i, 0, net.minecraft.world.inventory.ClickType.QUICK_MOVE, mc.player);
+                return;
+            }
+        }
+    }
+
+    /** Stap 5: de eerste rugzak uit je inventaris in je hand, en dan openritsen (zoals een rechtsklik ermee). */
+    static void unzipPackInHand(ServerPlayer player) {
+        net.minecraft.world.entity.player.Inventory inventory = player.getInventory();
+        for (int i = 0; i < inventory.items.size(); i++) {
+            ItemStack pack = inventory.items.get(i);
+            if (BackpackItem.isBackpack(pack)) {
+                ItemStack held = inventory.getSelected();
+                inventory.setItem(inventory.selected, pack);
+                if (i != inventory.selected) {
+                    inventory.setItem(i, held);
+                }
+                break;
+            }
+        }
+        com.senne.imttech.backpack.BackpackZip.start(player,
+                com.senne.imttech.backpack.BackpackPlace.hand(player, net.minecraft.world.InteractionHand.MAIN_HAND));
+    }
+
+    /**
+     * Stap 5: 3 x 2 Pegboards tegen de muur van het veldje (ze kijken naar het noorden, naar de camera), met de drie
+     * rugzakken in hun kleuren (en hun pouches), en losse MOLLE-pouches eronder.
+     */
+    static void buildPegboard(ServerLevel level, BlockPos origin) {
+        Direction facing = Direction.NORTH;
+        BlockPos leftBottom = origin.offset(1, 1, 4);
+        for (int du = 0; du < 3; du++) {
+            for (int dv = 0; dv < 2; dv++) {
+                BlockPos pos = com.senne.imttech.armory.Pegboard.offset(leftBottom, facing, du, dv);
+                level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+                level.setBlockAndUpdate(pos, com.senne.imttech.registry.ModBlocks.PEGBOARD.get().defaultBlockState()
+                        .setValue(com.senne.imttech.armory.PegboardBlock.FACING, facing));
+            }
+        }
+        hang(level, leftBottom, facing, 1, 8, withPouches(pack(BackpackItem.Size.ASSAULT, -1)));
+        hang(level, leftBottom, facing, 8, 8, withPouches(pack(BackpackItem.Size.PATROL, -2)));
+        hang(level, leftBottom, facing, 16, 6, withPouches(pack(BackpackItem.Size.RUCKSACK, 0x3C44AA)));
+        com.senne.imttech.backpack.MolleItem.Kind[] kinds = com.senne.imttech.backpack.MolleItem.Kind.values();
+        for (int i = 0; i < kinds.length; i++) {
+            hang(level, leftBottom, facing, 1 + i * 3, 2, new ItemStack(com.senne.imttech.backpack.BackpackRegistry.molle(kinds[i])));
+        }
+    }
+
+    /** Dit item op het Pegboard, met zijn linkeronderhoek op gaatje ({@code u}, {@code v}) van de wand (zoals ArmoryDisplay). */
+    private static void hang(ServerLevel level, BlockPos leftBottom, Direction facing, int u, int v, ItemStack stack) {
+        int[] size = com.senne.imttech.armory.Pegboard.size(stack, com.senne.imttech.armory.Pegboard.Turn.LEFT);
+        double cu = com.senne.imttech.armory.Pegboard.column(leftBottom, facing) * com.senne.imttech.armory.Pegboard.CELLS + u + size[0] / 2.0;
+        double cv = leftBottom.getY() * com.senne.imttech.armory.Pegboard.CELLS + v + size[1] / 2.0;
+        if (!com.senne.imttech.armory.PegboardBlock.hangAt(null, level, leftBottom, facing, cu, cv, stack,
+                com.senne.imttech.armory.Pegboard.Turn.LEFT)) {
+            ImtTech.LOGGER.warn("[backpack tour] geen plek op het Pegboard voor {} op {}, {}", stack.getHoverName().getString(), u, v);
+        }
     }
 
     /** Het lichaam het dichtst bij deze speler (binnen 8 blokken), of null. */

@@ -27,6 +27,27 @@ public class RavenSoldierRenderer extends HumanoidMobRenderer<RavenSoldierEntity
 
     public RavenSoldierRenderer(EntityRendererProvider.Context context) {
         super(context, new Model(context.bakeLayer(LAYER)), 0.5f);
+        addLayer(new PackLayer(this));
+    }
+
+    /** Hoofdstuk 72, stap 5: zijn rugzak op zijn rug (soms een antracietgrijze Assault Pack), zoals bij een speler. */
+    private static final class PackLayer extends net.minecraft.client.renderer.entity.layers.RenderLayer<RavenSoldierEntity, Model> {
+        PackLayer(net.minecraft.client.renderer.entity.RenderLayerParent<RavenSoldierEntity, Model> parent) {
+            super(parent);
+        }
+
+        @Override
+        public void render(PoseStack pose, net.minecraft.client.renderer.MultiBufferSource buffers, int light, RavenSoldierEntity soldier,
+                           float limbSwing, float limbSwingAmount, float partialTick, float ageInTicks, float netHeadYaw, float headPitch) {
+            net.minecraft.world.item.ItemStack pack = soldier.pack();
+            if (pack.isEmpty() || soldier.isInvisible()) {
+                return;
+            }
+            pose.pushPose();
+            getParentModel().body.translateAndRotate(pose);
+            com.senne.imttech.client.backpack.BackpackLayer.renderOnBack(pose, buffers, light, pack, soldier.level(), false);
+            pose.popPose();
+        }
     }
 
     @Override

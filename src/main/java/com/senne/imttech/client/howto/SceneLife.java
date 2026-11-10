@@ -222,7 +222,8 @@ final class SceneLife {
     }
 
     /**
-     * Wat een speler aan uitrusting draagt (de holster, de pouches en de twee slings, zie HowToCue.Actor#worn): dan tekent
+     * Wat een speler aan uitrusting draagt (de holster, de pouches, de twee slings en sinds hoofdstuk 72 een rugzak, zie
+     * HowToCue.Actor#worn): dan tekent
      * het spel ze op zijn lijf. Met Curios in de modpack lukt dat bij een speler in de animatie niet (hij heeft geen
      * Curios-vakjes); dan zie je ze gewoon niet.
      */
@@ -236,6 +237,8 @@ final class SceneLife {
                 int index = kinds.length + i;
                 Gear.setSling(person, i, index < worn.size() ? worn.get(index).copy() : ItemStack.EMPTY);
             }
+            // Hoofdstuk 72: als zesde de rugzak op zijn rug.
+            Gear.setBack(person, Gear.BACK < worn.size() ? worn.get(Gear.BACK).copy() : ItemStack.EMPTY);
         } catch (RuntimeException e) {
             ImtTech.LOGGER.warn("[how it works] de uitrusting van een speler lukt niet", e);
         }

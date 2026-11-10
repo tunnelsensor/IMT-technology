@@ -176,6 +176,10 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
         pose.translate(0.5, 0.5, 0.5);
         Minecraft.getInstance().getItemRenderer().render(stack, ItemDisplayContext.NONE, false, pose, buffers, light,
                 OverlayTexture.NO_OVERLAY, model);
+        // Hoofdstuk 72, stap 5: een rugzak met zijn MOLLE-pouches erop.
+        if (com.senne.imttech.backpack.BackpackItem.isBackpack(stack)) {
+            com.senne.imttech.client.backpack.BackpackLayer.renderPouches(pose, buffers, light, OverlayTexture.NO_OVERLAY, stack, level);
+        }
     }
 
     /**
@@ -197,6 +201,12 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
             if (turn == Pegboard.Turn.RIGHT) {
                 q.rotateY((float) Math.PI);
             }
+            return q;
+        }
+        // Hoofdstuk 72, stap 5: een rugzak of MOLLE-pouch hangt met zijn voorkant (de MOLLE-banden) naar je toe; in zijn
+        // model kijkt die naar -z, dus een halve draai.
+        if (com.senne.imttech.backpack.BackpackItem.isBackpack(stack) || stack.getItem() instanceof com.senne.imttech.backpack.MolleItem) {
+            q.rotateY((float) Math.PI);
             return q;
         }
         q.rotateY((float) Math.toRadians(turn == Pegboard.Turn.RIGHT ? -90 : 90));
