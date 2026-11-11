@@ -244,8 +244,9 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
 // this works with both building through Gradle and the IDE.
 sourceSets.main.resources.srcDir generateModMetadata
 
-// De licentie van de mod (MIT) en die van de meegeleverde bibliotheken gaan mee in de jar: de MIT- en
-// Apache-licenties vragen dat hun tekst bij elke kopie zit. Met de mod-id in de naam, zodat je ziet van wie ze zijn.
+// De licentie van de mod (All Rights Reserved) en die van de meegeleverde bibliotheken gaan mee in de jar: de MIT- en
+// Apache-licenties van die bibliotheken vragen dat hun tekst bij elke kopie zit. Met de mod-id in de naam, zodat je
+// ziet van wie ze zijn.
 tasks.named('jar', Jar).configure {
     def suffix = "_${mod_id}".toString()
     from('LICENSE') {

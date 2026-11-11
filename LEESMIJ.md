@@ -2632,7 +2632,8 @@ showcase en staat hij bij NIEUW.
 - **Publiceren op CurseForge**: alles wat je nodig hebt (beschrijving, samenvatting, changelog,
   projectplaatje en een stappenplan) staat in de map `publish/`. Begin bij
   `publish/HOE-PUBLICEREN.md`.
-- **Licentie**: de mod valt onder de MIT-licentie (zie `LICENSE`): iedereen mag hem gebruiken,
-  aanpassen en verspreiden, zolang jouw naam en de licentie erbij blijven. De bibliotheken van
-  anderen die in de jar zitten (voor het Claude-brein) houden hun eigen licentie: zie
-  `THIRD-PARTY-LICENSES.txt`. Beide bestanden gaan vanzelf mee in de jar.
+- **Licentie**: **All Rights Reserved** (zie `LICENSE`; van 17 oktober tot 11 november was het
+  MIT): alle rechten blijven bij jou. Spelers kunnen de mod van jouw CurseForge-pagina halen en
+  spelen, maar niemand mag hem kopiëren, aanpassen of zelf verspreiden zonder jouw schriftelijke
+  toestemming. De bibliotheken van anderen die in de jar zitten (voor het Claude-brein) houden hun
+  eigen licentie: zie `THIRD-PARTY-LICENSES.txt`. Beide bestanden gaan vanzelf mee in de jar.

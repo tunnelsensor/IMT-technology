@@ -26,8 +26,9 @@ Afspraken die overal gelden:
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
-**Publiceren:** klaar voor CurseForge onder de MIT-licentie (17 oktober): de beschrijving, het logo, de
-changelog en een stappenplan staan in `publish/` (begin bij `publish/HOE-PUBLICEREN.md`).
+**Publiceren:** klaar voor CurseForge (17 oktober), onder **All Rights Reserved** (sinds 11 november, daarvoor
+MIT): de beschrijving, het logo, de changelog en een stappenplan staan in `publish/` (begin bij
+`publish/HOE-PUBLICEREN.md`).
 Alles zelf bekijken: `python tools/showcase.py` laat alle 128 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
@@ -6491,6 +6492,24 @@ heb je nu crushed gunpowder nodig dat betekend dus dat je met 1 gunpowder 10 9mm
       de eerste keer niet op: tussen de muis verzetten en de foto zat een seconde, en dan zet Minecraft de muis terug
       waar de echte muis staat zodra die beweegt (mijn vermoeden). Nu neemt hij de foto vlak erna, en toen stond hij er wel.
 - [x] LEESMIJ (Barsten herstellen, Patronen en de Reloading Bench) bijgewerkt.
+
+### 77. De licentie wordt All Rights Reserved, en alles op GitHub (11 november)
+
+Jouw vraag: "Kun je alles naar github pushen en de licentie veranderen naar all right reserved dankjewel".
+
+- [x] **De licentie** — `LICENSE` is nu een All Rights Reserved-tekst: copyright tunnelsensor, en niemand mag de mod
+      (code, textures, modellen, geluiden, gebouwen, teksten) kopiëren, aanpassen of verspreiden zonder jouw schriftelijke
+      toestemming. Onderaan staat nog steeds dat de bibliotheken van anderen in de jar hun eigen MIT- en Apache-licentie
+      houden (`THIRD-PARTY-LICENSES.txt` bleef hetzelfde). `mod_license=All Rights Reserved` in `gradle.properties` (zo
+      staat het in de modlijst van Minecraft), en `publish/description.md`, `publish/HOE-PUBLICEREN.md` (stap 7),
+      LEESMIJ (hoofdstuk 9) en de uitleg in `build.gradle` zeggen het nu ook. De oude jar in `publish/release/` (2.0.0)
+      heeft nog de MIT-tekst; een nieuwe `gradlew build` heeft de nieuwe.
+- [x] **Op GitHub** — eerst gecommit wat nog in de werkmap lag: het Pegboard-werk van hoofdstuk 70 en 71 en jouw eigen
+      logo (`publish/I.M.T technology logo.png`, in de plaats van het gemaakte `avatar-400.png`). Daarna alles naar
+      GitHub gepusht (`origin/master`; de vorige push was op 17 oktober).
+- [x] **Tests** — vooraf twee keer alle 497 gedraaid: telkens 496 groen en één van de bekende wisselvallige tests rood
+      (de eerste keer `guard_searches_where_he_lost_you`, de tweede keer `raven_soldier_shoots`; elk was groen in de
+      andere ronde).
 
 ## Nog nooit in het spel bekeken
 

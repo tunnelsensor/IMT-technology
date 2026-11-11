@@ -105,7 +105,7 @@ while you hold a gun.
 Made by **tunnelsensor**, with the help of Claude Code (an AI coding assistant). The textures,
 sounds and buildings are made by the mod's own generator scripts.
 
-License: **MIT**. The bundled libraries for the Claude brain keep their own licenses (MIT and
+License: **All Rights Reserved**. The bundled libraries for the Claude brain keep their own licenses (MIT and
 Apache 2.0, see `THIRD-PARTY-LICENSES_imttech.txt` in the jar). The optional voice and AI parts
 are by rhasspy (Piper), ggml-org (llama.cpp) and Alibaba Qwen (Qwen models).
 

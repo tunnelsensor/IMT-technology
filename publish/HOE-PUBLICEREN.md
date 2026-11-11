@@ -36,7 +36,8 @@ De jar staat dan in `build/libs/`, met de versie in de naam: bijvoorbeeld `imtte
 5. **Avatar**: `avatar-400.png`.
 6. **Categories**: hoofdcategorie **Technology**. Extra (tot vier): bijvoorbeeld **Armor,
    Tools, and Weapons**, **Redstone**, **Structures** en **Energy**.
-7. **License**: **MIT**.
+7. **License**: **All Rights Reserved** (sinds 11 november; daarvoor MIT). Staat je project al
+   op CurseForge met MIT, verander het dan ook daar in de instellingen van je project.
 8. Links (bron, issues, Discord) mag je leeg laten: je repo is privé, en spelers kunnen
    reageren op je projectpagina.
 
