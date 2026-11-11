@@ -21,7 +21,9 @@ import org.jetbrains.annotations.Nullable;
  *
  * Jouw keuze: "deze onderdelen moeten wel heel duur zijn, ze moeten endgame zijn": titanium (met diamanten, chips en
  * lasermodules) en netherite (een titanium onderdeel plus twee Netherite Ingots). Op de Laser Workbench sleep je ze in
- * het geweer (zie LaserWorkbenchBlockEntity).
+ * het geweer (zie LaserWorkbenchBlockEntity). Maken doe je ze sinds hoofdstuk 78 op de Gunsmith Table (het tabblad
+ * "Make parts", zie GunsmithRecipe), niet meer in de crafting table; elk onderdeel van de rifle, sniper en shotgun kost
+ * er het kenmerk van zijn geweer bij (kwarts, amethist of glowstone), zodat geen twee recepten hetzelfde zijn.
  */
 public class LaserPartItem extends Item {
     private final GunType gun;
@@ -120,5 +122,7 @@ public class LaserPartItem extends Item {
         }
         tooltip.add(Component.translatable("tooltip.imttech.laser_part.table", Component.translatable("item.imttech." + gun.id))
                 .withStyle(ChatFormatting.DARK_GRAY));
+        // Hoofdstuk 78: je maakt het op de Gunsmith Table (in elkaar zetten doe je op de Laser Workbench).
+        tooltip.add(Component.translatable("tooltip.imttech.gunsmith.made").withStyle(ChatFormatting.DARK_GRAY));
     }
 }

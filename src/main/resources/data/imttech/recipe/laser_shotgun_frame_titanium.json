@@ -1,18 +1,18 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "category": "equipment",
-  "key": {
-    "C": {
-      "item": "imttech:computer_chip"
+  "type": "imttech:gunsmithing",
+  "ingredients": [
+    {
+      "item": "imttech:titanium_ingot",
+      "count": 7
     },
-    "T": {
-      "item": "imttech:titanium_ingot"
+    {
+      "item": "imttech:computer_chip",
+      "count": 1
+    },
+    {
+      "tag": "c:dusts/glowstone",
+      "count": 2
     }
-  },
-  "pattern": [
-    "TTT",
-    "TCT",
-    "T T"
   ],
   "result": {
     "id": "imttech:laser_shotgun_frame",

@@ -46,6 +46,10 @@ import org.joml.Vector3f;
  * onderdelen, waar ze zitten, hoe het wapen getekend wordt, de teksten) vragen we aan de tafel zelf: de abstracte
  * methodes onderaan.
  *
+ * Hoofdstuk 78: de Gunsmith Table heeft twee tabbladen bovenaan, <b>Build</b> (alles hierboven) en <b>Make parts</b>
+ * (onderdelen maken, zie {@link GunsmithMakePanel}). Jouw wens: onderdelen maak je alleen nog daar, niet meer in de
+ * crafting table. De Laser Workbench heeft geen tabbladen: die zet alleen in elkaar (jouw keuze).
+ *
  * @param <P> de soort onderdelen van deze tafel (GunPart of LaserPart); zijn nummer is het nummer voor de server.
  */
 public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContainerScreen<GunsmithMenu> {
@@ -56,6 +60,8 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
     protected static final int TRAY_X = 6, TRAY_Y = 26, TRAY_W = 74, TRAY_H = 152;
     protected static final int VIEW_X = 84, VIEW_Y = 18, VIEW_W = 150, VIEW_H = 160;
     protected static final int SIDE_X = 238, SIDE_W = 84;
+    /** Hoofdstuk 78: de tabbladen "Build" en "Make parts" in de titelbalk. */
+    private static final int TAB_Y = 3, TAB_H = 13;
     /** Tot zo ver (pixels) van zijn plek klikt een onderdeel vast. */
     private static final int SNAP = 16;
 
@@ -75,6 +81,13 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
     private final Map<P, Button> removeButtons = new HashMap<>();
     /** Waar elk onderdeel op het scherm ligt (deze frame): zijn vak. */
     private final Map<P, int[]> zones = new HashMap<>();
+    /** Hoofdstuk 78: het tabblad "Make parts" (alleen als de tafel onderdelen maakt, zie {@link #makesParts}); anders null. */
+    private @Nullable GunsmithMakePanel make;
+    private @Nullable Button makeButton;
+    /** Staat het tabblad "Make parts" open (in plaats van "Build")? */
+    private boolean making;
+    /** Welk tabblad het laatst open stond: de tafel gaat weer open zoals je hem achterliet (zolang het spel draait). */
+    private static boolean wasMaking;
 
     protected PartsTableScreen(GunsmithMenu menu, Inventory inventory, Component title, P[] all) {
         super(menu, inventory, title);
@@ -163,6 +176,11 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
     /** De uitleg bij een onderdeel in het wapen als je er met de muis over gaat. */
     protected abstract List<Component> partTooltip(ItemStack gun, P part, PartState state);
 
+    /** Maakt deze tafel ook onderdelen (het tabblad "Make parts")? Alleen de Gunsmith Table (hoofdstuk 78, jouw keuze). */
+    protected boolean makesParts() {
+        return false;
+    }
+
     // ================================================================ Het scherm
 
     @Override
@@ -177,6 +195,99 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
                     b -> click(GunsmithMenu.REMOVE + part.ordinal())).bounds(leftPos + SIDE_X + SIDE_W - 12, y, 12, 12).build());
             removeButtons.put(part, button);
             y += rowStep();
+        }
+        // Hoofdstuk 78: het tabblad "Make parts", met zijn knop op de plek van "Take the pistol".
+        if (makesParts()) {
+            make = new GunsmithMakePanel(font);
+            making = wasMaking;
+            makeButton = addRenderableWidget(Button.builder(Component.translatable("screen.imttech.gunsmith.make"), b -> {
+                int recipe = make == null ? -1 : make.selectedIndex();
+                if (recipe >= 0) {
+                    click(GunsmithMenu.MAKE + recipe);
+                }
+            }).bounds(leftPos + SIDE_X, topPos + imageHeight - 26, SIDE_W, 18).build());
+        }
+        updateWidgets();
+    }
+
+    // ================================================================ De tabbladen (hoofdstuk 78)
+
+    /** Het tabblad "Make parts" openen ({@code true}) of "Build" ({@code false}). Ook voor de rondleiding. */
+    public void showMaking(boolean value) {
+        if (make == null) {
+            return;
+        }
+        making = value;
+        wasMaking = value;
+        dragSlot = -1;
+        dragPart = null;
+        updateWidgets();
+    }
+
+    /** Het tabblad "Make parts" (voor de rondleiding), of null als deze tafel geen onderdelen maakt. */
+    public @Nullable GunsmithMakePanel makePanel() {
+        return make;
+    }
+
+    /** De twee tabbladen in de titelbalk, na de naam van de tafel: x, breedte. */
+    private int[] tab(boolean forMaking) {
+        int build = font.width(Component.translatable("screen.imttech.gunsmith.tab.build")) + 12;
+        int makeW = font.width(Component.translatable("screen.imttech.gunsmith.tab.make")) + 12;
+        int x = leftPos + 8 + font.width(title) + 10;
+        return forMaking ? new int[]{x + build + 3, makeW} : new int[]{x, build};
+    }
+
+    /** Op welk tabblad staat de muis: true (Make parts), false (Build), of null (geen van beide). */
+    private @Nullable Boolean tabAt(double mouseX, double mouseY) {
+        if (make == null || mouseY < topPos + TAB_Y || mouseY >= topPos + TAB_Y + TAB_H) {
+            return null;
+        }
+        for (boolean forMaking : new boolean[]{false, true}) {
+            int[] tab = tab(forMaking);
+            if (mouseX >= tab[0] && mouseX < tab[0] + tab[1]) {
+                return forMaking;
+            }
+        }
+        return null;
+    }
+
+    private void renderTabs(GuiGraphics g, int mouseX, int mouseY) {
+        if (make == null) {
+            return;
+        }
+        Boolean hover = tabAt(mouseX, mouseY);
+        for (boolean forMaking : new boolean[]{false, true}) {
+            int[] tab = tab(forMaking);
+            boolean active = forMaking == making;
+            int y = topPos + TAB_Y;
+            if (active) {
+                g.fill(tab[0], y, tab[0] + tab[1], y + TAB_H, HudStyle.argb(45, HudStyle.CYAN));
+            }
+            g.renderOutline(tab[0], y, tab[1], TAB_H, active ? HudStyle.argb(255, HudStyle.CYAN) : FRAME);
+            Component text = Component.translatable(forMaking ? "screen.imttech.gunsmith.tab.make" : "screen.imttech.gunsmith.tab.build");
+            int colour = active ? HudStyle.CYAN : hover != null && hover == forMaking ? HudStyle.WHITE : 0x9AA7B0;
+            g.drawString(font, text, tab[0] + 6, y + 3, HudStyle.argb(255, colour), false);
+        }
+    }
+
+    /** Wat er van elk tabblad te zien is: de knoppen van "Build" of die van "Make parts". */
+    private void updateWidgets() {
+        ItemStack gun = menu.gun();
+        take.visible = !making;
+        take.active = !gun.isEmpty();
+        for (P part : all) {
+            Button button = removeButtons.get(part);
+            PartState state = state(gun, part);
+            boolean covered = state != null && !reachable(part, gun);
+            button.visible = !making && state != null;
+            button.active = state != null && !covered && removable(part, gun);
+            Component why = covered ? coveredTooltip(part, gun) : null;
+            button.setTooltip(why == null ? null : Tooltip.create(why));
+        }
+        if (make != null && makeButton != null && minecraft != null && minecraft.player != null) {
+            make.tick(minecraft.player);
+            makeButton.visible = making;
+            makeButton.active = make.canMake();
         }
     }
 
@@ -199,17 +310,7 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
     protected void containerTick() {
         super.containerTick();
         rebuildRows();
-        ItemStack gun = menu.gun();
-        take.active = !gun.isEmpty();
-        for (P part : all) {
-            Button button = removeButtons.get(part);
-            PartState state = state(gun, part);
-            boolean covered = state != null && !reachable(part, gun);
-            button.visible = state != null;
-            button.active = state != null && !covered && removable(part, gun);
-            Component why = covered ? coveredTooltip(part, gun) : null;
-            button.setTooltip(why == null ? null : Tooltip.create(why));
-        }
+        updateWidgets();
     }
 
     /** De lijst links: onderdelen en wapens uit je inventaris (niets anders). */
@@ -240,6 +341,12 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
         g.fill(x, y, x + imageWidth, y + imageHeight, PANEL);
         g.renderOutline(x, y, imageWidth, imageHeight, FRAME);
         HudStyle.brackets(g, x + 2, y + 2, x + imageWidth - 3, y + imageHeight - 3, 8, HudStyle.argb(255, HudStyle.ORANGE));
+        renderTabs(g, mouseX, mouseY);
+        if (making && make != null) {
+            // Hoofdstuk 78: het tabblad "Make parts" tekent zichzelf.
+            make.render(g, x, y, mouseX, mouseY);
+            return;
+        }
         // Links: de lijst.
         g.fill(x + TRAY_X, y + TRAY_Y, x + TRAY_X + TRAY_W, y + TRAY_Y + TRAY_H, TRAY_BG);
         g.renderOutline(x + TRAY_X, y + TRAY_Y, TRAY_W, TRAY_H, FRAME);
@@ -494,6 +601,13 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
     @Override
     protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {
         g.drawString(font, title, 8, 6, HudStyle.argb(255, HudStyle.CYAN), false);
+        if (making) {
+            small(g, Component.translatable("screen.imttech.gunsmith.make.weapons").getString(), TRAY_X + 2, TRAY_Y - 9,
+                    HudStyle.argb(170, HudStyle.ORANGE));
+            small(g, Component.translatable("screen.imttech.gunsmith.make.hint").getString(), GunsmithMakePanel.GRID_X + 2,
+                    GunsmithMakePanel.GRID_Y + GunsmithMakePanel.GRID_H + 2, HudStyle.argb(140, HudStyle.WHITE));
+            return;
+        }
         small(g, "YOUR PARTS", TRAY_X + 2, TRAY_Y - 9, HudStyle.argb(170, HudStyle.ORANGE));
         small(g, hint(), VIEW_X + 2, VIEW_Y + VIEW_H + 2, HudStyle.argb(140, HudStyle.WHITE));
     }
@@ -501,6 +615,10 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
+        if (making && make != null) {
+            make.renderTooltip(g, leftPos, topPos, mouseX, mouseY);
+            return;
+        }
         // Een uitleg bij een onderdeel in het wapen.
         if (dragSlot < 0 && dragPart == null) {
             P part = hoveredPart(mouseX, mouseY);
@@ -515,6 +633,25 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        // Hoofdstuk 78: een tabblad, of iets op het tabblad "Make parts".
+        if (button == 0 && make != null) {
+            Boolean tab = tabAt(mouseX, mouseY);
+            if (tab != null) {
+                if (tab != making) {
+                    showMaking(tab);
+                    Minecraft.getInstance().getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
+                            net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0f));
+                }
+                return true;
+            }
+        }
+        if (making && make != null) {
+            if (button == 0 && make.mouseClicked(leftPos, topPos, mouseX, mouseY)) {
+                updateWidgets();
+                return true;
+            }
+            return super.mouseClicked(mouseX, mouseY, button);
+        }
         if (button == 0) {
             // Een rij links: beginnen met slepen.
             int x = leftPos + TRAY_X;
@@ -545,6 +682,9 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (making) {
+            return super.mouseReleased(mouseX, mouseY, button);
+        }
         if (button == 0 && dragSlot >= 0) {
             Row row = draggedRow();
             int slot = dragSlot;
@@ -581,6 +721,13 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (making && make != null) {
+            if (make.mouseScrolled(leftPos, topPos, mouseX, mouseY, scrollY)) {
+                updateWidgets();
+                return true;
+            }
+            return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        }
         if (mouseX >= leftPos + TRAY_X && mouseX < leftPos + TRAY_X + TRAY_W) {
             scroll = Mth.clamp(scroll - (int) (scrollY * ROW_H), 0, Math.max(0, rows.size() * ROW_H - TRAY_H + 4));
             return true;
@@ -594,6 +741,9 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (making) {
+            return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        }
         if (button == 1 && mouseX >= leftPos + VIEW_X && mouseX < leftPos + VIEW_X + VIEW_W) {
             yaw += (float) dragX * 0.8f;
             pitch = Mth.clamp(pitch + (float) dragY * 0.8f, -60, 60);

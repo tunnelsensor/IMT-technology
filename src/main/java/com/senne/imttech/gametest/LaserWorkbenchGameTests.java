@@ -3,6 +3,7 @@ package com.senne.imttech.gametest;
 import com.senne.imttech.ImtTech;
 import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.guns.GunMaterial;
+import com.senne.imttech.guns.GunsmithRecipe;
 import com.senne.imttech.guns.PartState;
 import com.senne.imttech.registry.ModBlocks;
 import com.senne.imttech.registry.ModItems;
@@ -206,24 +207,30 @@ public final class LaserWorkbenchGameTests {
 
     /**
      * De recepten (jouw keuze: heel duur, endgame): een netherite onderdeel is een titanium onderdeel plus twee Netherite
-     * Ingots; de oude recepten van de geweren zelf zijn weg (die bouw je op de tafel). En een geweer uit een oude wereld
+     * Ingots; de oude recepten van de geweren zelf zijn weg (die bouw je op de tafel). Sinds hoofdstuk 78 maak je het op
+     * de Gunsmith Table (een eigen soort recept), niet meer in de crafting table. En een geweer uit een oude wereld
      * (zonder onderdelen) krijgt er complete titanium onderdelen en een kern bij zodra het in een inventaris ligt.
      */
     @GameTest(template = ARENA, timeoutTicks = 60, batch = "weapons")
     public static void netherite_upgrade_recipe_and_old_guns_get_parts(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
-        var input = CraftingInput.of(3, 1, List.of(
-                LaserPartItem.of(GunType.RIFLE, LaserPart.EMITTER, GunMaterial.TITANIUM, 55),
-                new ItemStack(Items.NETHERITE_INGOT), new ItemStack(Items.NETHERITE_INGOT)));
-        var recipe = level.getRecipeManager().getRecipeFor(RecipeType.CRAFTING, input, level);
-        check(recipe.isPresent(), "Er is geen recept voor een netherite emitter (titanium emitter + 2 netherite ingots)");
-        ItemStack result = recipe.get().value().assemble(input, level.registryAccess());
+        var holder = level.getRecipeManager().byKey(ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "laser_rifle_emitter_netherite"));
+        check(holder.isPresent() && holder.get().value() instanceof GunsmithRecipe,
+                "Er is geen recept op de Gunsmith Table voor een netherite emitter (titanium emitter + 2 netherite ingots)");
+        GunsmithRecipe recipe = (GunsmithRecipe) holder.get().value();
+        List<ItemStack> ingredients = List.of(LaserPartItem.of(GunType.RIFLE, LaserPart.EMITTER, GunMaterial.TITANIUM, 55),
+                new ItemStack(Items.NETHERITE_INGOT), new ItemStack(Items.NETHERITE_INGOT));
+        var input = new GunsmithRecipe.Carried(ingredients);
+        check(recipe.matches(input, level), "Een gebruikte titanium emitter met twee Netherite Ingots past niet op het recept");
+        ItemStack result = recipe.assemble(input, level.registryAccess());
         check(LaserPartItem.partOf(result) == LaserPart.EMITTER && LaserPartItem.gunOf(result) == GunType.RIFLE
-                && LaserPartItem.materialOf(result) == GunMaterial.NETHERITE, "Het recept geeft geen netherite rifle emitter: " + result);
-        var wrong = CraftingInput.of(2, 1, List.of(
-                LaserPartItem.of(GunType.RIFLE, LaserPart.EMITTER, GunMaterial.NETHERITE), new ItemStack(Items.NETHERITE_INGOT)));
-        check(level.getRecipeManager().getRecipeFor(RecipeType.CRAFTING, wrong, level).isEmpty(),
-                "Een netherite onderdeel met een ingot gaf nog een recept");
+                && LaserPartItem.materialOf(result) == GunMaterial.NETHERITE && LaserPartItem.conditionOf(result) == PartState.NEW,
+                "Het recept geeft geen nieuwe netherite rifle emitter: " + result);
+        var wrong = new GunsmithRecipe.Carried(List.of(LaserPartItem.of(GunType.RIFLE, LaserPart.EMITTER, GunMaterial.NETHERITE),
+                new ItemStack(Items.NETHERITE_INGOT), new ItemStack(Items.NETHERITE_INGOT)));
+        check(!recipe.matches(wrong, level), "Een netherite onderdeel werd nog eens netherite");
+        check(level.getRecipeManager().getRecipeFor(RecipeType.CRAFTING, CraftingInput.of(3, 1, ingredients), level).isEmpty(),
+                "De crafting table maakt nog een netherite emitter");
         for (GunType type : GunType.values()) {
             check(level.getRecipeManager().byKey(ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, type.id)).isEmpty(),
                     "Het oude recept van " + type.id + " bestaat nog");

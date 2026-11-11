@@ -22,7 +22,9 @@ import org.jetbrains.annotations.Nullable;
  *   <li>{@link #TAKE_GUN}: het wapen meenemen;</li>
  *   <li>{@link #INSTALL} + vakje: dat onderdeel uit je inventaris in het wapen;</li>
  *   <li>{@link #REMOVE} + onderdeel: dat onderdeel uit het wapen;</li>
- *   <li>{@link #PUT_GUN} + vakje: dat wapen uit je inventaris op de tafel.</li>
+ *   <li>{@link #PUT_GUN} + vakje: dat wapen uit je inventaris op de tafel;</li>
+ *   <li>{@link #MAKE} + nummer (hoofdstuk 78): dat recept maken, op het tabblad "Make parts" (alleen de Gunsmith Table;
+ *       het nummer is de plaats in {@link GunsmithRecipe#all}).</li>
  * </ul>
  */
 public class GunsmithMenu extends AbstractContainerMenu {
@@ -30,6 +32,7 @@ public class GunsmithMenu extends AbstractContainerMenu {
     public static final int INSTALL = 100;
     public static final int REMOVE = 200;
     public static final int PUT_GUN = 300;
+    public static final int MAKE = 1000;
 
     private final Container items;
     private final @Nullable PartsTable table;
@@ -92,6 +95,9 @@ public class GunsmithMenu extends AbstractContainerMenu {
         }
         if (id == TAKE_GUN) {
             return table.takeGun(serverPlayer);
+        }
+        if (id >= MAKE) {
+            return table.make(serverPlayer, id - MAKE);
         }
         if (id >= PUT_GUN) {
             return table.putGun(serverPlayer, id - PUT_GUN);

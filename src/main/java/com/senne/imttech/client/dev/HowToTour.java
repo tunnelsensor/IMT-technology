@@ -681,8 +681,21 @@ final class HowToTour {
         });
         // De Gunsmith Table en de Reloading Bench.
         t.onServer(5, player -> ShowcaseFeatures.openBench(player, GUN_STAND.offset(-2, 0, -2)));
-        t.step(5, () -> mouseTo(1, 1));
+        t.step(5, () -> ShowcaseFeatures.gunsmithTab(false, com.senne.imttech.client.guns.GunsmithMakePanel.Group.GLOCK, stack -> false));
+        t.step(0, () -> mouseTo(1, 1));
         t.step(25, () -> captureCentered("gunsmith_table", 328, 186));
+        t.close(5);
+        // Hoofdstuk 78: het tabblad "Make parts" van dezelfde tafel, met wat materiaal bij je (de stalen slede gekozen).
+        t.onServer(5, ShowcaseFeatures::giveGunsmithMaterials);
+        t.onServer(5, player -> ShowcaseFeatures.openBench(player, GUN_STAND.offset(-2, 0, -2)));
+        t.step(5, () -> ShowcaseFeatures.gunsmithTab(true, com.senne.imttech.client.guns.GunsmithMakePanel.Group.GLOCK,
+                stack -> com.senne.imttech.guns.GunPartItem.partOf(stack) == com.senne.imttech.guns.GunPart.SLIDE
+                        && com.senne.imttech.guns.GunPartItem.materialOf(stack) == com.senne.imttech.guns.GunMaterial.STEEL));
+        t.step(0, () -> mouseTo(1, 1));
+        // Het nieuwe materiaal gaf meldingen ("New Recipes Unlocked"): die liggen anders over de kosten rechts.
+        t.step(20, HowToTour::noToasts);
+        t.step(5, () -> captureCentered("gunsmith_make", 328, 186));
+        t.step(0, () -> ShowcaseFeatures.gunsmithTab(false, com.senne.imttech.client.guns.GunsmithMakePanel.Group.GLOCK, stack -> false));
         t.close(5);
         t.onServer(5, player -> ShowcaseFeatures.openBench(player, GUN_STAND.offset(-2, 0, 2)));
         t.step(5, () -> mouseTo(1, 1));

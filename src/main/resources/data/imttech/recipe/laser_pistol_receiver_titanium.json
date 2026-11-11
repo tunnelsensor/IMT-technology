@@ -1,17 +1,14 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "category": "equipment",
-  "key": {
-    "D": {
-      "tag": "c:gems/diamond"
+  "type": "imttech:gunsmithing",
+  "ingredients": [
+    {
+      "item": "imttech:titanium_ingot",
+      "count": 3
     },
-    "T": {
-      "item": "imttech:titanium_ingot"
+    {
+      "tag": "c:gems/diamond",
+      "count": 1
     }
-  },
-  "pattern": [
-    "TT",
-    "TD"
   ],
   "result": {
     "id": "imttech:laser_pistol_receiver",

@@ -1,18 +1,14 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "category": "equipment",
-  "key": {
-    "S": {
-      "item": "imttech:steel_ingot"
+  "type": "imttech:gunsmithing",
+  "ingredients": [
+    {
+      "item": "imttech:steel_ingot",
+      "count": 7
     },
-    "P": {
-      "item": "imttech:gun_springs"
+    {
+      "item": "imttech:gun_springs",
+      "count": 1
     }
-  },
-  "pattern": [
-    "S S",
-    "SPS",
-    "SSS"
   ],
   "result": {
     "id": "imttech:glock_19_magazine",

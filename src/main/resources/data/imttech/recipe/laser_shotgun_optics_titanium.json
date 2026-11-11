@@ -1,20 +1,22 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "category": "equipment",
-  "key": {
-    "D": {
-      "tag": "c:gems/diamond"
+  "type": "imttech:gunsmithing",
+  "ingredients": [
+    {
+      "item": "imttech:titanium_ingot",
+      "count": 2
     },
-    "P": {
-      "tag": "c:glass_panes"
+    {
+      "tag": "c:gems/diamond",
+      "count": 1
     },
-    "T": {
-      "item": "imttech:titanium_ingot"
+    {
+      "tag": "c:glass_panes",
+      "count": 1
+    },
+    {
+      "tag": "c:dusts/glowstone",
+      "count": 2
     }
-  },
-  "pattern": [
-    "DP",
-    "TT"
   ],
   "result": {
     "id": "imttech:laser_shotgun_optics",

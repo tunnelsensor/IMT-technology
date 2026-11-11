@@ -1,23 +1,22 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "category": "equipment",
-  "key": {
-    "B": {
-      "tag": "c:storage_blocks/redstone"
+  "type": "imttech:gunsmithing",
+  "ingredients": [
+    {
+      "item": "imttech:titanium_ingot",
+      "count": 1
     },
-    "D": {
-      "tag": "c:gems/diamond"
+    {
+      "item": "imttech:laser_cannon_capacitor",
+      "count": 1
     },
-    "K": {
-      "item": "imttech:laser_cannon_capacitor"
+    {
+      "tag": "c:gems/diamond",
+      "count": 1
     },
-    "T": {
-      "item": "imttech:titanium_ingot"
+    {
+      "tag": "c:storage_blocks/redstone",
+      "count": 1
     }
-  },
-  "pattern": [
-    "TK",
-    "DB"
   ],
   "result": {
     "id": "imttech:laser_pistol_capacitor",

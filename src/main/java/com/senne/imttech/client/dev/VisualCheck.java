@@ -3801,7 +3801,40 @@ public final class VisualCheck {
             t.tap(0, () -> Minecraft.getInstance().options.keyUse);
             t.shot(8, "gl17_casings_picked_up");
             t.onServer(10, player -> ShowcaseFeatures.openBench(player, g.offset(-2, 0, -2)));
-            t.shot(25, "gl18_gunsmith_table");
+            t.step(2, () -> ShowcaseFeatures.gunsmithTab(false, com.senne.imttech.client.guns.GunsmithMakePanel.Group.GLOCK, stack -> false));
+            t.shot(23, "gl18_gunsmith_table");
+            // Hoofdstuk 78: het tabblad "Make parts". De Glock met de stalen slede gekozen (5 staal bij je: groen), Make
+            // (daarna 0 / 5, rood, en een stalen slede erbij), de laser rifle met zijn titanium frame, en de tooltip van
+            // een tegel (het netherite frame).
+            t.onServer(0, ShowcaseFeatures::giveGunsmithMaterials);
+            t.step(5, () -> ShowcaseFeatures.gunsmithTab(true, com.senne.imttech.client.guns.GunsmithMakePanel.Group.GLOCK,
+                    stack -> com.senne.imttech.guns.GunPartItem.partOf(stack) == com.senne.imttech.guns.GunPart.SLIDE
+                            && com.senne.imttech.guns.GunPartItem.materialOf(stack) == com.senne.imttech.guns.GunMaterial.STEEL));
+            t.step(0, () -> HowToTour.mouseTo(1, 1));
+            // Weg met de meldingen rechtsboven (nieuwe recepten, prestaties): die liggen anders over de kosten.
+            t.step(15, () -> Minecraft.getInstance().getToasts().clear());
+            t.shot(5, "gl18b_gunsmith_make_glock");
+            t.step(0, ShowcaseFeatures::pressMake);
+            t.step(12, () -> Minecraft.getInstance().getToasts().clear());
+            t.shot(3, "gl18c_gunsmith_made_a_slide");
+            t.step(0, () -> ShowcaseFeatures.gunsmithTab(true, com.senne.imttech.client.guns.GunsmithMakePanel.Group.RIFLE,
+                    stack -> com.senne.imttech.weapons.LaserPartItem.partOf(stack) == com.senne.imttech.weapons.LaserPart.FRAME
+                            && com.senne.imttech.weapons.LaserPartItem.materialOf(stack) == com.senne.imttech.guns.GunMaterial.TITANIUM));
+            t.step(12, () -> Minecraft.getInstance().getToasts().clear());
+            t.shot(3, "gl18d_gunsmith_make_laser_rifle");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.guns.PartsTableScreen<?> screen
+                        && screen.makePanel() != null) {
+                    int[] at = screen.makePanel().tileCentre(screen.getGuiLeft(), screen.getGuiTop(),
+                            stack -> com.senne.imttech.weapons.LaserPartItem.partOf(stack) == com.senne.imttech.weapons.LaserPart.FRAME
+                                    && com.senne.imttech.weapons.LaserPartItem.materialOf(stack) == com.senne.imttech.guns.GunMaterial.NETHERITE);
+                    if (at != null) {
+                        HowToTour.mouseTo(at[0], at[1]);
+                    }
+                }
+            });
+            t.shot(4, "gl18e_gunsmith_make_tooltip");
+            t.step(0, () -> ShowcaseFeatures.gunsmithTab(false, com.senne.imttech.client.guns.GunsmithMakePanel.Group.GLOCK, stack -> false));
             t.close(5);
             t.onServer(5, player -> ShowcaseFeatures.openBench(player, g.offset(-2, 0, 2)));
             t.shot(25, "gl19_reloading_bench");

@@ -17,7 +17,8 @@ import net.minecraft.world.item.TooltipFlag;
  * client/guns/FirearmModels). Een onderdeel dat uit een gebruikt pistool komt, houdt zijn conditie (PART_CONDITION);
  * een nieuw onderdeel heeft dat component niet en is 100.
  *
- * Op de Gunsmith Table sleep je ze in het pistool (zie GunsmithTableBlockEntity).
+ * Op de Gunsmith Table sleep je ze in het pistool (zie GunsmithTableBlockEntity), en sinds hoofdstuk 78 maak je ze daar
+ * ook (het tabblad "Make parts", zie GunsmithRecipe): in de crafting table kan het niet meer.
  */
 public class GunPartItem extends Item {
     private final GunPart part;
@@ -103,5 +104,7 @@ public class GunPartItem extends Item {
                     .withStyle(condition < ImtConfig.Guns.WORN_BELOW ? ChatFormatting.GOLD : ChatFormatting.GREEN));
         }
         tooltip.add(Component.translatable("tooltip.imttech.gun_part.table").withStyle(ChatFormatting.DARK_GRAY));
+        // Hoofdstuk 78: niet meer in de crafting table, alleen nog op de Gunsmith Table.
+        tooltip.add(Component.translatable("tooltip.imttech.gunsmith.made").withStyle(ChatFormatting.DARK_GRAY));
     }
 }

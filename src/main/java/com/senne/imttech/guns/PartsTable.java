@@ -25,4 +25,13 @@ public interface PartsTable {
 
     /** Het wapen van de tafel meenemen. */
     boolean takeGun(ServerPlayer player);
+
+    /**
+     * Hoofdstuk 78: het recept met dit nummer (zie {@link GunsmithRecipe#all}) maken, met materiaal uit je inventaris.
+     * Alleen de Gunsmith Table doet dat (jouw keuze: alle onderdelen maak je daar); de Laser Workbench zet alleen in
+     * elkaar, dus standaard: niets.
+     */
+    default boolean make(ServerPlayer player, int recipeIndex) {
+        return false;
+    }
 }

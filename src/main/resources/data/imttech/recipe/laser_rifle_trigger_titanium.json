@@ -1,20 +1,22 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "category": "equipment",
-  "key": {
-    "C": {
-      "item": "imttech:computer_chip"
+  "type": "imttech:gunsmithing",
+  "ingredients": [
+    {
+      "item": "imttech:titanium_ingot",
+      "count": 2
     },
-    "R": {
-      "tag": "c:dusts/redstone"
+    {
+      "item": "imttech:computer_chip",
+      "count": 1
     },
-    "T": {
-      "item": "imttech:titanium_ingot"
+    {
+      "tag": "c:dusts/redstone",
+      "count": 1
+    },
+    {
+      "tag": "c:gems/quartz",
+      "count": 2
     }
-  },
-  "pattern": [
-    "TC",
-    "TR"
   ],
   "result": {
     "id": "imttech:laser_rifle_trigger",

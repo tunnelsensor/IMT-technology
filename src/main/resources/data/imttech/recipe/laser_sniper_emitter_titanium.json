@@ -1,23 +1,26 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "category": "equipment",
-  "key": {
-    "D": {
-      "tag": "c:gems/diamond"
+  "type": "imttech:gunsmithing",
+  "ingredients": [
+    {
+      "item": "imttech:titanium_ingot",
+      "count": 3
     },
-    "M": {
-      "item": "imttech:laser_module"
+    {
+      "item": "imttech:laser_module",
+      "count": 1
     },
-    "P": {
-      "tag": "c:glass_panes"
+    {
+      "tag": "c:glass_panes",
+      "count": 1
     },
-    "T": {
-      "item": "imttech:titanium_ingot"
+    {
+      "tag": "c:gems/diamond",
+      "count": 1
+    },
+    {
+      "tag": "c:gems/amethyst",
+      "count": 2
     }
-  },
-  "pattern": [
-    "TTT",
-    "MPD"
   ],
   "result": {
     "id": "imttech:laser_sniper_emitter",

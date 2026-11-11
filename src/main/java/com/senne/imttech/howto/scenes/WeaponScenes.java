@@ -260,7 +260,7 @@ public final class WeaponScenes {
         row(s, 170, new Vec3(2.5, 1.4, 2.5), 0.75f, 1.0f, parts);
         s.text(80, null, Side.RIGHT,
                 "A laser gun is six parts: a *frame*, a *receiver*, an *emitter*, *optics*, a *capacitor* and a *trigger"
-                        + " module*. Each part belongs to one gun.");
+                        + " module*. Each part belongs to one gun; you make them at the *Gunsmith Table* (tab *Make parts*).");
         s.idle(85);
         s.text(80, null, Side.RIGHT,
                 "Each part is *titanium* or *netherite* (a titanium part with two Netherite Ingots): a bit more damage, less"
@@ -493,7 +493,7 @@ public final class WeaponScenes {
         row(s, 170, new Vec3(2.5, 1.4, 2.5), 1.1f, 1.3f, List.of(GunPartItem.of(GunPart.FRAME, GunMaterial.POLYMER),
                 GunPartItem.of(GunPart.FRAME, GunMaterial.STEEL), GunPartItem.of(GunPart.FRAME, GunMaterial.TITANIUM)));
         s.text(80, null, Side.RIGHT,
-                "Craft each part from *polymer* (only the frame and trigger), *steel* or *titanium*.");
+                "Each part is *polymer* (only the frame and trigger), *steel* or *titanium*.");
         s.idle(85);
         s.text(80, null, Side.RIGHT,
                 "The better the material, the smaller the chance per shot that it wears (%s%%, %s%%, %s%%), and titanium jams"
@@ -512,6 +512,19 @@ public final class WeaponScenes {
                 s.arrow(0.41f, 0.27f, "What's missing is dotted"),
                 s.arrow(0.86f, 0.22f, "Each part with its material and condition"),
                 s.arrow(0.85f, 0.9f, "*Take the pistol*"));
+        s.idle(155);
+
+        // Hoofdstuk 78: onderdelen maak je alleen nog hier (niet in de crafting table), op het tabblad "Make parts".
+        s.chapter("Making parts");
+        s.text(80, HowToSceneBuilder.top(table), Side.RIGHT,
+                "Gun parts aren't in the crafting table: you make them here, on the tab *Make parts*. Laser parts, the"
+                        + " *Gun Sling* and the *magazine* too.");
+        s.idle(85);
+        s.picture(150, "gunsmith_make", 328, 186,
+                s.arrow(0.14f, 0.35f, "Pick a weapon: the Glock or a laser gun"),
+                s.arrow(0.5f, 0.42f, "A row per part, a column per material"),
+                s.arrow(0.75f, 0.3f, "What it costs: green is enough"),
+                s.arrow(0.85f, 0.9f, "*Make*: it takes the materials from your inventory"));
         s.idle(155);
 
         s.chapter("Worn parts");

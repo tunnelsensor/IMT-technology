@@ -71,6 +71,12 @@ public class GunsmithScreen extends PartsTableScreen<GunPart> {
         return true;
     }
 
+    /** Hoofdstuk 78: hier maak je alle onderdelen (jouw keuze), op het tabblad "Make parts" (zie GunsmithMakePanel). */
+    @Override
+    protected boolean makesParts() {
+        return true;
+    }
+
     /**
      * Zit dit onderdeel onder de slede (de loop, de veren en de slagpin) terwijl de slede erop zit? Dan kun je er niet bij:
      * niet om het eruit te halen, en niet om het erin te leggen. (Sleep je de slede net weg, dan wel.)

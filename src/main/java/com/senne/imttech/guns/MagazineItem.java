@@ -93,5 +93,7 @@ public class MagazineItem extends Item {
                 .withStyle(rounds(stack) == 0 ? ChatFormatting.RED : ChatFormatting.GOLD));
         tooltip.add(Component.translatable("tooltip.imttech.magazine").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.imttech.magazine.keys").withStyle(ChatFormatting.DARK_GRAY));
+        // Hoofdstuk 78: je maakt het op de Gunsmith Table, niet meer in de crafting table.
+        tooltip.add(Component.translatable("tooltip.imttech.gunsmith.made").withStyle(ChatFormatting.DARK_GRAY));
     }
 }

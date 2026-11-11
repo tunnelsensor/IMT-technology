@@ -80,6 +80,9 @@ public class ImtTech {
         com.senne.imttech.registry.ModStructures.TYPES.register(modEventBus);
         com.senne.imttech.registry.ModStructures.PIECES.register(modEventBus);
         ModMenus.MENUS.register(modEventBus);
+        // Hoofdstuk 78: de recepten van de Gunsmith Table (een eigen soort, de crafting table kent ze niet).
+        com.senne.imttech.registry.ModRecipes.TYPES.register(modEventBus);
+        com.senne.imttech.registry.ModRecipes.SERIALIZERS.register(modEventBus);
         ModAttachments.ATTACHMENTS.register(modEventBus);
         ModCreativeTabs.TABS.register(modEventBus);
         // Hoofdstuk 72: de militaire rugzakken (eigen lijsten, berichten en gebeurtenissen, zie backpack/Backpacks).

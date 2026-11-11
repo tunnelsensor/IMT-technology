@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 497 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 501 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -6511,10 +6511,94 @@ Jouw vraag: "Kun je alles naar github pushen en de licentie veranderen naar all 
       (de eerste keer `guard_searches_where_he_lost_you`, de tweede keer `raven_soldier_shoots`; elk was groen in de
       andere ronde).
 
+### 78. Onderdelen alleen op de Gunsmith Table, en geen twee recepten hetzelfde (11 november)
+
+Jouw wens: "Zorg dat je gun onderdelen niet meer in de crafting table kunt maken maar enkel in de gun smit table, zorg dat
+geen enkel recepie het zelfde is, nu zijn de laser shotgun frame en laser sniper frame het zelfde."
+
+Wat ik vond: niet alleen die twee frames. Bij de rifle, de sniper en de shotgun waren ook de receiver, de emitter en de
+capacitor hetzelfde, en de trigger was bij alle vier de lasergeweren hetzelfde. Minecraft kiest dan één recept, dus de
+andere kon je nooit maken.
+
+Jouw antwoorden op mijn drie vragen:
+- **Alles op de Gunsmith Table**: de onderdelen van de Glock én die van de lasergeweren (titanium en netherite). De Laser
+  Workbench zet alleen nog lasergeweren in elkaar.
+- **Een tabblad met tegels** (mijn voorstel): een tweede tabblad "Make parts", met een tegel per onderdeel; rechts wat het
+  kost (wat je hebt en wat nodig is, groen of rood) en een knop Make. Geen craftraster (de tafel heeft nog altijd geen
+  vakjes, jouw wens van hoofdstuk 52).
+- **De Gun Sling en het Glock 19 Magazine ook**: alleen nog op de Gunsmith Table.
+
+**Mijn invulling** (zeg het als je het anders wilt):
+- **De kosten.** De Glock blijft wat hij was, behalve de veren: die kostten evenveel als de loop (2 materiaal), dus nu 1
+  materiaal en 3 ijzerklompjes (de slagpin is 1 en een ijzerklompje). Het laserpistool blijft hetzelfde, alleen zijn
+  trigger kost 1 titanium minder (die was gelijk aan die van de rifle). De rifle, de sniper en de shotgun hielden hun
+  prijs, en elk onderdeel heeft nu het **kenmerk van zijn geweer** erbij: **2 Nether Quartz** (de rifle, snel vuur), **2
+  Amethyst Shards** (de sniper, precisie) of **2 Glowstone Dust** (de shotgun, een waaier van licht). Netherite blijft het
+  titanium onderdeel plus 2 Netherite Ingots. Het magazijn (7 staal en Glock-veren) en de sling (3 leer en 2 touw) ook.
+  Alle 64 recepten staan in LEESMIJ.
+- **Een eigen soort recept**, `imttech:gunsmithing`: een lijstje ingrediënten met elk een aantal, in dezelfde
+  JSON-bestanden als eerst (`data/imttech/recipe`, dezelfde namen). De crafting table kent ze niet. Ze gaan naar de
+  spelers zoals alle recepten, zodat het scherm ze toont; met een datapack kun je ze veranderen. Een recept dat bij geen
+  wapen hoort (van een datapack), staat onder een extra wapen "Other".
+- **Het materiaal** komt uit je inventaris en je tweede hand (niet wat je aanhebt), zoals bij de harnas-werkbank. Ook in
+  creative betaal je, zoals aan de crafting table. Heb je meer onderdelen die passen (twee titanium emitters voor een
+  netherite emitter), dan gaat het **meest versleten** weg.
+- **De lijst links**: de Glock 19 en de vier lasergeweren, elk met hoeveel recepten je nu kunt maken ("3 to make"); scrollen
+  op die lijst gaat naar het volgende wapen. **In het midden** een rij per onderdeel en een kolom per materiaal (de Glock:
+  polymeer, staal, titanium, en het magazijn onderaan; een lasergeweer: titanium en netherite, en bij de rifle, sniper en
+  shotgun de sling onderaan, bij alle drie hetzelfde recept). Groene rand = dat kun je nu maken, donker = niet, cyaan = gekozen.
+  **Rechts** het gekozen onderdeel, wat het kost (met de muis op een ingrediënt zie je zijn naam, en bij glazen ruiten dat
+  elke soort goed is), "You can make 2" of "Not enough materials", en Make op de plek van "Take the pistol".
+- **De tafel onthoudt** welk tabblad, wapen en onderdeel je het laatst open had (zolang het spel draait).
+- **Een geluid**: het hamergeluid van de smithing table als je iets maakt; een klikje als je een tabblad, wapen of tegel kiest.
+- **Tooltips**: onder elk onderdeel, de sling en het magazijn staat nu "Made on a Gunsmith Table (tab Make parts)".
+- **Niet veranderd**: de Laser Workbench wordt nog altijd gemaakt met een Gunsmith Table erin. Wie een Laser Workbench
+  bouwt, heeft dus een tweede Gunsmith Table nodig om laseronderdelen te maken. Zeg het als dat recept anders moet.
+
+- [x] **Het recept** — `guns/GunsmithRecipe` (de codec met `SizedIngredient`, wat je hebt, `plan`/`take`/`times`, het
+      meest versleten eerst, `all()` op naam gesorteerd zodat de server en jouw spel hetzelfde nummer gebruiken; "special",
+      zodat het receptenboek van Minecraft er niet over klaagt), `registry/ModRecipes` (het type en de serializer).
+- [x] **De tafel** — `GunsmithMenu.MAKE` (1000 + nummer), `PartsTable.make` (standaard niets: de Laser Workbench),
+      `GunsmithTableBlockEntity.make` (neemt het materiaal, geeft het onderdeel, telt mee in je statistieken).
+- [x] **Het scherm** — `client/guns/GunsmithMakePanel` (het tabblad: de wapens, de tegels, de kosten, tooltips, klikken
+      en scrollen; tekst die te breed is, wordt afgekapt met "...", zodat er niets over elkaar staat), en in
+      `PartsTableScreen` de twee tabbladen in de titelbalk en de knop Make (`makesParts()`: alleen de Gunsmith Table).
+- [x] **De 64 recepten** omgezet (de 14 van de Glock, het magazijn, de 48 laseronderdelen en de sling); in de crafting
+      table maakt geen enkel recept nog een onderdeel, een sling of een magazijn.
+- [x] **Tests** — vier nieuwe (`GunsmithRecipeGameTests`): geen ander recept maakt een onderdeel, sling of magazijn; precies
+      één recept per onderdeel, materiaal, sling en magazijn (64); geen twee recepten hetzelfde (op de tafel: dezelfde
+      ingrediënten met dezelfde aantallen; in de crafting table: hetzelfde patroon, ook gespiegeld, of dezelfde
+      ingrediënten zonder vorm, telkens als er een van ons bij is); en Make via het menu (5 staal geeft een slede, een
+      tweede keer lukt niet en neemt niets, de meest versleten emitter gaat weg, de ingot uit je tweede hand telt mee, de
+      Laser Workbench maakt niets). `netherite_upgrade_recipe_and_old_guns_get_parts` kijkt nu op de tafel. 501 tests,
+      twee rondes: de eerste 500 groen en de bekende wisselvallige `guard_searches_where_he_lost_you` rood, de tweede
+      alle 501 groen.
+- [x] **How it works** (Gunsmith Table) — een nieuw hoofdstukje "Making parts" met een plaatje van het tabblad
+      (`gunsmith_make`), en "Craft each part" is weg; bij de lasergeweren staat dat je de onderdelen op de Gunsmith Table
+      maakt.
+- [x] **Showcase 113** (Glock 19) — na het slepen het tabblad Make parts: een stalen slede maken (5 / 5 wordt 0 / 5), en de
+      onderdelen van de laser rifle. Geen nieuwe showcase.
+- [x] **Bekeken** met `-Ponly=glock` (`gl18`: Build met de twee tabbladen; `gl18b`: Make parts met de Glock, de stalen
+      slede gekozen, 5 / 5; `gl18c`: na Make 0 / 5 in het rood, "Not enough materials", de Glock van "8 to make" naar "4
+      to make"; `gl18d`: de laser rifle met titanium, netherite en de sling; `gl18e`: de tooltip van een tegel met "Made on
+      a Gunsmith Table"), `-Ponly=howtopics` (alleen `gunsmith_table` en het nieuwe `gunsmith_make` gehouden, de andere
+      plaatjes teruggezet) en `-Ponly=howtoall,howto:gunsmith,howto:laser_workbench`. Wat ik zo vond: "Polymer", "Laser
+      Shotgun" en "Trigger Module" werden eerst afgekapt ("Polym...", "Laser Shot..."). Nu is de lijst links op dit tabblad
+      breder, en is de kolom met namen precies zo breed als de langste naam van dat wapen; de namen van de materialen zijn
+      nooit breder dan hun kolom. De meldingen rechtsboven ("New Recipes Unlocked") lagen in de rondleiding over de kosten:
+      die haalt de rondleiding nu eerst weg. Een pijltje in How it works wees op "5 / 5" en bedekte het; nu wijst het naar
+      het icoontje.
+- [x] LEESMIJ (de Glock, de Gunsmith Table, de lasergeweren, het magazijn en de sling) bijgewerkt.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
+
+- [ ] **Het tabblad "Make parts" van de Gunsmith Table (hoofdstuk 78)**: gezien op screenshots (`-Ponly=glock`: `gl18` tot
+      `gl18e`), niet met de muis gespeeld. Probeer: de tabbladen bovenaan, een wapen links kiezen (ook scrollen op die
+      lijst), een tegel kiezen, Make (komt het onderdeel in je inventaris, worden de getallen rechts meteen lager?), en of
+      de kleine tekst en de tegels goed leesbaar zijn op jouw GUI-schaal.
 
 - [ ] **How it works (hoofdstuk 63)**: gezien op screenshots (`-Ponly=howto`, ht01 tot ht19), niet met de muis gespeeld.
       Probeer: in je inventaris je muis op een Battery Casing en W vasthouden (op jouw AZERTY-toetsenbord: Z); voelt 0,6

@@ -8,7 +8,9 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import java.util.List;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Container;
 import net.minecraft.world.ContainerHelper;
@@ -18,6 +20,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
@@ -32,6 +35,9 @@ import org.jetbrains.annotations.Nullable;
  *       zijn conditie. Het frame kan er pas uit als de rest eruit is; dan is het pistool weg (een frame is geen
  *       pistool). Een magazijn en een patroon in de kamer komen ook mee terug als het pistool uit elkaar gaat.</li>
  *   <li><b>een pistool op de tafel</b> ({@link #putGun}) en <b>weer meenemen</b> ({@link #takeGun}).</li>
+ *   <li><b>een onderdeel maken</b> ({@link #make}, hoofdstuk 78): op het tabblad "Make parts". Alle onderdelen (van de
+ *       Glock en van de lasergeweren), de Gun Sling en het magazijn maak je alleen hier, niet in de crafting table (jouw
+ *       wens). Het materiaal komt uit je inventaris (zie {@link GunsmithRecipe}).</li>
  * </ul>
  * Alles gebeurt op de server, via de knoppen van het menu (zie GunsmithMenu).
  */
@@ -181,6 +187,39 @@ public class GunsmithTableBlockEntity extends BlockEntity implements MenuProvide
         items.setItem(0, ItemStack.EMPTY);
         Firearms.give(player, gun);
         click(player);
+        return true;
+    }
+
+    /**
+     * Hoofdstuk 78: het recept met dit nummer maken (zie {@link GunsmithRecipe#all}). Heb je niet alles bij je, dan
+     * gebeurt er niets (en zegt de tafel het). Ook in creative betaal je: zoals aan de crafting table.
+     */
+    @Override
+    public boolean make(ServerPlayer player, int recipeIndex) {
+        if (level == null) {
+            return false;
+        }
+        RecipeHolder<GunsmithRecipe> holder = GunsmithRecipe.byIndex(level.getRecipeManager(), recipeIndex);
+        if (holder == null) {
+            return false;
+        }
+        GunsmithRecipe recipe = holder.value();
+        GunsmithRecipe.Carried carried = GunsmithRecipe.Carried.of(player.getInventory());
+        List<ItemStack> leftovers = recipe.take(carried);
+        if (leftovers == null) {
+            tell(player, Component.translatable("gunsmith.imttech.missing"));
+            return false;
+        }
+        player.getInventory().setChanged();
+        ItemStack made = recipe.assemble(carried, level.registryAccess());
+        // Zoals de crafting table: het telt in je statistieken ("gemaakt") en voor advancements.
+        made.onCraftedBy(level, player, made.getCount());
+        player.triggerRecipeCrafted(holder, carried.stacks());
+        Firearms.give(player, made);
+        for (ItemStack leftover : leftovers) {
+            Firearms.give(player, leftover);
+        }
+        level.playSound(null, worldPosition, SoundEvents.SMITHING_TABLE_USE, SoundSource.BLOCKS, 0.7f, 1.1f);
         return true;
     }
 

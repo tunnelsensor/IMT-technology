@@ -1,6 +1,5 @@
 {
-  "type": "minecraft:crafting_shapeless",
-  "category": "equipment",
+  "type": "imttech:gunsmithing",
   "ingredients": [
     {
       "type": "neoforge:components",
@@ -8,13 +7,12 @@
       "components": {
         "imttech:gun_material": "titanium"
       },
-      "strict": false
+      "strict": false,
+      "count": 1
     },
     {
-      "tag": "c:ingots/netherite"
-    },
-    {
-      "tag": "c:ingots/netherite"
+      "tag": "c:ingots/netherite",
+      "count": 2
     }
   ],
   "result": {

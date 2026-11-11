@@ -1,21 +1,13 @@
 {
-  "type": "minecraft:crafting_shapeless",
-  "category": "equipment",
+  "type": "imttech:gunsmithing",
   "ingredients": [
     {
-      "item": "minecraft:leather"
+      "item": "minecraft:leather",
+      "count": 3
     },
     {
-      "item": "minecraft:leather"
-    },
-    {
-      "item": "minecraft:leather"
-    },
-    {
-      "tag": "c:strings"
-    },
-    {
-      "tag": "c:strings"
+      "tag": "c:strings",
+      "count": 2
     }
   ],
   "result": {

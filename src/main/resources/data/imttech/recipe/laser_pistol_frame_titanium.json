@@ -1,18 +1,14 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "category": "equipment",
-  "key": {
-    "C": {
-      "item": "imttech:computer_chip"
+  "type": "imttech:gunsmithing",
+  "ingredients": [
+    {
+      "item": "imttech:titanium_ingot",
+      "count": 4
     },
-    "T": {
-      "item": "imttech:titanium_ingot"
+    {
+      "item": "imttech:computer_chip",
+      "count": 1
     }
-  },
-  "pattern": [
-    "TT",
-    "TC",
-    "T "
   ],
   "result": {
     "id": "imttech:laser_pistol_frame",

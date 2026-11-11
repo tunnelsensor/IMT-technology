@@ -1971,9 +1971,11 @@ blokken ver als een doffe knal met echo's.
 
 **Zes onderdelen, drie materialen.** Een Glock bestaat uit een **frame** (met de greep), een **slede**, een **loop**, de
 **veren** (de terugslagveer op zijn stang), een **slagpin** (een Glock heeft geen hamer) en een **trekker**. Elk
-onderdeel maak je aan de gewone werkbank van **polymeer** (alleen het frame en de trekker, zoals bij de echte Glock),
-**staal** of **titanium**: polymeer = 2 slijmballen + kool, staal = een Steel Blend (ijzer + 2 kool) smelten, titanium =
-een Titanium Blend (2 ijzer, een diamant, goud) smelten. Hoe beter het materiaal, hoe kleiner de kans per schot dat het
+onderdeel maak je op de **Gunsmith Table** (het tabblad "Make parts", hieronder; in de crafting table kan het niet meer)
+van **polymeer** (alleen het frame en de trekker, zoals bij de echte Glock), **staal** of **titanium**: polymeer = 2
+slijmballen + kool, staal = een Steel Blend (ijzer + 2 kool) smelten, titanium = een Titanium Blend (2 ijzer, een
+diamant, goud) smelten. Wat het kost, in het materiaal van het onderdeel: frame 4, slede 5, loop 2, trekker 3, veren 1
+en 3 ijzerklompjes, slagpin 1 en een ijzerklompje. Hoe beter het materiaal, hoe kleiner de kans per schot dat het
 onderdeel een punt slijt (polymeer 4%, staal 2%, titanium 0,8%), en: titanium geeft minder storingen, een titanium
 loop iets meer schade, een titanium slede minder terugslag, een polymeer frame trekt en herlaadt sneller. Onder 40%
 is een onderdeel versleten en geeft het steeds meer storingen; op 0% is het kapot en doet het pistool niets meer tot je
@@ -1988,6 +1990,18 @@ kan er pas als laatste uit, en de loop, de veren en de slagpin zitten **onder de
 niet bij (eerst de slede eraf, zoals bij een echte Glock). Scrollen op de tafel draait het pistool, rechts slepen
 kantelt het. "Take the pistol" neemt het mee; een pistool uit je inventaris sleep je op de tafel om het te repareren.
 
+**Onderdelen maken: het tabblad "Make parts"** (sinds 11 november). Bovenaan de Gunsmith Table staan twee tabbladen:
+**Build** (het slepen hierboven) en **Make parts**. Alle onderdelen maak je alleen nog hier, niet in de crafting table:
+die van de Glock, die van de lasergeweren (titanium en netherite), de **Gun Sling** en het **Glock 19 Magazine**. Links
+kies je een wapen (de Glock 19, het Laser Pistol, de Laser Rifle, Sniper of Shotgun; eronder staat hoeveel je er nu van
+kunt maken), in het midden een onderdeel: een rij per onderdeel, een kolom per materiaal. Een tegel met een groene rand
+kun je nu maken, een donkere niet. Rechts staat wat het kost, met per materiaal wat je hebt en wat nodig is (groen is
+genoeg, rood te weinig; met de muis erop zie je de naam, en of elke soort goed is, zoals bij glazen ruiten). **Make**
+haalt het materiaal uit je inventaris (en je tweede hand) en geeft je het onderdeel. Scrollen op de lijst links gaat naar
+het volgende wapen. De tafel onthoudt welk tabblad en wapen je het laatst open had. Geen twee recepten zijn hetzelfde.
+De recepten staan in `src/main/resources/data/imttech/recipe` (type `imttech:gunsmithing`): een lijstje ingrediënten met
+elk een aantal, dus met een datapack kun je ze veranderen.
+
 **Patronen en de Reloading Bench.** Een **9mm Round** pers je op de **Reloading Bench** (ijzer, planken en een werkbank)
 uit een **9mm Casing** (koper: 8 per staaf), een **9mm Bullet** (2 ijzerklompjes: 4 kogelpunten) en **Crushed
 Gunpowder**: één per keer, shift-klik voor een stapel. Gewoon buskruit past daar niet: dat maal je eerst fijn in een
@@ -1997,7 +2011,7 @@ Bij elk schot springt de **huls** rechts uit het pistool en blijft hij liggen
 (10 minuten); **rechtsklik op de grond** vlak bij de hulzen (met een lege hand of hulzen in je hand) raapt ze op, en
 dan pers je er weer patronen van.
 
-**Het magazijn, kogel per kogel.** Een **Glock 19 Magazine** (staal en een veer) houdt 15 patronen en stapelt niet: elk
+**Het magazijn, kogel per kogel.** Een **Glock 19 Magazine** (7 staal en Glock-veren, op de Gunsmith Table) houdt 15 patronen en stapelt niet: elk
 magazijn heeft zijn eigen inhoud (het streepje). Houd het vast en druk **R**: elke druk duwt er één patroon uit je
 inventaris in (inhouden gaat door), en **U** haalt er weer één uit (unload, ook inhouden). In het pistool zit er nog één in de **kamer** (15 + 1): heb je een magazijn van 5 en
 herlaad je, dan heeft het magazijn er 4 en de kamer 1; een nieuw magazijn van 6 erin = 7 in totaal. **Sneak + R** met
@@ -2067,15 +2081,25 @@ en het herladen), een **emitter** (de loop met de lens: de schade en het bereik)
 spreiding), een **capacitor** (het gloeiende blokje rechts opzij: hoeveel lading een schot kost) en een **trigger module**
 (hoe snel je schiet). Een onderdeel hoort bij één geweer (een emitter van een rifle past niet op een sniper) en bestaat in
 **titanium** (de getallen uit de config gelden voor titanium) of **netherite** (donker paarsbruin metaal; iets meer schade,
-minder terugslag, en het slijt het minst). Titanium onderdelen maak je aan de werkbank van titaniumstaven met diamanten,
-Computer Chips, een Laser Module (de emitter) of een Laser Cannon Capacitor met een redstoneblok (de capacitor), en voor
-de kijker van de sniper een verrekijker; een netherite onderdeel is datzelfde onderdeel plus **twee Netherite Ingots** in het
-craftraster (ook een gebruikt onderdeel mag: het wordt weer nieuw). De oude recepten van de geweren zelf zijn weg: die
-bouw je nu op de tafel.
+minder terugslag, en het slijt het minst). Je maakt ze op de **Gunsmith Table** (tabblad "Make parts", zie de Glock
+hierboven), niet in de crafting table. Titanium onderdelen kosten titaniumstaven met diamanten, Computer Chips, een Laser
+Module (de emitter) of een Laser Cannon Capacitor met een redstoneblok (de capacitor), en voor de kijker van de sniper een
+verrekijker. Het pistool is het goedkoopst (frame 4 titanium en een chip, receiver 3 titanium en een diamant, emitter 2
+titanium, een Laser Module en een glazen ruit, optics 2 titanium, een ruit en een diamant, capacitor 1 titanium, een
+Laser Cannon Capacitor, een diamant en een redstoneblok, trigger 1 titanium, een chip en redstone). De rifle, de sniper en
+de shotgun kosten meer (frame 7 titanium en een chip, receiver 5 titanium en een diamant, emitter 3 titanium, een Laser
+Module, een ruit en een diamant, capacitor 2 titanium, de capacitor, 2 diamanten en een redstoneblok, trigger 2 titanium,
+een chip en redstone; optics: de rifle 2 titanium, 2 diamanten, een ruit en een chip, de sniper hetzelfde met een
+verrekijker in plaats van de chip, de shotgun 2 titanium, een diamant en een ruit), en elk onderdeel heeft het kenmerk
+van zijn geweer erbij: **2 Nether Quartz** (rifle), **2 Amethyst Shards** (sniper) of **2 Glowstone Dust** (shotgun).
+Zo is geen recept hetzelfde. Een netherite onderdeel is datzelfde titanium onderdeel plus **twee Netherite Ingots** (ook
+een gebruikt onderdeel mag: het wordt weer nieuw; heb je er meer, dan gaat het meest versleten weg). De oude recepten
+van de geweren zelf zijn weg: die bouw je nu op de tafel.
 
 **De kern en de sling.** In elk geweer hoort een **Nether Star** (de kern): zonder kern schiet het niet ("NO NETHER STAR -
 LASER WORKBENCH"). Je steekt hem op de werkbank in het vak "core" (achter in de romp zie je hem gloeien) en haalt hem er
-ook weer uit, bijvoorbeeld om hem in een ander geweer te zetten. Een **Gun Sling** (3 leer en 2 touw) hang je op de
+ook weer uit, bijvoorbeeld om hem in een ander geweer te zetten. Een **Gun Sling** (3 leer en 2 touw, op de Gunsmith
+Table) hang je op de
 werkbank aan een rifle, sniper of shotgun (een pistool heeft er geen vak voor); met een sling past het geweer in een
 sling-vakje (hieronder) en zie je de leren band langs de rechterkant van het geweer.
 

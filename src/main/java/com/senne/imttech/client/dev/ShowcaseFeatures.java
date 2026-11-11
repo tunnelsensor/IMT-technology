@@ -3002,14 +3002,19 @@ final class ShowcaseFeatures {
                 + "klem zitten, half uit de uitwerpopening): 'JAMMED - PRESS R', en R doet een tap-rack: een klap op het magazijn, "
                 + "de slede naar achteren, de huls valt eruit. Dan H: het pistool bekijken. Dan het lege magazijn in je hand: "
                 + "elke R duwt er een patroon in, en U (unload, hoofdstuk 54) haalt er weer een uit. Je kijkt naar de hulzen op "
-                + "de grond en raapt ze op met rechtsklik. Tot slot de Gunsmith Table (een pistool van een frame, slede en "
+                + "de grond en raapt ze op met rechtsklik. Dan de Gunsmith Table (een pistool van een frame, slede en "
                 + "trekker; links je losse onderdelen om erin te slepen; wat ontbreekt staat gestippeld ernaast, en wat onder "
-                + "de slede zit kun je pas pakken als die eraf is) en de Reloading Bench (huls + kogelpunt + Crushed Gunpowder = "
-                + "een 9mm-patroon; dat poeder maakt een Crusher, 10 uit één buskruit, hoofdstuk 76).",
+                + "de slede zit kun je pas pakken als die eraf is). Dan het tabblad Make parts van die tafel (hoofdstuk 78: "
+                + "onderdelen maak je alleen nog daar, niet in de crafting table): de stalen slede is gekozen, rechts '5 / 5' "
+                + "in het groen, en Make maakt hem (daarna '0 / 5' in het rood, en de tegel wordt donker). Dan de Laser Rifle: "
+                + "titanium en netherite naast elkaar, en elk onderdeel kost 2 Nether Quartz erbij. Tot slot de Reloading Bench "
+                + "(huls + kogelpunt + Crushed Gunpowder = een 9mm-patroon; dat poeder maakt een Crusher, 10 uit één buskruit, "
+                + "hoofdstuk 76).",
                 stand, 90, 4, s -> s
                 .onServer(0, ShowcaseScene::buildWeapons)
                 .onServer(0, player -> buildGunBenches(player, w.above()))
                 .onServer(0, ShowcaseFeatures::giveGlock)
+                .onServer(0, ShowcaseFeatures::giveGunsmithMaterials)
                 .stand(0, stand.x, stand.y, stand.z, 90, 3)
                 .step(0, () -> hotbar(0))
                 .pause(40)
@@ -3056,7 +3061,20 @@ final class ShowcaseFeatures {
                 // De twee banken.
                 .lookAt(0, new Vec3(stand.x - 1.5, stand.y + 0.5, stand.z - 1.5))
                 .onServer(15, player -> openBench(player, w.above().offset(-2, 0, -2)))
+                .step(2, () -> gunsmithTab(false, com.senne.imttech.client.guns.GunsmithMakePanel.Group.GLOCK, stack -> false))
                 .pause(110)
+                // Hoofdstuk 78: het tabblad "Make parts": een stalen slede maken, en de onderdelen van de laser rifle.
+                .step(0, () -> gunsmithTab(true, com.senne.imttech.client.guns.GunsmithMakePanel.Group.GLOCK,
+                        stack -> com.senne.imttech.guns.GunPartItem.partOf(stack) == com.senne.imttech.guns.GunPart.SLIDE
+                                && com.senne.imttech.guns.GunPartItem.materialOf(stack) == com.senne.imttech.guns.GunMaterial.STEEL))
+                .pause(70)
+                .step(0, ShowcaseFeatures::pressMake)
+                .pause(50)
+                .step(0, () -> gunsmithTab(true, com.senne.imttech.client.guns.GunsmithMakePanel.Group.RIFLE,
+                        stack -> com.senne.imttech.weapons.LaserPartItem.partOf(stack) == com.senne.imttech.weapons.LaserPart.FRAME
+                                && com.senne.imttech.weapons.LaserPartItem.materialOf(stack) == com.senne.imttech.guns.GunMaterial.TITANIUM))
+                .pause(80)
+                .step(0, () -> gunsmithTab(false, com.senne.imttech.client.guns.GunsmithMakePanel.Group.GLOCK, stack -> false))
                 .close(0)
                 .lookAt(5, new Vec3(stand.x - 1.5, stand.y + 0.5, stand.z + 2.5))
                 .onServer(15, player -> openBench(player, w.above().offset(-2, 0, 2)))
@@ -4093,6 +4111,48 @@ final class ShowcaseFeatures {
             reloading.items().setItem(0, new ItemStack(ModItems.CASING_9MM.get(), 12));
             reloading.items().setItem(1, new ItemStack(ModItems.BULLET_9MM.get(), 9));
             reloading.items().setItem(2, new ItemStack(ModItems.CRUSHED_GUNPOWDER.get(), 20));
+        }
+    }
+
+    /**
+     * Hoofdstuk 78: materiaal om op de Gunsmith Table onderdelen te maken (het tabblad "Make parts"). Genoeg staal voor
+     * de slede, het frame, de loop en de trekker van de Glock (niet voor de veren, de slagpin of een magazijn), te weinig
+     * polymeer, en titanium, een chip, kwarts en diamant voor het frame en de receiver van de laser rifle. Zo zie je groene
+     * tegels (dat kun je maken) naast donkere (dat niet).
+     */
+    static void giveGunsmithMaterials(ServerPlayer player) {
+        var inventory = player.getInventory();
+        inventory.setItem(13, new ItemStack(ModItems.STEEL_INGOT.get(), 5));
+        inventory.setItem(14, new ItemStack(ModItems.POLYMER.get(), 2));
+        inventory.setItem(15, new ItemStack(ModItems.TITANIUM_INGOT.get(), 9));
+        inventory.setItem(16, new ItemStack(ModItems.COMPUTER_CHIP.get(), 1));
+        inventory.setItem(17, new ItemStack(net.minecraft.world.item.Items.QUARTZ, 4));
+        inventory.setItem(18, new ItemStack(net.minecraft.world.item.Items.DIAMOND, 2));
+    }
+
+    /**
+     * Hoofdstuk 78: op het open scherm van de Gunsmith Table het tabblad "Make parts" ({@code making}, met dit wapen en
+     * de eerste tegel die aan {@code select} voldoet) of "Build". Doet niets als dat scherm niet open staat.
+     */
+    static void gunsmithTab(boolean making, com.senne.imttech.client.guns.GunsmithMakePanel.Group group,
+                            java.util.function.Predicate<ItemStack> select) {
+        if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.guns.PartsTableScreen<?> screen) {
+            screen.showMaking(making);
+            if (making && screen.makePanel() != null) {
+                screen.makePanel().show(group, select);
+            }
+        }
+    }
+
+    /** Hoofdstuk 78: op Make drukken (zoals de knop): het gekozen recept maken. */
+    static void pressMake() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen instanceof com.senne.imttech.client.guns.PartsTableScreen<?> screen && screen.makePanel() != null
+                && mc.gameMode != null) {
+            int recipe = screen.makePanel().selectedIndex();
+            if (recipe >= 0) {
+                mc.gameMode.handleInventoryButtonClick(screen.getMenu().containerId, com.senne.imttech.guns.GunsmithMenu.MAKE + recipe);
+            }
         }
     }
 
