@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 501 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 504 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -6608,6 +6608,29 @@ zag het daarom niet.
       je de kogelpunten eruit, dan is hij weg. Een tweede speler met de bank open ziet telkens hetzelfde.
       502 tests, twee rondes: de eerste 501 groen en de bekende wisselvallige `guard_searches_where_he_lost_you` rood, de
       tweede alle 502 groen.
+
+### 81. De blokken van de Power Battery vallen terug en breken vlot met een pickaxe (11 november)
+
+Jouw melding: "Als je iets van de battery breekt zoals een casing, glass, cel... dan krijg je dat niet terug, ook duurt
+het heel lang om te breken. Kun je dit fixen".
+
+Wat er mis was: de vier blokken van de batterij (Battery Casing, Battery Glass, Battery Cell en Battery Port, hoofdstuk
+47) hadden geen loot table, dus Minecraft liet niets vallen. En ze vragen het goede gereedschap
+(`requiresCorrectToolForDrops`), maar stonden bij geen enkel gereedschap (`mineable/pickaxe`). Dan is elk gereedschap het
+verkeerde: ook met een pickaxe brak je zo'n blok even traag als met je hand (ongeveer 15 seconden).
+
+- [x] **Loot tables** voor de vier blokken (`loot_table/blocks/battery_*.json`): elk blok valt terug als zichzelf, net als
+      de andere machines (bij een explosie niet altijd, zoals bij gewone blokken).
+- [x] **Bij de pickaxe** (`tags/block/mineable/pickaxe.json`): met een ijzeren pickaxe breek je er nu een in ongeveer
+      0,75 seconde (hardheid 3, zoals ijzererts), met een houten in ruim 2 seconden. Met je hand blijft het traag en valt
+      er niets, zoals bij de andere machines.
+- [x] **De hele mod nagekeken**: geen ander blok had dit probleem. Alleen de laserwand van een gate heeft geen loot table,
+      en die kun je niet breken.
+- [x] **Tests** — twee nieuwe (`BatteryGameTests`): `battery_blocks_drop_themselves` (de vier blokken staan bij de pickaxe,
+      een ijzeren pickaxe is het goede gereedschap, en elk valt terug als één blok) en `every_block_has_drops_and_a_tool`
+      (elk breekbaar blok van de mod heeft een loot table, en wie het goede gereedschap vraagt, staat bij een gereedschap;
+      zo komt deze fout bij een nieuw blok niet terug). 508 tests (met de vier van hoofdstuk 80 erbij), in één ronde
+      allemaal groen.
 
 ## Nog nooit in het spel bekeken
 

@@ -394,6 +394,8 @@ zonnepaneel of warmtegenerator zegt alleen nog wat hij zelf maakt en opslaat.
   Air at 12 64 -30").
 - Breek je een wandblok, dan is het geen batterij meer tot je het dichtmaakt; de stroom blijft bewaard
   in de laagste poort.
+- Alle blokken van de batterij breek je met een **pickaxe** (met ijzer in een kleine seconde), en ze
+  vallen terug als item.
 
 Kabels zijn **geen blokken**: je **tekent** ze.
 - Neem de kabel in je hand, **houd de rechtermuisknop ingedrukt** en kijk rond: waar je kijkt,

@@ -40,6 +40,10 @@
     "imttech:gunsmith_table",
     "imttech:laser_workbench",
     "imttech:pegboard",
-    "imttech:ammo_box"
+    "imttech:ammo_box",
+    "imttech:battery_casing",
+    "imttech:battery_glass",
+    "imttech:battery_cell",
+    "imttech:battery_port"
   ]
 }

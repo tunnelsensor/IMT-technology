@@ -176,4 +176,62 @@ public final class BatteryGameTests {
             });
         });
     }
+
+    /**
+     * Hoofdstuk 81 (jouw melding van 11 november: "Als je iets van de battery breekt zoals een casing, glass, cel... dan
+     * krijg je dat niet terug, ook duurt het heel lang om te breken"): de vier blokken van de batterij vallen terug als je
+     * ze met een pickaxe breekt, en die pickaxe is ook echt het goede gereedschap (anders breek je ze even traag als met
+     * je hand).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "battery")
+    public static void battery_blocks_drop_themselves(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos pos = helper.absolutePos(new BlockPos(2, 3, 2));
+        net.minecraft.world.item.ItemStack pickaxe = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_PICKAXE);
+        for (net.minecraft.world.level.block.Block block : java.util.List.of(ModBlocks.BATTERY_CASING.get(),
+                ModBlocks.BATTERY_GLASS.get(), ModBlocks.BATTERY_CELL.get(), ModBlocks.BATTERY_PORT.get())) {
+            net.minecraft.world.level.block.state.BlockState state = block.defaultBlockState();
+            String name = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(block).getPath();
+            check(state.is(net.minecraft.tags.BlockTags.MINEABLE_WITH_PICKAXE), name + " staat niet bij de pickaxe-blokken");
+            check(pickaxe.isCorrectToolForDrops(state), "Een ijzeren pickaxe is niet het goede gereedschap voor " + name);
+            java.util.List<net.minecraft.world.item.ItemStack> drops =
+                    net.minecraft.world.level.block.Block.getDrops(state, level, pos, null, null, pickaxe);
+            check(drops.size() == 1 && drops.getFirst().is(block.asItem()) && drops.getFirst().getCount() == 1,
+                    name + " valt niet terug als één blok, maar als " + drops);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Dezelfde fout mag bij geen enkel blok van de mod terugkomen: elk blok dat je kunt breken heeft een loot table (dus
+     * je krijgt er iets voor terug), en wie het goede gereedschap nodig heeft, staat bij een gereedschap (pickaxe, bijl,
+     * schop of schoffel). Alleen onbreekbare blokken (de laserwand van een gate) slaan we over.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "battery")
+    public static void every_block_has_drops_and_a_tool(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        java.util.List<String> problems = new java.util.ArrayList<>();
+        for (var entry : ModBlocks.BLOCKS.getEntries()) {
+            net.minecraft.world.level.block.Block block = entry.get();
+            net.minecraft.world.level.block.state.BlockState state = block.defaultBlockState();
+            String name = entry.getId().getPath();
+            if (state.getDestroySpeed(level, BlockPos.ZERO) < 0) {
+                continue;
+            }
+            var lootKey = block.getLootTable();
+            if (lootKey == net.minecraft.world.level.storage.loot.BuiltInLootTables.EMPTY
+                    || level.getServer().reloadableRegistries().getLootTable(lootKey)
+                            == net.minecraft.world.level.storage.loot.LootTable.EMPTY) {
+                problems.add(name + " heeft geen loot table");
+            }
+            if (state.requiresCorrectToolForDrops() && !state.is(net.minecraft.tags.BlockTags.MINEABLE_WITH_PICKAXE)
+                    && !state.is(net.minecraft.tags.BlockTags.MINEABLE_WITH_AXE)
+                    && !state.is(net.minecraft.tags.BlockTags.MINEABLE_WITH_SHOVEL)
+                    && !state.is(net.minecraft.tags.BlockTags.MINEABLE_WITH_HOE)) {
+                problems.add(name + " vraagt het goede gereedschap maar staat bij geen enkel gereedschap");
+            }
+        }
+        check(problems.isEmpty(), String.join("; ", problems));
+        helper.succeed();
+    }
 }
