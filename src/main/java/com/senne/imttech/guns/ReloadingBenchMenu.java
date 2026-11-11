@@ -44,6 +44,14 @@ public class ReloadingBenchMenu extends AbstractContainerMenu {
                 public boolean mayPlace(ItemStack stack) {
                     return ReloadingBenchBlockEntity.fits(index, stack);
                 }
+
+                @Override
+                public void setChanged() {
+                    // Hoofdstuk 79: iets erin gelegd of eruit gehaald, dan meteen de patroon klaarleggen (of weghalen).
+                    // Eerst gebeurde dat alleen bij het openen, dus moest je de bank dicht en weer open doen.
+                    super.setChanged();
+                    refresh();
+                }
             });
         }
         addSlot(new Slot(result, 0, RESULT_X, RESULT_Y) {
@@ -82,13 +90,26 @@ public class ReloadingBenchMenu extends AbstractContainerMenu {
 
     /** Het resultaat klaarleggen: één patroon als van alle drie iets ligt. */
     private void refresh() {
-        result.setItem(0, ReloadingBenchBlockEntity.pressable(items) > 0 ? new ItemStack(ModItems.ROUND_9MM.get()) : ItemStack.EMPTY);
+        boolean ready = ReloadingBenchBlockEntity.pressable(items) > 0;
+        if (ready != result.getItem(0).is(ModItems.ROUND_9MM.get())) {
+            result.setItem(0, ready ? new ItemStack(ModItems.ROUND_9MM.get()) : ItemStack.EMPTY);
+        }
     }
 
     @Override
     public void slotsChanged(Container container) {
         super.slotsChanged(container);
         refresh();
+    }
+
+    /**
+     * Hoofdstuk 79: elke tick (en na elke klik) nog eens kijken. Staan er twee spelers aan dezelfde bank en legt de ene er
+     * iets in, dan ziet de andere de patroon ook meteen.
+     */
+    @Override
+    public void broadcastChanges() {
+        refresh();
+        super.broadcastChanges();
     }
 
     @Override

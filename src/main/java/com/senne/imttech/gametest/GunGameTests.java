@@ -27,6 +27,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.monster.Husk;
+import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
@@ -360,6 +361,49 @@ public final class GunGameTests {
         check(bench.items().getItem(ReloadingBenchBlockEntity.SLOT_CASING).getCount() == 1
                 && bench.items().getItem(ReloadingBenchBlockEntity.SLOT_BULLET).isEmpty()
                 && bench.items().getItem(ReloadingBenchBlockEntity.SLOT_POWDER).getCount() == 3, "De ingrediënten klopten niet na het persen");
+        helper.succeed();
+    }
+
+    /**
+     * Hoofdstuk 79 (jouw melding: "je moet uit reloadbench gaan voor aleer de bullets er zijn"): de bank leeg openen, de
+     * drie dingen erin klikken zoals een speler, en dan ligt de patroon er meteen. Haal je er iets uit, dan is hij meteen
+     * weg. Een tweede speler die de bank ook open heeft, ziet hetzelfde.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "guns")
+    public static void reloading_bench_updates_while_open(GameTestHelper helper) {
+        BlockPos at = new BlockPos(4, 2, 4);
+        helper.setBlock(at, ModBlocks.RELOADING_BENCH.get());
+        ReloadingBenchBlockEntity bench = (ReloadingBenchBlockEntity) helper.getBlockEntity(at);
+        ServerPlayer player = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(4, 2, 6), "live-reloader");
+        ServerPlayer other = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(5, 2, 6), "live-watcher");
+        ReloadingBenchMenu menu = new ReloadingBenchMenu(1, player.getInventory(), bench.items());
+        ReloadingBenchMenu watcher = new ReloadingBenchMenu(2, other.getInventory(), bench.items());
+        check(menu.getSlot(ReloadingBenchMenu.RESULT_SLOT).getItem().isEmpty(), "Een lege bank heeft toch een patroon klaar");
+        ItemStack[] put = {new ItemStack(ModItems.CASING_9MM.get(), 2), new ItemStack(ModItems.BULLET_9MM.get(), 2),
+                new ItemStack(ModItems.CRUSHED_GUNPOWDER.get(), 2)};
+        for (int slot = 0; slot < put.length; slot++) {
+            menu.setCarried(put[slot]);
+            menu.clicked(slot, 0, ClickType.PICKUP, player);
+            check(menu.getCarried().isEmpty(), "Vakje " + slot + " nam niet alles aan");
+            check(menu.getSlot(ReloadingBenchMenu.RESULT_SLOT).getItem().isEmpty() == (slot < 2),
+                    slot < 2 ? "Met nog niet alle drie ligt er al een patroon klaar"
+                            : "Alle drie erin geklikt, maar de patroon ligt er pas na opnieuw openen");
+        }
+        watcher.broadcastChanges();
+        check(watcher.getSlot(ReloadingBenchMenu.RESULT_SLOT).getItem().is(ModItems.ROUND_9MM.get()),
+                "De tweede speler aan de bank ziet de patroon niet");
+        menu.clicked(ReloadingBenchMenu.RESULT_SLOT, 0, ClickType.PICKUP, player);
+        check(menu.getCarried().is(ModItems.ROUND_9MM.get()), "De patroon kon niet gepakt worden");
+        check(menu.getSlot(ReloadingBenchMenu.RESULT_SLOT).getItem().is(ModItems.ROUND_9MM.get()),
+                "Na de eerste patroon ligt de tweede niet meteen klaar");
+        menu.setCarried(ItemStack.EMPTY);
+        menu.clicked(ReloadingBenchBlockEntity.SLOT_BULLET, 0, ClickType.PICKUP, player);
+        check(menu.getCarried().is(ModItems.BULLET_9MM.get()), "De kogelpunt kon er niet uit");
+        check(menu.getSlot(ReloadingBenchMenu.RESULT_SLOT).getItem().isEmpty(),
+                "Zonder kogelpunt ligt er nog een patroon klaar");
+        watcher.broadcastChanges();
+        check(watcher.getSlot(ReloadingBenchMenu.RESULT_SLOT).getItem().isEmpty(),
+                "De tweede speler ziet nog een patroon terwijl de kogelpunt eruit is");
         helper.succeed();
     }
 

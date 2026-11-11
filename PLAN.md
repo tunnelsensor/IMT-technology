@@ -6590,6 +6590,25 @@ Jouw antwoorden op mijn drie vragen:
       het icoontje.
 - [x] LEESMIJ (de Glock, de Gunsmith Table, de lasergeweren, het magazijn en de sling) bijgewerkt.
 
+### 79. De Reloading Bench legt de patroon meteen klaar (11 november)
+
+Jouw melding: "je moet uit reloadbench gaan voor aleer de bullets er zijn dit is raar kun je dat oplossen".
+
+Wat er mis was: het menu rekende alleen bij het openen uit of er een patroon klaarlag. De drie vakjes horen bij de bank
+zelf (niet bij het menu, zoals bij de crafting table), dus als je er iets in legde, kreeg het menu daar geen seintje van.
+De regel eronder ("Enough for 2 round(s).") zag het wel, want die leest de vakjes zelf; alleen het vakje rechts bleef leeg tot je
+de bank dicht en weer open deed. De eerste test (`reloading_bench_presses_rounds`) vulde de bank al vóór het openen, en
+zag het daarom niet.
+
+- [x] **De oplossing** — in `ReloadingBenchMenu` rekenen de drie vakjes het resultaat opnieuw uit zodra er iets in of uit
+      gaat (`setChanged`), en `broadcastChanges` doet het elke tick nog eens: staan er twee spelers aan dezelfde bank, dan
+      ziet de tweede het ook meteen. Het resultaat wordt alleen vervangen als het echt verandert.
+- [x] **Test** — `reloading_bench_updates_while_open`: de bank leeg openen, huls, kogelpunt en Crushed Gunpowder erin
+      klikken zoals een speler; pas bij het derde ligt de patroon er, meteen. Pak je hem, dan ligt de volgende klaar; haal
+      je de kogelpunten eruit, dan is hij weg. Een tweede speler met de bank open ziet telkens hetzelfde.
+      502 tests, twee rondes: de eerste 501 groen en de bekende wisselvallige `guard_searches_where_he_lost_you` rood, de
+      tweede alle 502 groen.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
