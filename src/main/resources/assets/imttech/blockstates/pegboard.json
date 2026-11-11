@@ -1,19 +1,117 @@
 {
- "variants": {
-  "facing=north": {
-   "model": "imttech:block/pegboard"
+ "multipart": [
+  {
+   "when": {
+    "facing": "north"
+   },
+   "apply": {
+    "model": "imttech:block/pegboard"
+   }
   },
-  "facing=east": {
-   "model": "imttech:block/pegboard",
-   "y": 90
+  {
+   "when": {
+    "facing": "north",
+    "corner": "right"
+   },
+   "apply": {
+    "model": "imttech:block/pegboard",
+    "y": 90
+   }
   },
-  "facing=south": {
-   "model": "imttech:block/pegboard",
-   "y": 180
+  {
+   "when": {
+    "facing": "north",
+    "corner": "left"
+   },
+   "apply": {
+    "model": "imttech:block/pegboard",
+    "y": 270
+   }
   },
-  "facing=west": {
-   "model": "imttech:block/pegboard",
-   "y": 270
+  {
+   "when": {
+    "facing": "east"
+   },
+   "apply": {
+    "model": "imttech:block/pegboard",
+    "y": 90
+   }
+  },
+  {
+   "when": {
+    "facing": "east",
+    "corner": "right"
+   },
+   "apply": {
+    "model": "imttech:block/pegboard",
+    "y": 180
+   }
+  },
+  {
+   "when": {
+    "facing": "east",
+    "corner": "left"
+   },
+   "apply": {
+    "model": "imttech:block/pegboard"
+   }
+  },
+  {
+   "when": {
+    "facing": "south"
+   },
+   "apply": {
+    "model": "imttech:block/pegboard",
+    "y": 180
+   }
+  },
+  {
+   "when": {
+    "facing": "south",
+    "corner": "right"
+   },
+   "apply": {
+    "model": "imttech:block/pegboard",
+    "y": 270
+   }
+  },
+  {
+   "when": {
+    "facing": "south",
+    "corner": "left"
+   },
+   "apply": {
+    "model": "imttech:block/pegboard",
+    "y": 90
+   }
+  },
+  {
+   "when": {
+    "facing": "west"
+   },
+   "apply": {
+    "model": "imttech:block/pegboard",
+    "y": 270
+   }
+  },
+  {
+   "when": {
+    "facing": "west",
+    "corner": "right"
+   },
+   "apply": {
+    "model": "imttech:block/pegboard"
+   }
+  },
+  {
+   "when": {
+    "facing": "west",
+    "corner": "left"
+   },
+   "apply": {
+    "model": "imttech:block/pegboard",
+    "y": 180
+   }
   }
- }
+ ]
 }

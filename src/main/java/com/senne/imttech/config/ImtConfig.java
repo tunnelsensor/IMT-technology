@@ -2359,6 +2359,15 @@ public final class ImtConfig {
         /** Zoveel magazijnen of energiecellen passen in één Ammo Box (die stapelen niet, elk houdt zijn eigen inhoud). */
         @Tunable(value = "Magazines or energy cells that fit in one Ammo Box", min = 1, max = 64)
         public static float AMMO_BOX_PIECES = 12.0f;
+        /**
+         * Hoofdstuk 71 (jouw wens: "de range mag verhoogd worden naar 2 blokken ipv 1"; in hoofdstuk 70 was het 2,0 =
+         * 1 blok ervan): zo ver mag het punt waar je op een Pegboard klikt van je ogen liggen. 3 = je staat tot 2 blokken
+         * voor het bord; zo haal je van daar een wand van 2 panelen hoog van onder tot boven. (Minecraft zelf laat je tot
+         * zo'n 4,5 blokken ver klikken.) Let op: een bestaand configbestand houdt zijn eigen getal.
+         */
+        @Tunable(value = "How far from your eyes you can hang, take or lock things on a Pegboard (blocks). "
+                + "3 = stand at most 2 blocks in front of it", min = 1, max = 6)
+        public static float PEGBOARD_REACH = 3.0f;
     }
 
     // =============================================================================================== Backpacks

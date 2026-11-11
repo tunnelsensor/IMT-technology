@@ -30,7 +30,8 @@ public final class ArmoryClient {
         ItemStack held = player.getMainHandItem();
         var entity = mc.level.getBlockEntity(hit.getBlockPos());
         if (entity instanceof PegboardBlockEntity) {
-            return Pegboard.hangable(held);
+            // Hoofdstuk 70: alleen van dichtbij. Verder weg richt een geweer gewoon, ook op een Pegboard.
+            return Pegboard.hangable(held) && Pegboard.inReach(player, hit.getLocation());
         }
         if (entity instanceof AmmoBoxBlockEntity box) {
             return AmmoBoxes.useFor(player, held, box) != AmmoBoxes.Use.NONE;

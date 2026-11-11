@@ -2149,8 +2149,25 @@ heeft 8 x 8 gaatjes, en alles klikt vast op dat raster.
 - **Sneak + rechtsklik met een lege hand**: het draait: loop naar links (je ziet de linkerkant), naar rechts, naar beneden,
   naar boven. Een stand die niet past wordt overgeslagen (een sniper op één rij panelen gaat dus van links naar rechts en
   weer terug).
-- **Iedereen** mag eraan (jouw keuze, zoals een item frame). Breek je een paneel af, dan valt wat erop hing eraf, ook wat
-  van een paneel ernaast over dit paneel hing.
+- **Iedereen** mag eraan (jouw keuze, zoals een item frame), maar alleen **van dichtbij** (hoofdstuk 71): je staat
+  hooguit 2 blokken voor het bord (het punt waar je klikt ligt hooguit 3 blokken van je ogen, `pegboardReach`). Van
+  verder weg zie je geen kader en zegt een klik "Too far away". Breek je een paneel af, dan valt wat erop hing eraf, ook
+  wat van een paneel ernaast over dit paneel hing.
+- **Vastzetten** (hoofdstuk 70 en 71): **sneak + linksklik** op wat hangt zet het vast: zijn **omtrek** wordt grijs op het
+  paneel geverfd (je ziet een grijs randje eromheen). Nog eens sneak + linksklik zet het weer los. Op een lege plek, of
+  zonder sneak, breekt linksklik gewoon het paneel. Pak je een vastgezet item, dan blijft de hele geverfde vorm op de
+  plek (de **schaduw**). Daar kan alleen **hetzelfde soort** op: elke Glock op een Glock-plek, elk Glock-magazijn op een
+  magazijnplek, elke Laser Rifle op een rifle-plek. **Rechtsklik op de schaduw** met zo'n item en het hangt er weer,
+  precies zoals het hing (ook gedraaid), en weer vastgezet. Sneak + linksklik op een schaduw veegt hem weg. Een schaduw
+  is geen echt item: breek je het paneel af, dan valt hij niet op de grond.
+- **Elke soort granaat** heeft zijn eigen kleur omtrek, zodat je ziet wat waar hoort: EMP roodachtig, frag groen,
+  smokebom donkerder grijs (een gekleurde smokebom een beetje in zijn rookkleur), flashbang bijna wit. De sticky's,
+  Remote EMP/Frag en hun triggers krijgen de kleur van hun soort (en ze hebben elk een andere vorm). De rest is grijs.
+- **Een hoek** (hoofdstuk 70): in een binnenhoek **rechtsklik je met een Pegboard op de andere muur**: het tweede paneel
+  komt in hetzelfde blok. Elke muur heeft zijn eigen gaatjes. Het gaatje direct naast de andere muur blijft vrij (daar zit
+  dat paneel), en de twee gaatjes daarna mogen alleen vol als op de andere muur op die hoogte niets in de hoek hangt (anders
+  steken ze door elkaar). Hangt er al iets in dat eerste gaatje, dan zegt hij "Take down what hangs in the corner first".
+  Breek je een hoek af, dan krijg je twee Pegboards terug.
 
 **De Ammo Box** (2 ijzer, een hendel en 5 stalen staven). Een olijfgroene munitiekist op de grond. **Eén soort per kist**:
 9mm-patronen, hulzen, kogelpunten, Glock-magazijnen of energiecellen; wat je er als eerste in doet, bepaalt de soort, en is

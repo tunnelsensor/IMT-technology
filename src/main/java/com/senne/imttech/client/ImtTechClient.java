@@ -140,6 +140,10 @@ public class ImtTechClient {
         // Hoofdstuk 69: een granaat oprapen gaat voor alles (ook met een geweer in je hand).
         NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGHEST,
                 com.senne.imttech.client.weapons.GrenadeGrab::onInteraction);
+        // Hoofdstuk 70: sneak + linksklik op een Pegboard zet vast of los (ook met een geweer in je hand).
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGH,
+                com.senne.imttech.client.armory.PegboardLock::onInteraction);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.armory.PegboardLock::onClientTick);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.weapons.GunControl::onMovementInput);
         NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST,
                 com.senne.imttech.client.weapons.GunControl::onComputeFov);

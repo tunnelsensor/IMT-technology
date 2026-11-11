@@ -6,6 +6,7 @@ import com.senne.imttech.guns.FirearmItem;
 import com.senne.imttech.guns.FirearmType;
 import com.senne.imttech.guns.GunMaterial;
 import com.senne.imttech.guns.MagazineItem;
+import com.senne.imttech.howto.HowToCue;
 import com.senne.imttech.howto.HowToCue.Side;
 import com.senne.imttech.howto.HowToScene;
 import com.senne.imttech.howto.HowToSceneBuilder;
@@ -34,7 +35,7 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * De animatie van de armory (hoofdstuk 67): het Pegboard (panelen aan de muur, ophangen op het raster, pakken en
- * draaien) en de Ammo Box (één soort per kist, in en uit met klikken, een magazijn laden door rechtsklik in te houden,
+ * draaien; hoofdstuk 70: vastzetten met een schaduw, en een hoek met twee panelen in een blok) en de Ammo Box (één soort per kist, in en uit met klikken, een magazijn laden door rechtsklik in te houden,
  * en afgebroken houdt hij zijn inhoud). De wapens aan de wand en het etiket van de kist tekenen hun echte renderers,
  * gevoed met dezelfde gegevens als een echt blok bewaart.
  */
@@ -46,8 +47,15 @@ public final class ArmoryScenes {
         return (CompoundTag) stack.save(RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY));
     }
 
-    /** Wat er aan één paneel hangt: per item zijn gaatje linksonder (x, y op dit paneel) en hoe het hangt. */
-    private record Hang(ItemStack stack, int x, int y, Pegboard.Turn turn) {}
+    /**
+     * Wat er aan een paneel hangt: per item zijn gaatje linksonder (x, y op dit paneel) en hoe het hangt. Hoofdstuk 70:
+     * op het tweede paneel van een hoek ({@code side}), vastgezet ({@code locked}), of alleen nog zijn schaduw.
+     */
+    private record Hang(ItemStack stack, int x, int y, Pegboard.Turn turn, boolean side, boolean locked, boolean shadow) {
+        Hang(ItemStack stack, int x, int y, Pegboard.Turn turn) {
+            this(stack, x, y, turn, false, false, false);
+        }
+    }
 
     private static CompoundTag board(List<Hang> hung) {
         ListTag list = new ListTag();
@@ -57,6 +65,9 @@ public final class ArmoryScenes {
             entry.putInt("X", one.x());
             entry.putInt("Y", one.y());
             entry.putInt("Turn", one.turn().ordinal());
+            entry.putBoolean("Side", one.side());
+            entry.putBoolean("Locked", one.locked());
+            entry.putBoolean("Shadow", one.shadow());
             list.add(entry);
         }
         CompoundTag tag = new CompoundTag();
@@ -82,15 +93,16 @@ public final class ArmoryScenes {
     }
 
     /**
-     * Het Pegboard: drie panelen aan een muur worden één wand; een rifle, een sniper over twee panelen, een Glock,
-     * magazijnen en granaten erop; pakken en draaien. De Ammo Box: patronen erin (één stapel, dan alles), er een stapel
+     * Het Pegboard: drie panelen aan een muur worden een wand; een rifle, een sniper over twee panelen, een Glock,
+     * magazijnen en granaten erop; pakken en draaien; vastzetten, pakken (de schaduw blijft) en terughangen; een hoek
+     * met een tweede paneel tegen een zijmuur. De Ammo Box: patronen erin (één stapel, dan alles), er een stapel
      * uit, een magazijn laden door rechtsklik in te houden, wisselen met een lasergeweer, en afbreken.
      */
     public static List<HowToScene> armory() {
-        // Een wand van 2 x 2 panelen in het midden, van voren bekeken (de camera bijna recht op de zuidkant); de kist
-        // rechts ervoor.
+        // Een wand van 2 x 2 panelen in het midden, van schuin voor bekeken (de camera op de zuidkant, schuin van het
+        // westen: 40 graden, zodat je in hoofdstuk 70 ook het paneel op de zijmuur rechts goed ziet); de kist rechts ervoor.
         HowToSceneBuilder s = new HowToSceneBuilder("armory", "Armory: pegboard and ammo box").plate(4, 3).height(3)
-                .camera(14, 24);
+                .camera(40, 24);
         BlockPos bottomLeft = new BlockPos(1, 1, 1);
         BlockPos bottomRight = new BlockPos(2, 1, 1);
         BlockPos topLeft = new BlockPos(1, 2, 1);
@@ -112,9 +124,9 @@ public final class ArmoryScenes {
         }
         s.place(boards, HowToSceneBuilder.DROP);
         s.idle(10);
-        s.text(90, new Vec3(3.0, 2.5, 1.1), Side.RIGHT,
+        s.text(80, new Vec3(3.0, 2.5, 1.1), Side.RIGHT,
                 "Put *Pegboards* on a wall. Side by side they make one big wall, with a hole every 2 pixels.");
-        s.idle(95);
+        s.idle(85);
 
         s.chapter("Hang your weapons");
         ItemStack rifle = LaserGunItem.complete(GunType.RIFLE, GunMaterial.TITANIUM);
@@ -165,10 +177,10 @@ public final class ArmoryScenes {
         onTopRight.add(new Hang(EnergyCellItem.withCharge(100), 5, 0, Pegboard.Turn.LEFT));
         s.blockData(topRight, board(onTopRight));
         s.sound(SoundEvents.ITEM_FRAME_ADD_ITEM, 0.6f, 1.1f);
-        s.text(90, new Vec3(3.0, 1.7, 1.1), Side.RIGHT,
+        s.text(80, new Vec3(3.0, 1.7, 1.1), Side.RIGHT,
                 "Every weapon fits: pistols and laser guns, magazines and cells, grenades, holsters, pouches and slings."
                         + " They stay exactly as they were.");
-        s.idle(95);
+        s.idle(85);
 
         s.chapter("Take and turn");
         Vec3 glockAt = new Vec3(1.33, 1.5, 1.15);
@@ -184,8 +196,104 @@ public final class ArmoryScenes {
         onBottomLeft.remove(0);
         s.blockData(bottomLeft, board(onBottomLeft));
         s.sound(SoundEvents.ITEM_FRAME_REMOVE_ITEM, 0.6f, 0.8f);
-        s.text(70, glockAt, Side.LEFT, "Right-click with an empty hand takes it. Anyone can use a pegboard.");
+        s.text(70, glockAt, Side.LEFT, "Right-click with an empty hand takes it. Anyone can use a pegboard, but only from"
+                + " close by: at most two blocks away.");
         s.idle(75);
+
+        s.chapter("Lock a spot");
+        // De Glock weer ophangen (met de loop naar links, zoals altijd), vastzetten, pakken: zijn schaduw blijft.
+        s.rightClick(glockAt, glock);
+        s.idle(HowToSceneBuilder.CLICK / 2);
+        onBottomLeft.add(0, new Hang(glock, 1, 3, Pegboard.Turn.LEFT));
+        s.blockData(bottomLeft, board(onBottomLeft));
+        s.sound(SoundEvents.ITEM_FRAME_ADD_ITEM, 0.6f, 0.8f);
+        s.idle(15);
+        s.click(HowToSceneBuilder.CLICK, List.of(glockAt), HowToCue.Button.LEFT, false, true, ItemStack.EMPTY);
+        s.idle(HowToSceneBuilder.CLICK / 2);
+        onBottomLeft.set(0, new Hang(glock, 1, 3, Pegboard.Turn.LEFT, false, true, false));
+        s.blockData(bottomLeft, board(onBottomLeft));
+        s.sound(SoundEvents.IRON_TRAPDOOR_CLOSE, 0.4f, 1.7f);
+        s.text(75, glockAt, Side.LEFT, "Sneak + left-click locks it: its outline is painted grey on the board. Do it again"
+                + " to unlock it.");
+        s.idle(80);
+        s.rightClick(glockAt, ItemStack.EMPTY);
+        s.idle(HowToSceneBuilder.CLICK / 2);
+        onBottomLeft.set(0, new Hang(glock, 1, 3, Pegboard.Turn.LEFT, false, true, true));
+        s.blockData(bottomLeft, board(onBottomLeft));
+        s.sound(SoundEvents.ITEM_FRAME_REMOVE_ITEM, 0.6f, 0.8f);
+        s.text(75, glockAt, Side.LEFT, "Take a locked item and its *shadow* stays: the spot is kept for the same kind, nothing"
+                + " else can hang there. Sneak + left-click wipes a shadow away.");
+        s.idle(80);
+        ItemStack titanium = FirearmItem.loaded(FirearmType.GLOCK_19, GunMaterial.TITANIUM);
+        s.rightClick(glockAt, titanium);
+        s.idle(HowToSceneBuilder.CLICK / 2);
+        onBottomLeft.set(0, new Hang(titanium, 1, 3, Pegboard.Turn.LEFT, false, true, false));
+        s.blockData(bottomLeft, board(onBottomLeft));
+        s.sound(SoundEvents.ITEM_FRAME_ADD_ITEM, 0.6f, 0.8f);
+        s.text(75, glockAt, Side.LEFT, "Right-click the shadow with one of the same kind (any Glock): it hangs right back,"
+                + " the way it hung.");
+        s.idle(80);
+        // Hoofdstuk 71: de EMP-granaat en de Frag Grenade rechtsonder vastzetten en pakken: twee schaduwen in hun eigen kleur.
+        Vec3 empAt = new Vec3(2.3, 1.62, 1.15);
+        Vec3 fragAt = new Vec3(2.62, 1.62, 1.15);
+        s.click(HowToSceneBuilder.CLICK, List.of(empAt), HowToCue.Button.LEFT, false, true, ItemStack.EMPTY);
+        s.idle(HowToSceneBuilder.CLICK / 2);
+        Hang emp = onBottomRight.get(0), frag = onBottomRight.get(1);
+        onBottomRight.set(0, new Hang(emp.stack(), emp.x(), emp.y(), emp.turn(), false, true, false));
+        s.blockData(bottomRight, board(onBottomRight));
+        s.sound(SoundEvents.IRON_TRAPDOOR_CLOSE, 0.4f, 1.7f);
+        s.click(HowToSceneBuilder.CLICK, List.of(fragAt), HowToCue.Button.LEFT, false, true, ItemStack.EMPTY);
+        s.idle(HowToSceneBuilder.CLICK / 2);
+        onBottomRight.set(1, new Hang(frag.stack(), frag.x(), frag.y(), frag.turn(), false, true, false));
+        s.blockData(bottomRight, board(onBottomRight));
+        s.sound(SoundEvents.IRON_TRAPDOOR_CLOSE, 0.4f, 1.7f);
+        s.rightClick(empAt, ItemStack.EMPTY);
+        s.idle(HowToSceneBuilder.CLICK / 2);
+        onBottomRight.set(0, new Hang(emp.stack(), emp.x(), emp.y(), emp.turn(), false, true, true));
+        s.blockData(bottomRight, board(onBottomRight));
+        s.sound(SoundEvents.ITEM_FRAME_REMOVE_ITEM, 0.6f, 0.8f);
+        s.rightClick(fragAt, ItemStack.EMPTY);
+        s.idle(HowToSceneBuilder.CLICK / 2);
+        onBottomRight.set(1, new Hang(frag.stack(), frag.x(), frag.y(), frag.turn(), false, true, true));
+        s.blockData(bottomRight, board(onBottomRight));
+        s.sound(SoundEvents.ITEM_FRAME_REMOVE_ITEM, 0.6f, 0.8f);
+        s.text(75, fragAt, Side.RIGHT, "Every kind of grenade has its own colour of outline: EMP reddish, frag green, smoke"
+                + " dark, flashbang white. So you see at a glance what goes where.");
+        s.idle(80);
+
+        s.chapter("Corners");
+        // Een zijmuur rechts (op x = 3), en met een Pegboard erop klikken: in de twee blokken van de hoek komt een tweede
+        // paneel bij (het kijkt naar het westen). Daarop een flashbang, een smokebom en een laserpistool.
+        Map<BlockPos, BlockState> sideWall = new LinkedHashMap<>();
+        sideWall.put(new BlockPos(3, 1, 1), Blocks.STONE_BRICKS.defaultBlockState());
+        sideWall.put(new BlockPos(3, 2, 1), Blocks.STONE_BRICKS.defaultBlockState());
+        s.place(sideWall, HowToSceneBuilder.DROP);
+        s.idle(12);
+        Vec3 sideAt = new Vec3(2.98, 1.6, 1.5);
+        s.rightClick(sideAt, new ItemStack(ModItems.PEGBOARD.get()));
+        s.idle(HowToSceneBuilder.CLICK / 2);
+        BlockState corner = facing(ModBlocks.PEGBOARD.get(), Direction.SOUTH)
+                .setValue(com.senne.imttech.armory.PegboardBlock.CORNER, com.senne.imttech.armory.PegboardBlock.Corner.RIGHT);
+        Map<BlockPos, BlockState> corners = new LinkedHashMap<>();
+        corners.put(bottomRight, corner);
+        corners.put(topRight, corner);
+        s.place(corners, 0);
+        // De tekstballonnen hangen rechts naast de voorkant van de zijmuur, zodat ze de hoek niet bedekken.
+        s.text(80, new Vec3(3.0, 1.9, 2.0), Side.RIGHT, "In an inside corner, right-click the other wall with a Pegboard:"
+                + " a second panel goes into the same block. Mine it and you get both back.");
+        s.idle(85);
+        onBottomRight.add(new Hang(new ItemStack(ModItems.FLASHBANG.get()), 4, 4, Pegboard.Turn.LEFT, true, false, false));
+        onBottomRight.add(new Hang(new ItemStack(ModItems.SMOKE_GRENADE.get()), 4, 1, Pegboard.Turn.LEFT, true, false, false));
+        s.blockData(bottomRight, board(onBottomRight));
+        s.sound(SoundEvents.ITEM_FRAME_ADD_ITEM, 0.6f, 1.0f);
+        s.idle(8);
+        onTopRight.add(new Hang(LaserGunItem.complete(GunType.PISTOL, GunMaterial.TITANIUM), 3, 1, Pegboard.Turn.LEFT, true, false,
+                false));
+        s.blockData(topRight, board(onTopRight));
+        s.sound(SoundEvents.ITEM_FRAME_ADD_ITEM, 0.6f, 1.1f);
+        s.text(75, new Vec3(3.0, 2.6, 2.0), Side.RIGHT, "Each wall has its own holes. The hole right next to the other wall"
+                + " stays free, and what hangs in the corner never pokes through the other side.");
+        s.idle(80);
 
         s.chapter("The Ammo Box");
         BlockPos ammo = new BlockPos(3, 1, 2);
@@ -197,9 +305,9 @@ public final class ArmoryScenes {
         s.idle(HowToSceneBuilder.CLICK / 2);
         s.blockData(ammo, box(round, 64));
         s.sound(SoundEvents.BUNDLE_INSERT, 0.6f, 1.0f);
-        s.text(80, label, Side.LEFT, "An *Ammo Box* holds one sort: rounds, casings, bullets, magazines or energy cells."
+        s.text(70, label, Side.LEFT, "An *Ammo Box* holds one sort: rounds, casings, bullets, magazines or energy cells."
                 + " Right-click puts the stack in your hand in.");
-        s.idle(85);
+        s.idle(75);
         s.sneakRightClick(label, round.copyWithCount(64));
         s.idle(HowToSceneBuilder.CLICK / 2);
         s.blockData(ammo, box(round, 240));
@@ -225,17 +333,17 @@ public final class ArmoryScenes {
             s.sound(ModSounds.GLOCK_ROUND_LOAD.get(), 0.4f, 1.0f);
         }
         s.idle(15);
-        s.text(80, label, Side.LEFT, "A laser gun on a box of cells swaps your cell for the fullest one; a Glock on a box of"
+        s.text(70, label, Side.LEFT, "A laser gun on a box of cells swaps your cell for the fullest one; a Glock on a box of"
                 + " magazines swaps your magazine.");
-        s.idle(85);
+        s.idle(75);
 
         s.chapter("Take it with you");
         s.remove(ammo);
         s.sound(SoundEvents.METAL_BREAK, 0.6f, 1.0f);
         s.item(80, Vec3.atCenterOf(ammo).add(0, 0.2, 0), new ItemStack(ModItems.AMMO_BOX.get()), 0.8f);
-        s.text(80, Vec3.atCenterOf(ammo).add(0, 0.3, 0), Side.LEFT,
+        s.text(70, Vec3.atCenterOf(ammo).add(0, 0.3, 0), Side.LEFT,
                 "Mine the box and everything stays inside, like a shulker box. Its tooltip says what is in it.");
-        s.idle(85);
+        s.idle(75);
         return List.of(s.build());
     }
 }

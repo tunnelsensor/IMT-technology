@@ -22,13 +22,13 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 494 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 497 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
 **Publiceren:** klaar voor CurseForge onder de MIT-licentie (17 oktober): de beschrijving, het logo, de
 changelog en een stappenplan staan in `publish/` (begin bij `publish/HOE-PUBLICEREN.md`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 127 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 128 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -5998,6 +5998,126 @@ jij gooit die terug of er hangt een remote frag op je base en jij hangt die gewo
       voor hij ging sluipen: sluipen zet je ogen lager, het kruisje zakte onder de lading (de muur kreeg de klik). In het
       echt mik je terwijl je sluipt; de rondleiding doet het nu ook zo. `-Ponly=howtoall,howto:grenade_throwback`: de
       animatie per hoofdstukje. Showcase **121** ("Throwing grenades back"). LEESMIJ aangepast.
+
+### 70. Het Pegboard: vastzetten, hoeken, dichtbij, en de flashbang (9 november)
+
+Jouw vraag: "items op armory locken zodat als je het pakt je het de volgende keer simpel kunt terug hangen op de zelfde
+plek; zorgen dat je de boards in een hoek kunt plaatsen zodat je een hoek van 90° van boards kunt hebben; de plaats en er
+afhalen range minder, nu kun je van 5 blokken ver iets doen, ik wil dat dit maar 1 block is; flashbangs even groot maken
+als de rest want ze zijn nu net iets kleiner".
+
+**Jouw antwoorden:**
+- **Vastzetten = sneak + linksklik** op wat hangt (een slotje erbij; nog eens = los). Zonder sneak, of op een lege plek,
+  breekt linksklik het paneel zoals altijd.
+- Pak je een vastgezet item, dan blijft zijn **schaduw**. **Terughangen = klikken op de schaduw zelf** (niet ergens op de
+  wand).
+- Op een schaduw past **hetzelfde soort** (elke Glock op een Glock-plek, elk Glock-magazijn op een magazijnplek, elke Laser
+  Rifle op een rifle-plek); niets anders kan eroverheen.
+- **Bereik: maximaal 1 blok ervan**: je staat tegen het bord of in het blok ervoor (2 blokken van je ogen tot waar je klikt).
+
+**Mijn invulling** (zeg het als je het anders wilt):
+- De **hoek** is een **binnenhoek**: twee panelen in hetzelfde blok, elk tegen zijn eigen muur. Een buitenhoek (om een
+  pilaar) kon al: daar zitten de panelen in verschillende blokken. Het tweede paneel zet je door met een Pegboard op de
+  andere muur te klikken. Afbreken haalt ze allebei weg (2 Pegboards terug, en alles wat erop hing).
+- In een hoek is het **gaatje direct naast de andere muur dicht** (daar zit dat paneel, 1 pixel dik). De **twee gaatjes
+  daarna** liggen binnen het stuk waar de wapens van de andere muur uitsteken (tot 5,2 pixels van de muur): daar mag iets
+  hangen zolang op de andere muur op die hoogte niets in zijn eigen hoekstrook hangt. Verder van de hoek botst niets.
+  Hangt er al iets in dat eerste gaatje, dan komt er geen tweede paneel ("Take down what hangs in the corner first").
+- De **schaduw** is het item zelf, plat (een honderdste pixel dik) en lichtgrijs op het paneel geverfd, zoals op een
+  echt gereedschapsbord, met het slotje rechtsboven. Een schaduw is geen echt item: hij valt nooit op de grond. Met een
+  lege hand een **grijs kader** op een schaduw; rechtsklik zegt "Locked spot for a Glock 19: right-click it with one to
+  hang it back. Sneak + left-click unlocks it."
+- Het **slotje**: messing met een stalen beugel, zo'n 1,4 pixel breed, rechtsboven op het item.
+- **Iedereen** mag vastzetten en losmaken (zoals iedereen eraan mag).
+- **Te ver** met iets dat erop mag: "Too far away: stand right in front of the Pegboard (at most 1 block away)", en verder
+  gebeurt er niets (een granaat gooi je dan ook niet tegen je eigen wand). Met een geweer in je hand richt je dan gewoon.
+  Van verder weg zie je ook geen kader. Het bereik staat in de config (`[armory] pegboardReach = 2`). De **Ammo Box**
+  bleef zoals hij was (jouw vraag ging over ophangen en eraf halen).
+- De **flashbang** op het Pegboard krijgt de grootte van de Frag Grenade (dezelfde bol); zijn gouden pin steekt een klein
+  beetje boven zijn rechthoek uit, net als de antenne van een remote. In je inventaris en in je hand was hij al even groot.
+
+- [x] **De hoek** — `PegboardBlock`: de blockstate `corner` (none, left, right: de muur links of rechts zoals jij voor het
+      eerste paneel staat); `canBeReplaced` (alleen met een Pegboard op de muur ernaast, zoals een halve plaat) en
+      `getStateForPlacement` voegen het tweede paneel toe (`Pegboard.cornerFree`); de vorm is beide panelen; `wallOf`
+      zegt op welk paneel je klikte; `mirror` wisselt links en rechts. `Pegboard.sideFacing`, `isBoard` (beide muren),
+      `otherWall`, `otherOnRight`, en in `fits` de regels voor de hoek (`clearOfCorners`, `CORNER_ZONE` = 3, `FRONT`).
+      `PegboardBlockEntity.Hung` weet nu op welk paneel het hangt (`side`). De blockstate is een multipart
+      (`tools/generate_armory_models.py`: `pegboard_blockstate`), de loot table geeft er 2 bij een hoek.
+- [x] **Vastzetten en de schaduw** — `Hung.locked` en `Hung.shadow`; `take` laat een schaduw achter, `fill` hangt iets op
+      een schaduw, `setLocked`; `dropAll`/`dropLoose` laten schaduwen niet vallen. `Pegboard.sameKind`, `shadowFor`;
+      `PegboardBlock.hangAt` kijkt eerst of je op een schaduw van hetzelfde soort klikte; `toggleLock`. In je spel:
+      `client/armory/PegboardLock` (EventPriority.HIGH, ook met een geweer in je hand) vangt sneak + linksklik op als je
+      dichtbij naar iets kijkt dat hangt, eens per klik (Minecraft herhaalt linksklik elke tick), en stuurt
+      `PegboardLockPayload`; de server kijkt zelf na (`handleLock`). `PegboardRenderer`: de schaduw (een
+      `VertexConsumer` die alles even lichtgrijs verft), het slotje (`models/armory/lock.json`), het kader op een schaduw.
+- [x] **Dichtbij** — `Pegboard.inReach` (de config `PEGBOARD_REACH`, de server 0,3 blok speling): ophangen, pakken,
+      draaien, vastzetten, het kader en `ArmoryClient.usesArmory` (een geweer richt verder weg gewoon).
+- [x] **De flashbang** — `PegboardRenderer.sizedLike`: de flashbang wordt gemeten aan de Frag Grenade.
+- [x] **How it works** — onderwerp 52 "Armory": twee nieuwe hoofdstukjes, "Lock a spot" (de Glock weer ophangen,
+      sneak + linksklik: slotje; pakken: schaduw; een titanium Glock op de schaduw) en "Corners" (een zijmuur, met een
+      Pegboard erop klikken: het tweede paneel; een flashbang, een smokebom en een laserpistool erop). "Take and turn" zegt
+      nu ook "only from close by: at most one block away". De camera van deze animatie staat nu op 40 graden (was 14,
+      bijna recht van voren): anders zag je het paneel op de zijmuur alleen als een smal streepje.
+- [x] **Tests** — `ArmoryGameTests` (3 nieuw): `pegboard_lock_leaves_a_shadow` (draaien, vastzetten, pakken: de
+      schaduw blijft zoals hij hing; een magazijn kan er niet over, een titanium Glock wel, precies daar en weer vast;
+      de schaduw wegvegen; een losse Glock laat niets achter; een schaduw valt nooit als item), `pegboard_corner_two_walls`
+      (een echte klik met een Pegboard op de zijmuur, gaatje 0 dicht en gaatje 1 open, de hoekstrook, ophangen op het
+      tweede paneel, geen tweede paneel over een magazijn heen, afbreken = 2 Pegboards en 2 magazijnen),
+      `pegboard_only_from_close_by` (van 3 blokken niet pakken en niet ophangen, vlak ervoor wel). In
+      `pegboard_take_turn_and_drop` staat de vreemde nu in het blok voor het paneel. 470 tests groen (twee keer; in
+      een ronde ertussen faalde `guard_searches_where_he_lost_you` een keer, de bekende wisselvallige bewakerstest).
+- [x] **Bekeken in het spel** — `-Ponly=armory` (nieuw: ar11 tot ar16), met de echte toetsen: sneak + linksklik op de
+      rifle gaf het slotje ("Locked: Laser Rifle. When you take it, its shadow keeps the spot.") en brak het paneel niet;
+      rechtsklik pakte hem (de schaduw bleef, met de rifle in je hand een blauw kader precies op de schaduw); rechtsklik
+      hing hem terug (je hand was daarna leeg). De hoek met de zijmuur (ar14, ar15: een vastgezette rifle en de schaduw
+      van een shotgun), en van 3 blokken "Too far away" (ar16, het magazijn bleef in je hand). De flashbang van dichtbij:
+      even groot als de smokebom, de frag en de EMP ernaast. Wat ik zo vond: de schaduw was eerst donkergrijs, en die van
+      een zwarte Glock leek dan op een echte Glock; nu is elke schaduw even lichtgrijs (de "witte flits" van een geraakt
+      wezen, over zwart). En in de showcase bouwde het armory-veldje zich opnieuw op de plek van hoofdstuk 67: alles wat
+      daar nog hing viel op de grond en de speler raapte het op (een Ion Blaster in zijn "lege" hand); nu ruimt
+      `VisualCheck.buildArmoryAt` die items op (dat gebeurde ook als je functie 120 twee keer afspeelde). Het veldje
+      heeft nu een zijmuur met panelen (`ArmoryDisplay`), en de rifle-stap van showcase 120 staat in het blok voor de
+      wand. `-Ponly=howtoall,howto:armory`: de animatie per hoofdstukje. Showcase **122** ("Pegboard: lock, shadow,
+      corner"), bekeken met `tools/showcase.py --test`. LEESMIJ aangepast.
+
+### 71. Het Pegboard bijgesteld: een grijze omtrek, granaten in hun eigen kleur, 2 blokken (9 november)
+
+Jouw vraag: "Kun je het slotje symbool weghalen, dat ziet er wat raar uit, geef ipv een slotje een gray outline op het
+board, de range mag ook verhoogd worden naar 2 blokken ipv 1. Zorg ook dat elke bom er net iets anders uitziet van
+outline zodat je makkelijk weet wat waar moet".
+
+**Mijn invulling** (zeg het als je het anders wilt):
+- Het **slotje is weg**. Van een vastgezet item wordt de **omtrek grijs op het paneel geverfd**, zoals op een echt
+  gereedschapsbord: hangt het er, dan zie je een grijs randje eromheen (0,5 pixel); pak je het, dan blijft de hele
+  geverfde vorm (de schaduw), zonder haakjes.
+- **Elke soort granaat zijn eigen kleur** (nog steeds grijzig, maar duidelijk anders): EMP roodachtig, frag olijfgroen,
+  smokebom donkerder grijs (een gekleurde smokebom voor de helft in zijn rookkleur), flashbang bijna wit. De sticky's, de
+  Remote EMP/Frag en de EMP/Frag Trigger krijgen de kleur van hun soort; ze verschillen ook van vorm (een bol, een halve
+  bol, een antenne). Al de rest blijft grijs.
+- **Bereik: 2 blokken ervan** = het punt waar je klikt ligt hooguit **3 blokken** van je ogen (was 2). De melding zegt nu
+  "Too far away: stand closer to the Pegboard (at most 2 blocks away)." In `run/config`, `run-visual/config` en
+  `run-showcase/config` stond nog 2.0 (een bestaand configbestand houdt zijn eigen getal): daar staat nu 3.0.
+
+- [x] **De omtrek** — `PegboardRenderer.paint`: hetzelfde model, plat net voor het paneel, 8 keer een randje opgeschoven
+      (en voor een schaduw ook in het midden), zodat de vorm overal 0,5 pixel groter is dan het item, ook bij een dunne
+      loop. De verf is een rendertype zonder plaatje (`RenderType.textBackground`: alleen kleur en het licht van de
+      plek), zodat elke omtrek precies zijn kleur heeft; alleen de Ion Blaster (een plat plaatje met doorzichtige pixels)
+      houdt zijn plaatje en wordt lichtgrijs met de "witte flits" van hoofdstuk 70. Het slotje (`models/armory/lock.json`,
+      `pegboard_lock.png`, de functie `lock` in `tools/generate_armory_models.py`) is weg.
+- [x] **De kleuren** — `PegboardRenderer.paintColour` (grijs, EMP, frag, smoke met zijn rookkleur, flashbang).
+- [x] **2 blokken** — `ImtConfig.Armory.PEGBOARD_REACH` = 3; de melding; `pegboard_only_from_close_by` test nu ook dat
+      ophangen en pakken van 2 blokken ver lukt (en van 3 nog steeds niet).
+- [x] **How it works** — in "Lock a spot" zegt de tekst nu "its outline is painted grey on the board", en de EMP-granaat
+      en de Frag Grenade worden vastgezet en gepakt: twee schaduwen in hun eigen kleur ("Every kind of grenade has its own
+      colour of outline"). De animatie werd daardoor 92 seconden, en de regel (hoofdstuk 63) is hooguit 90: tien
+      tekstballonnen staan nu een halve seconde korter (87 s).
+- [x] **De voorbeeldwand** — `ArmoryDisplay`: alle granaten op de zijmuur zijn vastgezet, en de flashbang, de frag en de
+      EMP zijn gepakt (hun schaduwen naast elkaar). Showcase 122 vertelt het nieuwe.
+- [x] **Tests** — 470, groen (de eerste ronde ving de animatie van 92 seconden; na het inkorten groen).
+- [x] **Bekeken in het spel** — `-Ponly=armory`: de vastgezette rifle met een grijs randje eromheen (ar11, ar13), op de
+      zijmuur de schaduwen van de flashbang (bijna wit), de frag (groen) en de EMP (roodachtig), en de smokebom en sticky
+      EMP die nog hangen met een randje in hun kleur (ar15); van 3 blokken "at most 2 blocks away" (ar16).
+      `-Ponly=howtoall,howto:armory`: de twee granaatschaduwen in "Lock a spot". LEESMIJ aangepast.
 
 ### 72. Militaire rugzakken, MOLLE-pouches en het lichaam van een speler (9 en 10 november)
 

@@ -357,8 +357,9 @@ public final class ArmoryGameTests {
         check(PegboardBlock.hangAt(null, level, pair[0], Direction.SOUTH, cu, cv, glock.copy(), Pegboard.Turn.LEFT), "De Glock hangt niet");
         PegboardBlockEntity left = board(helper, pair[0]);
 
-        // Iemand (iedereen mag) kijkt naar de Glock en draait hem met sneak + rechtsklik, en pakt hem dan.
-        ServerPlayer stranger = player(helper, "armory-stranger", new BlockPos(2, 2, 6), ItemStack.EMPTY);
+        // Iemand (iedereen mag) kijkt naar de Glock en draait hem met sneak + rechtsklik, en pakt hem dan. Hij staat in het
+        // blok voor het paneel (dichtbij genoeg).
+        ServerPlayer stranger = player(helper, "armory-stranger", new BlockPos(2, 2, 5), ItemStack.EMPTY);
         Vec3 centre = left.centre(0);
         stranger.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, centre);
         BlockHitResult hit = new BlockHitResult(centre.add(0, 0, -2.0 / 16), Direction.SOUTH, pair[0], false);
@@ -383,6 +384,244 @@ public final class ArmoryGameTests {
         List<ItemEntity> dropped = level.getEntitiesOfClass(ItemEntity.class, helper.getBounds().inflate(2),
                 entity -> LaserGunItem.typeOf(entity.getItem()) == GunType.RIFLE);
         check(dropped.size() == 1, "De rifle viel niet op de grond");
+        helper.succeed();
+    }
+
+    // ================================================================ Hoofdstuk 70: vastzetten, hoeken, bereik
+
+    /** Rechtsklik met een lege hand op wapen {@code index} van dit paneel (pakken, of met sneak draaien), zoals Minecraft het doet. */
+    private static void clickOn(ServerPlayer player, PegboardBlockEntity board, int index, boolean sneak) {
+        Vec3 centre = board.centre(index);
+        player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, centre);
+        Direction wall = board.wall(index);
+        Vec3 onPanel = centre.subtract(wall.getStepX() * 2.0 / 16, 0, wall.getStepZ() * 2.0 / 16);
+        player.setShiftKeyDown(sneak);
+        board.getBlockState().useWithoutItem(player.level(), player, new BlockHitResult(onPanel, wall, board.getBlockPos(), false));
+        player.setShiftKeyDown(false);
+    }
+
+    /** Het midden van wapen {@code index}, in gaatjes over de wand: {U, V}. */
+    private static double[] middle(PegboardBlockEntity board, int index) {
+        Pegboard.Spot spot = board.spot(index);
+        return new double[]{spot.u() + spot.w() / 2.0, spot.v() + spot.h() / 2.0};
+    }
+
+    /**
+     * Vastzetten (jouw keuze: sneak + linksklik): pak je een vastgezette Glock, dan blijft zijn schaduw op de plek, zoals
+     * hij hing (ook gedraaid). Een magazijn kan er niet over, een andere Glock (titanium) wel: door op de schaduw te
+     * klikken, en dan hangt hij precies daar, weer vastgezet. Sneak + linksklik op een schaduw veegt hem weg, en een
+     * schaduw valt nooit als item op de grond.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "armory")
+    public static void pegboard_lock_leaves_a_shadow(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos[] pair = boards(helper, 2, 2, 3);
+        ItemStack steel = FirearmItem.loaded(FirearmType.GLOCK_19, GunMaterial.STEEL);
+        double cu = Pegboard.column(pair[0], Direction.SOUTH) * 8 + 4;
+        double cv = pair[0].getY() * 8 + 4;
+        check(PegboardBlock.hangAt(null, level, pair[0], Direction.SOUTH, cu, cv, steel.copy(), Pegboard.Turn.LEFT), "De Glock hangt niet");
+        PegboardBlockEntity left = board(helper, pair[0]);
+        ServerPlayer player = player(helper, "armory-locker", new BlockPos(2, 2, 5), ItemStack.EMPTY);
+
+        // Draaien (loop naar rechts), dan vastzetten.
+        clickOn(player, left, 0, true);
+        check(left.hung().getFirst().turn() == Pegboard.Turn.RIGHT, "De Glock draaide niet");
+        double[] at = middle(left, 0);
+        check(PegboardBlock.toggleLock(player, level, pair[0], Direction.SOUTH, at[0], at[1]), "Vastzetten lukte niet");
+        check(left.hung().getFirst().locked(), "De Glock is niet vastgezet");
+        Pegboard.Spot before = left.spot(0);
+
+        // Pakken: in je hand, en zijn schaduw blijft (zelfde plek, zelfde stand).
+        clickOn(player, left, 0, false);
+        check(ItemStack.isSameItemSameComponents(player.getMainHandItem(), steel), "Je kreeg de Glock niet terug");
+        check(left.hung().size() == 1 && left.hung().getFirst().shadow(), "Er bleef geen schaduw op de plek");
+        Pegboard.Spot shadow = left.spot(0);
+        check(shadow.u() == before.u() && shadow.v() == before.v() && left.hung().getFirst().turn() == Pegboard.Turn.RIGHT,
+                "De schaduw ligt niet waar de Glock hing");
+        check(Pegboard.itemAt(level, pair[0], Direction.SOUTH, at[0], at[1]) != null, "Op de schaduw vind je niets");
+
+        // Een magazijn op de schaduw: dat hangt ernaast (of nergens), nooit eroverheen.
+        ItemStack magazine = MagazineItem.of(FirearmType.GLOCK_19, 15);
+        PegboardBlock.hangAt(null, level, pair[0], Direction.SOUTH, at[0], at[1], magazine.copy(), Pegboard.Turn.LEFT);
+        for (BlockPos pos : pair) {
+            PegboardBlockEntity one = board(helper, pos);
+            for (int i = 0; i < one.hung().size(); i++) {
+                Pegboard.Spot spot = one.spot(i);
+                check(spot.shadow() || !spot.overlaps(shadow.u(), shadow.v(), shadow.w(), shadow.h()),
+                        "Het magazijn hangt over de schaduw van de Glock");
+            }
+            // Het magazijn mag weer weg (verder gaat het om de Glock).
+            for (int i = one.hung().size() - 1; i >= 0; i--) {
+                if (MagazineItem.typeOf(one.hung().get(i).stack()) != null) {
+                    one.remove(i);
+                }
+            }
+        }
+
+        // Een titanium Glock (hetzelfde soort) op de schaduw: precies daar, gedraaid zoals de schaduw, weer vastgezet.
+        ItemStack titanium = FirearmItem.loaded(FirearmType.GLOCK_19, GunMaterial.TITANIUM);
+        ItemStack held = titanium.copy();
+        check(PegboardBlock.hangAt(null, level, pair[0], Direction.SOUTH, at[0], at[1], held, Pegboard.Turn.LEFT),
+                "De titanium Glock ging niet op de schaduw");
+        check(held.isEmpty(), "De titanium Glock bleef in je hand");
+        PegboardBlockEntity.Hung back = left.hung().getFirst();
+        check(!back.shadow() && back.locked() && back.turn() == Pegboard.Turn.RIGHT
+                        && ItemStack.isSameItemSameComponents(back.stack(), titanium),
+                "De titanium Glock hangt niet als de schaduw (vastgezet, loop naar rechts)");
+        check(left.spot(0).u() == before.u() && left.spot(0).v() == before.v(), "De titanium Glock hangt niet op de plek van de schaduw");
+
+        // Weer pakken, en de schaduw wegvegen (sneak + linksklik op de schaduw): de plek is vrij.
+        player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+        clickOn(player, left, 0, false);
+        check(left.hung().getFirst().shadow(), "Na het pakken bleef er geen schaduw");
+        check(PegboardBlock.toggleLock(player, level, pair[0], Direction.SOUTH, at[0], at[1]), "De schaduw wegvegen lukte niet");
+        check(left.hung().isEmpty(), "De schaduw ligt er nog");
+
+        // Losgezet: pakken laat niets achter. En een schaduw valt nooit als item op de grond.
+        check(PegboardBlock.hangAt(null, level, pair[0], Direction.SOUTH, cu, cv, steel.copy(), Pegboard.Turn.LEFT), "De Glock hangt niet weer");
+        double[] again = middle(left, 0);
+        PegboardBlock.toggleLock(null, level, pair[0], Direction.SOUTH, again[0], again[1]);
+        PegboardBlock.toggleLock(null, level, pair[0], Direction.SOUTH, again[0], again[1]);
+        check(!left.hung().getFirst().locked(), "Twee keer sneak + linksklik zette hem niet los");
+        player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+        clickOn(player, left, 0, false);
+        check(left.hung().isEmpty(), "Een losse Glock liet een schaduw achter");
+        check(PegboardBlock.hangAt(null, level, pair[0], Direction.SOUTH, cu, cv, steel.copy(), Pegboard.Turn.LEFT), "De Glock hangt niet weer");
+        PegboardBlock.toggleLock(null, level, pair[0], Direction.SOUTH, middle(left, 0)[0], middle(left, 0)[1]);
+        player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+        clickOn(player, left, 0, false);
+        player.getInventory().clearContent();
+        level.removeBlock(pair[0], false);
+        List<ItemEntity> dropped = level.getEntitiesOfClass(ItemEntity.class, helper.getBounds().inflate(2),
+                entity -> FirearmItem.typeOf(entity.getItem()) != null);
+        check(dropped.isEmpty(), "Een schaduw viel als Glock op de grond");
+        helper.succeed();
+    }
+
+    /**
+     * Een hoek (hoofdstuk 70): met een Pegboard op de andere muur van een binnenhoek klikken zet het tweede paneel in
+     * hetzelfde blok. Het eerste gaatje naast de andere wand is dicht; in de twee gaatjes daarna mag iets hangen, maar niet
+     * als op de andere wand op die hoogte ook iets in de hoek hangt. Hangt er al iets in dat eerste gaatje, dan komt er
+     * geen tweede paneel bij. Afgebroken: twee Pegboards en alles wat erop hing.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "armory")
+    public static void pegboard_corner_two_walls(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        // De muur in het noorden (z = 3) met panelen op x = 2 en 3, en een muur in het westen (x = 1) naast de hoek.
+        BlockPos[] main = boards(helper, 2, 2, 3);
+        BlockPos westWall = helper.absolutePos(new BlockPos(1, 2, 4));
+        level.setBlockAndUpdate(westWall, Blocks.STONE.defaultBlockState());
+        BlockPos corner = main[0];
+        check(corner.equals(westWall.east()), "De hoek ligt niet naast de westmuur");
+
+        // Met een Pegboard op de westmuur klikken (zijn oostkant, in het blok van de hoek).
+        ServerPlayer player = player(helper, "armory-corner", new BlockPos(3, 2, 6), new ItemStack(ModItems.PEGBOARD.get(), 3));
+        Vec3 onWall = new Vec3(westWall.getX() + 1, westWall.getY() + 0.5, westWall.getZ() + 0.5);
+        player.getMainHandItem().useOn(new net.minecraft.world.item.context.UseOnContext(player, InteractionHand.MAIN_HAND,
+                new BlockHitResult(onWall, Direction.EAST, westWall, false)));
+        BlockState state = level.getBlockState(corner);
+        check(state.getValue(PegboardBlock.CORNER) == PegboardBlock.Corner.LEFT && Pegboard.sideFacing(state) == Direction.EAST,
+                "Er kwam geen tweede paneel tegen de westmuur (" + state + ")");
+        check(player.getMainHandItem().getCount() == 2, "Het tweede paneel kostte geen Pegboard");
+        check(Pegboard.isBoard(level, corner, Direction.SOUTH) && Pegboard.isBoard(level, corner, Direction.EAST),
+                "Het blok is niet allebei de wanden");
+
+        // De noordwand (kijkt naar het zuiden): de westmuur ligt links, dus gaatje 0 is dicht en gaatje 1 open.
+        int northCol = Pegboard.column(corner, Direction.SOUTH) * 8;
+        int row = corner.getY() * 8;
+        check(!Pegboard.fits(level, corner, Direction.SOUTH, northCol, row + 2, 1, 3, null), "Gaatje 0 naast de westwand is open");
+        check(Pegboard.fits(level, corner, Direction.SOUTH, northCol + 1, row + 2, 1, 3, null), "Gaatje 1 naast de westwand is dicht");
+        // De westwand (kijkt naar het oosten, rechts is het noorden): gaatje 7 ligt tegen de noordmuur.
+        int westCol = Pegboard.column(corner, Direction.EAST) * 8;
+        check(!Pegboard.fits(level, corner, Direction.EAST, westCol + 7, row + 2, 1, 3, null), "Gaatje 7 naast de noordwand is open");
+
+        // Een magazijn in de hoekstrook van de noordwand (gaatje 1): op de westwand op die hoogte niets in de hoekstrook.
+        ItemStack magazine = MagazineItem.of(FirearmType.GLOCK_19, 15);
+        PegboardBlockEntity board = board(helper, corner);
+        board.add(magazine, Direction.SOUTH, northCol + 1, row + 2, Pegboard.Turn.LEFT, false);
+        check(!Pegboard.fits(level, corner, Direction.EAST, westCol + 6, row + 2, 1, 3, null),
+                "Op de westwand mocht iets in de hoek, door het magazijn op de noordwand heen");
+        check(Pegboard.fits(level, corner, Direction.EAST, westCol + 4, row + 2, 1, 3, null), "Buiten de hoekstrook mocht niets");
+        check(Pegboard.fits(level, corner, Direction.EAST, westCol + 6, row + 5, 1, 3, null), "Hoger in de hoek mocht niets");
+        // Ophangen aan de westwand via een klik (zoals een speler): het komt op het tweede paneel.
+        check(PegboardBlock.hangAt(null, level, corner, Direction.EAST, westCol + 4.5, row + 3.5, magazine.copy(), Pegboard.Turn.LEFT),
+                "Op de westwand hangt niets");
+        int onWest = 0;
+        for (int i = 0; i < board.hung().size(); i++) {
+            if (board.wall(i) == Direction.EAST) {
+                onWest++;
+                check(board.hung().get(i).side(), "Het magazijn op de westwand hangt niet op het tweede paneel");
+            }
+        }
+        check(onWest == 1, "Er hangen " + onWest + " dingen op de westwand");
+
+        // Een hoek waar al iets in het eerste gaatje hangt: geen tweede paneel.
+        BlockPos eastWall = helper.absolutePos(new BlockPos(4, 2, 4));
+        level.setBlockAndUpdate(eastWall, Blocks.STONE.defaultBlockState());
+        PegboardBlockEntity right = board(helper, main[1]);
+        right.add(magazine, Direction.SOUTH, Pegboard.column(main[1], Direction.SOUTH) * 8 + 7, row + 2, Pegboard.Turn.LEFT, false);
+        player.getMainHandItem().useOn(new net.minecraft.world.item.context.UseOnContext(player, InteractionHand.MAIN_HAND,
+                new BlockHitResult(new Vec3(eastWall.getX(), eastWall.getY() + 0.5, eastWall.getZ() + 0.5), Direction.WEST, eastWall, false)));
+        check(level.getBlockState(main[1]).getValue(PegboardBlock.CORNER) == PegboardBlock.Corner.NONE,
+                "Er kwam een tweede paneel over het magazijn heen");
+        check(player.getMainHandItem().getCount() == 2, "Een geweigerd paneel kostte toch een Pegboard");
+
+        // Afbreken: twee Pegboards en de twee magazijnen.
+        level.destroyBlock(corner, true);
+        List<ItemEntity> dropped = level.getEntitiesOfClass(ItemEntity.class, helper.getBounds().inflate(2), entity -> true);
+        int boards = 0, magazines = 0;
+        for (ItemEntity entity : dropped) {
+            if (entity.getItem().is(ModItems.PEGBOARD.get())) {
+                boards += entity.getItem().getCount();
+            } else if (MagazineItem.typeOf(entity.getItem()) != null) {
+                magazines += entity.getItem().getCount();
+            }
+        }
+        check(boards == 2, "Een hoek gaf " + boards + " Pegboards terug");
+        check(magazines == 2, "Er vielen " + magazines + " magazijnen");
+        helper.succeed();
+    }
+
+    /**
+     * Alleen van dichtbij (hoofdstuk 71, jouw keuze: maximaal 2 blokken ervan; in hoofdstuk 70 was het 1): van 3
+     * blokken ver pak je niets en hang je niets op (het magazijn blijft in je hand); van 2 blokken ver en in het blok
+     * ervoor wel.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "armory")
+    public static void pegboard_only_from_close_by(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos[] one = boards(helper, 2, 2);
+        double cu = Pegboard.column(one[0], Direction.SOUTH) * 8 + 4;
+        double cv = one[0].getY() * 8 + 4;
+        ItemStack glock = FirearmItem.loaded(FirearmType.GLOCK_19, GunMaterial.STEEL);
+        check(PegboardBlock.hangAt(null, level, one[0], Direction.SOUTH, cu, cv, glock.copy(), Pegboard.Turn.LEFT), "De Glock hangt niet");
+        PegboardBlockEntity board = board(helper, one[0]);
+
+        ServerPlayer far = player(helper, "armory-far", new BlockPos(2, 2, 7), ItemStack.EMPTY);
+        clickOn(far, board, 0, false);
+        check(board.hung().size() == 1 && far.getMainHandItem().isEmpty(), "Van 3 blokken ver pakte je de Glock");
+        // Ophangen van ver: het magazijn blijft in je hand.
+        far.setItemInHand(InteractionHand.MAIN_HAND, MagazineItem.of(FirearmType.GLOCK_19, 15));
+        Vec3 onPanel = new Vec3(one[0].getX() + 0.2, one[0].getY() + 0.5, one[0].getZ() + 1.0 / 16);
+        far.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, onPanel);
+        BlockState state = board.getBlockState();
+        state.useItemOn(far.getMainHandItem(), level, far, InteractionHand.MAIN_HAND,
+                new BlockHitResult(onPanel, Direction.SOUTH, one[0], false));
+        check(board.hung().size() == 1 && !far.getMainHandItem().isEmpty(), "Van 3 blokken ver hing je een magazijn op");
+
+        // Van 2 blokken ver (hoofdstuk 71): ophangen en pakken lukt.
+        ServerPlayer two = player(helper, "armory-two", new BlockPos(2, 2, 6), MagazineItem.of(FirearmType.GLOCK_19, 15));
+        two.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, onPanel);
+        state.useItemOn(two.getMainHandItem(), level, two, InteractionHand.MAIN_HAND,
+                new BlockHitResult(onPanel, Direction.SOUTH, one[0], false));
+        check(board.hung().size() == 2 && two.getMainHandItem().isEmpty(), "Van 2 blokken ver hing je geen magazijn op");
+        two.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+        clickOn(two, board, 0, false);
+        check(board.hung().size() == 1 && FirearmItem.typeOf(two.getMainHandItem()) != null, "Van 2 blokken ver pakte je de Glock niet");
+
+        ServerPlayer near = player(helper, "armory-near", new BlockPos(2, 2, 5), ItemStack.EMPTY);
+        clickOn(near, board, 0, false);
+        check(board.hung().isEmpty() && MagazineItem.typeOf(near.getMainHandItem()) != null, "Vlak ervoor pakte je het magazijn niet");
         helper.succeed();
     }
 }

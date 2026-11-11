@@ -2667,6 +2667,9 @@ public final class VisualCheck {
         // uitrusting, met vier Ammo Boxes ervoor (patronen, hulzen, magazijnen, cellen). Dan: het kader als je een
         // rifle vasthoudt (waar hij komt), ophangen met een rechtsklik, het witte kader met een lege hand, draaien met
         // sneak, en een magazijn laden door rechtsklik in te houden op de kist met patronen.
+        // Hoofdstuk 70/71: alles van dichtbij (maximaal 2 blokken ervan); vastzetten met sneak + linksklik (een grijze
+        // omtrek op het paneel), pakken (de schaduw blijft), terughangen op de schaduw; de hoek met de zijmuur; de
+        // granaten met elk hun eigen kleur omtrek; en "te ver" van 3 blokken.
         if (want("armory")) {
             t.command(0, "gamemode survival @a");
             t.onServer(0, VisualCheck::buildArmory);
@@ -2697,8 +2700,17 @@ public final class VisualCheck {
             t.stand(0, wx + 0.0, wy + 1, wz + 0.2, 0, 0);
             t.lookAt(0, new Vec3(wx + 0.0, wy + 1.3, wz + 2.3));
             t.shot(25, "ar04_ammo_boxes");
-            // Met een rifle in je hand naar het vrije paneel rechts: het kader zegt waar hij komt.
-            t.stand(0, wx - 1.5, wy + 1, wz + 1.4, 0, 0);
+            // De hoek (hoofdstuk 70): de wand links en de zijmuur, van schuin voor bekeken; dan de zijmuur van dichtbij, met de
+            // vastgezette rifle (grijs randje) en de schaduw van de shotgun; onderaan de granaten met elk hun eigen kleur.
+            t.stand(0, wx - 0.5, wy + 1, wz + 0.5, 0, 0);
+            t.lookAt(0, new Vec3(wx + 2.6, wy + 2.9, wz + 3.4));
+            t.shot(25, "ar14_corner");
+            t.stand(0, wx + 0.9, wy + 1, wz + 2.2, 0, 0);
+            t.lookAt(0, new Vec3(wx + 2.94, wy + 3.5, wz + 2.2));
+            t.shot(25, "ar15_side_wall");
+            // Met een rifle in je hand naar het vrije paneel rechts: het kader zegt waar hij komt. Hoofdstuk 70: in het blok
+            // voor het paneel (van verder weg zie je geen kader, en gebeurt er niets).
+            t.stand(0, wx - 1.5, wy + 1, wz + 2.3, 0, 0);
             t.step(0, () -> selectSlot(0));
             t.lookAt(0, new Vec3(wx - 1.5, wy + 2.95, wz + 3.9));
             t.shot(25, "ar05_preview_rifle");
@@ -2707,10 +2719,24 @@ public final class VisualCheck {
             // Een lege hand op de rifle: een wit kader. Dan sneak + rechtsklik: hij draait (loop naar rechts).
             t.step(0, () -> selectSlot(1));
             t.shot(10, "ar07_hover_empty_hand");
+            // Eerst sluipen, dan mikken: sluipen zet je ogen lager (anders zakt het kruisje onder de rifle).
+            Vec3 rifleAt = new Vec3(wx - 1.5, wy + 2.95, wz + 3.9);
             t.key(0, () -> Minecraft.getInstance().options.keyShift, true);
-            t.tap(5, () -> Minecraft.getInstance().options.keyUse);
-            t.key(5, () -> Minecraft.getInstance().options.keyShift, false);
+            t.lookAt(5, rifleAt);
+            t.tap(2, () -> Minecraft.getInstance().options.keyUse);
             t.shot(15, "ar08_rifle_turned");
+            // Hoofdstuk 70: sneak + linksklik zet hem vast (grijs randje), rechtsklik pakt hem (zijn schaduw blijft, en met de
+            // rifle in je hand een blauw kader op de schaduw), rechtsklik hangt hem terug (weer vastgezet, loop naar rechts).
+            t.tap(5, () -> Minecraft.getInstance().options.keyAttack);
+            t.key(5, () -> Minecraft.getInstance().options.keyShift, false);
+            t.lookAt(5, rifleAt);
+            t.shot(15, "ar11_rifle_locked");
+            t.tap(0, () -> Minecraft.getInstance().options.keyUse);
+            t.shot(15, "ar12_shadow");
+            t.tap(0, () -> Minecraft.getInstance().options.keyUse);
+            t.shot(15, "ar13_back_on_shadow");
+            t.step(0, () -> ImtTech.LOGGER.info("[dev] armory: in hand after hanging back: '{}'",
+                    Minecraft.getInstance().player.getMainHandItem().getHoverName().getString()));
             // Een leeg magazijn op de kist met patronen: rechtsklik ingedrukt houden = patroon na patroon.
             t.stand(0, wx + 1.5, wy + 1, wz + 0.2, 0, 0);
             t.step(0, () -> selectSlot(2));
@@ -2721,6 +2747,11 @@ public final class VisualCheck {
                     com.senne.imttech.guns.MagazineItem.rounds(Minecraft.getInstance().player.getMainHandItem())));
             t.key(0, () -> Minecraft.getInstance().options.keyUse, false);
             t.shot(10, "ar10_magazine_loaded");
+            // Hoofdstuk 70: van 3 blokken ver ophangen lukt niet (een melding onderaan, het magazijn blijft in je hand).
+            t.stand(0, wx - 1.5, wy + 1, wz + 0.3, 0, 0);
+            t.lookAt(0, new Vec3(wx - 1.5, wy + 2.5, wz + 3.9));
+            t.tap(5, () -> Minecraft.getInstance().options.keyUse);
+            t.shot(10, "ar16_too_far");
             t.command(0, "gamemode creative @a");
         }
 
@@ -5251,10 +5282,19 @@ public final class VisualCheck {
         for (BlockPos pos : BlockPos.betweenClosed(origin.offset(-6, 1, -6), origin.offset(6, 6, 6))) {
             level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
         }
+        // Stond hier al een wand (de showcase speelt het veldje twee keer: hoofdstuk 67 en 70, of "r" = nog eens), dan
+        // viel alles wat erop hing net op de grond: weg ermee, anders raapt de speler het op en zit zijn hand vol.
+        level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+                        net.minecraft.world.phys.AABB.encapsulatingFullBlocks(origin.offset(-7, 0, -7), origin.offset(7, 7, 7)))
+                .forEach(net.minecraft.world.entity.Entity::discard);
         for (BlockPos pos : BlockPos.betweenClosed(origin.offset(-6, 0, -6), origin.offset(6, 0, 6))) {
             level.setBlockAndUpdate(pos, Blocks.SMOOTH_STONE.defaultBlockState());
         }
         for (BlockPos pos : BlockPos.betweenClosed(origin.offset(-4, 1, 4), origin.offset(4, 4, 4))) {
+            level.setBlockAndUpdate(pos, Blocks.STONE_BRICKS.defaultBlockState());
+        }
+        // Hoofdstuk 70: een zijmuur links (naar het oosten, 3 blokken diep), met panelen in de hoek.
+        for (BlockPos pos : BlockPos.betweenClosed(origin.offset(3, 1, 1), origin.offset(3, 4, 3))) {
             level.setBlockAndUpdate(pos, Blocks.STONE_BRICKS.defaultBlockState());
         }
         com.senne.imttech.armory.ArmoryDisplay.build(level, origin.offset(2, 2, 3), origin.offset(1, 1, 2));

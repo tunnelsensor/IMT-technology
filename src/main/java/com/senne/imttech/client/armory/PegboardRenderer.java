@@ -2,9 +2,11 @@ package com.senne.imttech.client.armory;
 
 import com.google.common.base.Suppliers;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import com.senne.imttech.ImtTech;
 import com.senne.imttech.armory.Pegboard;
+import com.senne.imttech.armory.PegboardBlock;
 import com.senne.imttech.armory.PegboardBlockEntity;
 import com.senne.imttech.client.guns.FirearmModels;
 import com.senne.imttech.client.weapons.LaserGunModels;
@@ -14,6 +16,7 @@ import com.senne.imttech.guns.GunPart;
 import com.senne.imttech.guns.GunParts;
 import com.senne.imttech.guns.MagazineItem;
 import com.senne.imttech.guns.PartState;
+import com.senne.imttech.registry.ModDataComponents;
 import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.weapons.GunSlingItem;
 import com.senne.imttech.weapons.LaserGunItem;
@@ -38,6 +41,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -58,12 +62,38 @@ import org.joml.Vector3f;
  * De Remote EMP en Remote Frag krijgen de grootte en de plek van hun sticky (zie {@link #sizedLike}).
  *
  * Houd je iets vast dat erop mag en kijk je naar het paneel, dan zie je een kader waar het komt (rood: geen plek).
- * Met een lege hand krijgt het wapen waar je naar kijkt een wit kader.
+ * Met een lege hand krijgt het wapen waar je naar kijkt een wit kader. Alleen van dichtbij (hoofdstuk 71: maximaal 2
+ * blokken ervan, zie Pegboard.inReach); verder weg zie je geen kader, want dan kun je er ook niets mee.
+ *
+ * Hoofdstuk 70: in een hoek hangen twee panelen in een blok; elk krijgt zijn eigen wapens. Hoofdstuk 71 (jouw wens: geen
+ * slotje maar een grijze omtrek op het bord): van een vastgezet wapen is de omtrek op het paneel geverfd, zoals op een
+ * echt gereedschapsbord. Hangt het er, dan zie je een grijs randje eromheen; pak je het, dan blijft de hele vorm (de
+ * schaduw). Elke soort granaat heeft zijn eigen kleur grijs (zie {@link #paintColour}), zodat je ziet wat waar hoort.
  */
 public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity> {
     /** Het haakje (tools/generate_armory_models.py: models/armory/peg.json). */
     public static final ModelResourceLocation PEG = ModelResourceLocation.standalone(
             ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "armory/peg"));
+    /** Hoe breed het geverfde randje rond een vastgezet wapen is (pixels): zo ver steekt zijn omtrek eromheen uit. */
+    private static final float OUTLINE = 0.5f;
+    /**
+     * De omtrek tekenen we 8 keer, telkens een randje opgeschoven (en voor een schaduw ook in het midden): zo wordt de
+     * vorm overal even veel groter, ook bij een dunne loop.
+     */
+    private static final float[][] SPREAD = {{0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1},
+            {0.7f, 0.7f}, {-0.7f, 0.7f}, {0.7f, -0.7f}, {-0.7f, -0.7f}};
+    /**
+     * De kleuren van de verf (rood, groen, blauw): grijs, en de granaten elk hun eigen kleur grijs. Het paneel is
+     * middengrijs met donkere gaatjes; de verf is lichter, zodat een zwarte Glock niet op zijn eigen omtrek lijkt.
+     */
+    private static final int PAINT_GREY = 0xB4B6BC, PAINT_EMP = 0xD49C9C, PAINT_FRAG = 0xA6B88A, PAINT_SMOKE = 0x8C9098,
+            PAINT_FLASH = 0xEEEADC;
+    /**
+     * Een plat plaatje (de Ion Blaster) heeft doorzichtige pixels: dat tekenen we met zijn eigen plaatje, de kleur op
+     * zwart en de "witte flits" die een wezen krijgt als het geraakt wordt (OverlayTexture: kolom 15, rij 10). Die mengt
+     * de kleur voor 70 % naar wit: lichtgrijs, net als de rest.
+     */
+    private static final int FLASH_OVERLAY_U = 15, FLASH_OVERLAY_V = 10;
 
     /** De gemeten doos van elk model, per stand (in blokken van het model, na het draaien). */
     private static final Map<BakedModel, AABB[]> BOUNDS = new IdentityHashMap<>();
@@ -86,18 +116,31 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
     @Override
     public void render(PegboardBlockEntity board, float partialTick, PoseStack pose, MultiBufferSource buffers, int light,
                        int overlay) {
-        Direction facing = board.facing();
+        renderWall(board, board.facing(), pose, buffers, light);
+        // Hoofdstuk 70: in een hoek ook het tweede paneel.
+        Direction side = Pegboard.sideFacing(board.getBlockState());
+        if (side != null) {
+            renderWall(board, side, pose, buffers, light);
+        }
+    }
+
+    /** Alles wat aan het paneel tegen muur {@code wall} hangt, en het kader. */
+    private static void renderWall(PegboardBlockEntity board, Direction wall, PoseStack pose, MultiBufferSource buffers, int light) {
         pose.pushPose();
         // Naar het vlak van het paneel: x naar rechts (zoals jij ervoor staat), y omhoog, z van de muur af, in pixels.
         pose.translate(0.5, 0, 0.5);
-        pose.mulPose(Axis.YP.rotationDegrees(-facing.toYRot()));
+        pose.mulPose(Axis.YP.rotationDegrees(-wall.toYRot()));
         pose.translate(-0.5, 0, -0.5);
         pose.scale(1 / 16f, 1 / 16f, 1 / 16f);
-        for (PegboardBlockEntity.Hung hung : board.hung()) {
+        for (int i = 0; i < board.hung().size(); i++) {
+            if (board.wall(i) != wall) {
+                continue;
+            }
+            PegboardBlockEntity.Hung hung = board.hung().get(i);
             int[] size = Pegboard.size(hung.stack(), hung.turn());
             renderHung(pose, buffers, light, board.getLevel(), hung, hung.x() * 2f, hung.y() * 2f, size[0] * 2f, size[1] * 2f);
         }
-        renderFrame(board, pose, buffers);
+        renderFrame(board, wall, pose, buffers);
         pose.popPose();
     }
 
@@ -120,6 +163,16 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
         float scale = (float) Math.min(1.3, Math.min(w / Math.max(0.01, sx), h / Math.max(0.01, sy)) * 0.9);
         float depth = (float) (box.getZsize() * 16 * scale);
 
+        // Hoofdstuk 71: van een vastgezet wapen is de omtrek op het paneel geverfd. Hangt het er, dan zie je alleen het
+        // randje eromheen (het wapen hangt ervoor); pakte iemand het, dan de hele vorm, zonder haakjes.
+        if (hung.locked()) {
+            paint(pose, buffers, light, level, stack, model, like, likeModel, box, turn, scale, x0 + w / 2, y0 + h / 2,
+                    !hung.shadow());
+        }
+        if (hung.shadow()) {
+            return;
+        }
+
         // De haakjes: van het paneel tot net achter het wapen.
         float pegLength = Pegboard.BACK - Pegboard.THICKNESS + Math.min(depth * 0.5f, 1.2f);
         if (!hung.turn().vertical() && w >= 6) {
@@ -132,18 +185,134 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
         pose.pushPose();
         pose.translate(x0 + w / 2, y0 + h / 2, Pegboard.BACK + depth / 2);
         pose.scale(16 * scale, 16 * scale, 16 * scale);
+        placeModel(pose, box, turn, stack, like, model, likeModel);
+        draw(pose, buffers, light, level, stack, model);
+        pose.popPose();
+    }
+
+    /** Van het midden van de rechthoek naar het model: het midden van zijn (gedraaide) doos hier, en gedraaid. */
+    private static void placeModel(PoseStack pose, AABB box, Quaternionf turn, ItemStack stack, ItemStack like, BakedModel model,
+                                   BakedModel likeModel) {
         Vector3f centre = box.getCenter().toVector3f();
         pose.translate(-centre.x, -centre.y, -centre.z);
         pose.mulPose(turn);
         if (like != stack) {
-            // In zijn eigen model ligt de bol van de remote lager dan die van de sticky (als blok staat hij op de
-            // vloer, y = 0; de sticky op y = 5): we schuiven hem naar de plek van de bol van de sticky. De onderkant
-            // (het kleefkussen) is in beide modellen het laagste en het breedste, dus de hoek linksonder vooraan klopt.
+            // Gemeten aan een ander item (zie sizedLike): we schuiven het model naar de plek van dat andere. Bij de
+            // remote ligt de bol in zijn eigen model lager dan die van de sticky (als blok staat hij op de vloer,
+            // y = 0; de sticky op y = 5). De onderkant (het kleefkussen) is in beide modellen het laagste en het
+            // breedste, dus de hoek linksonder vooraan klopt. Bij de flashbang is het dezelfde bol als de frag.
             AABB own = raw(model), theirs = raw(likeModel);
             pose.translate(theirs.minX - own.minX, theirs.minY - own.minY, theirs.minZ - own.minZ);
         }
-        draw(pose, buffers, light, level, stack, model);
-        pose.popPose();
+    }
+
+    /**
+     * De geverfde omtrek van een vastgezet wapen (hoofdstuk 71): hetzelfde model, plat (een honderdste pixel dik) net voor
+     * het paneel, in een kleur, en 8 keer een randje opgeschoven, zodat de vorm overal {@link #OUTLINE} groter is dan het
+     * wapen. {@code rimOnly}: het wapen hangt er nog, het midden zie je dan toch niet.
+     */
+    private static void paint(PoseStack pose, MultiBufferSource buffers, int light, Level level, ItemStack stack, BakedModel model,
+                              ItemStack like, BakedModel likeModel, AABB box, Quaternionf turn, float scale, float cx, float cy,
+                              boolean rimOnly) {
+        MultiBufferSource paint = painted(buffers, paintColour(stack), stack.is(ModItems.ION_BLASTER.get()));
+        for (int i = rimOnly ? 1 : 0; i < SPREAD.length; i++) {
+            pose.pushPose();
+            pose.translate(cx + SPREAD[i][0] * OUTLINE, cy + SPREAD[i][1] * OUTLINE, Pegboard.THICKNESS + 0.12f);
+            pose.scale(16 * scale, 16 * scale, 0.01f);
+            placeModel(pose, box, turn, stack, like, model, likeModel);
+            draw(pose, paint, light, level, stack, model);
+            pose.popPose();
+        }
+    }
+
+    /**
+     * De kleur van de verf (hoofdstuk 71, jouw wens: "elke bom er net iets anders uitziet van outline, zodat je makkelijk
+     * weet wat waar moet"). Grijs, maar elke soort granaat zijn eigen kleur grijs: EMP roodachtig, frag olijfgroen,
+     * smokebom donkerder grijs (of een beetje in zijn rookkleur), flashbang bijna wit. De sticky's, de remotes en de
+     * triggers krijgen de kleur van hun soort (en ze verschillen van vorm: een bol, een halve bol, een antenne).
+     */
+    static int paintColour(ItemStack stack) {
+        if (stack.is(ModItems.EMP_GRENADE.get()) || stack.is(ModItems.STICKY_EMP_GRENADE.get()) || stack.is(ModItems.REMOTE_EMP.get())
+                || stack.is(ModItems.EMP_TRIGGER.get())) {
+            return PAINT_EMP;
+        }
+        if (stack.is(ModItems.FRAG_GRENADE.get()) || stack.is(ModItems.STICKY_FRAG_GRENADE.get())
+                || stack.is(ModItems.REMOTE_FRAG.get()) || stack.is(ModItems.FRAG_TRIGGER.get())) {
+            return PAINT_FRAG;
+        }
+        if (stack.is(ModItems.FLASHBANG.get())) {
+            return PAINT_FLASH;
+        }
+        if (stack.is(ModItems.SMOKE_GRENADE.get())) {
+            DyeColor dye = stack.get(ModDataComponents.SMOKE_COLOR.get());
+            return dye == null ? PAINT_SMOKE : mix(PAINT_GREY, dye.getTextureDiffuseColor(), 0.45f);
+        }
+        return PAINT_GREY;
+    }
+
+    /** Twee kleuren gemengd: {@code amount} van {@code b}, de rest van {@code a}. */
+    private static int mix(int a, int b, float amount) {
+        int r = Math.round(((a >> 16) & 255) * (1 - amount) + ((b >> 16) & 255) * amount);
+        int g = Math.round(((a >> 8) & 255) * (1 - amount) + ((b >> 8) & 255) * amount);
+        int bl = Math.round((a & 255) * (1 - amount) + (b & 255) * amount);
+        return r << 16 | g << 8 | bl;
+    }
+
+    /**
+     * Alles wat hierin getekend wordt, krijgt de verf: een 3D-model zonder zijn plaatje, alleen in kleur {@code rgb} (met
+     * het licht van de plek); een plat plaatje ({@code flat}) met zijn eigen plaatje, lichtgrijs (zie FLASH_OVERLAY_U).
+     */
+    private static MultiBufferSource painted(MultiBufferSource buffers, int rgb, boolean flat) {
+        if (flat) {
+            return type -> new Painted(buffers.getBuffer(type), 0, true);
+        }
+        return type -> new Painted(buffers.getBuffer(RenderType.textBackground()), rgb, false);
+    }
+
+    /**
+     * Geeft alles door, behalve de kleur (die wordt {@code rgb}) en, bij een plat plaatje, de "flits". De doorzichtigheid
+     * blijft, en het licht ook (in het donker is de verf ook donker). Een rendertype zonder plaatje slaat de rest over.
+     */
+    private record Painted(VertexConsumer inner, int rgb, boolean flash) implements VertexConsumer {
+        @Override
+        public VertexConsumer addVertex(float x, float y, float z) {
+            inner.addVertex(x, y, z);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer setColor(int red, int green, int blue, int alpha) {
+            inner.setColor((rgb >> 16) & 255, (rgb >> 8) & 255, rgb & 255, alpha);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer setUv(float u, float v) {
+            inner.setUv(u, v);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer setUv1(int u, int v) {
+            if (flash) {
+                inner.setUv1(FLASH_OVERLAY_U, FLASH_OVERLAY_V);
+            } else {
+                inner.setUv1(u, v);
+            }
+            return this;
+        }
+
+        @Override
+        public VertexConsumer setUv2(int u, int v) {
+            inner.setUv2(u, v);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer setNormal(float x, float y, float z) {
+            inner.setNormal(x, y, z);
+            return this;
+        }
     }
 
     /** De doos om het model zoals het in zijn json staat, zonder te draaien (eenmalig gemeten). */
@@ -229,12 +398,20 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
         if (stack.getItem() instanceof RemoteChargeItem remote) {
             return remote.kind() == RemoteChargeBlock.Kind.FRAG ? STICKY_FRAG.get() : STICKY_EMP.get();
         }
+        // Hoofdstuk 70 (jouw wens: "flashbangs even groot als de rest, ze zijn nu net iets kleiner"): de flashbang is
+        // dezelfde bol als de andere granaten, maar zijn gouden pin steekt erboven uit. Zo groot als in zijn 2 x 2 gaatjes
+        // past werd hij daardoor zo'n 15 % kleiner. Nu krijgt hij de grootte van de Frag Grenade; de pin steekt een
+        // klein beetje boven zijn rechthoek uit, net als de antenne van een remote.
+        if (stack.is(ModItems.FLASHBANG.get())) {
+            return FRAG.get();
+        }
         return stack;
     }
 
     /** Een Sticky EMP en een Sticky Frag om de grootte van te meten (één keer gemaakt, niet elk beeld een nieuwe). */
     private static final Supplier<ItemStack> STICKY_EMP = Suppliers.memoize(() -> new ItemStack(ModItems.STICKY_EMP_GRENADE.get()));
     private static final Supplier<ItemStack> STICKY_FRAG = Suppliers.memoize(() -> new ItemStack(ModItems.STICKY_FRAG_GRENADE.get()));
+    private static final Supplier<ItemStack> FRAG = Suppliers.memoize(() -> new ItemStack(ModItems.FRAG_GRENADE.get()));
 
     /** De doos om het model na het draaien (eenmalig gemeten per model en stand). */
     private static AABB bounds(BakedModel model, Quaternionf turn, Pegboard.Turn which, ItemStack stack) {
@@ -289,7 +466,7 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
 
     // ================================================================ Het kader: waar het komt, of wat je pakt
 
-    private static void renderFrame(PegboardBlockEntity board, PoseStack pose, MultiBufferSource buffers) {
+    private static void renderFrame(PegboardBlockEntity board, Direction wall, PoseStack pose, MultiBufferSource buffers) {
         Minecraft mc = Minecraft.getInstance();
         Player player = mc.player;
         // Alleen voor een echt paneel in de wereld (niet in een animatie van How it works).
@@ -301,7 +478,11 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
             return;
         }
         BlockPos pos = board.getBlockPos();
-        Direction facing = board.facing();
+        // Alleen het paneel waar je naar kijkt (in een hoek hangen er twee), en alleen van dichtbij (hoofdstuk 70).
+        if (PegboardBlock.wallOf(board.getBlockState(), hit) != wall || !Pegboard.inReach(player, hit.getLocation())) {
+            return;
+        }
+        Direction facing = wall;
         ItemStack held = player.getMainHandItem();
         int baseU = Pegboard.column(pos, facing) * Pegboard.CELLS;
         int baseV = pos.getY() * Pegboard.CELLS;
@@ -309,8 +490,11 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
         int u, v, w, h;
         if (Pegboard.hangable(held)) {
             double[] cell = Pegboard.aim(player, pos, facing, hit.getLocation(), Pegboard.BACK);
-            int[] size = Pegboard.size(held, Pegboard.Turn.LEFT);
-            int[] at = Pegboard.place(board.getLevel(), pos, facing, cell[0], cell[1], size[0], size[1], null);
+            // Hoofdstuk 70: op de schaduw van hetzelfde soort komt het precies daar.
+            Pegboard.Spot shadow = Pegboard.shadowFor(board.getLevel(), pos, facing, cell[0], cell[1], held);
+            int[] size = shadow != null ? new int[]{shadow.w(), shadow.h()} : Pegboard.size(held, Pegboard.Turn.LEFT);
+            int[] at = shadow != null ? new int[]{shadow.u(), shadow.v()}
+                    : Pegboard.place(board.getLevel(), pos, facing, cell[0], cell[1], size[0], size[1], null);
             w = size[0];
             h = size[1];
             if (at != null) {
@@ -336,13 +520,14 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
             v = spot.v();
             w = spot.w();
             h = spot.h();
-            r = g = b = 1.0f;
+            // Een schaduw (hoofdstuk 70) krijgt een grijs kader: pakken kan niet, sneak + linksklik veegt hem weg.
+            r = g = b = spot.shadow() ? 0.55f : 1.0f;
         } else {
             return;
         }
         float x0 = (u - baseU) * 2f, y0 = (v - baseV) * 2f;
         LevelRenderer.renderLineBox(pose, buffers.getBuffer(RenderType.lines()),
-                new AABB(x0, y0, Pegboard.THICKNESS, x0 + w * 2f, y0 + h * 2f, Pegboard.BACK + 3.5), r, g, b, 0.8f);
+                new AABB(x0, y0, Pegboard.THICKNESS, x0 + w * 2f, y0 + h * 2f, Pegboard.FRONT), r, g, b, 0.8f);
     }
 
     /** Voor de tests in het spel: de gemeten dozen vergeten (na het herladen van de modellen). */

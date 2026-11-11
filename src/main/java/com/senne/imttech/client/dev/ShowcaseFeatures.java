@@ -3353,19 +3353,21 @@ final class ShowcaseFeatures {
                 .step(0, () -> hotbar(1))
                 .lookAt(0, new Vec3(ay.getX() + 0.5, ay.getY() + 2.6, ay.getZ() + 3.9))
                 .pause(80)
-                // De rifle op het vrije paneel rechts.
-                .stand(0, ay.getX() - 1.5, ay.getY() + 1, ay.getZ() + 1.4, 0, 0)
+                // De rifle op het vrije paneel rechts. Hoofdstuk 70: in het blok ervoor (dichtbij genoeg).
+                .stand(0, ay.getX() - 1.5, ay.getY() + 1, ay.getZ() + 2.3, 0, 0)
                 .step(0, () -> hotbar(0))
                 .lookAt(0, new Vec3(ay.getX() - 1.5, ay.getY() + 2.95, ay.getZ() + 3.9))
                 .pause(50)
                 .tap(0, () -> Minecraft.getInstance().options.keyUse)
                 .pause(40)
-                // Lege hand: draaien en weer pakken.
+                // Lege hand: draaien en weer pakken. Eerst sluipen, dan mikken (sluipen zet je ogen lager).
                 .step(0, () -> hotbar(1))
                 .pause(30)
                 .key(0, () -> Minecraft.getInstance().options.keyShift, true)
-                .tap(5, () -> Minecraft.getInstance().options.keyUse)
+                .lookAt(5, new Vec3(ay.getX() - 1.5, ay.getY() + 2.95, ay.getZ() + 3.9))
+                .tap(2, () -> Minecraft.getInstance().options.keyUse)
                 .key(5, () -> Minecraft.getInstance().options.keyShift, false)
+                .lookAt(0, new Vec3(ay.getX() - 1.5, ay.getY() + 2.95, ay.getZ() + 3.9))
                 .pause(40)
                 .tap(0, () -> Minecraft.getInstance().options.keyUse)
                 .pause(40)
@@ -3480,6 +3482,76 @@ final class ShowcaseFeatures {
                     player.getInventory().clearContent();
                     com.senne.imttech.guns.Gear.set(player, com.senne.imttech.guns.GearItem.Kind.HOLSTER, ItemStack.EMPTY);
                 }));
+
+        // ---------------------------------------------------------------- Het Pegboard bijgesteld (hoofdstuk 70)
+        Vec3 freePanel = new Vec3(ay.getX() - 1.5, ay.getY() + 2.5, ay.getZ() + 3.9);
+        add("Pegboard: lock, shadow, corner", "Hoofdstuk 70 en 71. Het armory-veldje, nu met een zijmuur links: de linkerkolom "
+                + "van de wand is een hoek, met een paneel tegen elke muur. Op de zijmuur hangt een vastgezette Laser Rifle (een "
+                + "grijs randje eromheen, op het paneel geverfd) en de lichtgrijze schaduw van een shotgun die iemand pakte. "
+                + "Onderaan de vastgezette granaten: van de flashbang (bijna wit), de frag (groen) en de EMP (roodachtig) is "
+                + "alleen de schaduw over, elk in zijn eigen kleur. Dan sta je 3 blokken van de wand met een magazijn: "
+                + "rechtsklik zegt 'Too far away' onderaan, en er komt geen kader. In het blok voor de wand hang je een Glock "
+                + "op; sneak + linksklik: een grijs randje eromheen (het paneel breekt niet). Rechtsklik met een lege hand pakt "
+                + "hem: zijn schaduw blijft. Met een titanium Glock in je hand staat het blauwe kader precies op de schaduw; "
+                + "rechtsklik: hij hangt er, weer met zijn randje. Sneak + linksklik (met een Glock in je hand) haalt het "
+                + "randje weg. Tot slot de onderste rij van dichtbij: de flashbang is even groot als de andere granaten, zijn "
+                + "gouden pin steekt een beetje boven de rest uit.",
+                GameType.SURVIVAL, new Vec3(ay.getX() - 0.5, ay.getY() + 1, ay.getZ() + 0.5), 0, 0, s -> s
+                .onServer(0, player -> VisualCheck.buildArmoryAt(player.serverLevel(), ay))
+                .onServer(0, player -> {
+                    player.getInventory().clearContent();
+                    player.getInventory().setItem(0, com.senne.imttech.guns.FirearmItem.loaded(
+                            com.senne.imttech.guns.FirearmType.GLOCK_19, com.senne.imttech.guns.GunMaterial.STEEL));
+                    player.getInventory().setItem(2, com.senne.imttech.guns.FirearmItem.loaded(
+                            com.senne.imttech.guns.FirearmType.GLOCK_19, com.senne.imttech.guns.GunMaterial.TITANIUM));
+                    player.getInventory().setItem(3, com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.GLOCK_19, 15));
+                })
+                // De hoek, en de zijmuur van dichtbij.
+                .stand(0, ay.getX() - 0.5, ay.getY() + 1, ay.getZ() + 0.5, 0, 0)
+                .step(0, () -> hotbar(1))
+                .lookAt(0, new Vec3(ay.getX() + 2.6, ay.getY() + 2.9, ay.getZ() + 3.4))
+                .pause(70)
+                .stand(0, ay.getX() + 0.9, ay.getY() + 1, ay.getZ() + 2.2, 0, 0)
+                .lookAt(0, new Vec3(ay.getX() + 2.94, ay.getY() + 3.5, ay.getZ() + 2.2))
+                .pause(70)
+                // Te ver weg (3 blokken), met een magazijn.
+                .stand(0, ay.getX() - 1.5, ay.getY() + 1, ay.getZ() + 0.3, 0, 0)
+                .step(0, () -> hotbar(3))
+                .lookAt(0, freePanel)
+                .pause(30)
+                .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                .pause(60)
+                // Dichtbij: de Glock ophangen, vastzetten, pakken, en een andere Glock op zijn schaduw.
+                .stand(0, ay.getX() - 1.5, ay.getY() + 1, ay.getZ() + 2.3, 0, 0)
+                .step(0, () -> hotbar(0))
+                .lookAt(0, freePanel)
+                .pause(30)
+                .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                .pause(30)
+                .step(0, () -> hotbar(1))
+                .key(0, () -> Minecraft.getInstance().options.keyShift, true)
+                .lookAt(5, freePanel)
+                .tap(2, () -> Minecraft.getInstance().options.keyAttack)
+                .key(5, () -> Minecraft.getInstance().options.keyShift, false)
+                .lookAt(0, freePanel)
+                .pause(50)
+                .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                .pause(40)
+                .step(0, () -> hotbar(2))
+                .pause(50)
+                .tap(0, () -> Minecraft.getInstance().options.keyUse)
+                .pause(40)
+                .step(0, () -> hotbar(1))
+                .key(0, () -> Minecraft.getInstance().options.keyShift, true)
+                .lookAt(5, freePanel)
+                .tap(2, () -> Minecraft.getInstance().options.keyAttack)
+                .key(5, () -> Minecraft.getInstance().options.keyShift, false)
+                .pause(50)
+                // De onderste rij van de wand van dichtbij: de flashbang naast de andere granaten.
+                .stand(0, ay.getX() + 0.4, ay.getY() + 1, ay.getZ() + 1.6, 0, 0)
+                .lookAt(0, new Vec3(ay.getX() + 0.4, ay.getY() + 2.45, ay.getZ() + 3.9))
+                .pause(80)
+                .onServer(0, player -> player.getInventory().clearContent()));
 
         // ---------------------------------------------------------------- De militaire rugzakken (hoofdstuk 72)
         BlockPos packs = BackpackTour.YARD;

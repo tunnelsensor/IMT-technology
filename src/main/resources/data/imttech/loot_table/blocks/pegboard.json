@@ -5,7 +5,26 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "imttech:pegboard"
+          "name": "imttech:pegboard",
+          "functions": [
+            {
+              "function": "minecraft:set_count",
+              "count": 2,
+              "add": false,
+              "conditions": [
+                {
+                  "condition": "minecraft:inverted",
+                  "term": {
+                    "condition": "minecraft:block_state_property",
+                    "block": "imttech:pegboard",
+                    "properties": {
+                      "corner": "none"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
         }
       ],
       "rolls": 1,

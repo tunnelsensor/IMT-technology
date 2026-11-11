@@ -324,6 +324,12 @@ public final class ModNetwork {
                 com.senne.imttech.guns.Gear.click(player, payload.slot());
             }
         });
+        // Hoofdstuk 70: sneak + linksklik op een Pegboard zet vast of los (of veegt een schaduw weg).
+        registrar.playToServer(PegboardLockPayload.TYPE, PegboardLockPayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                com.senne.imttech.armory.PegboardBlock.handleLock(player, payload.pos(), payload.wall(), payload.u(), payload.v());
+            }
+        });
         // De vuurwapens (hoofdstuk 52): de trekker, en de handelingen (herladen, tap-rack...) met hun duur terug.
         registrar.playToServer(FirearmFirePayload.TYPE, FirearmFirePayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) {

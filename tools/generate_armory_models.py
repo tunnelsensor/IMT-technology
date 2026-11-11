@@ -5,6 +5,10 @@ munitiekist met een hengsel op het deksel, een sluiting opzij en een etiket op d
 zelf op dat etiket, zie client/armory/AmmoBoxRenderer).
 
 Ook het haakje (models/armory/peg.json) waaraan elk wapen op het Pegboard hangt (zie client/armory/PegboardRenderer).
+(Het slotje van hoofdstuk 70 is weg: in hoofdstuk 71 werd het een geverfde grijze omtrek, die de mod zelf tekent.)
+
+Hoofdstuk 70: in een binnenhoek hangen twee panelen in een blok (de blockstate "corner": none, left of right). De
+blockstate is daarom een "multipart": het eerste paneel per kant, en het tweede erbij als corner niet none is.
 
 Draaien (vanuit de hoofdmap):  python tools/generate_armory_models.py
 Het script is eigenaar van alles wat het schrijft; een volledige run is veilig.
@@ -104,7 +108,7 @@ def pegboard():
         },
     })
     write("models/item/pegboard.json", {"parent": "imttech:block/pegboard"})
-    blockstate("pegboard")
+    pegboard_blockstate()
 
     # Het haakje: een pinnetje van 1 x 1 pixel, 16 lang langs z (de renderer schaalt het naar de juiste lengte).
     write("models/armory/peg.json", {
@@ -114,6 +118,28 @@ def pegboard():
                                        "texture": "#0"}
                                 for side in ("north", "south", "east", "west", "up", "down")}}],
     })
+
+
+def pegboard_blockstate():
+    """
+    Het eerste paneel kijkt naar "facing"; in een hoek (hoofdstuk 70) hangt het tweede tegen de muur links of rechts
+    (zoals jij voor het eerste staat). Het tweede tegen de muur rechts kijkt naar links, dus een kwartslag met de klok
+    mee gedraaid; tegen de muur links een kwartslag tegen de klok in. Hetzelfde model, alleen anders gedraaid.
+    """
+    order = ["north", "east", "south", "west"]
+    turn = {"north": 0, "east": 90, "south": 180, "west": 270}
+    parts = []
+    for i, facing in enumerate(order):
+        main = {"model": "imttech:block/pegboard"}
+        if turn[facing]:
+            main["y"] = turn[facing]
+        parts.append({"when": {"facing": facing}, "apply": main})
+        for corner, side in (("right", order[(i + 1) % 4]), ("left", order[(i + 3) % 4])):
+            second = {"model": "imttech:block/pegboard"}
+            if turn[side]:
+                second["y"] = turn[side]
+            parts.append({"when": {"facing": facing, "corner": corner}, "apply": second})
+    write("blockstates/pegboard.json", {"multipart": parts})
 
 
 # ---------------------------------------------------------------- De Ammo Box
