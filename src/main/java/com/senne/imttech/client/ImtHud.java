@@ -64,6 +64,8 @@ public class ImtHud implements LayeredDraw.Layer {
             new HackBubbleWidget(),
             new SatelliteStrikeWidget(),
             new CompassWidget(),
+            // Hoofdstuk 82: je coördinaten rechtsboven (links staat het paneel met je batterij).
+            new com.senne.imttech.client.hud.CoordinatesWidget(),
             new DroneFeedWidget(),
             new ZoomWidget(),
             new LaserCannonWidget(),
@@ -81,6 +83,7 @@ public class ImtHud implements LayeredDraw.Layer {
     public void render(GuiGraphics g, DeltaTracker deltaTracker) {
         Minecraft mc = Minecraft.getInstance();
         Player player = mc.player;
+        com.senne.imttech.client.hud.CoordinatesWidget.newFrame();
         if (player == null || mc.options.hideGui || !ImtClientState.wearing) {
             return;
         }

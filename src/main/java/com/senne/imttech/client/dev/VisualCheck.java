@@ -849,6 +849,17 @@ public final class VisualCheck {
             // Even ergens anders (dichtbij, zodat de wereld er al geladen is): de getallen lopen mee, ook negatieve.
             t.view(0, -20.5, -55, -13.5, 90, 22);
             t.shot(40, "32d_coords_back_on_moved");
+            // Rechtsboven tekent Minecraft ook de icoontjes van effecten (goede bovenaan, slechte op een rij eronder). Met de
+            // coördinaten aan schuiven die naar onder; de coördinaten blijven staan.
+            for (String effect : new String[] {"speed", "haste", "strength", "slowness", "weakness"}) {
+                t.command(0, "effect give @a minecraft:" + effect + " 60 0");
+            }
+            t.shot(20, "32e_coords_effects_below");
+            // Coördinaten uit: de icoontjes staan weer bovenaan, zoals altijd.
+            t.step(0, com.senne.imttech.client.ImtClientEvents::toggleCoordinates);
+            t.shot(20, "32f_coords_off_effects_up");
+            t.step(0, com.senne.imttech.client.ImtClientEvents::toggleCoordinates);
+            t.command(0, "effect clear @a");
             t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.COMBAT);
             t.view(0, 0.5, -60, -3.2, 0, 22);
         }

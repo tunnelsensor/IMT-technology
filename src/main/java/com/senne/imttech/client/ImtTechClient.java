@@ -162,6 +162,11 @@ public class ImtTechClient {
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.guns.FirearmControl::onPlayerTurn);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.guns.FirearmRenderer::onRenderHand);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.guns.FirearmHud::onRenderLayer);
+        // Hoofdstuk 82: de effect-icoontjes van Minecraft schuiven onder je coördinaten rechtsboven. LOWEST: als laatste, zodat
+        // we niets verschuiven wat een andere mod al geschrapt heeft.
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST,
+                com.senne.imttech.client.hud.CoordinatesWidget::onEffectsPre);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.hud.CoordinatesWidget::onEffectsPost);
         // De holster en de pouches (hoofdstuk 52, stap 2): het wiel op linker Alt en de eigen vakjes in je inventaris.
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.guns.GearControl::onClientTick);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.guns.GearSlotsOverlay::onRender);

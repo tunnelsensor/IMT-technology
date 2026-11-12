@@ -6638,16 +6638,24 @@ Jouw vraag: "Kun je zorgen dat je cords op IMT glasses kunt aan en uitzetten".
 
 De bril liet je coördinaten nog nergens zien (alleen I.M.T zei ze als je ernaar vroeg). Nu wel, en je zet ze zelf aan of uit.
 
-- [x] **In het paneel linksboven**, vlak onder de batterij: `X 0  Y -60  Z -4` (de letters cyaan, de getallen wit). Het
-      zijn de blokcoördinaten, dezelfde als "Block" in F3, gewoon als getal (zonder punten of "k" van G > Information >
-      Numbers). Altijd op dezelfde plek, dus de labeltjes en de rest van het paneel schuiven een regel naar onder. Zonder
-      stroom in de bril (OFFLINE) en met het G-menu open zie je ze niet, zoals de rest van het paneel.
+- [x] **Rechtsboven** (`CoordinatesWidget`): `X 0  Y -60  Z -4` (de letters cyaan, de getallen wit), even ver van de rand
+      als het paneel links. Links je batterij en wat er actief is, rechts je coördinaten (jouw tweede wens: "Zet de cords
+      rechts boven zodat er in de linker hoek je batterlij en active dingen staan en rechts je cords"; eerst stonden ze
+      onder de batterij). Het zijn de blokcoördinaten, dezelfde als "Block" in F3, gewoon als getal (zonder punten of "k"
+      van G > Information > Numbers). Zonder stroom in de bril (OFFLINE) en met het G-menu open zie je ze niet, zoals de
+      rest van de HUD.
+- [x] **De icoontjes van drankeffecten** tekent Minecraft ook rechtsboven. Zolang je de coördinaten ziet, schuiven die 21
+      pixels naar onder, net onder de coördinaten (zoals Xaero's Minimap dat ook doet). Zo blijven de coördinaten altijd op
+      dezelfde plek en valt er niets over elkaar. Coördinaten uit: de icoontjes staan weer bovenaan. (Mijn keuze; eerst
+      probeerde ik de coördinaten naast de icoontjes te zetten, maar op een kleiner scherm paste er naast één icoontje al
+      niets meer, en dan sprongen ze naar onder zodra je een drankje dronk.)
 - [x] **Aan/uit** in **G > Navigation > Coordinates** (ON/OFF), of met een eigen toets in Opties > Besturing > I.M.T
       ("Coordinates on/off", standaard geen toets, zoals de andere snelacties). I.M.T meldt het: "Coordinates enabled." /
       "Coordinates disabled.". Het is een instelling van je eigen spel (`coordinates` in `imttech-client.toml`), er gaat
       niets naar de server. **Standaard aan** (mijn keuze: zo zie je ze meteen; uitzetten is één klik).
-- [x] **Gezien** op screenshots (`gradlew runVisualCheck -Ponly=coords`: `32_coords_on` tot `32d_coords_back_on_moved`):
-      aan, uit (met de melding), het G-menu met de optie op OFF, en weer aan op een andere plek met negatieve getallen.
+- [x] **Gezien** op screenshots (`gradlew runVisualCheck -Ponly=coords`: `32_coords_on` tot `32f_coords_off_effects_up`):
+      aan, uit (met de melding), het G-menu met de optie op OFF, weer aan op een andere plek met negatieve getallen, met
+      drie goede en twee slechte effecten (de icoontjes onder de coördinaten), en uit met die effecten (icoontjes bovenaan).
       Geen nieuwe automatische test: het is alleen beeld en een instelling van je eigen spel, en die draaien de tests
       (zonder beeld) niet.
 

@@ -160,7 +160,7 @@ magazine pouch"), ook allemaal standaard zonder toets.
 | **Tech** | Redstone-relais, muziek (Spotify), hacken |
 | **Illusion** | Valse muur, nep-leger, onzichtbaar veld, stoppen |
 | **Information** | Ertsen-scan, dreigingsscan, doelwit-analyse, kabel-xray (verborgen kabels zien), zonerand, Numbers (hoe grote getallen eruitzien: 5 000, 5.000, 5k...) |
-| **Navigation** | Waypoints, ping, comms, coördinaten aan/uit (X, Y en Z linksboven, onder de batterij) |
+| **Navigation** | Waypoints, ping, comms, coördinaten aan/uit (X, Y en Z rechtsboven; de icoontjes van drankeffecten staan dan eronder) |
 | **Systems** | Eigendom overdragen, stem, spraakbesturing, commando's bewerken, spraaktekst, nachtzicht |
 
 Wisselen van tabblad: scrollen, de pijltjes links/rechts, of meteen met de cijfers **1** tot

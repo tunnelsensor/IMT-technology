@@ -78,11 +78,11 @@ public final class ImtClientConfig {
             .define("zoneBorder", true);
 
     /**
-     * Staan je coördinaten (X, Y, Z) in het paneel linksboven van de bril? Aan/uit via G > Navigation > Coordinates, of
+     * Staan je coördinaten (X, Y, Z) rechtsboven in de bril? Aan/uit via G > Navigation > Coordinates, of
      * een eigen toets (hoofdstuk 82, jouw wens van 12 november).
      */
     public static final ModConfigSpec.BooleanValue COORDINATES = BUILDER
-            .comment("Show your coordinates (X, Y, Z) in the top-left panel of the I.M.T glasses (G > Navigation > Coordinates, or its own key)")
+            .comment("Show your coordinates (X, Y, Z) in the top-right corner of the I.M.T glasses (G > Navigation > Coordinates, or its own key)")
             .define("coordinates", true);
 
     /**

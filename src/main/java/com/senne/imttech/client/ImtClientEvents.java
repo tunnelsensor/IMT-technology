@@ -235,7 +235,7 @@ public final class ImtClientEvents {
         }
     }
 
-    /** Je coördinaten in het paneel linksboven aan of uit (G > Navigation > Coordinates of de eigen toets, hoofdstuk 82). */
+    /** Je coördinaten rechtsboven in de bril aan of uit (G > Navigation > Coordinates of de eigen toets, hoofdstuk 82). */
     public static void toggleCoordinates() {
         toggleSetting(ImtClientConfig.COORDINATES, "screen.imttech.menu.coordinates");
     }
