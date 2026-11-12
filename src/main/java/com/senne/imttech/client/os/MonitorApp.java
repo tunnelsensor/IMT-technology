@@ -477,7 +477,8 @@ final class MonitorApp {
     }
 
     /**
-     * Rechts zonder gekozen rack: de hele server (CPU's en GPU's, of het geheugen ze genoeg voedt, hoe snel de diagrammen en
+     * Rechts zonder gekozen rack: de hele server (CPU's en GPU's en hoeveel apparaten je diagrammen gebruiken van hoeveel ze
+     * aankunnen, of het geheugen ze genoeg voedt, hoe snel de diagrammen en
      * I.M.T zijn, hoeveel plaats je diagrammen innemen), dan warmte en koeling van alle racks samen (en in welk rack de fans
      * moeten), en wat er bezig is.
      */
@@ -485,8 +486,16 @@ final class MonitorApp {
         g.drawString(font, "SERVER", x, y, HudStyle.argb(255, HudStyle.CYAN), false);
         int cpus = server.getInt("cpu");
         int gpus = server.getInt("gpu");
-        small(g, font, cpus + (cpus == 1 ? " CPU, " : " CPUs, ") + gpus + (gpus == 1 ? " GPU" : " GPUs"), x, y + 12,
-                HudStyle.argb(255, HudStyle.WHITE));
+        // Hoofdstuk 86: hoeveel apparaten je diagrammen gebruiken, van hoeveel de CPU's en GPU's aankunnen zonder trager te
+        // worden (10 per CPU, 5 per GPU). Te veel: oranje.
+        int devices = server.getInt("devices");
+        int deviceCap = (int) Math.floor(server.getDouble("deviceCap") + 1.0e-9);
+        boolean tooMany = online && devices > deviceCap;
+        long slower = Math.round(server.getDouble("slower") * 100);
+        String chips = cpus + (cpus == 1 ? " CPU, " : " CPUs, ") + gpus + (gpus == 1 ? " GPU" : " GPUs")
+                + ": " + devices + " / " + deviceCap + " devices" + (online && slower > 0 ? ", " + slower + "% slower" : "");
+        small(g, font, OsDraw.fitRight(font, chips, (int) (w / 0.75f)), x, y + 12,
+                HudStyle.argb(255, tooMany ? HudStyle.ORANGE : HudStyle.WHITE));
         // Wat de CPU's en GPU's aan RAM nodig hebben om op volle snelheid te draaien (per 10: 64 GB). Een SSD is alleen opslag.
         memoryNeed(g, font, x, y + 21, w, "RAM", server.getDouble("ramMb"), server.getDouble("ramNeedMb"));
         double ssd = server.getDouble("ssdMb");
@@ -494,12 +503,14 @@ final class MonitorApp {
                 HudStyle.argb(255, ssd <= 0 ? HudStyle.ORANGE : OsDraw.GREY));
         int delay = server.getInt("brainDelay");
         double fed = server.getDouble("fed");
-        String speed = online ? "Diagrams " + LogicStats.delay(server.getInt("react")) + ",  I.M.T "
+        // Hoofdstuk 86: kort gehouden, zodat het in de breedte past (hoeveel trager staat op de regel van de apparaten).
+        String speed = online ? "Diagrams " + LogicStats.delay(server.getInt("react")) + ", I.M.T "
                 + (delay < 0 ? "-" : delay == 0 ? "no delay" : String.format(Locale.ROOT, "+%.1f s", delay / 20.0))
-                + (cpus + gpus > 0 && fed < 0.999 ? String.format(Locale.ROOT, "  (%d%% speed)", Math.round(fed * 100)) : "")
+                + (cpus + gpus > 0 && fed < 0.999 ? String.format(Locale.ROOT, " (RAM %d%%)", Math.round(fed * 100)) : "")
                 : "Server offline";
+        boolean slow = cpus + gpus > 0 && fed < 0.999 || online && slower > 0;
         small(g, font, OsDraw.fitRight(font, speed, (int) (w / 0.75f)), x, y + 39,
-                HudStyle.argb(255, cpus + gpus > 0 && fed < 0.999 ? HudStyle.ORANGE : OsDraw.GREY));
+                HudStyle.argb(255, slow ? HudStyle.ORANGE : OsDraw.GREY));
 
         int cy = y + 51;
         g.drawString(font, "COOLING", x, cy, HudStyle.argb(255, HudStyle.CYAN), false);

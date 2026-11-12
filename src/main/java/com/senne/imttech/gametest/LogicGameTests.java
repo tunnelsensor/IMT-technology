@@ -350,8 +350,9 @@ public final class LogicGameTests {
                 throw new GameTestAssertException("Het diagram werd niet bewaard: " + lastLog(setup.core()));
             }
         });
-        // De timer gaat na 1 s af (plus 0,5 s reactietijd): dan is total 2 (2,5 afgerond) en pulst open_door de lamp 2 s.
-        helper.runAfterDelay(45, () -> {
+        // De timer gaat na 1 s af (sinds hoofdstuk 86 meteen: 1 apparaat op één CPU): dan is total 2 (2,5 afgerond) en pulst
+        // open_door de lamp 2 s. De tweede keer is een seconde later.
+        helper.runAfterDelay(35, () -> {
             check(Double.valueOf(2.0).equals(setup.core().logic().sharedValues().get("total")),
                     "total zou 2 moeten zijn (2,5 afgerond naar een heel getal), niet " + setup.core().logic().sharedValues().get("total")
                             + ". Logboek: " + lastLog(setup.core()));
@@ -1855,7 +1856,7 @@ public final class LogicGameTests {
             LogicEvents.keycard(level, readerAbs, setup.owner(),
                     new KeycardData(setup.core().ip(), setup.core().hostname(), card.number(), 3, "Lab access"));
         });
-        // Na de reactietijd (een halve seconde met één CPU): groen, en de kluisdeur aan.
+        // Na de reactietijd (met 2 apparaten op één CPU meteen): groen, en de kluisdeur aan.
         helper.runAfterDelay(20, () -> {
             helper.assertBlockProperty(reader, InputDeviceBlock.LIGHT, InputLight.OK);
             if (!level.getBlockState(vault).getValue(RelayBlock.POWERED)) {
@@ -1877,6 +1878,10 @@ public final class LogicGameTests {
             if (!alarm || level.getBlockState(vault).getValue(RelayBlock.POWERED)) {
                 throw new GameTestAssertException("Een valse kaart gaf geen alarm (of opende de deur). Logboek: " + lastLog(setup.core()));
             }
+        });
+        // Pas als het rode lampje van de valse kaart weer uit is (LIGHT_TICKS na het rood): sinds hoofdstuk 86 reageert een
+        // server met weinig apparaten meteen, en een tweede rood binnen die 30 ticks zou door de eerste "uit" afgekapt worden.
+        helper.runAfterDelay(105, () -> {
             // De echte kaart geblokkeerd: hij zit nog in zijn groep, maar card.in_group geeft dan false.
             var card = setup.core().logic().cards().getFirst();
             setup.core().logic().setBlocked(card.number(), true);
@@ -1884,7 +1889,7 @@ public final class LogicGameTests {
             LogicEvents.keycard(level, readerAbs, setup.owner(),
                     new KeycardData(setup.core().ip(), setup.core().hostname(), card.number(), 3, "Lab access"));
         });
-        helper.runAfterDelay(110, () -> {
+        helper.runAfterDelay(115, () -> {
             helper.assertBlockProperty(reader, InputDeviceBlock.LIGHT, InputLight.DENIED);
             boolean logged = setup.core().log().entries().stream()
                     .anyMatch(entry -> entry.text().contains("used card #1001 (not valid here)"));

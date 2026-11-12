@@ -8,9 +8,12 @@ import com.senne.imttech.security.SecurityCoreBlockEntity;
 import com.senne.imttech.security.SecurityCores;
 import com.senne.imttech.security.SecurityDevices;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -28,6 +31,9 @@ import net.minecraft.server.level.ServerPlayer;
  *
  * <b>Ingangen</b> (wat een diagram start: {@code when keycard("Lab door"):}): de keycardlezers,
  * codepanelen en (hoofdstuk 38) netwerkknoppen en -hendels van de kern, met de naam die in het blok zelf staat.
+ *
+ * Hoofdstuk 86: hoeveel van die apparaten je diagrammen echt gebruiken ({@link #used}) bepaalt hoeveel CPU's de server
+ * nodig heeft: 10 per CPU, daarboven per apparaat 10% trager (zie LogicStats.slower).
  */
 public final class LogicDevices {
     private LogicDevices() {}
@@ -149,5 +155,45 @@ public final class LogicDevices {
             }
         }
         return inputs;
+    }
+
+    /**
+     * Hoofdstuk 86 (jouw wens: "met 1 CPU 10 devices zoals keycard readers tegelijk"): zoveel apparaten gebruiken de
+     * diagrammen die nu draaien (aan, en op de SSD's die er zijn: {@code capacity} blokjes). Een apparaat telt als een
+     * blokje het bij naam noemt: {@code when keycard("Lab door"):} (elke lezer, elk paneel, elke knop of hendel met die
+     * naam), of {@code on("Vault door")}, {@code pulse(...)}, {@code when turned_on(...)} (elk relais, elke laserpoort,
+     * koepel, torentje of schakelaar met die naam; een groep telt dus voor alles wat erin zit). Elk apparaat telt één keer,
+     * hoe vaak je het ook noemt. Een naam die pas tijdens het draaien uitgerekend wordt ({@code pulse(door)} met een
+     * parameter) en apparaten die geen enkel diagram noemt, tellen niet.
+     */
+    public static int used(ServerLevel level, SecurityCoreBlockEntity core, int capacity) {
+        Set<String> inputNames = new HashSet<>();
+        Set<String> outputNames = new HashSet<>();
+        for (com.senne.imttech.logic.program.LogicProgram program : LogicRunner.runnable(core, capacity)) {
+            for (com.senne.imttech.logic.program.LogicGraph.Node node : program.graph().nodes()) {
+                if (node.op.textArg() != com.senne.imttech.logic.program.Op.Arg.DEVICE || node.text.isBlank()) {
+                    continue;
+                }
+                String name = node.text.trim().toLowerCase(Locale.ROOT);
+                boolean output = !node.op.isTrigger() || node.op == com.senne.imttech.logic.program.Op.TURNED_ON
+                        || node.op == com.senne.imttech.logic.program.Op.TURNED_OFF;
+                (output ? outputNames : inputNames).add(name);
+            }
+        }
+        // Ingangen: elk blok (lezer, paneel, knop, hendel, Auth Console) met zo'n naam, op zijn plek.
+        Set<BlockPos> inputs = new HashSet<>();
+        if (!inputNames.isEmpty()) {
+            for (Input input : inputs(level, core)) {
+                if (inputNames.contains(input.name().trim().toLowerCase(Locale.ROOT))) {
+                    inputs.add(input.pos().immutable());
+                }
+            }
+        }
+        // Uitgangen: wat het telefoonboek onder die naam heeft (een plek en een kanaal per apparaat).
+        Set<LogicStore.Target> outputs = new HashSet<>();
+        for (String name : outputNames) {
+            outputs.addAll(core.logic().devices(name));
+        }
+        return inputs.size() + outputs.size();
     }
 }

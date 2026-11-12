@@ -1349,7 +1349,7 @@ public final class ImtTechGameTests {
             }
             // Twee CPU's met één latje RAM (hoofdstuk 64: is dat te weinig voor twee CPU's, dan draaien ze naar verhouding).
             int expected = LogicStats.reactionTicks(2.0 * LogicStats.logicPower(com.senne.imttech.logic.ServerPartItem.Kind.CPU)
-                    * LogicStats.fed(2, 1));
+                    * LogicStats.fed(2, 1), stats.devices());
             if (stats.reactionTicks() != expected || stats.maxRuns() != LogicStats.maxRuns(1)) {
                 throw new GameTestAssertException("Reageren of tegelijk klopt niet: " + stats.reactionTicks() + " ticks, " + stats.maxRuns() + " tegelijk");
             }

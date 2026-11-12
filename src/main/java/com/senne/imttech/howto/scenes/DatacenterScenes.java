@@ -85,7 +85,8 @@ public final class DatacenterScenes {
 
     /**
      * Serverracks: samen één server tegen je kern, onderdelen in de vakjes klikken (CPU, GPU, RAM, SSD, fans), hoe groot een
-     * datacenter moet zijn (30 en 120 CPU's, 64 GB RAM per 10, een SSD is alleen opslag), een naam en de app Monitor, en
+     * datacenter moet zijn (10 apparaten per CPU, 240 CPU's voor I.M.T, 64 GB RAM per 10, een SSD is alleen opslag), een
+     * naam en de app Monitor, en
      * dan "online".
      */
     public static List<HowToScene> racks() {
@@ -125,11 +126,12 @@ public final class DatacenterScenes {
         s.meter(90, HowToSceneBuilder.top(new BlockPos(5, 3, 4)).add(0, 0.6, 0), "DIAGRAMS", 1.0f, 0.0f,
                 HowToSceneBuilder.GREEN, Math.round(ImtConfig.Logic.LOGIC_MAX_DELAY_TICKS / 20.0f), " s");
         s.text(140, HowToSceneBuilder.top(new BlockPos(3, 3, 4)), Side.RIGHT,
-                "Every CPU makes your server a bit faster. From *%s CPUs* (or %s GPUs) your diagrams react at once; I.M.T"
-                        + " needs *%s CPUs* (or %s GPUs). Every 10 CPUs or GPUs need *%s RAM*, or everything runs slower."
-                        + " *SSDs* only store your diagrams.",
-                number(ImtConfig.Logic.LOGIC_INSTANT_POWER), number(ImtConfig.Logic.LOGIC_INSTANT_POWER / ImtConfig.Logic.GPU_LOGIC_POWER),
-                number(ImtConfig.Logic.BRAIN_INSTANT_POWER), number(ImtConfig.Logic.BRAIN_INSTANT_POWER / ImtConfig.Logic.GPU_BRAIN_POWER),
+                "One *CPU* (or %s GPUs) lets your diagrams use *%s devices* at once, like keycard readers. Every device"
+                        + " more makes them *%s%% slower*. I.M.T needs *%s CPUs* (or %s GPUs). Every 10 CPUs or GPUs need"
+                        + " *%s RAM*. *SSDs* only store your diagrams.",
+                number(1.0 / Math.max(0.01, ImtConfig.Logic.GPU_LOGIC_POWER)), number(ImtConfig.Logic.LOGIC_DEVICES_PER_CPU),
+                number(ImtConfig.Logic.LOGIC_SLOWER_PER_DEVICE * 100.0),
+                number(ImtConfig.Logic.BRAIN_FULL_SPEED_POWER), number(ImtConfig.Logic.BRAIN_FULL_SPEED_POWER / ImtConfig.Logic.GPU_BRAIN_POWER),
                 LogicStats.bytes(LogicStats.ramNeededMb(10)));
         s.idle(145);
         s.remove(wall.keySet().toArray(new BlockPos[0]));

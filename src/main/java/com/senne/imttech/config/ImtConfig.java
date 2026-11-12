@@ -1301,32 +1301,47 @@ public final class ImtConfig {
     public static final class Logic {
         private Logic() {}
 
-        // ------------------------------------------------------------------------- Snelheid (hoofdstuk 64)
+        // ------------------------------------------------------------------------- Snelheid (hoofdstuk 64 en 86)
         /*
          * Jouw wens van 8 november: "voor imt heb je 120 cpu's nodig of 60 gpu's en voor de diagrams 60 gpu's of 30 cpu's",
          * met daarvoor "100 ... is 1 sec diagram delay en 2 sec imt delay, vanaf 120 reageert alles instant" en je keuze
-         * "rechte lijn": de vertraging loopt in een rechte lijn af van MAX_DELAY (bijna geen kracht) tot 0 bij INSTANT_POWER.
-         * Elke CPU haalt er dus evenveel af: voor de diagrammen 120 / 30 = 4 ticks (0,2 s), voor I.M.T 240 / 120 = 2 ticks.
-         * Zo komt I.M.T op 2 s bij 100 CPU's en diagrammen op 1 s bij 25 CPU's. Een GPU telt voor de diagrammen half en
-         * voor I.M.T dubbel (dezelfde verhouding als sinds 8 oktober). Tot hier deelde een CPU de tijd (REACTION_TICKS,
-         * CPUS_PER_POWER, BRAIN_DELAY_TICKS); die regels zijn weg, en met nieuwe namen gelden de nieuwe getallen ook in een
-         * oude wereld.
+         * "rechte lijn": de vertraging loopt in een rechte lijn af van MAX_DELAY (bijna geen kracht) tot 0 bij de kracht
+         * waarbij alles meteen gaat. Voor I.M.T is dat zo gebleven (sinds hoofdstuk 86 met het dubbele: 240 CPU's). Een GPU
+         * telt voor de diagrammen half en voor I.M.T dubbel (dezelfde verhouding als sinds 8 oktober). Tot hoofdstuk 64
+         * deelde een CPU de tijd (REACTION_TICKS, CPUS_PER_POWER, BRAIN_DELAY_TICKS); die regels zijn weg, en met nieuwe
+         * namen gelden de nieuwe getallen ook in een oude wereld.
          */
-        /** Vanaf zoveel Logic-kracht (1 CPU = 1, 1 GPU = GPU_LOGIC_POWER) reageren je diagrammen meteen (1 tick). */
-        @Tunable(value = "From this much Logic power (a CPU counts 1, a GPU counts gpuLogicPower) your diagrams react at "
-                + "once: 30 = 30 CPUs or 60 GPUs", min = 0.1)
-        public static float LOGIC_INSTANT_POWER = 30.0f;
-        /** Zo lang (ticks) wacht een server met bijna geen kracht voor hij reageert: 120 = 6 seconden. */
-        @Tunable(value = "How long (ticks) a server with almost no Logic power waits before a diagram starts: 120 = 6 s. "
-                + "Every bit of power takes an equal part off, down to 1 tick at logicInstantPower", min = 1)
+        /*
+         * Hoofdstuk 86 (jouw wens van 12 november): "het is logisch dat je voor weinig devices ook maar weinig CPU's nodig
+         * hebt: zorg dat je met 1 CPU 10 devices zoals keycard readers tegelijk kunt gebruiken, als je er meer dan 10 hebt
+         * wordt het per device 10% trager". De diagrammen hangen dus niet meer aan een rechte lijn naar 30 CPU's, maar aan
+         * hoeveel apparaten je diagrammen gebruiken (LogicDevices.used): tot LOGIC_DEVICES_PER_CPU per CPU reageren ze
+         * meteen, en elk apparaat te veel haalt er LOGIC_SLOWER_PER_DEVICE (10%) af, tot ze zo traag zijn als het kan
+         * (LOGIC_MAX_DELAY_TICKS, na 10 apparaten te veel). Een GPU telt nog altijd half ("dubbel zoveel voor hetzelfde
+         * effect": 2 GPU's = 10 apparaten). Het RAM per 10 CPU's of GPU's en de SSD's blijven zoals ze waren.
+         * En "voor de I.M.T glasses het dubbele van de CPU's en GPU's": 240 CPU's of 120 GPU's in plaats van 120 of 60
+         * (met een nieuwe naam, zodat de nieuwe 240 ook in een oude wereld geldt).
+         */
+        /** Zoveel apparaten kunnen je diagrammen gebruiken per Logic-kracht (1 CPU = 1, 1 GPU = GPU_LOGIC_POWER) zonder trager te worden. */
+        @Tunable(value = "How many devices (keycard readers, code panels, buttons, levers, relays, laser gates...) your diagrams "
+                + "can use per Logic power without getting slower: 10 = 10 for one CPU, or for two GPUs (a GPU counts "
+                + "gpuLogicPower)", min = 0.1)
+        public static float LOGIC_DEVICES_PER_CPU = 10.0f;
+        /** Zoveel trager worden je diagrammen voor elk apparaat te veel: 0,1 = 10%. */
+        @Tunable(value = "How much slower your diagrams get for every device too many: 0.1 = 10%. Ten devices too many = "
+                + "100% = as slow as it gets (logicMaxDelayTicks)", min = 0.0, max = 1.0)
+        public static float LOGIC_SLOWER_PER_DEVICE = 0.10f;
+        /** Zo lang (ticks) wacht een server hooguit voor een diagram begint (100% trager): 120 = 6 seconden. */
+        @Tunable(value = "How long (ticks) a server waits at most before a diagram starts, when it is 100% slower (far too "
+                + "many devices for its CPUs): 120 = 6 s. Every device too many adds logicSlowerPerDevice of this", min = 1)
         public static float LOGIC_MAX_DELAY_TICKS = 120.0f;
         /** Vanaf zoveel breinkracht (1 CPU = 1, 1 GPU = GPU_BRAIN_POWER) denkt I.M.T zonder vertraging. */
         @Tunable(value = "From this much brain power (a CPU counts 1, a GPU counts gpuBrainPower) I.M.T thinks without "
-                + "delay: 120 = 120 CPUs or 60 GPUs", min = 0.1)
-        public static float BRAIN_INSTANT_POWER = 120.0f;
-        /** Zo lang (ticks) denkt I.M.T extra na met bijna geen breinkracht: 240 = 12 seconden (2 s bij 100 CPU's). */
+                + "delay: 240 = 240 CPUs or 120 GPUs", min = 0.1)
+        public static float BRAIN_FULL_SPEED_POWER = 240.0f;
+        /** Zo lang (ticks) denkt I.M.T extra na met bijna geen breinkracht: 240 = 12 seconden (2 s bij 200 CPU's). */
         @Tunable(value = "How long (ticks) I.M.T thinks extra on a datacenter with almost no brain power: 240 = 12 s. "
-                + "Every bit of power takes an equal part off, down to 0 at brainInstantPower (2 s with 100 CPUs)", min = 0)
+                + "Every bit of power takes an equal part off, down to 0 at brainFullSpeedPower (2 s with 200 CPUs)", min = 0)
         public static float BRAIN_MAX_DELAY_TICKS = 240.0f;
         /** Hoeveel één GPU telt voor Logic (een CPU telt 1). */
         @Tunable("How much one GPU counts for Logic (a CPU counts 1)")

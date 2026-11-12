@@ -45,8 +45,8 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 /**
  * Tests voor het datacenter (hoofdstuk 9 van het plan, 8 oktober): de GPU en de fan, warmte (elk rack zijn eigen
  * temperatuur), slijten en brand, het gebruik, backups en het brein van I.M.T. Sinds hoofdstuk 64 (8 november): acht
- * vakjes waar je de onderdelen in klikt, de rechte lijn naar 30 en 120 CPU's, RAM en SSD per 10 CPU's of GPU's, en de
- * naam van een rack.
+ * vakjes waar je de onderdelen in klikt, RAM en SSD per 10 CPU's of GPU's, en de naam van een rack. Sinds hoofdstuk 86
+ * (12 november): 10 apparaten per CPU in je diagrammen (per apparaat te veel 10% trager), en I.M.T meteen vanaf 240 CPU's.
  */
 @GameTestHolder(ImtTech.MODID)
 @PrefixGameTestTemplate(false)
@@ -71,13 +71,13 @@ public final class DatacenterGameTests {
     }
 
     /**
-     * Hoofdstuk 64, de rechte lijn met jouw getallen: diagrammen 1 s met 25 CPU's en meteen vanaf 30 CPU's (of 60 GPU's),
-     * I.M.T 2 s met 100 CPU's en meteen vanaf 120 CPU's (of 60 GPU's); met één CPU 5,8 en 11,9 seconden. Een GPU telt voor
-     * de diagrammen half en voor I.M.T dubbel; een CPU en een GPU samen zijn 1,5 en 3. Zonder CPU of GPU draait de server
-     * niet, en zegt hij waarom.
+     * Hoofdstuk 86, jouw getallen: "met 1 CPU 10 devices zoals keycard readers tegelijk, als je er meer dan 10 hebt wordt
+     * het per device 10% trager", een GPU telt half ("dubbel zoveel voor hetzelfde effect"), en I.M.T heeft het dubbele
+     * nodig: 2 s met 200 CPU's en meteen vanaf 240 CPU's (of 120 GPU's). Een CPU en een GPU samen zijn 1,5 en 3. Zonder CPU
+     * of GPU draait de server niet, en zegt hij waarom.
      */
     @GameTest(template = ARENA, timeoutTicks = 40, batch = "datacenter")
-    public static void datacenter_straight_line_to_30_and_120(GameTestHelper helper) {
+    public static void datacenter_ten_devices_per_cpu(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         Setup setup = datacenter(helper);
         ServerRackBlockEntity rack = setup.rackEntity(helper);
@@ -91,22 +91,40 @@ public final class DatacenterGameTests {
             // De echte schaal (in de tests wachten diagrammen anders hooguit 10 ticks), alleen in dit stukje van één tick.
             LogicStats.overrideRealScale(true);
             try {
-                check(LogicStats.reactionTicks(25) == 20 && LogicStats.reactionTicks(30) == 1 && LogicStats.reactionTicks(60 * 0.5) == 1
-                                && LogicStats.reactionTicks(1) == 116 && LogicStats.reactionTicks(0) == Integer.MAX_VALUE,
-                        "Diagrammen: 25 CPU's 20 ticks, 30 CPU's of 60 GPU's 1 tick, 1 CPU 116 ticks; niet " + LogicStats.reactionTicks(25)
-                                + " / " + LogicStats.reactionTicks(30) + " / " + LogicStats.reactionTicks(1));
-                check(LogicStats.brainDelayTicks(100) == 40 && LogicStats.brainDelayTicks(120) == 0 && LogicStats.brainDelayTicks(60 * 2.0) == 0
-                                && LogicStats.brainDelayTicks(1) == 238 && LogicStats.brainDelayTicks(0) == -1,
-                        "I.M.T: 100 CPU's 40 ticks, 120 CPU's of 60 GPU's 0, 1 CPU 238, niets -1; niet " + LogicStats.brainDelayTicks(100)
-                                + " / " + LogicStats.brainDelayTicks(120) + " / " + LogicStats.brainDelayTicks(1));
+                double gpuPower = LogicStats.logicPower(com.senne.imttech.logic.ServerPartItem.Kind.GPU);
+                // 1 CPU: tot 10 apparaten meteen (1 tick), 11 = 10% van 6 s, 15 = 50%, 20 en meer = 6 s (zo traag als het kan).
+                check(LogicStats.reactionTicks(1, 0) == 1 && LogicStats.reactionTicks(1, 10) == 1
+                                && LogicStats.reactionTicks(1, 11) == 12 && LogicStats.reactionTicks(1, 15) == 60
+                                && LogicStats.reactionTicks(1, 20) == 120 && LogicStats.reactionTicks(1, 40) == 120,
+                        "Diagrammen met 1 CPU: 10 apparaten 1 tick, 11 12 ticks, 15 60, 20 120; niet " + LogicStats.reactionTicks(1, 10)
+                                + " / " + LogicStats.reactionTicks(1, 11) + " / " + LogicStats.reactionTicks(1, 15) + " / "
+                                + LogicStats.reactionTicks(1, 20));
+                // 2 CPU's: 20 apparaten; een GPU 5, twee GPU's 10 (dubbel zoveel voor hetzelfde); zonder kracht: nooit.
+                check(LogicStats.reactionTicks(2, 20) == 1 && LogicStats.reactionTicks(2, 21) == 12
+                                && LogicStats.reactionTicks(gpuPower, 5) == 1 && LogicStats.reactionTicks(gpuPower, 6) == 12
+                                && LogicStats.reactionTicks(2 * gpuPower, 10) == 1 && LogicStats.reactionTicks(0, 0) == Integer.MAX_VALUE,
+                        "2 CPU's 20 apparaten, 1 GPU 5, 2 GPU's 10; niet " + LogicStats.reactionTicks(2, 21) + " / "
+                                + LogicStats.reactionTicks(gpuPower, 6) + " / " + LogicStats.reactionTicks(2 * gpuPower, 10));
+                check(LogicStats.devicesTooMany(1, 13) == 3 && Math.abs(LogicStats.slower(1, 13) - 0.3) < 1.0e-6
+                                && LogicStats.slower(1, 99) == 1.0 && LogicStats.slower(1, 3) == 0.0,
+                        "13 apparaten op 1 CPU zijn er 3 te veel (30% trager): " + LogicStats.devicesTooMany(1, 13));
+                // I.M.T: het dubbele van vroeger.
+                check(LogicStats.brainDelayTicks(200) == 40 && LogicStats.brainDelayTicks(240) == 0
+                                && LogicStats.brainDelayTicks(120 * 2.0) == 0 && LogicStats.brainDelayTicks(120) == 120
+                                && LogicStats.brainDelayTicks(1) == 239 && LogicStats.brainDelayTicks(0) == -1,
+                        "I.M.T: 200 CPU's 40 ticks, 240 CPU's of 120 GPU's 0, 120 CPU's 120, 1 CPU 239, niets -1; niet "
+                                + LogicStats.brainDelayTicks(200) + " / " + LogicStats.brainDelayTicks(240) + " / "
+                                + LogicStats.brainDelayTicks(120) + " / " + LogicStats.brainDelayTicks(1));
                 LogicServer.Stats gpu = LogicServer.stats(level, setup.core());
                 check(gpu.online() && gpu.cpus() == 0 && gpu.gpus() == 1 && gpu.fans() == 1,
                         "De server met een GPU telt verkeerd: " + gpu + " (" + gpu.problem() + ")");
                 check(Math.abs(gpu.logicPower() - 0.5) < 1.0e-9 && Math.abs(gpu.brainPower() - 2.0) < 1.0e-9,
                         "Een GPU zou 0,5 Logic en 2 brein moeten zijn: " + gpu.logicPower() + " / " + gpu.brainPower());
-                check(gpu.reactionTicks() == LogicStats.reactionTicks(0.5) && gpu.reactionTicks() > LogicStats.reactionTicks(1.0)
+                // Zonder diagrammen gebruikt de server geen apparaten: meteen, ook met één GPU.
+                check(gpu.devices() == 0 && Math.abs(gpu.deviceCapacity() - 5.0) < 1.0e-9 && gpu.reactionTicks() == 1
                                 && gpu.brainDelayTicks() == LogicStats.brainDelayTicks(2.0) && gpu.brainDelayTicks() < LogicStats.brainDelayTicks(1.0),
-                        "Een GPU zou trager moeten reageren en sneller denken dan een CPU: " + gpu.reactionTicks() + " / " + gpu.brainDelayTicks());
+                        "Een GPU zou 5 apparaten aankunnen en sneller denken dan een CPU: " + gpu.deviceCapacity() + " / "
+                                + gpu.reactionTicks() + " / " + gpu.brainDelayTicks());
             } finally {
                 LogicStats.overrideRealScale(null);
             }
@@ -118,8 +136,9 @@ public final class DatacenterGameTests {
                     "CPU + GPU zou 1.5 Logic en 3 brein moeten zijn (maal " + fedBoth + " voor het RAM): " + both.logicPower()
                             + " / " + both.brainPower());
             // In de automatische tests wacht een diagram hooguit TEST_LOGIC_MAX_DELAY_TICKS (zie LogicStats.logicMaxDelayTicks).
-            check(both.reactionTicks() <= LogicStats.TEST_LOGIC_MAX_DELAY_TICKS, "In de tests zou een server snel moeten reageren: "
-                    + both.reactionTicks());
+            check(both.reactionTicks() <= LogicStats.TEST_LOGIC_MAX_DELAY_TICKS
+                            && LogicStats.reactionTicks(1, 99) == LogicStats.TEST_LOGIC_MAX_DELAY_TICKS,
+                    "In de tests zou een server snel moeten reageren: " + both.reactionTicks());
             // Geen CPU en geen GPU: de server zegt wat er mist.
             rack.parts().setItem(0, ItemStack.EMPTY);
             rack.parts().setItem(1, ItemStack.EMPTY);
@@ -128,6 +147,98 @@ public final class DatacenterGameTests {
                     "Zonder CPU of GPU zou de server dat moeten zeggen, niet: " + none.problem());
             helper.succeed();
         });
+    }
+
+    /**
+     * Hoofdstuk 86: de server telt de apparaten die je diagrammen bij naam noemen. Twee keycardlezers die allebei "Lab door"
+     * heten zijn twee apparaten, een relais dat je drie keer noemt is er één, en een lezer of relais dat geen diagram noemt
+     * telt niet; een diagram dat uit staat ook niet. Met 1 CPU passen er 10: meteen. Met 12 zijn er 2 te veel: 20% trager.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "datacenter")
+    public static void datacenter_counts_the_devices_in_your_diagrams(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        Setup setup = datacenter(helper);
+        SecurityCoreBlockEntity core = setup.core();
+        setup.rackEntity(helper).insert(new ItemStack(ModItems.SERVER_FAN.get()));
+        // Twee keycardlezers met dezelfde naam, een codepaneel, en een lezer die (nog) geen diagram noemt.
+        input(helper, new BlockPos(3, 3, 8), ModBlocks.KEYCARD_READER.get(), "Lab door");
+        input(helper, new BlockPos(4, 3, 8), ModBlocks.KEYCARD_READER.get(), "lab door");
+        input(helper, new BlockPos(5, 3, 8), ModBlocks.CODE_PANEL.get(), "Front door");
+        input(helper, new BlockPos(7, 3, 8), ModBlocks.KEYCARD_READER.get(), "Spare reader");
+        // Acht relais op de bril van de eigenaar: Light 1 tot 7, en Spare light.
+        for (int i = 1; i <= 7; i++) {
+            relay(helper, setup.owner(), new BlockPos(9, 3, i), "Light " + i);
+        }
+        relay(helper, setup.owner(), new BlockPos(10, 3, 8), "Spare light");
+        helper.runAfterDelay(2, () -> {
+            ImtTechGameTests.startServer(helper, setup.rack(), core);
+            com.senne.imttech.logic.LogicDevices.refresh(level, core, setup.owner());
+            diagram(core, "Doors", true, """
+                    when keycard("Lab door"):
+                        on("Light 1")
+                        on("Light 2")
+
+                    when codepanel("Front door"):
+                        pulse("Light 3", 2)
+                        toggle("Light 4")
+                        off("Light 5")
+
+                    when turned_on("Light 6"):
+                        on("Light 7")
+                        on("light 1")
+                    """);
+            // Een diagram dat uit staat, telt niet mee.
+            diagram(core, "Spare", false, """
+                    when keycard("Spare reader"):
+                        on("Spare light")
+                    """);
+            LogicStats.overrideRealScale(true);
+            try {
+                LogicServer.Stats ten = LogicServer.stats(level, core);
+                double power = ten.logicPower() / ten.slowdown();
+                check(ten.online() && ten.devices() == 10, "3 ingangen en 7 relais zouden 10 apparaten moeten zijn, niet "
+                        + ten.devices() + " (" + ten.problem() + ")");
+                check(ten.reactionTicks() == LogicStats.reactionTicks(power, 10) && (ten.fed() < 1.0 || ten.reactionTicks() == 1),
+                        "10 apparaten op 1 CPU zouden meteen moeten gaan, niet na " + ten.reactionTicks() + " ticks");
+                // Het tweede diagram aan: een lezer en een relais erbij, dus 12.
+                diagram(core, "Spare", true, """
+                        when keycard("Spare reader"):
+                            on("Spare light")
+                        """);
+                LogicServer.Stats twelve = LogicServer.stats(level, core);
+                check(twelve.devices() == 12, "Met het tweede diagram aan zouden het 12 apparaten moeten zijn, niet " + twelve.devices());
+                check(twelve.reactionTicks() == LogicStats.reactionTicks(power, 12)
+                                && (ten.fed() < 1.0 || twelve.reactionTicks() == (int) Math.round(ImtConfig.Logic.LOGIC_MAX_DELAY_TICKS
+                                * 2 * ImtConfig.Logic.LOGIC_SLOWER_PER_DEVICE)),
+                        "12 apparaten op 1 CPU zouden 20% trager moeten zijn, niet " + twelve.reactionTicks() + " ticks");
+                CompoundTag snapshot = LogicServer.snapshot(level, core);
+                check(snapshot.getInt("devices") == 12 && Math.abs(snapshot.getDouble("deviceCap") - twelve.deviceCapacity()) < 1.0e-9
+                                && Math.abs(snapshot.getDouble("slower") - twelve.slower()) < 1.0e-9,
+                        "De app Monitor krijgt de apparaten verkeerd: " + snapshot.getInt("devices") + " / " + snapshot.getDouble("deviceCap"));
+            } finally {
+                LogicStats.overrideRealScale(null);
+            }
+            helper.succeed();
+        });
+    }
+
+    /** Een keycardlezer of codepaneel met deze naam. */
+    private static void input(GameTestHelper helper, BlockPos pos, net.minecraft.world.level.block.Block block, String name) {
+        helper.setBlock(pos, block);
+        ((com.senne.imttech.logic.InputDeviceBlockEntity) helper.getBlockEntity(pos)).setName(name);
+    }
+
+    /** Een relais met deze naam op de bril van de eigenaar (zoals LogicGameTests.relay). */
+    private static void relay(GameTestHelper helper, ServerPlayer owner, BlockPos pos, String name) {
+        helper.setBlock(pos, ModBlocks.RELAY.get());
+        var data = owner.getData(com.senne.imttech.registry.ModAttachments.RELAYS);
+        owner.setData(com.senne.imttech.registry.ModAttachments.RELAYS, data.with(new com.senne.imttech.redstone.Relay(name, "",
+                helper.getLevel().dimension(), helper.absolutePos(pos))));
+    }
+
+    /** Een diagram op de server zetten (aan of uit), zoals de app Logic het bewaart. */
+    private static void diagram(SecurityCoreBlockEntity core, String name, boolean enabled, String code) {
+        core.logic().put(null, new LogicProgram(name, enabled, GraphConverter.toGraph(ScriptParser.parse(code), null), code));
     }
 
     /**
@@ -194,8 +305,8 @@ public final class DatacenterGameTests {
     /**
      * Jouw vraag "kun je de config value eens nakijken en kijken of dat in de tooltips ook klopt": elke tooltip van een
      * onderdeel toont de getallen uit de config. Een RAM-latje: hoeveel GB erop zit en hoeveel elke 10 CPU's of GPU's nodig
-     * hebben; een SSD: hoeveel erop past en hoe groot een blokje is; een CPU en een GPU: hun kracht, en vanaf hoeveel het
-     * meteen gaat; en de warmte en koeling. Verander je een getal (zoals in het configbestand), dan verandert de tooltip mee.
+     * hebben; een SSD: hoeveel erop past en hoe groot een blokje is; een CPU en een GPU: hun kracht, hoeveel apparaten je
+     * diagrammen ermee kunnen gebruiken (hoofdstuk 86) en vanaf hoeveel I.M.T meteen denkt; en de warmte en koeling. Verander je een getal (zoals in het configbestand), dan verandert de tooltip mee.
      */
     @GameTest(template = ARENA, timeoutTicks = 20, batch = "datacenter")
     public static void datacenter_part_tooltips_follow_the_config(GameTestHelper helper) {
@@ -204,7 +315,7 @@ public final class DatacenterGameTests {
         float perTen = ImtConfig.Logic.RAM_GB_PER_TEN;
         float ssd = ImtConfig.Logic.SSD_GB;
         float block = ImtConfig.Logic.BLOCK_MB;
-        float logicInstant = ImtConfig.Logic.LOGIC_INSTANT_POWER;
+        float devicesPerCpu = ImtConfig.Logic.LOGIC_DEVICES_PER_CPU;
         double fan = ImtConfig.Logic.FAN_COOLING;
         try {
             // Andere getallen, zoals in het configbestand: de tooltips volgen.
@@ -212,12 +323,13 @@ public final class DatacenterGameTests {
             ImtConfig.Logic.RAM_GB_PER_TEN = 48.0f;
             ImtConfig.Logic.SSD_GB = 4000.0f;
             ImtConfig.Logic.BLOCK_MB = 0.5f;
-            ImtConfig.Logic.LOGIC_INSTANT_POWER = 45.0f;
+            ImtConfig.Logic.LOGIC_DEVICES_PER_CPU = 12.0f;
             ImtConfig.Logic.FAN_COOLING = 7.5;
             checkTooltips(helper);
             check(tooltipArgs(helper, ModItems.SERVER_RAM.get(), 0).equals(List.of("32 GB", "48 GB"))
                             && tooltipArgs(helper, ModItems.SERVER_SSD.get(), 0).equals(List.of("4 TB", "0.5 MB"))
-                            && tooltipArgs(helper, ModItems.SERVER_CPU.get(), 0).get(1).equals("45")
+                            && tooltipArgs(helper, ModItems.SERVER_CPU.get(), 0).get(1).equals("12")
+                            && tooltipArgs(helper, ModItems.SERVER_GPU.get(), 0).get(1).equals("6")
                             && tooltipArgs(helper, ModItems.SERVER_FAN.get(), 1).equals(List.of("7.5")),
                     "De tooltips zouden de nieuwe getallen moeten tonen: " + tooltipArgs(helper, ModItems.SERVER_RAM.get(), 0)
                             + " " + tooltipArgs(helper, ModItems.SERVER_SSD.get(), 0));
@@ -226,7 +338,7 @@ public final class DatacenterGameTests {
             ImtConfig.Logic.RAM_GB_PER_TEN = perTen;
             ImtConfig.Logic.SSD_GB = ssd;
             ImtConfig.Logic.BLOCK_MB = block;
-            ImtConfig.Logic.LOGIC_INSTANT_POWER = logicInstant;
+            ImtConfig.Logic.LOGIC_DEVICES_PER_CPU = devicesPerCpu;
             ImtConfig.Logic.FAN_COOLING = fan;
         }
         helper.succeed();
@@ -236,17 +348,19 @@ public final class DatacenterGameTests {
     private static void checkTooltips(GameTestHelper helper) {
         String gpuLogic = plain(ImtConfig.Logic.GPU_LOGIC_POWER);
         String gpuBrain = plain(ImtConfig.Logic.GPU_BRAIN_POWER);
-        String instant = plain(ImtConfig.Logic.LOGIC_INSTANT_POWER);
-        String brainInstant = plain(ImtConfig.Logic.BRAIN_INSTANT_POWER);
+        // Hoofdstuk 86: hoeveel apparaten één CPU (10) of één GPU (5) aankan, en vanaf hoeveel breinkracht I.M.T meteen denkt.
+        String cpuDevices = plain(ImtConfig.Logic.LOGIC_DEVICES_PER_CPU);
+        String gpuDevices = plain(ImtConfig.Logic.LOGIC_DEVICES_PER_CPU * ImtConfig.Logic.GPU_LOGIC_POWER);
+        String brainInstant = plain(ImtConfig.Logic.BRAIN_FULL_SPEED_POWER);
         check(tooltipArgs(helper, ModItems.SERVER_RAM.get(), 0).equals(List.of(LogicStats.bytes(LogicStats.ramStickMb()),
                         LogicStats.bytes(LogicStats.ramNeededMb(10)))),
                 "De tooltip van het RAM klopt niet met de config: " + tooltipArgs(helper, ModItems.SERVER_RAM.get(), 0));
         check(tooltipArgs(helper, ModItems.SERVER_SSD.get(), 0).equals(List.of(LogicStats.bytes(LogicStats.ssdMb()),
                         LogicStats.bytes(LogicStats.blocksMb(1)))),
                 "De tooltip van de SSD klopt niet met de config: " + tooltipArgs(helper, ModItems.SERVER_SSD.get(), 0));
-        check(tooltipArgs(helper, ModItems.SERVER_CPU.get(), 0).equals(List.of("1", instant, "1", brainInstant)),
+        check(tooltipArgs(helper, ModItems.SERVER_CPU.get(), 0).equals(List.of("1", cpuDevices, "1", brainInstant)),
                 "De tooltip van de CPU klopt niet met de config: " + tooltipArgs(helper, ModItems.SERVER_CPU.get(), 0));
-        check(tooltipArgs(helper, ModItems.SERVER_GPU.get(), 0).equals(List.of(gpuLogic, instant, gpuBrain, brainInstant)),
+        check(tooltipArgs(helper, ModItems.SERVER_GPU.get(), 0).equals(List.of(gpuLogic, gpuDevices, gpuBrain, brainInstant)),
                 "De tooltip van de GPU klopt niet met de config: " + tooltipArgs(helper, ModItems.SERVER_GPU.get(), 0));
         check(tooltipArgs(helper, ModItems.SERVER_CPU.get(), 1).equals(List.of(plain(ImtConfig.Logic.CPU_HEAT),
                         plain(ImtConfig.Logic.CPU_HEAT + ImtConfig.Logic.CPU_BUSY_HEAT)))
@@ -479,8 +593,12 @@ public final class DatacenterGameTests {
                         + Datacenter.degrees(core.datacenter().temperature()));
             }
             LogicServer.Stats hot = LogicServer.stats(level, core);
-            if (!hot.warm() || hot.reactionTicks() != LogicStats.reactionTicks(1.0 / ImtConfig.Logic.WARM_SLOWDOWN)) {
-                throw new GameTestAssertException("Eén warm rack zou de hele server half zo snel moeten maken: " + hot.reactionTicks() + " ticks");
+            // Hoofdstuk 86: warm kan de server maar de helft van de apparaten aan (de reactietijd volgt daaruit).
+            double slowdown = Math.max(1.0, ImtConfig.Logic.WARM_SLOWDOWN);
+            if (!hot.warm() || Math.abs(hot.deviceCapacity() * slowdown - stats.deviceCapacity()) > 1.0e-9
+                    || hot.reactionTicks() != LogicStats.reactionTicks(hot.logicPower() / slowdown, hot.devices())) {
+                throw new GameTestAssertException("Eén warm rack zou de hele server half zo snel moeten maken: " + hot.deviceCapacity()
+                        + " van " + stats.deviceCapacity() + " apparaten, " + hot.reactionTicks() + " ticks");
             }
             BlockPos bAbs = helper.absolutePos(bPos);
             if (!logged(core, EventLog.Type.HEAT, "Rack at " + bAbs.getX() + " " + bAbs.getY() + " " + bAbs.getZ() + " running hot")) {

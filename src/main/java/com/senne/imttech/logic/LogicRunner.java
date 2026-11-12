@@ -39,7 +39,8 @@ import org.jetbrains.annotations.Nullable;
  * een timer), kijkt de server in al zijn diagrammen welke "when" daarop past. Elk passend when-blok
  * wordt een "run": een vingertje dat de blokjes afloopt.
  * <ul>
- *   <li>Een run begint pas na de <b>reactietijd</b> van de server: hoe meer CPU's, hoe sneller.</li>
+ *   <li>Een run begint pas na de <b>reactietijd</b> van de server: meteen zolang je diagrammen niet meer apparaten
+ *       gebruiken dan je CPU's aankunnen (10 per CPU), en per apparaat te veel 10% trager (hoofdstuk 86).</li>
  *   <li>Er kunnen er maar zoveel tegelijk bezig zijn als je <b>RAM</b> toelaat (een run die
  *       {@code wait(5)} doet, telt mee zolang hij wacht). De rest wacht in een rij.</li>
  *   <li>Alleen diagrammen die op je <b>SSD's</b> passen draaien (de bovenste in de lijst eerst).</li>
@@ -384,11 +385,16 @@ public final class LogicRunner {
      * passen. Een robotprogramma (hoofdstuk 23) telt mee voor de SSD's, maar draait op de robot, niet hier.
      */
     private static List<LogicProgram> runnable(SecurityCoreBlockEntity core, LogicServer.Stats stats) {
+        return runnable(core, stats.capacity());
+    }
+
+    /** Hetzelfde, met zoveel blokjes plaats op de SSD's (voor LogicDevices.used, terwijl de server nog geteld wordt). */
+    static List<LogicProgram> runnable(SecurityCoreBlockEntity core, int capacity) {
         List<LogicProgram> fits = new ArrayList<>();
         int used = 0;
         for (LogicProgram program : core.logic().programs()) {
             used += program.graph().size();
-            if (used > stats.capacity()) {
+            if (used > capacity) {
                 break;
             }
             if (program.enabled() && program.kind() == com.senne.imttech.logic.program.ProgramKind.SERVER) {

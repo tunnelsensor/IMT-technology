@@ -2872,6 +2872,22 @@ public final class VisualCheck {
                     be.logic().put(null, new com.senne.imttech.logic.program.LogicProgram("Busy", true,
                             com.senne.imttech.logic.program.GraphConverter.toGraph(
                                     com.senne.imttech.logic.program.ScriptParser.parse(code), null), code));
+                    // Hoofdstuk 86: zestien lampen (relais op je bril) die een diagram schakelt, zodat de app Monitor
+                    // "16 / 14 devices" toont (warm kan de server de helft aan), oranje en 20% trager.
+                    var relays = player.getData(com.senne.imttech.registry.ModAttachments.RELAYS);
+                    StringBuilder lights = new StringBuilder("when every(30):\n");
+                    for (int i = 1; i <= 16; i++) {
+                        BlockPos lamp = core.offset(-6 + i, 0, -4);
+                        level.setBlockAndUpdate(lamp, ModBlocks.RELAY.get().defaultBlockState());
+                        relays = relays.with(new com.senne.imttech.redstone.Relay("Lamp " + i, "", level.dimension(), lamp));
+                        lights.append("    pulse(\"Lamp ").append(i).append("\", 2)\n");
+                    }
+                    player.setData(com.senne.imttech.registry.ModAttachments.RELAYS, relays);
+                    com.senne.imttech.logic.LogicDevices.refresh(level, be, player);
+                    String lamps = lights.toString();
+                    be.logic().put(null, new com.senne.imttech.logic.program.LogicProgram("Lights", true,
+                            com.senne.imttech.logic.program.GraphConverter.toGraph(
+                                    com.senne.imttech.logic.program.ScriptParser.parse(lamps), null), lamps));
                 }
                 for (BlockPos generator : new BlockPos[] {core.below(), server[0].below(), lone.below()}) {
                     level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
@@ -2939,6 +2955,10 @@ public final class VisualCheck {
             t.shot(15, "r05_monitor_rack_hot");
             t.step(0, () -> monitorRack("rack1"));
             t.shot(10, "r05b_monitor_rack_cool");
+            // Hoofdstuk 86: de hele server (geen rack gekozen): 16 apparaten in je diagrammen, en warm kan hij er maar de
+            // helft van wat zijn CPU's en GPU's aankunnen aan (14), dus oranje en 20% trager.
+            t.step(0, () -> monitorRack(null));
+            t.shot(10, "r05c_monitor_server_devices");
             t.step(0, () -> monitorRack("spare"));
             t.shot(10, "r03_monitor_rack_not_connected");
             t.close(5);

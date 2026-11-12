@@ -846,9 +846,17 @@ tegen de lezer, open dan de kluis 3 seconden; anders alarm". De server hangt aan
    je hand ("this bay takes a CPU or GPU"). Je ziet op de voorkant wat erin zit; draait het rack mee,
    dan knipperen de lampjes en draaien de fans. Elk rack met iets erin heeft minstens één **fan**
    nodig, anders wordt het te heet (zie hieronder, "Het datacenter").
-   **Hoe snel**: een server met bijna geen rekenkracht laat een diagram 6 seconden wachten; elke CPU
-   haalt er een stukje af (0,2 s), en vanaf **30 CPU's** (of 60 GPU's: een GPU telt voor je redstone
-   half) reageren je diagrammen meteen. Met 25 CPU's is het 1 seconde, met 10 CPU's 4 seconden.
+   **Hoe snel** (12 november): dat hangt af van hoeveel **apparaten** je diagrammen gebruiken. Met
+   **1 CPU** kunnen je diagrammen **10 apparaten** tegelijk gebruiken (of met 2 GPU's: een GPU telt voor
+   je redstone half), en dan reageren ze meteen. Elk apparaat te veel maakt ze **10% trager**: met 11
+   apparaten op 1 CPU wacht een diagram 0,6 s, met 15 apparaten 3 s, en vanaf 20 apparaten 6 s (zo traag
+   als het kan). Met 2 CPU's gaan 20 apparaten meteen, met 3 CPU's 30. Een apparaat telt als een blokje
+   het bij naam noemt: elke keycardlezer, elk codepaneel, elke knop of hendel in `when keycard("...")` en
+   zo, en elk relais, elke laserpoort, koepel, torentje of schakelaar in `on(...)`, `off(...)`,
+   `toggle(...)`, `pulse(...)` of `when turned_on(...)` (een groep telt voor alles wat erin zit). Twee
+   lezers met dezelfde naam zijn twee apparaten; een apparaat dat je vaker noemt telt één keer, en een
+   apparaat dat geen enkel diagram (dat aan staat) noemt, telt niet. In de app **Monitor** zie je
+   rechts "devices 12 / 10" en hoeveel trager het is.
    **RAM** voedt de CPU's en GPU's: een latje RAM is **8 GB**, en elke 10 CPU's of GPU's hebben
    **64 GB RAM** nodig (8 latjes). Heb je minder, dan draait alles naar verhouding trager (de helft van
    het RAM = alsof je de helft van je CPU's hebt). Een **SSD** (**200 GB**) is alleen **opslag**: daar
@@ -1121,19 +1129,20 @@ er backups van, en het brein van I.M.T draait erop.
   datacenter werkt er geen enkel brein**, ook het woordenboek niet: dan is het gewoon een mooie
   bril (in creative hoeft het niet). Met een datacenter duurt een antwoord de tijd van het model
   plus een vertraging zolang je datacenter nog niet sterk is: met bijna niets 12 seconden, elke CPU
-  haalt er 0,1 s af (een GPU telt voor het brein dubbel), met 100 CPU's nog 2 seconden, en vanaf
-  **120 CPU's** (of 60 GPU's) niets meer (warm: alsof je de helft hebt). Rechtsboven in **G > Systems >
+  haalt er 0,05 s af (een GPU telt voor het brein dubbel), met 100 CPU's nog 7 seconden, met 200 CPU's
+  2 seconden, en vanaf **240 CPU's** (of 120 GPU's) niets meer (warm: alsof je de helft hebt). Sinds
+  12 november is dat het dubbele van vroeger (120 CPU's of 60 GPU's). Rechtsboven in **G > Systems >
   AI Brain** zie je op welk datacenter het draait en hoeveel het erbij zet. Terwijl ze nadenkt, werkt je
   datacenter hard (en wordt het warmer).
-- **Groot genoeg** (8 november): een echt datacenter is groot. Een rack heeft plaats voor twee CPU's of
-  GPU's, dus voor 30 CPU's (diagrammen meteen) heb je 15 racks nodig, en voor 120 CPU's (I.M.T meteen)
-  60 racks; met GPU's de helft voor I.M.T. Vergeet het RAM niet (per 10 CPU's of GPU's 8 latjes); een
+- **Groot genoeg** (8 november, 12 november): voor je diagrammen volstaat een klein datacenter (1 CPU per
+  10 apparaten), maar I.M.T heeft een groot nodig. Een rack heeft plaats voor twee CPU's of GPU's, dus
+  voor 240 CPU's (I.M.T meteen) heb je 120 racks nodig; met GPU's de helft (120 GPU's in 60 racks). Vergeet het RAM niet (per 10 CPU's of GPU's 8 latjes); een
   SSD is alleen opslag. Racks hoeven niet tegen elkaar: alle racks die met een netwerkkabel (of PoE) aan
   je kern hangen, zijn samen één server.
 
 Alle getallen staan in `config/imttech.toml` onder `[logic]` (de stroom van een kast onder `[power]`):
-`logicInstantPower` (30) en `logicMaxDelayTicks` (120 = 6 s) voor je diagrammen, `brainInstantPower` (120)
-en `brainMaxDelayTicks` (240 = 12 s) voor I.M.T, `ramStickGb` (8), `ramGbPerTen` (64), `ssdGb` (200) en `blockMb` (2)
+`logicDevicesPerCpu` (10), `logicSlowerPerDevice` (0.1 = 10%) en `logicMaxDelayTicks` (120 = 6 s, de langste wachttijd)
+voor je diagrammen, `brainFullSpeedPower` (240) en `brainMaxDelayTicks` (240 = 12 s) voor I.M.T, `ramStickGb` (8), `ramGbPerTen` (64), `ssdGb` (200) en `blockMb` (2)
 voor het geheugen. Let op: staat een getal al in je configbestand, dan geldt dat getal, ook als de standaard in een nieuwe
 versie van de mod verandert (de standaard staat erboven bij "Default"). Een rack van voor 8 november (zes vakjes) wordt bij het laden netjes
 ingedeeld; wat niet meer in een vakje past, valt eruit.

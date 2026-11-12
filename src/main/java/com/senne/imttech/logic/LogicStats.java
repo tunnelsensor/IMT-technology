@@ -11,19 +11,22 @@ import org.jetbrains.annotations.Nullable;
  * uitkomen (hoe snel een server reageert, hoe lang I.M.T nadenkt, hoeveel RAM en SSD er nodig is).
  * De getallen zelf pas je daar aan.
  *
- * Hoofdstuk 64 (jouw wens van 8 november): "voor imt heb je 120 cpu's nodig of 60 gpu's en voor de diagrams 60 gpu's
- * of 30 cpu's", in een rechte lijn: zonder kracht wachten de diagrammen 6 s en I.M.T 12 s, en elke CPU haalt er
- * evenveel af tot het meteen gaat. En "voor elke 10 cpu's of gpu's 4 ramsticks": met minder RAM telt maar een deel van
+ * Hoofdstuk 64 (jouw wens van 8 november): I.M.T in een rechte lijn: zonder kracht denkt ze 12 s extra na, en elke CPU haalt
+ * er evenveel af tot het meteen gaat. En "voor elke 10 cpu's of gpu's 4 ramsticks": met minder RAM telt maar een deel van
  * je CPU's en GPU's mee ({@link #fed}). Een SSD is alleen opslag ("zorg ook dat de ssd geen invloed heeft op de speed").
  *
+ * Hoofdstuk 86 (jouw wens van 12 november): de diagrammen hangen af van hoeveel apparaten ze gebruiken. "Met 1 CPU 10
+ * devices zoals keycard readers tegelijk, als je er meer dan 10 hebt wordt het per device 10% trager" ({@link #slower}),
+ * en I.M.T heeft het dubbele nodig: meteen vanaf 240 CPU's of 120 GPU's.
+ *
  * <pre>
- *   CPU's   I.M.T     diagrammen
- *     1     11,9 s     5,8 s
- *    10     11,0 s     4,0 s
- *    25      9,5 s     1,0 s
- *    30      9,0 s     meteen
- *   100      2,0 s     meteen
- *   120     meteen     meteen
+ *   diagrammen met 1 CPU (of 2 GPU's)      I.M.T
+ *   apparaten   trager   wacht            CPU's   wacht
+ *     1 - 10      0%     meteen              1    11,95 s
+ *       11       10%     0,6 s              25    10,8 s
+ *       15       50%     3,0 s             100     7,0 s
+ *     20 of meer 100%    6,0 s             200     2,0 s
+ *   (met 2 CPU's tot 20 apparaten meteen)  240    meteen
  * </pre>
  */
 public final class LogicStats {
@@ -107,30 +110,51 @@ public final class LogicStats {
         return blocks * (double) Math.max(0.001, ImtConfig.Logic.BLOCK_MB);
     }
 
-    // ================================================================ Vertraging: een rechte lijn
+    // ================================================================ Vertraging
 
     /**
-     * Hoe snel een server reageert (ticks tussen "er gebeurt iets" en "het diagram begint") met zoveel Logic-kracht: een
-     * rechte lijn van LOGIC_MAX_DELAY_TICKS (bijna geen kracht) naar 1 tick bij LOGIC_INSTANT_POWER (30 CPU's). Zonder
-     * kracht: nooit.
+     * Zoveel apparaten kunnen je diagrammen gebruiken zonder trager te worden met zoveel Logic-kracht: per CPU
+     * LOGIC_DEVICES_PER_CPU (10), een GPU telt half (dus 5). Met kracht 1,5 (een CPU en een GPU): 15.
      */
-    public static int reactionTicks(double logicPower) {
+    public static double deviceCapacity(double logicPower) {
+        return Math.max(0.0, logicPower) * Math.max(0.0, ImtConfig.Logic.LOGIC_DEVICES_PER_CPU);
+    }
+
+    /** Zoveel apparaten zijn er te veel voor zoveel Logic-kracht (0 als het past). Een half apparaat ruimte telt niet. */
+    public static int devicesTooMany(double logicPower, int devices) {
+        return Math.max(0, devices - (int) Math.floor(deviceCapacity(logicPower) + 1.0e-9));
+    }
+
+    /**
+     * Hoeveel trager de diagrammen zijn (hoofdstuk 86): 0 als de apparaten passen, en voor elk apparaat te veel
+     * LOGIC_SLOWER_PER_DEVICE (10%) erbij, tot 1 (100%: zo traag als het kan).
+     */
+    public static double slower(double logicPower, int devices) {
+        return Math.min(1.0, devicesTooMany(logicPower, devices) * Math.max(0.0, ImtConfig.Logic.LOGIC_SLOWER_PER_DEVICE));
+    }
+
+    /**
+     * Hoe snel een server reageert (ticks tussen "er gebeurt iets" en "het diagram begint") met zoveel Logic-kracht en
+     * zoveel apparaten in de diagrammen: 1 tick (meteen) zolang de apparaten passen, en per apparaat te veel 10% van
+     * LOGIC_MAX_DELAY_TICKS (6 s) erbij. Zonder kracht: nooit.
+     */
+    public static int reactionTicks(double logicPower, int devices) {
         if (logicPower <= 0) {
             return Integer.MAX_VALUE;
         }
-        return Math.max(1, line(logicMaxDelayTicks(), logicPower, ImtConfig.Logic.LOGIC_INSTANT_POWER));
+        return Math.max(1, (int) Math.round(logicMaxDelayTicks() * slower(logicPower, devices)));
     }
 
     /**
      * Hoeveel ticks I.M.T extra nadenkt op een datacenter met zoveel breinkracht: een rechte lijn van
-     * BRAIN_MAX_DELAY_TICKS (bijna geen kracht) naar 0 bij BRAIN_INSTANT_POWER (120 CPU's of 60 GPU's). Zonder kracht -1
+     * BRAIN_MAX_DELAY_TICKS (bijna geen kracht) naar 0 bij BRAIN_FULL_SPEED_POWER (240 CPU's of 120 GPU's). Zonder kracht -1
      * (dan kan ze niet denken).
      */
     public static int brainDelayTicks(double brainPower) {
         if (brainPower <= 0) {
             return -1;
         }
-        return Math.max(0, line(ImtConfig.Logic.BRAIN_MAX_DELAY_TICKS, brainPower, ImtConfig.Logic.BRAIN_INSTANT_POWER));
+        return Math.max(0, line(ImtConfig.Logic.BRAIN_MAX_DELAY_TICKS, brainPower, ImtConfig.Logic.BRAIN_FULL_SPEED_POWER));
     }
 
     /** De rechte lijn zelf: {@code max} bij kracht 0, 0 bij {@code instant} en meer (afgerond op hele ticks). */
@@ -141,8 +165,8 @@ public final class LogicStats {
 
     /**
      * Zo lang wachten de diagrammen hooguit. Tijdens de automatische tests ({@code gradlew runGameTestServer}) maar
-     * TEST_LOGIC_MAX_DELAY_TICKS (zoals vroeger een halve seconde met één CPU), zodat de honderd tests met een diagram niet
-     * elk 6 seconden op hun server wachten; de tests van het datacenter zetten de echte schaal zelf aan (zoals het netwerk
+     * TEST_LOGIC_MAX_DELAY_TICKS (zoals vroeger een halve seconde met één CPU), zodat een test met veel apparaten niet
+     * 6 seconden op zijn server wacht; de tests van het datacenter zetten de echte schaal zelf aan (zoals het netwerk
      * in LanGrid.required).
      */
     public static double logicMaxDelayTicks() {

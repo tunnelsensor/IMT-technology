@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 504 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 505 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -6692,10 +6692,67 @@ onder het vakje".
       en `nb04_station_cell` (een energiecel), naast `nb04_station_plain`, `_space` en `_short` (met de bril). Het midden
       van het opschrift en van het vakje liggen op dezelfde pixel. Geen nieuwe automatische test: het is alleen beeld.
 
+### 86. Diagrammen: 1 CPU per 10 apparaten, en I.M.T het dubbele (12 november)
+
+Jouw wens: "ik wil dat het gebruik van diagrams simpeler is, het is logisch dat je voor weinig devices ook maar weinig
+CPU's nodig hebt. Zorg dat je met 1 CPU 10 devices zoals keycard readers tegelijk kunt gebruiken, als je er meer dan 10
+hebt wordt het per device 10% trager. Je hebt wel nog steeds voldoende SSD's nodig en de RAM in verhouding tot CPU blijft.
+Voor IMT glasses wil ik dat je het dubbele van de CPU's nu nodig hebt en ook het dubbele van de GPU's. Voor de diagrams kun
+je ook GPU's gebruiken, dat is dan dubbel zoveel voor hetzelfde effect."
+
+**Mijn invulling** (zeg het als je het anders wil, het zijn allemaal getallen in de config):
+- **Wat een apparaat is**: alles wat een diagram dat aan staat bij naam noemt. Ingangen in `when keycard(...)`,
+  `codepanel`, `button`, `lever` en `request` (elk blok met die naam: twee lezers die allebei "Lab door" heten zijn er
+  twee), en uitgangen in `on`, `off`, `toggle`, `pulse`, `when turned_on` en `turned_off` (alles wat het telefoonboek
+  onder die naam heeft: een groep telt voor alles wat erin zit). Een apparaat dat je vaker noemt telt één keer. Apparaten
+  die geen enkel diagram noemt (camera's, een lezer die nergens in staat) tellen niet: daar heeft de server geen werk aan.
+  Een naam die pas tijdens het draaien uitgerekend wordt (`pulse(door)` met een parameter) telt ook niet.
+- **"10% trager"**: zolang het past reageert een diagram meteen (1 tick). Elk apparaat te veel haalt 10% van de snelheid
+  af, dus 10% van de langste wachttijd (6 s, zoals vroeger met bijna geen CPU's) erbij: 11 apparaten op 1 CPU = 0,6 s,
+  15 = 3 s, en vanaf 20 (10 te veel = 100%) 6 s. Trager dan 6 s wordt het niet.
+- **GPU's**: een GPU telt voor je diagrammen half (zoals al sinds 8 oktober), dus 2 GPU's = 10 apparaten.
+- **Warm** (een rack vanaf 70 graden): de server kan de helft van de apparaten aan, zoals warm altijd alles halveert.
+- **RAM en SSD** blijven zoals ze waren: per 10 CPU's of GPU's 64 GB RAM (minder = naar verhouding minder kracht, dus ook
+  minder apparaten), en een SSD is opslag (een diagram dat niet meer op je SSD's past, draait niet en telt dus ook niet).
+
+- [x] **De rekenregel** — `LogicStats.deviceCapacity`, `devicesTooMany`, `slower` en `reactionTicks(kracht, apparaten)`.
+      De rechte lijn naar 30 CPU's voor de diagrammen is weg (`logicInstantPower`); nieuw zijn `logicDevicesPerCpu` (10)
+      en `logicSlowerPerDevice` (0.1). `logicMaxDelayTicks` (120 = 6 s) is nu de langste wachttijd bij 100% trager.
+- [x] **De apparaten tellen** — `LogicDevices.used`: de namen uit de blokjes van de diagrammen die draaien (aan, en op de
+      SSD's), en daarvan de echte blokken (ingangen op hun plek, uitgangen uit het telefoonboek). `LogicServer.Stats` heeft
+      nu `devices`, en telt opnieuw zodra je een diagram bewaart (niet pas na 2 seconden).
+- [x] **I.M.T het dubbele** — `brainFullSpeedPower` (240) vervangt `brainInstantPower` (120), met een nieuwe naam zodat de
+      240 ook in een bestaand configbestand geldt. Dezelfde rechte lijn van 12 s: 7 s met 100 CPU's, 2 s met 200, meteen
+      vanaf 240 CPU's of 120 GPU's (een GPU telt voor het brein nog altijd dubbel). Dat zijn 120 racks met CPU's, of 60 met
+      GPU's.
+- [x] **Wat je ziet** — de app **Monitor** (rechts, zonder rack gekozen): "2 CPUs, 2 GPUs: 16 / 14 devices, 20% slower"
+      (oranje als het er te veel zijn) en daaronder "Diagrams 1.2 s, I.M.T +11.9 s (RAM 94%)". Die tweede regel is korter
+      dan eerst ("(94% speed)" viel er rechts af). Gezien op een screenshot (`gradlew runVisualCheck -Ponly=racks`, nieuw:
+      `r05c_monitor_server_devices`, met 16 lampen in een diagram op een warme server). De tooltip van een CPU zegt "Logic power 1 (10
+      devices in your diagrams at once), brain power 1 (240 = I.M.T without delay)", van een GPU 5 apparaten en 120 GPU's.
+      De uitleg (W op een serverrack, "Bigger is faster") en LEESMIJ zeggen hetzelfde.
+- [x] **Tests** — `datacenter_straight_line_to_30_and_120` heet nu `datacenter_ten_devices_per_cpu` (de rekenregel: 10, 11,
+      15, 20 apparaten op 1 CPU, 1 en 2 GPU's, en I.M.T met 100, 200 en 240 CPU's). Nieuw is
+      `datacenter_counts_the_devices_in_your_diagrams`: twee lezers met dezelfde naam, een codepaneel en zeven relais in een
+      diagram zijn 10 apparaten (meteen); een diagram dat uit staat telt niet; zet je het aan, dan zijn het er 12 en is de
+      server 20% trager. De tooltiptest en de test met het warme rack volgen de nieuwe regel.
+      Twee diagramtests rekenden nog op de oude reactietijd in de tests (10 ticks) en zijn bijgesteld:
+      `logic_def_params_run` kijkt nu vóór de tweede tik van de timer, en in `logic_keycard_opens_vault` komt de
+      geblokkeerde kaart pas als het rode lampje van de valse kaart uit is (een tweede rood binnen 30 ticks wordt door de
+      "uit" van het eerste afgekapt, dat was al zo). Eén test erbij. Volledige ronde: 514 tests (met het werk van de
+      andere sessies), alleen de wisselvallige bewakertest `a_guard_who_sees_a_body_calls_it_in` rood (willekeurige AI,
+      niets met het datacenter). Een eerdere ronde had meer rood doordat je dev-client met een oude versie tegelijk
+      `run/config/imttech.toml` steeds terugschreef.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
+
+- [ ] **Diagrammen: 1 CPU per 10 apparaten (hoofdstuk 86)**: de rekenregel is getest en de app Monitor gezien op een
+      screenshot, maar niet gespeeld. Probeer een basis met 1 CPU: tot 10 apparaten in je diagrammen gaat alles meteen;
+      zet er 15 in (de app Monitor zegt "15 / 10 devices, 50% slower") en voel hoe lang een lezer dan op zijn groene lampje
+      wacht (3 s). Voelt 10% per apparaat goed, of moet het anders (`logicSlowerPerDevice`, `logicDevicesPerCpu`)?
 
 - [ ] **Het tabblad "Make parts" van de Gunsmith Table (hoofdstuk 78)**: gezien op screenshots (`-Ponly=glock`: `gl18` tot
       `gl18e`), niet met de muis gespeeld. Probeer: de tabbladen bovenaan, een wapen links kiezen (ook scrollen op die

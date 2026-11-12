@@ -51,9 +51,10 @@ public class ServerPartItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         String key = "item.imttech.server_" + kind.name().toLowerCase(java.util.Locale.ROOT) + ".tooltip";
         Component text = switch (kind) {
+            // Hoofdstuk 86: hoeveel apparaten je diagrammen met dit ene onderdeel tegelijk kunnen gebruiken (CPU 10, GPU 5).
             case CPU, GPU -> Component.translatable(key, number(LogicStats.logicPower(kind)),
-                    number(ImtConfig.Logic.LOGIC_INSTANT_POWER), number(LogicStats.brainPower(kind)),
-                    number(ImtConfig.Logic.BRAIN_INSTANT_POWER));
+                    number(LogicStats.deviceCapacity(LogicStats.logicPower(kind))), number(LogicStats.brainPower(kind)),
+                    number(ImtConfig.Logic.BRAIN_FULL_SPEED_POWER));
             case RAM -> Component.translatable(key, LogicStats.bytes(LogicStats.ramStickMb()),
                     LogicStats.bytes(LogicStats.ramNeededMb(10)));
             case SSD -> Component.translatable(key, LogicStats.bytes(LogicStats.ssdMb()), LogicStats.bytes(LogicStats.blocksMb(1)));

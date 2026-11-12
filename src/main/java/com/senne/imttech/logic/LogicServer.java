@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
  * tellen: die met knipperende lampjes.
  *
  * Wat de server kan, hangt af van de onderdelen in die racks (alleen racks met stroom tellen):
- * CPU's en GPU's (rekenkracht: sneller reageren, en het brein van I.M.T), RAM (meer
+ * CPU's en GPU's (rekenkracht: meer apparaten in je diagrammen zonder te vertragen, en het brein van I.M.T), RAM (meer
  * tegelijk), SSD's (meer blokjes) en fans (koeling). Zonder rekenkracht, RAM of SSD draait hij niet.
  */
 public final class LogicServer {
@@ -48,9 +48,11 @@ public final class LogicServer {
      * @param coreOnline  heeft de kern zelf stroom?
      * @param cluster     waar de racks van de server staan
      * @param temperature hoe warm het heetste rack is (graden, zie Datacenter)
+     * @param devices     hoeveel apparaten de diagrammen die draaien gebruiken (hoofdstuk 86, zie LogicDevices.used)
+     * @param revision    welke versie van de diagrammen toen geteld werd (opnieuw bewaard: opnieuw tellen)
      */
     public record Stats(int racks, int cpus, int gpus, int ram, int ssd, int fans, boolean coreOnline,
-                        Set<BlockPos> cluster, long time, double temperature) {
+                        Set<BlockPos> cluster, long time, double temperature, int devices, int revision) {
         /** Draait de server? (De kern heeft stroom, en er is minstens één CPU, RAM en SSD.) */
         public boolean online() {
             return problem() == null;
@@ -132,9 +134,25 @@ public final class LogicServer {
             return warm() ? Math.max(1.0, ImtConfig.Logic.WARM_SLOWDOWN) : 1.0;
         }
 
-        /** Ticks tussen "er gebeurt iets" en "het diagram begint" (warm: trager). */
+        /**
+         * Zoveel apparaten kunnen de diagrammen gebruiken zonder trager te worden (hoofdstuk 86): 10 per CPU, 5 per GPU,
+         * maal wat het RAM voedt, en warm de helft.
+         */
+        public double deviceCapacity() {
+            return LogicStats.deviceCapacity(logicPower() / slowdown());
+        }
+
+        /** Hoeveel trager de diagrammen zijn: 0 = meteen, 0,1 per apparaat te veel, 1 = zo traag als het kan. */
+        public double slower() {
+            return LogicStats.slower(logicPower() / slowdown(), devices);
+        }
+
+        /**
+         * Ticks tussen "er gebeurt iets" en "het diagram begint": meteen zolang de apparaten passen, per apparaat te veel
+         * 10% van 6 s erbij (warm: de helft van de apparaten past).
+         */
         public int reactionTicks() {
-            return LogicStats.reactionTicks(logicPower() / slowdown());
+            return LogicStats.reactionTicks(logicPower() / slowdown(), devices);
         }
 
         /** Hoeveel ticks I.M.T extra nadenkt op dit datacenter (0 = sterk genoeg, -1 = draait niet). */
@@ -160,7 +178,7 @@ public final class LogicServer {
         GlobalPos key = GlobalPos.of(level.dimension(), core.getBlockPos());
         Stats cached = CACHE.get(key);
         long now = level.getGameTime();
-        if (cached != null && now - cached.time() < RECOUNT && now >= cached.time()) {
+        if (cached != null && now - cached.time() < RECOUNT && now >= cached.time() && cached.revision() == core.logic().revision()) {
             return cached;
         }
         // Alleen de racks die bij DEZE kern horen: liggen er twee gebieden (of netwerken) over elkaar, dan hoort een rack
@@ -186,10 +204,13 @@ public final class LogicServer {
                 counts[kind.ordinal()] += rack.count(kind);
             }
         }
+        // Hoofdstuk 86: hoeveel apparaten de diagrammen gebruiken die op de SSD's passen.
+        int ssds = counts[ServerPartItem.Kind.SSD.ordinal()];
+        int devices = core.logic().programs().isEmpty() ? 0 : LogicDevices.used(level, core, LogicStats.blockCapacity(ssds));
         Stats stats = new Stats(cluster.size(), counts[ServerPartItem.Kind.CPU.ordinal()], counts[ServerPartItem.Kind.GPU.ordinal()],
-                counts[ServerPartItem.Kind.RAM.ordinal()], counts[ServerPartItem.Kind.SSD.ordinal()],
+                counts[ServerPartItem.Kind.RAM.ordinal()], ssds,
                 counts[ServerPartItem.Kind.FAN.ordinal()], core.isOnline(), Set.copyOf(cluster), now,
-                core.datacenter().temperature());
+                core.datacenter().temperature(), devices, core.logic().revision());
         CACHE.put(key, stats);
         return stats;
     }
@@ -262,6 +283,10 @@ public final class LogicServer {
             tag.putString("problem", problem);
         }
         tag.putInt("react", stats.online() ? stats.reactionTicks() : 0);
+        // Hoofdstuk 86: hoeveel apparaten de diagrammen gebruiken, hoeveel er zonder vertragen passen, en hoeveel trager.
+        tag.putInt("devices", stats.devices());
+        tag.putDouble("deviceCap", stats.deviceCapacity());
+        tag.putDouble("slower", stats.slower());
         tag.putInt("brainDelay", stats.brainDelayTicks());
         // Hoofdstuk 64: het geheugen in MB (de app Monitor maakt er GB en TB van), wat de CPU's en GPU's ervan nodig
         // hebben, en welk deel van hen daardoor meedraait.
