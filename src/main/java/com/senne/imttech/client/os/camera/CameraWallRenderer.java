@@ -9,7 +9,6 @@ import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.math.Axis;
 import com.senne.imttech.client.hud.HudStyle;
-import com.senne.imttech.security.CameraBlockEntity;
 import com.senne.imttech.security.wall.CameraMonitorBlock;
 import com.senne.imttech.security.wall.CameraMonitorBlockEntity;
 import com.senne.imttech.security.wall.CameraWall;
@@ -25,13 +24,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
 /**
  * Tekent de camerabeelden op een schermmuur (zie security/wall/CameraWall). Elke tegel wordt getekend door de monitor van zijn
  * linkerbovenhoek, over zoveel blokken als hij groot is, net voor het scherm. Zoals in de app Cameras: het live beeld met
- * scanlijnen, hoekjes, de naam en een knipperend REC, en ruis met "NO SIGNAL" of "OUT OF RANGE" als er geen beeld is. Een beeld
+ * scanlijnen, hoekjes, de naam en een knipperend REC, en ruis met "NO SIGNAL" (of "NO ACCESS") als er geen beeld is. Een beeld
  * (16:9) wordt niet uitgerekt: we snijden af wat niet past, zoals een tv dat doet (zie CameraFeeds.crop).
  *
  * Een beeld vragen kost niets als de tegel niet in beeld is: deze renderer wordt dan niet aangeroepen, en de FeedPlanner tekent
@@ -91,32 +89,15 @@ public class CameraWallRenderer implements BlockEntityRenderer<CameraMonitorBloc
 
         String problem = null;
         int texture = -1;
-        Minecraft mc = Minecraft.getInstance();
         boolean big = width * height >= BIG;
         if (!entity.live()) {
             problem = "NO SIGNAL";
-        } else if (tile.camera() != null) {
-            if (mc.level != null && mc.level.getBlockEntity(tile.camera()) instanceof CameraBlockEntity camera) {
-                Vec3 eye = CameraBlockEntity.eye(tile.camera(), camera.getBlockState());
-                if (!CameraFeeds.inRange(eye)) {
-                    problem = "OUT OF RANGE";
-                } else if (CameraFeeds.broken(tile.camera())) {
-                    problem = "FEED ERROR";
-                } else {
-                    texture = CameraFeeds.request(tile.camera(), eye, camera.yaw(), camera.pitch(), big);
-                }
-            } else {
-                problem = "OUT OF RANGE";
-            }
         } else {
-            Entity robot = mc.level == null ? null : mc.level.getEntity(entity.robotEntity());
-            if (robot == null || !CameraFeeds.inRange(robot.getEyePosition(partialTick))) {
-                problem = "OUT OF RANGE";
-            } else if (CameraFeeds.brokenRobot(robot.getId())) {
-                problem = "FEED ERROR";
-            } else {
-                texture = CameraFeeds.requestRobot(robot, big, partialTick);
-            }
+            // Hoofdstuk 94: ook een camera ver weg heeft beeld (de server stuurt de wereld eromheen, zie CameraFeeds).
+            CameraFeeds.Picture picture = tile.camera() != null ? CameraFeeds.camera(tile.camera(), null, 0, 0, big)
+                    : CameraFeeds.robot(entity.robotEntity(), big, partialTick);
+            texture = picture.texture();
+            problem = picture.problem();
         }
         if (texture >= 0) {
             image(matrix, texture, x0, y0, x1, y1, width / (float) height);

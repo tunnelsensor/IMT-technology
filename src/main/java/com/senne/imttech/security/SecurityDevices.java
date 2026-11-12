@@ -295,6 +295,15 @@ public final class SecurityDevices {
         CACHE.remove(GlobalPos.of(level.dimension(), core.getBlockPos()));
     }
 
+    /**
+     * De Camera Monitors van deze kern zoals de laatste zoektocht ze vond (hoe oud ook), zonder opnieuw te zoeken; leeg als
+     * er nog nooit gezocht is. Voor lan/NetworkKeeper (hoofdstuk 94): een schermmuur zoekt zelf om de twee seconden.
+     */
+    public static List<BlockPos> knownMonitors(ServerLevel level, SecurityCoreBlockEntity core) {
+        Found cached = CACHE.get(GlobalPos.of(level.dimension(), core.getBlockPos()));
+        return cached == null ? List.of() : cached.monitors();
+    }
+
     public static void clear() {
         CACHE.clear();
     }

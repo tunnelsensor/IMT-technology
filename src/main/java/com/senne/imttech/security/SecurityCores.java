@@ -49,6 +49,12 @@ public final class SecurityCores {
         }
     }
 
+    /** De plekken van alle kernen in deze wereld die nu geladen zijn (hoofdstuk 94: lan/NetworkKeeper en LanGrid). */
+    public static List<BlockPos> loadedCores(Level level) {
+        Set<BlockPos> set = LOADED.get(level.dimension());
+        return set == null ? List.of() : List.copyOf(set);
+    }
+
     /** De kern die deze plek beschermt, of null als hij buiten elke toren ligt. */
     public static @Nullable SecurityCoreBlockEntity coreAt(Level level, BlockPos pos) {
         Set<BlockPos> set = LOADED.get(level.dimension());

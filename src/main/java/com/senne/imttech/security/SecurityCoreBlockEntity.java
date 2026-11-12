@@ -886,6 +886,31 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         saveConfig(tag);
         tag.putBoolean("TowerDrones", towerDrones);
         tag.putBoolean("TowerRobots", towerRobots);
+        tag.putLongArray("NetworkChunks", networkChunks);
+    }
+
+    // ================================================================ Waar zijn netwerk ligt (hoofdstuk 94)
+
+    /**
+     * In welke stukken wereld (chunks, {@code ChunkPos.asLong}) het netwerk van deze kern ligt, en waar het verder gaat
+     * (stukken die nog niet geladen waren). Zolang iemand het netwerk gebruikt, houdt de server ze geladen (zie
+     * lan/NetworkKeeper): zo hangt een camera aan een lange kabel er ook aan als niemand bij hem in de buurt is. Niet in
+     * {@link #saveConfig}: weghakken en ergens anders neerzetten geeft een ander netwerk.
+     */
+    private long[] networkChunks = new long[0];
+
+    public long[] networkChunks() {
+        return networkChunks;
+    }
+
+    /** Na een zoektocht langs de kabels (lan/LanGrid): onthouden waar het netwerk ligt (alleen bewaren als het veranderde). */
+    public void rememberNetwork(long[] chunks) {
+        long[] sorted = chunks.clone();
+        java.util.Arrays.sort(sorted);
+        if (!java.util.Arrays.equals(sorted, networkChunks)) {
+            networkChunks = sorted;
+            setChanged();
+        }
     }
 
     /** Alles wat de kern onthoudt: dit gaat ook mee als je hem weghakt (zie pack). */
@@ -967,6 +992,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         loadConfig(tag);
         towerDrones = tag.getBoolean("TowerDrones");
         towerRobots = tag.getBoolean("TowerRobots");
+        networkChunks = tag.getLongArray("NetworkChunks");
     }
 
     /** Terug uit {@link #saveConfig}. */

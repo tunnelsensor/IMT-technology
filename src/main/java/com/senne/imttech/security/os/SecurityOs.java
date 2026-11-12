@@ -154,6 +154,16 @@ public final class SecurityOs {
         public boolean remote() {
             return remote;
         }
+
+        /** In welke dimensie de kern staat. */
+        public ResourceKey<Level> dimension() {
+            return dimension;
+        }
+    }
+
+    /** Alle desktops die nu open zijn (hoofdstuk 94: hun netwerk blijft geladen, zie lan/NetworkKeeper). */
+    public static java.util.List<Session> sessions() {
+        return java.util.List.copyOf(SESSIONS.values());
     }
 
     /** Wie op welk systeem buitengesloten is (na een valstrik), en tot wanneer (speltijd). */

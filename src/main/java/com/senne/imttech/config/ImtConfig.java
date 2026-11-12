@@ -1299,6 +1299,17 @@ public final class ImtConfig {
          */
         @Tunable("How often (seconds) a device at most shows its power flowing towards it along the cables. 0 = never")
         public static float FLOW_SECONDS = 2.0f;
+
+        /**
+         * Hoofdstuk 94: zo ver (blokken) kijkt een camerabeeld hooguit. Een camera aan het netwerk heeft altijd beeld, hoe ver
+         * je er ook vandaan bent: de server stuurt je de wereld rond elke camera die je bekijkt, tot zo ver (en houdt dat stuk
+         * wereld geladen zolang je kijkt). Je eigen spel kan minder tonen (cameraFeedDistance in imttech-client.toml).
+         */
+        @Tunable(value = "How far (blocks) a security camera's picture reaches at most. A camera on the network always has a "
+                + "picture, however far away you are: the server sends you the world around every camera you watch, up to this "
+                + "far (and keeps it loaded while you watch). Your own game can show less (cameraFeedDistance in "
+                + "imttech-client.toml)", min = 16, max = 128)
+        public static float CAMERA_FEED_MAX = 64.0f;
     }
 
     // =============================================================================================== Logic

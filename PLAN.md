@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 513 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 528 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -900,9 +900,9 @@ Het volledige plan: `C:\Users\senne\.claude\plans\ik-wil-de-starktower-zesty-eic
       Het inlogvenster hiervoor werd door hetzelfde geautomatiseerde veiligheidsfilter
       tegengehouden. Wat er al was (de serverkant), staat buiten de build in
       `chapter7-wip/step9/` (een patch en twee netwerkberichten).
-- [~] **10. Camerabeeld van ver** (mixins, achter een schakelaar) — opzijgezet: alleen nuttig
-      met een sessie op afstand (stap 9). Bij de kern zelf hangen alle camera's binnen 30 blokken,
-      dus daar is het beeld altijd "in de buurt" en werkt het al (stap 7).
+- [x] **10. Camerabeeld van ver** — eerst opzijgezet (alleen nuttig met een sessie op afstand, stap 9);
+      gebouwd in hoofdstuk 94, zonder mixins in het tekenen: de server stuurt de wereld rond de camera's die
+      je bekijkt, en je spel bouwt het beeld zelf (ook met Sodium).
 - [x] **Camera's een andere naam geven** (jouw vraag, 3 oktober)
       In het grote camerabeeld staat onder de pijltjes de knop **Rename**: de naam bovenaan wordt
       een invoervak (de oude naam geselecteerd, dus typen vervangt hem). Enter of Save bewaart, Esc
@@ -6968,11 +6968,102 @@ zijn lezers en zijn stroom zaten, en waar je moest knippen.
       524 tests (met het werk van de andere sessies), de eerste keer alleen de bekende wisselvallige
       `raven_soldier_shoots` rood, de tweede keer alle 524 groen.
 
+### 93. Een camera hernoemen met sneak + rechtsklik, zoals een keycardlezer (12 november)
+
+Jouw wens: "Kun je ook zorgen dat je cam kunt renamen door shift klik zoals bij een keycardreader".
+
+- [x] **Sneak + rechtsklik met een lege hand** op een Security Camera opent het naamscherm, hetzelfde als bij een lezer
+      (`InputNameScreen`): bovenaan "Security Camera" en "Placed by ...", het vak met de huidige naam (geselecteerd, dus
+      typen vervangt hem), en eronder hoe je hem in een diagram uitzet: `off("Lobby")`. Enter of Save bewaart, Esc of
+      Cancel niet. Hooguit 32 tekens, geen aanhalingstekens of backslash (die passen niet in een diagram); een lege naam
+      kan niet. Met iets in je hand en sneak gebruik je dat ding, zoals bij de lezer. Een gewone rechtsklik zegt nog
+      steeds hoe hij ervoor staat.
+- [x] **Wie mag**: dezelfde regel als bij de lezer (`BaseTrust`): wie hem neerzette, of wie vertrouwd is in de basis waar
+      hij hangt (de eigenaar van de kern, zijn team en Access). Daarvoor onthoudt een camera nu wie hem neerzette
+      (`CameraBlockEntity`: owner, bewaard). Een camera van vóór vandaag heeft nog geen eigenaar: die wordt van wie hem
+      als eerste zo hernoemt, behalve in iemands basis of in de toren. Een vreemde hoort "This camera belongs to ...".
+- [x] **Eén naam overal** (`CameraNames`): de naam staat bij zijn beeld (app Cameras, schermmuur), in de I.M.T-lijst van
+      wie hem hernoemt en van zijn eigenaar (als die online is), dus ook in je diagrammen en voor je stem, en in het
+      logboek van de kern ("... renamed the camera "Courtyard" to "Front yard""). Nieuw bericht `CameraRenamePayload`.
+- [x] **Test** `camera_rename_by_sneak_click` (de eigenaar, een vreemde, netjes maken, leeg, van ver weg, een camera
+      zonder eigenaar, opslaan en laden) en **screenshots** (`gradlew runVisualCheck -Ponly=cameras`):
+      `c06b_camera_rename_screen`, `c06c_camera_rename_typed` en `c06d_camera_renamed` ("Camera renamed to Front yard").
+
+### 94. Camerabeelden van overal: zo ver als je kabel reikt, ook met Sodium (12 november)
+
+Jouw wens: "camera range moet evenveel zijn als de cabel lang is dus een verbonde camera moet altijd zicht hebben".
+
+Hoe het kwam: je spel tekende een camerabeeld met de stukken wereld die het al had klaargezet om jou de wereld te laten
+zien (de "view area" van Minecraft). Een camera verder weg dan je kijkafstand gaf daarom **OUT OF RANGE**, ook al hing hij
+aan de kabel. En in je Modrinth-profiel staat **Sodium** (0.8.13): dat neemt het tekenen van de wereld helemaal over en
+maakt die view area leeg, dus daar gaf **elke** camera OUT OF RANGE, ook vlak naast je. Daarnaast volgde het netwerk een
+kabel alleen door stukken wereld die de server geladen had, en hooguit 512 stukjes ver.
+
+- [x] **De server stuurt de wereld rond je camera's** (`security/feed/FeedServer`, `FeedFormat`): je spel zegt twee keer
+      per seconde welke beelden er op je scherm staan (`CameraWatchPayload`), en de server stuurt de stukjes wereld (16 x
+      16 x 16 blokken) rond die camera's: de blokken, het licht en de blokken met een eigen model (kisten, de koppen van
+      torentjes), ingepakt, het dichtstbijzijnde eerst, hooguit 32 stukjes per tick (`CameraWorldPayload`). Verandert er
+      daar een blok (een deur, iemand bouwt), dan gaat dat stukje opnieuw (via `LevelChunkMixin`); het licht kijkt hij
+      om de paar seconden na. Kijk je niet meer, dan mag je spel alles vergeten. Zolang je kijkt, houdt de server dat stuk
+      wereld geladen, maar het tikt niet: daar gebeurt niets extra's.
+- [x] **Wie mag kijken** (`FeedServer.mayWatch`): wie de desktop van die kern open heeft met de app Cameras (op de kern,
+      op een Computer, met de laptop of de telefoon), of wie binnen 96 blokken van een schermmuur van die kern staat waar
+      precies die camera (of robot) op staat. Anders staat er **NO ACCESS** (zo kan niemand met een aangepast spel de
+      wereld rond andermans camera's opvragen).
+- [x] **Wie er rondloopt**: tien keer per seconde stuurt de server wie er rond die camera's is (spelers, dieren,
+      monsters, robots: waar, welke kant op, en af en toe hoe ze eruitzien en wat ze dragen; `CameraFeedPayload`,
+      `FeedEntities`). Kent je spel ze zelf (in de buurt), dan tekent het die; anders een **pop** (`FeedPuppets`): een
+      wezen van dezelfde soort met dezelfde gegevens (de skin van een speler, de kleur van een schaap), dat rustig naar
+      zijn nieuwe plek schuift en zijn benen laat meelopen.
+- [x] **Je spel bouwt het beeld zelf** (`FeedWorld`, `FeedMesher`, `FeedRenderer`): met dezelfde blokmodellen, hetzelfde
+      licht en de kleur van gras en bladeren uit het bioom, per frame hooguit 4 ms bouwen (een nieuw beeld vult zich in een
+      paar tellen). Het hangt niet meer af van wat je spel voor jou tekent, dus het werkt **ook met Sodium**. Sodium sloeg
+      daarbij nog wezens over in stukken wereld die het zelf niet tekent; dat beslist het camerabeeld nu zelf.
+- [x] **Een lange kabel** (`lan/LanGrid`, `lan/NetworkKeeper`): vanaf de kern volgt het net een kabel nu 8192 stukjes ver
+      (vanaf een apparaat nog 512; is dat te weinig, dan vraagt het de kernen). Raakt een net geen andere kern, dan weet
+      elk apparaat meteen bij welke kern het hoort. De kern onthoudt in welke stukken wereld zijn net ligt en waar het
+      verder gaat (bewaard, hooguit 256 stukken), en zolang iemand het net gebruikt (de desktop open, of binnen 96 blokken
+      van een schermmuur) houdt de server die stukken geladen, zodat een camera aan het eind van een lange kabel erbij
+      blijft horen, ook als daar niemand is. Alleen geladen, niet levend: een boerderij ver weg gaat er niet van draaien.
+- [x] **Op het scherm**: OUT OF RANGE bestaat niet meer. Tot het eerste stukje wereld binnen is: CONNECTING...; mag je
+      hem niet zien: NO ACCESS; zonder stroom of uit: NO SIGNAL (zoals altijd).
+- [x] **Config**: `cameraFeedMax` onder `[network]` (64 blokken, hoe ver de server stuurt); je eigen spel kijkt
+      `cameraFeedDistance` ver (`imttech-client.toml`, 48). De regel voor `LevelRenderer.viewArea` in de access transformer
+      is weg (niet meer nodig). Het protocol is **37** (ook voor hoofdstuk 93): de server en iedereen die meespeelt moeten
+      deze versie hebben.
+- [x] **Mijn invullingen** (zeg het als je het anders wilt): wie mag kijken (hierboven), 64 blokken, het net geladen
+      houden zolang iemand het gebruikt (en niet altijd), dieren daar staan stil tot er iemand komt, een pop beweegt alleen
+      zijn benen, een kist ver weg gaat niet open en dicht, gras zonder het mengen van biomen aan de randen.
+- [x] **Gezien** (`gradlew runVisualCheck -Ponly=cameras,camerawall`), ook **met Sodium**: ik heb voor die rondes jouw
+      Sodium-jar (0.8.13) even in `run-visual/mods` gezet en daarna weer weggehaald. Alle camerabeelden (`c01` tot `c07`) en
+      de schermmuur (`cw05`, `cw06`) hebben beeld. Nieuw: `c07_far_camera_400_blocks`, een camera 400 blokken verderop
+      (ver buiten de kijkafstand van 192 blokken), met de laptop van ver bekeken: het plein, de kist, de lantaarn, een
+      koe en een rood schaap (twee poppen).
+- [x] **Tests** — `camera_feed_format_round_trip` (een stukje wereld met een kist en licht, en een koe, gaan ingepakt heen
+      en komen precies zo terug), `camera_feed_is_sent_to_who_may_watch` (zonder desktop niets, met de desktop wel, een
+      vreemde niet, bij een schermmuur met die camera wel, een veranderd blok gaat opnieuw, een lege lijst vergeet alles)
+      en `a_camera_far_along_a_big_network_stays_connected` (een net van 1200 stukjes kabel: de kern vindt de camera in de
+      verste hoek en onthoudt waar zijn net ligt, ook na opslaan en laden). Volledige ronde: 528 tests (met het werk van de
+      andere sessies), de eerste keer alleen de bekende wisselvallige `guard_searches_where_he_lost_you` rood, de tweede
+      keer alle 528 groen. Onderweg viel `raid_drones_come_for_you` een paar keer om, en dat kwam wel door dit hoofdstuk:
+      op de testserver blijven de desktops van testspelers open, dus hield NetworkKeeper de netten van oude tests geladen,
+      en dan landde een raiddrone op het dak van een andere testarena (in een geladen stuk wereld ziet hij de grond, in een
+      niet geladen stuk niet). Daarom doet NetworkKeeper niets tijdens de automatische tests, net zoals de netwerkregel daar
+      standaard uit staat. (`raid_starts_outside_a_base` en `security_core_launches_no_drones` vielen elk één keer om voor
+      NetworkKeeper er was: wisselvallig.)
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **Camerabeelden van ver, op je server (hoofdstuk 94)**: gezien in de rondleiding (ook met Sodium), nooit op een echte
+      server met vrienden. Probeer: een camera aan een lange kabel (meer dan 200 blokken) en kijk met de laptop van ver;
+      een schermmuur van 8 x 6 vol camera's (laggt het, of duurt het lang voor alles beeld heeft?); een vriend die voor een
+      camera ver weg rondloopt (zie je hem bewegen?). Voelt 48 blokken kijken goed (`cameraFeedDistance` in
+      `imttech-client.toml`)?
+- [ ] **Een camera hernoemen met sneak + rechtsklik (hoofdstuk 93)**: gezien op screenshots (`c06b` tot `c06d`), niet met
+      de muis gespeeld.
 - [ ] **De Electric Furnace (hoofdstuk 87)**: niet met de muis gespeeld. Probeer: iets smelten tegen een generator en met
       een stroomkabel, shift-klik op het resultaat (krijg je de ervaring?), trechters erboven, opzij en eronder, en kijk of
       hij gloeit en licht geeft terwijl hij werkt en weer uitgaat als hij klaar is. Is twee keer zo snel als een oven

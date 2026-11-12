@@ -213,6 +213,13 @@ public class ImtTech {
             com.senne.imttech.lan.LanGrid.clear();
             com.senne.imttech.lan.CableTraffic.clear();
         });
+        // Hoofdstuk 94: camerabeelden van overal (de wereld rond de camera's die je bekijkt naar je spel sturen), en het net
+        // van een kern geladen houden zolang iemand het gebruikt (een camera aan een lange kabel blijft eraan hangen).
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.lan.NetworkKeeper::onServerTick);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.feed.FeedServer::onServerTick);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.feed.FeedServer::onLoggedOut);
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->
+                com.senne.imttech.security.feed.FeedServer.clear());
         NeoForge.EVENT_BUS.addListener(ImtRedstone::onServerStopped);
         // Fase 12: cloakingdrones en hun illusies
         NeoForge.EVENT_BUS.addListener(ImtIllusions::onServerTick);

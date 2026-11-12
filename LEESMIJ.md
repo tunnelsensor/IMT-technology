@@ -734,6 +734,26 @@ app **Devices** van de desktop, en hoort het bij die kern.
   kern in wiens gebied ze staan, en hebben lezers en panelen geen stroom nodig. Onder `[network]`
   staan ook `signalRange` (hoe ver weg je de vakjes en streepjes ziet) en `flowSeconds`.
 
+### Bewakingscamera's: beeld zo ver als je kabel reikt
+Een **Security Camera** hang je aan de muur, aan het plafond of op de vloer. Met een netwerkkabel naar de desktop van je kern
+(of een PoE-kabel) en een beetje stroom staat hij in de app **Cameras**: een muur van live beeldjes, klik er een aan voor het
+grote beeld, waar je hem draait en kantelt.
+- **Zo ver als de kabel reikt.** Een camera aan het netwerk heeft altijd beeld, hoe ver je er ook vandaan bent: op de kern
+  zelf, op een Computer, met de laptop van de andere kant van de wereld, of op een schermmuur. De server stuurt je spel de
+  wereld rond de camera's die je bekijkt (de blokken, het licht, kisten en de koppen van torentjes, en wie er rondloopt), en je
+  spel tekent het beeld daaruit. Dat werkt ook met **Sodium**. Een nieuw beeld staat even op **CONNECTING...** tot het eerste
+  stukje wereld binnen is, en vult zich dan in een paar tellen.
+- **Een lange kabel.** Zolang iemand je net gebruikt (de desktop open, of bij een schermmuur), houdt de server de stukken
+  wereld van je kabels geladen, zodat een camera aan het eind van een lange kabel erbij blijft horen, ook als daar niemand is.
+  Daar tikt niets extra's: een boerderij ver weg gaat er niet van draaien, en dieren daar staan stil tot er iemand komt.
+- **Hoe ver hij kijkt**: `cameraFeedDistance` in `imttech-client.toml` (standaard 48 blokken), tot hooguit
+  `cameraFeedMax` onder `[network]` in `config/imttech.toml` (64, de grens van de server).
+- **Een naam** ("Lobby") geef je in een aambeeld, op de desktop (Rename bij het grote beeld), of met **sneak + rechtsklik met
+  een lege hand** op de camera, net als bij een keycardlezer. Dat mag wie hem neerzette en wie vertrouwd is in je basis
+  (Access); een camera van vóór 12 november wordt van wie hem als eerste zo hernoemt (behalve in iemands basis). De naam staat
+  bij zijn beeld en in je I.M.T-lijst: in een diagram zet je hem uit met `off("Lobby")`.
+- Een **gewone rechtsklik** zegt hoe hij ervoor staat (stroom, en bij welk netwerk hij hoort).
+
 ### De schermmuur: je camera's op een echt scherm
 De app Cameras laat je beelden zien op de desktop. Wil je ze aan de muur, bijvoorbeeld in je wachtkamer, dan bouw je een
 **schermmuur** van **Camera Monitors** (4 ijzer, 3 zwarte glazen ruiten, een Computer Chip en redstone geven er 4).
@@ -751,7 +771,7 @@ De app Cameras laat je beelden zien op de desktop. Wil je ze aan de muur, bijvoo
 - **Wie.** Kijken mag iedereen die ervoor staat. Instellen mag wie alle monitoren van dit scherm neerzette of vertrouwd is in je
   basis (Access). Er kunnen alleen camera's op van de kern waar het scherm aan hangt.
 - **Wat je ziet.** Elk vak is live, met de naam, een knipperend REC en scanlijnen. Staat een camera uit of heeft hij geen stroom:
-  ruis met **NO SIGNAL**. Ligt hij te ver weg voor je spel: **OUT OF RANGE**, net als in de app Cameras. Een beeld wordt niet
+  ruis met **NO SIGNAL**. Hoe ver de camera ook weg is, hij heeft beeld (zie hierboven). Een beeld wordt niet
   uitgerekt: wat niet in het vak past, wordt afgesneden, zoals op een tv. Een vak van 2 x 1 past het best.
 - **Haal je een monitor weg,** dan is alleen het vak weg dat daar linksboven begon; de rest blijft staan. Zet je er monitoren bij,
   dan worden die nieuwe vakken leeg. Een EMP-puls legt het scherm even plat.
@@ -781,8 +801,8 @@ op de kern zelf kunt.
   (ook als iemand anders met het goede wachtwoord inlogt). Na 5 foute pogingen moet je even wachten
   (`passwordAttempts` en `passwordLockoutMillis` onder `[security]`).
 - De verbinding valt weg als je de laptop niet meer bij je hebt, van dimensie wisselt, de kern geen
-  stroom meer heeft of iemand het wachtwoord verandert. Camera's ver weg geven "OUT OF RANGE": je
-  ziet alleen beeld van wat je spel zelf geladen heeft.
+  stroom meer heeft of iemand het wachtwoord verandert. In de app **Cameras** heb je beeld van al je
+  camera's, ook als je zelf ver weg bent: de server stuurt de wereld eromheen.
 - Hacken werkt zoals altijd: klik met de laptop op een kern die niet van jou is.
 
 **Een Computer met een Monitor**, bijvoorbeeld in de receptie van je basis, om de camera's te

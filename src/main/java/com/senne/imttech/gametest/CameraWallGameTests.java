@@ -345,4 +345,310 @@ public final class CameraWallGameTests {
             helper.succeed();
         });
     }
+
+    // ================================================================ Hoofdstuk 93: hernoemen met sneak + rechtsklik
+
+    /** Sneak + rechtsklik met een lege hand op de camera (of gewoon klikken, zonder sneak). */
+    private static void click(GameTestHelper helper, ServerPlayer player, BlockPos pos, boolean sneak) {
+        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, net.minecraft.world.item.ItemStack.EMPTY);
+        player.setShiftKeyDown(sneak);
+        BlockPos abs = helper.absolutePos(pos);
+        helper.getBlockState(pos).useWithoutItem(helper.getLevel(), player,
+                new net.minecraft.world.phys.BlockHitResult(Vec3.atCenterOf(abs), Direction.NORTH, abs, false));
+        player.setShiftKeyDown(false);
+    }
+
+    private static com.senne.imttech.security.CameraBlockEntity camera(GameTestHelper helper, BlockPos pos) {
+        return (com.senne.imttech.security.CameraBlockEntity) helper.getBlockEntity(pos);
+    }
+
+    /** Save in het naamscherm van de camera, zoals jouw spel het stuurt. */
+    private static void renameInWorld(GameTestHelper helper, ServerPlayer player, BlockPos pos, String name) {
+        com.senne.imttech.security.CameraNames.handleRename(player,
+                new com.senne.imttech.network.CameraRenamePayload(helper.absolutePos(pos), name));
+    }
+
+    /**
+     * Hoofdstuk 93, jouw wens: "Kun je ook zorgen dat je cam kunt renamen door shift klik zoals bij een keycardreader".
+     * Wie de camera neerzet, is zijn eigenaar en hernoemt hem (de naam wordt netjes, en ook zijn naam in de I.M.T-lijst
+     * verandert mee; leeg mag niet, van ver weg ook niet); een vreemde niet. Een camera zonder eigenaar (van vóór vandaag)
+     * wordt van wie er als eerste op sneak-klikt; gewoon klikken doet dat niet. (Een eigen batch met een klein bereik van
+     * de zones, zoals bij de lezer.)
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "camera_rename")
+    public static void camera_rename_by_sneak_click(GameTestHelper helper) {
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(3, 2, 1), "camera-owner");
+        ServerPlayer stranger = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(5, 2, 1), "camera-stranger");
+        BlockPos wall = new BlockPos(3, 3, 4);
+        helper.setBlock(wall, Blocks.STONE);
+        ImtTechGameTests.withReach(4, () -> {
+            // Neergezet met de muis, tegen de noordkant van een steen: dan is de eigenaar wie hem neerzette.
+            check(ZoneGameTests.place(helper, owner, com.senne.imttech.registry.ModItems.SECURITY_CAMERA.get(), wall, Direction.NORTH),
+                    "Neerzetten lukte niet");
+            BlockPos cam = wall.north();
+            BlockPos abs = helper.absolutePos(cam);
+            check(helper.getBlockState(cam).getBlock() instanceof CameraBlock, "Er hangt geen camera");
+            check(owner.getUUID().equals(camera(helper, cam).owner()), "Wie hem neerzette, is niet de eigenaar");
+            check(camera(helper, cam).ownerName().equals("camera-owner"), "De naam van de eigenaar klopt niet");
+            String first = camera(helper, cam).name();
+            check(!first.isEmpty(), "De camera kreeg bij het neerzetten geen naam");
+            check(first.equals(com.senne.imttech.redstone.DeviceNames.nameOf(owner, java.util.List.of(abs))),
+                    "De camera heet anders dan in de I.M.T-lijst: " + first);
+
+            // Een vreemde: sneak + klik neemt niets over, en Save doet niets.
+            click(helper, stranger, cam, true);
+            check(owner.getUUID().equals(camera(helper, cam).owner()), "Een vreemde nam de camera over");
+            renameInWorld(helper, stranger, cam, "Hacked");
+            check(camera(helper, cam).name().equals(first), "Een vreemde kon de camera hernoemen");
+
+            // De eigenaar: de naam wordt netjes (spaties eromheen weg, aanhalingstekens eruit), ook in zijn I.M.T-lijst.
+            click(helper, owner, cam, true);
+            renameInWorld(helper, owner, cam, "  Lobby \"east\"  ");
+            check(camera(helper, cam).name().equals("Lobby east"), "Hernoemen werkte niet: " + camera(helper, cam).name());
+            check(com.senne.imttech.redstone.DeviceNames.nameOf(owner, java.util.List.of(abs)).equals("Lobby east"),
+                    "De I.M.T-lijst kreeg de nieuwe naam niet: " + com.senne.imttech.redstone.DeviceNames.nameOf(owner, java.util.List.of(abs)));
+            renameInWorld(helper, owner, cam, "   ");
+            check(camera(helper, cam).name().equals("Lobby east"), "Een lege naam werd toch bewaard");
+            // Van ver weg (meer dan 6 blokken) niet.
+            Vec3 near = owner.position();
+            Vec3 far = helper.absoluteVec(new Vec3(3.5, 2, -8.5));
+            owner.moveTo(far.x, far.y, far.z);
+            renameInWorld(helper, owner, cam, "Far away");
+            owner.moveTo(near.x, near.y, near.z);
+            check(camera(helper, cam).name().equals("Lobby east"), "Van ver weg kon je de camera hernoemen");
+            // Gewoon klikken zegt nog steeds hoe hij ervoor staat (en verandert niets).
+            click(helper, owner, cam, false);
+            check(camera(helper, cam).name().equals("Lobby east"), "Gewoon klikken veranderde de naam");
+
+            // Een camera zonder eigenaar: gewoon klikken neemt hem niet over, sneak + klik wel.
+            BlockPos old = new BlockPos(1, 3, 3);
+            helper.setBlock(old, ModBlocks.SECURITY_CAMERA.get());
+            check(camera(helper, old).owner() == null, "Een camera zonder neerzetter heeft toch een eigenaar");
+            click(helper, stranger, old, false);
+            check(camera(helper, old).owner() == null, "Gewoon klikken maakte de klikker eigenaar");
+            click(helper, stranger, old, true);
+            check(stranger.getUUID().equals(camera(helper, old).owner()), "Wie als eerste sneak-klikte, werd niet de eigenaar");
+            renameInWorld(helper, owner, old, "Not mine");
+            check(!camera(helper, old).name().equals("Not mine"), "Daarna mocht een ander hem nog hernoemen");
+            // Opslaan en laden: de eigenaar blijft.
+            CompoundTag saved = camera(helper, old).saveWithoutMetadata(helper.getLevel().registryAccess());
+            com.senne.imttech.security.CameraBlockEntity copy = new com.senne.imttech.security.CameraBlockEntity(
+                    helper.absolutePos(old), helper.getBlockState(old));
+            copy.loadWithComponents(saved, helper.getLevel().registryAccess());
+            check(stranger.getUUID().equals(copy.owner()) && copy.ownerName().equals("camera-stranger"),
+                    "Na opslaan en laden was de eigenaar weg");
+            return null;
+        });
+        helper.succeed();
+    }
+
+    // ================================================================ Hoofdstuk 94: camerabeelden van overal
+
+    /** Het licht (0-15) op deze plek in een laag van 2048 bytes (twee blokken per byte, zoals Minecraft het bewaart). */
+    private static int nibble(byte[] data, BlockPos pos) {
+        int index = (pos.getY() & 15) << 8 | (pos.getZ() & 15) << 4 | (pos.getX() & 15);
+        return (data[index >> 1] >> ((index & 1) << 2)) & 15;
+    }
+
+    /**
+     * Hoofdstuk 94, het formaat: een stukje wereld gaat ingepakt heen en komt precies zo terug (de blokken, een kist met
+     * zijn gegevens, het licht, en wat je spel mag vergeten); een wezen ook (de soort, de plek, en hoe het eruitziet).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "camera_wall")
+    public static void camera_feed_format_round_trip(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos chest = new BlockPos(3, 2, 3);
+        BlockPos lamp = new BlockPos(5, 2, 3);
+        helper.setBlock(chest, Blocks.CHEST);
+        helper.setBlock(lamp, Blocks.GLOWSTONE);
+        helper.setBlock(new BlockPos(4, 2, 5), Blocks.OAK_LEAVES);
+        net.minecraft.world.entity.animal.Cow cow = helper.spawn(net.minecraft.world.entity.EntityType.COW, new BlockPos(2, 2, 6));
+        helper.runAfterDelay(4, () -> {
+            BlockPos abs = helper.absolutePos(chest);
+            long key = net.minecraft.core.SectionPos.asLong(abs);
+            net.minecraft.network.FriendlyByteBuf buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+            buf.writeVarInt(com.senne.imttech.security.feed.FeedFormat.VERSION);
+            buf.writeVarInt(1);
+            buf.writeLong(12345L);
+            buf.writeVarInt(1);
+            com.senne.imttech.security.feed.FeedFormat.writeSection(buf, level, level.getChunkAt(abs), key);
+            byte[] packed = com.senne.imttech.security.feed.FeedFormat.pack(buf);
+            net.minecraft.network.FriendlyByteBuf back = com.senne.imttech.security.feed.FeedFormat.unpack(packed);
+            check(back != null, "Uitpakken lukte niet");
+            com.senne.imttech.security.feed.FeedFormat.World world = com.senne.imttech.security.feed.FeedFormat.readWorld(back,
+                    level.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.BIOME));
+            check(world.forget().length == 1 && world.forget()[0] == 12345L, "Wat vergeten moet, kwam niet goed terug");
+            check(world.sections().size() == 1, "Er kwamen " + world.sections().size() + " stukjes terug in plaats van 1");
+            com.senne.imttech.security.feed.FeedFormat.Section section = world.sections().get(0);
+            check(section.key() == key && section.blocks() != null, "Het stukje kwam leeg of op een andere plek terug");
+            for (int x = 0; x < 8; x++) {
+                for (int y = 1; y < 5; y++) {
+                    for (int z = 0; z < 8; z++) {
+                        BlockPos at = helper.absolutePos(new BlockPos(x, y, z));
+                        if (net.minecraft.core.SectionPos.asLong(at) != key) {
+                            continue;
+                        }
+                        BlockState sent = section.blocks().getBlockState(at.getX() & 15, at.getY() & 15, at.getZ() & 15);
+                        check(sent == level.getBlockState(at), "Op " + at + " kwam " + sent + " terug in plaats van " + level.getBlockState(at));
+                        check(nibble(section.sky(), at) == level.getBrightness(net.minecraft.world.level.LightLayer.SKY, at)
+                                && nibble(section.block(), at) == level.getBrightness(net.minecraft.world.level.LightLayer.BLOCK, at),
+                                "Het licht op " + at + " kwam anders terug");
+                    }
+                }
+            }
+            check(section.blockEntities().stream().anyMatch(entity -> entity.pos().equals(abs)
+                    && com.senne.imttech.security.feed.FeedFormat.blockEntityType(entity.type()) == net.minecraft.world.level.block.entity.BlockEntityType.CHEST),
+                    "De kist kwam niet mee");
+
+            // Een wezen: met en zonder hoe het eruitziet.
+            net.minecraft.network.RegistryFriendlyByteBuf feed = new net.minecraft.network.RegistryFriendlyByteBuf(
+                    io.netty.buffer.Unpooled.buffer(), level.registryAccess());
+            feed.writeVarInt(1);
+            com.senne.imttech.security.feed.FeedEntities.writeSource(feed, false, abs.asLong(),
+                    com.senne.imttech.security.feed.FeedEntities.OK, Vec3.atCenterOf(abs), 90f, 20f);
+            feed.writeVarInt(2);
+            check(com.senne.imttech.security.feed.FeedEntities.writeEntity(feed, cow, true), "De koe ging niet mee");
+            check(com.senne.imttech.security.feed.FeedEntities.writeEntity(feed, cow, false), "De koe (kort) ging niet mee");
+            com.senne.imttech.security.feed.FeedEntities.Feed read = com.senne.imttech.security.feed.FeedEntities.read(feed);
+            check(read.sources().size() == 1 && read.sources().get(0).yaw() == 90f && read.sources().get(0).eye() != null,
+                    "De camera kwam niet goed terug");
+            check(read.entities().size() == 2, "Er kwamen " + read.entities().size() + " wezens terug in plaats van 2");
+            com.senne.imttech.security.feed.FeedEntities.EntityState full = read.entities().get(0);
+            check(full.id() == cow.getId() && full.pos().distanceTo(cow.position()) < 1e-6
+                    && net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.byId(full.type()) == net.minecraft.world.entity.EntityType.COW,
+                    "De koe kwam niet goed terug");
+            check(full.look() != null && full.look().equipment() != null, "Hoe de koe eruitziet, kwam niet mee");
+            check(read.entities().get(1).look() == null, "De korte beschrijving had toch alles");
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Hoofdstuk 94, jouw wens: "camera range moet evenveel zijn als de cabel lang is dus een verbonde camera moet altijd zicht
+     * hebben". De server stuurt de wereld rond een camera naar wie hem mag zien: de eigenaar met zijn desktop open (zonder
+     * desktop niet), of iemand bij een schermmuur waar die camera op staat; een vreemde zonder scherm niet. Een blok dat
+     * verandert, gaat opnieuw; een lege lijst vergeet alles.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "camera_wall")
+    public static void camera_feed_is_sent_to_who_may_watch(GameTestHelper helper) {
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(1, 2, 6), "feed-owner");
+        ServerPlayer stranger = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(1, 2, 8), "feed-stranger");
+        generator(helper, new BlockPos(2, 2, 2));
+        SecurityCoreBlockEntity core = poweredCore(helper, new BlockPos(2, 3, 2), owner);
+        ServerLevel level = helper.getLevel();
+        // Een PoE-kabel van de kern naar een camera op de vloer en verder naar een monitor.
+        cable(helper, CableKind.POE, new BlockPos(3, 3, 2), new BlockPos(4, 3, 2), new BlockPos(5, 3, 2), new BlockPos(5, 3, 3),
+                new BlockPos(5, 3, 4), new BlockPos(5, 3, 5), new BlockPos(5, 3, 6), new BlockPos(5, 3, 7));
+        BlockPos lens = new BlockPos(4, 3, 3);
+        helper.setBlock(lens, ModBlocks.SECURITY_CAMERA.get().defaultBlockState().setValue(CameraBlock.FACE,
+                net.minecraft.world.level.block.state.properties.AttachFace.FLOOR).setValue(CameraBlock.FACING, Direction.SOUTH));
+        BlockPos screen = new BlockPos(5, 3, 8);
+        monitor(helper, screen, Direction.SOUTH);
+        BlockPos camera = helper.absolutePos(lens);
+        com.senne.imttech.network.CameraWatchPayload watch = new com.senne.imttech.network.CameraWatchPayload(
+                java.util.List.of(camera.asLong()), java.util.List.of(), 16);
+        helper.runAfterDelay(2, () -> {
+            com.senne.imttech.security.SecurityDevices.forget(level, core);
+            ((com.senne.imttech.security.CameraBlockEntity) helper.getBlockEntity(lens)).updateOnline(level, camera, level.getBlockState(camera));
+            check(level.getBlockState(camera).getValue(CameraBlock.ONLINE), "De camera heeft geen beeld (netwerk of stroom)");
+            // Zonder desktop en zonder schermmuur: niets.
+            com.senne.imttech.security.feed.FeedServer.handleWatch(owner, watch);
+            com.senne.imttech.security.feed.FeedServer.tickFor(owner);
+            check(com.senne.imttech.security.feed.FeedServer.status(owner, camera) == com.senne.imttech.security.feed.FeedEntities.NO_ACCESS,
+                    "Zonder desktop mocht de eigenaar toch kijken: " + com.senne.imttech.security.feed.FeedServer.status(owner, camera));
+            check(com.senne.imttech.security.feed.FeedServer.sentCount(owner) == 0, "Zonder toegang ging er toch wereld mee");
+            // Met de desktop open: wel, het dichtstbijzijnde eerst.
+            check(com.senne.imttech.security.os.SecurityOs.openFor(owner, core, false), "De desktop ging niet open");
+            com.senne.imttech.security.feed.FeedServer.handleWatch(owner, new com.senne.imttech.network.CameraWatchPayload(
+                    watch.cameras(), watch.robots(), 17));
+            com.senne.imttech.security.feed.FeedServer.tickFor(owner);
+            check(com.senne.imttech.security.feed.FeedServer.status(owner, camera) == com.senne.imttech.security.feed.FeedEntities.OK,
+                    "Met de desktop open mocht de eigenaar niet kijken: " + com.senne.imttech.security.feed.FeedServer.status(owner, camera));
+            check(com.senne.imttech.security.feed.FeedServer.sentCount(owner) > 0, "Er ging geen wereld naar de eigenaar");
+            check(com.senne.imttech.security.feed.FeedServer.neededCount(owner) >= com.senne.imttech.security.feed.FeedServer.sentCount(owner),
+                    "Er ging meer weg dan nodig");
+            // Een vreemde zonder desktop en zonder scherm: niets.
+            com.senne.imttech.security.feed.FeedServer.handleWatch(stranger, watch);
+            com.senne.imttech.security.feed.FeedServer.tickFor(stranger);
+            check(com.senne.imttech.security.feed.FeedServer.status(stranger, camera) == com.senne.imttech.security.feed.FeedEntities.NO_ACCESS
+                    && com.senne.imttech.security.feed.FeedServer.sentCount(stranger) == 0, "Een vreemde kreeg het camerabeeld");
+        });
+        helper.runAfterDelay(30, () -> {
+            // Intussen (de server tikt door, en houdt de wereld rond de camera geladen) is alles verstuurd.
+            com.senne.imttech.security.feed.FeedServer.handleWatch(owner, new com.senne.imttech.network.CameraWatchPayload(
+                    watch.cameras(), watch.robots(), 17));
+            check(com.senne.imttech.security.feed.FeedServer.sentCount(owner) == com.senne.imttech.security.feed.FeedServer.neededCount(owner),
+                    "Niet alles ging mee: " + com.senne.imttech.security.feed.FeedServer.sentCount(owner) + " van "
+                            + com.senne.imttech.security.feed.FeedServer.neededCount(owner));
+            // Een blok verandert voor de camera: dat stukje gaat opnieuw.
+            int before = com.senne.imttech.security.feed.FeedServer.totalSent(owner);
+            helper.setBlock(lens.south(2), Blocks.GLOWSTONE);
+            com.senne.imttech.security.feed.FeedServer.tickFor(owner);
+            check(com.senne.imttech.security.feed.FeedServer.totalSent(owner) > before, "Een veranderd blok ging niet opnieuw mee");
+            // De vreemde staat bij een schermmuur waar deze camera op staat: dan wel.
+            entity(helper, screen).updateOn(level);
+            ListTag tiles = new ListTag();
+            tiles.add(tile(0, 0, 1, 1, camera));
+            CameraWall.setLayout(level, core, shape(helper, screen), tiles);
+            check(entity(helper, screen).tile() != null, "De camera kwam niet op het scherm");
+            com.senne.imttech.security.feed.FeedServer.handleWatch(stranger, new com.senne.imttech.network.CameraWatchPayload(
+                    watch.cameras(), watch.robots(), 17));
+            com.senne.imttech.security.feed.FeedServer.tickFor(stranger);
+            check(com.senne.imttech.security.feed.FeedServer.status(stranger, camera) == com.senne.imttech.security.feed.FeedEntities.OK,
+                    "Bij de schermmuur mocht de vreemde niet kijken: " + com.senne.imttech.security.feed.FeedServer.status(stranger, camera));
+            // Niets meer op je scherm: alles vergeten.
+            com.senne.imttech.security.feed.FeedServer.handleWatch(owner, new com.senne.imttech.network.CameraWatchPayload(
+                    java.util.List.of(), java.util.List.of(), 16));
+            com.senne.imttech.security.feed.FeedServer.handleWatch(stranger, new com.senne.imttech.network.CameraWatchPayload(
+                    java.util.List.of(), java.util.List.of(), 16));
+            check(com.senne.imttech.security.feed.FeedServer.sentCount(owner) == 0, "Na een lege lijst bleef er wereld staan");
+            com.senne.imttech.security.os.SecurityOs.close(owner);
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Hoofdstuk 94: "camera range moet evenveel zijn als de cabel lang is". Een net van 1200 stukjes kabel (een vlak van 20
+     * x 20, drie hoog) tussen de kern en een camera in de verste hoek: vroeger zocht het net hooguit 512 stukjes ver, en
+     * hing de camera er niet meer aan. Nu vindt de kern hem, weet de camera bij welke kern hij hoort, en onthoudt de kern in
+     * welke stukken wereld zijn net ligt (ook na opslaan en laden), zodat NetworkKeeper die geladen kan houden.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "camera_wall")
+    public static void a_camera_far_along_a_big_network_stays_connected(GameTestHelper helper) {
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(0, 2, 0), "bignet-owner");
+        generator(helper, new BlockPos(1, 2, 2));
+        SecurityCoreBlockEntity core = poweredCore(helper, new BlockPos(1, 3, 2), owner);
+        ServerLevel level = helper.getLevel();
+        for (int x = 2; x <= 21; x++) {
+            for (int y = 2; y <= 4; y++) {
+                for (int z = 2; z <= 21; z++) {
+                    Cables.add(CableKind.NETWORK, level, helper.absolutePos(new BlockPos(x, y, z)));
+                }
+            }
+        }
+        BlockPos lens = new BlockPos(22, 3, 21);
+        helper.setBlock(lens, ModBlocks.SECURITY_CAMERA.get().defaultBlockState().setValue(CameraBlock.FACE,
+                net.minecraft.world.level.block.state.properties.AttachFace.FLOOR).setValue(CameraBlock.FACING, Direction.SOUTH));
+        BlockPos camera = helper.absolutePos(lens);
+        helper.runAfterDelay(2, () -> {
+            com.senne.imttech.security.SecurityDevices.forget(level, core);
+            check(com.senne.imttech.security.SecurityDevices.scan(level, core).cameras().contains(camera),
+                    "De kern vond de camera achter 1200 stukjes kabel niet (apparaten: "
+                            + LanGrid.devicesOf(level, core.getBlockPos()) + ", kabel naast de camera: "
+                            + Cables.has(CableKind.NETWORK, level, helper.absolutePos(new BlockPos(21, 3, 21))) + ", kern van de camera: "
+                            + LanGrid.coreOf(level, camera) + ")");
+            check(com.senne.imttech.security.SecurityCores.deviceCore(level, camera) == core,
+                    "De camera weet niet dat hij bij de kern hoort");
+            long chunk = net.minecraft.world.level.ChunkPos.asLong(camera.getX() >> 4, camera.getZ() >> 4);
+            check(java.util.Arrays.stream(core.networkChunks()).anyMatch(c -> c == chunk),
+                    "De kern onthoudt niet dat zijn net tot bij de camera loopt");
+            // Opslaan en laden: de kern weet het nog.
+            var registries = level.registryAccess();
+            SecurityCoreBlockEntity copy = new SecurityCoreBlockEntity(core.getBlockPos(), core.getBlockState());
+            copy.loadWithComponents(core.saveWithoutMetadata(registries), registries);
+            check(java.util.Arrays.equals(copy.networkChunks(), core.networkChunks()),
+                    "Na opslaan en laden wist de kern niet meer waar zijn net ligt");
+            helper.succeed();
+        });
+    }
 }

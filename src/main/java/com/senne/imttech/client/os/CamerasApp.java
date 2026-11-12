@@ -40,8 +40,9 @@ import org.joml.Matrix4f;
  * de app zegt het om de seconde tegen de server.
  *
  * Elk beeldje heeft een CRT-randje (scanlijnen, hoekjes, de naam en een knipperend REC) zoals het
- * camerabeeld van de verkenningsdrone. Heeft een camera geen stroom of staat hij uit: "NO SIGNAL";
- * ligt hij buiten het stuk wereld dat je spel klaar heeft staan: "OUT OF RANGE".
+ * camerabeeld van de verkenningsdrone. Heeft een camera geen stroom of staat hij uit: "NO SIGNAL". Sinds hoofdstuk 94
+ * heeft een camera aan het netwerk altijd beeld, hoe ver je ook weg bent (de server stuurt de wereld eromheen); tot het
+ * eerste beeld er is: "CONNECTING...".
  *
  * De beelden zelf maakt CameraFeeds (vlak voor elk frame, een paar keer per seconde).
  */
@@ -55,8 +56,6 @@ final class CamerasApp {
     private static final float DRAG = 0.4f;
     /** Waar de knop Rename staat, onder de pijltjes (ten opzichte van de bovenkant van het beeld). */
     private static final int RENAME_DY = 106;
-    /** Zoveel graden kijkt de camera van een drone naar beneden. */
-    private static final float DRONE_PITCH = 20.0f;
 
     /** Zo vaak (ms) zegt de app tegen de server dat je naar een robot kijkt. */
     private static final long WATCH_EVERY = 1000;
@@ -244,39 +243,22 @@ final class CamerasApp {
     private void renderFeed(GuiGraphics g, Font font, CompoundTag camera, int x, int y, int w, int h, boolean large, boolean hover,
                             float partialTick) {
         boolean robot = isRobot(camera);
-        Entity entity = robot ? robotEntity(camera) : null;
-        Vec3 eye;
-        float yaw;
-        float pitch;
-        if (entity != null) {
-            // Het hoofd van de robot, een stukje naar voren (anders kijk je tegen de binnenkant van zijn hoofd).
-            float headYaw = entity instanceof net.minecraft.world.entity.LivingEntity living
-                    ? net.minecraft.util.Mth.rotLerp(partialTick, living.yHeadRotO, living.yHeadRot) : entity.getYRot();
-            eye = entity.getEyePosition(partialTick).add(Vec3.directionFromRotation(0, headYaw).scale(0.35));
-            yaw = headYaw;
-            // Een drone (hoofdstuk 25) kijkt een beetje naar beneden: zo zie je wat er onder hem gebeurt.
-            pitch = entity.getXRot() + (camera.getBoolean("drone") ? DRONE_PITCH : 0);
-        } else {
-            eye = new Vec3(camera.getDouble("ex"), camera.getDouble("ey"), camera.getDouble("ez"));
-            yaw = camera.getFloat("yaw");
-            pitch = camera.getFloat("pitch");
-        }
         g.fill(x, y, x + w, y + h, HudStyle.argb(255, 0x05080B));
         String problem = null;
+        boolean live = false;
         if (!camera.getBoolean("on")) {
             problem = "NO SIGNAL";
-        } else if (robot && entity == null || !CameraFeeds.inRange(eye)) {
-            problem = "OUT OF RANGE";
-        } else if (robot ? CameraFeeds.brokenRobot(camera.getInt("robot")) : CameraFeeds.broken(posOf(camera))) {
-            problem = "FEED ERROR";
-        }
-        boolean live = false;
-        if (problem == null) {
-            int texture = robot ? CameraFeeds.requestRobot(camera.getInt("robot"), eye, yaw, pitch, large)
-                    : CameraFeeds.request(posOf(camera), eye, yaw, pitch, large);
-            if (texture >= 0) {
-                blit(g, texture, x, y, w, h);
+        } else {
+            // Hoofdstuk 94: een camera aan het netwerk heeft altijd beeld, hoe ver ook (de server stuurt de wereld eromheen).
+            // Waar de lens zit, weet CameraFeeds (de camera zelf, of de server); de kern gaf het ons ook al (ex, ey, ez).
+            CameraFeeds.Picture picture = robot ? CameraFeeds.robot(camera.getInt("robot"), large, partialTick)
+                    : CameraFeeds.camera(posOf(camera), new Vec3(camera.getDouble("ex"), camera.getDouble("ey"), camera.getDouble("ez")),
+                            camera.getFloat("yaw"), camera.getFloat("pitch"), large);
+            if (picture.live()) {
+                blit(g, picture.texture(), x, y, w, h);
                 live = true;
+            } else {
+                problem = picture.problem();
             }
             if (robot) {
                 watching(camera.getInt("robot"));

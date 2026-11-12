@@ -565,6 +565,109 @@ public final class VisualCheck {
             t.view(10, -138.4, -58.6, 43.6, 22, 12);
             t.shot(10, "c06_camera_block");
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            // Hoofdstuk 93: sneak + rechtsklik op die camera opent het naamscherm, net als bij een keycardlezer.
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(postCam) instanceof com.senne.imttech.security.CameraBlockEntity be) {
+                    be.setOwner(player);
+                }
+                com.senne.imttech.security.CameraNames.open(player, postCam);
+            });
+            t.shot(15, "c06b_camera_rename_screen");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.InputNameScreen screen) {
+                    screen.tourType("Front yard");
+                }
+            });
+            t.shot(5, "c06c_camera_rename_typed");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.InputNameScreen screen) {
+                    screen.tourSave();
+                }
+            });
+            t.shot(10, "c06d_camera_renamed");
+
+            // Hoofdstuk 94: een camera 400 blokken verderop, ver buiten wat je spel kent (kijkafstand 12 = 192 blokken).
+            // Vroeger was dat "OUT OF RANGE"; nu stuurt de server de wereld eromheen. Je bekijkt hem met de laptop, ingelogd
+            // op de kern daar (op afstand). Een plein met een rode en een blauwe muur, een rood schaap en een koe (die je
+            // spel niet kent: hun "poppen"), een kist en een lamp.
+            BlockPos farCore = new BlockPos(260, -60, 43);
+            BlockPos farCam = new BlockPos(266, -57, 43);
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                for (int cx = 250 >> 4; cx <= 280 >> 4; cx++) {
+                    for (int cz = 30 >> 4; cz <= 60 >> 4; cz++) {
+                        level.setChunkForced(cx, cz, true);
+                    }
+                }
+                for (int x = 262; x <= 278; x++) {
+                    for (int z = 34; z <= 52; z++) {
+                        level.setBlockAndUpdate(new BlockPos(x, -61, z), Blocks.SMOOTH_STONE.defaultBlockState());
+                    }
+                }
+                for (int y = -60; y <= -58; y++) {
+                    for (int z = 34; z <= 52; z++) {
+                        level.setBlockAndUpdate(new BlockPos(278, y, z), Blocks.RED_CONCRETE.defaultBlockState());
+                    }
+                    for (int x = 268; x <= 277; x++) {
+                        level.setBlockAndUpdate(new BlockPos(x, y, 52), Blocks.BLUE_CONCRETE.defaultBlockState());
+                    }
+                }
+                level.setBlockAndUpdate(new BlockPos(276, -60, 48), Blocks.CHEST.defaultBlockState());
+                level.setBlockAndUpdate(new BlockPos(273, -60, 50), Blocks.LANTERN.defaultBlockState());
+                for (int y = -60; y <= -57; y++) {
+                    level.setBlockAndUpdate(new BlockPos(265, y, 43), Blocks.POLISHED_ANDESITE.defaultBlockState());
+                }
+                placeCamera(level, farCam, net.minecraft.world.level.block.state.properties.AttachFace.WALL, Direction.EAST,
+                        farCam.below(), "Far gate");
+                var sheep = EntityType.SHEEP.create(level);
+                if (sheep != null) {
+                    sheep.setColor(net.minecraft.world.item.DyeColor.RED);
+                    sheep.moveTo(272.5, -60, 41.5, 60, 0);
+                    sheep.setNoAi(true);
+                    level.addFreshEntity(sheep);
+                }
+                var cow = EntityType.COW.create(level);
+                if (cow != null) {
+                    cow.moveTo(274.5, -60, 46.5, 120, 0);
+                    cow.setNoAi(true);
+                    level.addFreshEntity(cow);
+                }
+                level.setBlockAndUpdate(farCore, ModBlocks.SECURITY_CORE.get().defaultBlockState());
+                level.setBlockAndUpdate(farCore.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+                if (level.getBlockEntity(farCore.below()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
+                    generator.fill(200_000);
+                }
+                if (level.getBlockEntity(farCore) instanceof com.senne.imttech.security.SecurityCoreBlockEntity be) {
+                    be.setOwner(player);
+                    be.ensureSystem(level);
+                    be.setPassword("bitech1", level.random);
+                }
+                player.getInventory().add(new ItemStack(ModItems.HACKING_LAPTOP.get()));
+            });
+            t.onServer(40, player -> {
+                ServerLevel level = player.serverLevel();
+                if (level.getBlockEntity(farCam) instanceof com.senne.imttech.security.CameraBlockEntity be) {
+                    be.updateOnline(level, farCam, level.getBlockState(farCam));
+                }
+                if (level.getBlockEntity(farCore) instanceof com.senne.imttech.security.SecurityCoreBlockEntity be) {
+                    be.powerTick(level);
+                    com.senne.imttech.security.os.SecurityOs.openFor(player, be, true); // zoals met de laptop, van ver
+                }
+            });
+            t.step(10, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen os) {
+                    os.tourCameras(farCam);
+                }
+            });
+            t.shot(100, "c07_far_camera_400_blocks");
+            t.close(10);
+            t.onServer(0, player -> {
+                for (int cx = 250 >> 4; cx <= 280 >> 4; cx++) {
+                    for (int cz = 30 >> 4; cz <= 60 >> 4; cz++) {
+                        player.serverLevel().setChunkForced(cx, cz, false);
+                    }
+                }
+            });
         }
 
         // --- De harnas-werkbank: het hologram, erop klikken om te bouwen (het stuk vliegt naar je

@@ -46,8 +46,17 @@ import org.jetbrains.annotations.Nullable;
 public final class LanGrid {
     private LanGrid() {}
 
-    /** Zoveel stukjes kabel (en racks en zenders) volgen we hooguit vanaf één plek (tegen eindeloos lange netten). */
+    /** Zoveel stukjes kabel (en racks en zenders) volgen we hooguit vanaf een apparaat dat zijn kern zoekt. */
     public static final int MAX_NODES = 512;
+    /**
+     * Zoveel vanaf een kern die al zijn apparaten zoekt (hoofdstuk 94, jouw wens: "camera range moet evenveel zijn als de
+     * cabel lang is"): een kabel mag lang zijn. Dat zoeken gebeurt maar één keer per kern (om de twee seconden of als er
+     * iets verandert), en vult meteen in welke kern elk apparaat heeft; zo hoeft een apparaat aan een lange kabel zelf niet
+     * zo ver te zoeken.
+     */
+    public static final int MAX_NODES_FROM_CORE = 8192;
+    /** Zoveel stukken wereld (chunks) onthoudt een kern hooguit voor zijn netwerk (zie NetworkKeeper). */
+    public static final int MAX_NETWORK_CHUNKS = 256;
     /** Na zoveel ticks zoeken we sowieso opnieuw welke kern een apparaat heeft (bijvoorbeeld als er een stuk wereld laadde). */
     private static final int CORE_TICKS = 200;
     /** Zo lang (ticks) onthouden we welke apparaten aan een kern hangen (net zo lang als SecurityDevices). */
@@ -114,17 +123,39 @@ public final class LanGrid {
         return level.getBlockEntity(core) instanceof SecurityCoreBlockEntity entity ? entity : null;
     }
 
-    /** Waar de kern van dit apparaat staat (uit het geheugen als dat nog klopt), of null. */
+    /**
+     * Waar de kern van dit apparaat staat (uit het geheugen als dat nog klopt), of null. Is het net te groot om vanaf het
+     * apparaat te doorzoeken (meer dan {@link #MAX_NODES} stukjes, hoofdstuk 94), dan vragen we het de kernen: die zoeken
+     * verder ({@link #MAX_NODES_FROM_CORE}).
+     */
     private static @Nullable BlockPos corePosOf(Level level, BlockPos device) {
         Map<BlockPos, Link> perLevel = CORE_OF.computeIfAbsent(level.dimension(), key -> new HashMap<>());
         Link link = perLevel.get(device);
         long now = level.getGameTime();
         if (link == null || link.version() != version || now - link.gameTime() > CORE_TICKS || now < link.gameTime()) {
-            link = new Link(version, now, searchCore(level, device, null));
+            boolean[] tooBig = {false};
+            BlockPos core = searchCore(level, device, null, tooBig);
+            if (core == null && tooBig[0]) {
+                core = coreByReach(level, device);
+            }
+            link = new Link(version, now, core);
             perLevel.put(device.immutable(), link);
         }
         return link.core();
     }
+
+    /** Welke geladen kern dit apparaat bij zijn eigen zoektocht vond (voor een net dat te groot is om vanaf het apparaat te doorzoeken). */
+    private static @Nullable BlockPos coreByReach(Level level, BlockPos device) {
+        for (BlockPos core : com.senne.imttech.security.SecurityCores.loadedCores(level)) {
+            if (!SEARCHING.contains(core) && devicesOf(level, core).contains(device)) {
+                return core;
+            }
+        }
+        return null;
+    }
+
+    /** De kernen die nu hun apparaten aan het zoeken zijn (zo vraagt een zoektocht nooit zichzelf om raad). */
+    private static final Set<BlockPos> SEARCHING = new HashSet<>();
 
     /**
      * Alle apparaten (de plekken van blokken met een netwerkaansluiting, zie NetworkConnectable) die via netwerkkabels aan
@@ -166,7 +197,8 @@ public final class LanGrid {
      * alleen verder in een netwerkkabel, een PoE-kabel alleen in een PoE-kabel. Van de ene soort naar de andere kom je
      * alleen via een blok (de kern, een switch, een rack...). Elk netwerkblok neemt allebei de soorten aan.
      */
-    private static @Nullable BlockPos searchCore(Level level, BlockPos device, @Nullable Map<Node, Node> parents) {
+    private static @Nullable BlockPos searchCore(Level level, BlockPos device, @Nullable Map<Node, Node> parents,
+                                                 @Nullable boolean[] tooBig) {
         Set<Node> seen = new HashSet<>();
         ArrayDeque<Node> todo = new ArrayDeque<>();
         Node start = new Node(device.immutable(), null);
@@ -202,6 +234,9 @@ public final class LanGrid {
                 }
             }
         }
+        if (tooBig != null && !todo.isEmpty()) {
+            tooBig[0] = true; // gestopt met nog werk over: het net is groter dan we vanaf hier zoeken
+        }
         return null;
     }
 
@@ -209,48 +244,86 @@ public final class LanGrid {
      * Zoekt de apparaten van een kern: vanaf de kern langs alle kabels. Een apparaat dat ook bij een andere kern kan (twee
      * netten die elkaar raken), houden we alleen als deze kern de dichtstbijzijnde is. Een switch telt zelf ook als
      * apparaat (hij staat in Devices) zodra je hem via een poort die aan staat bereikt, ook zonder stroom.
+     *
+     * Hoofdstuk 94: dit mag ver gaan ({@link #MAX_NODES_FROM_CORE}). Raakt dit net geen andere kern, dan hoort elk gevonden
+     * apparaat bij deze kern, en onthouden we dat meteen (dan hoeft een apparaat aan een lange kabel niet zelf de hele weg
+     * te zoeken). En we onthouden in de kern in welke stukken wereld zijn net ligt, en waar het verder gaat in een stuk dat
+     * niet geladen is: dat laadt NetworkKeeper zolang iemand het net gebruikt.
      */
     private static Set<BlockPos> searchDevices(Level level, BlockPos core) {
         Set<BlockPos> devices = new LinkedHashSet<>();
         Set<Node> seen = new HashSet<>();
         ArrayDeque<Node> todo = new ArrayDeque<>();
-        Node start = new Node(core.immutable(), null);
+        it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet chunks = new it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet();
+        boolean otherCore = false;
+        BlockPos self = core.immutable();
+        Node start = new Node(self, null);
         seen.add(start);
         todo.add(start);
         int followed = 0;
-        while (!todo.isEmpty() && followed++ < MAX_NODES) {
-            Node at = todo.poll();
-            BlockState atState = level.getBlockState(at.pos());
-            for (Direction direction : Direction.values()) {
-                if (closedPort(atState, direction)) {
-                    continue;
-                }
-                BlockPos next = at.pos().relative(direction);
-                if (!level.isLoaded(next)) {
-                    continue;
-                }
-                BlockState state = level.getBlockState(next);
-                if (closedPort(state, direction.getOpposite())) {
-                    continue;
-                }
-                if (state.getBlock() instanceof SecurityCoreBlock) {
-                    continue; // een andere kern: daar gaan we niet doorheen
-                }
-                followCables(level, at, next, state, seen, todo, null);
-                Node block = new Node(next.immutable(), null);
-                if (!seen.add(block)) {
-                    continue;
-                }
-                if (state.getBlock() instanceof NetworkConnectable) {
-                    devices.add(next.immutable());
-                }
-                if (conducts(level, next, state)) {
-                    todo.add(block);
+        SEARCHING.add(self);
+        try {
+            while (!todo.isEmpty() && followed++ < MAX_NODES_FROM_CORE) {
+                Node at = todo.poll();
+                addChunk(chunks, at.pos());
+                BlockState atState = level.getBlockState(at.pos());
+                for (Direction direction : Direction.values()) {
+                    if (closedPort(atState, direction)) {
+                        continue;
+                    }
+                    BlockPos next = at.pos().relative(direction);
+                    if (!level.isLoaded(next)) {
+                        addChunk(chunks, next); // hier gaat het net misschien verder, in een stuk wereld dat niet geladen is
+                        continue;
+                    }
+                    BlockState state = level.getBlockState(next);
+                    if (closedPort(state, direction.getOpposite())) {
+                        continue;
+                    }
+                    if (state.getBlock() instanceof SecurityCoreBlock) {
+                        // Een andere kern: daar gaan we niet doorheen. (Onszelf komen we ook tegen, vanaf de kabel ernaast.)
+                        otherCore |= !next.equals(self);
+                        continue;
+                    }
+                    followCables(level, at, next, state, seen, todo, null);
+                    Node block = new Node(next.immutable(), null);
+                    if (!seen.add(block)) {
+                        continue;
+                    }
+                    if (state.getBlock() instanceof NetworkConnectable) {
+                        devices.add(next.immutable());
+                        addChunk(chunks, next);
+                    }
+                    if (conducts(level, next, state)) {
+                        todo.add(block);
+                    }
                 }
             }
+            if (otherCore || !todo.isEmpty()) {
+                // Twee netten raken elkaar (of dit net is te groot om helemaal te doorzoeken): elk apparaat kijkt zelf welke
+                // kern het dichtstbij is.
+                devices.removeIf(device -> !self.equals(corePosOf(level, device)));
+            } else {
+                Map<BlockPos, Link> perLevel = CORE_OF.computeIfAbsent(level.dimension(), key -> new HashMap<>());
+                long now = level.getGameTime();
+                for (BlockPos device : devices) {
+                    perLevel.put(device, new Link(version, now, self));
+                }
+            }
+        } finally {
+            SEARCHING.remove(self);
         }
-        devices.removeIf(device -> !core.equals(corePosOf(level, device)));
+        if (level.getBlockEntity(self) instanceof SecurityCoreBlockEntity entity) {
+            entity.rememberNetwork(chunks.toLongArray());
+        }
         return Set.copyOf(devices);
+    }
+
+    /** Onthoudt het stuk wereld (chunk) van deze plek, tot {@link #MAX_NETWORK_CHUNKS}. */
+    private static void addChunk(it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet chunks, BlockPos pos) {
+        if (chunks.size() < MAX_NETWORK_CHUNKS) {
+            chunks.add(net.minecraft.world.level.ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4));
+        }
     }
 
     /**
@@ -290,7 +363,7 @@ public final class LanGrid {
      */
     public static List<BlockPos> path(Level level, BlockPos device) {
         Map<Node, Node> parents = new HashMap<>();
-        BlockPos core = searchCore(level, device, parents);
+        BlockPos core = searchCore(level, device, parents, null);
         if (core == null) {
             return List.of();
         }

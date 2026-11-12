@@ -1,6 +1,7 @@
 package com.senne.imttech.client.os.camera;
 
 import com.mojang.blaze3d.pipeline.TextureTarget;
+import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.shaders.FogShape;
 import com.mojang.blaze3d.shaders.Uniform;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -19,21 +20,19 @@ import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
-import net.minecraft.client.renderer.ViewArea;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
-import net.minecraft.client.renderer.chunk.RenderRegionCache;
-import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlas;
-import com.mojang.blaze3d.platform.Lighting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.joml.Quaternionf;
@@ -41,15 +40,16 @@ import org.joml.Quaternionf;
 /**
  * Tekent de wereld zoals een bewakingscamera hem ziet, in een klein plaatje (een TextureTarget).
  *
- * Minecraft tekent de wereld in "secties" (stukjes van 16x16x16 blokken) die je spel al heeft
- * klaargezet. Wij tekenen hier dezelfde secties nog een keer, maar vanuit de camera:
+ * Sinds hoofdstuk 94 tekenen we uit onze eigen kopie van de wereld rond de camera's: de stukjes die de server stuurt
+ * (FeedWorld), waarvan FeedMesher de modellen bouwt. Vroeger tekenden we de stukken wereld die je spel al voor jou had
+ * klaargezet (de "view area" van Minecraft); daardoor gaf een camera verder weg dan je kijkafstand "OUT OF RANGE", en met
+ * Sodium (dat het tekenen van de wereld overneemt) elke camera. Nu:
  * <ol>
- *   <li>de secties binnen {@code distance} blokken van de lens die in beeld vallen. Met een EIGEN
- *       lijst: Minecraft tekent alleen wat jij kunt zien, maar een camera op een andere verdieping
- *       ziet zijn eigen kamer (secties die nog nooit gebouwd zijn, laten we hier bouwen);</li>
+ *   <li>de stukjes wereld binnen {@code distance} blokken van de lens die in beeld vallen, het dichtstbijzijnde eerst (wat
+ *       nog geen model heeft, bouwt FeedMesher; een nieuw beeld vult zich zo in een paar frames);</li>
  *   <li>de blokken (vast, uitgesneden zoals bladeren, en als laatste doorzichtig zoals glas);</li>
- *   <li>de wezens en spelers (ook jij: de camera ziet je), en blokken met een eigen model, zoals
- *       kisten en de koppen van torentjes.</li>
+ *   <li>de wezens en spelers (ook jij: de camera ziet je): die je spel zelf kent, en anders hun "pop" (FeedPuppets), en
+ *       blokken met een eigen model, zoals kisten en de koppen van torentjes.</li>
  * </ol>
  * Geen lucht, wolken, regen of deeltjes: in de verte vervaagt alles naar de kleur van de lucht. (De rook van een
  * smokebom tekenen we wel, als dichte blokjes waar de rook hangt: zie client/weapons/SmokeView.)
@@ -59,9 +59,6 @@ import org.joml.Quaternionf;
  */
 final class FeedRenderer {
     private FeedRenderer() {}
-
-    /** Zoveel secties laten we hooguit per beeld nieuw bouwen (het bouwen zelf gebeurt naast het spel). */
-    private static final int MAX_COMPILES = 6;
 
     /** Een camera die we zelf neerzetten (de gewone camera van Minecraft volgt altijd een wezen). */
     private static final class FeedCamera extends Camera {
@@ -74,6 +71,33 @@ final class FeedRenderer {
     private static final FeedCamera CAMERA = new FeedCamera();
 
     /**
+     * Kan dit beeld al getekend worden? Pas als je spel het stukje wereld van de lens zelf heeft (van de server); daarvoor
+     * staat er "CONNECTING..." op het scherm.
+     */
+    static boolean ready(Vec3 eye) {
+        return FeedWorld.has(SectionPos.asLong(BlockPos.containing(eye)));
+    }
+
+    /**
+     * Bouwt alvast de modellen voor dit beeld (zoveel als er dit frame nog tijd is), ook als het nu niet getekend wordt: zo
+     * vult een nieuw beeld zich sneller.
+     */
+    static void prepare(Vec3 eye, float yaw, float pitch, int distance, float aspect) {
+        Frustum frustum = frustum(eye, yaw, pitch, distance, aspect);
+        FeedMesher.build(visibleSections(eye, frustum, distance), eye);
+    }
+
+    /** Wat de camera ziet: een piramide vanaf de lens (70 graden hoog, zo breed als het beeld), tot net voorbij de mist. */
+    private static Frustum frustum(Vec3 eye, float yaw, float pitch, int distance, float aspect) {
+        CAMERA.place(eye, yaw, pitch);
+        Matrix4f projection = new Matrix4f().perspective((float) Math.toRadians(70.0), aspect, 0.05f, distance + 16f);
+        Matrix4f view = new Matrix4f().rotation(CAMERA.rotation().conjugate(new Quaternionf()));
+        Frustum frustum = new Frustum(view, projection);
+        frustum.prepare(eye.x, eye.y, eye.z);
+        return frustum;
+    }
+
+    /**
      * Tekent één beeld. {@code eye} is de lens, {@code yaw}/{@code pitch} de richting (zoals bij een
      * speler), {@code distance} hoe ver de camera kijkt. {@code skip} is het nummer van een wezen dat we niet
      * tekenen (de robot waar de camera op zit), of -1.
@@ -81,9 +105,7 @@ final class FeedRenderer {
     static void render(TextureTarget target, Vec3 eye, float yaw, float pitch, float partialTick, int distance, int skip) {
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
-        LevelRenderer levelRenderer = mc.levelRenderer;
-        ViewArea viewArea = levelRenderer.viewArea; // via de access transformer (META-INF/accesstransformer.cfg)
-        if (level == null || viewArea == null) {
+        if (level == null) {
             return;
         }
         CAMERA.place(eye, yaw, pitch);
@@ -115,8 +137,8 @@ final class FeedRenderer {
             RenderSystem.setShaderFogColor(red, green, blue);
             RenderSystem.setShaderFogShape(FogShape.SPHERE);
 
-            List<SectionRenderDispatcher.RenderSection> sections = visibleSections(level, viewArea, eye, frustum, distance);
-            buildMissing(level, levelRenderer.getSectionRenderDispatcher(), sections);
+            List<Long> sections = visibleSections(eye, frustum, distance);
+            FeedMesher.build(sections, eye);
 
             // De blokken: eerst vast, dan uitgesneden (bladeren, gras), zoals Minecraft zelf.
             renderLayer(RenderType.solid(), sections, false, eye, view, projection);
@@ -161,93 +183,38 @@ final class FeedRenderer {
         }
     }
 
-    // ================================================================ Welke secties
+    // ================================================================ Welke stukjes
 
     /**
-     * De secties binnen {@code distance} blokken van de lens die in beeld vallen, de dichtstbijzijnde
-     * eerst. We zoeken ze op in de "view area" van je spel, net zoals Minecraft zelf (zie
-     * ViewArea.getRenderSectionAt): die is een raster dat met je meeschuift.
+     * De stukjes wereld binnen {@code distance} blokken van de lens (hun midden binnen {@code distance} + 14: dan valt geen
+     * hoek weg) die in beeld vallen, het dichtstbijzijnde eerst. Alleen wat je spel van de server heeft (FeedWorld).
      */
-    private static List<SectionRenderDispatcher.RenderSection> visibleSections(ClientLevel level, ViewArea viewArea,
-                                                                                Vec3 eye, Frustum frustum, int distance) {
-        SectionRenderDispatcher.RenderSection[] all = viewArea.sections;
-        int sizeX = viewArea.getViewDistance() * 2 + 1;
-        int sizeY = level.getSectionsCount();
-        int radius = (distance >> 4) + 1;
-        int cx = SectionPos.posToSectionCoord(eye.x);
-        int cy = SectionPos.posToSectionCoord(eye.y);
-        int cz = SectionPos.posToSectionCoord(eye.z);
-        double reach = (distance + 14.0) * (distance + 14.0);
-        List<SectionRenderDispatcher.RenderSection> found = new ArrayList<>();
-        for (int dx = -radius; dx <= radius; dx++) {
-            for (int dy = -radius; dy <= radius; dy++) {
-                for (int dz = -radius; dz <= radius; dz++) {
-                    int sx = cx + dx;
-                    int sy = cy + dy;
-                    int sz = cz + dz;
-                    int iy = sy - level.getMinSection();
-                    if (iy < 0 || iy >= sizeY) {
-                        continue;
-                    }
-                    int index = (Math.floorMod(sz, sizeX) * sizeY + iy) * sizeX + Math.floorMod(sx, sizeX);
-                    if (index < 0 || index >= all.length) {
-                        continue;
-                    }
-                    SectionRenderDispatcher.RenderSection section = all[index];
-                    BlockPos origin = section.getOrigin();
-                    // Klopt de plek niet, dan ligt dit stuk buiten wat je spel klaar heeft staan.
-                    if (origin.getX() != sx << 4 || origin.getY() != sy << 4 || origin.getZ() != sz << 4) {
-                        continue;
-                    }
-                    double ox = origin.getX() + 8 - eye.x;
-                    double oy = origin.getY() + 8 - eye.y;
-                    double oz = origin.getZ() + 8 - eye.z;
-                    if (ox * ox + oy * oy + oz * oz > reach || !frustum.isVisible(section.getBoundingBox())) {
-                        continue;
-                    }
-                    found.add(section);
-                }
-            }
-        }
-        found.sort(Comparator.comparingDouble(section -> {
-            BlockPos origin = section.getOrigin();
-            double ox = origin.getX() + 8 - eye.x;
-            double oy = origin.getY() + 8 - eye.y;
-            double oz = origin.getZ() + 8 - eye.z;
+    private static List<Long> visibleSections(Vec3 eye, Frustum frustum, int distance) {
+        List<Long> found = new ArrayList<>();
+        FeedWorld.around(eye, distance + 14.0, found);
+        found.removeIf(key -> !frustum.isVisible(box(key)));
+        found.sort(Comparator.comparingDouble(key -> {
+            double ox = (SectionPos.x(key) << 4) + 8 - eye.x;
+            double oy = (SectionPos.y(key) << 4) + 8 - eye.y;
+            double oz = (SectionPos.z(key) << 4) + 8 - eye.z;
             return ox * ox + oy * oy + oz * oz;
         }));
         return found;
     }
 
-    /**
-     * Secties die nog nooit gebouwd zijn (of veranderd zijn), laten we bouwen, net zoals Minecraft
-     * dat doet voor wat jij ziet. Het bouwen gebeurt naast het spel; een volgend beeld heeft ze dan.
-     */
-    private static void buildMissing(ClientLevel level, SectionRenderDispatcher dispatcher,
-                                     List<SectionRenderDispatcher.RenderSection> sections) {
-        RenderRegionCache cache = null;
-        int scheduled = 0;
-        for (SectionRenderDispatcher.RenderSection section : sections) {
-            if (!section.isDirty() || !section.hasAllNeighbors()
-                    || !level.getLightEngine().lightOnInSection(SectionPos.of(section.getOrigin()))) {
-                continue;
-            }
-            if (cache == null) {
-                cache = new RenderRegionCache();
-            }
-            section.rebuildSectionAsync(dispatcher, cache);
-            section.setNotDirty();
-            if (++scheduled >= MAX_COMPILES) {
-                return;
-            }
-        }
+    /** Het kader van één stukje wereld. */
+    private static AABB box(long key) {
+        double x = SectionPos.x(key) << 4;
+        double y = SectionPos.y(key) << 4;
+        double z = SectionPos.z(key) << 4;
+        return new AABB(x, y, z, x + 16, y + 16, z + 16);
     }
 
     // ================================================================ Tekenen
 
-    /** Eén laag blokken, zoals LevelRenderer.renderSectionLayer: elke sectie heeft er een eigen buffer voor. */
-    private static void renderLayer(RenderType type, List<SectionRenderDispatcher.RenderSection> sections, boolean farFirst,
-                                    Vec3 eye, Matrix4f view, Matrix4f projection) {
+    /** Eén laag blokken, zoals LevelRenderer.renderSectionLayer: elk stukje heeft er een eigen buffer voor (FeedMesher). */
+    private static void renderLayer(RenderType type, List<Long> sections, boolean farFirst, Vec3 eye, Matrix4f view,
+                                    Matrix4f projection) {
         type.setupRenderState();
         ShaderInstance shader = RenderSystem.getShader();
         if (shader == null) {
@@ -258,14 +225,15 @@ final class FeedRenderer {
         shader.apply();
         Uniform offset = shader.CHUNK_OFFSET;
         for (int i = 0; i < sections.size(); i++) {
-            SectionRenderDispatcher.RenderSection section = sections.get(farFirst ? sections.size() - 1 - i : i);
-            if (section.getCompiled().isEmpty(type)) {
+            long key = sections.get(farFirst ? sections.size() - 1 - i : i);
+            FeedMesher.Mesh mesh = FeedMesher.mesh(key);
+            VertexBuffer buffer = mesh == null ? null : mesh.buffers.get(type);
+            if (buffer == null) {
                 continue;
             }
-            VertexBuffer buffer = section.getBuffer(type);
-            BlockPos origin = section.getOrigin();
             if (offset != null) {
-                offset.set((float) (origin.getX() - eye.x), (float) (origin.getY() - eye.y), (float) (origin.getZ() - eye.z));
+                offset.set((float) ((SectionPos.x(key) << 4) - eye.x), (float) ((SectionPos.y(key) << 4) - eye.y),
+                        (float) ((SectionPos.z(key) << 4) - eye.z));
                 offset.upload();
             }
             buffer.bind();
@@ -279,7 +247,10 @@ final class FeedRenderer {
         type.clearRenderState();
     }
 
-    /** De wezens binnen bereik die in beeld vallen (ook jijzelf: de camera ziet je), behalve {@code skip}. */
+    /**
+     * De wezens binnen bereik die in beeld vallen (ook jijzelf: de camera ziet je), behalve {@code skip}: eerst die je spel
+     * zelf kent, dan de poppen van wie te ver weg is om zelf te kennen (FeedPuppets), met het licht uit FeedWorld.
+     */
     private static void renderEntities(Minecraft mc, ClientLevel level, Vec3 eye, Frustum frustum, int distance,
                                        float partialTick, PoseStack pose, MultiBufferSource buffers, int skip) {
         EntityRenderDispatcher dispatcher = mc.getEntityRenderDispatcher();
@@ -287,63 +258,82 @@ final class FeedRenderer {
         double reach = (double) distance * distance;
         for (Entity entity : level.entitiesForRendering()) {
             if (entity.getId() == skip || entity.distanceToSqr(eye) > reach || entity == mc.player && mc.player.isSpectator()
-                    || !dispatcher.shouldRender(entity, frustum, eye.x, eye.y, eye.z)) {
+                    || !inView(entity, frustum, eye)) {
                 continue;
             }
-            double x = Mth.lerp(partialTick, entity.xOld, entity.getX());
-            double y = Mth.lerp(partialTick, entity.yOld, entity.getY());
-            double z = Mth.lerp(partialTick, entity.zOld, entity.getZ());
-            float yRot = Mth.lerp(partialTick, entity.yRotO, entity.getYRot());
-            dispatcher.render(entity, x - eye.x, y - eye.y, z - eye.z, yRot, partialTick, pose, buffers,
-                    dispatcher.getPackedLightCoords(entity, partialTick));
+            renderEntity(dispatcher, entity, eye, partialTick, pose, buffers, dispatcher.getPackedLightCoords(entity, partialTick));
         }
-    }
-
-    /** Blokken met een eigen model (kisten, borden, de koppen van torentjes) in de secties in beeld. */
-    private static void renderBlockEntities(Minecraft mc, ClientLevel level, List<SectionRenderDispatcher.RenderSection> sections,
-                                            Vec3 eye, Frustum frustum, float partialTick, PoseStack pose,
-                                            MultiBufferSource buffers) {
-        BlockEntityRenderDispatcher dispatcher = mc.getBlockEntityRenderDispatcher();
-        dispatcher.prepare(level, CAMERA, mc.hitResult);
-        for (SectionRenderDispatcher.RenderSection section : sections) {
-            for (BlockEntity blockEntity : section.getCompiled().getRenderableBlockEntities()) {
-                if (!net.neoforged.neoforge.client.ClientHooks.isBlockEntityRendererVisible(dispatcher, blockEntity, frustum)) {
-                    continue;
-                }
-                BlockPos pos = blockEntity.getBlockPos();
-                pose.pushPose();
-                pose.translate(pos.getX() - eye.x, pos.getY() - eye.y, pos.getZ() - eye.z);
-                dispatcher.render(blockEntity, partialTick, pose, buffers);
-                pose.popPose();
+        for (Entity puppet : FeedPuppets.near(eye, distance)) {
+            if (puppet.getId() == skip || level.getEntity(puppet.getId()) != null || !inView(puppet, frustum, eye)) {
+                continue;
             }
+            int light = FeedWorld.packedLight(BlockPos.containing(puppet.getLightProbePosition(partialTick)));
+            renderEntity(dispatcher, puppet, eye, partialTick, pose, buffers, light);
         }
     }
 
     /**
-     * Kan je spel dit stuk wereld nu tekenen? (De plek ligt in wat je spel klaar heeft staan.) Zo
-     * niet, dan is het beeld "out of range" (camera's van ver: hoofdstuk 7, stap 10).
+     * Valt dit wezen in het beeld van de camera? Zoals Minecraft zelf (EntityRenderer.shouldRender), maar zonder te vragen
+     * wat jij ziet: Sodium slaat daar wezens over in stukken wereld die het voor jou niet tekent (achter je, of ver weg),
+     * en die ziet de camera juist wel.
      */
-    static boolean inRange(Vec3 eye) {
-        Minecraft mc = Minecraft.getInstance();
-        ClientLevel level = mc.level;
-        @Nullable ViewArea viewArea = mc.levelRenderer.viewArea;
-        if (level == null || viewArea == null || !level.isLoaded(BlockPos.containing(eye))) {
+    private static boolean inView(Entity entity, Frustum frustum, Vec3 eye) {
+        if (!entity.shouldRender(eye.x, eye.y, eye.z)) {
             return false;
         }
-        int sizeX = viewArea.getViewDistance() * 2 + 1;
-        int sizeY = level.getSectionsCount();
-        int sx = SectionPos.posToSectionCoord(eye.x);
-        int sy = SectionPos.posToSectionCoord(eye.y);
-        int sz = SectionPos.posToSectionCoord(eye.z);
-        int iy = sy - level.getMinSection();
-        if (iy < 0 || iy >= sizeY) {
-            return false;
+        if (entity.noCulling) {
+            return true;
         }
-        int index = (Math.floorMod(sz, sizeX) * sizeY + iy) * sizeX + Math.floorMod(sx, sizeX);
-        if (index < 0 || index >= viewArea.sections.length) {
-            return false;
+        AABB box = entity.getBoundingBoxForCulling().inflate(0.5);
+        if (box.hasNaN() || box.getSize() == 0.0) {
+            box = new AABB(entity.getX() - 2.0, entity.getY() - 2.0, entity.getZ() - 2.0,
+                    entity.getX() + 2.0, entity.getY() + 2.0, entity.getZ() + 2.0);
         }
-        BlockPos origin = viewArea.sections[index].getOrigin();
-        return origin.getX() == sx << 4 && origin.getY() == sy << 4 && origin.getZ() == sz << 4;
+        return frustum.isVisible(box);
+    }
+
+    private static void renderEntity(EntityRenderDispatcher dispatcher, Entity entity, Vec3 eye, float partialTick, PoseStack pose,
+                                     MultiBufferSource buffers, int light) {
+        double x = Mth.lerp(partialTick, entity.xOld, entity.getX());
+        double y = Mth.lerp(partialTick, entity.yOld, entity.getY());
+        double z = Mth.lerp(partialTick, entity.zOld, entity.getZ());
+        float yRot = Mth.lerp(partialTick, entity.yRotO, entity.getYRot());
+        try {
+            dispatcher.render(entity, x - eye.x, y - eye.y, z - eye.z, yRot, partialTick, pose, buffers, light);
+        } catch (RuntimeException e) {
+            // een wezen (van een andere mod) dat zich zo niet laat tekenen: dat ene slaan we over
+        }
+    }
+
+    /**
+     * Blokken met een eigen model (kisten, de koppen van torentjes) in de stukjes in beeld. Kent je spel dat blok zelf
+     * (het staat bij jou in de buurt), dan tekenen we dat (het beweegt: een kist die opengaat); anders onze kopie. Een blok
+     * dat zich ook buiten beeld tekent (een schermmuur) slaan we over: zo tekent een beeld nooit zichzelf.
+     */
+    private static void renderBlockEntities(Minecraft mc, ClientLevel level, List<Long> sections, Vec3 eye, Frustum frustum,
+                                            float partialTick, PoseStack pose, MultiBufferSource buffers) {
+        BlockEntityRenderDispatcher dispatcher = mc.getBlockEntityRenderDispatcher();
+        dispatcher.prepare(level, CAMERA, mc.hitResult);
+        for (long key : sections) {
+            for (BlockEntity copy : FeedWorld.blockEntities(key).values()) {
+                BlockPos pos = copy.getBlockPos();
+                BlockEntity real = level.isLoaded(pos) ? level.getBlockEntity(pos) : null;
+                BlockEntity entity = real != null && real.getType() == copy.getType() ? real : copy;
+                BlockEntityRenderer<BlockEntity> renderer = dispatcher.getRenderer(entity);
+                if (renderer == null || renderer.shouldRenderOffScreen(entity) || !renderer.shouldRender(entity, eye)
+                        || !net.neoforged.neoforge.client.ClientHooks.isBlockEntityRendererVisible(dispatcher, entity, frustum)) {
+                    continue;
+                }
+                int light = entity == real ? LevelRenderer.getLightColor(level, pos) : FeedWorld.packedLight(pos);
+                pose.pushPose();
+                pose.translate(pos.getX() - eye.x, pos.getY() - eye.y, pos.getZ() - eye.z);
+                try {
+                    renderer.render(entity, partialTick, pose, buffers, light, OverlayTexture.NO_OVERLAY);
+                } catch (RuntimeException e) {
+                    // dit ene blok niet
+                }
+                pose.popPose();
+            }
+        }
     }
 }

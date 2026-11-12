@@ -243,18 +243,18 @@ public class CameraWallScreen extends Screen {
         g.drawString(font, shown, x + 2, y + 1, HudStyle.argb(255, HudStyle.WHITE), false);
     }
 
-    /** Het beeld van deze camera (of -1 als er nog geen is). */
+    /**
+     * Het beeld van deze camera (of -1 als er nog geen is). Sinds hoofdstuk 94 ook van een camera ver weg: de server stuurt
+     * de wereld eromheen (zie CameraFeeds).
+     */
     private static int feed(Camera camera, float partialTick) {
-        Minecraft mc = Minecraft.getInstance();
         CompoundTag tag = camera.tag();
         if (camera.robot()) {
-            Entity robot = mc.level == null ? null : mc.level.getEntity(tag.getInt("robot"));
-            return robot == null || !CameraFeeds.inRange(robot.getEyePosition(partialTick)) ? -1
-                    : CameraFeeds.requestRobot(robot, false, partialTick);
+            return CameraFeeds.robot(tag.getInt("robot"), false, partialTick).texture();
         }
         Vec3 eye = new Vec3(tag.getDouble("ex"), tag.getDouble("ey"), tag.getDouble("ez"));
-        return !CameraFeeds.inRange(eye) ? -1 : CameraFeeds.request(
-                new BlockPos(tag.getInt("x"), tag.getInt("y"), tag.getInt("z")), eye, tag.getFloat("yaw"), tag.getFloat("pitch"), false);
+        return CameraFeeds.camera(new BlockPos(tag.getInt("x"), tag.getInt("y"), tag.getInt("z")), eye, tag.getFloat("yaw"),
+                tag.getFloat("pitch"), false).texture();
     }
 
     /** Een camerabeeld op het scherm, afgesneden tot de verhouding van het vak (zo'n plaatje staat op zijn kop). */

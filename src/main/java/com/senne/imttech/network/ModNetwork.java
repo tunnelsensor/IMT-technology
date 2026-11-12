@@ -28,7 +28,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "36";
+    private static final String PROTOCOL_VERSION = "37";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -236,6 +236,18 @@ public final class ModNetwork {
                 com.senne.imttech.logic.ServerRacks.handleRename(player, payload);
             }
         });
+        // Een bewakingscamera: Save in zijn naamscherm (hoofdstuk 93).
+        registrar.playToServer(CameraRenamePayload.TYPE, CameraRenamePayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                com.senne.imttech.security.CameraNames.handleRename(player, payload);
+            }
+        });
+        // Welke camerabeelden er op je scherm staan (hoofdstuk 94): de server stuurt dan de wereld eromheen.
+        registrar.playToServer(CameraWatchPayload.TYPE, CameraWatchPayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                com.senne.imttech.security.feed.FeedServer.handleWatch(player, payload);
+            }
+        });
 
         // Server -> speler. In 1.21.1 geef je de afhandeling hier meteen mee. We doen dat met
         // lambda's die pas op het moment van uitvoeren naar de client-code kijken; zo laadt een
@@ -287,6 +299,11 @@ public final class ModNetwork {
                 (payload, context) -> ClientPayloadHandlers.onTrainingOpen(payload, context));
         registrar.playToClient(InputNameOpenPayload.TYPE, InputNameOpenPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onInputNameOpen(payload, context));
+        // Camerabeelden van overal (hoofdstuk 94): de wereld rond de camera's die je bekijkt, en wie daar rondloopt.
+        registrar.playToClient(CameraWorldPayload.TYPE, CameraWorldPayload.STREAM_CODEC,
+                (payload, context) -> com.senne.imttech.client.os.camera.FeedWorld.onWorld(payload));
+        registrar.playToClient(CameraFeedPayload.TYPE, CameraFeedPayload.STREAM_CODEC,
+                (payload, context) -> com.senne.imttech.client.os.camera.FeedWorld.onFeed(payload));
         // Het harnas: stuwraketten aan/uit. Beide kanten op: jouw spel zet ze aan, de server
         // zet ze uit (bijvoorbeeld als je energie op is).
         registrar.playBidirectional(SuitFlightPayload.TYPE, SuitFlightPayload.STREAM_CODEC,

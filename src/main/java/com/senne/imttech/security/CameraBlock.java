@@ -42,8 +42,9 @@ import org.jetbrains.annotations.Nullable;
  *   <li>Hij kijkt van de muur af (of, aan het plafond, de kant op waar jij keek toen je hem
  *       ophing), een beetje omlaag. Precies waarheen stel je in op de desktop (zie
  *       CameraBlockEntity: pan en tilt).</li>
- *   <li>Geef je hem in een aambeeld of op de desktop (Rename, bij het grote beeld) een naam
- *       ("Lobby"), dan staat die naam bij zijn beeld. Breek je hem af, dan houdt het item die naam.</li>
+ *   <li>Geef je hem in een aambeeld, op de desktop (Rename, bij het grote beeld) of met sneak + rechtsklik
+ *       (hoofdstuk 93) een naam ("Lobby"), dan staat die naam bij zijn beeld. Breek je hem af, dan houdt het item die
+ *       naam.</li>
  *   <li>Hoofdstuk 39: wie hem neerzet, heeft hem in zijn I.M.T-lijst ("Camera 1", of de naam uit het aambeeld), en
  *       zet hem op die naam aan en uit, net als een relais: met je bril, je stem, een diagram ({@code off("Lobby")}) of
  *       de knop in Devices. Uit = geen beeld.</li>
@@ -117,6 +118,8 @@ public class CameraBlock extends FaceAttachedHorizontalDirectionalBlock implemen
             camera.setName(stack.getHoverName().getString());
         }
         if (placer instanceof net.minecraft.server.level.ServerPlayer player) {
+            // Hoofdstuk 93: wie hem neerzet, is zijn eigenaar (die hernoemt hem met sneak + rechtsklik, zie CameraNames).
+            camera.setOwner(player);
             if (camera.name().isEmpty()) {
                 // Eén naam overal: de camera heet zoals hij in je lijst staat ("Camera 3"), ook op de desktop.
                 com.senne.imttech.redstone.DeviceNames.register(player, java.util.List.of(pos), pos, DEFAULT_NAME);
@@ -167,9 +170,19 @@ public class CameraBlock extends FaceAttachedHorizontalDirectionalBlock implemen
         return state.getValue(ENABLED);
     }
 
-    /** Rechtsklik: hoe staat hij ervoor (stroom, en bij welk netwerk hij hoort)? */
+    /**
+     * Rechtsklik: hoe staat hij ervoor (stroom, en bij welk netwerk hij hoort)? Sneak + rechtsklik met een lege hand
+     * (hoofdstuk 93, jouw wens: "zorgen dat je cam kunt renamen door shift klik zoals bij een keycardreader"): het
+     * naamscherm, als je mag (zie CameraNames). Met iets in je hand en sneak slaat Minecraft dit zelf over.
+     */
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
+        if (player.isSecondaryUseActive()) {
+            if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+                CameraNames.open(serverPlayer, pos);
+            }
+            return InteractionResult.sidedSuccess(level.isClientSide);
+        }
         if (level instanceof ServerLevel serverLevel && level.getBlockEntity(pos) instanceof CameraBlockEntity camera) {
             SecurityCoreBlockEntity core = SecurityCores.deviceCore(serverLevel, pos);
             boolean cable = com.senne.imttech.lan.LanGrid.required();

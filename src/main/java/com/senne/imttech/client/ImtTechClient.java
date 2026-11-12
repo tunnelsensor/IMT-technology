@@ -82,6 +82,8 @@ public class ImtTechClient {
         // De bewakingscamera's: hun beeldjes tekenen vlak voor elk frame (alleen als de muur open staat).
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.os.camera.CameraFeeds::onRenderFrame);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.os.camera.CameraFeeds::onLoggingOut);
+        // Hoofdstuk 94: de server zeggen welke beelden er op je scherm staan (dan stuurt hij de wereld eromheen).
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.os.camera.CameraFeeds::onClientTick);
         NeoForge.EVENT_BUS.addListener(CableRenderer::onRenderLevel);
         // Hoofdstuk 10: de rand van je zones (en die van wie jou vertrouwt).
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.zone.ZoneBorderRenderer::onRenderLevel);

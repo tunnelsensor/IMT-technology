@@ -4,8 +4,12 @@ import com.senne.imttech.client.hud.HudStyle;
 import com.senne.imttech.logic.InputDeviceBlock;
 import com.senne.imttech.logic.InputDeviceBlockEntity;
 import com.senne.imttech.logic.ServerRackBlock;
+import com.senne.imttech.network.CameraRenamePayload;
 import com.senne.imttech.network.InputRenamePayload;
 import com.senne.imttech.network.RackRenamePayload;
+import com.senne.imttech.security.CameraBlock;
+import com.senne.imttech.security.CameraBlockEntity;
+import com.senne.imttech.security.CameraNames;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -18,11 +22,11 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Het naamscherm van een keycardlezer of codepaneel (13 oktober), en sinds hoofdstuk 64 ook van een serverrack. Openen:
- * sneak + rechtsklik met een lege hand, als jij hem neerzette of als je in deze basis vertrouwd bent (de server kijkt dat
- * na, zie logic/InputDevices en logic/ServerRacks).
+ * Het naamscherm van een keycardlezer of codepaneel (13 oktober), sinds hoofdstuk 64 ook van een serverrack en sinds
+ * hoofdstuk 93 van een bewakingscamera. Openen: sneak + rechtsklik met een lege hand, als jij hem neerzette of als je in
+ * deze basis vertrouwd bent (de server kijkt dat na, zie logic/InputDevices, logic/ServerRacks en security/CameraNames).
  * Bij een codepaneel staat er {@code when codepanel("...")} onder het vakje; bij een rack waar je hem in de app Monitor
- * terugvindt.
+ * terugvindt; bij een camera hoe je hem in een diagram uitzet ({@code off("Lobby")}).
  * <pre>
  *   Keycard Reader                    Placed by Senne
  *   Name
@@ -80,7 +84,8 @@ public class InputNameScreen extends Screen {
             return null;
         }
         BlockState state = mc.level.getBlockState(pos);
-        return state.getBlock() instanceof InputDeviceBlock || state.getBlock() instanceof ServerRackBlock ? state : null;
+        return state.getBlock() instanceof InputDeviceBlock || state.getBlock() instanceof ServerRackBlock
+                || state.getBlock() instanceof CameraBlock ? state : null;
     }
 
     /** Is het een serverrack (hoofdstuk 64)? Dan geen diagramcode maar waar je hem terugvindt: de app Monitor. */
@@ -89,9 +94,18 @@ public class InputNameScreen extends Screen {
         return state != null && state.getBlock() instanceof ServerRackBlock;
     }
 
+    /** Is het een bewakingscamera (hoofdstuk 93)? Die mag een langere naam hebben, en heeft zijn eigen bericht. */
+    private boolean camera() {
+        BlockState state = device();
+        return state != null && state.getBlock() instanceof CameraBlock;
+    }
+
     /** De naam zoals de server hem bewaart (zonder spaties eromheen, aanhalingstekens of te lange staart). */
     private String typed() {
-        return nameBox == null ? oldName : InputDeviceBlockEntity.cleanName(nameBox.getValue());
+        if (nameBox == null) {
+            return oldName;
+        }
+        return camera() ? CameraNames.clean(nameBox.getValue()) : InputDeviceBlockEntity.cleanName(nameBox.getValue());
     }
 
     @Override
@@ -108,14 +122,14 @@ public class InputNameScreen extends Screen {
         String value = nameBox == null ? oldName : nameBox.getValue();
         nameBox = new EditBox(font, left + MARGIN, top + 34, PANEL_W - 2 * MARGIN, 18,
                 Component.translatable("screen.imttech.input_name.name"));
-        nameBox.setMaxLength(InputDeviceBlockEntity.MAX_NAME);
+        nameBox.setMaxLength(camera() ? CameraBlockEntity.MAX_NAME : InputDeviceBlockEntity.MAX_NAME);
         // Aanhalingstekens en een backslash kunnen niet in een naam (dan klopt de code van je diagram niet meer).
         nameBox.setFilter(text -> text.indexOf('"') < 0 && text.indexOf('\\') < 0);
         nameBox.setValue(value);
         // Alles geselecteerd: typen vervangt de oude naam (zoals Rename in de app Devices).
         nameBox.moveCursorToEnd(false);
         nameBox.setHighlightPos(0);
-        nameBox.setHint(Component.translatable("screen.imttech.input_name.hint"));
+        nameBox.setHint(Component.translatable(camera() ? "screen.imttech.input_name.hint_camera" : "screen.imttech.input_name.hint"));
         addRenderableWidget(nameBox);
 
         int buttons = top + PANEL_H - 28;
@@ -141,6 +155,8 @@ public class InputNameScreen extends Screen {
         }
         if (rack()) {
             PacketDistributor.sendToServer(new RackRenamePayload(pos, typed()));
+        } else if (camera()) {
+            PacketDistributor.sendToServer(new CameraRenamePayload(pos, typed()));
         } else {
             PacketDistributor.sendToServer(new InputRenamePayload(pos, typed()));
         }
@@ -203,15 +219,23 @@ public class InputNameScreen extends Screen {
                     top + 72, HudStyle.argb(255, PLAIN), false);
             return;
         }
-        // Zo noem je hem in een diagram: when keycard("Lab door"):
+        // Zo noem je hem in een diagram: when keycard("Lab door"): (een camera zet je op zijn naam uit: off("Lobby"))
         g.drawString(font, Component.translatable("screen.imttech.input_name.in_diagram"), left + MARGIN, top + 60,
                 HudStyle.argb(150, HudStyle.WHITE), false);
-        String trigger = ((InputDeviceBlock) state.getBlock()).trigger().code();
-        Component code = Component.literal("when ").withColor(KEYWORD)
-                .append(Component.literal(trigger).withColor(HudStyle.CYAN))
-                .append(Component.literal("(").withColor(PLAIN))
-                .append(Component.literal("\"" + typed() + "\"").withColor(STRING))
-                .append(Component.literal("):").withColor(PLAIN));
+        Component code;
+        if (state.getBlock() instanceof CameraBlock) {
+            code = Component.literal("off").withColor(HudStyle.CYAN)
+                    .append(Component.literal("(").withColor(PLAIN))
+                    .append(Component.literal("\"" + typed() + "\"").withColor(STRING))
+                    .append(Component.literal(")").withColor(PLAIN));
+        } else {
+            String trigger = ((InputDeviceBlock) state.getBlock()).trigger().code();
+            code = Component.literal("when ").withColor(KEYWORD)
+                    .append(Component.literal(trigger).withColor(HudStyle.CYAN))
+                    .append(Component.literal("(").withColor(PLAIN))
+                    .append(Component.literal("\"" + typed() + "\"").withColor(STRING))
+                    .append(Component.literal("):").withColor(PLAIN));
+        }
         g.drawString(font, code, left + MARGIN, top + 72, HudStyle.argb(255, PLAIN), false);
 
         // Een andere naam: dan ook in je diagrammen (die zoeken de lezer of het paneel op zijn naam).

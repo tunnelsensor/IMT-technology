@@ -34,14 +34,20 @@ import org.jetbrains.annotations.Nullable;
  *
  * Naam, pan en tilt gaan ook naar je spel: daar tekent de bewakingsmuur het beeld vanaf de lens
  * (zie {@link #eye}) in de richting {@link #yaw()}/{@link #pitch()}.
+ *
+ * Sinds hoofdstuk 93 onthoudt hij ook wie hem neerzette ({@link BaseTrust.Placed}): wie dat is, of wie vertrouwd is in de
+ * basis, geeft hem met sneak + rechtsklik een andere naam (zie CameraNames), net als bij een keycardlezer.
  */
-public class CameraBlockEntity extends BlockEntity {
+public class CameraBlockEntity extends BlockEntity implements BaseTrust.Placed {
     /** Zoveel graden mag je hem hooguit draaien of kantelen (elke kant op). */
     public static final float MAX_TURN = 60f;
     /** Zo lang mag zijn naam hooguit zijn (tekens). */
     public static final int MAX_NAME = 32;
 
     private String name = "";
+    /** Wie hem neerzette (hoofdstuk 93), of null: van vóór 12 november, of uit een gebouw (de toren). */
+    private @Nullable java.util.UUID owner;
+    private String ownerName = "";
     /** Graden naar rechts (+) of links (-) van waar hij gewoon heen kijkt. */
     private float pan;
     /** Graden omlaag (+) of omhoog (-) van zijn gewone kanteling. */
@@ -74,6 +80,25 @@ public class CameraBlockEntity extends BlockEntity {
         }
         String result = clean.toString().strip();
         return result.length() > MAX_NAME ? result.substring(0, MAX_NAME).strip() : result;
+    }
+
+    // ================================================================ Wie hem neerzette (hoofdstuk 93)
+
+    @Override
+    public @Nullable java.util.UUID owner() {
+        return owner;
+    }
+
+    @Override
+    public String ownerName() {
+        return ownerName;
+    }
+
+    @Override
+    public void setOwner(net.minecraft.server.level.ServerPlayer player) {
+        owner = player.getUUID();
+        ownerName = player.getGameProfile().getName();
+        setChanged();
     }
 
     public float pan() {
@@ -173,12 +198,18 @@ public class CameraBlockEntity extends BlockEntity {
         tag.putString("Name", name);
         tag.putFloat("Pan", pan);
         tag.putFloat("Tilt", tilt);
+        if (owner != null) {
+            tag.putUUID("Owner", owner);
+        }
+        tag.putString("OwnerName", ownerName);
     }
 
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         name = tag.getString("Name");
+        owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
+        ownerName = tag.getString("OwnerName");
         pan = Mth.clamp(tag.getFloat("Pan"), -MAX_TURN, MAX_TURN);
         tilt = Mth.clamp(tag.getFloat("Tilt"), -MAX_TURN, MAX_TURN);
     }

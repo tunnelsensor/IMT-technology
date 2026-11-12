@@ -46,4 +46,16 @@ public abstract class LevelChunkMixin {
             ArcLampLight.blockChanged(((LevelChunk) (Object) this).getLevel(), pos, old, state);
         }
     }
+
+    /**
+     * Hetzelfde moment, voor de camerabeelden van overal (hoofdstuk 94): kijkt er iemand met een camera naar dit stukje
+     * wereld, dan stuurt de server het opnieuw (een deur ging open, iemand bouwt). Zie security/feed/FeedServer.
+     */
+    @Inject(method = "setBlockState", at = @At("RETURN"))
+    private void imttech$cameraFeeds(BlockPos pos, BlockState state, boolean isMoving,
+                                       CallbackInfoReturnable<BlockState> info) {
+        if (info.getReturnValue() != null && ((LevelChunk) (Object) this).getLevel() instanceof ServerLevel level) {
+            com.senne.imttech.security.feed.FeedServer.blockChanged(level, pos);
+        }
+    }
 }
