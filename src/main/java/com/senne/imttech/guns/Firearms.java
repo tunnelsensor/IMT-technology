@@ -809,7 +809,7 @@ public final class Firearms {
                 if (type.tube() && FirearmItem.roundsInMagazine(held) < FirearmItem.capacity(held)
                         && takeRound(player, type.caliber)) {
                     FirearmItem.setRoundsInMagazine(held, FirearmItem.roundsInMagazine(held) + 1);
-                    sound(player, ModSounds.GLOCK_ROUND_LOAD.get(), 0.8f);
+                    sound(player, type.roundLoadSound(), 0.8f);
                     GunSkillHooks.roundLoaded(player);
                 }
             }

@@ -379,6 +379,21 @@ public final class FirearmControl {
         player.displayClientMessage(Component.translatable("gun.imttech.nothing_to_unload").withStyle(ChatFormatting.RED), true);
     }
 
+    /** Kan er nog een patroon in de buis van het wapen in je hand (hij is niet vol, en je hebt er nog een bij)? */
+    private static boolean canLoadTube(LocalPlayer player) {
+        ItemStack gun = player.getMainHandItem();
+        FirearmType type = FirearmItem.typeOf(gun);
+        if (type == null || !type.tube() || FirearmItem.roundsInMagazine(gun) >= FirearmItem.capacity(gun)) {
+            return false;
+        }
+        for (ItemStack stack : player.getInventory().items) {
+            if (stack.is(type.caliber.round())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Een handeling aan de server vragen; zodra hij antwoordt, begint de animatie. */
     public static void request(Firearms.ActionKind kind, int arg) {
         waiting = true;
@@ -417,8 +432,12 @@ public final class FirearmControl {
             if (action == kind) {
                 action = null;
             }
-            if (kind == Firearms.ActionKind.LOAD_TUBE) {
-                tubeLoading = false; // de buis is vol of je patronen zijn op
+            if (kind == Firearms.ActionKind.LOAD_TUBE && tubeLoading) {
+                // Geweigerd. Is de buis vol of zijn je patronen op, dan stopt het laden. Maar meestal was de server gewoon
+                // nog een tikje bezig met de vorige patroon (jouw spel loopt daar net op voor): dan proberen we het zo
+                // meteen opnieuw, anders stopte het laden na elke patroon terwijl je R nog inhoudt.
+                tubeLoading = me != null && canLoadTube(me);
+                repeatAt = (Minecraft.getInstance().level == null ? 0 : Minecraft.getInstance().level.getGameTime()) + 2;
             }
             return;
         }

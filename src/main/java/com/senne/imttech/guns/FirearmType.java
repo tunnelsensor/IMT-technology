@@ -26,7 +26,13 @@ public enum FirearmType {
      * keuze), een magazijn van vijf. Eén schot is bijna altijd raak en dodelijk, maar daarna sta je even stil. De
      * schakelaar heeft alleen safe en één schot. Zonder kijker richt je over een ijzeren vizier.
      */
-    AWP("awp", Caliber.L338, Action.BOLT, true, 1.5f, FireMode.SAFE, FireMode.SEMI);
+    AWP("awp", Caliber.L338, Action.BOLT, true, 1.5f, FireMode.SAFE, FireMode.SEMI),
+    /**
+     * De Remington 870 (hoofdstuk 103, stap 4, jouw keuze): 12 Gauge, een <b>pomp</b> die je na elk schot zelf bedient
+     * met R, en geen magazijn maar een buis onder de loop (6 patronen) die je patroon per patroon laadt. Elk schot is
+     * acht korrels hagel: van dichtbij verwoestend, van ver bijna niets.
+     */
+    REMINGTON_870("remington_870", Caliber.G12, Action.PUMP, true, 1.15f, FireMode.SAFE, FireMode.SEMI);
 
     /**
      * Hoe een wapen de volgende patroon in de kamer krijgt (jouw keuze, hoofdstuk 103: "je moet na elk schot op R drukken
@@ -215,6 +221,7 @@ public enum FirearmType {
             case MP5 -> ModSounds.MP5_FIRE.get();
             case AK_47 -> ModSounds.AK47_FIRE.get();
             case AWP -> ModSounds.AWP_FIRE.get();
+            case REMINGTON_870 -> ModSounds.SHOTGUN_FIRE.get();
         };
     }
 
@@ -225,6 +232,7 @@ public enum FirearmType {
             case MP5 -> ModSounds.MP5_FIRE_FAR.get();
             case AK_47 -> ModSounds.AK47_FIRE_FAR.get();
             case AWP -> ModSounds.AWP_FIRE_FAR.get();
+            case REMINGTON_870 -> ModSounds.SHOTGUN_FIRE_FAR.get();
         };
     }
 
@@ -235,6 +243,7 @@ public enum FirearmType {
             case MP5 -> ModSounds.MP5_CHARGE.get();
             case AK_47 -> ModSounds.AK47_CHARGE.get();
             case AWP -> ModSounds.AWP_BOLT.get();
+            case REMINGTON_870 -> ModSounds.SHOTGUN_PUMP.get();
         };
     }
 
@@ -245,6 +254,7 @@ public enum FirearmType {
             case MP5 -> ModSounds.MP5_CHARGE.get();
             case AK_47 -> ModSounds.AK47_CHARGE.get();
             case AWP -> ModSounds.AWP_BOLT.get();
+            case REMINGTON_870 -> ModSounds.SHOTGUN_PUMP.get();
         };
     }
 
@@ -254,5 +264,10 @@ public enum FirearmType {
 
     public SoundEvent magInSound() {
         return longGun ? ModSounds.RIFLE_MAG_IN.get() : ModSounds.GLOCK_MAG_IN.get();
+    }
+
+    /** Eén patroon die erin gaat: in een magazijn, of (de Remington 870) in de buis. */
+    public SoundEvent roundLoadSound() {
+        return tube() ? ModSounds.SHOTGUN_SHELL.get() : ModSounds.GLOCK_ROUND_LOAD.get();
     }
 }

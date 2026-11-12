@@ -689,6 +689,44 @@
       }
     ]
   },
+  "shotgun.fire": {
+    "subtitle": "subtitles.imttech.shotgun.fire",
+    "sounds": [
+      {
+        "name": "imttech:shotgun_fire",
+        "attenuation_distance": 36
+      },
+      {
+        "name": "imttech:shotgun_fire_2",
+        "attenuation_distance": 36
+      }
+    ]
+  },
+  "shotgun.fire_far": {
+    "subtitle": "subtitles.imttech.shotgun.fire_far",
+    "sounds": [
+      {
+        "name": "imttech:shotgun_fire_far",
+        "attenuation_distance": 128
+      }
+    ]
+  },
+  "shotgun.pump": {
+    "subtitle": "subtitles.imttech.shotgun.pump",
+    "sounds": [
+      {
+        "name": "imttech:shotgun_pump"
+      }
+    ]
+  },
+  "shotgun.shell": {
+    "subtitle": "subtitles.imttech.shotgun.shell",
+    "sounds": [
+      {
+        "name": "imttech:shotgun_shell"
+      }
+    ]
+  },
   "rifle.mag_out": {
     "subtitle": "subtitles.imttech.rifle.mag_out",
     "sounds": [

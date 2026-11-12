@@ -126,7 +126,7 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (445 automati
 | **B** | Je rugzak openen (zie "Militaire rugzakken") |
 | **Linker Alt** | Het wiel om snel te trekken (vasthouden) |
 | **F6** | De skilltree van je vuurwapens |
-| **R / U / H** (met een geweer of magazijn in je hand) | Herladen / unload / bekijken (zie "Vuurwapens") |
+| **R / U / H** (met een geweer of magazijn in je hand) | Herladen (de AWP en de 870: eerst doorladen, zie "De grote update 2.0") / unload / bekijken (zie "Vuurwapens") |
 | **X** (met een vuurwapen in je hand) | De keuzeschakelaar: safe, semi, 3 schoten (MP5), auto (zie "De grote update 2.0") |
 | **W** (vasthouden, in een scherm, met je muis op een item) | How it works: de animatie van dat item |
 
@@ -2182,8 +2182,8 @@ punten verdelen, zodat je kiest waar je goed in wordt. Wat je leert blijft na je
 
 ### De grote update 2.0: meer vuurwapens, te beginnen met de MP5
 Jouw wens (hoofdstuk 103, 12 november): "meer guns, deze werken net zoals de Glock, de models zijn ook zoals de Glock":
-de **MP5**, de **AK-47**, de **AWP** en de Remington 870, en attachments. Dit is de grote update, dus **versie 2.0**. De wapens
-komen er één voor één bij; wat hier staat, is er al (de MP5, de AK-47 en de AWP). Alles wat bij "Vuurwapens: de Glock 19" staat (zes onderdelen die
+de **MP5**, de **AK-47**, de **AWP** en de **Remington 870**, en attachments. Dit is de grote update, dus **versie 2.0**. De wapens
+zijn er nu alle vier (de MP5, de AK-47, de AWP en de Remington 870); de attachments komen nog. Alles wat bij "Vuurwapens: de Glock 19" staat (zes onderdelen die
 slijten, storingen en de tap-rack, een patroon in de kamer, een magazijn dat je kogel per kogel vult, hulzen die eruit
 springen, de magazijnpouch, de skills) geldt ook voor de nieuwe wapens. Dit is wat anders is.
 
@@ -2264,15 +2264,42 @@ blokken.
 - Met een Gun Sling eraan hangt hij op je rug of voor je borst (hij is lang: de loop steekt boven je hoofd uit); op het
   Pegboard neemt hij 12 x 3 gaatjes in, zijn magazijn 2 x 2.
 
+**De Remington 870** (versie 2.3). Het pompgeweer (jouw keuze: "Remington 870, pomp"), de klassieke met de houten kolf
+en het houten voorhout, ook nagemeten van een foto. Hij schiet **12 Gauge Shells**: elk schot is **acht korrels hagel**
+(`[guns] pellets`) die een beetje uitwaaieren (`pelletSpread`, 4 graden). Elke korrel doet 3,5 schade: van dichtbij, als
+ze allemaal raken, is dat 28 (bijna zoveel als de AWP); vanaf 10 blokken neemt het snel af en verder dan 40 blokken
+vliegt de hagel niet. Bewakers horen hem van 80 blokken.
+- **Geen magazijn, maar een buis.** De patronen zitten in de buis onder de loop: **6**, plus één in de kamer. Je laadt
+  ze **één voor één met R**: het wapen kantelt op zijn kant en je linkerhand duwt een patroon door de laadopening
+  onderaan. **Houd R ingedrukt** en hij blijft laden tot de buis vol is of je patronen op zijn (`loadShellTicks`, 9 ticks
+  per patroon). Je kunt op elk moment bijvullen, ook met de buis half vol. **U** haalt er een patroon uit, terug in je
+  inventaris (is de buis leeg, dan de patroon uit de kamer).
+- **Het is een pomp: na elk schot druk je op R** (zoals de grendel van de AWP). Na het schot staat er in het rood
+  **PRESS R** en doet de trekker niets; R trekt het voorhout naar achteren (de lege huls springt eruit) en duwt het weer
+  naar voren (de volgende patroon gaat de kamer in). Dat is veel sneller dan een grendel: ruim een halve seconde
+  (`cycleTicks`, 12 ticks). R kijkt eerst of er gepompt moet worden; hoeft dat niet, dan laadt R een patroon in de buis.
+  Een lege 870 dus: R inhouden (zes patronen), loslaten, R (pompen: 5 + 1), en als je wil nog eens R (weer 6 + 1).
+- **De schakelaar** (X): SEMI en SAFE. **Richten** doe je over de rug van de behuizing op de kraal (het koperen bolletje
+  vooraan op de loop); gericht waaiert het schot iets minder uit.
+- **Zijn zes onderdelen**: Receiver (de behuizing met de kolf en de buis), **Forend** (het voorhout dat je pompt, met de
+  grendel eraan), Barrel, **Magazine Spring** (de veer in de buis), Firing Pin en Trigger Group, in staal of titanium. Je
+  maakt ze onder **Remington 870** op "Make parts": Receiver 9, Forend 4, Barrel 6, Magazine Spring 2 en 4
+  ijzerklompjes, Firing Pin 1 en 2 ijzerklompjes, Trigger Group 3; en bij elk onderdeel **stammen** (3 voor de Receiver,
+  2 voor het Forend, 1 voor de rest; eender welk hout): dat is het kenmerk van de 870. Een magazijn maak je niet.
+- Met een Gun Sling eraan hangt hij op je rug of voor je borst; op het Pegboard neemt hij 10 x 3 gaatjes in. In de
+  skilltree (F6) staan de vuurwapens nu op de bovenste rij tabbladen en de lasergeweren eronder.
+
 **Munitie per kaliber.** Elk kaliber heeft zijn eigen patroon, zijn eigen lege huls en zijn eigen kogelpunt, en ze
 passen niet door elkaar: een AK-magazijn neemt alleen 7.62x39mm, een AWP-magazijn alleen .338 Lapua, een Glock- of
-MP5-magazijn alleen 9mm (heb je de verkeerde bij, dan zegt het spel "No 7.62x39mm rounds in your inventory").
+MP5-magazijn alleen 9mm, de buis van de 870 alleen 12 Gauge (heb je de verkeerde bij, dan zegt het spel "No 7.62x39mm
+rounds in your inventory").
 - **Maken** (zonder vorm, in de gewone crafting table): een **huls** van koperstaven (9mm: 1 staaf geeft er 8; 7.62x39mm:
   2 staven voor 8; .338 Lapua: 4 staven voor 8) en een **kogelpunt** van ijzerklompjes (9mm: 2 geven er 4; 7.62x39mm: 3
-  voor 4; .338 Lapua: 4 voor 4).
+  voor 4; .338 Lapua: 4 voor 4). Voor de hagelpatroon: een **12 Gauge Hull** (de rode kunststof huls: 1 koperstaaf en 1
+  polymeer geven er 8) en **12 Gauge Buckshot** (de hagel: 5 ijzerklompjes geven er 4).
 - **De Reloading Bench perst elk kaliber.** De huls zegt welke patroon het wordt; de kogelpunt moet van hetzelfde kaliber
-  zijn. Een 9mm-patroon kost één Crushed Gunpowder, een 7.62-patroon **twee**, een .338-patroon **vier** (met 7 kruit pers
-  je dus 3 patronen 7.62). Boven
+  zijn. Een 9mm-patroon kost één Crushed Gunpowder, een 7.62-patroon of een hagelpatroon **twee**, een .338-patroon
+  **vier** (met 7 kruit pers je dus 3 patronen 7.62). Boven
   het vakje rechts staat welk kaliber er uitkomt. Past de kogelpunt niet bij de huls, dan staat er in het rood "The
   casing and the bullet are not the same caliber"; ligt er te weinig kruit voor één patroon, dan zegt de bank hoeveel er
   nodig is.
@@ -2287,13 +2314,14 @@ terugslag, korrels per schot, hoe lang doorladen duurt, hoe ver bewakers het hor
 krijgen die rijtjes hun nieuwe standaardwaarden.
 
 **Voor wie de modellen wil aanpassen.** Elk wapen heeft zijn eigen bestand (`tools/mp5_model.py`,
-`tools/ak47_model.py`, `tools/awp_model.py`), gebouwd met `tools/longgun.py` en `tools/gunmesh.py`;
-`python tools/generate_gun_models.py mp5` (of `ak_47`, `awp`) schrijft alleen dat wapen opnieuw, en met `--assets <map>`
+`tools/ak47_model.py`, `tools/awp_model.py`, `tools/r870_model.py`), gebouwd met `tools/longgun.py` en
+`tools/gunmesh.py`; `python tools/generate_gun_models.py mp5` (of `ak_47`, `awp`, `remington_870`) schrijft alleen dat
+wapen opnieuw, en met `--assets <map>`
 naar een proefmap die je met `tools/preview_obj.py --assets <map>` bekijkt. De omtrek van een foto halen doet
 `tools/trace_outline.py` (met `--colour r,g,b` alleen wat een bepaalde kleur heeft, zoals de kolf van de AWP naast zijn
 zwarte kijker). De patroon, de huls en de kogelpunt van een nieuw kaliber staan in `tools/ammo_models.py`
-(`python tools/generate_gun_models.py 762 338`). De geluiden:
-`py -3.12 tools/generate_sounds.py mp5_fire mp5_charge ak47_fire ak47_charge awp_fire awp_bolt ...`.
+(`python tools/generate_gun_models.py 762 338 12g`). De geluiden:
+`py -3.12 tools/generate_sounds.py mp5_fire mp5_charge ak47_fire ak47_charge awp_fire awp_bolt shotgun_fire shotgun_pump ...`.
 
 ### Lasergeweren uit onderdelen: de Laser Workbench, de Nether Star, de slings
 Jouw wens (hoofdstuk 55): de lasergeweren horen in hetzelfde systeem als de Glock: uit onderdelen gebouwd op een nieuwe

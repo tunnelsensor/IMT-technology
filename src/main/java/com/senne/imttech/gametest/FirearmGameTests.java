@@ -2,6 +2,7 @@ package com.senne.imttech.gametest;
 
 import com.senne.imttech.ImtTech;
 import com.senne.imttech.config.ImtConfig;
+import com.senne.imttech.guns.BulletEntity;
 import com.senne.imttech.guns.Caliber;
 import com.senne.imttech.guns.CasingEntity;
 import com.senne.imttech.guns.FirearmItem;
@@ -504,6 +505,102 @@ public final class FirearmGameTests {
         bench.setItem(ReloadingBenchBlockEntity.SLOT_POWDER, new ItemStack(ModItems.CRUSHED_GUNPOWDER.get(), 9));
         check(ReloadingBenchBlockEntity.caliber(bench) == Caliber.L338 && ReloadingBenchBlockEntity.pressable(bench) == 2,
                 "Met 9 kruit hoor je 2 patronen .338 te kunnen persen, niet " + ReloadingBenchBlockEntity.pressable(bench));
+        restore();
+        helper.succeed();
+    }
+
+    // ================================================================ De Remington 870 (stap 4): een pomp, een buis, hagel
+
+    /**
+     * De Remington 870 heeft geen magazijn: de patronen zitten in de buis onder de loop (6 + 1). Een schot is acht korrels
+     * hagel. Het is een pomp (jouw keuze): na een schot blijft de lege huls in de kamer en doet de trekker niets tot je R
+     * drukt; dan springt er een 12 Gauge-huls uit en gaat de volgende patroon uit de buis de kamer in.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "firearms")
+    public static void remington_870_fires_pellets_and_needs_pumping(GameTestHelper helper) {
+        deterministic();
+        Husk husk = helper.spawn(EntityType.HUSK, new BlockPos(4, 2, 9));
+        husk.setNoAi(true);
+        float before = husk.getHealth();
+        FirearmType type = FirearmType.REMINGTON_870;
+        ServerPlayer player = holder(helper, "pump-shooter", new BlockPos(4, 2, 4), FirearmItem.loaded(type, GunMaterial.STEEL),
+                helper.absoluteVec(new Vec3(4.5, 3.2, 9.5)));
+        player.getInventory().clearContent();
+        player.setItemInHand(InteractionHand.MAIN_HAND, FirearmItem.loaded(type, GunMaterial.STEEL));
+        ItemStack gun = player.getMainHandItem();
+        check(type.caliber == Caliber.G12 && type.tube() && type.manual() && type.capacity() == 6 && type.pellets() == 8,
+                "De 870 hoort een pomp te zijn met een buis van 6 patronen 12 Gauge en 8 korrels per schot");
+        check(FirearmItem.roundsInMagazine(gun) == 6 && FirearmItem.chambered(gun), "Een geladen 870 hoort 6 + 1 te hebben");
+        check(FirearmItem.magazine(gun).isEmpty(), "De 870 hoort geen los magazijn te hebben");
+        check(fire(player) == Firearms.Result.FIRED, "De 870 schoot niet");
+        int pellets = helper.getLevel().getEntitiesOfClass(BulletEntity.class, helper.getBounds().inflate(4)).size();
+        check(pellets == 8, "Een schot hoort 8 korrels te zijn, niet " + pellets);
+        check(!FirearmItem.chambered(gun) && FirearmItem.spent(gun) && FirearmItem.roundsInMagazine(gun) == 6,
+                "Na een schot hoort de lege huls in de kamer te zitten en de buis nog vol te zijn");
+        Firearms.forgetCooldown(player);
+        check(fire(player) == Firearms.Result.EMPTY, "Zonder pompen schoot de 870 een tweede keer");
+        check(!Firearms.request(player, Firearms.ActionKind.EJECT_MAG, 0), "De 870 wierp een magazijn uit");
+        check(Firearms.request(player, Firearms.ActionKind.CYCLE, 0), "R pompte niet");
+        Firearms.finishNow(player);
+        check(FirearmItem.chambered(gun) && !FirearmItem.spent(gun) && FirearmItem.roundsInMagazine(gun) == 5,
+                "Na het pompen hoort er 5 + 1 in te zitten");
+        List<CasingEntity> hulls = helper.getLevel().getEntitiesOfClass(CasingEntity.class, helper.getBounds().inflate(4));
+        check(hulls.size() == 1 && hulls.getFirst().caliber() == Caliber.G12, "De pomp hoort een 12 Gauge-huls uit te werpen");
+        helper.startSequence()
+                .thenIdle(5)
+                .thenExecute(() -> {
+                    check(husk.getHealth() < before, "De hagel raakte de husk niet");
+                    restore();
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * De buis laad je patroon per patroon met R (alleen 12 Gauge), tot hij vol is (6); U haalt er een uit. Een 870 die
+     * net van de Gunsmith Table komt is leeg: laden, pompen (5 + 1), en dan past er nog een in de buis (6 + 1). Op de
+     * Reloading Bench kost een hagelpatroon twee Crushed Gunpowder.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "firearms")
+    public static void remington_870_tube_loads_shell_by_shell(GameTestHelper helper) {
+        deterministic();
+        FirearmType type = FirearmType.REMINGTON_870;
+        ServerPlayer player = holder(helper, "pump-loader", new BlockPos(4, 2, 4), FirearmItem.withParts(type, GunParts.classic(type)),
+                helper.absoluteVec(new Vec3(4.5, 3.2, 12.5)));
+        player.getInventory().clearContent();
+        player.setItemInHand(InteractionHand.MAIN_HAND, FirearmItem.withParts(type, GunParts.classic(type)));
+        ItemStack gun = player.getMainHandItem();
+        check(FirearmItem.roundsInMagazine(gun) == 0 && !FirearmItem.chambered(gun), "Een nieuwe 870 hoort leeg te zijn");
+        player.getInventory().setItem(1, new ItemStack(ModItems.ROUND_9MM.get(), 8));
+        check(!Firearms.request(player, Firearms.ActionKind.LOAD_TUBE, 0), "Zonder 12 Gauge begon het laden toch");
+        player.getInventory().setItem(2, new ItemStack(ModItems.ROUND_12G.get(), 9));
+        for (int i = 0; i < 6; i++) {
+            check(Firearms.request(player, Firearms.ActionKind.LOAD_TUBE, 0), "Patroon " + (i + 1) + " ging de buis niet in");
+            Firearms.finishNow(player);
+        }
+        check(FirearmItem.roundsInMagazine(gun) == 6, "Er horen 6 patronen in de buis te zitten");
+        check(!Firearms.request(player, Firearms.ActionKind.LOAD_TUBE, 0), "Een zevende patroon ging in de buis");
+        check(player.getInventory().countItem(ModItems.ROUND_12G.get()) == 3, "Er horen 3 patronen over te zijn");
+        // Pompen: de eerste patroon gaat de kamer in, zonder dat er een huls uit springt.
+        check(Firearms.needsCycle(gun) && Firearms.request(player, Firearms.ActionKind.CYCLE, 0), "R pompte niet");
+        Firearms.finishNow(player);
+        check(FirearmItem.chambered(gun) && FirearmItem.roundsInMagazine(gun) == 5, "Na het pompen hoort er 5 + 1 in te zitten");
+        check(helper.getLevel().getEntitiesOfClass(CasingEntity.class, helper.getBounds().inflate(4)).isEmpty(),
+                "Er sprong een huls uit terwijl er niet geschoten was");
+        // Nu past er weer een in de buis; en U haalt hem er weer uit.
+        check(Firearms.request(player, Firearms.ActionKind.LOAD_TUBE, 0), "De buis nam geen patroon meer na het pompen");
+        Firearms.finishNow(player);
+        check(FirearmItem.roundsInMagazine(gun) == 6 && player.getInventory().countItem(ModItems.ROUND_12G.get()) == 2,
+                "Er hoort nu 6 + 1 in te zitten en 2 patronen over te zijn");
+        check(Firearms.request(player, Firearms.ActionKind.UNLOAD_TUBE, 0), "U haalde geen patroon uit de buis");
+        Firearms.finishNow(player);
+        check(FirearmItem.roundsInMagazine(gun) == 5 && player.getInventory().countItem(ModItems.ROUND_12G.get()) == 3,
+                "De patroon uit de buis kwam niet terug in je inventaris");
+        SimpleContainer bench = new SimpleContainer(ReloadingBenchBlockEntity.SIZE);
+        bench.setItem(ReloadingBenchBlockEntity.SLOT_CASING, new ItemStack(ModItems.CASING_12G.get(), 4));
+        bench.setItem(ReloadingBenchBlockEntity.SLOT_BULLET, new ItemStack(ModItems.BULLET_12G.get(), 4));
+        bench.setItem(ReloadingBenchBlockEntity.SLOT_POWDER, new ItemStack(ModItems.CRUSHED_GUNPOWDER.get(), 5));
+        check(ReloadingBenchBlockEntity.caliber(bench) == Caliber.G12 && ReloadingBenchBlockEntity.pressable(bench) == 2,
+                "Met 5 kruit hoor je 2 hagelpatronen te kunnen persen, niet " + ReloadingBenchBlockEntity.pressable(bench));
         restore();
         helper.succeed();
     }

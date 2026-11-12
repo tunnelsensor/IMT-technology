@@ -155,6 +155,11 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> AWP_FIRE = register("awp.fire");
     public static final DeferredHolder<SoundEvent, SoundEvent> AWP_FIRE_FAR = register("awp.fire_far");
     public static final DeferredHolder<SoundEvent, SoundEvent> AWP_BOLT = register("awp.bolt");
+    /** Hoofdstuk 103, stap 4: de Remington 870. De knal van hagel, de pomp (achteruit en vooruit), en een patroon de buis in. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> SHOTGUN_FIRE = register("shotgun.fire");
+    public static final DeferredHolder<SoundEvent, SoundEvent> SHOTGUN_FIRE_FAR = register("shotgun.fire_far");
+    public static final DeferredHolder<SoundEvent, SoundEvent> SHOTGUN_PUMP = register("shotgun.pump");
+    public static final DeferredHolder<SoundEvent, SoundEvent> SHOTGUN_SHELL = register("shotgun.shell");
     /** Hoofdstuk 103: het magazijn van een lang wapen dat eruit komt en erin klikt (zwaarder dan dat van een pistool). */
     public static final DeferredHolder<SoundEvent, SoundEvent> RIFLE_MAG_OUT = register("rifle.mag_out");
     public static final DeferredHolder<SoundEvent, SoundEvent> RIFLE_MAG_IN = register("rifle.mag_in");

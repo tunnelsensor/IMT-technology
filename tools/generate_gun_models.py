@@ -39,6 +39,7 @@ import gunmesh as gm
 import longgun as lg
 import model_display as md
 import mp5_model
+import r870_model
 
 ROOT = Path(__file__).resolve().parent.parent / "src" / "main" / "resources"
 ASSETS = ROOT / "assets" / "imttech"
@@ -434,7 +435,8 @@ def long_gun(mod):
               obj_model(name, {"mag": tex + "magazine"}, gui_light=None, folder=gun.id))
     # Het hele wapen: in je inventaris schuin (de loop naar rechtsboven, zoals een zwaard), zodat het zijn vakje vult.
     view = euler_xyz(gm.rot_z(38) @ gm.rot_y(-90))
-    textures = {gun.classic: tex + gun.classic, "mag": tex + "magazine"}
+    # Een wapen zonder magazijn (de Remington 870) heeft geen plaatje voor het magazijn.
+    textures = {gun.classic: tex + gun.classic, "mag": tex + ("magazine" if gun.mags else gun.classic)}
     write(f"models/item/{gun.id}.json", obj_model(
         "whole", textures, folder=gun.id,
         display=gun_display(gun.whole_points(), mod.GRIP, gui_rotation=view, ground_scale=mod.HAND_SCALE * 0.8,
@@ -475,7 +477,7 @@ def long_gun(mod):
     return gun
 
 
-LONG_GUNS = {"mp5": mp5_model, "ak_47": ak47_model, "awp": awp_model}
+LONG_GUNS = {"mp5": mp5_model, "ak_47": ak47_model, "awp": awp_model, "remington_870": r870_model}
 
 
 def ammo(caliber):
@@ -489,7 +491,8 @@ def ammo(caliber):
     meshes = {
         f"round_{caliber}": ammo_models.round_mesh(caliber, (8, 8.3 - c["length"] / 2, 8), (0, 1, 0)),
         f"casing_{caliber}": ammo_models.casing_mesh(caliber, (8, 7.65 - c["case_length"] / 2, 8), (0, 1, 0)),
-        f"bullet_{caliber}": ammo_models.bullet_mesh(caliber, (8, 8 - (c["length"] - c["case_length"] + 0.55) / 2, 8), (0, 1, 0)),
+        f"bullet_{caliber}": ammo_models.bullet_mesh(
+            caliber, (8, 8 - c.get("shot_height", c["length"] - c["case_length"] + 0.55) / 2, 8), (0, 1, 0)),
     }
     islands = [i for m in meshes.values() for i in m.islands]
     size = lg.auto_pack(islands)
@@ -514,7 +517,7 @@ def ammo(caliber):
     print(f"munitie {caliber}: texture {size}")
 
 
-AMMO = ("762", "338")
+AMMO = ("762", "338", "12g")
 
 
 # ---------------------------------------------------------------- Holster en pouches (hoofdstuk 52, stap 2)

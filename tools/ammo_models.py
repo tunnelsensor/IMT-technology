@@ -9,6 +9,8 @@ patronen:
 
 Elke vorm is een profiel voor gunmesh.lathe: (afstand vanaf de bodem, straal), in pixels van het model.
 """
+import math
+
 import gunmesh as gm
 
 MM = 1 / 12.8
@@ -41,13 +43,31 @@ CALIBERS = {
         case=bottleneck(69.2 * MM, 7.465 * MM, 7.45 * MM, 6.9 * MM, 54.9 * MM, 4.7 * MM, 60.9 * MM),
         bullet=ogive(69.2 * MM, 93.5 * MM, 4.305 * MM, steps=6),
         length=93.5 * MM, case_length=69.2 * MM, rim=7.465 * MM, mouth=4.3 * MM),
+    # 12 Gauge (2 3/4 inch): een rode kunststof huls van 20,3 mm dik op een messing bodem (rand 22,45 mm, 12 mm hoog). Geladen
+    # (de rand dichtgevouwen) is hij 60 mm lang, afgeschoten 70 mm. De hagel: korrels "00 buck" van 8,4 mm.
+    "12g": dict(shell=True, length=60.0 * MM, case_length=70.0 * MM, rim=11.225 * MM, body=10.15 * MM, brass=12.0 * MM,
+                mouth=9.3 * MM, pellet=4.2 * MM, shot_height=4.2 * MM * 5.5),
 }
+
+
+def shell_base(c):
+    """Het profiel van de messing bodem van een hagelpatroon: de rand en het korte messing kapje."""
+    rim, body, brass = c["rim"], c["body"], c["brass"]
+    return [(0.0, 0.0), (0.0, rim), (0.09, rim), (0.12, body + 0.01), (brass, body + 0.01), (brass, body - 0.02)]
 
 
 def round_mesh(caliber, base, axis):
     """Een hele patroon (huls + kogel) vanaf zijn bodem in de richting {axis}."""
     c = CALIBERS[caliber]
     m = gm.Mesh()
+    if c.get("shell"):
+        # Een hagelpatroon: de messing bodem, de rode kunststof huls, en vooraan de dichtgevouwen rand.
+        data = {"base": base, "axis": axis, "rim": c["rim"], "case": c["brass"], "length": c["length"]}
+        gm.lathe(m, base, axis, shell_base(c), 14, "brass", data=data)
+        body, top = c["body"], c["length"]
+        gm.lathe(m, base, axis, [(c["brass"], body), (top - 0.22, body), (top - 0.08, body * 0.93), (top, body * 0.72),
+                                 (top, 0.0)], 14, "hull", data=data)
+        return m
     data = {"base": base, "axis": axis, "rim": c["rim"], "case": c["case_length"]}
     gm.lathe(m, base, axis, c["case"], 14, "brass", data=data)
     gm.lathe(m, base, axis, c["bullet"], 14, "copper", data=data)
@@ -59,6 +79,15 @@ def casing_mesh(caliber, base, axis):
     c = CALIBERS[caliber]
     m = gm.Mesh()
     top = c["case_length"]
+    if c.get("shell"):
+        # Een afgeschoten hagelpatroon: de rand is opengevouwen, dus de huls is langer en vooraan open.
+        data = {"base": base, "axis": axis, "rim": c["rim"], "case": c["brass"], "length": top, "open": True,
+                "mouth": c["mouth"] + 0.01}
+        gm.lathe(m, base, axis, shell_base(c), 14, "brass", data=data)
+        body = c["body"]
+        gm.lathe(m, base, axis, [(c["brass"], body), (top, body), (top, c["mouth"]), (top - 0.6, c["mouth"]), (top - 0.6, 0.0)],
+                 14, "hull", data=data)
+        return m
     profile = c["case"] + [(top, c["mouth"]), (top - 0.25, c["mouth"]), (top - 0.25, 0.0)]
     gm.lathe(m, base, axis, profile, 14, "brass",
              data={"base": base, "axis": axis, "rim": c["rim"], "case": top, "open": True, "mouth": c["mouth"] + 0.01})
@@ -69,6 +98,19 @@ def bullet_mesh(caliber, base, axis):
     """Een losse kogelpunt (het stuk dat in de huls zit erbij)."""
     c = CALIBERS[caliber]
     m = gm.Mesh()
+    if c.get("shell"):
+        # De hagel: negen loden korrels, drie lagen van drie op elkaar (zoals ze in de huls zitten).
+        r = c["pellet"]
+        ball = [(0.0, 0.0)] + [(r * (1 - math.cos(math.pi * i / 6)), r * math.sin(math.pi * i / 6)) for i in range(1, 6)] \
+            + [(2 * r, 0.0)]
+        axis_v = gm.unit(gm.vec(*axis))
+        u, v = gm._plane_basis(axis_v)
+        for layer in range(3):
+            for k in range(3):
+                angle = 2 * math.pi * (k / 3 + layer / 6)
+                centre = gm.vec(*base) + axis_v * (layer * r * 1.75) + (u * math.cos(angle) + v * math.sin(angle)) * (r * 1.16)
+                gm.lathe(m, tuple(centre), axis, ball, 8, "lead", data={"base": tuple(centre), "axis": axis})
+        return m
     seat = 0.55
     start = c["case_length"]
     profile = [(0.0, 0.0), (0.0, c["mouth"] * 0.94), (0.05, c["mouth"])] + [(h - start + seat, r) for h, r in c["bullet"][1:]]

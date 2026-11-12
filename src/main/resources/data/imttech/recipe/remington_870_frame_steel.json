@@ -1,0 +1,20 @@
+{
+  "type": "imttech:gunsmithing",
+  "ingredients": [
+    {
+      "item": "imttech:steel_ingot",
+      "count": 9
+    },
+    {
+      "tag": "minecraft:logs",
+      "count": 3
+    }
+  ],
+  "result": {
+    "id": "imttech:remington_870_frame",
+    "count": 1,
+    "components": {
+      "imttech:gun_material": "steel"
+    }
+  }
+}

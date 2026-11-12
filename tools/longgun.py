@@ -248,6 +248,22 @@ def round_paint(isl, p, n, kind, grain):
     r = float(np.linalg.norm(rel - axis * h))
     along = float(np.dot(np.array([float(c) for c in n]), axis))
     rim = float(isl.data.get("rim", 0.4))
+    if kind == "hull":
+        # De kunststof huls van een hagelpatroon: rood, met fijne ribbels in de lengte; vooraan de gevouwen rand (zes
+        # plooien naar het midden), of bij een afgeschoten huls de donkere binnenkant.
+        u, v = gm._plane_basis(axis)
+        side = rel - axis * h
+        angle = math.atan2(float(np.dot(side, v)), float(np.dot(side, u)))
+        col = add((178, 36, 32), grain * 8 + 14 * max(0.0, along))
+        if abs(along) < 0.5 and int(angle * 20 / math.pi) % 2 == 0:
+            col = add(col, -12)
+        if isl.data.get("open") and (r < float(isl.data.get("mouth", 0.7)) or along < -0.5):
+            return (58, 16, 14)
+        if along > 0.5 and not isl.data.get("open"):
+            col = add((150, 28, 26), -26 if int((angle + math.pi) * 3 / math.pi + 0.5) % 2 == 0 else 0)
+        return col
+    if kind == "lead":
+        return add((96, 98, 106), grain * 10 + 22 * max(0.0, float(n[1])))
     if kind == "brass":
         col = add((204, 162, 82), -18 + 30 * min(1.0, h / max(0.5, float(isl.data.get("case", 1.5)))) + grain * 6)
         if along < -0.9:

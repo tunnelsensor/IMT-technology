@@ -73,14 +73,14 @@ public final class HowToTopics {
             // hebben) bij dezelfde onderwerpen: het wapen en zijn magazijn bij de Glock, hun onderdelen bij de Gunsmith Table.
             topic("glock", "weapons", "Glock 19", WeaponScenes::glock, ModItems.GLOCK_19, ModItems.GLOCK_19_MAGAZINE, ModItems.ROUND_9MM,
                     ModItems.MP5, ModItems.MP5_MAGAZINE, ModItems.AK_47, ModItems.AK_47_MAGAZINE, ModItems.ROUND_762,
-                    ModItems.AWP, ModItems.AWP_MAGAZINE, ModItems.ROUND_338),
+                    ModItems.AWP, ModItems.AWP_MAGAZINE, ModItems.ROUND_338, ModItems.REMINGTON_870, ModItems.ROUND_12G),
             topicItems("gunsmith", "weapons", "Gunsmith Table", WeaponScenes::gunsmith,
                     () -> concat(Arrays.stream(com.senne.imttech.guns.FirearmType.values())
                                     .flatMap(type -> Arrays.stream(GunPart.values()).map(part -> (Item) ModItems.gunPart(type, part))).toList(),
                             List.of(ModItems.GUNSMITH_TABLE.get()))),
             topic("reloading", "weapons", "Reloading Bench", WeaponScenes::reloading, ModItems.RELOADING_BENCH, ModItems.CASING_9MM,
                     ModItems.BULLET_9MM, ModItems.CRUSHED_GUNPOWDER, ModItems.ROUND_9MM, ModItems.CASING_762, ModItems.BULLET_762,
-                    ModItems.CASING_338, ModItems.BULLET_338),
+                    ModItems.CASING_338, ModItems.BULLET_338, ModItems.CASING_12G, ModItems.BULLET_12G),
             topic("gear", "weapons", "Holster, pouches and slings", WeaponScenes::gear, ModItems.HOLSTER, ModItems.GRENADE_POUCH,
                     ModItems.MAG_POUCH, ModItems.GUN_SLING),
             topic("armory", "weapons", "Armory: pegboard and ammo box", com.senne.imttech.howto.scenes.ArmoryScenes::armory,

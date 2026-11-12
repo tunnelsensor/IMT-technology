@@ -521,6 +521,11 @@ public final class ModItems {
             properties -> new com.senne.imttech.guns.MagazineItem(properties, com.senne.imttech.guns.FirearmType.AWP, false),
             new Item.Properties());
 
+    /** Hoofdstuk 103, stap 4: de Remington 870 (een pompgeweer). Hij heeft geen magazijn: de patronen zitten in zijn buis. */
+    public static final DeferredItem<com.senne.imttech.guns.FirearmItem> REMINGTON_870 = ITEMS.registerItem("remington_870",
+            properties -> new com.senne.imttech.guns.FirearmItem(properties, com.senne.imttech.guns.FirearmType.REMINGTON_870),
+            new Item.Properties().rarity(Rarity.UNCOMMON));
+
     /**
      * Hoofdstuk 52: de zes onderdelen (elk in zijn materialen, zie GunPartItem). Sinds hoofdstuk 103 per wapen: de Glock
      * houdt zijn oude namen ("gun_slide"), de andere wapens heten naar hun wapen ("mp5_slide").
@@ -557,6 +562,7 @@ public final class ModItems {
             case MP5 -> MP5.get();
             case AK_47 -> AK_47.get();
             case AWP -> AWP.get();
+            case REMINGTON_870 -> REMINGTON_870.get();
         };
     }
 
@@ -572,6 +578,7 @@ public final class ModItems {
             case MP5 -> MP5_MAGAZINE.get();
             case AK_47 -> AK_47_MAGAZINE.get();
             case AWP -> AWP_MAGAZINE.get();
+            case REMINGTON_870 -> throw new IllegalArgumentException("De Remington 870 heeft geen magazijn (hij heeft een buis)");
         };
     }
 
@@ -586,6 +593,7 @@ public final class ModItems {
             case MM9 -> ROUND_9MM.get();
             case R762 -> ROUND_762.get();
             case L338 -> ROUND_338.get();
+            case G12 -> ROUND_12G.get();
         };
     }
 
@@ -594,6 +602,7 @@ public final class ModItems {
             case MM9 -> CASING_9MM.get();
             case R762 -> CASING_762.get();
             case L338 -> CASING_338.get();
+            case G12 -> CASING_12G.get();
         };
     }
 
@@ -602,6 +611,7 @@ public final class ModItems {
             case MM9 -> BULLET_9MM.get();
             case R762 -> BULLET_762.get();
             case L338 -> BULLET_338.get();
+            case G12 -> BULLET_12G.get();
         };
     }
 
@@ -619,6 +629,10 @@ public final class ModItems {
     public static final DeferredItem<Item> ROUND_338 = ITEMS.registerSimpleItem("round_338", new Item.Properties());
     public static final DeferredItem<Item> CASING_338 = ITEMS.registerSimpleItem("casing_338", new Item.Properties());
     public static final DeferredItem<Item> BULLET_338 = ITEMS.registerSimpleItem("bullet_338", new Item.Properties());
+    /** Hoofdstuk 103, stap 4: de hagelpatroon van de Remington 870 (12 Gauge), zijn lege huls en zijn hagel. */
+    public static final DeferredItem<Item> ROUND_12G = ITEMS.registerSimpleItem("round_12g", new Item.Properties());
+    public static final DeferredItem<Item> CASING_12G = ITEMS.registerSimpleItem("casing_12g", new Item.Properties());
+    public static final DeferredItem<Item> BULLET_12G = ITEMS.registerSimpleItem("bullet_12g", new Item.Properties());
     /** Hoofdstuk 76: fijngemalen buskruit uit de Crusher (1 buskruit = 10), één per 9mm-patroon op de Reloading Bench. */
     public static final DeferredItem<com.senne.imttech.guns.CrushedGunpowderItem> CRUSHED_GUNPOWDER = ITEMS.registerItem(
             "crushed_gunpowder", com.senne.imttech.guns.CrushedGunpowderItem::new, new Item.Properties());

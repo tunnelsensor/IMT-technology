@@ -161,12 +161,30 @@ public final class FirearmRig {
         return this;
     }
 
+    /**
+     * De Remington 870 (hoofdstuk 103, stap 4, tools/r870_model.py): je rechterhand om de hals van de kolf, je linkerhand
+     * om het voorhout: dat is ook de hendel, die je 7 pixels naar achteren trekt en weer naar voren duwt (de pomp). Je
+     * richt over de rug van de behuizing op de kraal vooraan op de loop, met je oog vlak achter de behuizing (verder naar
+     * achteren vulde de hals van de kolf het halve beeld) en een centimeter erboven (lager vulde de behuizing zelf het
+     * halve beeld; de kraal staat zo net onder je richtpunt, zoals je over een hagelgeweer kijkt). "Het magazijn" is hier de laadopening onder de behuizing: daar
+     * duw je de patronen een voor een de buis in.
+     */
+    private static final FirearmRig REMINGTON_870 = new FirearmRig(0.34f,
+            new Vector3f(8, 7.95f, 12.5f), new Vector3f(8, 8.8f, -19.0f), new Vector3f(8, 15.2f, 6.8f),
+            new Vector3f(8, 13.44f, -42.96f), new Vector3f(8, 9.9f, -0.5f), new Vector3f(0, -1, 0),
+            new Vector3f(9.5f, 13.3f, -0.7f),
+            new Vector3f(0.20f, -0.31f, -0.40f), 0.13f, 7.0f, 2, 0.09f, 7.5f,
+            new Vector3f(8, 8.8f, -19.0f), 7.0f,
+            new Vector3f(8, 6.0f, -0.5f), new Vector3f(8, 9.9f, -0.5f), 0,
+            0.36f, new Vector3f(8, 10.5f, -3.0f));
+
     public static FirearmRig of(FirearmType type) {
         return switch (type) {
             case GLOCK_19 -> GLOCK_19;
             case MP5 -> MP5;
             case AK_47 -> AK_47;
             case AWP -> AWP;
+            case REMINGTON_870 -> REMINGTON_870;
         };
     }
 
@@ -338,6 +356,15 @@ public final class FirearmRig {
             // De grendel van de AWP is lang (met zijn kap en zijn knop): de veer past er niet achter. Hij ligt ervoor,
             // boven de loop.
             return new Vector3f(0, 9.0f, -24.0f).mul(explodedScale(type));
+        }
+        if (type == FirearmType.REMINGTON_870 && part == GunPart.SPRINGS) {
+            // De veer van de 870 zit in de buis, onder het voorhout: naast het voorhout is geen plek. Hij ligt erboven,
+            // vooraan, naast de slagpin.
+            return new Vector3f(0, 16.0f, -11.5f).mul(explodedScale(type));
+        }
+        if (type == FirearmType.REMINGTON_870 && part == GunPart.STRIKER) {
+            // ...en de slagpin een eindje naar achteren, zodat hun namen niet tegen elkaar staan.
+            return new Vector3f(0, 16.0f, 4.0f).mul(explodedScale(type));
         }
         if (type != FirearmType.GLOCK_19) {
             return new Vector3f(LONG_EXPLODED.get(part)).mul(explodedScale(type));

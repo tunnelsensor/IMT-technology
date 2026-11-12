@@ -4250,6 +4250,46 @@ public final class VisualCheck {
             firearmRackShots(t, g, "aw");
         }
 
+        // --- De Remington 870 (hoofdstuk 103, stap 4): de ronde van een lang wapen, maar met de pomp en de buis: na het
+        // schot "PRESS R" en pompen; met een lege 870 R inhouden (de patronen gaan een voor een de buis in), pompen, en U
+        // (een patroon eruit). Daarna de Reloading Bench met 12 Gauge en het Pegboard.
+        if (want("870")) {
+            BlockPos g = GUN_RANGE.above();
+            longGunTour(t, com.senne.imttech.guns.FirearmType.REMINGTON_870, "rs", "870", 0,
+                    com.senne.imttech.client.guns.GunsmithMakePanel.Group.R870);
+            t.onServer(5, player -> {
+                if (player.serverLevel().getBlockEntity(g.offset(-2, 0, 2)) instanceof com.senne.imttech.guns.ReloadingBenchBlockEntity bench) {
+                    bench.items().setItem(0, new ItemStack(ModItems.CASING_12G.get(), 12));
+                    bench.items().setItem(1, new ItemStack(ModItems.BULLET_12G.get(), 9));
+                    bench.items().setItem(2, new ItemStack(ModItems.CRUSHED_GUNPOWDER.get(), 10));
+                }
+                var inventory = player.getInventory();
+                inventory.clearContent();
+                int slot = 9;
+                for (com.senne.imttech.guns.Caliber caliber : com.senne.imttech.guns.Caliber.values()) {
+                    inventory.setItem(slot, new ItemStack(caliber.round(), 24));
+                    inventory.setItem(slot + 1, new ItemStack(caliber.casing(), 12));
+                    inventory.setItem(slot + 2, new ItemStack(caliber.bullet(), 12));
+                    slot += slot == 9 ? 4 : slot == 13 ? 5 : 4;
+                }
+                inventory.setItem(27, com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.REMINGTON_870,
+                        com.senne.imttech.guns.GunMaterial.STEEL));
+                inventory.setItem(28, com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.REMINGTON_870,
+                        com.senne.imttech.guns.GunMaterial.TITANIUM));
+                for (com.senne.imttech.guns.GunPart part : com.senne.imttech.guns.GunPart.values()) {
+                    inventory.setItem(29 + part.ordinal(), com.senne.imttech.guns.GunPartItem.of(
+                            com.senne.imttech.guns.FirearmType.REMINGTON_870, part, com.senne.imttech.guns.GunMaterial.STEEL));
+                }
+                ShowcaseFeatures.openBench(player, g.offset(-2, 0, 2));
+            });
+            t.step(0, () -> HowToTour.mouseTo(1, 1));
+            t.step(15, () -> Minecraft.getInstance().getToasts().clear());
+            t.shot(8, "rs18_reloading_bench_12_gauge");
+            t.close(5);
+            t.onServer(0, player -> player.getInventory().clearContent());
+            firearmRackShots(t, g, "rs");
+        }
+
         // --- De skilltree (hoofdstuk 52, stap 3): leeg, en met een paar niveaus geleerd.
         if (want("skills")) {
             t.onServer(0, player -> player.setData(com.senne.imttech.registry.ModAttachments.GUN_SKILLS,
@@ -5916,34 +5956,57 @@ public final class VisualCheck {
             t.shot(7, p + "05_full_auto");
             t.key(3, () -> Minecraft.getInstance().options.keyAttack, false);
         }
-        t.step(type.manual() ? cycle + 6 : 12, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
-        t.shot(5, p + "06_magazine_out");
-        t.step(15, () -> selectSlot(1));
-        t.tap(15, () -> Minecraft.getInstance().options.keyUse);
-        t.shot(7, p + "07_magazine_in");
-        // Een wapen met een vol magazijn en een lege kamer: zodra je het vastpakt, laadt het zelf door (de spanhendel).
-        // Een grendel of een pomp doet dat niet vanzelf: daar druk je op R.
-        t.step(15, () -> selectSlot(4));
-        if (type.manual()) {
-            t.step(10, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
-            t.shot(Math.round(cycle * 0.45f), p + "07b_charging");
-            t.step(cycle, () -> { });
+        if (type.tube()) {
+            // Een wapen met een buis (de Remington 870): geen magazijn. Met een lege 870 in je hand R inhouden: de patronen
+            // gaan een voor een door de laadopening de buis in; daarna R om te pompen, en U haalt er weer een uit.
+            int shell = Math.round(com.senne.imttech.config.ImtConfig.Guns.LOAD_SHELL_TICKS);
+            t.step(cycle + 10, () -> selectSlot(5));
+            // Een echte toets is tegelijk "ingedrukt" en "een klik"; hier zijn dat twee stappen: eerst ingedrukt, dan de
+            // klik (die begint het laden; omdat de toets ingedrukt blijft, gaat het door).
+            t.key(15, () -> com.senne.imttech.client.ImtKeys.GUN_RELOAD, true);
+            t.step(1, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
+            t.shot(Math.round(shell * 0.55f), p + "06_loading_a_shell");
+            t.shot(shell * 2, p + "07_loading_more_shells");
+            t.key(shell * 4, () -> com.senne.imttech.client.ImtKeys.GUN_RELOAD, false);
+            t.step(shell + 6, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
+            t.shot(Math.round(cycle * 0.4f), p + "07b_pumping");
+            t.step(cycle + 4, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_UNLOAD.getKey()));
+            t.shot(4, p + "08_unloading_a_shell");
+            t.step(25, () -> selectSlot(0));
+            t.step(15, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_INSPECT.getKey()));
+            t.shot(12, p + "09_inspect_side");
+            t.shot(18, p + "10_inspect_top");
+            t.step(30, () -> { });
         } else {
-            t.shot(7, p + "07b_charging");
+            t.step(type.manual() ? cycle + 6 : 12, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
+            t.shot(5, p + "06_magazine_out");
+            t.step(15, () -> selectSlot(1));
+            t.tap(15, () -> Minecraft.getInstance().options.keyUse);
+            t.shot(7, p + "07_magazine_in");
+            // Een wapen met een vol magazijn en een lege kamer: zodra je het vastpakt, laadt het zelf door (de spanhendel).
+            // Een grendel of een pomp doet dat niet vanzelf: daar druk je op R.
+            t.step(15, () -> selectSlot(4));
+            if (type.manual()) {
+                t.step(10, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
+                t.shot(Math.round(cycle * 0.45f), p + "07b_charging");
+                t.step(cycle, () -> { });
+            } else {
+                t.shot(7, p + "07b_charging");
+            }
+            t.step(15, () -> selectSlot(5));
+            t.key(15, () -> Minecraft.getInstance().options.keyShift, true);
+            t.step(2, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
+            t.key(2, () -> Minecraft.getInstance().options.keyShift, false);
+            t.shot(8, p + "08_chamber_by_hand");
+            t.step(25, () -> selectSlot(0));
+            t.step(15, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_INSPECT.getKey()));
+            t.shot(12, p + "09_inspect_side");
+            t.shot(18, p + "10_inspect_top");
+            t.step(30, () -> selectSlot(3));
+            t.shot(15, p + "11_magazine_in_hand");
+            t.step(0, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
+            t.shot(4, p + "12_magazine_loading");
         }
-        t.step(15, () -> selectSlot(5));
-        t.key(15, () -> Minecraft.getInstance().options.keyShift, true);
-        t.step(2, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
-        t.key(2, () -> Minecraft.getInstance().options.keyShift, false);
-        t.shot(8, p + "08_chamber_by_hand");
-        t.step(25, () -> selectSlot(0));
-        t.step(15, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_INSPECT.getKey()));
-        t.shot(12, p + "09_inspect_side");
-        t.shot(18, p + "10_inspect_top");
-        t.step(30, () -> selectSlot(3));
-        t.shot(15, p + "11_magazine_in_hand");
-        t.step(0, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
-        t.shot(4, p + "12_magazine_loading");
         // De Gunsmith Table: het wapen met alleen zijn Receiver, loop en trekker; de rest ligt eromheen.
         t.onServer(10, player -> {
             if (player.serverLevel().getBlockEntity(g.offset(-2, 0, -2)) instanceof com.senne.imttech.guns.GunsmithTableBlockEntity table) {
@@ -5960,8 +6023,12 @@ public final class VisualCheck {
         t.step(15, () -> Minecraft.getInstance().getToasts().clear());
         t.shot(8, p + "13_gunsmith_table_" + name);
         t.onServer(0, ShowcaseFeatures::giveGunsmithMaterials);
-        // Planken erbij: de onderdelen van de AK-47 kosten hout.
-        t.onServer(0, player -> player.getInventory().setItem(19, new ItemStack(net.minecraft.world.level.block.Blocks.OAK_PLANKS, 6)));
+        // Planken, groene verf en stammen erbij: het kenmerk in de recepten van de AK-47, de AWP en de Remington 870.
+        t.onServer(0, player -> {
+            player.getInventory().setItem(19, new ItemStack(net.minecraft.world.level.block.Blocks.OAK_PLANKS, 6));
+            player.getInventory().setItem(20, new ItemStack(net.minecraft.world.item.Items.GREEN_DYE, 3));
+            player.getInventory().setItem(21, new ItemStack(net.minecraft.world.level.block.Blocks.OAK_LOG, 4));
+        });
         t.step(5, () -> ShowcaseFeatures.gunsmithTab(true, group,
                 stack -> com.senne.imttech.guns.GunPartItem.partOf(stack) == com.senne.imttech.guns.GunPart.SLIDE
                         && com.senne.imttech.guns.GunPartItem.materialOf(stack) == com.senne.imttech.guns.GunMaterial.STEEL));
@@ -5999,13 +6066,17 @@ public final class VisualCheck {
         var inventory = player.getInventory();
         inventory.clearContent();
         inventory.setItem(0, com.senne.imttech.guns.FirearmItem.loaded(type, com.senne.imttech.guns.GunMaterial.STEEL));
-        inventory.setItem(1, com.senne.imttech.guns.MagazineItem.of(type, 12));
         inventory.setItem(2, new ItemStack(type.caliber.round(), 24));
-        inventory.setItem(3, com.senne.imttech.guns.MagazineItem.of(type, 0));
-        // Een wapen met een magazijn erin maar niets in de kamer (voor de foto van het doorladen).
-        ItemStack unchambered = com.senne.imttech.guns.FirearmItem.withParts(type, com.senne.imttech.guns.GunParts.classic(type));
-        com.senne.imttech.guns.FirearmItem.setMagazine(unchambered, com.senne.imttech.guns.MagazineItem.of(type, 12));
-        inventory.setItem(4, unchambered);
+        if (!type.tube()) {
+            // (Een wapen met een buis, de Remington 870, heeft geen magazijnen: vakje 5 is daar een lege om te laden.)
+            int rounds = Math.min(12, type.capacity());
+            inventory.setItem(1, com.senne.imttech.guns.MagazineItem.of(type, rounds));
+            inventory.setItem(3, com.senne.imttech.guns.MagazineItem.of(type, 0));
+            // Een wapen met een magazijn erin maar niets in de kamer (voor de foto van het doorladen).
+            ItemStack unchambered = com.senne.imttech.guns.FirearmItem.withParts(type, com.senne.imttech.guns.GunParts.classic(type));
+            com.senne.imttech.guns.FirearmItem.setMagazine(unchambered, com.senne.imttech.guns.MagazineItem.of(type, rounds));
+            inventory.setItem(4, unchambered);
+        }
         inventory.setItem(5, com.senne.imttech.guns.FirearmItem.withParts(type,
                 com.senne.imttech.guns.GunParts.complete(type, com.senne.imttech.guns.GunMaterial.TITANIUM)));
         inventory.setItem(9, com.senne.imttech.guns.GunPartItem.of(type, com.senne.imttech.guns.GunPart.SLIDE, com.senne.imttech.guns.GunMaterial.TITANIUM));

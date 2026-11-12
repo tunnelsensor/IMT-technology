@@ -106,6 +106,7 @@ public final class Pegboard {
                 case MP5 -> new int[]{8, 4};
                 case AK_47 -> new int[]{10, 4};
                 case AWP -> new int[]{12, 3};
+                case REMINGTON_870 -> new int[]{10, 3};
             };
         }
         if (MagazineItem.typeOf(stack) == FirearmType.AWP) {

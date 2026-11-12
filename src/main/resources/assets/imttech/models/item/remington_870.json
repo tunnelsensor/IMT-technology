@@ -1,0 +1,151 @@
+{
+ "loader": "neoforge:obj",
+ "model": "imttech:models/firearm/remington_870/whole.obj",
+ "automatic_culling": false,
+ "flip_v": false,
+ "emissive_ambient": true,
+ "textures": {
+  "steel": "imttech:item/remington_870/steel",
+  "mag": "imttech:item/remington_870/steel",
+  "particle": "imttech:item/remington_870/steel"
+ },
+ "gui_light": "front",
+ "display": {
+  "gui": {
+   "rotation": [
+    90.0,
+    -52.0,
+    90.0
+   ],
+   "translation": [
+    -1.823,
+    -1.652,
+    -0.0
+   ],
+   "scale": [
+    0.258,
+    0.258,
+    0.258
+   ]
+  },
+  "ground": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    0,
+    2,
+    0
+   ],
+   "scale": [
+    0.256,
+    0.256,
+    0.256
+   ]
+  },
+  "fixed": {
+   "rotation": [
+    0,
+    -90,
+    0
+   ],
+   "translation": [
+    -2.887,
+    0.155,
+    -0.0
+   ],
+   "scale": [
+    0.258,
+    0.258,
+    0.258
+   ]
+  },
+  "head": {
+   "rotation": [
+    0,
+    180,
+    0
+   ],
+   "translation": [
+    0,
+    13,
+    7
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ]
+  },
+  "thirdperson_righthand": {
+   "rotation": [
+    0,
+    -17,
+    0
+   ],
+   "translation": [
+    0.44,
+    0.02,
+    -1.44
+   ],
+   "scale": [
+    0.32,
+    0.32,
+    0.32
+   ]
+  },
+  "thirdperson_lefthand": {
+   "rotation": [
+    0,
+    -17,
+    0
+   ],
+   "translation": [
+    0.44,
+    0.02,
+    -1.44
+   ],
+   "scale": [
+    0.32,
+    0.32,
+    0.32
+   ]
+  },
+  "firstperson_righthand": {
+   "rotation": [
+    0,
+    180,
+    0
+   ],
+   "translation": [
+    1,
+    3,
+    0
+   ],
+   "scale": [
+    0.32,
+    0.32,
+    0.32
+   ]
+  },
+  "firstperson_lefthand": {
+   "rotation": [
+    0,
+    180,
+    0
+   ],
+   "translation": [
+    1,
+    3,
+    0
+   ],
+   "scale": [
+    0.32,
+    0.32,
+    0.32
+   ]
+  }
+ }
+}

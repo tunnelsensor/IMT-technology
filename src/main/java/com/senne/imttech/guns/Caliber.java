@@ -11,7 +11,8 @@ import org.jetbrains.annotations.Nullable;
  * lege huls (die springt uit het wapen en raap je op) en zijn eigen kogelpunt; op de Reloading Bench pers je er weer een
  * patroon van. De Glock 19 en de MP5 schieten allebei <b>9mm</b>: hun patronen zijn dezelfde, hun magazijnen niet.
  * De AK-47 schiet <b>7.62x39mm</b>: een grotere patroon, die twee Crushed Gunpowder kost in plaats van een. De AWP schiet
- * <b>.338 Lapua Magnum</b>: de grootste, met vier Crushed Gunpowder per patroon.
+ * <b>.338 Lapua Magnum</b>: de grootste, met vier Crushed Gunpowder per patroon. De Remington 870 schiet <b>12 Gauge</b>:
+ * een hagelpatroon (de "kogelpunt" is daar een handje hagel, de "huls" een rode kunststof huls).
  */
 public enum Caliber {
     /** 9x19mm Parabellum: de Glock 19 en de MP5. */
@@ -19,7 +20,9 @@ public enum Caliber {
     /** 7.62x39mm: de AK-47. Een geweerpatroon met een flessenhals: langer en dikker dan 9mm. */
     R762("762", "round_762", "casing_762", "bullet_762", 2),
     /** .338 Lapua Magnum: de AWP. Een patroon van ruim 9 cm voor het verre werk. */
-    L338("338", "round_338", "casing_338", "bullet_338", 4);
+    L338("338", "round_338", "casing_338", "bullet_338", 4),
+    /** 12 Gauge: de Remington 870. Een hagelpatroon: bij elk schot vliegen er acht korrels uit de loop. */
+    G12("12g", "round_12g", "casing_12g", "bullet_12g", 2);
 
     /** De naam in de bestanden ("9mm"). */
     public final String id;

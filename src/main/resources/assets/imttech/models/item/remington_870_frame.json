@@ -1,0 +1,164 @@
+{
+ "loader": "neoforge:obj",
+ "model": "imttech:models/firearm/remington_870/item_frame.obj",
+ "automatic_culling": false,
+ "flip_v": false,
+ "emissive_ambient": true,
+ "textures": {
+  "gun": "imttech:item/remington_870/steel",
+  "particle": "imttech:item/remington_870/steel"
+ },
+ "gui_light": "front",
+ "display": {
+  "gui": {
+   "rotation": [
+    30,
+    225,
+    0
+   ],
+   "translation": [
+    -0.758,
+    -0.083,
+    -0.368
+   ],
+   "scale": [
+    0.299,
+    0.299,
+    0.299
+   ]
+  },
+  "ground": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    -0.0,
+    2.39,
+    1.823
+   ],
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "fixed": {
+   "rotation": [
+    30,
+    225,
+    0
+   ],
+   "translation": [
+    -0.758,
+    -0.083,
+    -0.368
+   ],
+   "scale": [
+    0.299,
+    0.299,
+    0.299
+   ]
+  },
+  "head": {
+   "rotation": [
+    0,
+    180,
+    0
+   ],
+   "translation": [
+    0,
+    13,
+    7
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ]
+  },
+  "thirdperson_righthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    -0.0,
+    0.469,
+    2.187
+   ],
+   "scale": [
+    0.6,
+    0.6,
+    0.6
+   ]
+  },
+  "thirdperson_lefthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    -0.0,
+    0.469,
+    2.187
+   ],
+   "scale": [
+    0.6,
+    0.6,
+    0.6
+   ]
+  },
+  "firstperson_righthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    -0.0,
+    0.469,
+    2.187
+   ],
+   "scale": [
+    0.6,
+    0.6,
+    0.6
+   ]
+  },
+  "firstperson_lefthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    -0.0,
+    0.469,
+    2.187
+   ],
+   "scale": [
+    0.6,
+    0.6,
+    0.6
+   ]
+  }
+ },
+ "overrides": [
+  {
+   "predicate": {
+    "imttech:material": 1
+   },
+   "model": "imttech:item/remington_870_frame_steel"
+  },
+  {
+   "predicate": {
+    "imttech:material": 2
+   },
+   "model": "imttech:item/remington_870_frame_titanium"
+  }
+ ]
+}

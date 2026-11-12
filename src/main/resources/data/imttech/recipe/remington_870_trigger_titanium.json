@@ -1,0 +1,20 @@
+{
+  "type": "imttech:gunsmithing",
+  "ingredients": [
+    {
+      "item": "imttech:titanium_ingot",
+      "count": 3
+    },
+    {
+      "tag": "minecraft:logs",
+      "count": 1
+    }
+  ],
+  "result": {
+    "id": "imttech:remington_870_trigger",
+    "count": 1,
+    "components": {
+      "imttech:gun_material": "titanium"
+    }
+  }
+}

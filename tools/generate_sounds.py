@@ -1453,6 +1453,52 @@ def awp_bolt():
     return finish_hard(total, peak=0.8)
 
 
+SHOTGUN_SHOT = dict(body_hz=138.0, thump=(74, 30), boom=1.6, crack=0.85, tail=1.25, far_tail=2.2, mech=())
+
+
+def shotgun_fire():
+    """
+    Een schot met de Remington 870 (hoofdstuk 103, stap 4): 12 Gauge. Een brede, doffe dreun, minder scherp dan een
+    geweer. Er klapt geen mechaniek: de pomp bedien je zelf.
+    """
+    return firearm_shot(7801, **SHOTGUN_SHOT)
+
+
+def shotgun_fire_2():
+    return firearm_shot(7802, **SHOTGUN_SHOT)
+
+
+def shotgun_fire_far():
+    return firearm_shot(7804, far=True, **SHOTGUN_SHOT)
+
+
+def shotgun_pump():
+    """
+    De pomp van de Remington 870: het voorhout naar achteren (de stangen glijden, de grendel klapt open) en meteen weer
+    naar voren (hij vergrendelt): het bekende "sjik-sjak". Een halve seconde.
+    """
+    r = np.random.default_rng(7810)
+    total = np.zeros(int(RATE * 0.62))
+    back = scrape(r, 0.11, 900, 8000, ticks=260, grit=0.7, shape=lambda x: np.sin(np.pi * x) ** 0.5 * (0.5 + 0.5 * x))
+    place(total, back * 0.7, 0.1)
+    place(total, impact(r, 0.09, [(1500, 100, 0.6), (2900, 140, 0.45), (5200, 190, 0.25)], snap=0.9, thud=0.55, thud_hz=380) * 0.9,
+          0.2)
+    forward = scrape(r, 0.1, 1000, 8500, ticks=300, grit=0.7, shape=lambda x: np.sin(np.pi * x) ** 0.5 * (1.0 - 0.4 * x))
+    place(total, forward * 0.7, 0.3)
+    place(total, impact(r, 0.11, [(1700, 90, 0.65), (3300, 130, 0.5), (6100, 180, 0.3)], snap=1.2, thud=0.7, thud_hz=430), 0.4)
+    return finish_hard(total, peak=0.82)
+
+
+def shotgun_shell():
+    """Een hagelpatroon die de buis in gaat: kunststof schuift langs staal, en de pal klikt erachter."""
+    r = np.random.default_rng(7820)
+    total = np.zeros(int(RATE * 0.3))
+    place(total, scrape(r, 0.1, 600, 5000, ticks=180, grit=0.45, shape=lambda x: np.minimum(1, x * 1.6) ** 2) * 0.5, 0.0)
+    place(total, impact(r, 0.09, [(1900, 120, 0.5), (3600, 170, 0.35)], snap=0.9, thud=0.5, thud_hz=520) * 0.85, 0.11)
+    place(total, impact(r, 0.05, [(4200, 220, 0.25)], snap=0.4) * 0.35, 0.17)
+    return finish_hard(total, peak=0.7)
+
+
 def rifle_mag_out():
     """Het magazijn van een lang wapen eruit: de pal klikt, het stalen magazijn glijdt uit de schacht en tikt in je hand."""
     r = np.random.default_rng(7520)
@@ -1627,6 +1673,11 @@ SOUNDS = {
     "awp_fire_2": awp_fire_2,
     "awp_fire_far": awp_fire_far,
     "awp_bolt": awp_bolt,
+    "shotgun_fire": shotgun_fire,
+    "shotgun_fire_2": shotgun_fire_2,
+    "shotgun_fire_far": shotgun_fire_far,
+    "shotgun_pump": shotgun_pump,
+    "shotgun_shell": shotgun_shell,
     "rifle_mag_out": rifle_mag_out,
     "rifle_mag_in": rifle_mag_in,
     "gun_selector": gun_selector,

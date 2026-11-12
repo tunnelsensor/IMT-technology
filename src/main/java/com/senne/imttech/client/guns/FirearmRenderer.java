@@ -161,6 +161,15 @@ public final class FirearmRenderer {
         rotX += 12 * tilt;
         rotY += 10 * tilt;
         place.add(-0.06f * tilt, 0.07f * tilt, 0.03f * tilt);
+        // Hoofdstuk 103, stap 4: patronen in de buis duwen of eruit halen (de Remington 870). Het wapen kantelt op zijn
+        // kant, met de laadopening (onderaan) naar je toe, en blijft zo zolang je doorgaat.
+        float tube = tubePose(action, time);
+        if (tube > 0.001f) {
+            rotZ -= 68 * tube;
+            rotX += 12 * tube;
+            rotY += 8 * tube;
+            place.add(-0.08f * tube, 0.11f * tube, 0.02f * tube);
+        }
         // Hoofdstuk 103, stap 2: zit de hendel rechts (de AK-47), dan laadt je rechterhand door (zie rightHandRack). Het
         // wapen rolt daarbij wat naar links: zijn rechterkant komt naar boven, zodat je de spanhendel ziet bewegen.
         boolean rightRack = lng && rig.handleRight();
@@ -211,7 +220,8 @@ public final class FirearmRenderer {
         }
         float handleBack = lng ? racked * rig.handleTravel : slideBack;
         if (lng) {
-            slideBack = rig.handleLift != 0 ? racked * rig.cycle : Math.max(slideBack, racked * rig.cycle);
+            // Een grendel of een pomp beweegt niet vanzelf bij een schot: alleen als jij hem bedient.
+            slideBack = type.manual() ? racked * rig.cycle : Math.max(slideBack, racked * rig.cycle);
         }
         pose.pushPose();
         pose.translate(0, 0, slideBack);
@@ -291,6 +301,24 @@ public final class FirearmRenderer {
             pose.scale(16, 16, 16);
             FirearmModels.render(pose, buffers, FirearmModels.round(type.caliber), light, OverlayTexture.NO_OVERLAY);
             pose.popPose();
+        }
+        // Hoofdstuk 103, stap 4: de patroon die door de laadopening de buis in gaat (of eruit komt): hij ligt in de
+        // richting van de loop, komt van onder en schuift naar voren de buis in.
+        if ((action == Firearms.ActionKind.LOAD_TUBE || action == Firearms.ActionKind.UNLOAD_TUBE) && progress >= 0) {
+            float in = action == Firearms.ActionKind.LOAD_TUBE ? ease(Mth.clamp((progress - 0.15f) / 0.5f, 0, 1))
+                    : 1 - ease(Mth.clamp((progress - 0.2f) / 0.5f, 0, 1));
+            if (in < 0.97f) {
+                Vector3f from = new Vector3f(rig.magazine).add(0, -3.2f, 0.6f);
+                Vector3f to = new Vector3f(rig.magazine).add(0, 0.5f, -2.6f);
+                Vector3f at = lerp(from, to, in);
+                pose.pushPose();
+                pose.translate(at.x, at.y, at.z);
+                pose.mulPose(new Quaternionf().rotateX((float) Math.toRadians(-90)));
+                pose.translate(-8, -8.3f, -8);
+                pose.scale(16, 16, 16);
+                FirearmModels.render(pose, buffers, FirearmModels.round(type.caliber), light, OverlayTexture.NO_OVERLAY);
+                pose.popPose();
+            }
         }
         if (since < 1.8f && since >= 0) {
             flash(pose, buffers.getBuffer(SuitEffects.GLOW), rig.muzzle, 1 - since / 1.8f);
@@ -372,6 +400,26 @@ public final class FirearmRenderer {
             case UNLOAD_CHAMBER -> ease(Mth.clamp(t / 0.14f, 0, 1)) * ease(Mth.clamp((1 - t) / 0.22f, 0, 1));
             default -> 0;
         };
+    }
+
+    /** Hoe ver het wapen nu op zijn kant ligt om de buis te laden (0 tot 1), en hoe ver je linkerhand bij de laadopening is. */
+    private static float tubeHeld;
+    private static float tubeTime = -1;
+
+    /**
+     * Hoofdstuk 103, stap 4: de houding om de buis te laden, vloeiend. Elke patroon is een eigen korte handeling, en
+     * tussen twee patronen is er heel even geen; daarom gaat het wapen snel op zijn kant en zakt het traag terug, anders
+     * zou het bij elke patroon op en neer schokken.
+     */
+    private static float tubePose(@Nullable Firearms.ActionKind action, float time) {
+        boolean busy = action == Firearms.ActionKind.LOAD_TUBE || action == Firearms.ActionKind.UNLOAD_TUBE;
+        float dt = tubeTime < 0 || time < tubeTime ? 0 : Math.min(time - tubeTime, 5);
+        tubeTime = time;
+        tubeHeld += ((busy ? 1 : 0) - tubeHeld) * Math.min(1, dt * (busy ? 0.4f : 0.14f));
+        if (tubeHeld < 0.002f && !busy) {
+            tubeHeld = 0;
+        }
+        return ease(tubeHeld);
     }
 
     /** Het eerste stuk van de haal van een grendel is het optillen van de knop; de rest is naar achteren trekken. */
@@ -521,6 +569,17 @@ public final class FirearmRenderer {
         // blijft je linkerhand het wapen vooraan vasthouden.
         boolean rightRack = rig.handleRight();
         switch (action) {
+            case LOAD_TUBE, UNLOAD_TUBE -> {
+                // Je linkerhand laat het voorhout los en houdt de patroon onder de laadopening; bij elke patroon duwt ze
+                // hem omhoog de buis in (of vangt ze hem op). Tussen twee patronen blijft de hand daar (tubeHeld).
+                Vector3f below = new Vector3f(rig.magazine).add(-0.4f, -4.4f, 0.8f);
+                Vector3f port = new Vector3f(rig.magazine).add(-0.2f, -1.6f, -0.4f);
+                Vector3f held = lerp(rest, below, tubeHeld);
+                float push = action == Firearms.ActionKind.LOAD_TUBE
+                        ? ease(Mth.clamp((t - 0.15f) / 0.45f, 0, 1)) * ease(Mth.clamp((1 - t) / 0.25f, 0, 1))
+                        : ease(Mth.clamp(t / 0.25f, 0, 1)) * ease(Mth.clamp((0.8f - t) / 0.4f, 0, 1));
+                return lerp(held, port, push);
+            }
             case EJECT_MAG -> {
                 if (t < 0.25f) return lerp(rest, atMag, ease(t / 0.25f));
                 if (t < 0.6f) return atMag;

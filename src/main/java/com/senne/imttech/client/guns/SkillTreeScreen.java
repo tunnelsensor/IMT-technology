@@ -29,12 +29,17 @@ import net.neoforged.neoforge.network.PacketDistributor;
 public class SkillTreeScreen extends Screen {
     private static final int COL_W = 190;
     private static final int ROW_H = 24;
-    private static final int TOP = 52;
     private static final int TAB_H = 12;
 
     private final List<Button> buttons = new ArrayList<>();
     private final List<Button> tabs = new ArrayList<>();
     private final List<String> weapons = GunSkillHooks.weaponScopes();
+    /**
+     * Hoofdstuk 103: met meer dan acht wapens passen de tabbladen niet meer op één rij. Dan staan de vuurwapens op de
+     * bovenste rij en de lasergeweren eronder, en begint de boom een rij lager.
+     */
+    private final boolean twoRows = weapons.size() > 8;
+    private final int top = twoRows ? 66 : 52;
     private String weapon;
 
     public SkillTreeScreen() {
@@ -60,7 +65,7 @@ public class SkillTreeScreen extends Screen {
         tabs.clear();
         for (int column = 0; column < 2; column++) {
             for (GunSkill skill : GunSkill.values()) {
-                int y = TOP + 18 + skill.ordinal() * ROW_H;
+                int y = top + 18 + skill.ordinal() * ROW_H;
                 int which = column;
                 Button button = addRenderableWidget(Button.builder(Component.literal("+"),
                                 b -> PacketDistributor.sendToServer(new SkillLearnPayload(which == 0 ? GunSkills.GLOBAL : weapon, skill.ordinal())))
@@ -69,14 +74,18 @@ public class SkillTreeScreen extends Screen {
             }
         }
         // De tabbladen van de wapens (hoofdstuk 55), over de hele breedte boven de twee kolommen.
-        int tabW = (2 * COL_W + 16) / Math.max(1, weapons.size());
+        int firstRow = twoRows ? com.senne.imttech.guns.FirearmType.values().length : weapons.size();
         for (int i = 0; i < weapons.size(); i++) {
             String scope = weapons.get(i);
+            boolean second = i >= firstRow;
+            int inRow = second ? weapons.size() - firstRow : firstRow;
+            int tabW = (2 * COL_W + 16) / Math.max(1, inRow);
+            int y = top - TAB_H - 4 - (twoRows && !second ? TAB_H + 2 : 0);
             Button tab = addRenderableWidget(Button.builder(GunSkillHooks.shortName(scope), b -> weapon = scope)
-                    .bounds(left(0) + i * tabW, TOP - TAB_H - 4, tabW - 2, TAB_H).build());
+                    .bounds(left(0) + (second ? i - firstRow : i) * tabW, y, tabW - 2, TAB_H).build());
             tabs.add(tab);
         }
-        int bottom = TOP + 18 + GunSkill.values().length * ROW_H + 22;
+        int bottom = top + 18 + GunSkill.values().length * ROW_H + 22;
         addRenderableWidget(Button.builder(Component.translatable("gui.back"), b -> onClose())
                 .bounds(width / 2 - 30, bottom - 2, 60, 16).build());
     }
@@ -118,7 +127,7 @@ public class SkillTreeScreen extends Screen {
         GunSkills skills = skills();
         int x0 = left(0) - 8;
         int x1 = left(1) + COL_W + 8;
-        int bottom = TOP + 18 + GunSkill.values().length * ROW_H + 22;
+        int bottom = top + 18 + GunSkill.values().length * ROW_H + 22;
         g.fill(x0, 10, x1, bottom, HudStyle.argb(235, 0x0E1116));
         g.renderOutline(x0, 10, x1 - x0, bottom - 10, HudStyle.argb(255, 0x465460));
         HudStyle.brackets(g, x0 + 2, 12, x1 - 3, bottom - 3, 8, HudStyle.argb(255, HudStyle.ORANGE));
@@ -138,19 +147,19 @@ public class SkillTreeScreen extends Screen {
             String scope = column == 0 ? GunSkills.GLOBAL : weapon;
             int x = left(column);
             Component head = column == 0 ? Component.translatable("screen.imttech.skills.global") : GunSkillHooks.scopeText(weapon);
-            g.drawString(font, head, x, TOP + 2, HudStyle.argb(255, HudStyle.CYAN), false);
+            g.drawString(font, head, x, top + 2, HudStyle.argb(255, HudStyle.CYAN), false);
             g.pose().pushPose();
-            g.pose().translate(x + font.width(head) + 6, TOP + 3, 0);
+            g.pose().translate(x + font.width(head) + 6, top + 3, 0);
             g.pose().scale(0.75f, 0.75f, 1);
             int percent = Math.round((column == 0 ? ImtConfig.Guns.SKILL_GLOBAL_STEP : ImtConfig.Guns.SKILL_WEAPON_STEP) * 100);
             g.drawString(font, Component.translatable(column == 0 ? "screen.imttech.skills.global_what" : "screen.imttech.skills.weapon_what", percent),
                     0, 0, HudStyle.argb(160, HudStyle.WHITE), false);
             g.pose().popPose();
             // De stam van de boom.
-            g.fill(x + 3, TOP + 14, x + 4, TOP + 18 + GunSkill.values().length * ROW_H - 10, HudStyle.argb(120, HudStyle.ORANGE));
+            g.fill(x + 3, top + 14, x + 4, top + 18 + GunSkill.values().length * ROW_H - 10, HudStyle.argb(120, HudStyle.ORANGE));
             int textW = (int) ((COL_W - 28 - 14 - GunSkills.maxLevel() * 9 - 8) / 0.7f);
             for (GunSkill skill : GunSkill.values()) {
-                int y = TOP + 18 + skill.ordinal() * ROW_H;
+                int y = top + 18 + skill.ordinal() * ROW_H;
                 int level = skills.level(scope, skill);
                 boolean applies = skill.appliesTo(scope);
                 g.fill(x + 3, y + 8, x + 12, y + 9, HudStyle.argb(120, HudStyle.ORANGE));
@@ -179,7 +188,7 @@ public class SkillTreeScreen extends Screen {
             }
         }
         // Wat ze samen doen, onderaan.
-        int y = TOP + 18 + GunSkill.values().length * ROW_H + 4;
+        int y = top + 18 + GunSkill.values().length * ROW_H + 4;
         List<String> parts = new ArrayList<>();
         for (GunSkill skill : GunSkill.values()) {
             if (!skill.appliesTo(weapon)) {

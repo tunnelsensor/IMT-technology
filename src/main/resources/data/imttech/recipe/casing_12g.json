@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "tag": "c:ingots/copper"
+    },
+    {
+      "item": "imttech:polymer"
+    }
+  ],
+  "result": {
+    "id": "imttech:casing_12g",
+    "count": 8
+  }
+}

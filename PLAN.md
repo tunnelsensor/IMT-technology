@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 549 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 551 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -7468,7 +7468,45 @@ standen), suppressors, extended mags en grips." Omdat jij het een grote update n
       **Mijn invullingen erbij**: het is de .338-versie (de AWM), groen met staal en zandkleurig met titanium; groene
       verf als kenmerk in de recepten; vier kruit per patroon; een ijzeren vizier dat het echte wapen ook kan hebben; het
       zoomt zonder kijker 1,5 keer; versie 2.2.0 omdat het een nieuw wapen is.
-- [ ] **4. De Remington 870** — met 12 Gauge Shells, de pomp op R, de buis patroon per patroon, en hagel.
+- [x] **4. De Remington 870** (13 november, versie 2.3.0) — met 12 Gauge Shells, de pomp op R, de buis patroon per
+      patroon, en hagel.
+      **Het wapen**: `FirearmType.REMINGTON_870` (12 Gauge, `Action.PUMP`, de schakelaar safe en semi), het item
+      `remington_870`, zijn zes onderdelen (`remington_870_frame`... met de namen Receiver, Forend, Barrel, Magazine
+      Spring, Firing Pin, Trigger Group) in staal en titanium, 12 recepten (met stammen als kenmerk; geen magazijn: de
+      patronen zitten in de buis, `ModItems.magazine` zegt dat ook), de Curios-tag "sling", het Pegboard (10 x 3 gaatjes).
+      `Caliber.G12` met `round_12g` (12 Gauge Shell), `casing_12g` (12 Gauge Hull: koper + polymeer = 8) en `bullet_12g`
+      (12 Gauge Buckshot: 5 ijzerklompjes = 4), twee Crushed Gunpowder per patroon.
+      **Pomp, buis en hagel** stonden klaar sinds stap 1 (`CYCLE`, `LOAD_TUBE`, `UNLOAD_TUBE`, `pellets`,
+      `pelletSpread`); nu is er een wapen dat ze gebruikt, en dat bracht twee dingen aan het licht. Een: R inhouden om de
+      buis te vullen stopte in je spel zodra de server één keer "nu niet" zei (hij was nog een tikje bezig met de vorige
+      patroon); nu stopt het alleen als de buis vol is of je patronen op zijn, en probeert het anders zo meteen opnieuw
+      (`FirearmControl.canLoadTube`). Twee: de HUD had geen tekst voor "een patroon eruit" (je zag de sleutel
+      `hud.imttech.firearm.action.unload_chamber`, ook bij de Glock): nu "UNLOADING".
+      **In je spel**: `FirearmRig.REMINGTON_870` (de hendel is het voorhout: je linkerhand pompt; "het magazijn" is de
+      laadopening onder de behuizing). `FirearmRenderer`: een grendel of een pomp beweegt niet meer vanzelf bij een schot;
+      bij het laden van de buis kantelt het wapen op zijn kant en blijft het zo zolang je doorgaat (`tubePose`, vloeiend:
+      elke patroon is een eigen korte handeling), je linkerhand duwt de patroon door de laadopening en de patroon zelf
+      schuift de buis in (of komt eruit). Het geluid van een patroon de buis in: `FirearmType.roundLoadSound`.
+      **Het model** (`tools/r870_model.py`): de 870 met houten kolf en voorhout en een loop van 20 inch, van een foto
+      (Wikimedia, een Wingmaster op een houten vloer: met het oog van een raster afgelezen). De behuizing met de
+      uitwerpopening rechts (de blanke grendel erin) en de laadopening onderaan, de buis met haar geribbelde dop, het
+      voorhout met zijn groeven en zijn twee stangen, de loop met de kraal, de kolf met de rubberen kolfkap. 931 vlakken.
+      De hagelpatroon in `tools/ammo_models.py` (de rode geribbelde huls met de gevouwen rand op een messing bodem; de
+      lege huls is langer en open; de hagel is negen korrels).
+      **Verder**: de skilltree heeft met negen wapens twee rijen tabbladen (de vuurwapens boven, de lasergeweren onder);
+      Make parts: de groep Remington 870 (negen wapens in de lijst); geluiden `shotgun_fire` (twee varianten),
+      `shotgun_fire_far`, `shotgun_pump`, `shotgun_shell`; op de Gunsmith Table liggen de veer en de slagpin van de 870
+      boven het voorhout uit elkaar.
+      **Tests** (twee nieuw, 551 in totaal): `remington_870_fires_pellets_and_needs_pumping` (6 + 1, acht korrels per
+      schot, de huls blijft zitten tot je pompt, dan springt er een 12 Gauge-huls uit) en
+      `remington_870_tube_loads_shell_by_shell` (alleen 12 Gauge, tot 6, pompen = 5 + 1, bijvullen, U haalt er een uit,
+      twee kruit per patroon). **Gezien** (`gradlew runVisualCheck -Ponly=870`: `rs01` tot `rs22`: heup, richten over de
+      kraal, schot, "PRESS R", pompen, R inhouden met een lege 870 (de buis vult: 0, 2, ... 6), pompen, U, bekijken, de
+      Gunsmith Table, Make parts, op je rug, de Reloading Bench met 12 Gauge, het Pegboard met alle vijf), en
+      `-Ponly=skills`.
+      **Mijn invullingen erbij**: een loop van 20 inch en hout (de foto die er was); stammen als kenmerk in de recepten;
+      de hagel heet "12 Gauge Buckshot" en de lege huls "12 Gauge Hull"; twee kruit per patroon; R kiest zelf tussen
+      pompen (als dat moet) en laden; versie 2.3.0 omdat het een nieuw wapen is.
 - [ ] **5. Attachments: het systeem, de Red Dot Sight en de Sniper Scope (1x tot 10x)** — maken op "Make parts", op het
       wapen slepen, en het beeld door de kijker met het wapen nog in beeld.
 - [ ] **6. Suppressors, grips, de tweepoot, de extended mags en de verlengbuis.**
