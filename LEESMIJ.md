@@ -2254,15 +2254,15 @@ heeft 8 x 8 gaatjes, en alles klikt vast op dat raster.
   verder weg zie je geen kader en zegt een klik "Too far away". Breek je een paneel af, dan valt wat erop hing eraf, ook
   wat van een paneel ernaast over dit paneel hing.
 - **Vastzetten** (hoofdstuk 70 en 71): **sneak + linksklik** op wat hangt zet het vast: zijn **omtrek** wordt grijs op het
-  paneel geverfd (je ziet een dun grijs lijntje eromheen, ook van opzij, hoofdstuk 95). Nog eens sneak + linksklik zet
-  het weer los. Op een lege plek, of
-  zonder sneak, breekt linksklik gewoon het paneel. Pak je een vastgezet item, dan blijft de hele geverfde vorm op de
-  plek (de **schaduw**). Daar kan alleen **hetzelfde soort** op: elke Glock op een Glock-plek, elk Glock-magazijn op een
+  paneel geverfd: een dun lijntje eromheen, net iets lichter dan het bord (hoofdstuk 95). Nog eens sneak + linksklik
+  zet het weer los. Op een lege plek, of zonder sneak, breekt linksklik gewoon het paneel. Pak je een vastgezet item,
+  dan blijft dat lijntje op de plek (de **schaduw**, niet opgevuld). Daar kan alleen **hetzelfde soort** op: elke
+  Glock op een Glock-plek, elk Glock-magazijn op een
   magazijnplek, elke Laser Rifle op een rifle-plek. **Rechtsklik op de schaduw** met zo'n item en het hangt er weer,
   precies zoals het hing (ook gedraaid), en weer vastgezet. Sneak + linksklik op een schaduw veegt hem weg. Een schaduw
   is geen echt item: breek je het paneel af, dan valt hij niet op de grond.
 - **Elke soort granaat** heeft zijn eigen kleur omtrek, zodat je ziet wat waar hoort: EMP roodachtig, frag groen,
-  smokebom donkerder grijs (een gekleurde smokebom een beetje in zijn rookkleur), flashbang bijna wit. De sticky's,
+  smokebom donkerder grijs (een gekleurde smokebom een beetje in zijn rookkleur), flashbang het lichtst. De sticky's,
   Remote EMP/Frag en hun triggers krijgen de kleur van hun soort (en ze hebben elk een andere vorm). De rest is grijs.
 - **Een hoek** (hoofdstuk 70): in een binnenhoek **rechtsklik je met een Pegboard op de andere muur**: het tweede paneel
   komt in hetzelfde blok. Elke muur heeft zijn eigen gaatjes. Het gaatje direct naast de andere muur blijft vrij (daar zit

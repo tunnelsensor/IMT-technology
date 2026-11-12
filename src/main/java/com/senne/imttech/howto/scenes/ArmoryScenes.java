@@ -258,7 +258,7 @@ public final class ArmoryScenes {
         s.blockData(bottomRight, board(onBottomRight));
         s.sound(SoundEvents.ITEM_FRAME_REMOVE_ITEM, 0.6f, 0.8f);
         s.text(75, fragAt, Side.RIGHT, "Every kind of grenade has its own colour of outline: EMP reddish, frag green, smoke"
-                + " dark, flashbang white. So you see at a glance what goes where.");
+                + " dark, flashbang light. So you see at a glance what goes where.");
         s.idle(80);
 
         s.chapter("Corners");

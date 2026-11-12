@@ -7052,29 +7052,50 @@ kabel alleen door stukken wereld die de server geladen had, en hooguit 512 stukj
       standaard uit staat. (`raid_starts_outside_a_base` en `security_core_launches_no_drones` vielen elk één keer om voor
       NetworkKeeper er was: wisselvallig.)
 
-### 95. De Armory: een dunner randje rond een vastgezet wapen (12 november)
+### 95. De Armory: een dun lijntje als omtrek van een vastgezet wapen (12 november)
 
-Jouw wens: "Kun je de outline van de armory subtiler maken, heel kleine smalle dunne lijn".
+Jouw wensen: "Kun je de outline van de armory subtiler maken, heel kleine smalle dunne lijn", en daarna: "als je het
+gun er afhaalt moet het een outline blijven en niet opgevuld worden, de outline mag nog net iets dunner en een andere
+kleur die iets meer blend met de boards".
 
 Hoe het was: rond een vastgezet wapen lag een randje van een halve pixel, maar onder dat randje was de hele vorm van het
 wapen geverfd. Het wapen hangt een stukje voor het paneel, dus zodra je er een beetje schuin naar keek, zag je naast het
 wapen een brede lichte vlek in plaats van een randje (op `ar15_side_wall` een witte L naast het laserpistool). Alleen
-het randje dunner maken hielp daarom bijna niet; dat heb ik eerst geprobeerd en op de screenshots gezien.
+het randje dunner maken hielp daarom bijna niet; dat heb ik eerst geprobeerd en op de screenshots gezien. Pakte je het
+wapen, dan bleef de hele vorm opgevuld staan (de schaduw), lichtgrijs, bijna wit.
 
 - [x] **Een echt lijntje** (`PegboardRenderer.paint`): eerst tekenen we het wapen plat en onzichtbaar net voor de verf
       (een masker dat alleen diepte schrijft, `MASK`), dan de verf. Binnen de vorm van het wapen valt de verf zo weg en
-      blijft alleen het lijntje eromheen over, ook van opzij. Het lijntje is 0,15 pixel breed (`OUTLINE`, was 0,5). De
-      Ion Blaster (een plat plaatje) krijgt een masker met zijn plaatje (`MASK_FLAT`), zodat zijn doorzichtige pixels
-      niet meetellen.
-- [x] **Wat hetzelfde bleef**: de kleuren (grijs, en elke granaat de zijne), de kaders als je ernaar kijkt (blauw,
-      rood, wit, grijs), en de **schaduw** als je het wapen pakt: die blijft de hele geverfde vorm (mijn keuze, zeg het
-      als die ook alleen een lijntje moet worden), alleen een fractie kleiner rond de randen. Het geldt ook in How it
-      works.
-- [x] **Gezien** (`gradlew runVisualCheck -Ponly=armory,howtoall,howto:armory`): `ar11_rifle_locked` (een fijne lijn
-      onder de rifle, met het bord ertussen), `ar15_side_wall` (rond het laserpistool een lijntje in plaats van de witte
-      L), `ar12_shadow` en `ar14_corner` (de schaduwen zoals ze waren) en in How it works "Lock a spot" (`ha_armory_0_4a`
-      en `_4b`: een lijntje rond de Glock). Ook met jouw Sodium-jar (0.8.13) even in `run-visual/mods`: hetzelfde beeld,
-      daarna weer weggehaald. Geen nieuwe automatische test: het is alleen beeld.
+      blijft alleen het lijntje eromheen over, ook van opzij. De Ion Blaster (een plat plaatje) krijgt een masker met
+      zijn plaatje (`MASK_FLAT`), zodat zijn doorzichtige pixels niet meetellen.
+- [x] **De schaduw is ook een lijntje** (je tweede wens): pak je een vastgezet wapen, dan blijft alleen het lijntje op
+      de plek, niet opgevuld. Een gat in de vorm zelf (tussen twee onderdelen van een geweer) krijgt dan ook een
+      lijntje.
+- [x] **Zo dun als het kan, zonder gaten** (`LINE_PX`, `outlineWidth`): het lijntje is op je scherm altijd ongeveer
+      1¼ pixel breed. Het spel rekent per wapen uit hoe groot één pixel van het paneel daar op je scherm is (ook in How
+      it works) en maakt het lijntje op het paneel zo breed. Van dichtbij is het zo smaller dan eerst, van verder weg
+      niet. Een vaste tiende pixel van het paneel heb ik ook geprobeerd: met jouw instellingen (1920x1080, FOV 110) is
+      dat op 2 tot 3 blokken minder dan één schermpixel, en dan valt het lijntje in stukjes uiteen (op de screenshots
+      ontbraken hele randen). De verf en het masker zijn nu ook platter (`FLAT`, `MASK_Z`), zodat het masker van
+      dichtbij en schuin het lijntje niet aan één kant opeet.
+- [x] **Een kleur die bij het bord past** (`boardPaint`): de verf is voor 55 % het grijs van het bord (`BOARD`, uit
+      `pegboard.png`) en voor 45 % zijn eigen kleur (`BLEND`). Hij is ook even donker als het bord aan die kant:
+      Minecraft tekent een paneel dat naar het oosten of westen kijkt donkerder dan een dat naar het noorden of zuiden
+      kijkt, en de verf kreeg dat vroeger niet. Zo is het lijntje net iets lichter dan het bord in plaats van bijna wit.
+      De granaten houden een tintje: EMP roodachtig, frag groenig, smokebom donkerder, flashbang het lichtst. De Ion
+      Blaster krijgt een grijs dat even licht is (`flashColumn`). **Ook opgelost**: zijn verf was sinds hoofdstuk 71
+      zwart in plaats van lichtgrijs. De "witte flits" die hem grijs maakt, tekende het rendertype van een plat item
+      niet; nu verft hij met een rendertype dat de flits wel kent (`entityCutoutNoCull`).
+- [x] **Wat hetzelfde bleef**: de kaders als je ernaar kijkt (blauw, rood, wit, grijs) en wat je kunt doen
+      (vastzetten, pakken, terughangen, wegvegen). In How it works zegt "Lock a spot" nu "flashbang light" in plaats
+      van "flashbang white".
+- [x] **Gezien** (`gradlew runVisualCheck -Ponly=armory,howtoall,howto:armory`): `ar11_rifle_locked` (een fijn lijntje
+      onder de rifle, met het bord ertussen), `ar12_shadow` (de schaduw van de rifle: een doorlopend lijntje),
+      `ar15_side_wall` en `ar14_corner` (de schaduwen van de granaten als lijntjes in hun tint) en in How it works "Lock a
+      spot" (`ha_armory_0_4a` en `_4b`). De Ion Blaster heb ik voor één ronde tijdelijk vastgezet en gepakt op de
+      voorbeeldwand (`ar03_wall_right_close`): eerst een zwart lijntje, met de oplossing grijs zoals de rest; daarna
+      stond de wand weer zoals altijd. De eerste versie (zonder schaduw-lijntje) ook met jouw Sodium-jar (0.8.13) even in
+      `run-visual/mods`: hetzelfde beeld, daarna weer weggehaald. Geen nieuwe automatische test: het is alleen beeld.
 
 ## Nog nooit in het spel bekeken
 

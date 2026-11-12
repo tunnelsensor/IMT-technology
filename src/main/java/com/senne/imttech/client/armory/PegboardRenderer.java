@@ -1,6 +1,8 @@
 package com.senne.imttech.client.armory;
 
 import com.google.common.base.Suppliers;
+import com.mojang.blaze3d.platform.Window;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -53,8 +55,10 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.neoforged.neoforge.client.event.ModelEvent;
+import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 
 /**
  * Tekent wat aan een Pegboard hangt (hoofdstuk 67): elk wapen in zijn eigen rechthoek van gaatjes, plat tegen de wand
@@ -71,26 +75,35 @@ import org.joml.Vector3f;
  *
  * Hoofdstuk 70: in een hoek hangen twee panelen in een blok; elk krijgt zijn eigen wapens. Hoofdstuk 71 (jouw wens: geen
  * slotje maar een grijze omtrek op het bord): van een vastgezet wapen is de omtrek op het paneel geverfd, zoals op een
- * echt gereedschapsbord. Hangt het er, dan zie je een grijs randje eromheen; pak je het, dan blijft de hele vorm (de
- * schaduw). Elke soort granaat heeft zijn eigen kleur grijs (zie {@link #paintColour}), zodat je ziet wat waar hoort.
- * Hoofdstuk 95: dat randje is een dun lijntje, ook als je er schuin naar kijkt (zie {@link #paint}).
+ * echt gereedschapsbord. Elke soort granaat heeft zijn eigen kleur grijs (zie {@link #paintColour}), zodat je ziet wat
+ * waar hoort. Hoofdstuk 95: die omtrek is een dun lijntje in een kleur dicht bij die van het bord, ook als je er schuin
+ * naar kijkt (zie {@link #paint}). Pak je het wapen, dan blijft alleen dat lijntje (de schaduw), niet opgevuld.
  */
 public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity> {
     /** Het haakje (tools/generate_armory_models.py: models/armory/peg.json). */
     public static final ModelResourceLocation PEG = ModelResourceLocation.standalone(
             ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "armory/peg"));
     /**
-     * Hoe breed het geverfde randje rond een vastgezet wapen is (pixels): zo ver steekt zijn omtrek eromheen uit.
-     * Hoofdstuk 95 (jouw wens: "subtieler, heel kleine smalle dunne lijn"): was een halve pixel, nu een fijn lijntje.
+     * Hoe breed het geverfde lijntje rond een vastgezet wapen op je scherm is (pixels van je scherm). Hoofdstuk 95 (jouw
+     * wensen: "heel kleine smalle dunne lijn", daarna "nog net iets dunner"): het was een randje van een halve pixel van
+     * het paneel. Nu rekenen we elke keer uit hoe breed het op het paneel moet zijn om op je scherm zo'n fijn lijntje te
+     * zijn (zie {@link #outlineWidth}): van dichtbij smaller, van verder weg breder, maar altijd even dun om te zien.
+     * Smaller dan één schermpixel valt het lijntje in stukjes uiteen (dat zag ik op de screenshots, bij een tiende pixel
+     * van het paneel).
      */
-    private static final float OUTLINE = 0.15f;
+    private static final float LINE_PX = 1.25f;
+    /** Grenzen voor de breedte op het paneel (pixels van het paneel), voor als de berekening iets vreemds geeft. */
+    private static final float OUTLINE_MIN = 0.02f, OUTLINE_MAX = 1.0f;
+    /** Zo dik is de platte verf (en het masker): een blok van het model wordt zoveel pixels van het paneel. */
+    private static final float FLAT = 0.002f;
     /** Hoe ver de verf voor het paneel ligt (pixels). */
     private static final float PAINT_Z = 0.12f;
     /**
-     * Hoe ver het masker (zie {@link #paint}) voor de verf ligt (pixels): meer dan de platte verf zelf dik is (een
-     * honderdste pixel), en zo weinig dat het van opzij niet merkbaar verschuift.
+     * Hoe ver het masker (zie {@link #paint}) voor de verf ligt (pixels): meer dan de platte verf zelf dik is, en zo
+     * weinig dat het van opzij niet verschuift ten opzichte van het lijntje (anders eet het van dichtbij en schuin aan
+     * één kant het lijntje op).
      */
-    private static final float MASK_Z = 0.03f;
+    private static final float MASK_Z = 0.008f;
     /**
      * Het masker: tekent geen kleur, alleen diepte. Wat daarna achter het masker getekend wordt, valt weg. Het schuift in
      * de diepte een klein beetje naar je toe (POLYGON_OFFSET_LAYERING), zodat het ook van ver weg voor de verf blijft.
@@ -121,23 +134,32 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
                     .setLayeringState(RenderStateShard.POLYGON_OFFSET_LAYERING)
                     .createCompositeState(false));
     /**
-     * De omtrek tekenen we 8 keer, telkens een randje opgeschoven (en voor een schaduw ook in het midden): zo wordt de
-     * vorm overal even veel groter, ook bij een dunne loop.
+     * De omtrek tekenen we 8 keer, telkens een randje opgeschoven: zo wordt de vorm overal even veel groter, ook bij een
+     * dunne loop. Het masker haalt de vorm zelf er weer uit.
      */
-    private static final float[][] SPREAD = {{0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1},
+    private static final float[][] SPREAD = {{1, 0}, {-1, 0}, {0, 1}, {0, -1},
             {0.7f, 0.7f}, {-0.7f, 0.7f}, {0.7f, -0.7f}, {-0.7f, -0.7f}};
     /**
      * De kleuren van de verf (rood, groen, blauw): grijs, en de granaten elk hun eigen kleur grijs. Het paneel is
      * middengrijs met donkere gaatjes; de verf is lichter, zodat een zwarte Glock niet op zijn eigen omtrek lijkt.
+     * Hoofdstuk 95: we verven er niet meer zo fel mee, maar mengen ze met het grijs van het bord (zie {@link #boardPaint}).
      */
     private static final int PAINT_GREY = 0xB4B6BC, PAINT_EMP = 0xD49C9C, PAINT_FRAG = 0xA6B88A, PAINT_SMOKE = 0x8C9098,
             PAINT_FLASH = 0xEEEADC;
+    /** Het grijs van het bord tussen de gaatjes (textures/block/pegboard.png). */
+    private static final int BOARD = 0x6B717B;
+    /**
+     * Hoeveel van de eigen kleur van de verf overblijft; de rest is het grijs van het bord. Hoofdstuk 95 (jouw wens: "een
+     * andere kleur die iets meer blend met de boards"): het lijntje is zo net iets lichter dan het bord, met een tintje
+     * van zijn soort, in plaats van bijna wit.
+     */
+    private static final float BLEND = 0.45f;
     /**
      * Een plat plaatje (de Ion Blaster) heeft doorzichtige pixels: dat tekenen we met zijn eigen plaatje, de kleur op
-     * zwart en de "witte flits" die een wezen krijgt als het geraakt wordt (OverlayTexture: kolom 15, rij 10). Die mengt
-     * de kleur voor 70 % naar wit: lichtgrijs, net als de rest.
+     * zwart en de "witte flits" die een wezen krijgt als het geraakt wordt (OverlayTexture, rij 10). De kolom zegt
+     * hoeveel wit: kolom 15 is 75 %, kolom 0 niets. We nemen de kolom die even licht is als de verf (zie flashColumn).
      */
-    private static final int FLASH_OVERLAY_U = 15, FLASH_OVERLAY_V = 10;
+    private static final int FLASH_OVERLAY_V = 10;
 
     /** De gemeten doos van elk model, per stand (in blokken van het model, na het draaien). */
     private static final Map<BakedModel, AABB[]> BOUNDS = new IdentityHashMap<>();
@@ -182,7 +204,7 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
             }
             PegboardBlockEntity.Hung hung = board.hung().get(i);
             int[] size = Pegboard.size(hung.stack(), hung.turn());
-            renderHung(pose, buffers, light, board.getLevel(), hung, hung.x() * 2f, hung.y() * 2f, size[0] * 2f, size[1] * 2f);
+            renderHung(pose, buffers, light, board.getLevel(), wall, hung, hung.x() * 2f, hung.y() * 2f, size[0] * 2f, size[1] * 2f);
         }
         renderFrame(board, wall, pose, buffers);
         pose.popPose();
@@ -190,9 +212,12 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
 
     // ================================================================ Eén wapen
 
-    /** Tekent één wapen in de rechthoek (x0, y0, w, h) in pixels van dit paneel, met zijn haakjes. */
-    static void renderHung(PoseStack pose, MultiBufferSource buffers, int light, Level level, PegboardBlockEntity.Hung hung,
-                           float x0, float y0, float w, float h) {
+    /**
+     * Tekent één wapen in de rechthoek (x0, y0, w, h) in pixels van dit paneel, met zijn haakjes. {@code wall}: de kant
+     * waar het paneel naar kijkt (voor de verf, zie {@link #boardPaint}).
+     */
+    static void renderHung(PoseStack pose, MultiBufferSource buffers, int light, Level level, Direction wall,
+                           PegboardBlockEntity.Hung hung, float x0, float y0, float w, float h) {
         ItemStack stack = hung.stack();
         Minecraft mc = Minecraft.getInstance();
         BakedModel model = mc.getItemRenderer().getModel(stack, level, null, 0);
@@ -207,11 +232,12 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
         float scale = (float) Math.min(1.3, Math.min(w / Math.max(0.01, sx), h / Math.max(0.01, sy)) * 0.9);
         float depth = (float) (box.getZsize() * 16 * scale);
 
-        // Hoofdstuk 71: van een vastgezet wapen is de omtrek op het paneel geverfd. Hangt het er, dan zie je alleen het
-        // randje eromheen (het wapen hangt ervoor); pakte iemand het, dan de hele vorm, zonder haakjes.
+        // Hoofdstuk 71 en 95: van een vastgezet wapen is de omtrek op het paneel geverfd, een dun lijntje. Pakte iemand het,
+        // dan blijft alleen dat lijntje (de schaduw), zonder haakjes.
         if (hung.locked()) {
+            float shade = level == null ? 1.0f : level.getShade(wall, true);
             paint(pose, buffers, light, level, stack, model, like, likeModel, box, turn, scale, x0 + w / 2, y0 + h / 2,
-                    !hung.shadow());
+                    boardPaint(stack, shade));
         }
         if (hung.shadow()) {
             return;
@@ -251,40 +277,67 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
     }
 
     /**
-     * De geverfde omtrek van een vastgezet wapen (hoofdstuk 71): hetzelfde model, plat (een honderdste pixel dik) net voor
-     * het paneel, in een kleur, en 8 keer een randje opgeschoven, zodat de vorm overal {@link #OUTLINE} groter is dan het
-     * wapen.
+     * De geverfde omtrek van een vastgezet wapen (hoofdstuk 71): hetzelfde model, plat net voor het paneel, in kleur
+     * {@code rgb}, en 8 keer een randje opgeschoven, zodat de vorm overal even veel groter is dan het wapen (zie
+     * {@link #outlineWidth}).
      *
-     * {@code rimOnly}: het wapen hangt er nog. Dan tekenen we eerst het wapen zelf, plat en onzichtbaar, als masker
-     * ({@link #MASK}) net voor de verf: binnen de vorm van het wapen valt de verf weg en blijft alleen het lijntje
-     * eromheen over. Zonder masker zag je van opzij een brede vlek naast het wapen (hoofdstuk 95): het wapen hangt een
-     * stukje voor het paneel, dus van schuin zie je de verf achter het wapen, niet alleen het randje.
+     * Eerst tekenen we het wapen zelf, plat en onzichtbaar, als masker ({@link #MASK}) net voor de verf: binnen de vorm
+     * van het wapen valt de verf weg en blijft alleen het lijntje eromheen over. Hoofdstuk 95: zonder masker zag je van
+     * opzij een brede vlek naast het wapen (het wapen hangt een stukje voor het paneel, dus van schuin zie je de verf
+     * achter het wapen), en een schaduw was een opgevulde vorm. Nu is het altijd een lijntje, of het wapen er hangt of niet
+     * (jouw wens: "als je het gun er afhaalt moet het een outline blijven en niet opgevuld worden").
      */
     private static void paint(PoseStack pose, MultiBufferSource buffers, int light, Level level, ItemStack stack, BakedModel model,
                               ItemStack like, BakedModel likeModel, AABB box, Quaternionf turn, float scale, float cx, float cy,
-                              boolean rimOnly) {
+                              int rgb) {
         boolean flat = stack.is(ModItems.ION_BLASTER.get());
-        if (rimOnly) {
-            pose.pushPose();
-            pose.translate(cx, cy, Pegboard.THICKNESS + PAINT_Z + MASK_Z);
-            pose.scale(16 * scale, 16 * scale, 0.01f);
-            placeModel(pose, box, turn, stack, like, model, likeModel);
-            draw(pose, masked(buffers, flat), light, level, stack, model);
-            pose.popPose();
-            // Het masker meteen tekenen: het moet in de diepte staan voor de verf getekend wordt.
-            if (buffers instanceof MultiBufferSource.BufferSource source) {
-                source.endBatch(flat ? MASK_FLAT : MASK);
-            }
+        float outline = outlineWidth(pose, cx, cy, Pegboard.THICKNESS + PAINT_Z);
+        pose.pushPose();
+        pose.translate(cx, cy, Pegboard.THICKNESS + PAINT_Z + MASK_Z);
+        pose.scale(16 * scale, 16 * scale, FLAT);
+        placeModel(pose, box, turn, stack, like, model, likeModel);
+        draw(pose, masked(buffers, flat), light, level, stack, model);
+        pose.popPose();
+        // Het masker meteen tekenen: het moet in de diepte staan voor de verf getekend wordt.
+        if (buffers instanceof MultiBufferSource.BufferSource source) {
+            source.endBatch(flat ? MASK_FLAT : MASK);
         }
-        MultiBufferSource paint = painted(buffers, paintColour(stack), flat);
-        for (int i = rimOnly ? 1 : 0; i < SPREAD.length; i++) {
+        MultiBufferSource paint = painted(buffers, rgb, flat);
+        for (float[] spread : SPREAD) {
             pose.pushPose();
-            pose.translate(cx + SPREAD[i][0] * OUTLINE, cy + SPREAD[i][1] * OUTLINE, Pegboard.THICKNESS + PAINT_Z);
-            pose.scale(16 * scale, 16 * scale, 0.01f);
+            pose.translate(cx + spread[0] * outline, cy + spread[1] * outline, Pegboard.THICKNESS + PAINT_Z);
+            pose.scale(16 * scale, 16 * scale, FLAT);
             placeModel(pose, box, turn, stack, like, model, likeModel);
             draw(pose, paint, light, level, stack, model);
             pose.popPose();
         }
+    }
+
+    /**
+     * Hoe breed het lijntje op het paneel moet zijn (pixels van het paneel) om op je scherm {@link #LINE_PX} breed te zijn.
+     * We zetten het punt ({@code cx}, {@code cy}) en een punt één pixel ernaast en erboven om naar je scherm, met dezelfde
+     * matrices waarmee straks getekend wordt (dus ook in How it works, waar het paneel in een venster staat), en kijken
+     * hoe ver ze uit elkaar liggen.
+     */
+    private static float outlineWidth(PoseStack pose, float cx, float cy, float z) {
+        Matrix4f toScreen = new Matrix4f(RenderSystem.getProjectionMatrix()).mul(RenderSystem.getModelViewMatrix())
+                .mul(pose.last().pose());
+        Vector4f here = toScreen.transform(new Vector4f(cx, cy, z, 1));
+        Vector4f right = toScreen.transform(new Vector4f(cx + 1, cy, z, 1));
+        Vector4f up = toScreen.transform(new Vector4f(cx, cy + 1, z, 1));
+        if (here.w <= 0 || right.w <= 0 || up.w <= 0) {
+            return OUTLINE_MIN; // achter je: wordt toch niet getekend
+        }
+        Window window = Minecraft.getInstance().getWindow();
+        float halfWidth = window.getWidth() / 2f, halfHeight = window.getHeight() / 2f;
+        double alongX = Math.hypot((right.x / right.w - here.x / here.w) * halfWidth, (right.y / right.w - here.y / here.w) * halfHeight);
+        double alongY = Math.hypot((up.x / up.w - here.x / here.w) * halfWidth, (up.y / up.w - here.y / here.w) * halfHeight);
+        // Hoe groot één pixel van het paneel op je scherm is (van schuin is hij in één richting korter: het gemiddelde).
+        double onScreen = Math.sqrt(alongX * alongY);
+        if (!(onScreen > 0.001)) {
+            return OUTLINE_MAX;
+        }
+        return (float) Math.max(OUTLINE_MIN, Math.min(OUTLINE_MAX, LINE_PX / onScreen));
     }
 
     /**
@@ -321,14 +374,38 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
     }
 
     /**
+     * De kleur waarmee we echt verven (hoofdstuk 95, jouw wens: "een andere kleur die iets meer blend met de boards"): de
+     * kleur van {@link #paintColour}, gemengd met het grijs van het bord ({@link #BLEND}), en even donker als het bord aan
+     * die kant. Minecraft tekent een paneel dat naar het oosten of westen kijkt donkerder dan een dat naar het noorden of
+     * zuiden kijkt ({@code shade}); de verf krijgt dat niet vanzelf, dus doen we het hier.
+     */
+    static int boardPaint(ItemStack stack, float shade) {
+        int rgb = mix(BOARD, paintColour(stack), BLEND);
+        int r = Math.round(((rgb >> 16) & 255) * shade);
+        int g = Math.round(((rgb >> 8) & 255) * shade);
+        int b = Math.round((rgb & 255) * shade);
+        return r << 16 | g << 8 | b;
+    }
+
+    /** Voor een plat plaatje: de kolom van de "witte flits" (zie FLASH_OVERLAY_V) die even licht is als {@code rgb}. */
+    private static int flashColumn(int rgb) {
+        float grey = (((rgb >> 16) & 255) + ((rgb >> 8) & 255) + (rgb & 255)) / (3 * 255f);
+        return Math.max(0, Math.min(15, Math.round(grey / 0.75f * 15)));
+    }
+
+    /**
      * Alles wat hierin getekend wordt, krijgt de verf: een 3D-model zonder zijn plaatje, alleen in kleur {@code rgb} (met
-     * het licht van de plek); een plat plaatje ({@code flat}) met zijn eigen plaatje, lichtgrijs (zie FLASH_OVERLAY_U).
+     * het licht van de plek); een plat plaatje ({@code flat}) met zijn eigen plaatje, in een grijs dat even licht is.
      */
     private static MultiBufferSource painted(MultiBufferSource buffers, int rgb, boolean flat) {
         if (flat) {
-            return type -> new Painted(buffers.getBuffer(type), 0, true);
+            // Niet het rendertype van het item zelf: dat van een plat item tekent de flits niet, en dan werd de verf
+            // zwart (zo was het sinds hoofdstuk 71, gezien in hoofdstuk 95). Dit rendertype tekent hem wel, zoals bij
+            // een wezen dat geraakt wordt, en laat de doorzichtige pixels weg.
+            int column = flashColumn(rgb);
+            return type -> new Painted(buffers.getBuffer(RenderType.entityCutoutNoCull(TextureAtlas.LOCATION_BLOCKS)), 0, column);
         }
-        return type -> new Painted(buffers.getBuffer(RenderType.textBackground()), rgb, false);
+        return type -> new Painted(buffers.getBuffer(RenderType.textBackground()), rgb, -1);
     }
 
     /** Alles wat hierin getekend wordt, komt in het masker (zie {@link #paint}): alleen diepte, geen kleur. */
@@ -336,14 +413,15 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
         if (flat) {
             return type -> buffers.getBuffer(MASK_FLAT);
         }
-        return type -> new Painted(buffers.getBuffer(MASK), 0, false);
+        return type -> new Painted(buffers.getBuffer(MASK), 0, -1);
     }
 
     /**
-     * Geeft alles door, behalve de kleur (die wordt {@code rgb}) en, bij een plat plaatje, de "flits". De doorzichtigheid
-     * blijft, en het licht ook (in het donker is de verf ook donker). Een rendertype zonder plaatje slaat de rest over.
+     * Geeft alles door, behalve de kleur (die wordt {@code rgb}) en, bij een plat plaatje, de "flits" (kolom
+     * {@code flash} van de witte rij; -1 = geen flits). De doorzichtigheid blijft, en het licht ook (in het donker is de
+     * verf ook donker). Een rendertype zonder plaatje slaat de rest over.
      */
-    private record Painted(VertexConsumer inner, int rgb, boolean flash) implements VertexConsumer {
+    private record Painted(VertexConsumer inner, int rgb, int flash) implements VertexConsumer {
         @Override
         public VertexConsumer addVertex(float x, float y, float z) {
             inner.addVertex(x, y, z);
@@ -364,8 +442,8 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
 
         @Override
         public VertexConsumer setUv1(int u, int v) {
-            if (flash) {
-                inner.setUv1(FLASH_OVERLAY_U, FLASH_OVERLAY_V);
+            if (flash >= 0) {
+                inner.setUv1(flash, FLASH_OVERLAY_V);
             } else {
                 inner.setUv1(u, v);
             }
