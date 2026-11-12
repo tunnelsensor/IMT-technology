@@ -14,10 +14,10 @@ tasks.named('wrapper', Wrapper).configure {
     distributionType = Wrapper.DistributionType.BIN
 }
 
-// De versie: de eerste twee getallen staan in gradle.properties (bijvoorbeeld mod_version=2.2), het derde
+// De versie: de eerste twee getallen staan in gradle.properties (bijvoorbeeld mod_version=1.2), het derde
 // telt git: het aantal commits sinds die regel voor het laatst veranderde. Elke commit geeft zo vanzelf een
-// hogere versie (2.2.0, 2.2.1, 2.2.2, ...), en zet je de regel op 2.3 (bij iets nieuws), dan begint het
-// weer bij 2.3.0. Zonder git (een zip van de broncode, bijvoorbeeld) wordt het 2.2.0.
+// hogere versie (1.2.0, 1.2.1, 1.2.2, ...), en zet je de regel op 1.3 (iets nieuws) of 2.0 (een grote
+// update), dan begint het weer bij .0. Zonder git (een zip van de broncode, bijvoorbeeld) wordt het 1.2.0.
 def git = { String... args ->
     try {
         def run = providers.exec {

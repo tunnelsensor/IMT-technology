@@ -72,11 +72,14 @@ dan wil CurseForge er een duidelijke vermelding bij.
   `src/main/templates/META-INF/neoforge.mods.toml` als `displayURL`; dan staat hij in de
   modlijst van Minecraft.
 - **De versie telt vanzelf mee.** In `gradle.properties` staan alleen de eerste twee getallen
-  (`mod_version=2.2`); het derde is het aantal commits sinds die regel veranderde. Elke commit
-  geeft dus een hogere versie (2.2.0, 2.2.1, 2.2.2, ...). Komt er iets **nieuws** bij (een blok,
-  item, systeem of functie, zoals de Electric Furnace), dan gaat het tweede getal omhoog in
-  dezelfde commit (`2.3`): de jar is dan `imttech-2.3.0.jar`. Een fix of kleine aanpassing laat
-  het tweede getal staan. Schrijf bij een upload een nieuwe changelog (`changelog-2.3.0.md`).
+  (`mod_version=1.2`); het derde is het aantal commits sinds die regel veranderde. Elke commit
+  geeft dus een hogere versie (1.2.0, 1.2.1, 1.2.2, ...). Een **grote update** maakt van het
+  eerste getal één meer en zet het tweede op 0 (`2.0`: de jar is dan `imttech-2.0.0.jar`). Komt
+  er iets **nieuws** bij (een blok, item, systeem of functie, zoals de Electric Furnace), dan gaat
+  het tweede getal omhoog in dezelfde commit (`1.3`). Een fix of klein ding laat de eerste twee
+  staan (2.0.1, 2.0.2, ...). Schrijf bij een upload een nieuwe changelog (`changelog-2.0.0.md`;
+  de oude met die naam en `release/imttech-2.0.0.jar` zijn van de eerste versie van oktober, die
+  vervang je dan).
 - Je oude `starktech-2.0.0.jar` in je CurseForge-instances (BuildingsForMod en PVP) vervang je
   door de nieuwe jar. Je spraakmodellen en instellingen verhuizen vanzelf mee.
 - Het logo en het projectplaatje maak je opnieuw met `python tools/generate_logo.py`.
