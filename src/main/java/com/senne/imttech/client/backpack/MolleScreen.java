@@ -74,12 +74,8 @@ public class MolleScreen extends AbstractContainerScreen<MolleMenu> {
         MolleItem.Kind kind = menu.kind();
         String count = MolleItem.filled(menu.pouch()) + " / " + kind.size();
         g.drawString(font, count, imageWidth - 8 - font.width(count), titleLabelY, HudStyle.argb(220, HudStyle.WHITE), false);
-        g.pose().pushPose();
-        g.pose().translate(8, 60, 0);
-        g.pose().scale(0.75f, 0.75f, 1);
-        g.drawString(font, Component.translatable("screen.imttech.molle.hint_" + kind.id), 0, 0, HudStyle.argb(170, HudStyle.WHITE), false);
-        g.drawString(font, Component.translatable("screen.imttech.molle.hint_close"), 0, 10, HudStyle.argb(130, HudStyle.WHITE), false);
-        g.pose().popPose();
+        // Hoofdstuk 90: geen uitlegregels meer onder de vakjes ("On your backpack: open it from the Alt wheel..." liep
+        // rechts uit het scherm). Wat erin mag staat in de tooltip van de pouch.
     }
 
     @Override

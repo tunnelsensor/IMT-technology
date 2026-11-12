@@ -6888,6 +6888,21 @@ Jouw wens: "r to reload mag... de gray tekst rechtsonder als je een mag vast heb
       niets onder "0 / 15") en `gl14_magazine_loading` (alleen het blauwe balkje erboven). Geen nieuwe automatische test:
       het is alleen beeld.
 
+### 90. De MOLLE-pouches: geen tekst meer onder de vakjes (12 november)
+
+Jouw wens: "in de utility pouch is de tekst te groot, het valt uit de GUI, dit moet opgelost worden, de hele tekst die
+daar staat mag gewoon weg".
+
+- [x] **Beide regels zijn weg** (`MolleScreen.renderLabels`): "Anything, but no boxes and no full pouches." en "On your
+      backpack: open it from the Alt wheel, no zip needed" (die tweede liep rechts uit het scherm). Bovenaan staan nog de
+      naam en hoeveel vakjes vol zijn ("2 / 4"), daaronder de vakjes.
+- [x] **Bij alle vijf MOLLE-pouches** (mijn keuze): de MOLLE-magazijnpouch, -granaatpouch, dump pouch, IFAK en utility
+      pouch hebben hetzelfde scherm, en de lange tweede regel liep bij elk ervan uit het scherm. Wat erin mag, staat nog in
+      de tooltip van de pouch. De zes teksten (`screen.imttech.molle.hint_*`) zijn ook weg uit `en_us.json`. Het scherm
+      van de holster en de pouches op je heup (`GearPouchScreen`) is niet veranderd.
+- [x] **Gezien** op screenshots (`gradlew runVisualCheck -Ponly=backpack`): `pk22_ifak_open` en nieuw
+      `pk22b_utility_pouch_open` (een schaar en 12 fakkels, "2 / 4"). Geen nieuwe automatische test: het is alleen beeld.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het

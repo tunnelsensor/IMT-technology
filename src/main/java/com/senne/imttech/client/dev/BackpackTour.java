@@ -258,6 +258,10 @@ final class BackpackTour {
         t.onServer(5, player -> com.senne.imttech.backpack.Molle.openWornPouch(player, 0));
         t.shot(12, "pk22_ifak_open");
         t.close(0);
+        // Hoofdstuk 90: de utility pouch (plek 3 op de Rucksack), zonder uitlegregels onder de vakjes.
+        t.onServer(5, player -> com.senne.imttech.backpack.Molle.openWornPouch(player, 3));
+        t.shot(12, "pk22b_utility_pouch_open");
+        t.close(0);
         t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
         t.step(0, () -> Minecraft.getInstance().options.fov().set(40));
         t.camera(0, CameraType.THIRD_PERSON_BACK);
