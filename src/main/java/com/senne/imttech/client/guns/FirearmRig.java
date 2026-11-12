@@ -61,6 +61,11 @@ public final class FirearmRig {
     /** Zo groot hangt het wapen op je rug of voor je borst (aan zijn sling), en waar het dan om draait (het midden). */
     public final float slingScale;
     public final Vector3f slingPivot;
+    /**
+     * Een grendel (de AWP): zoveel graden draait de grendel met zijn knop omhoog voor je hem naar achteren trekt, en weer
+     * omlaag als hij voorin zit. 0 = geen grendel. De grendel draait om de as van de loop ({@link #muzzle}).
+     */
+    public float handleLift;
 
     private FirearmRig(float scale, Vector3f grip, Vector3f support, Vector3f sight, Vector3f muzzle, Vector3f magazine,
                        Vector3f magazineAxis, Vector3f port, Vector3f hip, float sightDistance, float cycle, float cycleTicks,
@@ -136,12 +141,51 @@ public final class FirearmRig {
             new Vector3f(8, -1.83f, -6.0f), new Vector3f(8, 10.98f, 1.04f), -0.515f,
             0.36f, new Vector3f(8, 10.5f, 4.0f));
 
+    /**
+     * De AWP (hoofdstuk 103, stap 3, tools/awp_model.py): je rechterhand op de greep achter het duimgat, je linkerhand
+     * onder de handbeschermer, de keep van het ijzeren vizier achteraan op de rail voor je oog (je wang ligt voor het
+     * wangstuk, dus dicht bij het vizier), de grendelknop rechts (optillen, 7 pixels naar achteren, terug en omlaag), en
+     * het rechte magazijn dat recht naar beneden uit de kolf komt.
+     */
+    private static final FirearmRig AWP = new FirearmRig(0.34f,
+            new Vector3f(8, 5.9f, 14.0f), new Vector3f(8, 10.2f, -16.0f), new Vector3f(8, 16.58f, 7.7f),
+            new Vector3f(8, 14.56f, -61.5f), new Vector3f(8, 13.03f, 0.2f), new Vector3f(0, -1, 0),
+            new Vector3f(9.0f, 14.7f, 0.66f),
+            new Vector3f(0.20f, -0.34f, -0.42f), 0.215f, 7.0f, 2, 0.085f, 7.0f,
+            new Vector3f(11.5f, 12.66f, 7.22f), 7.0f,
+            new Vector3f(8, 6.23f, 0.24f), new Vector3f(8, 13.45f, 0.2f), 0,
+            0.34f, new Vector3f(8, 11.5f, -10.0f)).lift(58);
+
+    private FirearmRig lift(float degrees) {
+        this.handleLift = degrees;
+        return this;
+    }
+
     public static FirearmRig of(FirearmType type) {
         return switch (type) {
             case GLOCK_19 -> GLOCK_19;
             case MP5 -> MP5;
             case AK_47 -> AK_47;
+            case AWP -> AWP;
         };
+    }
+
+    /**
+     * Waar de hendel nu zit (model-pixels): {@code lift} van 0 (omlaag) tot 1 (de grendelknop helemaal omhoog gedraaid
+     * om de as van de loop), en {@code back} pixels naar achteren. Voor een wapen zonder grendel gewoon de hendel, naar
+     * achteren geschoven.
+     */
+    public Vector3f handleAt(float lift, float back) {
+        Vector3f at = new Vector3f(handle);
+        if (handleLift != 0) {
+            double a = Math.toRadians(handleLift * lift);
+            float dx = handle.x - 8;
+            float dy = handle.y - muzzle.y;
+            at.x = 8 + (float) (dx * Math.cos(a) - dy * Math.sin(a));
+            at.y = muzzle.y + (float) (dx * Math.sin(a) + dy * Math.cos(a));
+        }
+        at.z += back;
+        return at;
     }
 
     /**
@@ -290,6 +334,11 @@ public final class FirearmRig {
      * hoek: de slede erboven, de loop en de veren ervoor, de slagpin erachter, de trekker eronder.
      */
     public static Vector3f exploded(FirearmType type, GunPart part) {
+        if (type == FirearmType.AWP && part == GunPart.SPRINGS) {
+            // De grendel van de AWP is lang (met zijn kap en zijn knop): de veer past er niet achter. Hij ligt ervoor,
+            // boven de loop.
+            return new Vector3f(0, 9.0f, -24.0f).mul(explodedScale(type));
+        }
         if (type != FirearmType.GLOCK_19) {
             return new Vector3f(LONG_EXPLODED.get(part)).mul(explodedScale(type));
         }

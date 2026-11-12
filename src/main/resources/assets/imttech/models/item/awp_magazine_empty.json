@@ -1,0 +1,150 @@
+{
+ "loader": "neoforge:obj",
+ "model": "imttech:models/firearm/awp/magazine_empty.obj",
+ "automatic_culling": false,
+ "flip_v": false,
+ "emissive_ambient": true,
+ "textures": {
+  "mag": "imttech:item/awp/magazine",
+  "particle": "imttech:item/awp/magazine"
+ },
+ "gui_light": "front",
+ "display": {
+  "gui": {
+   "rotation": [
+    8,
+    -68,
+    0
+   ],
+   "translation": [
+    -12.766,
+    -3.95,
+    4.634
+   ],
+   "scale": [
+    1.754,
+    1.754,
+    1.754
+   ]
+  },
+  "ground": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    -0.0,
+    1.158,
+    3.303
+   ],
+   "scale": [
+    0.42,
+    0.42,
+    0.42
+   ]
+  },
+  "fixed": {
+   "rotation": [
+    8,
+    -68,
+    0
+   ],
+   "translation": [
+    -12.766,
+    -3.95,
+    4.634
+   ],
+   "scale": [
+    1.754,
+    1.754,
+    1.754
+   ]
+  },
+  "head": {
+   "rotation": [
+    0,
+    180,
+    0
+   ],
+   "translation": [
+    0,
+    13,
+    7
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ]
+  },
+  "thirdperson_righthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    -0.0,
+    -1.003,
+    3.932
+   ],
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "thirdperson_lefthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    -0.0,
+    -1.003,
+    3.932
+   ],
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "firstperson_righthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    -0.0,
+    -1.003,
+    3.932
+   ],
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "firstperson_lefthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    -0.0,
+    -1.003,
+    3.932
+   ],
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  }
+ }
+}

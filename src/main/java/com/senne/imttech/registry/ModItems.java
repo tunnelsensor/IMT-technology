@@ -513,6 +513,14 @@ public final class ModItems {
             properties -> new com.senne.imttech.guns.MagazineItem(properties, com.senne.imttech.guns.FirearmType.AK_47, false),
             new Item.Properties());
 
+    /** Hoofdstuk 103, stap 3: de AWP (een grendelgeweer), en zijn magazijn van 5 patronen (.338 Lapua Magnum). */
+    public static final DeferredItem<com.senne.imttech.guns.FirearmItem> AWP = ITEMS.registerItem("awp",
+            properties -> new com.senne.imttech.guns.FirearmItem(properties, com.senne.imttech.guns.FirearmType.AWP),
+            new Item.Properties().rarity(Rarity.RARE));
+    public static final DeferredItem<com.senne.imttech.guns.MagazineItem> AWP_MAGAZINE = ITEMS.registerItem("awp_magazine",
+            properties -> new com.senne.imttech.guns.MagazineItem(properties, com.senne.imttech.guns.FirearmType.AWP, false),
+            new Item.Properties());
+
     /**
      * Hoofdstuk 52: de zes onderdelen (elk in zijn materialen, zie GunPartItem). Sinds hoofdstuk 103 per wapen: de Glock
      * houdt zijn oude namen ("gun_slide"), de andere wapens heten naar hun wapen ("mp5_slide").
@@ -548,6 +556,7 @@ public final class ModItems {
             case GLOCK_19 -> GLOCK_19.get();
             case MP5 -> MP5.get();
             case AK_47 -> AK_47.get();
+            case AWP -> AWP.get();
         };
     }
 
@@ -562,12 +571,13 @@ public final class ModItems {
             case GLOCK_19 -> GLOCK_19_MAGAZINE.get();
             case MP5 -> MP5_MAGAZINE.get();
             case AK_47 -> AK_47_MAGAZINE.get();
+            case AWP -> AWP_MAGAZINE.get();
         };
     }
 
     /** Alle magazijnen van alle vuurwapens (voor de modellen en het Pegboard). */
     public static java.util.List<com.senne.imttech.guns.MagazineItem> magazines() {
-        return java.util.List.of(GLOCK_19_MAGAZINE.get(), MP5_MAGAZINE.get(), AK_47_MAGAZINE.get());
+        return java.util.List.of(GLOCK_19_MAGAZINE.get(), MP5_MAGAZINE.get(), AK_47_MAGAZINE.get(), AWP_MAGAZINE.get());
     }
 
     /** Hoofdstuk 103: de patroon, de lege huls en de kogelpunt van dit kaliber. */
@@ -575,6 +585,7 @@ public final class ModItems {
         return switch (caliber) {
             case MM9 -> ROUND_9MM.get();
             case R762 -> ROUND_762.get();
+            case L338 -> ROUND_338.get();
         };
     }
 
@@ -582,6 +593,7 @@ public final class ModItems {
         return switch (caliber) {
             case MM9 -> CASING_9MM.get();
             case R762 -> CASING_762.get();
+            case L338 -> CASING_338.get();
         };
     }
 
@@ -589,6 +601,7 @@ public final class ModItems {
         return switch (caliber) {
             case MM9 -> BULLET_9MM.get();
             case R762 -> BULLET_762.get();
+            case L338 -> BULLET_338.get();
         };
     }
 
@@ -602,6 +615,10 @@ public final class ModItems {
     public static final DeferredItem<Item> ROUND_762 = ITEMS.registerSimpleItem("round_762", new Item.Properties());
     public static final DeferredItem<Item> CASING_762 = ITEMS.registerSimpleItem("casing_762", new Item.Properties());
     public static final DeferredItem<Item> BULLET_762 = ITEMS.registerSimpleItem("bullet_762", new Item.Properties());
+    /** Hoofdstuk 103, stap 3: de patroon van de AWP (.338 Lapua Magnum), zijn lege huls en zijn kogelpunt. */
+    public static final DeferredItem<Item> ROUND_338 = ITEMS.registerSimpleItem("round_338", new Item.Properties());
+    public static final DeferredItem<Item> CASING_338 = ITEMS.registerSimpleItem("casing_338", new Item.Properties());
+    public static final DeferredItem<Item> BULLET_338 = ITEMS.registerSimpleItem("bullet_338", new Item.Properties());
     /** Hoofdstuk 76: fijngemalen buskruit uit de Crusher (1 buskruit = 10), één per 9mm-patroon op de Reloading Bench. */
     public static final DeferredItem<com.senne.imttech.guns.CrushedGunpowderItem> CRUSHED_GUNPOWDER = ITEMS.registerItem(
             "crushed_gunpowder", com.senne.imttech.guns.CrushedGunpowderItem::new, new Item.Properties());

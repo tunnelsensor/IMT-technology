@@ -27,6 +27,7 @@ import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.monster.Husk;
 import net.minecraft.world.item.ItemStack;
@@ -412,6 +413,98 @@ public final class FirearmGameTests {
         menu.slotsChanged(bench.items());
         check(menu.getSlot(ReloadingBenchMenu.RESULT_SLOT).getItem().is(ModItems.ROUND_9MM.get())
                 && ReloadingBenchBlockEntity.pressable(bench.items()) == 4, "9mm bij 9mm hoort 4 patronen te geven");
+        helper.succeed();
+    }
+
+    // ================================================================ De AWP (stap 3): een grendel, .338 Lapua Magnum
+
+    /**
+     * De AWP schiet .338 Lapua Magnum (5 + 1) en laadt niet zelf door (jouw keuze: "je moet na elk schot op R drukken"):
+     * na een schot zit de lege huls nog in de kamer en doet de trekker niets. R (de grendel) werpt de huls uit (een
+     * .338-huls, pas dan) en schuift de volgende patroon erin. Is het magazijn leeg, dan werpt R alleen de huls uit.
+     * Zijn schakelaar heeft twee standen: semi en safe.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "firearms")
+    public static void awp_needs_its_bolt_worked_after_every_shot(GameTestHelper helper) {
+        deterministic();
+        Husk husk = helper.spawn(EntityType.HUSK, new BlockPos(4, 2, 12));
+        husk.setNoAi(true);
+        float before = husk.getHealth();
+        ServerPlayer player = holder(helper, "awp-shooter", new BlockPos(4, 2, 4),
+                FirearmItem.loaded(FirearmType.AWP, GunMaterial.STEEL), helper.absoluteVec(new Vec3(4.5, 3.2, 12.5)));
+        player.getInventory().clearContent();
+        player.setItemInHand(InteractionHand.MAIN_HAND, FirearmItem.loaded(FirearmType.AWP, GunMaterial.STEEL));
+        ItemStack gun = player.getMainHandItem();
+        check(FirearmType.AWP.caliber == Caliber.L338 && FirearmType.AWP.capacity() == 5 && FirearmType.AWP.manual(),
+                "De AWP hoort een grendelgeweer met 5 patronen .338 Lapua te zijn");
+        check(FirearmType.AWP.damage() > FirearmType.AK_47.damage(), "De AWP hoort harder te raken dan de AK-47");
+        check(fire(player) == Firearms.Result.FIRED, "De AWP schoot niet");
+        check(!FirearmItem.chambered(gun) && FirearmItem.spent(gun) && FirearmItem.roundsInMagazine(gun) == 5,
+                "Na een schot hoort de lege huls in de kamer te zitten en het magazijn nog vol te zijn");
+        check(helper.getLevel().getEntitiesOfClass(CasingEntity.class, helper.getBounds().inflate(4)).isEmpty(),
+                "De huls sprong er al uit voor je de grendel bediende");
+        Firearms.forgetCooldown(player);
+        check(fire(player) == Firearms.Result.EMPTY, "Zonder doorladen schoot de AWP een tweede keer");
+        check(Firearms.needsCycle(gun), "Met een lege huls in de kamer hoort de AWP om R te vragen");
+        check(Firearms.request(player, Firearms.ActionKind.CYCLE, 0) && Firearms.currentAction(player) == Firearms.ActionKind.CYCLE,
+                "R bediende de grendel niet");
+        Firearms.finishNow(player);
+        check(FirearmItem.chambered(gun) && !FirearmItem.spent(gun) && FirearmItem.roundsInMagazine(gun) == 4,
+                "Na het doorladen hoort er 4 + 1 in te zitten");
+        List<CasingEntity> casings = helper.getLevel().getEntitiesOfClass(CasingEntity.class, helper.getBounds().inflate(4));
+        check(casings.size() == 1 && casings.getFirst().caliber() == Caliber.L338, "De grendel hoort een .338-huls uit te werpen");
+        check(!Firearms.needsCycle(gun), "Met een patroon in de kamer hoeft de grendel niet");
+        // Het laatste schot, met een leeg magazijn: R werpt alleen de huls uit.
+        FirearmItem.setRoundsInMagazine(gun, 0);
+        Firearms.forgetCooldown(player);
+        check(fire(player) == Firearms.Result.FIRED, "Het tweede schot ging niet af");
+        check(Firearms.request(player, Firearms.ActionKind.CYCLE, 0), "R wierp de laatste huls niet uit");
+        Firearms.finishNow(player);
+        check(!FirearmItem.chambered(gun) && !FirearmItem.spent(gun) && !Firearms.needsCycle(gun),
+                "Met een leeg magazijn hoort de kamer na het doorladen leeg te zijn");
+        check(!Firearms.request(player, Firearms.ActionKind.CYCLE, 0), "De grendel ging nog eens zonder dat het nodig was");
+        helper.startSequence()
+                .thenIdle(5)
+                .thenExecute(() -> {
+                    check(!husk.isAlive() || husk.getHealth() <= before - 15, "Een schot van de AWP hoort een husk (bijna) te doden");
+                    check(Firearms.selectFire(player) == FirearmType.FireMode.SAFE, "Na semi hoort bij de AWP safe te komen");
+                    check(Firearms.selectFire(player) == FirearmType.FireMode.SEMI, "Na safe hoort weer semi te komen");
+                    restore();
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * In een AWP-magazijn gaan vijf patronen .338 Lapua (geen 7.62), en op de Reloading Bench kost zo een patroon vier
+     * Crushed Gunpowder: met 9 kruit pers je er 2.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "firearms")
+    public static void awp_magazine_holds_five_and_a_round_costs_four_powder(GameTestHelper helper) {
+        deterministic();
+        ServerPlayer player = holder(helper, "awp-loader", new BlockPos(4, 2, 4), MagazineItem.of(FirearmType.AWP, 0),
+                helper.absoluteVec(new Vec3(4.5, 3.2, 12.5)));
+        player.getInventory().clearContent();
+        player.setItemInHand(InteractionHand.MAIN_HAND, MagazineItem.of(FirearmType.AWP, 0));
+        player.getInventory().setItem(1, new ItemStack(ModItems.ROUND_762.get(), 8));
+        check(MagazineItem.capacityOf(player.getMainHandItem()) == 5, "Een AWP-magazijn hoort 5 patronen te houden");
+        check(!Firearms.request(player, Firearms.ActionKind.LOAD_ROUND, 0), "Een 7.62-patroon ging in een AWP-magazijn");
+        player.getInventory().setItem(2, new ItemStack(ModItems.ROUND_338.get(), 7));
+        for (int i = 0; i < 5; i++) {
+            check(Firearms.request(player, Firearms.ActionKind.LOAD_ROUND, 0), "Patroon " + (i + 1) + " ging er niet in");
+            Firearms.finishNow(player);
+        }
+        check(MagazineItem.rounds(player.getMainHandItem()) == 5 && MagazineItem.isFull(player.getMainHandItem()),
+                "Er horen 5 patronen in het magazijn te zitten");
+        check(!Firearms.request(player, Firearms.ActionKind.LOAD_ROUND, 0), "Een zesde patroon ging in een magazijn van vijf");
+        check(player.getInventory().getItem(2).getCount() == 2 && player.getInventory().getItem(1).getCount() == 8,
+                "Er horen 2 patronen .338 en alle 8 patronen 7.62 over te zijn");
+        SimpleContainer bench = new SimpleContainer(ReloadingBenchBlockEntity.SIZE);
+        bench.setItem(ReloadingBenchBlockEntity.SLOT_CASING, new ItemStack(ModItems.CASING_338.get(), 3));
+        bench.setItem(ReloadingBenchBlockEntity.SLOT_BULLET, new ItemStack(ModItems.BULLET_338.get(), 3));
+        bench.setItem(ReloadingBenchBlockEntity.SLOT_POWDER, new ItemStack(ModItems.CRUSHED_GUNPOWDER.get(), 9));
+        check(ReloadingBenchBlockEntity.caliber(bench) == Caliber.L338 && ReloadingBenchBlockEntity.pressable(bench) == 2,
+                "Met 9 kruit hoor je 2 patronen .338 te kunnen persen, niet " + ReloadingBenchBlockEntity.pressable(bench));
+        restore();
         helper.succeed();
     }
 }

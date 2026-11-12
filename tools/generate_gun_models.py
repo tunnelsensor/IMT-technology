@@ -33,6 +33,7 @@ from PIL import Image, ImageDraw
 
 import ak47_model
 import ammo_models
+import awp_model
 import glock19_model as glock
 import gunmesh as gm
 import longgun as lg
@@ -474,7 +475,7 @@ def long_gun(mod):
     return gun
 
 
-LONG_GUNS = {"mp5": mp5_model, "ak_47": ak47_model}
+LONG_GUNS = {"mp5": mp5_model, "ak_47": ak47_model, "awp": awp_model}
 
 
 def ammo(caliber):
@@ -513,7 +514,7 @@ def ammo(caliber):
     print(f"munitie {caliber}: texture {size}")
 
 
-AMMO = ("762",)
+AMMO = ("762", "338")
 
 
 # ---------------------------------------------------------------- Holster en pouches (hoofdstuk 52, stap 2)

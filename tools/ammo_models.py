@@ -35,6 +35,12 @@ CALIBERS = {
         case=bottleneck(38.7 * MM, 5.675 * MM, 5.6 * MM, 5.0 * MM, 30.5 * MM, 4.3 * MM, 33.0 * MM),
         bullet=ogive(38.7 * MM, 56.0 * MM, 3.96 * MM),
         length=56.0 * MM, case_length=38.7 * MM, rim=5.675 * MM, mouth=3.9 * MM),
+    # .338 Lapua Magnum: huls 69,2 mm, rand 14,93 mm, lijf 14,9 -> 13,8 mm bij de schouder, hals 9,4 mm; kogel 8,61 mm;
+    # samen 93,5 mm.
+    "338": dict(
+        case=bottleneck(69.2 * MM, 7.465 * MM, 7.45 * MM, 6.9 * MM, 54.9 * MM, 4.7 * MM, 60.9 * MM),
+        bullet=ogive(69.2 * MM, 93.5 * MM, 4.305 * MM, steps=6),
+        length=93.5 * MM, case_length=69.2 * MM, rim=7.465 * MM, mouth=4.3 * MM),
 }
 
 

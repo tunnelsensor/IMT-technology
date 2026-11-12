@@ -2182,8 +2182,8 @@ punten verdelen, zodat je kiest waar je goed in wordt. Wat je leert blijft na je
 
 ### De grote update 2.0: meer vuurwapens, te beginnen met de MP5
 Jouw wens (hoofdstuk 103, 12 november): "meer guns, deze werken net zoals de Glock, de models zijn ook zoals de Glock":
-de **MP5**, de **AK-47**, de AWP en de Remington 870, en attachments. Dit is de grote update, dus **versie 2.0**. De wapens
-komen er één voor één bij; wat hier staat, is er al (de MP5 en de AK-47). Alles wat bij "Vuurwapens: de Glock 19" staat (zes onderdelen die
+de **MP5**, de **AK-47**, de **AWP** en de Remington 870, en attachments. Dit is de grote update, dus **versie 2.0**. De wapens
+komen er één voor één bij; wat hier staat, is er al (de MP5, de AK-47 en de AWP). Alles wat bij "Vuurwapens: de Glock 19" staat (zes onderdelen die
 slijten, storingen en de tap-rack, een patroon in de kamer, een magazijn dat je kogel per kogel vult, hulzen die eruit
 springen, de magazijnpouch, de skills) geldt ook voor de nieuwe wapens. Dit is wat anders is.
 
@@ -2237,13 +2237,42 @@ aantallen staal of titanium als bij de MP5, maar met **planken** in plaats van p
 rest; eender welk hout): hout is het kenmerk van de AK. Het **AK-47 Magazine**: 8 staal en een AK-47 Recoil Spring. Met
 een Gun Sling eraan hangt hij op je rug of voor je borst, en op het Pegboard neemt hij 10 x 4 gaatjes in.
 
+**De AWP** (versie 2.2). Het sluipschuttersgeweer uit Counter-Strike: de Arctic Warfare met de groene kunststof kolf met
+het duimgat, ook nagemeten van een foto. Hij schiet **.338 Lapua Magnum** uit een recht magazijn van **5** (5 + 1 met de
+kamer). Eén schot doet **30** schade (genoeg voor bijna alles zonder pantser), blijft dat doen tot 150 blokken en vliegt
+tot 300; gericht is hij haarscherp, vanuit de heup juist het minst precies van allemaal. Bewakers horen hem van 96
+blokken.
+- **Het is een grendelgeweer: na elk schot druk je op R** (jouw keuze: "je moet na elk schot op R drukken om terug een
+  round in de chamber te doen bij wapens die niet semi-auto zijn"). Na het schot blijft de lege huls in de kamer zitten:
+  rechtsonder staat in het rood **PRESS R** en de trekker doet niets ("Spent casing in the chamber: press R"). R bedient
+  de grendel: je rechterhand tilt de knop op, trekt de grendel naar achteren (pas nu springt de huls eruit), duwt hem
+  weer naar voren (de volgende patroon gaat mee de kamer in) en drukt de knop omlaag. Dat duurt ruim een seconde
+  (`[guns] cycleTicks`, 24 ticks). Is het magazijn leeg, dan werpt R alleen de huls uit.
+- **R doet de rest zoals bij de Glock** zodra er een patroon in de kamer zit of er niets door te laden valt: het magazijn
+  uitwerpen of wisselen uit je magazijnpouch. Een nieuw magazijn met een lege kamer: nog eens R (de grendel schuift de
+  eerste patroon erin; niets gaat vanzelf). Sneak + R steekt een patroon met de hand in de kamer, U haalt hem eruit.
+- **De schakelaar** (X) heeft twee standen: SEMI en SAFE.
+- **Richten**: zolang er geen kijker op zit (die komt met de attachments), kijk je over een ijzeren vizier: de keep
+  achteraan op de rail en de korrel vooraan op de loop, vlak achter de mondingsrem. Je kijkt daarbij over de kap van de
+  grendel heen.
+- **Zijn zes onderdelen**: Receiver (de kolf met de stalen behuizing en de rail), **Bolt** (de grendel met zijn knop),
+  Barrel (de zware loop met de mondingsrem), **Mainspring** (de slagveer), Firing Pin en Trigger Group, in staal of
+  titanium. Met een stalen Receiver is de kolf **groen**, met een van titanium **zandkleurig**. Je maakt ze onder **AWP**
+  op "Make parts": Receiver 12, Bolt 8, Barrel 8 en 4 ijzerklompjes, Mainspring 2 en 3 ijzerklompjes, Firing Pin 1 en 2
+  ijzerklompjes, Trigger Group 3; en bij elk onderdeel **groene verf** (4 voor de Receiver, 1 voor de rest): dat is het
+  kenmerk van de AWP. Het **AWP Magazine**: 5 staal en een AWP Mainspring.
+- Met een Gun Sling eraan hangt hij op je rug of voor je borst (hij is lang: de loop steekt boven je hoofd uit); op het
+  Pegboard neemt hij 12 x 3 gaatjes in, zijn magazijn 2 x 2.
+
 **Munitie per kaliber.** Elk kaliber heeft zijn eigen patroon, zijn eigen lege huls en zijn eigen kogelpunt, en ze
-passen niet door elkaar: een AK-magazijn neemt alleen 7.62x39mm, een Glock- of MP5-magazijn alleen 9mm (heb je de
-verkeerde bij, dan zegt het spel "No 7.62x39mm rounds in your inventory").
-- **Maken**: **7.62x39mm Casing**: 2 koperstaven geven er 8 (een 9mm-huls: 1 koperstaaf voor 8). **7.62x39mm Bullet**: 3
-  ijzerklompjes geven er 4 (9mm: 2 voor 4). Zonder vorm, in de gewone crafting table.
+passen niet door elkaar: een AK-magazijn neemt alleen 7.62x39mm, een AWP-magazijn alleen .338 Lapua, een Glock- of
+MP5-magazijn alleen 9mm (heb je de verkeerde bij, dan zegt het spel "No 7.62x39mm rounds in your inventory").
+- **Maken** (zonder vorm, in de gewone crafting table): een **huls** van koperstaven (9mm: 1 staaf geeft er 8; 7.62x39mm:
+  2 staven voor 8; .338 Lapua: 4 staven voor 8) en een **kogelpunt** van ijzerklompjes (9mm: 2 geven er 4; 7.62x39mm: 3
+  voor 4; .338 Lapua: 4 voor 4).
 - **De Reloading Bench perst elk kaliber.** De huls zegt welke patroon het wordt; de kogelpunt moet van hetzelfde kaliber
-  zijn. Een 7.62-patroon kost **twee** Crushed Gunpowder, een 9mm één (met 7 kruit pers je dus 3 patronen 7.62). Boven
+  zijn. Een 9mm-patroon kost één Crushed Gunpowder, een 7.62-patroon **twee**, een .338-patroon **vier** (met 7 kruit pers
+  je dus 3 patronen 7.62). Boven
   het vakje rechts staat welk kaliber er uitkomt. Past de kogelpunt niet bij de huls, dan staat er in het rood "The
   casing and the bullet are not the same caliber"; ligt er te weinig kruit voor één patroon, dan zegt de bank hoeveel er
   nodig is.
@@ -2258,11 +2287,13 @@ terugslag, korrels per schot, hoe lang doorladen duurt, hoe ver bewakers het hor
 krijgen die rijtjes hun nieuwe standaardwaarden.
 
 **Voor wie de modellen wil aanpassen.** Elk wapen heeft zijn eigen bestand (`tools/mp5_model.py`,
-`tools/ak47_model.py`), gebouwd met `tools/longgun.py` en `tools/gunmesh.py`; `python tools/generate_gun_models.py mp5`
-(of `ak_47`) schrijft alleen dat wapen opnieuw, en met `--assets <map>` naar een proefmap die je met
-`tools/preview_obj.py --assets <map>` bekijkt. De omtrek van een foto halen doet `tools/trace_outline.py`. De patroon, de
-huls en de kogelpunt van een nieuw kaliber staan in `tools/ammo_models.py` (`python tools/generate_gun_models.py 762`).
-De geluiden: `py -3.12 tools/generate_sounds.py mp5_fire mp5_charge ak47_fire ak47_charge ...`.
+`tools/ak47_model.py`, `tools/awp_model.py`), gebouwd met `tools/longgun.py` en `tools/gunmesh.py`;
+`python tools/generate_gun_models.py mp5` (of `ak_47`, `awp`) schrijft alleen dat wapen opnieuw, en met `--assets <map>`
+naar een proefmap die je met `tools/preview_obj.py --assets <map>` bekijkt. De omtrek van een foto halen doet
+`tools/trace_outline.py` (met `--colour r,g,b` alleen wat een bepaalde kleur heeft, zoals de kolf van de AWP naast zijn
+zwarte kijker). De patroon, de huls en de kogelpunt van een nieuw kaliber staan in `tools/ammo_models.py`
+(`python tools/generate_gun_models.py 762 338`). De geluiden:
+`py -3.12 tools/generate_sounds.py mp5_fire mp5_charge ak47_fire ak47_charge awp_fire awp_bolt ...`.
 
 ### Lasergeweren uit onderdelen: de Laser Workbench, de Nether Star, de slings
 Jouw wens (hoofdstuk 55): de lasergeweren horen in hetzelfde systeem als de Glock: uit onderdelen gebouwd op een nieuwe

@@ -20,7 +20,13 @@ public enum FirearmType {
      * De AK-47 (hoofdstuk 103, stap 2): 7.62x39mm, zelfladend, met een schakelaar: safe, één schot of automatisch. Harder
      * en verder dan de MP5, maar hij schopt meer en zijn patronen zijn duurder.
      */
-    AK_47("ak_47", Caliber.R762, Action.SEMI, true, 1.25f, FireMode.SAFE, FireMode.SEMI, FireMode.AUTO);
+    AK_47("ak_47", Caliber.R762, Action.SEMI, true, 1.25f, FireMode.SAFE, FireMode.SEMI, FireMode.AUTO),
+    /**
+     * De AWP (hoofdstuk 103, stap 3): .338 Lapua Magnum, een <b>grendel</b> die je na elk schot zelf bedient met R (jouw
+     * keuze), een magazijn van vijf. Eén schot is bijna altijd raak en dodelijk, maar daarna sta je even stil. De
+     * schakelaar heeft alleen safe en één schot. Zonder kijker richt je over een ijzeren vizier.
+     */
+    AWP("awp", Caliber.L338, Action.BOLT, true, 1.5f, FireMode.SAFE, FireMode.SEMI);
 
     /**
      * Hoe een wapen de volgende patroon in de kamer krijgt (jouw keuze, hoofdstuk 103: "je moet na elk schot op R drukken
@@ -208,6 +214,7 @@ public enum FirearmType {
             case GLOCK_19 -> ModSounds.GLOCK_FIRE.get();
             case MP5 -> ModSounds.MP5_FIRE.get();
             case AK_47 -> ModSounds.AK47_FIRE.get();
+            case AWP -> ModSounds.AWP_FIRE.get();
         };
     }
 
@@ -217,6 +224,7 @@ public enum FirearmType {
             case GLOCK_19 -> ModSounds.GLOCK_FIRE_FAR.get();
             case MP5 -> ModSounds.MP5_FIRE_FAR.get();
             case AK_47 -> ModSounds.AK47_FIRE_FAR.get();
+            case AWP -> ModSounds.AWP_FIRE_FAR.get();
         };
     }
 
@@ -226,6 +234,7 @@ public enum FirearmType {
             case GLOCK_19 -> ModSounds.GLOCK_SLIDE.get();
             case MP5 -> ModSounds.MP5_CHARGE.get();
             case AK_47 -> ModSounds.AK47_CHARGE.get();
+            case AWP -> ModSounds.AWP_BOLT.get();
         };
     }
 
@@ -235,6 +244,7 @@ public enum FirearmType {
             case GLOCK_19 -> ModSounds.GLOCK_SLIDE_RELEASE.get();
             case MP5 -> ModSounds.MP5_CHARGE.get();
             case AK_47 -> ModSounds.AK47_CHARGE.get();
+            case AWP -> ModSounds.AWP_BOLT.get();
         };
     }
 

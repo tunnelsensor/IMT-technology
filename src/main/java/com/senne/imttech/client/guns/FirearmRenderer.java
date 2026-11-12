@@ -202,12 +202,25 @@ public final class FirearmRenderer {
         pose.popPose();
         // De slede (een pistool) of de grendel (een lang wapen), en hoe ver de hendel naar achteren staat.
         float slideBack = slideBack(rig, stack, since, action, progress, lng);
-        float handleBack = lng ? rack(action, progress) * rig.handleTravel : slideBack;
+        float racked = lng ? rack(rig, action, progress) : 0;
+        // Hoofdstuk 103, stap 3: een grendel (de AWP) draait eerst omhoog (het eerste kwart van de haal) en gaat dan pas
+        // naar achteren; terug omgekeerd.
+        float boltLift = rig.handleLift != 0 ? Math.min(1, racked / BOLT_LIFT) : 0;
+        if (rig.handleLift != 0) {
+            racked = Math.max(0, (racked - BOLT_LIFT) / (1 - BOLT_LIFT));
+        }
+        float handleBack = lng ? racked * rig.handleTravel : slideBack;
         if (lng) {
-            slideBack = Math.max(slideBack, rack(action, progress) * rig.cycle);
+            slideBack = rig.handleLift != 0 ? racked * rig.cycle : Math.max(slideBack, racked * rig.cycle);
         }
         pose.pushPose();
         pose.translate(0, 0, slideBack);
+        if (boltLift > 0) {
+            // Om de as van de loop: de knop (rechts, schuin omlaag) komt omhoog.
+            pose.translate(8, rig.muzzle.y, 0);
+            pose.mulPose(new Quaternionf().rotateZ((float) Math.toRadians(rig.handleLift * boltLift)));
+            pose.translate(-8, -rig.muzzle.y, 0);
+        }
         part(pose, buffers, type, parts, GunPart.SLIDE, light);
         pose.popPose();
         PartState slideState = parts.get(GunPart.SLIDE);
@@ -286,7 +299,8 @@ public final class FirearmRenderer {
 
         // ---- Je armen.
         boolean suit = player.getItemBySlot(EquipmentSlot.CHEST).getItem() instanceof TechSuitItem;
-        Vector3f right = gun.transformPosition(rightRack ? rightHandRack(rig, action, progress, handleBack) : new Vector3f(rig.grip));
+        Vector3f right = gun.transformPosition(rightRack ? rightHandRack(rig, action, progress, boltLift, handleBack)
+                : new Vector3f(rig.grip));
         Vector3f left = gun.transformPosition(lng ? leftHandLong(rig, action, progress, handleBack, magOut)
                 : leftHand(rig, action, progress, slideBack, magOut, hasMag));
         HumanoidArm main = player.getMainArm();
@@ -352,10 +366,33 @@ public final class FirearmRenderer {
             return 0;
         }
         return switch (action) {
-            case SLIDE_RELEASE, CYCLE -> ease(Mth.clamp(t / 0.18f, 0, 1)) * ease(Mth.clamp((1 - t) / 0.25f, 0, 1));
+            case SLIDE_RELEASE, CYCLE -> ease(Mth.clamp(t / 0.18f, 0, 1)) * ease(Mth.clamp((1 - t) / 0.18f, 0, 1));
             case TAP_RACK -> ease(Mth.clamp((t - 0.33f) / 0.12f, 0, 1)) * ease(Mth.clamp((1 - t) / 0.18f, 0, 1));
             case CHAMBER_ROUND -> ease(Mth.clamp(t / 0.14f, 0, 1)) * ease(Mth.clamp((1 - t) / 0.12f, 0, 1));
             case UNLOAD_CHAMBER -> ease(Mth.clamp(t / 0.14f, 0, 1)) * ease(Mth.clamp((1 - t) / 0.22f, 0, 1));
+            default -> 0;
+        };
+    }
+
+    /** Het eerste stuk van de haal van een grendel is het optillen van de knop; de rest is naar achteren trekken. */
+    private static final float BOLT_LIFT = 0.25f;
+
+    /** De haal van dit wapen: een grendel (de AWP) heeft bij het doorladen zijn eigen, tragere beweging. */
+    private static float rack(FirearmRig rig, @Nullable Firearms.ActionKind action, float t) {
+        if (rig.handleLift != 0 && (action == Firearms.ActionKind.CYCLE || action == Firearms.ActionKind.SLIDE_RELEASE)) {
+            // De hand naar de knop (tot 0,12), optillen en trekken (tot 0,46), even open, duwen en omlaag (0,54-0,88).
+            return t < 0.12f ? 0 : t < 0.46f ? ease((t - 0.12f) / 0.34f) : t < 0.54f ? 1 : t < 0.88f ? 1 - ease((t - 0.54f) / 0.34f) : 0;
+        }
+        return rack(action, t);
+    }
+
+    /** Hoe ver je rechterhand van de greep naar de grendelknop is (0 = op de greep, 1 = aan de knop). */
+    private static float handAtBolt(Firearms.ActionKind action, float t) {
+        return switch (action) {
+            case CYCLE, SLIDE_RELEASE -> ease(Mth.clamp(t / 0.12f, 0, 1)) * ease(Mth.clamp((1 - t) / 0.12f, 0, 1));
+            case TAP_RACK -> ease(Mth.clamp((t - 0.35f) / 0.1f, 0, 1)) * ease(Mth.clamp((1 - t) / 0.2f, 0, 1));
+            case UNLOAD_CHAMBER -> ease(Mth.clamp(t / 0.15f, 0, 1)) * ease(Mth.clamp((1 - t) / 0.25f, 0, 1));
+            case CHAMBER_ROUND -> ease(Mth.clamp(t / 0.15f, 0, 1)) * ease(Mth.clamp((1 - t) / 0.14f, 0, 1));
             default -> 0;
         };
     }
@@ -548,14 +585,20 @@ public final class FirearmRenderer {
      * bij het doorladen laat ze die even los: naar de spanhendel (vlak boven de greep), naar achteren trekken, loslaten en
      * terug. Dezelfde tijden als rack: de hand is er voor de hendel beweegt en blijft er tot hij los is.
      */
-    private static Vector3f rightHandRack(FirearmRig rig, @Nullable Firearms.ActionKind action, float t, float handleBack) {
+    private static Vector3f rightHandRack(FirearmRig rig, @Nullable Firearms.ActionKind action, float t, float lift,
+                                          float handleBack) {
         Vector3f grip = new Vector3f(rig.grip);
         if (action == null) {
             return grip;
         }
         // De vingers om de knop gehaakt: de hand zit rechts onder de hendel, achter het wapen. Zo zie je de hendel
         // bewegen en blijft de kap vrij (een hand is in je beeld veel breder dan de behuizing).
-        Vector3f atHandle = new Vector3f(rig.handle).add(1.9f, -3.0f, 0.6f + handleBack);
+        Vector3f atHandle = rig.handleAt(lift, handleBack).add(1.9f, -3.0f, 0.6f);
+        if (rig.handleLift != 0) {
+            // Een grendel houdt je hand de hele haal vast: er is geen veer die hem terugslaat.
+            float there = handAtBolt(action, t);
+            return lerp(grip, atHandle, there);
+        }
         Vector3f released = new Vector3f(rig.handle).add(1.9f, -3.0f, 0.6f + rig.handleTravel);
         switch (action) {
             case SLIDE_RELEASE, CYCLE -> {

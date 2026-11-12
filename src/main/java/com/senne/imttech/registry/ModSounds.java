@@ -151,6 +151,10 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> AK47_FIRE = register("ak47.fire");
     public static final DeferredHolder<SoundEvent, SoundEvent> AK47_FIRE_FAR = register("ak47.fire_far");
     public static final DeferredHolder<SoundEvent, SoundEvent> AK47_CHARGE = register("ak47.charge");
+    /** Hoofdstuk 103, stap 3: de AWP. Een zware knal die lang nagalmt, en de grendel: omhoog, achteruit, vooruit, omlaag. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> AWP_FIRE = register("awp.fire");
+    public static final DeferredHolder<SoundEvent, SoundEvent> AWP_FIRE_FAR = register("awp.fire_far");
+    public static final DeferredHolder<SoundEvent, SoundEvent> AWP_BOLT = register("awp.bolt");
     /** Hoofdstuk 103: het magazijn van een lang wapen dat eruit komt en erin klikt (zwaarder dan dat van een pistool). */
     public static final DeferredHolder<SoundEvent, SoundEvent> RIFLE_MAG_OUT = register("rifle.mag_out");
     public static final DeferredHolder<SoundEvent, SoundEvent> RIFLE_MAG_IN = register("rifle.mag_in");

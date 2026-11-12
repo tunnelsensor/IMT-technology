@@ -659,6 +659,36 @@
       }
     ]
   },
+  "awp.fire": {
+    "subtitle": "subtitles.imttech.awp.fire",
+    "sounds": [
+      {
+        "name": "imttech:awp_fire",
+        "attenuation_distance": 40
+      },
+      {
+        "name": "imttech:awp_fire_2",
+        "attenuation_distance": 40
+      }
+    ]
+  },
+  "awp.fire_far": {
+    "subtitle": "subtitles.imttech.awp.fire_far",
+    "sounds": [
+      {
+        "name": "imttech:awp_fire_far",
+        "attenuation_distance": 160
+      }
+    ]
+  },
+  "awp.bolt": {
+    "subtitle": "subtitles.imttech.awp.bolt",
+    "sounds": [
+      {
+        "name": "imttech:awp_bolt"
+      }
+    ]
+  },
   "rifle.mag_out": {
     "subtitle": "subtitles.imttech.rifle.mag_out",
     "sounds": [

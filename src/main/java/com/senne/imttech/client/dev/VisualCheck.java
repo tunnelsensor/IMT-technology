@@ -4205,28 +4205,49 @@ public final class VisualCheck {
             t.close(5);
             t.onServer(0, player -> player.getInventory().clearContent());
             // Op het Pegboard: de AK-47 (10 x 4 gaatjes) en zijn gebogen magazijnen, naast de MP5 en de Glock.
-            t.onServer(0, player -> {
-                ServerLevel level = player.serverLevel();
-                BlockPos leftBottom = g.offset(6, 1, 3);
-                for (int dx = -1; dx <= 3; dx++) {
-                    for (int dy = -1; dy <= 2; dy++) {
-                        level.setBlockAndUpdate(leftBottom.offset(-dx, dy, 1), Blocks.STONE_BRICKS.defaultBlockState());
-                    }
+            firearmRackShots(t, g, "ak");
+        }
+
+        // --- De AWP (hoofdstuk 103, stap 3): de ronde van een lang wapen, maar met de grendel: na het schot "PRESS R", de
+        // grendel omhoog, naar achteren, naar voren en omlaag. Daarna de Reloading Bench met .338 Lapua (vier kruit per
+        // patroon) en het Pegboard.
+        if (want("awp")) {
+            BlockPos g = GUN_RANGE.above();
+            longGunTour(t, com.senne.imttech.guns.FirearmType.AWP, "aw", "awp", 0,
+                    com.senne.imttech.client.guns.GunsmithMakePanel.Group.AWP);
+            t.onServer(5, player -> {
+                if (player.serverLevel().getBlockEntity(g.offset(-2, 0, 2)) instanceof com.senne.imttech.guns.ReloadingBenchBlockEntity bench) {
+                    bench.items().setItem(0, new ItemStack(ModItems.CASING_338.get(), 12));
+                    bench.items().setItem(1, new ItemStack(ModItems.BULLET_338.get(), 9));
+                    bench.items().setItem(2, new ItemStack(ModItems.CRUSHED_GUNPOWDER.get(), 10));
                 }
-                com.senne.imttech.armory.ArmoryDisplay.buildFirearmRack(level, leftBottom);
-            });
-            t.stand(10, g.getX() + 5.5, g.getY(), g.getZ() + 0.6, 0, -12);
-            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
-            t.shot(25, "ak21_pegboard");
-            t.stand(0, g.getX() + 6.0, g.getY(), g.getZ() + 1.9, 0, -32);
-            t.shot(15, "ak22_pegboard_close");
-            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
-            t.onServer(0, player -> {
-                ServerLevel level = player.serverLevel();
-                for (BlockPos pos : BlockPos.betweenClosed(g.offset(2, 0, 3), g.offset(8, 4, 4))) {
-                    level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+                var inventory = player.getInventory();
+                inventory.clearContent();
+                int slot = 9;
+                for (com.senne.imttech.guns.Caliber caliber : com.senne.imttech.guns.Caliber.values()) {
+                    inventory.setItem(slot, new ItemStack(caliber.round(), 24));
+                    inventory.setItem(slot + 1, new ItemStack(caliber.casing(), 12));
+                    inventory.setItem(slot + 2, new ItemStack(caliber.bullet(), 12));
+                    slot += 9;
                 }
+                inventory.setItem(13, com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.AWP, 5));
+                inventory.setItem(14, com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.AWP, 0));
+                inventory.setItem(15, com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.AWP,
+                        com.senne.imttech.guns.GunMaterial.STEEL));
+                inventory.setItem(16, com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.AWP,
+                        com.senne.imttech.guns.GunMaterial.TITANIUM));
+                for (com.senne.imttech.guns.GunPart part : com.senne.imttech.guns.GunPart.values()) {
+                    inventory.setItem(22 + part.ordinal() % 5 + (part.ordinal() / 5) * 9, com.senne.imttech.guns.GunPartItem.of(
+                            com.senne.imttech.guns.FirearmType.AWP, part, com.senne.imttech.guns.GunMaterial.STEEL));
+                }
+                ShowcaseFeatures.openBench(player, g.offset(-2, 0, 2));
             });
+            t.step(0, () -> HowToTour.mouseTo(1, 1));
+            t.step(15, () -> Minecraft.getInstance().getToasts().clear());
+            t.shot(8, "aw18_reloading_bench_338");
+            t.close(5);
+            t.onServer(0, player -> player.getInventory().clearContent());
+            firearmRackShots(t, g, "aw");
         }
 
         // --- De skilltree (hoofdstuk 52, stap 3): leeg, en met een paar niveaus geleerd.
@@ -5825,6 +5846,36 @@ public final class VisualCheck {
      * stenen erachter.
      */
     /**
+     * Hoofdstuk 103: een wand van Pegboards naast de schietbaan met de vuurwapens van de grote update (zie
+     * ArmoryDisplay.buildFirearmRack), van op afstand en van dichtbij, en daarna weer weg. De screenshots heten
+     * {@code p}21_pegboard en {@code p}22_pegboard_close.
+     */
+    private static void firearmRackShots(DevScript t, BlockPos g, String p) {
+        t.onServer(0, player -> {
+            ServerLevel level = player.serverLevel();
+            BlockPos leftBottom = g.offset(6, 1, 3);
+            for (int dx = -1; dx <= 3; dx++) {
+                for (int dy = -1; dy <= 3; dy++) {
+                    level.setBlockAndUpdate(leftBottom.offset(-dx, dy, 1), Blocks.STONE_BRICKS.defaultBlockState());
+                }
+            }
+            com.senne.imttech.armory.ArmoryDisplay.buildFirearmRack(level, leftBottom);
+        });
+        t.stand(10, g.getX() + 5.5, g.getY(), g.getZ() - 0.4, 0, -18);
+        t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+        t.shot(25, p + "21_pegboard");
+        t.stand(0, g.getX() + 6.0, g.getY() + 1.0, g.getZ() + 1.7, 0, -20);
+        t.shot(15, p + "22_pegboard_close");
+        t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+        t.onServer(0, player -> {
+            ServerLevel level = player.serverLevel();
+            for (BlockPos pos : BlockPos.betweenClosed(g.offset(2, 0, 3), g.offset(8, 5, 4))) {
+                level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+            }
+        });
+    }
+
+    /**
      * Hoofdstuk 103: de ronde van een lang vuurwapen (de MP5, de AK-47...) op de schietbaan: vanuit de heup, gericht, een
      * schot, de keuzeschakelaar naar auto ({@code toAuto} keer X) en automatisch vuur, het magazijn eruit en erin, een
      * patroon met de hand in de kamer, bekijken, een magazijn in je hand, de Gunsmith Table (het wapen uit elkaar, en het
@@ -5846,22 +5897,40 @@ public final class VisualCheck {
         t.key(1, () -> Minecraft.getInstance().options.keyAttack, false);
         t.shot(0, p + "03_" + name + "_fire");
         t.key(8, () -> Minecraft.getInstance().options.keyUse, false);
-        // X tot de schakelaar op auto staat (de MP5 twee keer: semi, 3 schoten, auto); dan de knop inhouden.
-        for (int i = 0; i < toAuto; i++) {
-            t.step(i == 0 ? 6 : 4, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_FIRE_MODE.getKey()));
+        int cycle = Math.round(type.cycleTicks());
+        if (type.manual()) {
+            // Een grendel of een pomp (jouw keuze): na het schot zit de lege huls in de kamer en zegt de HUD "PRESS R".
+            // R bedient de grendel: omhoog, naar achteren (de huls springt eruit), naar voren en omlaag.
+            t.shot(6, p + "04_press_r");
+            t.step(2, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
+            t.shot(Math.round(cycle * 0.3f), p + "05a_cycling_lift");
+            t.shot(Math.round(cycle * 0.2f), p + "05b_cycling_back");
+            t.shot(Math.round(cycle * 0.25f), p + "05c_cycling_forward");
+        } else {
+            // X tot de schakelaar op auto staat (de MP5 twee keer: semi, 3 schoten, auto); dan de knop inhouden.
+            for (int i = 0; i < toAuto; i++) {
+                t.step(i == 0 ? 6 : 4, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_FIRE_MODE.getKey()));
+            }
+            t.shot(6, p + "04_selector_auto");
+            t.key(4, () -> Minecraft.getInstance().options.keyAttack, true);
+            t.shot(7, p + "05_full_auto");
+            t.key(3, () -> Minecraft.getInstance().options.keyAttack, false);
         }
-        t.shot(6, p + "04_selector_auto");
-        t.key(4, () -> Minecraft.getInstance().options.keyAttack, true);
-        t.shot(7, p + "05_full_auto");
-        t.key(3, () -> Minecraft.getInstance().options.keyAttack, false);
-        t.step(12, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
+        t.step(type.manual() ? cycle + 6 : 12, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
         t.shot(5, p + "06_magazine_out");
         t.step(15, () -> selectSlot(1));
         t.tap(15, () -> Minecraft.getInstance().options.keyUse);
         t.shot(7, p + "07_magazine_in");
         // Een wapen met een vol magazijn en een lege kamer: zodra je het vastpakt, laadt het zelf door (de spanhendel).
+        // Een grendel of een pomp doet dat niet vanzelf: daar druk je op R.
         t.step(15, () -> selectSlot(4));
-        t.shot(7, p + "07b_charging");
+        if (type.manual()) {
+            t.step(10, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
+            t.shot(Math.round(cycle * 0.45f), p + "07b_charging");
+            t.step(cycle, () -> { });
+        } else {
+            t.shot(7, p + "07b_charging");
+        }
         t.step(15, () -> selectSlot(5));
         t.key(15, () -> Minecraft.getInstance().options.keyShift, true);
         t.step(2, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));

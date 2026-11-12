@@ -12,6 +12,7 @@ Wat het kan:
 Draaien (de foto's staan niet in de mod; geef het pad mee):
     python tools/trace_outline.py grid foto.png --out raster.png [--box 0,0,800,400] [--step 50] [--zoom 2]
     python tools/trace_outline.py outline foto.png [--box ...] [--tol 1.5] [--white 235] [--rotate -3.2]
+    python tools/trace_outline.py outline foto.png --colour 176,134,74 --dist 55     (alleen wat die kleur heeft)
     python tools/trace_outline.py check foto.png --out check.png --poly "10,20;30,40;..." [--poly ...]
 """
 import argparse
@@ -31,10 +32,17 @@ def load(path, rotate=0.0):
     return im
 
 
-def mask_of(im, white=235, alpha=160, dark=None):
-    """Waar het wapen is: niet doorzichtig en niet (bijna) wit. Met {dark}: alleen wat donkerder is dan dat."""
+def mask_of(im, white=235, alpha=160, dark=None, colour=None, dist=60):
+    """
+    Waar het wapen is: niet doorzichtig en niet (bijna) wit. Met {dark}: alleen wat donkerder is dan dat. Met {colour}
+    (r, g, b): alleen wat op die kleur lijkt (minder dan {dist} ervandaan), bijvoorbeeld alleen de zandkleurige kolf van
+    een geweer waar ook een zwarte kijker en een tweepoot aan hangen.
+    """
     a = np.asarray(im).astype(int)
     solid = a[:, :, 3] > alpha
+    if colour is not None:
+        away = np.sqrt(((a[:, :, :3] - np.array(colour)) ** 2).sum(axis=2))
+        return solid & (away < dist)
     if dark is not None:
         return solid & (a[:, :, :3].max(axis=2) < dark)
     not_white = a[:, :, :3].min(axis=2) < white
@@ -125,9 +133,9 @@ def region_mask(size, box=None, poly=None):
     return np.asarray(im) > 0
 
 
-def outline(im, box=None, poly=None, tol=1.5, white=235, fill=True, dark=None, close=0):
+def outline(im, box=None, poly=None, tol=1.5, white=235, fill=True, dark=None, close=0, colour=None, dist=60):
     """De omtrek van het wapen binnen een stuk van de foto, als veelhoek in foto-pixels."""
-    mask = mask_of(im, white=white, dark=dark)
+    mask = mask_of(im, white=white, dark=dark, colour=colour, dist=dist)
     if close:
         mask = ndimage.binary_closing(mask, iterations=close)
     if fill:
@@ -205,6 +213,8 @@ def main():
     ap.add_argument("--white", type=int, default=235)
     ap.add_argument("--dark", type=int, default=None)
     ap.add_argument("--close", type=int, default=0)
+    ap.add_argument("--colour", default="", help="r,g,b: alleen wat op deze kleur lijkt")
+    ap.add_argument("--dist", type=float, default=60.0, help="hoe ver een pixel van --colour af mag liggen")
     ap.add_argument("--rotate", type=float, default=0.0)
     ap.add_argument("--nofill", action="store_true")
     args = ap.parse_args()
@@ -215,7 +225,9 @@ def main():
         print("geschreven:", args.out, im.size)
     elif args.mode == "outline":
         poly = parse_points(args.poly[0]) if args.poly else None
-        pts = outline(im, box if not poly else None, poly, args.tol, args.white, not args.nofill, args.dark, args.close)
+        colour = tuple(int(c) for c in args.colour.split(",")) if args.colour else None
+        pts = outline(im, box if not poly else None, poly, args.tol, args.white, not args.nofill, args.dark, args.close,
+                      colour, args.dist)
         print(len(pts), "punten:")
         print("[" + ", ".join(f"({x}, {y})" for x, y in pts) + "]")
     else:

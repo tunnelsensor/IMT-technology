@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 547 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 549 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -7433,7 +7433,41 @@ standen), suppressors, extended mags en grips." Omdat jij het een grote update n
       7.62-patroon; de schakelaar gaat semi, auto, safe (bij een echte AK staat auto in het midden); je rechterhand laadt
       door (de hendel zit rechts en een arm over de kap verborg het hele wapen); het vizier is wat groter en hoger dan
       het echte; versie 2.1.0 omdat het een nieuw wapen is.
-- [ ] **3. De AWP** — met .338 Lapua Magnum, de grendel op R, en een eenvoudig ijzeren vizier zolang er geen kijker op zit.
+- [x] **3. De AWP** (12 november, versie 2.2.0) — met .338 Lapua Magnum, de grendel op R, en een eenvoudig ijzeren
+      vizier zolang er geen kijker op zit.
+      **Het wapen**: `FirearmType.AWP` (.338 Lapua Magnum, `Action.BOLT`, de schakelaar safe en semi), de items `awp` en
+      `awp_magazine` (5 patronen), zijn zes onderdelen (`awp_frame`... met de namen Receiver, Bolt, Barrel, Mainspring,
+      Firing Pin, Trigger Group) in staal en titanium, 13 recepten (zwaarder dan de MP5 en de AK-47, met groene verf als
+      kenmerk), de Curios-tag "sling", het Pegboard (12 x 3 gaatjes; zijn korte, brede magazijn 2 x 2).
+      `Caliber.L338` met `round_338`, `casing_338` en `bullet_338` (4 koper = 8 hulzen, 4 ijzerklompjes = 4 kogelpunten),
+      vier Crushed Gunpowder per patroon.
+      **De grendel** (het stond al klaar sinds stap 1: `Firearms.needsCycle`, de handeling `CYCLE`, `gun_spent`): na een
+      schot blijft de lege huls in de kamer en zegt de HUD "PRESS R"; R werpt de huls uit (pas dan springt hij eruit) en
+      schuift de volgende patroon erin. Nieuw is hoe je het ziet: `FirearmRig.handleLift` (de grendel draait 58 graden
+      omhoog om de as van de loop voor hij naar achteren gaat, en omlaag als hij voorin zit; `handleAt` geeft waar de
+      knop dan is), in `FirearmRenderer` een eigen, tragere haal voor een grendel (`rack(rig, ...)`: optillen, trekken,
+      even open, duwen, omlaag) waarbij je rechterhand de knop de hele haal vasthoudt (`handAtBolt`).
+      **Het model** (`tools/awp_model.py`): de Arctic Warfare in .338, nagemeten van een foto (Wikimedia: de L115A3 met
+      kijker, tweepoot en demper; die laten we weg, het worden attachments). De kolf in twee stukken met het scharnier en
+      het duimgat ertussen (de omtrek op kleur van de foto gehaald: `trace_outline.py --colour`), het wangstuk, de
+      rubberen kolfkap, de stalen behuizing met de uitwerpopening rechts en de rail, de grendel met zijn knop en zijn kap,
+      de zware gecanneleerde loop met de mondingsrem, en een ijzeren vizier (de keep achteraan op de rail, de korrel op
+      de loop). 2.113 vlakken. Twee kleuren: staal = groene kolf (zoals in Counter-Strike), titanium = zandkleurig (zoals
+      op de foto). De .338-patroon in `tools/ammo_models.py`.
+      **In je spel**: `FirearmRig.AWP` (het oog 0,215 blok achter de keep: voor het wangstuk, je kijkt over de kap van de
+      grendel). Geluiden: `awp_fire` (twee varianten), `awp_fire_far`, `awp_bolt`. Op de Gunsmith Table ligt de veer
+      van de AWP voor de grendel in plaats van erachter (de grendel is lang). Make parts: de groep AWP (acht wapens in
+      de lijst, de rijen krimpen zoals bedoeld). De skilltree heeft nu acht tabbladen; dat past nog.
+      **Tests** (twee nieuw, 549 in totaal): `awp_needs_its_bolt_worked_after_every_shot` (de huls blijft zitten, de
+      trekker doet niets, R werpt een .338-huls uit en laadt door tot 4 + 1; met een leeg magazijn werpt R alleen de huls
+      uit; safe en semi) en `awp_magazine_holds_five_and_a_round_costs_four_powder`. **Gezien**
+      (`gradlew runVisualCheck -Ponly=awp`: `aw01` tot `aw22`: heup, richten over het ijzeren vizier, schot, "PRESS R",
+      de grendel omhoog, achter en voor, magazijn eruit en erin, een patroon met de hand in de kamer (de zandkleurige),
+      bekijken, het magazijn in je hand, de Gunsmith Table, Make parts, op je rug, de Reloading Bench met .338, en het
+      Pegboard met alle vier), en `-Ponly=skills`.
+      **Mijn invullingen erbij**: het is de .338-versie (de AWM), groen met staal en zandkleurig met titanium; groene
+      verf als kenmerk in de recepten; vier kruit per patroon; een ijzeren vizier dat het echte wapen ook kan hebben; het
+      zoomt zonder kijker 1,5 keer; versie 2.2.0 omdat het een nieuw wapen is.
 - [ ] **4. De Remington 870** — met 12 Gauge Shells, de pomp op R, de buis patroon per patroon, en hagel.
 - [ ] **5. Attachments: het systeem, de Red Dot Sight en de Sniper Scope (1x tot 10x)** — maken op "Make parts", op het
       wapen slepen, en het beeld door de kijker met het wapen nog in beeld.

@@ -58,7 +58,7 @@ public final class GunsmithMakePanel {
      * Een wapen in de lijst links: de Glock, (hoofdstuk 103) de MP5, elk lasergeweer, en "Other" voor recepten die een
      * datapack toevoegt.
      */
-    public enum Group { GLOCK, MP5, AK47, PISTOL, RIFLE, SNIPER, SHOTGUN, OTHER }
+    public enum Group { GLOCK, MP5, AK47, AWP, PISTOL, RIFLE, SNIPER, SHOTGUN, OTHER }
 
     /** Het vuurwapen van deze groep, of null (een lasergeweer of "Other"). */
     private static @Nullable FirearmType firearm(Group group) {
@@ -66,6 +66,7 @@ public final class GunsmithMakePanel {
             case GLOCK -> FirearmType.GLOCK_19;
             case MP5 -> FirearmType.MP5;
             case AK47 -> FirearmType.AK_47;
+            case AWP -> FirearmType.AWP;
             default -> null;
         };
     }
@@ -75,6 +76,7 @@ public final class GunsmithMakePanel {
             case GLOCK_19 -> Group.GLOCK;
             case MP5 -> Group.MP5;
             case AK_47 -> Group.AK47;
+            case AWP -> Group.AWP;
         };
     }
 
@@ -233,6 +235,7 @@ public final class GunsmithMakePanel {
             case GLOCK -> FirearmType.GLOCK_19.text();
             case MP5 -> FirearmType.MP5.text();
             case AK47 -> FirearmType.AK_47.text();
+            case AWP -> FirearmType.AWP.text();
             case PISTOL -> Component.translatable("item.imttech." + GunType.PISTOL.id);
             case RIFLE -> Component.translatable("item.imttech." + GunType.RIFLE.id);
             case SNIPER -> Component.translatable("item.imttech." + GunType.SNIPER.id);
@@ -245,7 +248,7 @@ public final class GunsmithMakePanel {
     private static List<GunMaterial> columns(Group group) {
         return switch (group) {
             case GLOCK -> List.of(GunMaterial.POLYMER, GunMaterial.STEEL, GunMaterial.TITANIUM);
-            case MP5, AK47 -> List.of(GunMaterial.STEEL, GunMaterial.TITANIUM);
+            case MP5, AK47, AWP -> List.of(GunMaterial.STEEL, GunMaterial.TITANIUM);
             case OTHER -> List.of();
             default -> List.of(GunMaterial.TITANIUM, GunMaterial.NETHERITE);
         };

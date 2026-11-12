@@ -1,0 +1,24 @@
+{
+  "type": "imttech:gunsmithing",
+  "ingredients": [
+    {
+      "item": "imttech:steel_ingot",
+      "count": 2
+    },
+    {
+      "tag": "c:nuggets/iron",
+      "count": 3
+    },
+    {
+      "tag": "c:dyes/green",
+      "count": 1
+    }
+  ],
+  "result": {
+    "id": "imttech:awp_springs",
+    "count": 1,
+    "components": {
+      "imttech:gun_material": "steel"
+    }
+  }
+}

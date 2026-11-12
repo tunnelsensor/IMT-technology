@@ -142,18 +142,23 @@ public final class ArmoryDisplay {
     }
 
     /**
-     * Hoofdstuk 103: een kleine wand van 3 x 2 Pegboards (met hun voorkant naar het noorden; de muur erachter moet er al
-     * staan) met de vuurwapens van de grote update, elk met zijn magazijnen ernaast: bovenaan de AK-47 en de Glock, eronder
-     * de MP5 en een AK-47 van titanium. Voor de rondleiding (-Ponly=ak47): zo zie je of ze goed hangen.
+     * Hoofdstuk 103: een kleine wand van 3 x 3 Pegboards (met hun voorkant naar het noorden; de muur erachter moet er al
+     * staan) met de vuurwapens van de grote update, elk met zijn magazijnen ernaast: bovenaan de AWP (groen, en een
+     * zandkleurige van titanium), dan de AK-47 en de Glock, en onderaan de MP5 en een AK-47 van titanium. Voor de
+     * rondleiding (-Ponly=ak47 of awp): zo zie je of ze goed hangen.
      */
     public static void buildFirearmRack(ServerLevel level, BlockPos leftBottom) {
         for (int du = 0; du < 3; du++) {
-            for (int dv = 0; dv < 2; dv++) {
+            for (int dv = 0; dv < 3; dv++) {
                 level.setBlockAndUpdate(Pegboard.offset(leftBottom, FACING, du, dv), ModBlocks.PEGBOARD.get().defaultBlockState()
                         .setValue(PegboardBlock.FACING, FACING));
             }
         }
         Pegboard.Turn left = Pegboard.Turn.LEFT;
+        hang(level, leftBottom, 1, 20, FirearmItem.loaded(FirearmType.AWP, GunMaterial.STEEL), left);
+        hang(level, leftBottom, 14, 21, MagazineItem.of(FirearmType.AWP, 5), left);
+        hang(level, leftBottom, 17, 21, MagazineItem.of(FirearmType.AWP, 0), left);
+        hang(level, leftBottom, 11, 16, FirearmItem.loaded(FirearmType.AWP, GunMaterial.TITANIUM), Pegboard.Turn.RIGHT);
         hang(level, leftBottom, 1, 10, FirearmItem.loaded(FirearmType.AK_47, GunMaterial.STEEL), left);
         hang(level, leftBottom, 12, 11, MagazineItem.of(FirearmType.AK_47, 30), left);
         hang(level, leftBottom, 13, 11, MagazineItem.of(FirearmType.AK_47, 0), left);

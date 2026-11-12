@@ -1,0 +1,20 @@
+{
+  "type": "imttech:gunsmithing",
+  "ingredients": [
+    {
+      "item": "imttech:titanium_ingot",
+      "count": 12
+    },
+    {
+      "tag": "c:dyes/green",
+      "count": 4
+    }
+  ],
+  "result": {
+    "id": "imttech:awp_frame",
+    "count": 1,
+    "components": {
+      "imttech:gun_material": "titanium"
+    }
+  }
+}

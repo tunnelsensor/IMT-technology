@@ -105,7 +105,13 @@ public final class Pegboard {
                 case GLOCK_19 -> new int[]{4, 3};
                 case MP5 -> new int[]{8, 4};
                 case AK_47 -> new int[]{10, 4};
+                case AWP -> new int[]{12, 3};
             };
+        }
+        if (MagazineItem.typeOf(stack) == FirearmType.AWP) {
+            // Hoofdstuk 103: het magazijn van de AWP is een kort, breed doosje (vijf lange patronen op een rij): in een
+            // smalle strook van 1 x 3 werd het een dwerg.
+            return new int[]{2, 2};
         }
         if (MagazineItem.typeOf(stack) != null || stack.is(ModItems.ENERGY_CELL.get())) {
             return new int[]{1, 3};

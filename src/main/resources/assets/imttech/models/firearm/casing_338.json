@@ -1,0 +1,11 @@
+{
+ "loader": "neoforge:obj",
+ "model": "imttech:models/firearm/ammo/casing_338.obj",
+ "automatic_culling": false,
+ "flip_v": false,
+ "emissive_ambient": true,
+ "textures": {
+  "mag": "imttech:item/ammo/338",
+  "particle": "imttech:item/ammo/338"
+ }
+}

@@ -1411,6 +1411,48 @@ def ak47_charge():
     return finish_hard(total, peak=0.8)
 
 
+AWP_SHOT = dict(body_hz=118.0, thump=(68, 26), boom=1.9, crack=1.35, tail=1.5, far_tail=2.8, mech=())
+
+
+def awp_fire():
+    """
+    Een schot met de AWP (hoofdstuk 103, stap 3): .338 Lapua Magnum. De zwaarste knal van allemaal: laag, lang en met
+    een lange galm. Er klapt geen mechaniek: de grendel bedien je zelf.
+    """
+    return firearm_shot(7701, **AWP_SHOT)
+
+
+def awp_fire_2():
+    return firearm_shot(7702, **AWP_SHOT)
+
+
+def awp_fire_far():
+    return firearm_shot(7704, far=True, **AWP_SHOT)
+
+
+def awp_bolt():
+    """
+    De grendel van de AWP: de knop omhoog (een klik), de grendel naar achteren (staal glijdt door de behuizing, een tik
+    tegen de aanslag), weer naar voren, en de knop omlaag (hij vergrendelt met een zware klik). Ruim een seconde.
+    """
+    r = np.random.default_rng(7710)
+    total = np.zeros(int(RATE * 1.25))
+    # Omhoog.
+    place(total, impact(r, 0.06, [(2100, 160, 0.5), (3900, 210, 0.35)], snap=0.9, thud=0.25, thud_hz=600) * 0.7, 0.13)
+    # Naar achteren.
+    back = scrape(r, 0.2, 1400, 9000, ticks=300, grit=0.6, shape=lambda x: np.sin(np.pi * x) ** 0.5 * (0.5 + 0.5 * x))
+    place(total, back * 0.55, 0.26)
+    place(total, impact(r, 0.08, [(1700, 110, 0.55), (3300, 150, 0.4)], snap=0.7, thud=0.4, thud_hz=420) * 0.75, 0.47)
+    # Naar voren.
+    forward = scrape(r, 0.22, 1500, 9500, ticks=340, grit=0.6, shape=lambda x: np.sin(np.pi * x) ** 0.5 * (1.0 - 0.4 * x))
+    place(total, forward * 0.55, 0.64)
+    place(total, impact(r, 0.07, [(1900, 120, 0.5), (3700, 170, 0.35)], snap=0.6, thud=0.3, thud_hz=480) * 0.6, 0.87)
+    # Omlaag: vergrendeld.
+    place(total, impact(r, 0.1, [(2400, 100, 0.6), (4400, 140, 0.45), (7200, 190, 0.25)], snap=1.2, thud=0.55, thud_hz=520) * 0.95,
+          0.97)
+    return finish_hard(total, peak=0.8)
+
+
 def rifle_mag_out():
     """Het magazijn van een lang wapen eruit: de pal klikt, het stalen magazijn glijdt uit de schacht en tikt in je hand."""
     r = np.random.default_rng(7520)
@@ -1581,6 +1623,10 @@ SOUNDS = {
     "ak47_fire_3": ak47_fire_3,
     "ak47_fire_far": ak47_fire_far,
     "ak47_charge": ak47_charge,
+    "awp_fire": awp_fire,
+    "awp_fire_2": awp_fire_2,
+    "awp_fire_far": awp_fire_far,
+    "awp_bolt": awp_bolt,
     "rifle_mag_out": rifle_mag_out,
     "rifle_mag_in": rifle_mag_in,
     "gun_selector": gun_selector,
