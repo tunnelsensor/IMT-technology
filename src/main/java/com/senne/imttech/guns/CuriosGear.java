@@ -11,7 +11,8 @@ import top.theillusivec4.curios.api.type.inventory.ICurioStacksHandler;
  * De brug naar Curios (hoofdstuk 52, stap 2, jouw keuze: "zet dat in een curios slot of als je die mod niet hebt in
  * een slot dat mijn mod toevoegt"). Zit Curios in het modpack, dan draag je de holster in het slot "holster", de
  * pouches in de twee slots "pouch", en (hoofdstuk 55) je geweren met een sling in de twee slots "sling" (zie
- * data/imttech/curios/), en (hoofdstuk 72) je rugzak in het slot "back". Deze klasse wordt ALLEEN aangeraakt als Curios geladen is (zie Gear.curios()); zonder Curios
+ * data/imttech/curios/), en (hoofdstuk 72) je rugzak in het slot "back", en (hoofdstuk 100) je keycard in het slot
+ * "necklace" (het gewone halskettingslot van Curios). Deze klasse wordt ALLEEN aangeraakt als Curios geladen is (zie Gear.curios()); zonder Curios
  * bestaan de klassen hierboven niet.
  */
 final class CuriosGear {
@@ -85,6 +86,24 @@ final class CuriosGear {
 
     static boolean setBack(Player player, ItemStack stack) {
         return handler(player, "back").map(handler -> {
+            if (handler.getStacks().getSlots() == 0) {
+                return false;
+            }
+            handler.getStacks().setStackInSlot(0, stack);
+            return true;
+        }).orElse(false);
+    }
+
+    // ================================================================ De keycard aan je nek (hoofdstuk 100)
+
+    /** De keycard in het slot "necklace" van Curios (een kopie), of leeg. */
+    static ItemStack neck(Player player) {
+        return handler(player, "necklace").map(handler -> handler.getStacks().getSlots() > 0
+                ? handler.getStacks().getStackInSlot(0).copy() : ItemStack.EMPTY).orElse(ItemStack.EMPTY);
+    }
+
+    static boolean setNeck(Player player, ItemStack stack) {
+        return handler(player, "necklace").map(handler -> {
             if (handler.getStacks().getSlots() == 0) {
                 return false;
             }

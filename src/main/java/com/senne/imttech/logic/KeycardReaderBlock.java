@@ -69,6 +69,8 @@ public class KeycardReaderBlock extends InputDeviceBlock {
         }
         if (level instanceof ServerLevel serverLevel && player instanceof ServerPlayer serverPlayer) {
             LogicEvents.keycard(serverLevel, pos, serverPlayer, KeycardItem.data(stack));
+            // Hoofdstuk 100: was dit je getrokken nekkaart, dan hangt hij zo weer aan je nek (en heb je je eigen ding terug).
+            com.senne.imttech.guns.NeckCard.used(serverPlayer, stack);
         }
         return ItemInteractionResult.sidedSuccess(level.isClientSide);
     }

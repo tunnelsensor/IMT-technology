@@ -46,6 +46,8 @@ import org.jetbrains.annotations.Nullable;
  *       magazijnen in je pouch, je klikt er een; het oude magazijn komt op zijn plek in de pouch. (Voor de cellen van
  *       een lasergeweer: zie weapons/LaserGuns.startReload.)</li>
  *   <li><b>Doodgaan</b>: zonder keepInventory vallen ze op de grond, net als de rest.</li>
+ *   <li><b>Je nek</b> (hoofdstuk 100): een keycard in het nekvakje ({@link #NECK}, met Curios het slot "necklace"). Trekken
+ *       houdt hem "over" wat je vasthoudt en na gebruik hangt hij weer aan je nek (zie NeckCard).</li>
  * </ul>
  */
 public final class Gear {
@@ -65,6 +67,8 @@ public final class Gear {
     public static final int ACTION_OPEN_MOLLE = 6;
     /** Hoofdstuk 72, stap 2: een genees-item uit je IFAK gebruiken (arg = plek * 16 + vakje). */
     public static final int ACTION_USE_IFAK = 7;
+    /** Hoofdstuk 100: de keycard aan je nek trekken, over wat je vasthoudt (nog eens = terug), zie NeckCard. */
+    public static final int ACTION_DRAW_KEYCARD = 8;
 
     /** Zoveel sling-vakjes draag je (jouw keuze: twee, een op je rug en een voor je borst). */
     public static final int SLINGS = 2;
@@ -73,8 +77,13 @@ public final class Gear {
      * oude wereld zonder dit vakje vult het rijtje vanzelf aan (GearContents.sized).
      */
     public static final int BACK = GearItem.Kind.values().length + SLINGS;
-    /** Zoveel vakjes heeft de attachment: de drie van GearItem.Kind, dan de slings, dan je rugzak. */
-    public static final int SLOTS = BACK + 1;
+    /**
+     * Hoofdstuk 100: het vakje van je keycard aan je nek (jouw wens: "deze nekslot is net zoals de rest een extra slot die de
+     * mod toevoegt, tenzij Curios beschikbaar is, dan gebruik je dat"), na je rugzak. Met Curios: het slot "necklace".
+     */
+    public static final int NECK = BACK + 1;
+    /** Zoveel vakjes heeft de attachment: de drie van GearItem.Kind, dan de slings, je rugzak en je nek. */
+    public static final int SLOTS = NECK + 1;
 
     private static Boolean curiosLoaded;
 
@@ -150,6 +159,28 @@ public final class Gear {
         return true;
     }
 
+    /** De keycard aan je nek (een kopie), of leeg (hoofdstuk 100). */
+    public static ItemStack neck(Player player) {
+        if (curios()) {
+            return CuriosGear.neck(player);
+        }
+        return player.getData(ModAttachments.GEAR).get(NECK);
+    }
+
+    /** Deze keycard (of leeg) aan je nek. Geeft false als dat niet kan (Curios zonder slot "necklace"). */
+    public static boolean setNeck(Player player, ItemStack stack) {
+        if (curios()) {
+            return CuriosGear.setNeck(player, stack);
+        }
+        setSlot(player, NECK, stack);
+        return true;
+    }
+
+    /** Past dit aan je nek: een keycard (een, ook een lege)? */
+    public static boolean neckAccepts(ItemStack stack) {
+        return NeckCard.fits(stack);
+    }
+
     /** Past dit in een sling-vakje: een laser rifle, sniper of shotgun met een sling eraan? */
     public static boolean slingAccepts(ItemStack stack) {
         GunType type = LaserGunItem.typeOf(stack);
@@ -192,7 +223,8 @@ public final class Gear {
 
     /** Kun je dit wegsteken: in een sling-vakje, of in een holster of pouch? */
     public static boolean canStow(Player player, ItemStack stack) {
-        return (slingAccepts(stack) && freeSling(player) >= 0) || roomFor(player, stack) != null
+        return (slingAccepts(stack) && freeSling(player) >= 0) || (neckAccepts(stack) && neck(player).isEmpty())
+                || roomFor(player, stack) != null
                 || com.senne.imttech.backpack.Molle.roomFor(player, stack) != null;
     }
 
@@ -200,6 +232,9 @@ public final class Gear {
     public static @Nullable Component stowTarget(Player player, ItemStack stack) {
         if (slingAccepts(stack) && freeSling(player) >= 0) {
             return Component.translatable("screen.imttech.wheel.onto_sling");
+        }
+        if (neckAccepts(stack) && neck(player).isEmpty()) {
+            return Component.translatable("screen.imttech.wheel.onto_neck");
         }
         GearItem.Kind kind = roomFor(player, stack);
         if (kind == null) {
@@ -303,6 +338,8 @@ public final class Gear {
      * hand (zie weapons/GrenadePickup).
      */
     public static void intoHand(ServerPlayer player, ItemStack stack) {
+        // Hoofdstuk 100: had je je nekkaart vast, dan eerst die terug (en je eigen ding weer in je hand).
+        NeckCard.putBack(player);
         Inventory inventory = player.getInventory();
         ItemStack held = inventory.getItem(inventory.selected);
         if (!held.isEmpty() && !stow(player, held.copy())) {
@@ -319,6 +356,9 @@ public final class Gear {
         if (slingAccepts(stack)) {
             int free = freeSling(player);
             return free >= 0 && setSling(player, free, stack);
+        }
+        if (neckAccepts(stack) && stack.getCount() == 1 && neck(player).isEmpty()) {
+            return setNeck(player, stack);
         }
         GearItem.Kind kind = roomFor(player, stack);
         if (kind == null) {
@@ -349,9 +389,26 @@ public final class Gear {
     public static boolean holsterHand(ServerPlayer player) {
         Inventory inventory = player.getInventory();
         ItemStack held = inventory.getItem(inventory.selected);
+        if (NeckCard.isDrawn(player)) {
+            // Hoofdstuk 100: je getrokken nekkaart weer aan je nek, en je eigen ding terug in je hand.
+            NeckCard.putBack(player);
+            return true;
+        }
         if (held.isEmpty()) {
             tell(player, Component.translatable("gear.imttech.nothing_to_holster"));
             return false;
+        }
+        if (neckAccepts(held)) {
+            if (!neck(player).isEmpty()) {
+                tell(player, Component.translatable("gear.imttech.neck_full"));
+                return false;
+            }
+            if (!setNeck(player, held.copyWithCount(1))) {
+                return false;
+            }
+            held.shrink(1);
+            sound(player, ModSounds.HOLSTER_DRAW.get(), 0.4f);
+            return true;
         }
         if (slingAccepts(held)) {
             int free = freeSling(player);
@@ -513,9 +570,10 @@ public final class Gear {
 
     /**
      * Een klik op een van de eigen vakjes (zie GearClickPayload): de drie naast je harnas (holster, granaatpouch,
-     * magazijnpouch; {@code index} 0-2), de twee sling-vakjes onder het craftraster (3 en 4) of (hoofdstuk 72) je rugzak
-     * ernaast (5). Wat je aan je muis hebt
-     * gaat erin, wat erin zat komt aan je muis (of ze wisselen). In een sling-vakje past alleen een geweer met een sling.
+     * magazijnpouch; {@code index} 0-2), de twee sling-vakjes onder het craftraster (3 en 4), (hoofdstuk 72) je rugzak
+     * ernaast (5) of (hoofdstuk 100) je nek daarnaast (6). Wat je aan je muis hebt
+     * gaat erin, wat erin zat komt aan je muis (of ze wisselen). In een sling-vakje past alleen een geweer met een sling,
+     * aan je nek alleen een keycard (van een stapel kaarten één).
      */
     public static void click(ServerPlayer player, int index) {
         if (curios() || index < 0 || index >= SLOTS) {
@@ -526,6 +584,10 @@ public final class Gear {
             return;
         }
         ItemStack carried = menu.getCarried();
+        if (index == NECK) {
+            clickNeck(player, menu, carried);
+            return;
+        }
         boolean back = index == BACK;
         boolean sling = !back && index >= GearItem.Kind.values().length;
         ItemStack worn = back ? back(player) : sling ? sling(player, index - GearItem.Kind.values().length)
@@ -549,6 +611,32 @@ public final class Gear {
         }
         menu.broadcastChanges();
         sound(player, ModSounds.HOLSTER_DRAW.get(), 0.5f);
+    }
+
+    /**
+     * Hoofdstuk 100: een klik op het nekvakje. Met een lege muis pak je de kaart; met een keycard aan je muis hangt er één aan
+     * je nek (van een stapel één, de rest blijft aan je muis); hing er al een, dan wisselen ze (alleen met één kaart).
+     */
+    private static void clickNeck(ServerPlayer player, AbstractContainerMenu menu, ItemStack carried) {
+        ItemStack worn = neck(player);
+        if (carried.isEmpty()) {
+            if (worn.isEmpty()) {
+                return;
+            }
+            setSlot(player, NECK, ItemStack.EMPTY);
+            menu.setCarried(worn);
+        } else if (neckAccepts(carried) && worn.isEmpty()) {
+            setSlot(player, NECK, carried.copyWithCount(1));
+            carried.shrink(1);
+            menu.setCarried(carried.isEmpty() ? ItemStack.EMPTY : carried);
+        } else if (neckAccepts(carried) && carried.getCount() == 1) {
+            setSlot(player, NECK, carried.copy());
+            menu.setCarried(worn);
+        } else {
+            return;
+        }
+        menu.broadcastChanges();
+        sound(player, ModSounds.HOLSTER_DRAW.get(), 0.4f);
     }
 
     /**

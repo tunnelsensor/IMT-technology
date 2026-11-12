@@ -164,6 +164,80 @@ public final class GearGameTests {
     }
 
     /**
+     * Hoofdstuk 100: de keycard aan je nek. Een klik op het nekvakje met drie kaarten aan je muis hangt er één aan je nek.
+     * Trekken: de kaart komt in je hand "over" je zwaard (dat valt niet en verschuift niet); tegen een keycardlezer houden
+     * en een halve seconde later hangt hij weer aan je nek, met je zwaard terug in je hand. Ook terug als je naar een ander
+     * vakje gaat; en raakt de kaart uit je hand (je gooit hem weg), dan krijg je je zwaard terug en blijft je nek leeg.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 120, batch = "neck")
+    public static void neck_keycard_held_over_your_item_and_back_after_use(GameTestHelper helper) {
+        check(!Gear.curios(), "Deze test is voor zonder Curios");
+        ServerPlayer player = player(helper, "neck-wearer");
+        player.getInventory().setItem(0, new ItemStack(Items.IRON_SWORD));
+        player.containerMenu = player.inventoryMenu;
+        player.inventoryMenu.setCarried(new ItemStack(ModItems.KEYCARD.get(), 3));
+        Gear.click(player, Gear.NECK);
+        check(Gear.neck(player).is(ModItems.KEYCARD.get()) && Gear.neck(player).getCount() == 1, "Er hangt geen (enkele) kaart aan je nek");
+        check(player.inventoryMenu.getCarried().getCount() == 2, "Van de stapel aan je muis ging er niet precies één af");
+        player.inventoryMenu.setCarried(ItemStack.EMPTY);
+
+        BlockPos reader = new BlockPos(4, 2, 6);
+        helper.setBlock(reader, com.senne.imttech.registry.ModBlocks.KEYCARD_READER.get());
+        check(com.senne.imttech.guns.NeckCard.draw(player), "Trekken lukte niet");
+        check(player.getMainHandItem().is(ModItems.KEYCARD.get()), "De kaart zit niet in je hand");
+        check(Gear.neck(player).isEmpty() && com.senne.imttech.guns.NeckCard.isDrawn(player), "De kaart hangt nog aan je nek");
+        check(player.getInventory().countItem(Items.IRON_SWORD) == 0
+                && helper.getLevel().getEntitiesOfClass(ItemEntity.class, helper.getBounds().inflate(3)).isEmpty(),
+                "Je zwaard viel of schoof ergens heen in plaats van onder de kaart te blijven");
+        net.minecraft.core.BlockPos abs = helper.absolutePos(reader);
+        player.gameMode.useItemOn(player, helper.getLevel(), player.getMainHandItem(), InteractionHand.MAIN_HAND,
+                new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(abs),
+                        net.minecraft.core.Direction.UP, abs, false));
+        helper.runAfterDelay(com.senne.imttech.guns.NeckCard.USED_DELAY + 3, () -> {
+            check(!com.senne.imttech.guns.NeckCard.isDrawn(player), "Na de lezer heb je de kaart nog vast");
+            check(player.getMainHandItem().is(Items.IRON_SWORD), "Je zwaard is niet terug in je hand");
+            check(Gear.neck(player).is(ModItems.KEYCARD.get()), "De kaart hangt niet weer aan je nek");
+            // Een ander vakje kiezen: ook terug.
+            com.senne.imttech.guns.NeckCard.draw(player);
+            player.getInventory().selected = 1;
+        });
+        helper.runAfterDelay(com.senne.imttech.guns.NeckCard.USED_DELAY + 6, () -> {
+            check(!com.senne.imttech.guns.NeckCard.isDrawn(player) && Gear.neck(player).is(ModItems.KEYCARD.get())
+                    && player.getInventory().getItem(0).is(Items.IRON_SWORD), "Naar een ander vakje: de kaart ging niet terug");
+            // De kaart weggooien: je zwaard komt terug, je nek blijft leeg.
+            player.getInventory().selected = 0;
+            com.senne.imttech.guns.NeckCard.draw(player);
+            player.getInventory().setItem(0, ItemStack.EMPTY);
+        });
+        helper.runAfterDelay(com.senne.imttech.guns.NeckCard.USED_DELAY + 9, () -> {
+            check(!com.senne.imttech.guns.NeckCard.isDrawn(player), "Zonder kaart in je hand bleef hij 'getrokken'");
+            check(player.getInventory().getItem(0).is(Items.IRON_SWORD), "Je zwaard kwam niet terug toen de kaart weg was");
+            check(Gear.neck(player).isEmpty(), "Een weggegooide kaart hangt weer aan je nek");
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Hoofdstuk 100: wegsteken met het wiel ("put away"): een keycard in je hand hangt aan je nek (van een stapel één); hangt
+     * er al een, dan niet. Met een getrokken kaart steekt "put away" hem weer weg.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "neck")
+    public static void neck_keycard_put_away(GameTestHelper helper) {
+        check(!Gear.curios(), "Deze test is voor zonder Curios");
+        ServerPlayer player = player(helper, "neck-stower");
+        player.getInventory().setItem(0, new ItemStack(ModItems.KEYCARD.get(), 2));
+        check(Gear.holsterHand(player), "Wegsteken lukte niet");
+        check(Gear.neck(player).getCount() == 1 && player.getMainHandItem().getCount() == 1, "Niet precies één kaart aan je nek");
+        check(!Gear.holsterHand(player), "Er ging een tweede kaart aan je nek");
+        player.getInventory().setItem(0, new ItemStack(Items.APPLE));
+        com.senne.imttech.guns.NeckCard.draw(player);
+        check(Gear.holsterHand(player), "Een getrokken kaart wegsteken lukte niet");
+        check(Gear.neck(player).is(ModItems.KEYCARD.get()) && player.getMainHandItem().is(Items.APPLE),
+                "Na wegsteken: geen kaart aan je nek of geen appel in je hand");
+        helper.succeed();
+    }
+
+    /**
      * Het scherm van een pouch (hoofdstuk 54, jouw notitie: volle magazijnen erin, lege eruit): een gedragen pouch openen
      * geeft een menu met zijn vakjes; shift-klik zet een magazijn uit je inventaris erin en de pouch om je heup weet het
      * meteen. Een diamant past er niet in. Een pouch in je hand gaat ook open; dan zit dat vakje van je werkbalk op slot.

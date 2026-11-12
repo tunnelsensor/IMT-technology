@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 533 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 537 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -7216,11 +7216,51 @@ vind door dat je de nametag ziet". Jouw keuze: wie in de zone mag bouwen (team e
       wel), een indringer (de eigenaar en zijn vriend zien zijn naam, een andere vreemde niet), en zonder stroom ziet iedereen
       alles weer. Niet op screenshots: de rondleiding heeft maar één echte speler.
 
+### 100. Een keycard aan je nek: snel trekken, en na gebruik vanzelf terug (12 november)
+
+Jouw wens: "een nek slot zodat je je keycard ook kunt quick drawen, deze nekslot is net zoals de rest een extra slot die de
+mod toevoegt, tenzij curios beschikbaar is, dan gebruik je dat". Jouw keuzes: "quickdraw, maar je moet geen lege hand
+hebben: je hebt het dan gewoon vast over het item in je inventory en je kunt het dan gebruiken, na gebruik gaat het weer
+naar de slot", en een zakkenroller mag de kaart aan je nek ook pakken.
+
+- [x] **Het nekvakje** (`Gear.NECK`, `Gear.neck`/`setNeck`): rechts naast het vakje van je rugzak, onder het craftraster,
+      met een vaag keycard als hij leeg is. Klik erin met een keycard aan je muis (van een stapel één, de rest blijft aan
+      je muis), of kies "Put away" in het wiel met een keycard in je hand. Er past één keycard in, ook een lege. Met
+      **Curios**: het gewone Curios-slot "necklace" (`data/imttech/curios/entities/player.json`, de tag
+      `curios:necklace` met `imttech:keycard`), zoals je rugzak het Curios-slot "back" gebruikt (mijn keuze: het slot
+      bestaat in Curios al, en een kaart aan je nek is precies een halsketting).
+- [x] **Trekken, over wat je vasthoudt** (`NeckCard`): uit het wiel (rechtsboven, tussen je pistool en je slings) of met
+      een eigen toets ("Quickdraw: keycard from your neck", standaard geen toets). De kaart komt in je hand; wat je
+      vasthield valt niet en schuift nergens heen, maar wacht "onder" de kaart (bewaard met je speler, dus ook na een crash
+      niet weg). In het wiel lees je "Held over your Iron Sword; back on your neck after you use it".
+- [x] **Na gebruik terug**: houd hem tegen een keycardlezer, en een halve seconde later (`USED_DELAY`, zodat je hem nog
+      even bij de lezer ziet) hangt hij weer aan je nek en heb je je eigen ding terug in je hand. Hij gaat ook terug als je
+      een ander vakje van je werkbalk kiest, als je hem in het wiel nog eens kiest of "Put away" doet, als je een pistool
+      of granaat trekt, als je doodgaat (eerst, zodat je lichaam allebei krijgt) en als je uitlogt. Gooi je hem weg of raakt
+      hij anders uit je hand, dan krijg je je eigen ding terug en blijft je nek leeg.
+- [x] **Zichtbaar**: een kaartje aan twee koordjes op je borst, voor anderen en voor jezelf met F5 (`GearLayer`).
+- [x] **Zakkenrollen** (jouw keuze): de kaart aan iemands nek ligt in de zak tussen zijn andere kaarten; pak je hem, dan is
+      zijn nek leeg.
+- [x] **Je lichaam** (hoofdstuk 72): de kaart aan je nek ligt op zijn eigen plek (in de onderste rij, naast het geweer voor
+      je borst, met een vaag keycard), en "Everything back" hangt hem weer aan je nek. Daardoor is er één vakje minder voor
+      "wat andere mods lieten vallen" (nu 7). In een oud lichaam lag daar misschien al iets anders: "Everything back" stopt
+      dat in je inventaris.
+- [x] **Protocol 39** (server en spelers moeten deze versie hebben): je spel krijgt nu het nekvakje mee, en of je je kaart
+      vasthebt (alleen jouw spel, voor het wiel). Versie 1.4.0, want het is iets nieuws.
+- [x] **Tests** `neck_keycard_held_over_your_item_and_back_after_use` (klik in het nekvakje met drie kaarten, trekken over
+      een zwaard, een echte keycardlezer, een ander vakje, de kaart weggooien), `neck_keycard_put_away`,
+      `neck_card_goes_into_the_body_and_back` (doodgaan met de kaart in je hand: het zwaard in de werkbalk, de kaart op de
+      plek van je nek; Everything back) en `pickpocket_takes_the_neck_card`.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **De keycard aan je nek (hoofdstuk 100)**: gezien op screenshots (`-Ponly=neck`), niet met de muis gespeeld en nooit
+      met Curios. Probeer: een kaart in je nekvakje (met Curios: het slot Necklace), dan met een zwaard in je hand het wiel
+      en de keycard rechtsboven; houd hem tegen een lezer (komt je zwaard terug?), scroll naar een ander vakje, en laat
+      een vriend hem van achteren stelen.
 - [ ] **Geen naamtag in een zone (hoofdstuk 99)**: alleen met een test gecontroleerd, want het heeft twee spelers nodig.
       Probeer op je server met een vriend: ga in je zone staan (ziet hij je naam niet meer, ook niet door een muur?),
       vertrouw hem in de app Access (ziet hij hem dan wel?), en zet de stroom van je kern uit.

@@ -871,6 +871,30 @@ public final class BypassGameTests {
     }
 
     /**
+     * Hoofdstuk 100 (jouw keuze): de keycard aan iemands nek komt ook in de zak. Het slachtoffer heeft alleen nog de kaart in
+     * zijn hand (die telt niet) en een kaart aan zijn nek: de zak heeft één kaart, en die pakken = zijn nek is leeg.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "pickpocket_neck")
+    public static void pickpocket_takes_the_neck_card(GameTestHelper helper) {
+        Pockets p = pockets(helper, "neck-thief");
+        for (int slot : new int[]{10, 11, 12}) {
+            p.victim().getInventory().setItem(slot, ItemStack.EMPTY);
+        }
+        com.senne.imttech.guns.Gear.setNeck(p.victim(), card(1004, 1, "Neck card"));
+        helper.runAfterDelay(2, () -> {
+            check(Pickpocket.tryStart(p.thief(), p.victim()), "Van achteren ging de zak niet open");
+            check(Pickpocket.cardsInPocket(p.thief()) == 1, "Kaarten in de zak: " + Pickpocket.cardsInPocket(p.thief()));
+            CompoundTag args = new CompoundTag();
+            args.putInt("index", 0);
+            Pickpocket.handle(p.thief(), new PocketPayload(p.victim().getId(), "take", args));
+            check(keycards(p.thief()) == 1 && p.thief().getInventory().countItem(ModItems.KEYCARD.get()) == 1,
+                    "De dief heeft de nekkaart niet");
+            check(com.senne.imttech.guns.Gear.neck(p.victim()).isEmpty(), "De kaart hangt nog aan de nek van het slachtoffer");
+            helper.succeed();
+        });
+    }
+
+    /**
      * Draait het slachtoffer zich om en ziet hij de dief, dan is die betrapt: de zak gaat dicht en de
      * dief licht op. Dat gebeurt ook als de meter op het scherm vol is ("caught").
      */

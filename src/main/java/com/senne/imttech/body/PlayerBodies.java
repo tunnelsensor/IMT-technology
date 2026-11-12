@@ -100,6 +100,9 @@ public final class PlayerBodies {
         }
         body.setPack(keep(Gear.back(player)));
         Gear.setBack(player, ItemStack.EMPTY);
+        // Hoofdstuk 100: de keycard aan je nek.
+        body.loot().setItem(PlayerBodyEntity.NECK, keep(Gear.neck(player)));
+        Gear.setNeck(player, ItemStack.EMPTY);
         Vec3 at = player.position();
         if (at.y < level.getMinBuildHeight()) {
             at = LAST_GROUND.getOrDefault(player.getUUID(), Vec3.atBottomCenterOf(level.getSharedSpawnPos()));
@@ -252,9 +255,19 @@ public final class PlayerBodies {
         return back;
     }
 
-    /** Een holster, pouch of geweer met sling terug op zijn plek (0-2 de holster en pouches, 3-4 de slings). */
+    /**
+     * Een holster, pouch of geweer met sling terug op zijn plek (0-2 de holster en pouches, 3-4 de slings), of (hoofdstuk 100,
+     * 5) de keycard aan je nek. Ligt daar in een oud lichaam iets anders (het was het eerste vakje van "andere mods"), dan
+     * gaat dat in je inventaris.
+     */
     private static boolean restoreGear(ServerPlayer player, int index, ItemStack stack) {
         GearItem.Kind[] kinds = GearItem.Kind.values();
+        if (index == PlayerBodyEntity.NECK - PlayerBodyEntity.GEAR) {
+            if (!Gear.neckAccepts(stack)) {
+                return player.getInventory().add(stack.copy());
+            }
+            return Gear.neck(player).isEmpty() && Gear.setNeck(player, stack.copy());
+        }
         if (index < kinds.length) {
             return Gear.get(player, kinds[index]).isEmpty() && Gear.set(player, kinds[index], stack.copy());
         }

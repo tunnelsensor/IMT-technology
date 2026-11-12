@@ -4206,6 +4206,62 @@ public final class VisualCheck {
             t.command(0, "gamemode creative @a");
         }
 
+        // --- Hoofdstuk 100: de keycard aan je nek. Het nekvakje in je inventaris (leeg, dan met een kaart), het wiel met de
+        // keycard-tegel, de kaart in je hand "over" je steen, en op je borst (F5).
+        if (want("neck")) {
+            BlockPos g = GUN_RANGE.above();
+            Vec3 stand = new Vec3(g.getX() + 0.5, g.getY(), g.getZ() + 0.5);
+            t.onServer(0, VisualCheck::buildGunRange);
+            t.onServer(0, player -> {
+                ShowcaseFeatures.giveGear(player);
+                com.senne.imttech.guns.Gear.setNeck(player, ItemStack.EMPTY);
+            });
+            t.command(0, "gamemode survival @a");
+            t.stand(20, stand.x, stand.y, stand.z, 0, 2);
+            t.step(0, () -> selectSlot(0));
+            t.open(10, () -> new net.minecraft.client.gui.screens.inventory.InventoryScreen(Minecraft.getInstance().player));
+            t.shot(15, "ns01_neck_slot_empty");
+            t.close(0);
+            t.onServer(0, player -> {
+                ItemStack card = new ItemStack(com.senne.imttech.registry.ModItems.KEYCARD.get());
+                com.senne.imttech.logic.KeycardItem.write(card, new com.senne.imttech.logic.KeycardData("10.0.0.9", "neck-net",
+                        2100, 3, "Lobby card"));
+                com.senne.imttech.guns.Gear.setNeck(player, card);
+            });
+            t.open(10, () -> new net.minecraft.client.gui.screens.inventory.InventoryScreen(Minecraft.getInstance().player));
+            t.shot(15, "ns02_neck_slot_with_card");
+            t.close(0);
+            t.wheel(10, true);
+            t.step(8, () -> {
+                com.senne.imttech.client.guns.GearWheelScreen wheel = com.senne.imttech.client.guns.GearWheelScreen.current();
+                double[] at = wheel == null ? null : wheel.centerOf(com.senne.imttech.guns.Gear.ACTION_DRAW_KEYCARD);
+                if (at != null) {
+                    HowToTour.mouseTo(at[0], at[1]);
+                }
+            });
+            t.shot(4, "ns03_wheel_keycard");
+            t.step(0, () -> {
+                com.senne.imttech.client.guns.GearWheelScreen wheel = com.senne.imttech.client.guns.GearWheelScreen.current();
+                if (wheel != null) {
+                    wheel.chooseAction(com.senne.imttech.guns.Gear.ACTION_DRAW_KEYCARD);
+                }
+            });
+            t.wheel(2, false);
+            t.shot(15, "ns04_card_over_your_stone");
+            t.camera(0, CameraType.THIRD_PERSON_FRONT);
+            t.shot(15, "ns05_card_in_hand_front");
+            // Terug aan je nek (wat de lezer na gebruik doet), en dan van voren en van dichtbij: de kaart op je borst.
+            t.onServer(0, com.senne.imttech.guns.NeckCard::putBack);
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(30));
+            t.shot(15, "ns06_card_on_the_chest");
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(70));
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.camera(0, CameraType.FIRST_PERSON);
+            t.onServer(0, player -> com.senne.imttech.guns.Gear.setNeck(player, ItemStack.EMPTY));
+            t.command(0, "gamemode creative @a");
+        }
+
         // --- Lasergeweren uit onderdelen (hoofdstuk 55): een titanium rifle en een netherite sniper uit hun onderdelen, zonder
         // Nether Star, met een kapotte emitter, het pistool, de Laser Workbench met een half gebouwd geweer, en de losse onderdelen.
         if (want("laserparts")) {

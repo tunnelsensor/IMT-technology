@@ -55,6 +55,8 @@ public final class Pickpocket {
     private static final double SEES = 0.5;
     /** Zo lang mag een zak openstaan (2 minuten). */
     private static final int MAX_TICKS = 2400;
+    /** Hoofdstuk 100: in de lijst met vakjes staat dit getal voor de keycard aan zijn nek (geen vakje van zijn inventaris). */
+    static final int NECK = -2;
 
     /** Eén poging: van wie de zak is, welke vakjes van zijn inventaris de kaarten zijn, en sinds wanneer. */
     private record Theft(UUID victim, int victimId, List<Integer> slots, long startedAt) {}
@@ -108,13 +110,17 @@ public final class Pickpocket {
                     (wait + 19) / 20).withStyle(ChatFormatting.GRAY), true);
             return false;
         }
-        // Zijn keycards: alles in zijn inventaris, behalve wat hij in zijn hand houdt (die zit niet in een zak).
+        // Zijn keycards: alles in zijn inventaris, behalve wat hij in zijn hand houdt (die zit niet in een zak). Sinds hoofdstuk
+        // 100 ook de keycard aan zijn nek (jouw keuze: die hangt zichtbaar op zijn borst, en hij komt tussen de andere kaarten).
         Inventory inventory = victim.getInventory();
         List<Integer> slots = new ArrayList<>();
         for (int slot = 0; slot < inventory.items.size(); slot++) {
             if (slot != inventory.selected && inventory.items.get(slot).getItem() instanceof KeycardItem) {
                 slots.add(slot);
             }
+        }
+        if (com.senne.imttech.guns.Gear.neck(victim).getItem() instanceof KeycardItem) {
+            slots.add(NECK);
         }
         Collections.shuffle(slots, new java.util.Random(thief.getRandom().nextLong()));
         if (slots.size() > Math.round(ImtConfig.Bypass.POCKET_MAX_CARDS)) {
@@ -178,13 +184,18 @@ public final class Pickpocket {
         CompoundTag args = new CompoundTag();
         int slot = index >= 0 && index < theft.slots().size() ? theft.slots().get(index) : -1;
         Inventory inventory = victim.getInventory();
-        ItemStack stack = slot >= 0 ? inventory.items.get(slot) : ItemStack.EMPTY;
-        if (slot == inventory.selected || !(stack.getItem() instanceof KeycardItem)) {
+        // Hoofdstuk 100: de kaart aan zijn nek (een kopie; we zetten zijn nek daarna leeg).
+        boolean neck = slot == NECK;
+        ItemStack stack = neck ? com.senne.imttech.guns.Gear.neck(victim) : slot >= 0 ? inventory.items.get(slot) : ItemStack.EMPTY;
+        if ((!neck && slot == inventory.selected) || !(stack.getItem() instanceof KeycardItem)) {
             args.putString("result", "slipped");
             ModNetwork.sendTo(thief, new PocketPayload(theft.victimId(), "result", args));
             return;
         }
         ItemStack taken = stack.split(1);
+        if (neck) {
+            com.senne.imttech.guns.Gear.setNeck(victim, stack);
+        }
         inventory.setChanged();
         KeycardData data = KeycardItem.data(taken);
         args.putString("result", "taken");

@@ -147,6 +147,8 @@ public final class ImtKeys {
     public static final KeyMapping OPEN_HOLSTER = key("open_holster", InputConstants.UNKNOWN.getValue());
     public static final KeyMapping OPEN_GRENADE_POUCH = key("open_grenade_pouch", InputConstants.UNKNOWN.getValue());
     public static final KeyMapping OPEN_MAG_POUCH = key("open_mag_pouch", InputConstants.UNKNOWN.getValue());
+    /** Hoofdstuk 100: de keycard aan je nek trekken (over wat je vasthoudt; nog eens = terug). Standaard geen toets. */
+    public static final KeyMapping DRAW_KEYCARD = key("draw_keycard", InputConstants.UNKNOWN.getValue());
 
     /** Wanneer de toetsen van een geweer werken: in het spel (geen scherm open) en met een lasergeweer, een pistool of een magazijn (hoofdstuk 52) in je hand. */
     private static final class GunKeys implements net.neoforged.neoforge.client.settings.IKeyConflictContext {
@@ -216,6 +218,7 @@ public final class ImtKeys {
         event.register(OPEN_HOLSTER);
         event.register(OPEN_GRENADE_POUCH);
         event.register(OPEN_MAG_POUCH);
+        event.register(DRAW_KEYCARD);
         event.register(HOW_IT_WORKS);
     }
 

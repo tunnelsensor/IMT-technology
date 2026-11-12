@@ -48,10 +48,11 @@ import org.jetbrains.annotations.Nullable;
  * Het ligt op zijn buik (de rugzak bovenop), met zijn hoofd de kant op waar de speler keek. Erin zit alles wat hij had, op
  * zijn eigen plek (zodat "Alles terug" het weer zo kan neerleggen):
  * <pre>
- *  vakje  0 - 35   je inventaris (0 - 8 je werkbalk)          46 - 53  wat andere mods lieten vallen (Curios...)
+ *  vakje  0 - 35   je inventaris (0 - 8 je werkbalk)          47 - 53  wat andere mods lieten vallen (Curios...)
  *  vakje 36 - 39   je harnas (voeten, benen, borst, hoofd)
  *  vakje 40        je andere hand
  *  vakje 41 - 45   je holster, granaatpouch, magazijnpouch, en je geweren op je rug en borst (de slings)
+ *  vakje 46        hoofdstuk 100: de keycard aan je nek (was het eerste vakje van "andere mods")
  * </pre>
  * En apart, op zijn rug: <b>de rugzak</b> (met zijn MOLLE-pouches).
  * <ul>
@@ -73,7 +74,9 @@ public class PlayerBodyEntity extends LivingEntity {
     public static final int ARMOR = 36;
     public static final int OFFHAND = 40;
     public static final int GEAR = 41;
-    public static final int EXTRA = 46;
+    /** Hoofdstuk 100: de keycard aan je nek, na de holster, de pouches en de slings. */
+    public static final int NECK = 46;
+    public static final int EXTRA = 47;
 
     private static final EntityDataAccessor<Optional<UUID>> OWNER =
             SynchedEntityData.defineId(PlayerBodyEntity.class, EntityDataSerializers.OPTIONAL_UUID);

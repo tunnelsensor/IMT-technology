@@ -151,7 +151,7 @@ die nog op hun oude letter stonden; zelf gekozen toetsen blijven). In Opties > B
 ook "Cable X-ray on/off" (je eigen verborgen kabels door muren heen zien), "Zone border on/off" (de rand van je
 zones), "Coordinates on/off" (je coördinaten in de bril), en de quickdraws en pouches van de vuurwapens
 ("Quickdraw: pistol", "Quickdraw: grenade", "Open the holster", "Open the grenade pouch", "Open the
-magazine pouch"), ook allemaal standaard zonder toets.
+magazine pouch", "Quickdraw: keycard from your neck"), ook allemaal standaard zonder toets.
 
 ---
 
@@ -1428,7 +1428,8 @@ seconden meer, tot 8 draden en 60 seconden. Elke laserzender mag, ook een zonder
 **Zakkenrollen.** Sluip (Shift) met een **lege hand** achter iemand en rechtsklik op hem: zijn zak
 gaat open. Zijn keycards liggen omgekeerd tussen rommel (een touwtje, een papiertje, een muntje...).
 Sleep de rommel opzij en trek een kaart naar boven, uit de zak: hij draait om, je ziet welke het is,
-en hij is van jou (de kaart in zijn hand zit niet in een zak). Maar pas op voor de meter **NOTICED**:
+en hij is van jou (de kaart in zijn hand zit niet in een zak; de kaart aan zijn nek wel, sinds 12 november, die zit
+tussen de andere). Maar pas op voor de meter **NOTICED**:
 elke beweging laat hem oplopen, snel slepen veel meer dan rustig; hou je even stil, dan zakt hij weer.
 Is hij vol, of draait de ander zich om en ziet hij je, dan ben je **betrapt**: hij krijgt een melding
 met je naam, en jij licht 10 seconden op. Loopt hij weg, dan houdt het gewoon op. Lukt het, dan merkt
@@ -2143,6 +2144,17 @@ de granaten steken uit hun vakjes, de magazijnen staan rechtop in de hunne. **Ee
 (uit het wiel, met een eigen toets uit Opties > Besturing, of rechtsklik met de pouch in je hand): een scherm met zijn
 vakjes boven je inventaris; sleep of shift-klik magazijnen of granaten erin en eruit. Ga je dood zonder keepInventory,
 dan vallen ze op de grond zoals de rest.
+
+**Een keycard aan je nek** (sinds 12 november). Rechts naast het vakje van je rugzak zit het **nekvakje** (met Curios: het
+slot "Necklace"): klik erin met een keycard aan je muis (van een stapel één), of kies "Put away" in het wiel met een
+keycard in je hand. Anderen zien de kaart aan een koordje op je borst. In het wiel staat hij **rechtsboven**, tussen je
+pistool en je slings (of op een eigen toets: "Quickdraw: keycard from your neck", standaard geen toets). Trekken werkt
+anders dan bij een wapen: je hand hoeft niet leeg te zijn. Je houdt de kaart **over** wat je vasthield (dat valt niet en
+schuift nergens heen), en zodra je hem tegen een keycardlezer houdt, hangt hij een halve seconde later weer aan je nek met
+je eigen ding terug in je hand. Hij gaat ook terug als je een ander vakje van je werkbalk kiest, als je hem in het wiel
+nog eens kiest of "Put away" kiest, als je iets anders trekt, en als je doodgaat (in je lichaam ligt hij op de plek van
+je nek). Gooi je hem weg of raakt hij anders uit je hand, dan krijg je je eigen ding terug en blijft je nek leeg. Een
+zakkenroller kan hem ook pakken (zie "Inbreken").
 
 **Schieten.** Linkerklik = één schot (een Glock is semi-automatisch), rechterklik = richten over de korrel en de keep,
 **H** = bekijken. De kogel vliegt echt (16 blokken per tick, dus niet meteen raak), zakt een heel klein beetje, doet

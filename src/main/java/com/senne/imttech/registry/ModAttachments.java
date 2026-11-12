@@ -132,6 +132,19 @@ public final class ModAttachments {
                             com.senne.imttech.guns.GearContents.STREAM_CODEC)
                     .build());
 
+    /**
+     * Hoofdstuk 100: je keycard van je nek getrokken, "over" wat je vasthield (zie guns/NeckCard). Opgeslagen (na een crash
+     * krijg je je ding terug bij het inloggen), alleen naar je eigen spel gestuurd (voor het wiel), en niet mee na je dood
+     * (dan gaat alles eerst terug op zijn plek).
+     */
+    public static final Supplier<AttachmentType<com.senne.imttech.guns.NeckCard.Drawn>> NECK_DRAW = ATTACHMENTS.register("neck_draw",
+            () -> AttachmentType.builder(() -> com.senne.imttech.guns.NeckCard.Drawn.NONE)
+                    .serialize(com.senne.imttech.guns.NeckCard.Drawn.CODEC, com.senne.imttech.guns.NeckCard.Drawn::active)
+                    .sync((holder, player) -> holder == player && player.connection != null
+                            && player.connection.hasChannel(SyncAttachmentsPayload.TYPE),
+                            com.senne.imttech.guns.NeckCard.Drawn.STREAM_CODEC)
+                    .build());
+
     /** Hoofdstuk 52 (stap 3): wat een speler geleerd heeft met zijn vuurwapens (zie GunSkills). Blijft na je dood; alleen jij krijgt het. */
     public static final Supplier<AttachmentType<com.senne.imttech.guns.GunSkills>> GUN_SKILLS = ATTACHMENTS.register("gun_skills",
             () -> AttachmentType.builder(() -> com.senne.imttech.guns.GunSkills.EMPTY)

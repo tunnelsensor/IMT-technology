@@ -54,6 +54,10 @@ public final class GearControl {
         while (ImtKeys.DRAW_GUN.consumeClick()) {
             send(Gear.ACTION_DRAW_GUN, 0);
         }
+        // Hoofdstuk 100: de keycard aan je nek (over wat je vasthoudt; nog eens = terug aan je nek).
+        while (ImtKeys.DRAW_KEYCARD.consumeClick()) {
+            send(Gear.ACTION_DRAW_KEYCARD, 0);
+        }
         while (ImtKeys.DRAW_SLING_BACK.consumeClick()) {
             drawSling(player, 0);
         }

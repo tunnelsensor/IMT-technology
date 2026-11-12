@@ -41,6 +41,8 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent;
  * Sinds hoofdstuk 55: in de holster kan ook het laserpistool zitten, in de magazijnpouch staan ook energiecellen, en
  * op je <b>rug</b> en voor je <b>borst</b> hangen de geweren uit je sling-vakjes (schuin, met hun sling eraan) met een
  * leren band over je schouder.
+ *
+ * Sinds hoofdstuk 100: je <b>keycard</b> aan een koordje om je nek, op je borst (zichtbaar, ook voor een zakkenroller).
  */
 public final class GearLayer extends RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> {
     /** Het midden van elk vakje van de granaatpouch (model-pixels). */
@@ -79,7 +81,9 @@ public final class GearLayer extends RenderLayer<AbstractClientPlayer, PlayerMod
         ItemStack magazines = Gear.get(player, GearItem.Kind.MAG_POUCH);
         ItemStack back = Gear.sling(player, 0);
         ItemStack chest = Gear.sling(player, 1);
-        if (holster.isEmpty() && grenades.isEmpty() && magazines.isEmpty() && back.isEmpty() && chest.isEmpty()) {
+        ItemStack neckCard = Gear.neck(player);
+        if (holster.isEmpty() && grenades.isEmpty() && magazines.isEmpty() && back.isEmpty() && chest.isEmpty()
+                && neckCard.isEmpty()) {
             return;
         }
         pose.pushPose();
@@ -103,6 +107,33 @@ public final class GearLayer extends RenderLayer<AbstractClientPlayer, PlayerMod
         if (!chest.isEmpty()) {
             renderSlung(pose, buffers, light, chest, false, 0);
         }
+        if (!neckCard.isEmpty()) {
+            renderNeckCard(pose, buffers, light, player, neckCard);
+        }
+        pose.popPose();
+    }
+
+    /**
+     * Hoofdstuk 100: de keycard aan je nek. Twee dunne koordjes van je nek schuin naar beneden, en de kaart plat op je borst
+     * (de voorkant van je lijf is -z in de ruimte van het model, en +y is omlaag).
+     */
+    private static void renderNeckCard(PoseStack pose, MultiBufferSource buffers, int light, AbstractClientPlayer player,
+                                       ItemStack card) {
+        for (float side : new float[]{-1, 1}) {
+            pose.pushPose();
+            pose.translate(0.1 * side, -0.01, -0.135);
+            pose.mulPose(Axis.ZP.rotationDegrees(-20 * side));
+            pose.scale(0.45f, 0.3f, 0.5f);
+            pose.translate(-0.5, 0, 0);
+            WeaponModels.render(pose, buffers, WeaponModels.location("sling_strap"), light, OverlayTexture.NO_OVERLAY);
+            pose.popPose();
+        }
+        pose.pushPose();
+        pose.translate(0, 0.33, -0.15);
+        pose.mulPose(Axis.ZP.rotationDegrees(180));
+        pose.scale(0.3f, 0.3f, 0.3f);
+        Minecraft.getInstance().getItemRenderer().renderStatic(card, ItemDisplayContext.FIXED, light, OverlayTexture.NO_OVERLAY,
+                pose, buffers, player.level(), player.getId());
         pose.popPose();
     }
 

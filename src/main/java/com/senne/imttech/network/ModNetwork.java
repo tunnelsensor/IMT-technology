@@ -28,7 +28,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "38";
+    private static final String PROTOCOL_VERSION = "39";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -332,6 +332,8 @@ public final class ModNetwork {
                     case com.senne.imttech.guns.Gear.ACTION_OPEN_BACKPACK -> com.senne.imttech.backpack.Backpacks.openWorn(player);
                     case com.senne.imttech.guns.Gear.ACTION_OPEN_MOLLE -> com.senne.imttech.backpack.Molle.openWornPouch(player, payload.arg());
                     case com.senne.imttech.guns.Gear.ACTION_USE_IFAK -> com.senne.imttech.backpack.Molle.useIfak(player, payload.arg() / 16, payload.arg() % 16);
+                    // Hoofdstuk 100: de keycard aan je nek trekken (nog eens = terug aan je nek).
+                    case com.senne.imttech.guns.Gear.ACTION_DRAW_KEYCARD -> com.senne.imttech.guns.NeckCard.draw(player);
                     default -> { }
                 }
             }

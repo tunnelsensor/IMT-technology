@@ -258,6 +258,13 @@ public class ImtTech {
                 com.senne.imttech.armory.AmmoBoxes.clear());
         // Hoofdstuk 52 (stap 2): wat je draagt valt op de grond als je doodgaat (zonder keepInventory).
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.guns.Gear::onDeath);
+        // Hoofdstuk 100: de keycard aan je nek, "over" wat je vasthoudt: terug na gebruik, bij een ander vakje, bij doodgaan
+        // (als eerste, voor je lichaam alles krijgt) en bij uit- en inloggen.
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.guns.NeckCard::onServerTick);
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGHEST, com.senne.imttech.guns.NeckCard::onDeath);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.guns.NeckCard::onLoggedOut);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.guns.NeckCard::onLoggedIn);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.guns.NeckCard::onServerStopped);
         // Hoofdstuk 52 (stap 3): iemand doodschieten geeft ervaring.
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.guns.GunSkillsServer::onDeath);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->

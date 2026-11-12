@@ -709,6 +709,44 @@ public final class BackpackGameTests {
         helper.succeed();
     }
 
+    /**
+     * Hoofdstuk 100: de keycard aan je nek gaat mee in je lichaam, op zijn eigen plek. Had je hem net vast (over je zwaard),
+     * dan gaat eerst alles terug: het zwaard ligt op zijn plek in de werkbalk en de kaart op de plek van je nek. "Everything
+     * back" hangt hem weer aan je nek.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "bodies")
+    public static void neck_card_goes_into_the_body_and_back(GameTestHelper helper) {
+        check(!Gear.curios(), "Deze test is voor zonder Curios");
+        var keep = helper.getLevel().getGameRules().getRule(net.minecraft.world.level.GameRules.RULE_KEEPINVENTORY);
+        boolean kept = keep.get();
+        keep.set(false, helper.getLevel().getServer());
+        try {
+            floor(helper, new BlockPos(3, 2, 3));
+            ServerPlayer player = player(helper, "neck-dier", new BlockPos(3, 2, 3));
+            player.getInventory().selected = 0;
+            player.getInventory().setItem(0, new ItemStack(Items.IRON_SWORD));
+            Gear.setNeck(player, new ItemStack(ModItems.KEYCARD.get()));
+            check(com.senne.imttech.guns.NeckCard.draw(player), "Trekken lukte niet");
+            player.hurt(player.damageSources().fellOutOfWorld(), 1000);
+            com.senne.imttech.body.PlayerBodyEntity body = bodyNear(helper, player);
+            check(body != null, "Er ligt geen lichaam");
+            check(body.loot().getItem(0).is(Items.IRON_SWORD), "Het zwaard (onder de kaart) ligt niet in vakje 0");
+            check(body.loot().getItem(com.senne.imttech.body.PlayerBodyEntity.NECK).is(ModItems.KEYCARD.get()),
+                    "De nekkaart ligt niet op de plek van je nek");
+            body.discard();
+            helper.getLevel().getServer().getPlayerList().remove(player);
+        } finally {
+            keep.set(kept, helper.getLevel().getServer());
+        }
+        ServerPlayer owner = player(helper, "neck-owner", new BlockPos(3, 2, 3));
+        com.senne.imttech.body.PlayerBodyEntity body = body(helper, owner, new BlockPos(3, 2, 4),
+                com.senne.imttech.body.PlayerBodyEntity.NECK, new ItemStack(ModItems.KEYCARD.get()));
+        com.senne.imttech.body.PlayerBodies.restore(owner, body);
+        check(Gear.neck(owner).is(ModItems.KEYCARD.get()), "Everything back hing de kaart niet aan je nek");
+        body.discard();
+        helper.succeed();
+    }
+
     /** Met keepInventory geen lichaam: je houdt alles, zoals altijd. */
     @GameTest(template = ARENA, timeoutTicks = 40, batch = "bodies")
     public static void keep_inventory_leaves_no_body(GameTestHelper helper) {

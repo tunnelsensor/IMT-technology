@@ -278,6 +278,23 @@ public class GearWheelScreen extends Screen {
         place(slings, 90, 60, 120);
         options.addAll(slings);
 
+        // Rechtsboven, tussen je pistool en je slings (hoofdstuk 100): je keycard aan je nek. Je houdt hem over wat je
+        // vasthoudt, en na gebruik hangt hij weer aan je nek; heb je hem vast, dan steek je hem hiermee weer weg.
+        ItemStack neckCard = Gear.neck(player);
+        boolean cardDrawn = com.senne.imttech.guns.NeckCard.isDrawn(player);
+        if (cardDrawn) {
+            options.add(new Option(held, held.getHoverName(), lines(Component.translatable("screen.imttech.wheel.keycard_back")),
+                    null, HudStyle.argb(255, HudStyle.WHITE), true, Gear.ACTION_DRAW_KEYCARD, 0, 30));
+        } else if (neckCard.isEmpty()) {
+            options.add(disabled(new ItemStack(ModItems.KEYCARD.get()), Component.translatable("screen.imttech.wheel.no_keycard"),
+                    Component.translatable("screen.imttech.wheel.keycard_hint"), Gear.ACTION_DRAW_KEYCARD, 30));
+        } else {
+            Component over = held.isEmpty() ? Component.translatable("screen.imttech.wheel.keycard_hand")
+                    : Component.translatable("screen.imttech.wheel.keycard_over", held.getHoverName());
+            options.add(new Option(neckCard, neckCard.getHoverName(), lines(over), null, HudStyle.argb(255, HudStyle.WHITE), true,
+                    Gear.ACTION_DRAW_KEYCARD, 0, 30));
+        }
+
         // Onderaan: wegsteken wat je vasthoudt (het pijltje omlaag).
         Component target = Gear.stowTarget(player, held);
         Component stowLine = held.isEmpty() ? Component.translatable("screen.imttech.wheel.nothing")
@@ -859,5 +876,15 @@ public class GearWheelScreen extends Screen {
 
     public static @Nullable GearWheelScreen current() {
         return Minecraft.getInstance().screen instanceof GearWheelScreen wheel ? wheel : null;
+    }
+
+    /** Het midden van de tegel of knop met deze actie (GUI-pixels), of null: voor de rondleiding, om de muis erop te zetten. */
+    public double[] centerOf(int action) {
+        for (Option o : options) {
+            if (o.action == action) {
+                return new double[]{o.x + o.w / 2.0, o.y + o.h / 2.0};
+            }
+        }
+        return null;
     }
 }

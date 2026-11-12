@@ -47,6 +47,7 @@ public class BodyScreen extends AbstractContainerScreen<BodyMenu> {
             case PlayerBodyEntity.GEAR + 1 -> new ItemStack(ModItems.GRENADE_POUCH.get());
             case PlayerBodyEntity.GEAR + 2 -> new ItemStack(ModItems.MAG_POUCH.get());
             case PlayerBodyEntity.GEAR + 3, PlayerBodyEntity.GEAR + 4 -> new ItemStack(ModItems.LASER_RIFLE.get());
+            case PlayerBodyEntity.NECK -> new ItemStack(ModItems.KEYCARD.get());
             default -> ItemStack.EMPTY;
         };
     }
