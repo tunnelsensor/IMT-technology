@@ -19,7 +19,8 @@ import net.minecraft.world.item.ItemStack;
  * we er zelf overheen. Sinds hoofdstuk 54 (jouw notitie) is het kaal: links de balk met wat het station heeft, in het
  * midden het vakje voor de bril (of een energiecel) met ernaast hoe vol die is. Geen redstone-vakje, geen balk onder
  * de bril en geen upgrade-pijl meer: upgrades bouw je in aan de harnas-werkbank. Sinds hoofdstuk 83 (jouw wens) zegt het
- * scherm daar ook niets meer over: de oranje regel "Upgrades: on the Suit Workbench" is weg.
+ * scherm daar ook niets meer over: de oranje regel "Upgrades: on the Suit Workbench" is weg. Sinds hoofdstuk 84 staat er
+ * niets naast een leeg vakje, en staat "GLASSES OR CELL" in het midden onder het vakje.
  */
 public class ChargingStationScreen extends AbstractContainerScreen<ChargingStationMenu> {
     private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "textures/gui/charging_station.png");
@@ -50,14 +51,18 @@ public class ChargingStationScreen extends AbstractContainerScreen<ChargingStati
         }
     }
 
-    /** Titels in I.M.T-blauw, en naast het vakje hoe vol de bril (of de cel) is. */
+    /** Titels in I.M.T-blauw, onder het vakje wat erin kan, en naast het vakje hoe vol de bril (of de cel) is. */
     @Override
     protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {
         g.drawString(font, title, titleLabelX, titleLabelY, HudStyle.argb(255, HudStyle.CYAN), false);
         g.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, HudStyle.argb(255, 0x9FC9D6), false);
         int dim = HudStyle.argb(170, HudStyle.WHITE);
-        small(g, Component.translatable("screen.imttech.station.slot_glasses").getString().toUpperCase(),
-                ChargingStationMenu.GLASSES_X - 1, ChargingStationMenu.GLASSES_Y + 20, dim);
+        // "GLASSES OR CELL" mooi in het midden onder het vakje (hoofdstuk 84, jouw wens). Het midden van het vakje is
+        // GLASSES_X + 8 (een vakje is 16 breed); de tekst is klein (75%), dus we schuiven hem de helft van zijn kleine
+        // breedte naar links. Min 1: font.width telt na de laatste letter nog een lege kolom mee.
+        String slotLabel = Component.translatable("screen.imttech.station.slot_glasses").getString().toUpperCase();
+        small(g, slotLabel, ChargingStationMenu.GLASSES_X + 8 - (font.width(slotLabel) - 1) * 0.75f / 2.0f,
+                ChargingStationMenu.GLASSES_Y + 20, dim);
         ItemStack glasses = menu.getGlasses();
         int textX = ChargingStationMenu.GLASSES_X + 24;
         if (ImtData.isGlasses(glasses)) {
@@ -75,13 +80,13 @@ public class ChargingStationScreen extends AbstractContainerScreen<ChargingStati
             HudStyle.bar(g, textX, ChargingStationMenu.GLASSES_Y + 11, 60, 3, ImtData.getEnergyFraction(glasses), HudStyle.CYAN);
         } else if (glasses.getItem() instanceof com.senne.imttech.weapons.EnergyCellItem) {
             small(g, glasses.getHoverName().getString(), textX, ChargingStationMenu.GLASSES_Y + 2, HudStyle.argb(230, HudStyle.WHITE));
-        } else {
-            small(g, Component.translatable("screen.imttech.station.empty").getString(), textX, ChargingStationMenu.GLASSES_Y + 2, dim);
         }
+        // Is het vakje leeg, dan staat er niets naast (hoofdstuk 84): "Put your glasses (or an energy cell) here" liep
+        // rechts buiten het scherm, en het opschrift onder het vakje zegt al wat erin kan.
     }
 
-    /** Kleine tekst (75%). */
-    private void small(GuiGraphics g, String text, int x, int y, int colour) {
+    /** Kleine tekst (75%). De plek mag een kommagetal zijn, zodat tekst precies in het midden kan staan. */
+    private void small(GuiGraphics g, String text, float x, float y, int colour) {
         g.pose().pushPose();
         g.pose().translate(x, y, 0);
         g.pose().scale(0.75f, 0.75f, 1.0f);

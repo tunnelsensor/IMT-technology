@@ -2672,6 +2672,19 @@ public final class VisualCheck {
                 t.shot(20, "nb04_station_" + style.name().toLowerCase());
                 t.close(0);
             }
+            // Hoofdstuk 84: een leeg vakje (niets ernaast, "GLASSES OR CELL" in het midden eronder) en een energiecel. De cel
+            // maken we pas in de stap zelf: bij het opbouwen van de rondleiding bestaan de items van de mod nog niet.
+            for (boolean cell : new boolean[] {false, true}) {
+                t.onServer(5, player -> {
+                    if (player.serverLevel().getBlockEntity(padAt.east(3)) instanceof com.senne.imttech.station.ChargingStationBlockEntity station) {
+                        station.setItem(com.senne.imttech.station.ChargingStationBlockEntity.SLOT_GLASSES,
+                                cell ? new ItemStack(ModItems.ENERGY_CELL.get()) : ItemStack.EMPTY);
+                        player.openMenu(station);
+                    }
+                });
+                t.shot(20, "nb04_station_" + (cell ? "cell" : "empty"));
+                t.close(0);
+            }
             // Het G-menu in de stijl met punten: Systems (de energie van de bril) en Information (de optie Numbers).
             t.step(0, () -> com.senne.imttech.client.ImtClientConfig.setNumberStyle(com.senne.imttech.config.NumberStyle.DOT));
             t.view(0, 0.5, -60, -3.2, 0, 22);

@@ -220,7 +220,6 @@
   "screen.imttech.station.energy": "Station energy: %s / %s FE",
   "screen.imttech.station.glasses_label": "I.M.T energy (FE)",
   "screen.imttech.station.slot_glasses": "Glasses or cell",
-  "screen.imttech.station.empty": "Put your glasses (or an energy cell) here",
   "key.category.imttech.imt": "I.M.T",
   "key.imttech.menu": "I.M.T menu",
   "key.categories.imttech": "I.M.T",

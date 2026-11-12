@@ -6677,6 +6677,21 @@ Jouw wens: "bij chargin station niks zeggen over dat de upgrades ergns ander zij
       het scherm heeft alleen nog de balk van het station, het vakje met de bril en de energie ernaast. Geen nieuwe
       automatische test: het is alleen tekst, en die draaien de tests (zonder beeld) niet.
 
+### 84. Het laadstation: niets naast een leeg vakje, "Glasses or cell" in het midden (12 november)
+
+Jouw wens, met een screenshot: "de tekst 'put your glasse...' mag weg. de tekst 'glass or cell' mag mooi in het midden
+onder het vakje".
+
+- [x] **"Put your glasses (or an energy cell) here" is weg.** Die stond naast een leeg vakje en liep rechts buiten het
+      scherm. Nu staat er niets naast een leeg vakje. Ligt er een bril in, dan staat daar zijn energie; ligt er een cel
+      in, dan zijn naam, net als eerst. De tekst zelf (`screen.imttech.station.empty`) is ook weg uit `en_us.json`.
+- [x] **"GLASSES OR CELL" staat in het midden onder het vakje** (eerst begon hij links gelijk met het vakje). Het midden
+      van het vakje is `GLASSES_X + 8`; de kleine tekst (75%) schuift de helft van zijn breedte naar links, min de lege
+      kolom die Minecraft na de laatste letter meetelt (anders stond hij net één pixel te ver naar links).
+- [x] **Gezien** op screenshots (`gradlew runVisualCheck -Ponly=numbers`): nieuw zijn `nb04_station_empty` (leeg vakje)
+      en `nb04_station_cell` (een energiecel), naast `nb04_station_plain`, `_space` en `_short` (met de bril). Het midden
+      van het opschrift en van het vakje liggen op dezelfde pixel. Geen nieuwe automatische test: het is alleen beeld.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
