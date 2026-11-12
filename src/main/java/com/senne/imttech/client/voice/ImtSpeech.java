@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
@@ -40,13 +41,18 @@ import org.jetbrains.annotations.Nullable;
 public final class ImtSpeech {
     private ImtSpeech() {}
 
-    private record Utterance(String text, VoicePack voice, float volume) {}
+    /** @param number het volgnummer van de zin (zie say en isFinished) */
+    private record Utterance(String text, VoicePack voice, float volume, long number) {}
 
     /** Zinnen die nog uitgesproken moeten worden. Er wachten er nooit meer dan 3: de oudste valt weg. */
     private static final LinkedBlockingDeque<Utterance> QUEUE = new LinkedBlockingDeque<>();
     private static final int MAX_WAITING = 3;
     private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().create();
     private static final AtomicInteger FILE_NUMBER = new AtomicInteger();
+    /** Elke zin in de wachtrij krijgt een volgnummer: 1, 2, 3... */
+    private static final AtomicLong NUMBERS = new AtomicLong();
+    /** Alle zinnen tot en met dit volgnummer zijn klaar: uitgesproken, afgebroken of weggevallen. */
+    private static final AtomicLong FINISHED = new AtomicLong();
 
     private static @Nullable Thread worker;
     private static volatile boolean speaking;
@@ -73,11 +79,20 @@ public final class ImtSpeech {
     }
 
     /**
+     * Is de zin met dit volgnummer (van say) klaar? Uitgesproken, afgebroken of weggevallen; 0 (niet gezegd) is altijd klaar.
+     * Zo wacht de bril met uitvallen tot haar laatste zin gedaan is (hoofdstuk 102).
+     */
+    public static boolean isFinished(long number) {
+        return FINISHED.get() >= number;
+    }
+
+    /**
      * Meteen stoppen met praten: de wachtrij leeg en de zin die nu klinkt afbreken.
      * Dit gebruiken we als je zelf begint te praten (spraaktoets): dan zwijgt zij.
      */
     public static void stopSpeaking() {
         QUEUE.clear();
+        FINISHED.accumulateAndGet(NUMBERS.get(), Math::max); // alles wat wachtte of klonk, is nu klaar
         stopGeneration++;
         lastText = ""; // zo mag dezelfde zin daarna weer gezegd worden
         SourceDataLine line = playing;
@@ -107,32 +122,36 @@ public final class ImtSpeech {
     /**
      * Laat I.M.T iets zeggen (vanaf de hoofd-thread). Doet niets als haar stem uit staat,
      * niet geïnstalleerd is, of als het volume op 0 staat.
+     *
+     * @return het volgnummer van de zin (zie isFinished), of 0 als ze hem niet zegt
      */
-    public static void say(Component message, ImtMessagePayload.Level level) {
+    public static long say(Component message, ImtMessagePayload.Level level) {
         // Hoofdstuk 96: een lege bril zwijgt. (Haar laatste zin zegt ImtClientEvents net voordat de bril "dood" telt.)
         if (!available() || com.senne.imttech.client.ImtClientState.batteryDead) {
-            return;
+            return 0;
         }
         if ((level == ImtMessagePayload.Level.INFO || level == ImtMessagePayload.Level.BOOT) && Util.getMillis() < holdInfoUntil) {
-            return;
+            return 0;
         }
         String text = speakable(message.getString());
         long now = Util.getMillis();
         if (text.isEmpty() || (text.equals(lastText) && now - lastMillis < 3000)) {
-            return;
+            return 0;
         }
         lastText = text;
         lastMillis = now;
         Minecraft mc = Minecraft.getInstance();
         float volume = mc.options.getSoundSourceVolume(SoundSource.VOICE) * ImtClientConfig.VOICE_VOLUME.get().floatValue();
         if (volume <= 0.001f) {
-            return;
+            return 0;
         }
         while (QUEUE.size() >= MAX_WAITING) {
-            QUEUE.pollFirst();
+            QUEUE.pollFirst(); // valt weg; hij telt als klaar zodra een latere zin klaar is
         }
-        QUEUE.offerLast(new Utterance(text, voicePack(), volume));
+        long number = NUMBERS.incrementAndGet();
+        QUEUE.offerLast(new Utterance(text, voicePack(), volume, number));
         startWorker();
+        return number;
     }
 
     /** Kan I.M.T praten? (Haar stem staat aan en is geïnstalleerd.) */
@@ -190,6 +209,7 @@ public final class ImtSpeech {
                 stopPiper(); // de volgende keer opnieuw starten
             } finally {
                 speaking = false;
+                FINISHED.accumulateAndGet(utterance.number(), Math::max);
                 if (wav != null) {
                     try {
                         Files.deleteIfExists(wav);

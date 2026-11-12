@@ -105,9 +105,10 @@ public class ImtHud implements LayeredDraw.Layer {
         if (ImtClientState.bootPending) {
             return;
         }
-        // Hoofdstuk 96: de batterij is leeg, dus de bril is uit. Liep hij net leeg, dan nog even het uitvalbeeld; daarna
-        // helemaal niets (geen rand, geen paneel, geen meldingen). Een EMP op een lege bril zie je dus ook niet.
-        if (ImtClientState.batteryDead) {
+        // Hoofdstuk 96: de batterij is leeg, dus de bril is uit. Liep hij net leeg, dan staat de HUD nog tot haar laatste zin
+        // gedaan is (hoofdstuk 102, met de rode rand van een lege bril), dan nog even het uitvalbeeld; daarna helemaal niets
+        // (geen rand, geen paneel, geen meldingen). Een EMP op een lege bril zie je dus ook niet.
+        if (ImtClientState.batteryDead && ImtClientState.lastWordsStartMillis == 0) {
             long age = now - ImtClientState.shutdownStartMillis;
             if (ImtClientState.shutdownStartMillis > 0 && age < com.senne.imttech.client.hud.ShutdownOverlay.MILLIS) {
                 com.senne.imttech.client.hud.ShutdownOverlay.render(g, mc.font, w, h, age);
@@ -133,7 +134,7 @@ public class ImtHud implements LayeredDraw.Layer {
         }
 
         projection.begin(w, h, deltaTracker.getGameTimeDeltaPartialTick(false));
-        // Hier is er altijd stroom (een lege bril tekent hierboven al niets meer, hoofdstuk 96).
+        // Hier is er stroom, behalve tijdens haar laatste zin van een lege bril (hoofdstuk 102: rode rand, batterij op 0).
         boolean powered = ImtData.getEnergy(glasses) > 0;
         // Is het ronde G-menu open? Dan verdwijnt alles wat plat op je scherm staat (het paneel
         // links, het kompas, meldingen...), zodat niets de cirkel in het midden in de weg zit.

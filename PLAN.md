@@ -7269,6 +7269,32 @@ Jouw melding: "de glock magazijn op de pegboards zijn mini, zorg dat ze ook zijn
       cellen, even hoog; ook die op de zijmuur). Een leeg magazijn hangt niet in die rondleiding, dat stuk is alleen
       uitgerekend.
 
+### 102. Een lege bril: eerst haar laatste zin, dan pas het uitvalbeeld (12 november)
+
+Jouw wens: "Battery depleted voice message moet gebeuren net voor dat de uitval animatie is, als die zin gedaan is mag de
+uitgaan animatie pas gebeuren".
+
+Hoe het was (hoofdstuk 96): het uitvalbeeld, het uitschakelgeluid en haar zin "Battery depleted. Recharge me at a Charging
+Station." begonnen allemaal tegelijk. Het beeld duurt maar 1,8 seconde, de zin ongeveer 3: ze praatte dus nog terwijl de
+HUD al weg was.
+
+- [x] **Eerst de zin** (`ImtClientEvents.trackBattery`): loopt de batterij leeg terwijl je hem draagt, dan breekt ze af wat
+      ze nog zei en zegt ze haar laatste zin. Zolang staat de HUD nog, zoals een lege bril er vroeger uitzag: een rode rand,
+      het paneel links met "NO POWER" en je batterij op 0, en de zin als melding (met "Voice text" uit alleen als je haar
+      niet hoort, zoals elke melding). Een scherm van de bril gaat meteen dicht en de toetsen van de bril (ook G) doen al
+      vanaf dat moment niets meer.
+- [x] **Dan het uitvalbeeld**: zodra de zin gedaan is, het uitschakelgeluid en het uitvalbeeld van hoofdstuk 96 (rood
+      knipperen met "BATTERY DEPLETED", de lichtstreep, het puntje). Daarna niets meer, zoals voorheen.
+- [x] **Wanneer is de zin gedaan?** (`ImtSpeech.say` geeft nu een volgnummer, `isFinished`): haar stem houdt bij welke zin
+      klaar is, ook als hij afgebroken wordt of mislukt. Hoor je haar niet (stem uit, niet geïnstalleerd of volume op 0),
+      dan staat de zin 2,5 seconden in beeld en valt de bril daarna uit. Langer dan 10 seconden wacht hij nooit (mocht haar
+      stem vastlopen).
+- [x] **Wat bleef**: zet je de bril af of krijgt hij weer stroom tijdens de zin, dan komt er geen uitvalbeeld (weer stroom:
+      hij start opnieuw op). Een lege bril opzetten doet nog steeds niets.
+- [x] **Gezien** (`gradlew runVisualCheck -Ponly=deadbattery`): een nieuwe foto `33a_battery_dead_last_words` (de HUD nog
+      aan, rood, met de zin), daarna `33b` tot `33f` zoals voorheen. Geen nieuwe automatische test: het gebeurt alleen in je
+      spel (de stem en de HUD).
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het

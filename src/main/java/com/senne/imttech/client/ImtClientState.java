@@ -53,8 +53,15 @@ public final class ImtClientState {
      * meldingen, geen stem, en geen enkele toets van de bril (ook G niet). Zie ImtClientEvents.onClientTick.
      */
     public static boolean batteryDead;
-    /** Wanneer (ms) de batterij leegliep terwijl je hem droeg, voor het uitvalbeeld; 0 = geen uitvalbeeld (zie ShutdownOverlay). */
+    /** Wanneer (ms) het uitvalbeeld begon (na haar laatste zin); 0 = geen uitvalbeeld (zie ShutdownOverlay). */
     public static long shutdownStartMillis;
+    /**
+     * Hoofdstuk 102: de batterij liep leeg terwijl je hem droeg, en I.M.T zegt nog haar laatste zin. Zolang staat de HUD nog
+     * (met de rode rand van een lege bril); pas als de zin gedaan is, begint het uitvalbeeld. Wanneer (ms) ze begon; 0 = niet.
+     */
+    public static long lastWordsStartMillis;
+    /** Het volgnummer van die laatste zin bij ImtSpeech (0 = je hoort haar niet, dan lees je hem even). */
+    public static long lastWordsNumber;
 
     // ---------------------------------------------------------------- Meldingen
 
@@ -260,6 +267,8 @@ public final class ImtClientState {
         operational = false;
         batteryDead = false;
         shutdownStartMillis = 0;
+        lastWordsStartMillis = 0;
+        lastWordsNumber = 0;
         NOTIFICATIONS.clear();
         oreMarkers = List.of();
         target = null;

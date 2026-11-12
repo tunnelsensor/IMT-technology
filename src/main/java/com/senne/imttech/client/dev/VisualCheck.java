@@ -967,14 +967,16 @@ public final class VisualCheck {
             t.view(0, 0.5, -60, -3.2, 0, 22);
         }
 
-        // --- Hoofdstuk 96: de batterij van de bril loopt leeg. Nog even het uitvalbeeld (en haar laatste zin), daarna is de
-        // HUD helemaal weg en doet G niets meer. Weer stroom: de bril start opnieuw op.
+        // --- Hoofdstuk 96: de batterij van de bril loopt leeg. Eerst haar laatste zin (de HUD staat dan nog, rood), pas daarna
+        // het uitvalbeeld (hoofdstuk 102); dan is de HUD helemaal weg en doet G niets meer. Weer stroom: de bril start opnieuw op.
         if (want("deadbattery")) {
             t.view(10, 0.5, -60, -3.2, 0, 22);
             t.shot(20, "33_battery_full");
             t.onServer(0, player -> com.senne.imttech.imt.ImtData.setEnergy(
                     com.senne.imttech.imt.ImtData.getWornGlasses(player), 0));
             t.waitUntil(40, () -> com.senne.imttech.client.ImtClientState.batteryDead);
+            t.shot(10, "33a_battery_dead_last_words");
+            t.waitUntil(260, () -> com.senne.imttech.client.ImtClientState.shutdownStartMillis > 0);
             t.shot(6, "33b_battery_dead_shutdown");
             t.shot(17, "33c_battery_dead_line");
             t.shot(40, "33d_battery_dead_nothing");

@@ -11,11 +11,11 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 
 /**
- * De bril valt uit omdat de batterij leeg is (hoofdstuk 96, jouw keuze: "uitvalbeeld en nog 1 zin"). Het omgekeerde van de
+ * De bril valt uit omdat de batterij leeg is (hoofdstuk 96, jouw keuze: "uitvalbeeld en nog 1 zin"). Het begint pas als
+ * I.M.T haar laatste zin gezegd heeft (hoofdstuk 102, zie ImtClientEvents.trackBattery). Het omgekeerde van de
  * opstart-animatie, in iets minder dan twee seconden:
  * <ol>
- *   <li>0 - 1,1 s: de rand knippert rood, en in het midden staat "BATTERY DEPLETED" (I.M.T zegt tegelijk haar laatste zin,
- *       zie ImtClientEvents). Op het eind gaat de tekst haperen.</li>
+ *   <li>0 - 1,1 s: de rand knippert rood, en in het midden staat "BATTERY DEPLETED". Op het eind gaat de tekst haperen.</li>
  *   <li>1,1 - 1,5 s: zoals een oude tv die uitgaat: het beeld wordt een lichtstreep die naar het midden krimpt.</li>
  *   <li>1,5 - 1,8 s: een puntje in het midden dat uitdooft.</li>
  * </ol>

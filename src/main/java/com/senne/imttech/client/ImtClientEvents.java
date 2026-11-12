@@ -114,13 +114,20 @@ public final class ImtClientEvents {
         }
     }
 
+    /** Hoor je haar niet (stem uit of niet geïnstalleerd), dan staat haar laatste zin zo lang (ms) in beeld. */
+    private static final long LAST_WORDS_READ_MILLIS = 2500;
+    /** Langer dan dit (ms) wachten we nooit op haar laatste zin (bv. als haar stem vastloopt). */
+    private static final long LAST_WORDS_MAX_MILLIS = 10000;
+
     /**
      * Hoofdstuk 96 (jouw wens: "zorg dat als power van de bril op is echt de hele HUD weg is en er niets meer gezegd word, G
      * werkt dan ook niet meer"): houdt bij of je bril leeg is.
      * <ul>
-     *   <li><b>Loopt hij leeg terwijl je hem draagt</b>: nog één keer het uitvalbeeld (ShutdownOverlay) met een zacht
-     *       uitschakelgeluid, en haar laatste zin, "Battery depleted. Recharge me at a Charging Station." (jouw keuze: allebei).
-     *       Wat ze nog aan het zeggen was, breekt ze af. Daarna niets meer.</li>
+     *   <li><b>Loopt hij leeg terwijl je hem draagt</b>: eerst haar laatste zin, "Battery depleted. Recharge me at a Charging
+     *       Station." (wat ze nog aan het zeggen was, breekt ze af). Zolang staat de HUD nog, met de rode rand van een lege bril
+     *       en de zin als melding. Pas als die zin gedaan is, het uitvalbeeld (ShutdownOverlay) met een zacht
+     *       uitschakelgeluid (hoofdstuk 102, jouw wens: "als die zin gedaan is mag het uitgaan animatie maar gebeuren").
+     *       Daarna niets meer. De toetsen van de bril doen al vanaf het begin van de zin niets meer.</li>
      *   <li><b>Zet je een lege bril op</b>: niets, ook geen opstart-animatie (mijn invulling: hij is gewoon uit).</li>
      *   <li><b>Krijgt hij weer stroom terwijl je hem draagt</b>: hij start opnieuw op, zoals na een EMP (zonder welkomstzin).</li>
      * </ul>
@@ -129,28 +136,51 @@ public final class ImtClientEvents {
      * @param wasWearing droeg je hem de tick hiervoor al?
      */
     private static void trackBattery(boolean dead, boolean wasWearing) {
+        long now = Util.getMillis();
         if (dead && !ImtClientState.batteryDead) {
             ImtClientState.NOTIFICATIONS.clear();
+            ImtClientState.shutdownStartMillis = 0;
             if (wasWearing) {
                 // Stond het G-menu of een scherm van de bril open? Dat gaat dicht: de bril is uit.
                 Minecraft mc = Minecraft.getInstance();
                 if (isGlassesScreen(mc.screen)) {
                     mc.setScreen(null);
                 }
-                ImtClientState.shutdownStartMillis = Util.getMillis();
-                playUi(ModSounds.IMT_SHUTDOWN.get(), 1.0f);
-                // De laatste zin, NET voordat de bril "dood" telt: daarna zegt ImtSpeech niets meer.
+                // De laatste zin, NET voordat de bril "dood" telt: daarna zegt ImtSpeech niets meer. Ook als melding in
+                // beeld (zoals elke melding: met "Voice text" uit alleen als je haar niet hoort).
+                Component lastWords = Component.translatable("imt.imttech.msg.battery_empty");
                 com.senne.imttech.client.voice.ImtSpeech.stopSpeaking();
-                com.senne.imttech.client.voice.ImtSpeech.say(Component.translatable("imt.imttech.msg.battery_empty"),
+                ImtClientState.lastWordsNumber = com.senne.imttech.client.voice.ImtSpeech.say(lastWords,
                         ImtMessagePayload.Level.ALERT);
-            } else {
-                ImtClientState.shutdownStartMillis = 0;
+                if (ImtClientConfig.voiceTextInHud() || ImtClientState.lastWordsNumber == 0) {
+                    ImtClientState.NOTIFICATIONS.add(new ImtClientState.Notification(lastWords,
+                            ImtMessagePayload.Level.ALERT, now));
+                }
+                ImtClientState.lastWordsStartMillis = now;
             }
         } else if (!dead && ImtClientState.batteryDead && ImtClientState.wearing && wasWearing) {
-            ImtClientState.bootStartMillis = Util.getMillis();
+            ImtClientState.bootStartMillis = now;
             ImtClientState.bootGreetingSaid = true;
         }
+        if (!dead) {
+            ImtClientState.lastWordsStartMillis = 0; // afgezet of weer stroom: geen uitvalbeeld meer
+        }
         ImtClientState.batteryDead = dead;
+
+        // Haar laatste zin is gedaan: nu pas valt de bril uit.
+        if (ImtClientState.lastWordsStartMillis > 0) {
+            long waited = now - ImtClientState.lastWordsStartMillis;
+            boolean done = ImtClientState.lastWordsNumber == 0
+                    ? waited >= LAST_WORDS_READ_MILLIS
+                    : com.senne.imttech.client.voice.ImtSpeech.isFinished(ImtClientState.lastWordsNumber)
+                            || waited >= LAST_WORDS_MAX_MILLIS;
+            if (done) {
+                ImtClientState.lastWordsStartMillis = 0;
+                ImtClientState.NOTIFICATIONS.clear();
+                ImtClientState.shutdownStartMillis = now;
+                playUi(ModSounds.IMT_SHUTDOWN.get(), 1.0f);
+            }
+        }
     }
 
     /** Het G-menu, of een scherm dat je uit het G-menu (of met een toets van de bril) opent. */
