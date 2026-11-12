@@ -494,29 +494,89 @@ public final class ModItems {
 
     /** Hoofdstuk 52: het magazijn van de Glock 19 (15 patronen, kogel per kogel te vullen). */
     public static final DeferredItem<com.senne.imttech.guns.MagazineItem> GLOCK_19_MAGAZINE = ITEMS.registerItem("glock_19_magazine",
-            properties -> new com.senne.imttech.guns.MagazineItem(properties, com.senne.imttech.guns.FirearmType.GLOCK_19),
+            properties -> new com.senne.imttech.guns.MagazineItem(properties, com.senne.imttech.guns.FirearmType.GLOCK_19, false),
             new Item.Properties());
 
-    /** Hoofdstuk 52: de zes onderdelen (elk in zijn materialen, zie GunPartItem). */
-    private static final Map<com.senne.imttech.guns.GunPart, DeferredItem<com.senne.imttech.guns.GunPartItem>> GUN_PARTS = new EnumMap<>(com.senne.imttech.guns.GunPart.class);
+    /** Hoofdstuk 103 (de grote update): de MP5, en zijn gebogen magazijn van 30 patronen (dezelfde 9mm als de Glock). */
+    public static final DeferredItem<com.senne.imttech.guns.FirearmItem> MP5 = ITEMS.registerItem("mp5",
+            properties -> new com.senne.imttech.guns.FirearmItem(properties, com.senne.imttech.guns.FirearmType.MP5),
+            new Item.Properties().rarity(Rarity.UNCOMMON));
+    public static final DeferredItem<com.senne.imttech.guns.MagazineItem> MP5_MAGAZINE = ITEMS.registerItem("mp5_magazine",
+            properties -> new com.senne.imttech.guns.MagazineItem(properties, com.senne.imttech.guns.FirearmType.MP5, false),
+            new Item.Properties());
+
+    /**
+     * Hoofdstuk 52: de zes onderdelen (elk in zijn materialen, zie GunPartItem). Sinds hoofdstuk 103 per wapen: de Glock
+     * houdt zijn oude namen ("gun_slide"), de andere wapens heten naar hun wapen ("mp5_slide").
+     */
+    private static final Map<com.senne.imttech.guns.FirearmType, Map<com.senne.imttech.guns.GunPart, DeferredItem<com.senne.imttech.guns.GunPartItem>>> GUN_PARTS =
+            new EnumMap<>(com.senne.imttech.guns.FirearmType.class);
 
     static {
-        for (com.senne.imttech.guns.GunPart part : com.senne.imttech.guns.GunPart.values()) {
-            GUN_PARTS.put(part, ITEMS.registerItem(part.itemId(),
-                    properties -> new com.senne.imttech.guns.GunPartItem(properties, part), new Item.Properties()));
+        for (com.senne.imttech.guns.FirearmType type : com.senne.imttech.guns.FirearmType.values()) {
+            Map<com.senne.imttech.guns.GunPart, DeferredItem<com.senne.imttech.guns.GunPartItem>> parts =
+                    new EnumMap<>(com.senne.imttech.guns.GunPart.class);
+            for (com.senne.imttech.guns.GunPart part : com.senne.imttech.guns.GunPart.values()) {
+                parts.put(part, ITEMS.registerItem(part.itemId(type),
+                        properties -> new com.senne.imttech.guns.GunPartItem(properties, type, part), new Item.Properties()));
+            }
+            GUN_PARTS.put(type, parts);
         }
     }
 
+    /** Het onderdeel-item van de Glock. */
     public static com.senne.imttech.guns.GunPartItem gunPart(com.senne.imttech.guns.GunPart part) {
-        return GUN_PARTS.get(part).get();
+        return gunPart(com.senne.imttech.guns.FirearmType.GLOCK_19, part);
+    }
+
+    /** Het onderdeel-item van dit wapen. */
+    public static com.senne.imttech.guns.GunPartItem gunPart(com.senne.imttech.guns.FirearmType type,
+                                                             com.senne.imttech.guns.GunPart part) {
+        return GUN_PARTS.get(type).get(part).get();
     }
 
     public static com.senne.imttech.guns.FirearmItem firearm(com.senne.imttech.guns.FirearmType type) {
-        return GLOCK_19.get();
+        return switch (type) {
+            case GLOCK_19 -> GLOCK_19.get();
+            case MP5 -> MP5.get();
+        };
     }
 
+    /** Het gewone magazijn van dit wapen. */
     public static com.senne.imttech.guns.MagazineItem magazine(com.senne.imttech.guns.FirearmType type) {
-        return GLOCK_19_MAGAZINE.get();
+        return magazine(type, false);
+    }
+
+    /** Het magazijn van dit wapen: het gewone, of (hoofdstuk 103) het lange (de extended mag). */
+    public static com.senne.imttech.guns.MagazineItem magazine(com.senne.imttech.guns.FirearmType type, boolean extended) {
+        return switch (type) {
+            case GLOCK_19 -> GLOCK_19_MAGAZINE.get();
+            case MP5 -> MP5_MAGAZINE.get();
+        };
+    }
+
+    /** Alle magazijnen van alle vuurwapens (voor de modellen en het Pegboard). */
+    public static java.util.List<com.senne.imttech.guns.MagazineItem> magazines() {
+        return java.util.List.of(GLOCK_19_MAGAZINE.get(), MP5_MAGAZINE.get());
+    }
+
+    /** Hoofdstuk 103: de patroon, de lege huls en de kogelpunt van dit kaliber. */
+    public static Item round(com.senne.imttech.guns.Caliber caliber) {
+        return switch (caliber) {
+            case MM9 -> ROUND_9MM.get();
+        };
+    }
+
+    public static Item casing(com.senne.imttech.guns.Caliber caliber) {
+        return switch (caliber) {
+            case MM9 -> CASING_9MM.get();
+        };
+    }
+
+    public static Item bullet(com.senne.imttech.guns.Caliber caliber) {
+        return switch (caliber) {
+            case MM9 -> BULLET_9MM.get();
+        };
     }
 
     /** Hoofdstuk 52: een 9mm-patroon (huls + kogelpunt + Crushed Gunpowder sinds hoofdstuk 76, geperst op de Reloading Bench). */

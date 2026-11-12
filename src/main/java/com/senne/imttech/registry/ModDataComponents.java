@@ -264,6 +264,24 @@ public final class ModDataComponents {
                     .persistent(Codec.INT)
                     .networkSynchronized(ByteBufCodecs.VAR_INT));
 
+    /** Hoofdstuk 103: de stand van de keuzeschakelaar van een vuurwapen (het nummer in de rij van dat wapen, zie FirearmType). */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> GUN_FIRE_MODE =
+            COMPONENTS.registerComponentType("gun_fire_mode", builder -> builder
+                    .persistent(Codec.INT)
+                    .networkSynchronized(ByteBufCodecs.VAR_INT));
+
+    /** Hoofdstuk 103: een lege huls in de kamer van een wapen dat je zelf doorlaadt (een grendel of een pomp). */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Boolean>> GUN_SPENT =
+            COMPONENTS.registerComponentType("gun_spent", builder -> builder
+                    .persistent(Codec.BOOL)
+                    .networkSynchronized(ByteBufCodecs.BOOL));
+
+    /** Hoofdstuk 103: hangt er een Gun Sling aan een lang vuurwapen (dan past het in een sling-vakje)? */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Boolean>> GUN_SLING =
+            COMPONENTS.registerComponentType("gun_sling", builder -> builder
+                    .persistent(Codec.BOOL)
+                    .networkSynchronized(ByteBufCodecs.BOOL));
+
     /** Zoveel patronen zitten er in een magazijn. */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> MAG_ROUNDS =
             COMPONENTS.registerComponentType("mag_rounds", builder -> builder

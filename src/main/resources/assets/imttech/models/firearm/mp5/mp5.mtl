@@ -1,0 +1,18 @@
+# De materialen van mp5 (hoofdstuk 103). Ka 1 1 1 = gloeit (lichtgevende vizierpunten).
+newmtl gun
+map_Kd #gun
+newmtl glow
+map_Kd #gun
+Ka 1 1 1
+newmtl steel
+map_Kd #steel
+newmtl steel_glow
+map_Kd #steel
+Ka 1 1 1
+newmtl titanium
+map_Kd #titanium
+newmtl titanium_glow
+map_Kd #titanium
+Ka 1 1 1
+newmtl mag
+map_Kd #mag

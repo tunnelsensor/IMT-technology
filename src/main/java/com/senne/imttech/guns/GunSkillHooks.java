@@ -25,6 +25,9 @@ public final class GunSkillHooks {
             case LOAD_ROUND, UNLOAD_ROUND -> GunSkill.MAG_HANDLING;
             case UNLOAD_CHAMBER -> GunSkill.RELOAD;
             case DRAW -> GunSkill.QUICKDRAW;
+            // Hoofdstuk 103: doorladen (grendel, pomp) hoort bij herladen, een patroon in de buis bij magazijnen vullen.
+            case CYCLE, SELECT_FIRE -> GunSkill.RELOAD;
+            case LOAD_TUBE, UNLOAD_TUBE -> GunSkill.MAG_HANDLING;
         };
     }
 

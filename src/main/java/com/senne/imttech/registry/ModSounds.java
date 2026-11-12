@@ -142,6 +142,16 @@ public final class ModSounds {
     /** ...een huls die op de grond tinkelt, en een kogel die in een blok slaat. */
     public static final DeferredHolder<SoundEvent, SoundEvent> CASING_TINK = register("casing.tink");
     public static final DeferredHolder<SoundEvent, SoundEvent> BULLET_IMPACT = register("bullet.impact");
+    /** Hoofdstuk 103: de MP5. Het schot van dichtbij (drie varianten) en van ver weg... */
+    public static final DeferredHolder<SoundEvent, SoundEvent> MP5_FIRE = register("mp5.fire");
+    public static final DeferredHolder<SoundEvent, SoundEvent> MP5_FIRE_FAR = register("mp5.fire_far");
+    /** ...en de spanhendel: naar achteren en met een klap naar voren. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> MP5_CHARGE = register("mp5.charge");
+    /** Hoofdstuk 103: het magazijn van een lang wapen dat eruit komt en erin klikt (zwaarder dan dat van een pistool). */
+    public static final DeferredHolder<SoundEvent, SoundEvent> RIFLE_MAG_OUT = register("rifle.mag_out");
+    public static final DeferredHolder<SoundEvent, SoundEvent> RIFLE_MAG_IN = register("rifle.mag_in");
+    /** Hoofdstuk 103: de keuzeschakelaar (safe, semi, auto): een droge klik. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> GUN_SELECTOR = register("gun.selector");
     /** Een pistool uit de holster trekken (stap 2). */
     public static final DeferredHolder<SoundEvent, SoundEvent> HOLSTER_DRAW = register("holster.draw");
     /** Hoofdstuk 72: een rugzak openritsen (de rits duurt 1,5 s, zie backpack/BackpackZip). */

@@ -181,10 +181,27 @@ public final class Gear {
         return NeckCard.fits(stack);
     }
 
-    /** Past dit in een sling-vakje: een laser rifle, sniper of shotgun met een sling eraan? */
+    /**
+     * Past dit in een sling-vakje: een laser rifle, sniper of shotgun met een sling eraan, of (hoofdstuk 103) een lang
+     * vuurwapen (de MP5, de AK-47, de AWP, de Remington 870) met een sling eraan?
+     */
     public static boolean slingAccepts(ItemStack stack) {
+        FirearmType firearm = FirearmItem.typeOf(stack);
+        if (firearm != null) {
+            return firearm.longGun && FirearmItem.hasSling(stack);
+        }
         GunType type = LaserGunItem.typeOf(stack);
         return type != null && type != GunType.PISTOL && LaserGunItem.hasSling(stack);
+    }
+
+    /** Is dit een lang wapen dat een sling nodig heeft om het weg te hangen (een lasergeweer of een lang vuurwapen)? */
+    public static boolean needsSling(ItemStack stack) {
+        FirearmType firearm = FirearmItem.typeOf(stack);
+        if (firearm != null) {
+            return firearm.longGun;
+        }
+        GunType type = LaserGunItem.typeOf(stack);
+        return type != null && type != GunType.PISTOL;
     }
 
     /** Het eerste lege sling-vakje, of -1. */
@@ -430,8 +447,7 @@ public final class Gear {
             }
         }
         if (kind == null) {
-            tell(player, Component.translatable(LaserGunItem.typeOf(held) != null && LaserGunItem.typeOf(held) != GunType.PISTOL
-                    ? "gear.imttech.needs_sling" : "gear.imttech.does_not_fit"));
+            tell(player, Component.translatable(needsSling(held) ? "gear.imttech.needs_sling" : "gear.imttech.does_not_fit"));
             return false;
         }
         if (get(player, kind).isEmpty() || freeIndex(player, kind, held) < 0) {
@@ -546,7 +562,7 @@ public final class Gear {
             tell(player, Component.translatable("gear.imttech.no_magazine_there"));
             return false;
         }
-        sound(player, ModSounds.GLOCK_MAG_OUT.get(), 0.8f);
+        sound(player, type.magOutSound(), 0.8f);
         return Firearms.start(player, Firearms.ActionKind.RELOAD_POUCH, player.getInventory().selected, index, gun);
     }
 
@@ -562,7 +578,7 @@ public final class Gear {
         FirearmItem.setMagazine(gun, fresh);
         pouch.set(index, old);
         com.senne.imttech.backpack.Molle.setMagazines(player, pouch);
-        sound(player, ModSounds.GLOCK_MAG_IN.get(), 0.8f);
+        sound(player, type.magInSound(), 0.8f);
         GunSkillHooks.reloaded(player, gun);
     }
 
@@ -604,7 +620,7 @@ public final class Gear {
             setSlot(player, index, carried.copy());
             menu.setCarried(worn);
         } else {
-            if (sling && LaserGunItem.typeOf(carried) != null) {
+            if (sling && needsSling(carried)) {
                 tell(player, Component.translatable("gear.imttech.needs_sling"));
             }
             return;

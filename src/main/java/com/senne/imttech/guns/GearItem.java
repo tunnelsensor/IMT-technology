@@ -46,7 +46,8 @@ public class GearItem extends Item {
         public boolean accepts(ItemStack stack) {
             return switch (this) {
                 // Sinds hoofdstuk 55 ook het laserpistool (een pistool tegelijk, jouw keuze).
-                case HOLSTER -> FirearmItem.typeOf(stack) != null
+                // Hoofdstuk 103: een lang vuurwapen (de MP5, de AK-47...) past er niet in; dat hangt aan een sling.
+                case HOLSTER -> (FirearmItem.typeOf(stack) != null && !FirearmItem.typeOf(stack).longGun)
                         || com.senne.imttech.weapons.LaserGunItem.typeOf(stack) == com.senne.imttech.weapons.GunType.PISTOL;
                 // Hoofdstuk 69: geen scherpe granaat (in de pouch zou zijn lont stilstaan).
                 case GRENADE_POUCH -> stack.getItem() instanceof GrenadeItem && !GrenadeItem.isLive(stack);

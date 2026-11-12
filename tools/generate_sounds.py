@@ -1285,6 +1285,122 @@ def casing(seed, bounces):
     return finish_hard(total, peak=0.45, fade_out=0.08)
 
 
+def firearm_shot(seed, far=False, body_hz=200.0, thump=(95, 45), boom=1.0, crack=1.0, tail=0.9, far_tail=1.6,
+                 mech=((0.005, 0.3), (0.055, 0.35))):
+    """
+    Een schot van een van de wapens van hoofdstuk 103 (de MP5, de AK-47, de AWP, de Remington 870): dezelfde opbouw als
+    gunshot (de Glock: de krak, de klap, de dreun, het mechaniek en de galm), met knoppen per wapen. {body_hz}: de toon
+    van de klap (lager = een groter kaliber), {thump}: van waar naar waar de dreun zakt, {boom}: hoeveel langer en
+    zwaarder de knal is (1 = een 9mm-pistool), {crack}: hoe scherp de krak, {tail}: hoe lang de galm, {mech}: wanneer
+    het mechaniek klapt en hoe hard (de grendel tegen zijn aanslag, en weer naar voren; leeg voor een grendelgeweer).
+    """
+    r = np.random.default_rng(seed)
+    total = np.zeros(int(RATE * 0.8))
+    cn = int(RATE * 0.03)
+    tc = np.arange(cn) / RATE
+    snap = r.uniform(-1, 1, cn) * np.exp(-tc * 420)
+    snap[:4] += np.array([1.0, -0.85, 0.55, -0.3]) * 3.0
+    snap = highpass(snap, 900)
+    bn = int(RATE * 0.45)
+    tb = np.arange(bn) / RATE
+    wide = r.uniform(-1, 1, bn)
+    blast = (bandpass(wide, 150, 500) * 4.0 + bandpass(wide, 500, 2000) * 2.0 + bandpass(wide, 2000, 6000) * 1.5
+             + bandpass(wide, 6000, 16000) * 0.8) * np.exp(-tb * 42 / boom) * (1 - np.exp(-tb * 4000))
+    sizzle = highpass(r.uniform(-1, 1, bn), 6000) * np.exp(-tb * 75)
+    b, a = signal.iirpeak(body_hz + r.uniform(-15, 15), 3.0, fs=RATE)
+    body = signal.lfilter(b, a, r.uniform(-1, 1, bn) * np.exp(-tb * 55 / boom))
+    low = np.sin(sweep(thump[0], thump[1], 0.25 * boom)) * np.exp(-seconds(0.25 * boom) * 30 / boom)
+    if not far:
+        place(total, snap * crack, 0.0005)
+        place(total, blast * 1.0, 0.0008)
+        place(total, sizzle * 0.5 * crack, 0.0008)
+        place(total, body * 3.0, 0.0008)
+        place(total, low * 0.85 * boom, 0.0005)
+        for at, gain in mech:
+            place(total, impact(r, 0.09, [(2600, 90, 0.6), (4300, 120, 0.4), (7600, 170, 0.25)], snap=0.8, thud=0.25) * gain,
+                  at + r.uniform(-0.003, 0.003))
+        out = room(total, r, length=tail, mix=0.14, bright=6000, low=2000,
+                   early=((0.006, 0.55), (0.014, 0.42), (0.026, 0.33), (0.041, 0.24), (0.063, 0.17)))
+        out = highpass(out, 35)
+        return finish_hard(out / np.max(np.abs(out)) * 1.2, peak=0.95, fade_out=0.15)
+    place(total, lowpass(blast, 2500) * 1.0, 0.0)
+    place(total, body * 4.0, 0.0)
+    place(total, np.sin(sweep(thump[0] * 0.9, thump[1] * 0.9, 0.4 * boom)) * np.exp(-seconds(0.4 * boom) * 18 / boom) * 0.6, 0.0)
+    out = room(total, r, length=far_tail, mix=0.3, bright=2400, low=900,
+               early=((0.04, 0.5), (0.09, 0.38), (0.16, 0.28), (0.25, 0.2)))
+    out = highpass(lowpass(out, 3500), 30)
+    return finish_hard(out / np.max(np.abs(out)) * 1.2, peak=0.75, fade_out=0.3)
+
+
+MP5_SHOT = dict(body_hz=235.0, thump=(105, 52), boom=0.9, crack=0.9, mech=((0.004, 0.35), (0.05, 0.45)))
+
+
+def mp5_fire():
+    """Een schot met de MP5 (hoofdstuk 103): 9mm uit een langere loop, met de zware grendel die heen en weer klapt."""
+    return firearm_shot(7501, **MP5_SHOT)
+
+
+def mp5_fire_2():
+    return firearm_shot(7502, **MP5_SHOT)
+
+
+def mp5_fire_3():
+    return firearm_shot(7503, **MP5_SHOT)
+
+
+def mp5_fire_far():
+    return firearm_shot(7504, far=True, **MP5_SHOT)
+
+
+def mp5_charge():
+    """
+    De spanhendel van de MP5: naar achteren trekken (staal schuurt in de spanbuis), een tik tegen de aanslag, en
+    loslaten: de grendel slaat met een harde klap naar voren.
+    """
+    r = np.random.default_rng(7510)
+    total = np.zeros(int(RATE * 0.55))
+    place(total, impact(r, 0.03, [(2200, 280, 0.25)], snap=0.3, snap_from=1400), 0.0)
+    back = scrape(r, 0.12, 2200, 12000, ticks=420, grit=0.55, shape=lambda x: np.sin(np.pi * x) ** 0.5 * (0.4 + 0.6 * x))
+    place(total, back * 0.55, 0.02)
+    place(total, impact(r, 0.07, [(2600, 110, 0.5), (4700, 150, 0.35), (7900, 210, 0.2)], snap=0.8) * 0.7, 0.14)
+    place(total, scrape(r, 0.04, 2200, 11000, ticks=700, grit=0.6) * 0.35, 0.25)
+    place(total, slam(r, 1.15), 0.29)
+    place(total, impact(r, 0.06, [(1800, 120, 0.4), (3600, 180, 0.3)], snap=0.4, thud=0.4, thud_hz=500) * 0.5, 0.3)
+    return finish_hard(total, peak=0.78)
+
+
+def rifle_mag_out():
+    """Het magazijn van een lang wapen eruit: de pal klikt, het stalen magazijn glijdt uit de schacht en tikt in je hand."""
+    r = np.random.default_rng(7520)
+    total = np.zeros(int(RATE * 0.5))
+    place(total, impact(r, 0.06, [(2300, 150, 0.45), (4100, 200, 0.3)], snap=1.0, thud=0.25, thud_hz=700), 0.0)
+    out = scrape(r, 0.16, 700, 7000, ticks=240, grit=0.5, shape=lambda x: (1 - x) ** 1.5 * np.minimum(1, x * 12))
+    place(total, out * 0.6, 0.035)
+    place(total, impact(r, 0.1, [(1000, 120, 0.45), (2100, 160, 0.3)], snap=0.4, snap_from=1000, thud=0.5,
+                        thud_hz=450) * 0.65, 0.23)
+    return finish_hard(total, peak=0.65)
+
+
+def rifle_mag_in():
+    """Het magazijn van een lang wapen erin: het schuift de schacht in en klikt vast, zwaarder dan dat van een pistool."""
+    r = np.random.default_rng(7530)
+    total = np.zeros(int(RATE * 0.45))
+    place(total, scrape(r, 0.12, 700, 7000, ticks=280, grit=0.5, shape=lambda x: np.minimum(1, x * 1.4) ** 2) * 0.5, 0.0)
+    place(total, impact(r, 0.14, [(2700, 85, 0.6), (4600, 120, 0.45), (7400, 180, 0.25)], snap=1.5, thud=0.7,
+                        thud_hz=520), 0.12)
+    place(total, impact(r, 0.06, [(3900, 200, 0.25)], snap=0.4) * 0.4, 0.19)
+    return finish_hard(total, peak=0.78)
+
+
+def gun_selector():
+    """De keuzeschakelaar (safe, semi, auto): een droge, dubbele klik van staal dat in zijn stand valt."""
+    r = np.random.default_rng(7540)
+    total = np.zeros(int(RATE * 0.12))
+    place(total, impact(r, 0.03, [(3800, 320, 0.3), (6400, 380, 0.2)], snap=0.5, snap_from=2500), 0.0)
+    place(total, impact(r, 0.07, [(4900, 140, 0.5), (8200, 190, 0.35)], snap=1.0, thud=0.12, thud_hz=1100), 0.018)
+    return finish_hard(total, peak=0.5)
+
+
 def casing_tink():
     """Een huls die op de grond valt. Drie varianten (casing_tink, _2, _3) met een andere toon en aantal stuiters."""
     return casing(7470, 3)
@@ -1413,6 +1529,14 @@ SOUNDS = {
     "glock_mag_in": glock_mag_in,
     "glock_round_load": glock_round_load,
     "glock_tap_rack": glock_tap_rack,
+    "mp5_fire": mp5_fire,
+    "mp5_fire_2": mp5_fire_2,
+    "mp5_fire_3": mp5_fire_3,
+    "mp5_fire_far": mp5_fire_far,
+    "mp5_charge": mp5_charge,
+    "rifle_mag_out": rifle_mag_out,
+    "rifle_mag_in": rifle_mag_in,
+    "gun_selector": gun_selector,
     "casing_tink": casing_tink,
     "casing_tink_2": casing_tink_2,
     "casing_tink_3": casing_tink_3,
@@ -1440,7 +1564,7 @@ def main():
         path = OUT / f"{name}.ogg"
         # Hoofdstuk 74: de vuurwapens met een hogere kwaliteit (compression_level 0,15 = Vorbis-kwaliteit 0,85), anders
         # vervaagt de scherpe aanzet van een schot of een klik; de rest zoals altijd (dezelfde bestanden als vroeger).
-        hifi = name.startswith(("glock_", "casing_", "holster_"))
+        hifi = name.startswith(("glock_", "casing_", "holster_", "mp5_", "rifle_", "gun_", "ak47_", "awp_", "shotgun_"))
         sf.write(path, make(), RATE, format="OGG", subtype="VORBIS", compression_level=0.15 if hifi else None)
         print(f"{path.relative_to(OUT.parent.parent.parent.parent.parent.parent)}  ({path.stat().st_size // 1024} KB)")
 

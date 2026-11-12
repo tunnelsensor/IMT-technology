@@ -98,8 +98,13 @@ public final class Pegboard {
                 case SHOTGUN -> new int[]{7, 3};
             };
         }
-        if (FirearmItem.typeOf(stack) != null) {
-            return new int[]{4, 3};
+        FirearmType firearm = FirearmItem.typeOf(stack);
+        if (firearm != null) {
+            // Hoofdstuk 103: een lang wapen neemt meer gaatjes in (met zijn magazijn eronder).
+            return switch (firearm) {
+                case GLOCK_19 -> new int[]{4, 3};
+                case MP5 -> new int[]{8, 4};
+            };
         }
         if (MagazineItem.typeOf(stack) != null || stack.is(ModItems.ENERGY_CELL.get())) {
             return new int[]{1, 3};

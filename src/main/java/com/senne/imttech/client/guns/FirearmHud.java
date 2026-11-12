@@ -31,6 +31,7 @@ public final class FirearmHud implements LayeredDraw.Layer {
     private static final int WHITE = 0xE8FBFF;
     private static final int RED = 0xFF4545;
     private static final int CYAN = 0x3FD8FF;
+    private static final int GREEN = 0x5CFF9D;
 
     @Override
     public void render(GuiGraphics g, DeltaTracker deltaTracker) {
@@ -83,7 +84,7 @@ public final class FirearmHud implements LayeredDraw.Layer {
         int rounds = FirearmItem.roundsInMagazine(gun);
         boolean chambered = FirearmItem.chambered(gun);
         boolean noMag = !FirearmItem.hasMagazine(gun);
-        int max = type.capacity();
+        int max = FirearmItem.capacity(gun);
         int right = w - 10;
         int bottom = h - 12;
         boolean low = rounds + (chambered ? 1 : 0) <= Math.max(1, max / 5);
@@ -105,17 +106,26 @@ public final class FirearmHud implements LayeredDraw.Layer {
         g.drawString(font, rest, x, bottom - 18, argb(0.8f, GOLD), true);
         Component name = type.text();
         g.drawString(font, name, right - font.width(name), bottom - 38, argb(0.9f, GOLD), true);
+        if (type.selectable()) {
+            // Hoofdstuk 103: de stand van de keuzeschakelaar, links van de naam (safe groen, de rest wit).
+            FirearmType.FireMode mode = FirearmItem.fireMode(gun);
+            Component modeText = mode.text();
+            g.drawString(font, modeText, right - font.width(name) - 6 - font.width(modeText), bottom - 38,
+                    argb(1, mode == FirearmType.FireMode.SAFE ? GREEN : WHITE), true);
+        }
         int mags = 0;
         int loose = 0;
         for (ItemStack stack : player.getInventory().items) {
             if (MagazineItem.typeOf(stack) == type && MagazineItem.rounds(stack) > 0) {
                 mags++;
-            } else if (stack.is(ModItems.ROUND_9MM.get())) {
+            } else if (stack.is(type.caliber.round())) {
                 loose += stack.getCount();
             }
         }
         mags += GunGearClient.magazinesInPouch(player, type);
-        Component carried = Component.translatable("hud.imttech.firearm.carried", mags, loose);
+        // Een wapen met een buis (de Remington 870) heeft geen magazijnen: alleen losse patronen.
+        Component carried = type.tube() ? Component.translatable("hud.imttech.firearm.carried_loose", loose)
+                : Component.translatable("hud.imttech.firearm.carried", mags, loose);
         g.drawString(font, carried, right - font.width(carried), bottom - 6, argb(0.75f, mags == 0 && loose == 0 ? RED : WHITE), true);
 
         // Wat er aan de hand is, of het balkje van een handeling.
@@ -144,7 +154,7 @@ public final class FirearmHud implements LayeredDraw.Layer {
         }
         if (!parts.broken().isEmpty()) {
             GunPart broken = parts.broken().getFirst();
-            return Component.translatable("hud.imttech.firearm.broken", broken.text());
+            return Component.translatable("hud.imttech.firearm.broken", broken.text(type));
         }
         int jam = FirearmItem.jam(gun);
         if (jam == FirearmItem.JAM_STOVEPIPE) {
@@ -152,6 +162,10 @@ public final class FirearmHud implements LayeredDraw.Layer {
         }
         if (jam == FirearmItem.JAM_MISFIRE) {
             return Component.translatable("hud.imttech.firearm.misfire");
+        }
+        // Hoofdstuk 103 (jouw keuze): een grendel of een pomp laad je zelf door.
+        if (Firearms.needsCycle(gun)) {
+            return Component.translatable("hud.imttech.firearm.cycle");
         }
         if (!FirearmItem.hasMagazine(gun)) {
             return Component.translatable(FirearmItem.chambered(gun) ? "hud.imttech.firearm.no_magazine_one"
@@ -172,13 +186,13 @@ public final class FirearmHud implements LayeredDraw.Layer {
         }
         int loose = 0;
         for (ItemStack stack : player.getInventory().items) {
-            if (stack.is(ModItems.ROUND_9MM.get())) {
+            if (stack.is(type.caliber.round())) {
                 loose += stack.getCount();
             }
         }
         int right = w - 10;
         int bottom = h - 12;
-        String big = MagazineItem.rounds(magazine) + " / " + type.capacity();
+        String big = MagazineItem.rounds(magazine) + " / " + MagazineItem.capacityOf(magazine);
         g.pose().pushPose();
         g.pose().translate(right - font.width(big) * 2, bottom - 26, 0);
         g.pose().scale(2, 2, 1);

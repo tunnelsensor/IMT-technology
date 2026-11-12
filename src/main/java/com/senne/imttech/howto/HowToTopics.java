@@ -69,9 +69,13 @@ public final class HowToTopics {
             topic("grenade_throwback", "weapons", "Throwing grenades back", GrenadeScenes::throwback, ModItems.EMP_GRENADE,
                     ModItems.STICKY_EMP_GRENADE, ModItems.FRAG_GRENADE, ModItems.STICKY_FRAG_GRENADE, ModItems.SMOKE_GRENADE,
                     ModItems.FLASHBANG, ModItems.REMOTE_EMP, ModItems.REMOTE_FRAG),
-            topic("glock", "weapons", "Glock 19", WeaponScenes::glock, ModItems.GLOCK_19, ModItems.GLOCK_19_MAGAZINE, ModItems.ROUND_9MM),
+            // Hoofdstuk 103: de vuurwapens van de grote update werken zoals de Glock, dus ze horen (tot ze hun eigen uitleg
+            // hebben) bij dezelfde onderwerpen: het wapen en zijn magazijn bij de Glock, hun onderdelen bij de Gunsmith Table.
+            topic("glock", "weapons", "Glock 19", WeaponScenes::glock, ModItems.GLOCK_19, ModItems.GLOCK_19_MAGAZINE, ModItems.ROUND_9MM,
+                    ModItems.MP5, ModItems.MP5_MAGAZINE),
             topicItems("gunsmith", "weapons", "Gunsmith Table", WeaponScenes::gunsmith,
-                    () -> concat(Arrays.stream(GunPart.values()).map(part -> (Item) ModItems.gunPart(part)).toList(),
+                    () -> concat(Arrays.stream(com.senne.imttech.guns.FirearmType.values())
+                                    .flatMap(type -> Arrays.stream(GunPart.values()).map(part -> (Item) ModItems.gunPart(type, part))).toList(),
                             List.of(ModItems.GUNSMITH_TABLE.get()))),
             topic("reloading", "weapons", "Reloading Bench", WeaponScenes::reloading, ModItems.RELOADING_BENCH, ModItems.CASING_9MM,
                     ModItems.BULLET_9MM, ModItems.CRUSHED_GUNPOWDER, ModItems.ROUND_9MM),

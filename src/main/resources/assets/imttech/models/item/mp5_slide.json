@@ -1,0 +1,164 @@
+{
+ "loader": "neoforge:obj",
+ "model": "imttech:models/firearm/mp5/item_slide.obj",
+ "automatic_culling": false,
+ "flip_v": false,
+ "emissive_ambient": true,
+ "textures": {
+  "gun": "imttech:item/mp5/steel",
+  "particle": "imttech:item/mp5/steel"
+ },
+ "gui_light": "front",
+ "display": {
+  "gui": {
+   "rotation": [
+    30,
+    225,
+    0
+   ],
+   "translation": [
+    -5.531,
+    -4.423,
+    -7.999
+   ],
+   "scale": [
+    0.831,
+    0.831,
+    0.831
+   ]
+  },
+  "ground": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    0.254,
+    -2.45,
+    4.539
+   ],
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "fixed": {
+   "rotation": [
+    30,
+    225,
+    0
+   ],
+   "translation": [
+    -5.531,
+    -4.423,
+    -7.999
+   ],
+   "scale": [
+    0.831,
+    0.831,
+    0.831
+   ]
+  },
+  "head": {
+   "rotation": [
+    0,
+    180,
+    0
+   ],
+   "translation": [
+    0,
+    13,
+    7
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ]
+  },
+  "thirdperson_righthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    0.305,
+    -5.34,
+    5.447
+   ],
+   "scale": [
+    0.6,
+    0.6,
+    0.6
+   ]
+  },
+  "thirdperson_lefthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    0.305,
+    -5.34,
+    5.447
+   ],
+   "scale": [
+    0.6,
+    0.6,
+    0.6
+   ]
+  },
+  "firstperson_righthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    0.305,
+    -5.34,
+    5.447
+   ],
+   "scale": [
+    0.6,
+    0.6,
+    0.6
+   ]
+  },
+  "firstperson_lefthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    0.305,
+    -5.34,
+    5.447
+   ],
+   "scale": [
+    0.6,
+    0.6,
+    0.6
+   ]
+  }
+ },
+ "overrides": [
+  {
+   "predicate": {
+    "imttech:material": 1
+   },
+   "model": "imttech:item/mp5_slide_steel"
+  },
+  {
+   "predicate": {
+    "imttech:material": 2
+   },
+   "model": "imttech:item/mp5_slide_titanium"
+  }
+ ]
+}

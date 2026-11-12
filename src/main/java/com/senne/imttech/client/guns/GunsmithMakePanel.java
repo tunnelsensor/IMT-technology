@@ -54,8 +54,27 @@ import org.jetbrains.annotations.Nullable;
  * inventaris (zie GunsmithRecipe). De recepten zelf komen van de server: wat in data/imttech/recipe staat, staat hier.
  */
 public final class GunsmithMakePanel {
-    /** Een wapen in de lijst links: de Glock, elk lasergeweer, en "Other" voor recepten die een datapack toevoegt. */
-    public enum Group { GLOCK, PISTOL, RIFLE, SNIPER, SHOTGUN, OTHER }
+    /**
+     * Een wapen in de lijst links: de Glock, (hoofdstuk 103) de MP5, elk lasergeweer, en "Other" voor recepten die een
+     * datapack toevoegt.
+     */
+    public enum Group { GLOCK, MP5, PISTOL, RIFLE, SNIPER, SHOTGUN, OTHER }
+
+    /** Het vuurwapen van deze groep, of null (een lasergeweer of "Other"). */
+    private static @Nullable FirearmType firearm(Group group) {
+        return switch (group) {
+            case GLOCK -> FirearmType.GLOCK_19;
+            case MP5 -> FirearmType.MP5;
+            default -> null;
+        };
+    }
+
+    private static Group group(FirearmType type) {
+        return switch (type) {
+            case GLOCK_19 -> Group.GLOCK;
+            case MP5 -> Group.MP5;
+        };
+    }
 
     /** Eén tegel: een recept (zijn nummer voor de server) op zijn plek: rij = onderdeel, kolom = materiaal. */
     private record Tile(int index, GunsmithRecipe recipe, ItemStack result, int row, int column) {}
@@ -120,15 +139,14 @@ public final class GunsmithMakePanel {
             ItemStack result = recipe.result();
             boolean placed = false;
             if (result.getItem() instanceof GunPartItem item) {
-                int column = switch (GunPartItem.materialOf(result)) {
-                    case POLYMER -> 0;
-                    case STEEL -> 1;
-                    case TITANIUM -> 2;
-                    default -> -1;
-                };
-                placed = column >= 0 && add(Group.GLOCK, index, recipe, result, item.part().ordinal(), column);
-            } else if (result.is(ModItems.GLOCK_19_MAGAZINE.get())) {
-                placed = add(Group.GLOCK, index, recipe, result, GunPart.values().length, 1);
+                // De kolom van het materiaal in de rij van dit wapen (hoofdstuk 103: elk vuurwapen zijn eigen groep).
+                int column = columns(group(item.type())).indexOf(GunPartItem.materialOf(result));
+                placed = column >= 0 && add(group(item.type()), index, recipe, result, item.part().ordinal(), column);
+            } else if (result.getItem() instanceof com.senne.imttech.guns.MagazineItem magazine) {
+                // Het magazijn onder de onderdelen, in de kolom van staal (het lange magazijn ernaast).
+                int steel = columns(group(magazine.type())).indexOf(GunMaterial.STEEL);
+                placed = add(group(magazine.type()), index, recipe, result, GunPart.values().length,
+                        steel + (magazine.extended() ? 1 : 0));
             } else if (result.getItem() instanceof LaserPartItem item) {
                 int column = LaserPartItem.materialOf(result) == GunMaterial.NETHERITE ? 1 : 0;
                 placed = add(group(item.gun()), index, recipe, result, LaserPart.wearing().indexOf(item.part()), column);
@@ -137,12 +155,20 @@ public final class GunsmithMakePanel {
                 int row = LaserPart.wearing().size();
                 placed = add(Group.RIFLE, index, recipe, result, row, 0) | add(Group.SNIPER, index, recipe, result, row, 0)
                         | add(Group.SHOTGUN, index, recipe, result, row, 0);
+                // Hoofdstuk 103: en bij elk lang vuurwapen (onder zijn magazijn).
+                for (FirearmType type : FirearmType.values()) {
+                    if (type.longGun) {
+                        placed |= add(group(type), index, recipe, result, GunPart.values().length + 1, 0);
+                    }
+                }
             }
             if (!placed) {
                 other.add(new Tile(index, recipe, result, other.size() / OTHER_COLUMNS, other.size() % OTHER_COLUMNS));
             }
         }
-        icons.put(Group.GLOCK, FirearmItem.withParts(FirearmType.GLOCK_19, GunParts.classic()));
+        for (FirearmType type : FirearmType.values()) {
+            icons.put(group(type), FirearmItem.withParts(type, GunParts.classic(type)));
+        }
         for (GunType type : GunType.values()) {
             icons.put(group(type), LaserGunItem.complete(type, GunMaterial.TITANIUM));
         }
@@ -151,6 +177,18 @@ public final class GunsmithMakePanel {
             List<Group> shown = groups();
             group = shown.isEmpty() ? Group.GLOCK : shown.getFirst();
         }
+    }
+
+    /**
+     * Zo ver staan de rijen van het gekozen wapen uit elkaar: 20 pixels zoals altijd, en iets dichter als er meer dan
+     * zeven rijen zijn (hoofdstuk 103: een lang vuurwapen heeft zes onderdelen, een magazijn en een sling).
+     */
+    private int gridStep() {
+        int rows = 0;
+        for (Tile tile : tiles.getOrDefault(group, List.of())) {
+            rows = Math.max(rows, tile.row + 1);
+        }
+        return rows <= 7 ? ROW_H : (GRID_H - 22) / rows;
     }
 
     /** Een tegel op zijn plek leggen; false als daar al een ligt (dan gaat hij naar "Other"). */
@@ -191,6 +229,7 @@ public final class GunsmithMakePanel {
     private static Component groupName(Group group) {
         return switch (group) {
             case GLOCK -> FirearmType.GLOCK_19.text();
+            case MP5 -> FirearmType.MP5.text();
             case PISTOL -> Component.translatable("item.imttech." + GunType.PISTOL.id);
             case RIFLE -> Component.translatable("item.imttech." + GunType.RIFLE.id);
             case SNIPER -> Component.translatable("item.imttech." + GunType.SNIPER.id);
@@ -203,6 +242,7 @@ public final class GunsmithMakePanel {
     private static List<GunMaterial> columns(Group group) {
         return switch (group) {
             case GLOCK -> List.of(GunMaterial.POLYMER, GunMaterial.STEEL, GunMaterial.TITANIUM);
+            case MP5 -> List.of(GunMaterial.STEEL, GunMaterial.TITANIUM);
             case OTHER -> List.of();
             default -> List.of(GunMaterial.TITANIUM, GunMaterial.NETHERITE);
         };
@@ -210,9 +250,11 @@ public final class GunsmithMakePanel {
 
     /** De naam van een rij: het onderdeel, of het magazijn (de Glock) en de sling (de lange lasergeweren). */
     private static Component rowName(Group group, int row) {
-        if (group == Group.GLOCK) {
-            return row < GunPart.values().length ? GunPart.values()[row].text()
-                    : Component.translatable("screen.imttech.gunsmith.make.magazine");
+        FirearmType firearm = firearm(group);
+        if (firearm != null) {
+            int parts = GunPart.values().length;
+            return row < parts ? GunPart.values()[row].text(firearm)
+                    : row == parts ? Component.translatable("screen.imttech.gunsmith.make.magazine") : LaserPart.SLING.text();
         }
         List<LaserPart> parts = LaserPart.wearing();
         return row < parts.size() ? parts.get(row).text() : LaserPart.SLING.text();
@@ -357,14 +399,14 @@ public final class GunsmithMakePanel {
                 rows.add(tile.row);
             }
             for (int row : rows) {
-                small(g, rowName(group, row).getString(), x + 5, y + 17 + row * ROW_H + 5, HudStyle.argb(220, HudStyle.WHITE),
+                small(g, rowName(group, row).getString(), x + 5, y + 17 + row * gridStep() + 5, HudStyle.argb(220, HudStyle.WHITE),
                         namesW - 7);
             }
         }
         // De tegels.
         for (Tile tile : list) {
             int tx = x + namesW + tile.column * columnW + (columnW - TILE) / 2;
-            int ty = y + 17 + tile.row * ROW_H;
+            int ty = y + 17 + tile.row * gridStep();
             boolean can = affordable.contains(tile.index);
             boolean chosen = tile.index == selected;
             boolean hover = inside(mouseX, mouseY, tx, ty, TILE, TILE);
@@ -537,7 +579,7 @@ public final class GunsmithMakePanel {
         for (Tile tile : tiles.getOrDefault(group, List.of())) {
             if (result.test(tile.result)) {
                 return new int[]{left + GRID_X + namesW + tile.column * columnW + columnW / 2,
-                        top + GRID_Y + 17 + tile.row * ROW_H + TILE / 2};
+                        top + GRID_Y + 17 + tile.row * gridStep() + TILE / 2};
             }
         }
         return null;
@@ -550,7 +592,7 @@ public final class GunsmithMakePanel {
         int columnW = columnWidth(group);
         for (Tile tile : tiles.getOrDefault(group, List.of())) {
             int tx = x + namesW + tile.column * columnW + (columnW - TILE) / 2;
-            int ty = y + 17 + tile.row * ROW_H;
+            int ty = y + 17 + tile.row * gridStep();
             if (inside(mouseX, mouseY, tx, ty, TILE, TILE)) {
                 return tile;
             }

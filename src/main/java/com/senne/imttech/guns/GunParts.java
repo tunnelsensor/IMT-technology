@@ -38,19 +38,35 @@ public record GunParts(Map<GunPart, PartState> parts) {
         return copy;
     }
 
-    /** Een compleet nieuw pistool, alle onderdelen van dit materiaal (polymeer waar dat mag, anders staal). */
+    /** Een compleet nieuw pistool (de Glock), alle onderdelen van dit materiaal (polymeer waar dat mag, anders staal). */
     public static GunParts complete(GunMaterial material) {
+        return complete(FirearmType.GLOCK_19, material);
+    }
+
+    /** Een compleet nieuw wapen van deze soort, alle onderdelen van dit materiaal (waar dat mag, anders staal). */
+    public static GunParts complete(FirearmType type, GunMaterial material) {
         Map<GunPart, PartState> all = new EnumMap<>(GunPart.class);
         for (GunPart part : GunPart.values()) {
-            all.put(part, PartState.fresh(part.accepts(material) ? material : GunMaterial.STEEL));
+            all.put(part, PartState.fresh(part.accepts(type, material) ? material : GunMaterial.STEEL));
         }
         return new GunParts(all);
     }
 
     /** Zoals een echte Glock: een polymeer frame en trekker, de rest van staal. */
     public static GunParts classic() {
-        return complete(GunMaterial.STEEL)
-                .with(GunPart.FRAME, PartState.fresh(GunMaterial.POLYMER))
+        return classic(FirearmType.GLOCK_19);
+    }
+
+    /**
+     * Zoals het echte wapen: de Glock met een polymeer frame en trekker en de rest van staal; de wapens van hoofdstuk
+     * 103 helemaal van staal.
+     */
+    public static GunParts classic(FirearmType type) {
+        GunParts steel = complete(type, GunMaterial.STEEL);
+        if (type != FirearmType.GLOCK_19) {
+            return steel;
+        }
+        return steel.with(GunPart.FRAME, PartState.fresh(GunMaterial.POLYMER))
                 .with(GunPart.TRIGGER, PartState.fresh(GunMaterial.POLYMER));
     }
 

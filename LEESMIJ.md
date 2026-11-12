@@ -127,6 +127,7 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (445 automati
 | **Linker Alt** | Het wiel om snel te trekken (vasthouden) |
 | **F6** | De skilltree van je vuurwapens |
 | **R / U / H** (met een geweer of magazijn in je hand) | Herladen / unload / bekijken (zie "Vuurwapens") |
+| **X** (met een vuurwapen in je hand) | De keuzeschakelaar: safe, semi, 3 schoten, auto (zie "De grote update 2.0") |
 | **W** (vasthouden, in een scherm, met je muis op een item) | How it works: de animatie van dat item |
 
 **De snelacties van de bril hebben standaard geen toets** (sinds 2026-11-10, zo blijven er letters vrij
@@ -2178,6 +2179,58 @@ de **Glock 19** zelf (8% per niveau); ze tellen bij elkaar op (tot 70% eraf). Re
 kamer), Recoil control (de terugslag), Steady aim (de spreiding), Quickdraw (trekken), Clearing (de tap-rack) en
 Magazine handling (patronen in een magazijn); elk tot niveau 5, en elk volgend niveau kost een punt meer. Jouw keuze:
 punten verdelen, zodat je kiest waar je goed in wordt. Wat je leert blijft na je dood. Alle getallen onder `[guns]`.
+
+### De grote update 2.0: meer vuurwapens, te beginnen met de MP5
+Jouw wens (hoofdstuk 103, 12 november): "meer guns, deze werken net zoals de Glock, de models zijn ook zoals de Glock":
+de **MP5**, de AK-47, de AWP en de Remington 870, en attachments. Dit is de grote update, dus **versie 2.0**. De wapens
+komen er één voor één bij; wat hier staat, is er al. Alles wat bij "Vuurwapens: de Glock 19" staat (zes onderdelen die
+slijten, storingen en de tap-rack, een patroon in de kamer, een magazijn dat je kogel per kogel vult, hulzen die eruit
+springen, de magazijnpouch, de skills) geldt ook voor de nieuwe wapens. Dit is wat anders is.
+
+**De MP5.** Een machinepistool, de H&K MP5A3 met uitgeschoven kolf, als echt 3D-model nagemeten van een foto (zoals de
+Glock). Hij schiet dezelfde **9mm Round** als de Glock, maar heeft zijn eigen gebogen **MP5 Magazine** van **30**
+patronen (30 + 1 met de kamer); een Glock-magazijn past er niet in. Een schot doet iets minder schade dan de Glock
+(4,5), maar hij schiet veel sneller en preciezer, en heeft minder terugslag. In je hand houd je hem met je linkerhand
+onder de handbeschermer; richten (rechtermuisknop) kijkt door de ring van het achterste vizier naar de ring met het
+paaltje vooraan. Na een nieuw magazijn met een lege kamer trekt je linkerhand de **spanhendel** (links vooraan) naar
+achteren en laat hem los.
+
+**De keuzeschakelaar: toets X** (alleen met een vuurwapen in je hand; in Opties > Besturing > I.M.T heet hij "Fire
+selector"). Elke druk zet de schakelaar een stand verder; rechtsonder bij je munitie zie je de stand, en de hendel klikt.
+- **SAFE**: de trekker doet niets ("Safety on: press X").
+- **SEMI**: één schot per klik. Zo staat een nieuw wapen.
+- **BURST** (alleen de MP5): drie schoten per klik (`[guns] burstShots`).
+- **AUTO**: houd de linkermuisknop in en hij blijft schieten, zo snel als het wapen kan (de MP5 tien schoten per
+  seconde: `[guns] interval`).
+De Glock heeft geen schakelaar: een echte Glock heeft geen veiligheidspal (X zegt dat dan).
+
+**Zijn zes onderdelen** hebben dezelfde rollen als die van de Glock, met de namen van een MP5: de **Receiver** (de
+behuizing met de kolf, de greep en de handbeschermer), de **Bolt Carrier** (met de spanhendel), de **Barrel**, de
+**Recoil Spring**, de **Firing Pin** en de **Trigger Group**. Ze zijn van **staal** of **titanium** (polymeer blijft iets
+van de Glock) en passen alleen in een MP5. Je maakt ze op de Gunsmith Table, tabblad "Make parts", onder **MP5**: in het
+materiaal van het onderdeel Receiver 8, Bolt Carrier 6, Barrel 4, Recoil Spring 2 en 3 ijzerklompjes, Firing Pin 1 en 2
+ijzerklompjes, Trigger Group 3; en bij elk onderdeel polymeer (4 voor de Receiver, 1 voor de rest): dat is het kenmerk
+van de MP5, zo is geen recept hetzelfde als een ander. Het **MP5 Magazine**: 8 staal en een MP5 Recoil Spring.
+
+**Bouwen op de Gunsmith Table.** Het frame dat je op de lege tafel sleept, zegt welk wapen het wordt: een MP5 Receiver
+maakt een MP5. Een lang wapen zie je van opzij (scrollen draait het). De Recoil Spring en de Firing Pin zitten achter de
+Bolt Carrier (eerst die eraf); de loop van een lang wapen steekt gewoon uit en kan er zo in of uit. Links staan nu ook
+de onderdelen van de MP5 ("Bolt Carrier" met eronder "MP5, steel").
+
+**Dragen: de sling.** Een lang wapen past niet in de holster. Sleep op de Gunsmith Table een **Gun Sling** op zijn plek
+(onder het wapen); daarna past het wapen in een **sling-vakje** (op je rug of voor je borst, of het Curios-slot "sling")
+en trek je het met het wiel (linker Alt), net als een lasergeweer. Zonder sling zegt het wiel "needs a sling". Een
+wapen uit het creative-menu heeft zijn sling al. De sling eraf slepen geeft hem terug.
+
+**De getallen** staan in `config/imttech.toml` onder `[guns]`: elk rijtje heeft nu vijf getallen, in de volgorde Glock
+19, MP5, AK-47, AWP, Remington 870 (schade, tempo, bereik, kogelsnelheid, magazijn, het lange magazijn, spreiding,
+terugslag, korrels per schot, hoe lang doorladen duurt, hoe ver bewakers het horen). Had je al een configbestand, dan
+krijgen die rijtjes hun nieuwe standaardwaarden.
+
+**Voor wie de modellen wil aanpassen.** Elk wapen heeft zijn eigen bestand (`tools/mp5_model.py`), gebouwd met
+`tools/longgun.py` en `tools/gunmesh.py`; `python tools/generate_gun_models.py mp5` schrijft alleen dat wapen opnieuw,
+en met `--assets <map>` naar een proefmap die je met `tools/preview_obj.py --assets <map>` bekijkt. De omtrek van een
+foto halen doet `tools/trace_outline.py`. De geluiden: `py -3.12 tools/generate_sounds.py mp5_fire mp5_charge ...`.
 
 ### Lasergeweren uit onderdelen: de Laser Workbench, de Nether Star, de slings
 Jouw wens (hoofdstuk 55): de lasergeweren horen in hetzelfde systeem als de Glock: uit onderdelen gebouwd op een nieuwe

@@ -30,19 +30,22 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 /**
- * Het pistool in je eigen beeld (hoofdstuk 52), zoals GunRenderer voor de lasergeweren: uit zijn losse onderdelen
+ * Het vuurwapen in je eigen beeld (hoofdstuk 52), zoals GunRenderer voor de lasergeweren: uit zijn losse onderdelen
  * (elk in zijn materiaal), met je twee handen eraan. Wat er beweegt:
  * <ul>
  *   <li><b>schieten</b>: de slede schiet terug en veert naar voren, de trekker gaat in, een gele vlam uit de loop;
- *       na het laatste schot (met een leeg magazijn) blijft de slede open staan;</li>
+ *       na het laatste schot (met een leeg magazijn) blijft de slede van een pistool open staan;</li>
  *   <li><b>storingen</b>: bij een klemzittende huls staat de slede half open met de huls erin; een tap-rack is een klap
  *       op het magazijn en de slede naar achteren en weer naar voren;</li>
- *   <li><b>herladen</b>: het magazijn valt uit de greep (R), een nieuw magazijn gaat erin (rechtsklik met het magazijn:
- *       het pistool komt in beeld, je linkerhand duwt het erin), de slede gaat naar voren;</li>
+ *   <li><b>herladen</b>: het magazijn valt uit het wapen (R), een nieuw magazijn gaat erin (rechtsklik met het magazijn:
+ *       het wapen komt in beeld, je linkerhand duwt het erin), de slede gaat naar voren;</li>
  *   <li><b>een patroon in de kamer</b> (sneak + R): de slede naar achteren, de patroon erin, de slede naar voren;</li>
  *   <li><b>een magazijn vullen</b> (R met het magazijn in je hand): je duim duwt er een patroon in;</li>
- *   <li>richten (de korrel en de keep voor je oog), bekijken (H), sprinten (het pistool zakt).</li>
+ *   <li>richten (de korrel en de keep voor je oog), bekijken (H), sprinten (het wapen zakt).</li>
  * </ul>
+ * Hoofdstuk 103: een <b>lang wapen</b> (de MP5...) houd je met je linkerhand vooraan vast. Doorladen doet die hand aan
+ * de hendel van het wapen (FirearmRig.handle: de spanhendel van de MP5 links vooraan): naar achteren trekken en loslaten.
+ * De grendel binnenin schuift mee; de hendel zelf beweegt bij een schot niet.
  */
 public final class FirearmRenderer {
     private FirearmRenderer() {}
@@ -73,7 +76,7 @@ public final class FirearmRenderer {
             }
             event.setCanceled(true);
             if (action == Firearms.ActionKind.INSERT_MAG) {
-                // Het pistool uit je werkbalk komt in beeld en het magazijn gaat erin.
+                // Het wapen uit je werkbalk komt in beeld en het magazijn gaat erin.
                 ItemStack gun = player.getInventory().getItem(FirearmControl.actionArg());
                 FirearmType gunType = FirearmItem.typeOf(gun);
                 if (gunType != null) {
@@ -91,11 +94,12 @@ public final class FirearmRenderer {
         renderGun(mc, player, event, stack, type, pt, false);
     }
 
-    // ================================================================ Het pistool
+    // ================================================================ Het wapen
 
     private static void renderGun(Minecraft mc, LocalPlayer player, RenderHandEvent event, ItemStack stack, FirearmType type,
                                   float pt, boolean inserting) {
         FirearmRig rig = FirearmRig.of(type);
+        boolean lng = type.longGun;
         PoseStack pose = event.getPoseStack();
         MultiBufferSource buffers = event.getMultiBufferSource();
         int light = event.getPackedLight();
@@ -116,7 +120,7 @@ public final class FirearmRenderer {
         float breathe = 1 - 0.7f * aim;
         place.y += 0.004f * Mth.sin(time * 0.08f) * breathe;
         rotX += 0.4f * Mth.sin(time * 0.06f) * breathe;
-        // Pakken: van onder je beeld omhoog (bij een magazijn erin: van rechtsonder, alsof je het pistool erbij pakt).
+        // Pakken: van onder je beeld omhoog (bij een magazijn erin: van rechtsonder, alsof je het wapen erbij pakt).
         float draw = ease(inserting ? Mth.clamp(progress * 3, 0, 1) : action == Firearms.ActionKind.DRAW ? 1 : FirearmControl.drawn(pt));
         place.y -= (1 - draw) * 0.45f;
         rotX -= (1 - draw) * 35;
@@ -136,17 +140,22 @@ public final class FirearmRenderer {
         place.z += rig.kickBack * kick * (1 - 0.4f * aim);
         rotX += rig.kickUp * kick * (1 - 0.5f * aim);
 
-        // De handelingen: het pistool kantelt zodat je ziet wat je doet.
+        // De handelingen: het wapen kantelt zodat je ziet wat je doet (een lang wapen minder: je houdt het met twee handen).
         float tilt = 0;
         if (action == Firearms.ActionKind.EJECT_MAG || action == Firearms.ActionKind.INSERT_MAG
                 || action == Firearms.ActionKind.RELOAD_POUCH) {
-            tilt = ease(Mth.clamp(progress / 0.15f, 0, 1)) * ease(Mth.clamp((1 - progress) / 0.15f, 0, 1));
+            tilt = ease(Mth.clamp(progress / 0.15f, 0, 1)) * ease(Mth.clamp((1 - progress) / 0.15f, 0, 1)) * (lng ? 0.45f : 1);
         } else if (action == Firearms.ActionKind.TAP_RACK) {
-            tilt = ease(Mth.clamp(progress / 0.12f, 0, 1)) * ease(Mth.clamp((1 - progress) / 0.2f, 0, 1));
-            // De klap op het magazijn: het pistool wipt even omhoog.
+            tilt = ease(Mth.clamp(progress / 0.12f, 0, 1)) * ease(Mth.clamp((1 - progress) / 0.2f, 0, 1)) * (lng ? 0.4f : 1);
+            // De klap op het magazijn: het wapen wipt even omhoog.
             place.y -= 0.02f * bump(progress, 0.25f, 0.08f);
-        } else if (action == Firearms.ActionKind.CHAMBER_ROUND || action == Firearms.ActionKind.SLIDE_RELEASE) {
+        } else if (action == Firearms.ActionKind.CHAMBER_ROUND) {
             tilt = 0.6f * ease(Mth.clamp(progress / 0.2f, 0, 1)) * ease(Mth.clamp((1 - progress) / 0.2f, 0, 1));
+        } else if (action == Firearms.ActionKind.SLIDE_RELEASE || action == Firearms.ActionKind.CYCLE) {
+            tilt = (lng ? 0.15f : 0.6f) * ease(Mth.clamp(progress / 0.2f, 0, 1)) * ease(Mth.clamp((1 - progress) / 0.2f, 0, 1));
+        } else if (lng && action == Firearms.ActionKind.UNLOAD_CHAMBER) {
+            // Een lang wapen kantelt even, zodat je de patroon uit de uitwerpopening ziet springen.
+            tilt = 0.42f * ease(Mth.clamp(progress / 0.2f, 0, 1)) * ease(Mth.clamp((1 - progress) / 0.2f, 0, 1));
         }
         rotZ -= 30 * tilt;
         rotX += 12 * tilt;
@@ -156,11 +165,13 @@ public final class FirearmRenderer {
             float side = ease(Mth.clamp(inspect / 0.15f, 0, 1)) * ease(Mth.clamp((1 - inspect) / 0.15f, 0, 1));
             float top = ease(Mth.clamp((inspect - 0.48f) / 0.14f, 0, 1)) * ease(Mth.clamp((0.88f - inspect) / 0.12f, 0, 1));
             // Hoofdstuk 74: verder gedraaid, zodat je de rechterkant ziet (de uitwerpopening, MADE IN AUSTRIA), zoals op
-            // een foto van een Glock; en naar links geschoven, zodat de loop in beeld blijft.
-            rotY -= 68 * side - 26 * top;
+            // een foto van een Glock; en naar links geschoven, zodat de loop in beeld blijft. Een lang wapen draait
+            // minder ver (anders zwaait de loop uit beeld) en gaat meer naar links.
+            float turn = lng ? 0.62f : 1;
+            rotY -= (68 * side - 26 * top) * turn;
             rotZ -= 10 * side;
-            rotX += 32 * top;
-            place.add(-0.15f * side, 0.07f * side + 0.03f * top, 0.03f * side);
+            rotX += 32 * top * turn;
+            place.add(-(lng ? 0.24f : 0.15f) * side, 0.07f * side + 0.03f * top, 0.03f * side);
             rotZ += 3 * Mth.sin(inspect * 14) * side * (1 - top);
         }
         float s = rig.scale / 16f;
@@ -177,14 +188,29 @@ public final class FirearmRenderer {
         part(pose, buffers, type, parts, GunPart.FRAME, light);
         float trigger = Math.max(since < 2 ? 1 : 0, FirearmControl.sinceClick(pt) < 2 ? 1 : 0);
         pose.pushPose();
-        pose.translate(0, 0, 0.4f * trigger);
+        pose.translate(0, 0, (lng ? 0.22f : 0.4f) * trigger);
         part(pose, buffers, type, parts, GunPart.TRIGGER, light);
         pose.popPose();
-        float slideBack = slideBack(rig, stack, since, action, progress);
+        // De slede (een pistool) of de grendel (een lang wapen), en hoe ver de hendel naar achteren staat.
+        float slideBack = slideBack(rig, stack, since, action, progress, lng);
+        float handleBack = lng ? rack(action, progress) * rig.handleTravel : slideBack;
+        if (lng) {
+            slideBack = Math.max(slideBack, rack(action, progress) * rig.cycle);
+        }
         pose.pushPose();
         pose.translate(0, 0, slideBack);
         part(pose, buffers, type, parts, GunPart.SLIDE, light);
         pose.popPose();
+        PartState slideState = parts.get(GunPart.SLIDE);
+        if (slideState != null) {
+            for (String extra : FirearmModels.extras(type, GunPart.SLIDE)) {
+                pose.pushPose();
+                pose.translate(0, 0, handleBack);
+                pose.scale(16, 16, 16);
+                FirearmModels.render(pose, buffers, FirearmModels.extra(type, extra, slideState.material()), light, OverlayTexture.NO_OVERLAY);
+                pose.popPose();
+            }
+        }
         part(pose, buffers, type, parts, GunPart.BARREL, light);
         // Een huls die klem zit, in de uitwerpopening.
         int jam = FirearmItem.jam(stack);
@@ -196,13 +222,13 @@ public final class FirearmRenderer {
             pose.mulPose(new Quaternionf().rotateZ((float) Math.toRadians(-40)));
             pose.translate(-8, -7.65f, -8);
             pose.scale(16, 16, 16);
-            FirearmModels.render(pose, buffers, FirearmModels.location("casing"), light, OverlayTexture.NO_OVERLAY);
+            FirearmModels.render(pose, buffers, FirearmModels.casing(type.caliber), light, OverlayTexture.NO_OVERLAY);
             pose.popPose();
         }
         // Het magazijn: erin, eruit vallend, of erin komend.
         float magOut = magazineOffset(action, progress);
-        boolean hasMag = FirearmItem.hasMagazine(stack) || action == Firearms.ActionKind.INSERT_MAG
-                || (action == Firearms.ActionKind.RELOAD_POUCH && progress > 0.45f);
+        boolean hasMag = !type.tube() && (FirearmItem.hasMagazine(stack) || action == Firearms.ActionKind.INSERT_MAG
+                || (action == Firearms.ActionKind.RELOAD_POUCH && progress > 0.45f));
         if (action == Firearms.ActionKind.EJECT_MAG && progress > 0.9f) {
             hasMag = false;
         }
@@ -218,19 +244,19 @@ public final class FirearmRenderer {
             FirearmModels.render(pose, buffers, FirearmModels.magazine(type, empty), light, OverlayTexture.NO_OVERLAY);
             pose.popPose();
         }
-        // Een patroon die met de hand in de kamer gaat: van rechtsonder naast het pistool door de uitwerpopening de kamer
+        // Een patroon die met de hand in de kamer gaat: van rechtsonder naast het wapen door de uitwerpopening de kamer
         // in (hoofdstuk 74: het pad hoort bij het nieuwe model; de patroon is nu op ware grootte).
         if (action == Firearms.ActionKind.CHAMBER_ROUND && progress > 0.3f && progress < 0.72f) {
             float t = ease((progress - 0.3f) / 0.4f);
             pose.pushPose();
             Vector3f from = new Vector3f(rig.port.x + 3.0f, rig.port.y - 2.2f, rig.port.z + 1.2f);
-            Vector3f to = new Vector3f(8.0f, rig.muzzle.y, rig.port.z - 0.4f);
+            Vector3f to = new Vector3f(8.0f, lng ? rig.port.y - 0.4f : rig.muzzle.y, rig.port.z - 0.4f);
             Vector3f at = lerp(from, to, t);
             pose.translate(at.x, at.y, at.z);
             pose.mulPose(new Quaternionf().rotateX((float) Math.toRadians(-90)));
             pose.translate(-8, -8.3f, -8);
             pose.scale(16, 16, 16);
-            FirearmModels.render(pose, buffers, FirearmModels.location("round"), light, OverlayTexture.NO_OVERLAY);
+            FirearmModels.render(pose, buffers, FirearmModels.round(type.caliber), light, OverlayTexture.NO_OVERLAY);
             pose.popPose();
         }
         // De patroon die bij een unload uit de kamer springt (hoofdstuk 54): een boogje naar rechts.
@@ -241,7 +267,7 @@ public final class FirearmRenderer {
             pose.mulPose(new Quaternionf().rotateZ((float) Math.toRadians(-40 - 120 * t)));
             pose.translate(-8, -8.3f, -8);
             pose.scale(16, 16, 16);
-            FirearmModels.render(pose, buffers, FirearmModels.location("round"), light, OverlayTexture.NO_OVERLAY);
+            FirearmModels.render(pose, buffers, FirearmModels.round(type.caliber), light, OverlayTexture.NO_OVERLAY);
             pose.popPose();
         }
         if (since < 1.8f && since >= 0) {
@@ -252,7 +278,8 @@ public final class FirearmRenderer {
         // ---- Je armen.
         boolean suit = player.getItemBySlot(EquipmentSlot.CHEST).getItem() instanceof TechSuitItem;
         Vector3f right = gun.transformPosition(new Vector3f(rig.grip));
-        Vector3f left = gun.transformPosition(leftHand(rig, action, progress, slideBack, magOut, hasMag));
+        Vector3f left = gun.transformPosition(lng ? leftHandLong(rig, action, progress, handleBack, magOut)
+                : leftHand(rig, action, progress, slideBack, magOut, hasMag));
         HumanoidArm main = player.getMainArm();
         arm(mc, player, main, suit, right, main == HumanoidArm.RIGHT ? RIGHT_SHOULDER : LEFT_SHOULDER, pose, buffers, light);
         HumanoidArm other = main.getOpposite();
@@ -271,8 +298,9 @@ public final class FirearmRenderer {
         pose.popPose();
     }
 
-    /** Hoe ver (pixels) de slede nu naar achteren staat. */
-    private static float slideBack(FirearmRig rig, ItemStack stack, float since, @Nullable Firearms.ActionKind action, float t) {
+    /** Hoe ver (pixels) de slede (of, bij een lang wapen, de grendel) nu naar achteren staat. */
+    private static float slideBack(FirearmRig rig, ItemStack stack, float since, @Nullable Firearms.ActionKind action, float t,
+                                   boolean lng) {
         float back = 0;
         if (since >= 0 && since < rig.cycleTicks + 1) {
             back = since < 1 ? since : 1 - (since - 1) / rig.cycleTicks;
@@ -282,6 +310,9 @@ public final class FirearmRenderer {
             back = rig.cycle;
         } else if (FirearmItem.jam(stack) == FirearmItem.JAM_STOVEPIPE) {
             back = rig.cycle * 0.55f;
+        }
+        if (lng) {
+            return back; // de handelingen van een lang wapen: zie rack
         }
         if (action == Firearms.ActionKind.SLIDE_RELEASE) {
             back = rig.cycle * (1 - ease(Mth.clamp((t - 0.35f) / 0.3f, 0, 1)));
@@ -303,7 +334,27 @@ public final class FirearmRenderer {
         return back;
     }
 
-    /** Hoe ver (pixels) het magazijn uit de greep staat tijdens een handeling. */
+    /**
+     * Hoofdstuk 103: hoe ver de hendel van een lang wapen (de spanhendel, de grendel, de pomp) naar achteren staat
+     * tijdens een handeling, van 0 (voor) tot 1 (helemaal achter). Je linkerhand is er dan al (zie leftHandLong).
+     */
+    private static float rack(@Nullable Firearms.ActionKind action, float t) {
+        if (action == null) {
+            return 0;
+        }
+        return switch (action) {
+            // Naar achteren trekken (0,2-0,5), even vasthouden, en loslaten: hij klapt naar voren.
+            case SLIDE_RELEASE, CYCLE -> t < 0.2f ? 0 : t < 0.5f ? ease((t - 0.2f) / 0.3f) : t < 0.58f ? 1 : 1 - ease((t - 0.58f) / 0.1f);
+            // Eerst de klap op het magazijn (tot 0,35), dan de hendel.
+            case TAP_RACK -> t < 0.45f ? 0 : t < 0.62f ? ease((t - 0.45f) / 0.17f) : t < 0.66f ? 1 : 1 - ease((t - 0.66f) / 0.12f);
+            // Naar achteren en vasthouden terwijl de patroon erin gaat, dan los.
+            case CHAMBER_ROUND -> t < 0.15f ? 0 : t < 0.32f ? ease((t - 0.15f) / 0.17f) : t < 0.76f ? 1 : 1 - ease((t - 0.76f) / 0.1f);
+            case UNLOAD_CHAMBER -> t < 0.15f ? 0 : t < 0.35f ? ease((t - 0.15f) / 0.2f) : t < 0.6f ? 1 : 1 - ease((t - 0.6f) / 0.15f);
+            default -> 0;
+        };
+    }
+
+    /** Hoe ver (pixels) het magazijn uit het wapen staat tijdens een handeling. */
     private static float magazineOffset(@Nullable Firearms.ActionKind action, float t) {
         if (action == Firearms.ActionKind.EJECT_MAG) {
             return t < 0.3f ? 0 : t < 0.6f ? 5 * ease((t - 0.3f) / 0.3f) : 5 + 60 * (t - 0.6f) * (t - 0.6f);
@@ -391,6 +442,72 @@ public final class FirearmRenderer {
         }
     }
 
+    /**
+     * Hoofdstuk 103: waar je linkerhand is bij een lang wapen (model-pixels): onder de handbeschermer, of bij het
+     * magazijn, de hendel (die hij naar achteren trekt, zie rack) of boven de uitwerpopening.
+     */
+    private static Vector3f leftHandLong(FirearmRig rig, @Nullable Firearms.ActionKind action, float t, float handleBack, float magOut) {
+        Vector3f rest = new Vector3f(rig.support);
+        if (action == null) {
+            return rest;
+        }
+        Vector3f axis = rig.magazineAxis;
+        Vector3f atMag = new Vector3f(rig.magazine).add(new Vector3f(axis).mul(Math.min(magOut, 18) + 5.5f)).add(-1.0f, 0, 0.3f);
+        Vector3f atHandle = new Vector3f(rig.handle).add(-0.3f, -0.2f, handleBack);
+        switch (action) {
+            case EJECT_MAG -> {
+                if (t < 0.25f) return lerp(rest, atMag, ease(t / 0.25f));
+                if (t < 0.6f) return atMag;
+                return lerp(atMag, rest, ease((t - 0.6f) / 0.4f));
+            }
+            case INSERT_MAG, RELOAD_POUCH -> {
+                if (action == Firearms.ActionKind.RELOAD_POUCH && t < 0.45f) {
+                    return t < 0.12f ? lerp(rest, atMag, ease(t / 0.12f)) : atMag;
+                }
+                if (t > 0.85f) return lerp(atMag, rest, ease((t - 0.85f) / 0.15f));
+                return magOut < 40 ? atMag : rest;
+            }
+            case SLIDE_RELEASE, CYCLE -> {
+                // Naar de hendel (tot 0,2), trekken en loslaten (de hand blijft even achter), en terug naar voren.
+                if (t < 0.2f) return lerp(rest, atHandle, ease(t / 0.2f));
+                if (t < 0.58f) return atHandle;
+                Vector3f released = new Vector3f(rig.handle).add(-0.3f, -0.2f, rig.handleTravel);
+                if (t < 0.72f) return released;
+                return lerp(released, rest, ease((t - 0.72f) / 0.28f));
+            }
+            case TAP_RACK -> {
+                // Een klap onder tegen het magazijn, dan de hendel.
+                Vector3f base = new Vector3f(rig.magazineFoot).add(-0.6f, -1.2f, 0.4f);
+                if (t < 0.15f) return lerp(rest, base, ease(t / 0.15f));
+                if (t < 0.35f) return base;
+                if (t < 0.45f) return lerp(base, atHandle, ease((t - 0.35f) / 0.1f));
+                if (t < 0.66f) return atHandle;
+                Vector3f released = new Vector3f(rig.handle).add(-0.3f, -0.2f, rig.handleTravel);
+                if (t < 0.8f) return released;
+                return lerp(released, rest, ease((t - 0.8f) / 0.2f));
+            }
+            case UNLOAD_CHAMBER -> {
+                if (t < 0.15f) return lerp(rest, atHandle, ease(t / 0.15f));
+                if (t < 0.75f) return atHandle;
+                return lerp(atHandle, rest, ease((t - 0.75f) / 0.25f));
+            }
+            case CHAMBER_ROUND -> {
+                // De hendel naar achteren, de patroon van boven in de uitwerpopening, en de hendel los.
+                Vector3f port = new Vector3f(rig.port.x + 1.6f, rig.port.y + 1.4f, rig.port.z + 0.6f);
+                if (t < 0.15f) return lerp(rest, atHandle, ease(t / 0.15f));
+                if (t < 0.32f) return atHandle;
+                if (t < 0.42f) return lerp(atHandle, port, ease((t - 0.32f) / 0.1f));
+                if (t < 0.66f) return port;
+                if (t < 0.76f) return lerp(port, atHandle, ease((t - 0.66f) / 0.1f));
+                if (t < 0.88f) return atHandle;
+                return lerp(atHandle, rest, ease((t - 0.88f) / 0.12f));
+            }
+            default -> {
+                return rest;
+            }
+        }
+    }
+
     // ================================================================ Een magazijn in je hand
 
     /** Het magazijn in je linkerhand; met R duwt je rechterhand er een patroon in. */
@@ -417,28 +534,34 @@ public final class FirearmRenderer {
         float rotX = -12 - (1 - draw) * 30 - 8 * sprint;
         float rotY = 30;
         float rotZ = 10;
-        float s = rig.scale / 16f;
-        // Het magazijn staat in het model schuin (zoals in de greep): hier recht overeind (FirearmRig.magazineUpright),
-        // met zijn midden op {@code place} (het is 7,7 pixels hoog).
+        // Hoofdstuk 103: een lang magazijn (de MP5) wordt kleiner getekend, zodat het even groot in je hand ligt als dat van
+        // de Glock; {@code k} is hoeveel groter een pixel van de Glock is: zo ver staan je handen en de patroon ervan af.
+        float fit = FirearmRig.magazineFit(type);
+        float s = rig.scale / 16f * fit;
+        float k = 0.44f / (rig.scale * fit);
+        float height = FirearmRig.magazineHeight(type);
+        // Het magazijn staat in het model zoals in het wapen (bij de Glock schuin): hier recht overeind
+        // (FirearmRig.magazineUpright), met zijn midden op {@code place}.
         Matrix4f mag = new Matrix4f()
                 .translate(place)
                 .rotateY((float) Math.toRadians(rotY))
                 .rotateX((float) Math.toRadians(rotX))
                 .rotateZ((float) Math.toRadians(rotZ))
                 .scale(s)
-                .translate(0, -3.9f, 0)
-                .mul(FirearmRig.magazineUpright());
+                .translate(0, -height / 2, 0)
+                .mul(FirearmRig.magazineUpright(type));
         pose.mulPose(mag);
         pose.pushPose();
         pose.scale(16, 16, 16);
         FirearmModels.render(pose, buffers, FirearmModels.magazine(stack), light, OverlayTexture.NO_OVERLAY);
         pose.popPose();
         // De patroon die erin gaat: van rechtsboven naar de bovenkant van het magazijn.
-        Vector3f top = new Vector3f(FirearmRig.MAGAZINE_TOP);
+        Vector3f top = new Vector3f(rig.magazineTop);
+        Vector3f foot = new Vector3f(rig.magazineFoot);
         if (loading || unloading) {
-            float k = ease(Mth.clamp(t / 0.75f, 0, 1));
-            Vector3f from = new Vector3f(13, 14.5f, 8.5f);
-            Vector3f at = loading ? lerp(from, top, k) : lerp(top, from, k);
+            float q = ease(Mth.clamp(t / 0.75f, 0, 1));
+            Vector3f from = new Vector3f(top).add(4.87f * k, 3.27f * k, -0.7f * k);
+            Vector3f at = loading ? lerp(from, top, q) : lerp(top, from, q);
             if (loading ? t < 0.85f : t > 0.08f) {
                 pose.pushPose();
                 pose.translate(at.x, at.y, at.z);
@@ -446,7 +569,7 @@ public final class FirearmRenderer {
                 pose.mulPose(new Quaternionf().rotateX((float) Math.toRadians(-90)));
                 pose.translate(-8, -8.3f, -8);
                 pose.scale(16, 16, 16);
-                FirearmModels.render(pose, buffers, FirearmModels.location("round"), light, OverlayTexture.NO_OVERLAY);
+                FirearmModels.render(pose, buffers, FirearmModels.round(type.caliber), light, OverlayTexture.NO_OVERLAY);
                 pose.popPose();
             }
         }
@@ -454,14 +577,14 @@ public final class FirearmRenderer {
 
         boolean suit = player.getItemBySlot(EquipmentSlot.CHEST).getItem() instanceof TechSuitItem;
         // Je linkerhand om het onderste stuk van het magazijn, je rechterhand ernaast (of met je duim op de patroon).
-        Vector3f leftAt = mag.transformPosition(new Vector3f(8.6f, 5.8f, 11.3f));
-        Vector3f rightRest = mag.transformPosition(new Vector3f(19, 3.5f, 10.0f));
-        Vector3f rightAt = rightRest;
+        Vector3f hold = new Vector3f(top).sub(foot).mul(0.28f).add(foot).add(0.56f * k, -0.09f * k, 0.13f * k);
+        Vector3f away = new Vector3f(foot).add(11.0f * k, -0.3f * k, -1.9f * k);
+        Vector3f atTop = new Vector3f(top).add(2.47f * k, 0.97f * k, 0.2f * k); // rechts naast de bovenkant: je duim duwt
+        Vector3f leftAt = mag.transformPosition(hold);
+        Vector3f rightAt = mag.transformPosition(new Vector3f(away));
         if (loading || unloading) {
-            float k = ease(Mth.clamp(t / 0.75f, 0, 1));
-            Vector3f away = new Vector3f(19, 3.5f, 10.0f);
-            Vector3f atTop = new Vector3f(10.6f, 12.2f, 9.4f); // rechts naast de bovenkant: je duim duwt, je arm blijft opzij
-            rightAt = mag.transformPosition(loading ? lerp(away, atTop, k) : lerp(atTop, away, k));
+            float q = ease(Mth.clamp(t / 0.75f, 0, 1));
+            rightAt = mag.transformPosition(loading ? lerp(away, atTop, q) : lerp(atTop, away, q));
         }
         HumanoidArm main = player.getMainArm();
         HumanoidArm other = main.getOpposite();

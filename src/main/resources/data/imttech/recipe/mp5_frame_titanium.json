@@ -1,0 +1,20 @@
+{
+  "type": "imttech:gunsmithing",
+  "ingredients": [
+    {
+      "item": "imttech:titanium_ingot",
+      "count": 8
+    },
+    {
+      "item": "imttech:polymer",
+      "count": 4
+    }
+  ],
+  "result": {
+    "id": "imttech:mp5_frame",
+    "count": 1,
+    "components": {
+      "imttech:gun_material": "titanium"
+    }
+  }
+}

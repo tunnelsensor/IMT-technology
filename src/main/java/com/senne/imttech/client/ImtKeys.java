@@ -135,6 +135,13 @@ public final class ImtKeys {
     public static final KeyMapping GUN_UNLOAD = new KeyMapping("key.imttech.gun_unload", GunKeys.CONTEXT, Type.KEYSYM,
             InputConstants.KEY_U, CATEGORY);
     /**
+     * Hoofdstuk 103 (jouw keuze: "schakelaar met ook safe"): X = de keuzeschakelaar van je vuurwapen één stand verder:
+     * safe, één schot, drie schoten, automatisch (wat het wapen heeft). Alleen met een vuurwapen in je hand. (Niet V: dat
+     * is de zoomtoets van de bril, en die zou dan tegelijk inzoomen.)
+     */
+    public static final KeyMapping GUN_FIRE_MODE = new KeyMapping("key.imttech.gun_fire_mode", GunKeys.CONTEXT, Type.KEYSYM,
+            InputConstants.KEY_X, CATEGORY);
+    /**
      * Hoofdstuk 54 (jouw notitie): een eigen toets voor elke quickdraw en om elke pouch te openen (magazijnen en granaten
      * erin stoppen of eruit halen). Standaard op geen toets (bijna alle letters zijn bezet); kies ze in Opties > Besturing.
      * Het wiel (linker Alt) kan het allemaal ook.
@@ -211,6 +218,7 @@ public final class ImtKeys {
         event.register(SKILL_TREE);
         event.register(GUN_INSPECT);
         event.register(GUN_UNLOAD);
+        event.register(GUN_FIRE_MODE);
         event.register(DRAW_GUN);
         event.register(DRAW_GRENADE);
         event.register(DRAW_SLING_BACK);

@@ -1,25 +1,38 @@
 package com.senne.imttech.client.guns;
 
 import com.senne.imttech.guns.FirearmType;
+import com.senne.imttech.guns.GunMaterial;
 import com.senne.imttech.guns.GunPart;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.client.resources.model.ModelResourceLocation;
+import net.minecraft.core.Direction;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.AABB;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 /**
- * Hoe een pistool in je eigen beeld hangt en beweegt (hoofdstuk 52), in de maten van het model (zie
+ * Hoe een vuurwapen in je eigen beeld hangt en beweegt (hoofdstuk 52), in de maten van het model (zie
  * tools/generate_gun_models.py: 16 = één blok, de loop wijst naar -z en ligt op x = 8). Zoals GunRig voor de
  * lasergeweren: de greep (je rechterhand), de steun (je linkerhand), het vizier (voor je oog als je richt), de loop,
- * waar het magazijn uit de greep komt, en een paar getallen voor de animaties.
+ * waar het magazijn uit het wapen komt, en een paar getallen voor de animaties.
+ *
+ * Hoofdstuk 103: elk wapen zijn eigen maten ({@link #of}). Een lang wapen (de MP5...) houd je met je linkerhand vooraan
+ * vast, en je laadt het door met een hendel ({@link #handle}): de spanhendel, de grendel of de pomp.
  */
 public final class FirearmRig {
-    /** Hoe groot het pistool in beeld is (1 = 16 pixels van het model per blok). */
+    /** Hoe groot het wapen in beeld is (1 = 16 pixels van het model per blok). */
     public final float scale;
     public final Vector3f grip;
     public final Vector3f support;
     public final Vector3f sight;
     public final Vector3f muzzle;
-    /** Waar het magazijn in de greep zit (zijn bovenkant), en de richting waarin het eruit schuift. */
+    /** Waar het magazijn in het wapen zit (zijn bovenkant), en de richting waarin het eruit schuift. */
     public final Vector3f magazine;
     public final Vector3f magazineAxis;
     /** Waar de uitwerpopening zit (daar steekt een klemzittende huls uit). */
@@ -28,16 +41,31 @@ public final class FirearmRig {
     public final Vector3f hip;
     /** Zo ver voor je oog zit het vizier als je richt (blokken). */
     public final float sightDistance;
-    /** Zo ver schuift de slede terug bij een schot (pixels van het model), en zo lang duurt dat (ticks). */
+    /** Zo ver schuift de slede (of de grendel) terug bij een schot (pixels van het model), en zo lang duurt dat (ticks). */
     public final float cycle;
     public final float cycleTicks;
-    /** Zo ver springt het pistool naar achteren en omhoog bij een schot. */
+    /** Zo ver springt het wapen naar achteren en omhoog bij een schot. */
     public final float kickBack;
     public final float kickUp;
+    /**
+     * Waar je linkerhand het wapen doorlaadt (hoofdstuk 103): achter op de slede van een pistool, de spanhendel van de
+     * MP5, de grendel, de pomp. En hoe ver die hendel naar achteren gaat (pixels).
+     */
+    public final Vector3f handle;
+    public final float handleTravel;
+    /** Het midden van de onderkant van het magazijn zoals het in het wapen zit, en waar zijn bovenste patroon ligt. */
+    public final Vector3f magazineFoot;
+    public final Vector3f magazineTop;
+    /** Hoe schuin het magazijn in het wapen staat (radialen): zoveel draaien we terug om het rechtop te zetten. */
+    public final float magazineAngle;
+    /** Zo groot hangt het wapen op je rug of voor je borst (aan zijn sling), en waar het dan om draait (het midden). */
+    public final float slingScale;
+    public final Vector3f slingPivot;
 
     private FirearmRig(float scale, Vector3f grip, Vector3f support, Vector3f sight, Vector3f muzzle, Vector3f magazine,
                        Vector3f magazineAxis, Vector3f port, Vector3f hip, float sightDistance, float cycle, float cycleTicks,
-                       float kickBack, float kickUp) {
+                       float kickBack, float kickUp, Vector3f handle, float handleTravel, Vector3f magazineFoot,
+                       Vector3f magazineTop, float magazineAngle, float slingScale, Vector3f slingPivot) {
         this.scale = scale;
         this.grip = grip;
         this.support = support;
@@ -52,9 +80,16 @@ public final class FirearmRig {
         this.cycleTicks = cycleTicks;
         this.kickBack = kickBack;
         this.kickUp = kickUp;
+        this.handle = handle;
+        this.handleTravel = handleTravel;
+        this.magazineFoot = magazineFoot;
+        this.magazineTop = magazineTop;
+        this.magazineAngle = magazineAngle;
+        this.slingScale = slingScale;
+        this.slingPivot = slingPivot;
     }
 
-    /** Hoe schuin de greep (en dus het magazijn) naar achteren helt: 22,5 graden, de onderkant naar +z. */
+    /** Hoe schuin de greep (en dus het magazijn) van de Glock naar achteren helt: 22,5 graden, de onderkant naar +z. */
     public static final float GRIP_ANGLE = (float) Math.toRadians(22.5);
 
     /**
@@ -67,41 +102,161 @@ public final class FirearmRig {
             new Vector3f(8, 12.14f, 0.49f), new Vector3f(8, 4.0f, 11.9f),
             new Vector3f(0, -(float) Math.cos(GRIP_ANGLE), (float) Math.sin(GRIP_ANGLE)),
             new Vector3f(9.2f, 12.6f, 7.4f),
-            new Vector3f(0.21f, -0.21f, -0.42f), 0.46f, 2.6f, 2, 0.055f, 6.5f);
+            new Vector3f(0.21f, -0.21f, -0.42f), 0.46f, 2.6f, 2, 0.055f, 6.5f,
+            new Vector3f(8.2f, 13.6f, 12.4f), 2.6f,
+            new Vector3f(8, 3.82f, 11.94f), new Vector3f(8.13f, 11.23f, 9.2f), GRIP_ANGLE,
+            0.5f, new Vector3f(8, 9, 8));
+
+    /**
+     * De MP5 (hoofdstuk 103, tools/mp5_model.py): je rechterhand op de greep, je linkerhand onder de handbeschermer, het
+     * venster van het achterste vizier voor je oog, de spanhendel links vooraan op de spanbuis, en het gebogen magazijn
+     * dat recht naar beneden uit de schacht komt.
+     */
+    private static final FirearmRig MP5 = new FirearmRig(0.34f,
+            new Vector3f(8, 7.1f, 13.2f), new Vector3f(8, 13.0f, -8.2f), new Vector3f(8, 19.22f, 12.78f),
+            new Vector3f(8, 15.11f, -18.84f), new Vector3f(8, 10.9f, 1.2f), new Vector3f(0, -1, 0),
+            new Vector3f(9.5f, 16.8f, 3.3f),
+            new Vector3f(0.19f, -0.335f, -0.36f), 0.36f, 3.0f, 2, 0.03f, 2.6f,
+            new Vector3f(6.2f, 17.7f, -11.4f), 4.6f,
+            new Vector3f(8, -1.2f, -3.1f), new Vector3f(8, 13.36f, 1.4f), 0,
+            0.36f, new Vector3f(8, 12.5f, 8.5f));
 
     public static FirearmRig of(FirearmType type) {
-        return GLOCK_19;
+        return switch (type) {
+            case GLOCK_19 -> GLOCK_19;
+            case MP5 -> MP5;
+        };
     }
 
-    /** Het midden van de onderkant van het magazijn, zoals het in de greep zit (model-pixels). */
-    private static final Vector3f MAGAZINE_FOOT = new Vector3f(8, 3.82f, 11.94f);
+    // ================================================================ Het magazijn los (in je hand, in de pouch)
 
     /**
-     * Zet het magazijn rechtop (in het model staat het schuin, zoals in de greep), met het midden van zijn bodemplaat op
-     * (0, 0, 0) en de lipjes naar +y. Voor een magazijn in je hand en in de magazijnpouch. Het magazijn is ongeveer 7,7
-     * pixels hoog.
+     * Zet het magazijn van de Glock rechtop (in het model staat het schuin, zoals in de greep), met het midden van zijn
+     * bodemplaat op (0, 0, 0) en de lipjes naar +y. Voor een magazijn in je hand en in de magazijnpouch. Het magazijn is
+     * ongeveer 7,7 pixels hoog.
      */
     public static Matrix4f magazineUpright() {
-        return new Matrix4f().rotateX(GRIP_ANGLE).translate(-MAGAZINE_FOOT.x, -MAGAZINE_FOOT.y, -MAGAZINE_FOOT.z);
+        return magazineUpright(FirearmType.GLOCK_19);
     }
 
-    /** Waar de bovenste patroon in het magazijn ligt (model-pixels, zoals in de greep). */
-    public static final Vector3f MAGAZINE_TOP = new Vector3f(8.13f, 11.23f, 9.2f);
+    /** Hetzelfde voor het magazijn van dit wapen (hoofdstuk 103). */
+    public static Matrix4f magazineUpright(FirearmType type) {
+        FirearmRig rig = of(type);
+        return new Matrix4f().rotateX(rig.magazineAngle).translate(-rig.magazineFoot.x, -rig.magazineFoot.y, -rig.magazineFoot.z);
+    }
+
+    /** Zo hoog is het magazijn van dit wapen ongeveer (pixels van het model), van zijn bodemplaat tot zijn bovenste patroon. */
+    public static float magazineHeight(FirearmType type) {
+        FirearmRig rig = of(type);
+        return rig.magazineTop.distance(rig.magazineFoot);
+    }
 
     /**
-     * Waar elk onderdeel in het model zit (voor de Gunsmith Table: waar je het neerlegt), en hoe ver het uit elkaar
-     * geschoven ligt als het er nog niet in zit ("exploded view").
+     * Hoeveel kleiner het magazijn van dit wapen getekend wordt waar een Glock-magazijn precies past (je hand, de
+     * magazijnpouch): het lange magazijn van een MP5 zou er anders ver bovenuit steken.
      */
+    public static float magazineFit(FirearmType type) {
+        return Math.min(1.0f, 9.5f / Math.max(1.0f, magazineHeight(type)));
+    }
+
+    /** Waar de bovenste patroon in het magazijn van de Glock ligt (model-pixels, zoals in de greep). */
+    public static final Vector3f MAGAZINE_TOP = new Vector3f(8.13f, 11.23f, 9.2f);
+
+    // ================================================================ De Gunsmith Table
+
+    /** Het vak van dit onderdeel van de Glock (model-pixels). */
     public static AABB bounds(GunPart part) {
-        // De dozen die tools/generate_gun_models.py uitprint ("de maten voor FirearmRig"), hoofdstuk 74.
-        return switch (part) {
-            case FRAME -> new AABB(6.66, 4.0, 0.68, 9.22, 11.32, 15.26);
-            case SLIDE -> new AABB(6.98, 11.32, 0.7, 9.04, 13.33, 14.27);
-            case BARREL -> new AABB(7.25, 10.95, 0.49, 8.96, 12.97, 8.7);
-            case SPRINGS -> new AABB(7.76, 11.24, 0.69, 8.24, 11.72, 6.69);
-            case STRIKER -> new AABB(7.84, 11.55, 8.75, 8.16, 12.3, 13.3);
-            case TRIGGER -> new AABB(7.72, 8.14, 7.74, 8.28, 9.93, 8.24);
-        };
+        return bounds(FirearmType.GLOCK_19, part);
+    }
+
+    private static final Map<String, AABB> BOUNDS = new HashMap<>();
+
+    /**
+     * Waar elk onderdeel in het model zit (voor de Gunsmith Table: waar je het neerlegt). Voor de Glock de dozen die
+     * tools/generate_gun_models.py uitprint (hoofdstuk 74); voor de wapens van hoofdstuk 103 rekenen we ze uit het
+     * model zelf (de hoeken van al zijn vlakjes), zodat ze altijd kloppen.
+     */
+    public static AABB bounds(FirearmType type, GunPart part) {
+        if (type == FirearmType.GLOCK_19) {
+            return switch (part) {
+                case FRAME -> new AABB(6.66, 4.0, 0.68, 9.22, 11.32, 15.26);
+                case SLIDE -> new AABB(6.98, 11.32, 0.7, 9.04, 13.33, 14.27);
+                case BARREL -> new AABB(7.25, 10.95, 0.49, 8.96, 12.97, 8.7);
+                case SPRINGS -> new AABB(7.76, 11.24, 0.69, 8.24, 11.72, 6.69);
+                case STRIKER -> new AABB(7.84, 11.55, 8.75, 8.16, 12.3, 13.3);
+                case TRIGGER -> new AABB(7.72, 8.14, 7.74, 8.28, 9.93, 8.24);
+            };
+        }
+        return BOUNDS.computeIfAbsent(type.id + "/" + part.id, key -> {
+            AABB box = measure(FirearmModels.part(type, part, GunMaterial.STEEL));
+            for (String extra : FirearmModels.extras(type, part)) {
+                box = box.minmax(measure(FirearmModels.extra(type, extra, GunMaterial.STEEL)));
+            }
+            return box;
+        });
+    }
+
+    /** Het vak van de sling van dit wapen (alleen de lange wapens). */
+    public static AABB slingBounds(FirearmType type) {
+        return BOUNDS.computeIfAbsent(type.id + "/sling", key -> measure(FirearmModels.sling(type)));
+    }
+
+    /** De doos om het hele wapen (voor het midden van de tafel en hoe ver hij uitzoomt). */
+    public static AABB whole(FirearmType type) {
+        AABB box = null;
+        for (GunPart part : GunPart.values()) {
+            AABB one = bounds(type, part);
+            box = box == null ? one : box.minmax(one);
+        }
+        return box == null ? new AABB(0, 0, 0, 16, 16, 16) : box;
+    }
+
+    /** De kleinste doos om alle vlakjes van een model (model-pixels). */
+    static AABB measure(ModelResourceLocation location) {
+        BakedModel model = Minecraft.getInstance().getModelManager().getModel(location);
+        float minX = Float.MAX_VALUE, minY = Float.MAX_VALUE, minZ = Float.MAX_VALUE;
+        float maxX = -Float.MAX_VALUE, maxY = -Float.MAX_VALUE, maxZ = -Float.MAX_VALUE;
+        boolean any = false;
+        RandomSource random = RandomSource.create(0);
+        Direction[] sides = new Direction[Direction.values().length + 1];
+        System.arraycopy(Direction.values(), 0, sides, 0, Direction.values().length);
+        for (Direction side : sides) {
+            for (BakedQuad quad : model.getQuads(null, side, random)) {
+                int[] data = quad.getVertices();
+                int stride = data.length / 4;
+                for (int v = 0; v < 4; v++) {
+                    float x = Float.intBitsToFloat(data[v * stride]) * 16;
+                    float y = Float.intBitsToFloat(data[v * stride + 1]) * 16;
+                    float z = Float.intBitsToFloat(data[v * stride + 2]) * 16;
+                    minX = Math.min(minX, x);
+                    minY = Math.min(minY, y);
+                    minZ = Math.min(minZ, z);
+                    maxX = Math.max(maxX, x);
+                    maxY = Math.max(maxY, y);
+                    maxZ = Math.max(maxZ, z);
+                    any = true;
+                }
+            }
+        }
+        return any ? new AABB(minX, minY, minZ, maxX, maxY, maxZ) : new AABB(7, 7, 7, 9, 9, 9);
+    }
+
+    /** Hoe ver een onderdeel van de Glock uit elkaar geschoven ligt op de Gunsmith Table (model-pixels). */
+    public static Vector3f exploded(GunPart part) {
+        return exploded(FirearmType.GLOCK_19, part);
+    }
+
+    private static final Map<GunPart, Vector3f> LONG_EXPLODED = new EnumMap<>(GunPart.class);
+
+    static {
+        // Een lang wapen (je ziet het van opzij): het frame blijft liggen; de grendel erboven, de veer erboven en naar
+        // achteren, de slagpin hoog erboven, de loop recht eronder, de trekker eronder en naar voren (voor het magazijn).
+        LONG_EXPLODED.put(GunPart.FRAME, new Vector3f(0, 0, 0));
+        LONG_EXPLODED.put(GunPart.SLIDE, new Vector3f(0, 9.0f, 0));
+        LONG_EXPLODED.put(GunPart.BARREL, new Vector3f(0, -8.0f, 0));
+        LONG_EXPLODED.put(GunPart.SPRINGS, new Vector3f(0, 9.0f, 7.0f));
+        LONG_EXPLODED.put(GunPart.STRIKER, new Vector3f(0, 16.0f, 0));
+        LONG_EXPLODED.put(GunPart.TRIGGER, new Vector3f(0, -5.0f, -12.0f));
     }
 
     /**
@@ -109,7 +264,10 @@ public final class FirearmRig {
      * hoofdstuk 54 (jouw notitie: "je kunt niet goed aan elk onderdeel") liggen ze verder uit elkaar, elk in zijn eigen
      * hoek: de slede erboven, de loop en de veren ervoor, de slagpin erachter, de trekker eronder.
      */
-    public static Vector3f exploded(GunPart part) {
+    public static Vector3f exploded(FirearmType type, GunPart part) {
+        if (type != FirearmType.GLOCK_19) {
+            return new Vector3f(LONG_EXPLODED.get(part));
+        }
         return switch (part) {
             case FRAME -> new Vector3f(0, 0, 0);
             case SLIDE -> new Vector3f(0, 6.0f, 0);
@@ -118,5 +276,10 @@ public final class FirearmRig {
             case STRIKER -> new Vector3f(0, 4.0f, 4.5f);
             case TRIGGER -> new Vector3f(0, -8.0f, -3.0f);
         };
+    }
+
+    /** Waar de sling ligt als hij er nog niet aan hangt: helemaal onder het wapen. */
+    public static Vector3f slingExploded() {
+        return new Vector3f(0, -13.0f, 0);
     }
 }

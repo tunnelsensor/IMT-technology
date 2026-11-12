@@ -2250,37 +2250,61 @@ public final class ImtConfig {
     public static final class Guns {
         private Guns() {}
 
-        // ------------------------------------------------------------------------- Per pistool (volgorde: Glock 19)
-        /** Schade van één kogel van dichtbij (halve hartjes). */
-        @Tunable(value = "Damage of one bullet up close (half hearts), per firearm: Glock 19", max = 1_000)
-        public static float[] DAMAGE = {5.0f};
-        /** Zoveel ticks minstens tussen twee schoten (een Glock schiet zo snel als je klikt, tot deze grens). */
-        @Tunable(value = "Ticks between two shots at least (a Glock fires as fast as you click, up to this), per firearm", min = 1, max = 200)
-        public static float[] INTERVAL = {3.0f};
+        // ------------------------------------------------------------------------- Per vuurwapen
+        // De volgorde van elk rijtje (hoofdstuk 103): Glock 19, MP5, AK-47, AWP, Remington 870. Een wapen dat er nog niet
+        // is, heeft zijn getallen hier al staan.
+        /** Schade van één kogel (of één hagelkorrel) van dichtbij (halve hartjes). */
+        @Tunable(value = "Damage of one bullet (or one shotgun pellet) up close (half hearts), per firearm: Glock 19, MP5, AK-47, AWP, Remington 870", max = 1_000)
+        public static float[] DAMAGE = {5.0f, 4.5f, 9.0f, 30.0f, 3.5f};
+        /** Zoveel ticks minstens tussen twee schoten (een Glock schiet zo snel als je klikt, tot deze grens; automatisch vuur schiet precies zo snel). */
+        @Tunable(value = "Ticks between two shots at least (a Glock fires as fast as you click, up to this; automatic fire shoots exactly this fast), per firearm", min = 1, max = 200)
+        public static float[] INTERVAL = {3.0f, 2.0f, 2.0f, 4.0f, 4.0f};
         /** Tot zo ver doet een kogel zijn volle schade (blokken). */
         @Tunable(value = "Up to this distance a bullet does its full damage (blocks), per firearm", min = 1, max = 512)
-        public static float[] FULL_RANGE = {24.0f};
+        public static float[] FULL_RANGE = {24.0f, 28.0f, 50.0f, 150.0f, 10.0f};
         /** Zo ver vliegt een kogel hoogstens (blokken); op het eind doet hij nog farDamage van zijn schade. */
         @Tunable(value = "How far a bullet flies at most (blocks), per firearm", min = 1, max = 512)
-        public static float[] RANGE = {80.0f};
+        public static float[] RANGE = {80.0f, 100.0f, 200.0f, 300.0f, 40.0f};
         /** Hoe snel een kogel vliegt (blokken per tick; 16 = ongeveer 300 meter per seconde). */
         @Tunable(value = "Bullet speed (blocks per tick; 16 is about 300 m/s), per firearm", min = 1, max = 64)
-        public static float[] BULLET_SPEED = {16.0f};
-        /** Zoveel patronen gaan er in een magazijn (een echte Glock 19: 15). */
-        @Tunable(value = "Rounds in a magazine (a real Glock 19 holds 15), per firearm", min = 1, max = 100)
-        public static float[] MAGAZINE_CAPACITY = {15.0f};
+        public static float[] BULLET_SPEED = {16.0f, 20.0f, 36.0f, 50.0f, 22.0f};
+        /** Zoveel patronen gaan er in een magazijn (een echte Glock 19: 15), of in de buis van de Remington 870. */
+        @Tunable(value = "Rounds in a magazine (a real Glock 19 holds 15) or in the tube of the Remington 870, per firearm", min = 1, max = 100)
+        public static float[] MAGAZINE_CAPACITY = {15.0f, 30.0f, 30.0f, 5.0f, 6.0f};
+        /** Hoofdstuk 103 (jouw keuze: een extended mag is een eigen, groter magazijn): zoveel patronen gaan daarin; bij de 870 de buis met zijn verlengstuk. */
+        @Tunable(value = "Rounds in the extended magazine (its own, longer magazine), or in the tube of the Remington 870 with a Tube Extension, per firearm", min = 1, max = 200)
+        public static float[] EXTENDED_CAPACITY = {33.0f, 40.0f, 40.0f, 10.0f, 8.0f};
         /** Hoe ver een schot van het midden af kan gaan als je vanuit de heup schiet (graden). */
         @Tunable(value = "How far a shot can stray when you shoot from the hip (degrees), per firearm", max = 45)
-        public static float[] SPREAD = {3.5f};
+        public static float[] SPREAD = {3.5f, 3.0f, 4.0f, 6.0f, 2.5f};
         /** Hetzelfde als je door het vizier richt. */
         @Tunable(value = "How far a shot can stray while aiming down the sights (degrees), per firearm", max = 45)
-        public static float[] SPREAD_AIMING = {0.8f};
+        public static float[] SPREAD_AIMING = {0.8f, 0.7f, 0.5f, 0.05f, 1.5f};
         /** Zo hard duwt een schot je zicht omhoog (graden), vanuit de heup... */
         @Tunable(value = "How hard a shot kicks your view up when shooting from the hip (degrees), per firearm", max = 30)
-        public static float[] RECOIL = {1.8f};
+        public static float[] RECOIL = {1.8f, 1.0f, 2.6f, 6.0f, 5.0f};
         /** ...en als je richt. */
         @Tunable(value = "How hard a shot kicks your view up while aiming (degrees), per firearm", max = 30)
-        public static float[] RECOIL_AIMING = {1.1f};
+        public static float[] RECOIL_AIMING = {1.1f, 0.6f, 1.8f, 4.0f, 4.0f};
+        /** Hoofdstuk 103: zoveel kogels per schot (hagel uit de shotgun; de rest één). */
+        @Tunable(value = "Bullets per shot (the pellets of a shotgun shell; 1 for the rest), per firearm", min = 1, max = 32)
+        public static float[] PELLETS = {1.0f, 1.0f, 1.0f, 1.0f, 8.0f};
+        /** Hoofdstuk 103: zo ver waaiert hagel uit elkaar (graden), bovenop de gewone spreiding. */
+        @Tunable(value = "How far the pellets of one shotgun shell fan out (degrees), on top of the normal spread", max = 45)
+        public static float PELLET_SPREAD = 4.0f;
+        /**
+         * Hoofdstuk 103: zo lang duurt doorladen (ticks): de spanhendel van de MP5 en de AK-47 nadat er een magazijn in ging,
+         * de grendel van de AWP en de pomp van de 870 (die twee doe je zelf met R, jouw keuze). De slede van de Glock heeft
+         * zijn eigen getal (slideTicks).
+         */
+        @Tunable(value = "Ticks to work the action: the charging handle of the MP5 and AK-47 after a new magazine, the bolt of the AWP and the pump of the 870 (those two you do yourself with R). The Glock uses slideTicks, per firearm", min = 1, max = 200)
+        public static float[] CYCLE_TICKS = {7.0f, 9.0f, 9.0f, 24.0f, 12.0f};
+        /** Hoofdstuk 103: tot zo ver horen bewakers een schot (blokken). De Glock heeft zijn eigen getal onder [guards] (noiseGlock). */
+        @Tunable(value = "How far guards hear a shot (blocks). The Glock uses [guards] noiseGlock, per firearm", max = 512)
+        public static float[] NOISE = {48.0f, 48.0f, 72.0f, 96.0f, 80.0f};
+        /** Hoofdstuk 103: zoveel schoten geeft de stand "3 schoten" (burst) per klik. */
+        @Tunable(value = "Shots per click in burst mode", min = 2, max = 10)
+        public static float BURST_SHOTS = 3.0f;
 
         // ------------------------------------------------------------------------- Kogels en hulzen
         /** Hoeveel een kogel per tick zakt (blokken per tick per tick): een heel klein beetje. */
@@ -2360,6 +2384,11 @@ public final class ImtConfig {
         public static float UNLOAD_CHAMBER_TICKS = 16.0f;
         @Tunable(value = "Ticks to reload from a magazine pouch (R, then pick a magazine)", min = 1, max = 200)
         public static float POUCH_RELOAD_TICKS = 30.0f;
+        /** Hoofdstuk 103: een patroon in de buis van de Remington 870 duwen (R), of er een uit halen (U). */
+        @Tunable(value = "Ticks to push one shell into the tube of the Remington 870 (R)", min = 1, max = 200)
+        public static float LOAD_SHELL_TICKS = 9.0f;
+        @Tunable(value = "Ticks to take one shell out of the tube of the Remington 870 (U)", min = 1, max = 200)
+        public static float UNLOAD_SHELL_TICKS = 8.0f;
         @Tunable(value = "Ticks to draw the pistol from its holster", min = 1, max = 200)
         public static float DRAW_TICKS = 12.0f;
 

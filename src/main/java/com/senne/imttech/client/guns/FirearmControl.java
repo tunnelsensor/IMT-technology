@@ -37,6 +37,14 @@ import org.jetbrains.annotations.Nullable;
  *       magazijn de patroon uit de kamer; met een magazijn in je hand één patroon eruit (inhouden = doorgaan);</li>
  *   <li><b>H</b> bekijkt het pistool; sprinten laat het zakken.</li>
  * </ul>
+ * Hoofdstuk 103 (de grote update), voor de nieuwe wapens:
+ * <ul>
+ *   <li><b>X</b>: de keuzeschakelaar één stand verder (safe, één schot, drie schoten, automatisch). Op automatisch
+ *       schiet het wapen zolang je de knop inhoudt; op drie schoten geeft één klik er drie;</li>
+ *   <li><b>R met een grendel of een pomp</b> (de AWP, de Remington 870; jouw keuze): doorladen na elk schot. Is er niets
+ *       door te laden, dan doet R wat hij altijd doet, of duwt hij een patroon in de buis van de 870 (inhouden =
+ *       doorgaan); <b>U</b> haalt er daar een uit.</li>
+ * </ul>
  * Een handeling vraag je aan de server (FirearmActionPayload); die zegt hoe lang hij duurt, en zo lang loopt hier de
  * animatie (FirearmRenderer tekent hem).
  */
@@ -63,6 +71,10 @@ public final class FirearmControl {
     private static long nextShot;
     private static boolean triggerWasDown;
     private static boolean wasAiming;
+    /** Hoofdstuk 103: zoveel schoten van een salvo van drie moeten er nog komen. */
+    private static int burstLeft;
+    /** Hoofdstuk 103: houd je R in om de buis van een shotgun te vullen (dan gaat hij door met de volgende patroon)? */
+    private static boolean tubeLoading;
 
     // De handeling die bezig is (van de server), en of we op een antwoord wachten.
     private static @Nullable Firearms.ActionKind action;
@@ -156,6 +168,8 @@ public final class FirearmControl {
             drawnAt = now;
             inspectAt = -1;
             aim = aimO = 0;
+            burstLeft = 0;
+            tubeLoading = false;
             // Een handeling met het vorige item is voorbij (behalve een magazijn erin: dan pak je het pistool erna).
             if (action != Firearms.ActionKind.INSERT_MAG && action != Firearms.ActionKind.DRAW) {
                 action = null;
@@ -236,12 +250,43 @@ public final class FirearmControl {
         if (inspectAt >= 0 && now - inspectAt > INSPECT_TICKS) {
             inspectAt = -1;
         }
+        // Hoofdstuk 103: X = de keuzeschakelaar.
+        while (ImtKeys.GUN_FIRE_MODE.consumeClick()) {
+            if (!busy() && drawn(0) >= 1) {
+                burstLeft = 0;
+                requestQuiet(Firearms.ActionKind.SELECT_FIRE, 0);
+            }
+        }
+        // Hoofdstuk 103: R inhouden met een shotgun = de buis blijven vullen.
+        if (tubeLoading) {
+            if (!ImtKeys.GUN_RELOAD.isDown() || !type.tube()) {
+                tubeLoading = false;
+            } else if (!busy() && now >= repeatAt && FirearmItem.roundsInMagazine(main) < FirearmItem.capacity(main)) {
+                request(Firearms.ActionKind.LOAD_TUBE, 0);
+                repeatAt = now + 4;
+            }
+        }
 
         boolean down = free && mc.options.keyAttack.isDown();
         boolean pressed = down && !triggerWasDown;
         triggerWasDown = down;
+        FirearmType.FireMode mode = FirearmItem.fireMode(main);
         if (pressed) {
+            burstLeft = 0;
+            if (mode == FirearmType.FireMode.SAFE) {
+                // De schakelaar staat op safe: de trekker doet niets (geen klik, geen bericht naar de server).
+                if (!busy() && drawn(0) >= 1) {
+                    player.displayClientMessage(Component.translatable("gun.imttech.safe").withStyle(ChatFormatting.RED), true);
+                }
+            } else if (tryFire(player, main, type, now) && mode == FirearmType.FireMode.BURST) {
+                burstLeft = Math.max(0, Math.round(com.senne.imttech.config.ImtConfig.Guns.BURST_SHOTS) - 1);
+            }
+        } else if (mode == FirearmType.FireMode.AUTO && down && now >= nextShot) {
+            // Automatisch: zolang je de knop inhoudt, haalt je spel de trekker telkens opnieuw over.
             tryFire(player, main, type, now);
+        } else if (burstLeft > 0 && now >= nextShot) {
+            // Een salvo van drie: de rest komt vanzelf, ook als je de knop al losliet.
+            burstLeft = tryFire(player, main, type, now) ? burstLeft - 1 : 0;
         }
     }
 
@@ -250,6 +295,9 @@ public final class FirearmControl {
             // niets
         }
         while (ImtKeys.GUN_UNLOAD.consumeClick()) {
+            // niets
+        }
+        while (ImtKeys.GUN_FIRE_MODE.consumeClick()) {
             // niets
         }
         drainInspect();
@@ -279,6 +327,19 @@ public final class FirearmControl {
             request(Firearms.ActionKind.CHAMBER_ROUND, 0);
             return;
         }
+        FirearmType type = FirearmItem.typeOf(gun);
+        // Hoofdstuk 103 (jouw keuze): een grendel of een pomp laad je zelf door. Is dat nodig, dan doet R dat eerst.
+        if (type != null && Firearms.needsCycle(gun)) {
+            request(Firearms.ActionKind.CYCLE, 0);
+            return;
+        }
+        if (type != null && type.tube()) {
+            // De Remington 870 heeft geen magazijn: R duwt een patroon in de buis (inhouden = doorgaan).
+            tubeLoading = true;
+            request(Firearms.ActionKind.LOAD_TUBE, 0);
+            repeatAt = (Minecraft.getInstance().level == null ? 0 : Minecraft.getInstance().level.getGameTime()) + 4;
+            return;
+        }
         if (GunGearClient.openMagazinePicker(player, gun)) {
             return;
         }
@@ -300,11 +361,18 @@ public final class FirearmControl {
             player.displayClientMessage(Component.translatable("gun.imttech.jammed_unload").withStyle(ChatFormatting.RED), true);
             return;
         }
-        if (FirearmItem.hasMagazine(gun)) {
+        FirearmType type = FirearmItem.typeOf(gun);
+        if (type != null && type.tube()) {
+            // Hoofdstuk 103: de buis van de Remington 870: U haalt er een patroon uit; is hij leeg, dan de kamer.
+            if (FirearmItem.roundsInMagazine(gun) > 0) {
+                request(Firearms.ActionKind.UNLOAD_TUBE, 0);
+                return;
+            }
+        } else if (FirearmItem.hasMagazine(gun)) {
             request(Firearms.ActionKind.EJECT_MAG, 0);
             return;
         }
-        if (FirearmItem.chambered(gun)) {
+        if (FirearmItem.chambered(gun) || FirearmItem.spent(gun)) {
             request(Firearms.ActionKind.UNLOAD_CHAMBER, 0);
             return;
         }
@@ -316,6 +384,11 @@ public final class FirearmControl {
         waiting = true;
         waitingSince = Minecraft.getInstance().level == null ? 0 : Minecraft.getInstance().level.getGameTime();
         aim = 0;
+        PacketDistributor.sendToServer(new FirearmActionPayload(kind.ordinal(), arg, 0));
+    }
+
+    /** Hetzelfde voor iets wat niet duurt (de keuzeschakelaar): je blijft richten, en je spel wacht nergens op. */
+    private static void requestQuiet(Firearms.ActionKind kind, int arg) {
         PacketDistributor.sendToServer(new FirearmActionPayload(kind.ordinal(), arg, 0));
     }
 
@@ -336,10 +409,16 @@ public final class FirearmControl {
             }
             return;
         }
+        if (kind == Firearms.ActionKind.SELECT_FIRE) {
+            return; // de keuzeschakelaar duurt niet: niets te tekenen, en een andere handeling loopt gewoon door
+        }
         waiting = false;
         if (payload.ticks() <= 0) {
             if (action == kind) {
                 action = null;
+            }
+            if (kind == Firearms.ActionKind.LOAD_TUBE) {
+                tubeLoading = false; // de buis is vol of je patronen zijn op
             }
             return;
         }
@@ -355,9 +434,10 @@ public final class FirearmControl {
         }
     }
 
-    private static void tryFire(LocalPlayer player, ItemStack gun, FirearmType type, long now) {
+    /** De trekker overhalen. Geeft true als er (volgens je eigen spel) een schot afging. */
+    private static boolean tryFire(LocalPlayer player, ItemStack gun, FirearmType type, long now) {
         if (busy() || drawn(0) < 1 || now < nextShot) {
-            return;
+            return false;
         }
         nextShot = now + type.interval();
         inspectAt = -1;
@@ -366,19 +446,29 @@ public final class FirearmControl {
             // Een klik: de server zegt waarom, en speelt de klik voor iedereen.
             clickAt = now;
             PacketDistributor.sendToServer(new FirearmFirePayload(player.getYRot(), player.getXRot(), aiming));
-            return;
+            return false;
         }
         if (player.isSprinting()) {
             player.setSprinting(false);
         }
         shotAt = now;
         PacketDistributor.sendToServer(new FirearmFirePayload(player.getYRot(), player.getXRot(), aiming));
-        play(player, ModSounds.GLOCK_FIRE.get(), 1.0f);
+        play(player, type.fireSound(), 1.0f);
+        // Hoofdstuk 103: je spel doet alvast wat de server ook doet (de kamer leeg, de volgende patroon erin), zodat
+        // automatisch vuur niet hoeft te wachten tot de server het wapen terugstuurt. De server stuurt daarna het echte
+        // wapen, ook als het anders liep (een storing).
+        FirearmItem.setChambered(gun, false);
+        if (type.manual()) {
+            FirearmItem.setSpent(gun, true);
+        } else if (FirearmItem.takeRoundFromMagazine(gun)) {
+            FirearmItem.setChambered(gun, true);
+        }
         // De terugslag: omhoog (minder als je richt, en naar het materiaal van de slede), en een beetje opzij.
         float kick = type.recoil(aiming) * FirearmItem.parts(gun).materialOf(GunPart.SLIDE).recoilFactor()
                 * GunSkillsClient.recoilFactor(type);
         player.setXRot(Mth.clamp(player.getXRot() - kick, -90, 90));
         player.setYRot(player.getYRot() + (player.getRandom().nextFloat() - 0.5f) * kick * 0.5f);
+        return true;
     }
 
     // ================================================================ Wat Minecraft zelf zou doen
@@ -449,6 +539,8 @@ public final class FirearmControl {
         action = null;
         waiting = false;
         nextShot = 0;
+        burstLeft = 0;
+        tubeLoading = false;
         repeatAt = 0;
         waitingSince = 0;
         drawnAt = shotAt = clickAt = -100;

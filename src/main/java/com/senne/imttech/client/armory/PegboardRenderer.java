@@ -472,17 +472,9 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
     private static void draw(PoseStack pose, MultiBufferSource buffers, int light, Level level, ItemStack stack, BakedModel model) {
         FirearmType firearm = FirearmItem.typeOf(stack);
         if (firearm != null) {
-            // De Glock uit zijn onderdelen (zoals in de holster), met het magazijn als het erin zit.
-            GunParts parts = FirearmItem.parts(stack);
-            for (GunPart part : GunPart.values()) {
-                PartState state = parts.get(part);
-                if (state != null) {
-                    FirearmModels.render(pose, buffers, FirearmModels.part(firearm, part, state.material()), light, OverlayTexture.NO_OVERLAY);
-                }
-            }
-            if (FirearmItem.hasMagazine(stack)) {
-                FirearmModels.render(pose, buffers, FirearmModels.magazine(firearm), light, OverlayTexture.NO_OVERLAY);
-            }
+            // Het vuurwapen uit zijn onderdelen (zoals in de holster), met het magazijn als het erin zit en (hoofdstuk 103)
+            // zijn losse bewegende stukken en zijn sling.
+            FirearmModels.renderParts(pose, buffers, stack, light, true, null);
             return;
         }
         if (LaserGunItem.typeOf(stack) != null) {
@@ -532,7 +524,8 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
             // (hoofdstuk 74) leunt in zijn model de andere kant op dan het oude blokjesmodel. Met -22,5 graden leunde het
             // daardoor dubbel zo schuin (7,7 pixels breed), en zo klein als in zijn 1 x 3 gaatjes past werd het een
             // dwerg. Met +22,5 staat het rechtop (2,8 breed, 8,9 hoog) en hangt het even groot als een Energy Cell.
-            q.rotateX((float) Math.toRadians(22.5));
+            // Hoofdstuk 103: elk magazijn zo ver als het in zijn eigen wapen schuin staat (dat van de MP5 staat al recht).
+            q.rotateX(com.senne.imttech.client.guns.FirearmRig.of(MagazineItem.typeOf(stack)).magazineAngle);
         } else if (stack.getItem() instanceof GunSlingItem) {
             q.rotateZ((float) Math.toRadians(90));
         }

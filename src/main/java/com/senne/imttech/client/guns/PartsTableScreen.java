@@ -77,6 +77,8 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
     private double dragX, dragY;
     private float yaw = 28;
     private float pitch = 12;
+    /** Het wapen dat er de vorige tick lag: komt er een ander op de tafel, dan draait de tafel naar zijn beginstand. */
+    private @Nullable net.minecraft.world.item.Item shown;
     private Button take;
     private final Map<P, Button> removeButtons = new HashMap<>();
     /** Waar elk onderdeel op het scherm ligt (deze frame): zijn vak. */
@@ -175,6 +177,22 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
 
     /** De uitleg bij een onderdeel in het wapen als je er met de muis over gaat. */
     protected abstract List<Component> partTooltip(ItemStack gun, P part, PartState state);
+
+    /**
+     * Staat dit onderdeel in de lijst rechts bij het wapen dat er ligt? Hoofdstuk 103: de Gunsmith Table laat bij een
+     * pistool de plek van de sling weg, zodat de lijst van de Glock blijft zoals hij was.
+     */
+    protected boolean listed(P part, ItemStack gun) {
+        return true;
+    }
+
+    /**
+     * Van welke kant je het wapen ziet als het op de tafel komt (graden; scrollen draait verder). Een pistool schuin
+     * van achteren, zoals altijd; hoofdstuk 103: een lang wapen van opzij, anders zie je het in zijn lengte.
+     */
+    protected float startYaw(ItemStack gun) {
+        return 28;
+    }
 
     /** Maakt deze tafel ook onderdelen (het tabblad "Make parts")? Alleen de Gunsmith Table (hoofdstuk 78, jouw keuze). */
     protected boolean makesParts() {
@@ -275,14 +293,21 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
         ItemStack gun = menu.gun();
         take.visible = !making;
         take.active = !gun.isEmpty();
+        int y = topPos + 30;
+        int step = rowStep();
         for (P part : all) {
             Button button = removeButtons.get(part);
+            boolean listed = listed(part, gun);
             PartState state = state(gun, part);
             boolean covered = state != null && !reachable(part, gun);
-            button.visible = !making && state != null;
+            button.visible = !making && listed && state != null;
             button.active = state != null && !covered && removable(part, gun);
             Component why = covered ? coveredTooltip(part, gun) : null;
             button.setTooltip(why == null ? null : Tooltip.create(why));
+            if (listed) {
+                button.setY(y);
+                y += step;
+            }
         }
         if (make != null && makeButton != null && minecraft != null && minecraft.player != null) {
             make.tick(minecraft.player);
@@ -293,7 +318,14 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
 
     /** De rijen rechts: zoals altijd 20 pixels uit elkaar, iets dichter als er veel onderdelen zijn (de laser heeft er acht). */
     private int rowStep() {
-        return all.length <= 6 ? 20 : 13;
+        int rows = 0;
+        ItemStack gun = menu.gun();
+        for (P part : all) {
+            if (listed(part, gun)) {
+                rows++;
+            }
+        }
+        return rows <= 6 ? 20 : 13;
     }
 
     protected final void click(int button) {
@@ -309,6 +341,11 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
     @Override
     protected void containerTick() {
         super.containerTick();
+        net.minecraft.world.item.Item now = menu.gun().getItem();
+        if (now != shown) {
+            shown = now;
+            yaw = startYaw(menu.gun());
+        }
         rebuildRows();
         updateWidgets();
     }
@@ -563,6 +600,9 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
         int rowY = y + 12;
         int step = rowStep();
         for (P part : all) {
+            if (!listed(part, gun)) {
+                continue;
+            }
             PartState state = state(gun, part);
             boolean allowed = allowed(part, gun);
             small(g, partName(part).getString(), x, rowY, HudStyle.argb(allowed ? 220 : 90, HudStyle.WHITE));

@@ -3,11 +3,15 @@ package com.senne.imttech.client.guns;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.senne.imttech.guns.FirearmItem;
 import com.senne.imttech.guns.FirearmType;
+import com.senne.imttech.guns.GunMaterial;
 import com.senne.imttech.guns.GunPart;
 import com.senne.imttech.guns.GunPartItem;
 import com.senne.imttech.guns.GunParts;
+import com.senne.imttech.guns.GunSlot;
 import com.senne.imttech.guns.GunsmithMenu;
+import com.senne.imttech.guns.GunsmithTableBlockEntity;
 import com.senne.imttech.guns.PartState;
+import com.senne.imttech.registry.ModItems;
 import java.util.List;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -20,30 +24,41 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 
 /**
- * Het scherm van de Gunsmith Table (hoofdstuk 52): de Glock 19 uit zijn zes onderdelen. Het slepen, de vakken en de
+ * Het scherm van de Gunsmith Table (hoofdstuk 52): een vuurwapen uit zijn zes onderdelen. Het slepen, de vakken en de
  * lijsten staan in {@link PartsTableScreen} (sinds hoofdstuk 55 gedeeld met de Laser Workbench); hier staat alleen wat
- * de Glock bijzonder maakt.
+ * de vuurwapens bijzonder maakt.
  *
  * Hoofdstuk 54 (jouw notitie: "je kunt niet goed aan elk onderdeel"): de loop, de veren en de slagpin zitten ONDER de
  * slede. Zit de slede erop, dan kun je er niet bij (niet slepen, geen [x]): eerst de slede eraf, zoals bij een echte
  * Glock. De losse onderdelen liggen verder uit elkaar, elk in zijn eigen vak, en hun naam valt nooit buiten de tafel.
+ *
+ * Hoofdstuk 103: elk wapen van {@link FirearmType} (de Glock, de MP5...). Het frame dat je op de lege tafel legt, zegt
+ * welk wapen het wordt; een onderdeel van een ander wapen past niet. De plekken zijn die van {@link GunSlot}: de zes
+ * onderdelen, en bij een lang wapen de <b>sling</b> (dan past het in een sling-vakje). De tafel zoomt uit voor een lang
+ * wapen, en de namen van de onderdelen zijn die van het wapen dat er ligt.
  */
-public class GunsmithScreen extends PartsTableScreen<GunPart> {
-    /** Zo groot is het pistool: pixels op je scherm per pixel van het model (sinds hoofdstuk 54 iets kleiner: de losse onderdelen liggen verder uit elkaar). */
+public class GunsmithScreen extends PartsTableScreen<GunSlot> {
+    /** Zo groot is de Glock: pixels op je scherm per pixel van het model (sinds hoofdstuk 54 iets kleiner: de losse onderdelen liggen verder uit elkaar). */
     private static final float ZOOM = 6.6f;
 
     public GunsmithScreen(GunsmithMenu menu, Inventory inventory, Component title) {
-        super(menu, inventory, title, GunPart.values());
+        super(menu, inventory, title, GunSlot.values());
+    }
+
+    /** Het wapen dat op de tafel ligt, of de Glock als er niets ligt (voor de namen en de maten van een lege tafel). */
+    private static FirearmType typeOf(ItemStack gun) {
+        FirearmType type = FirearmItem.typeOf(gun);
+        return type == null ? FirearmType.GLOCK_19 : type;
     }
 
     @Override
-    protected GunPart base() {
-        return GunPart.FRAME;
+    protected GunSlot base() {
+        return GunSlot.FRAME;
     }
 
     @Override
-    protected @Nullable GunPart partOf(ItemStack stack) {
-        return GunPartItem.partOf(stack);
+    protected @Nullable GunSlot partOf(ItemStack stack) {
+        return GunsmithTableBlockEntity.slotOf(stack);
     }
 
     @Override
@@ -52,23 +67,40 @@ public class GunsmithScreen extends PartsTableScreen<GunPart> {
     }
 
     @Override
-    protected @Nullable PartState state(ItemStack gun, GunPart part) {
-        return FirearmItem.parts(gun).get(part);
+    protected @Nullable PartState state(ItemStack gun, GunSlot slot) {
+        if (slot.part == null) {
+            // De sling slijt niet en heeft geen materiaal: hij hangt eraan of niet.
+            return FirearmItem.hasSling(gun) ? PartState.fresh(GunMaterial.STEEL) : null;
+        }
+        return FirearmItem.parts(gun).get(slot.part);
     }
 
     @Override
-    protected boolean hasMaterial(GunPart part) {
-        return true;
+    protected boolean hasMaterial(GunSlot slot) {
+        return slot.part != null;
     }
 
     @Override
-    protected Component partName(GunPart part) {
-        return part.text();
+    protected Component partName(GunSlot slot) {
+        return slot.text(typeOf(menu.gun()));
     }
 
+    /** Een pistool heeft geen plek voor een sling. */
     @Override
-    protected boolean allowed(GunPart part, ItemStack gun) {
-        return true;
+    protected boolean allowed(GunSlot slot, ItemStack gun) {
+        return slot.fitsOn(typeOf(gun));
+    }
+
+    /** In de lijst rechts staan alleen de plekken van dit wapen: bij een pistool (of een lege tafel) geen sling. */
+    @Override
+    protected boolean listed(GunSlot slot, ItemStack gun) {
+        return slot.fitsOn(typeOf(gun));
+    }
+
+    /** Een lang wapen zie je van opzij (een pistool schuin van achteren, zoals altijd). */
+    @Override
+    protected float startYaw(ItemStack gun) {
+        return typeOf(gun).longGun ? 72 : 28;
     }
 
     /** Hoofdstuk 78: hier maak je alle onderdelen (jouw keuze), op het tabblad "Make parts" (zie GunsmithMakePanel). */
@@ -82,45 +114,68 @@ public class GunsmithScreen extends PartsTableScreen<GunPart> {
      * niet om het eruit te halen, en niet om het erin te leggen. (Sleep je de slede net weg, dan wel.)
      */
     @Override
-    protected boolean reachable(GunPart part, ItemStack gun) {
+    protected boolean reachable(GunSlot slot, ItemStack gun) {
+        if (slot.part == null) {
+            return true;
+        }
         GunParts parts = FirearmItem.parts(gun);
-        boolean under = (part == GunPart.BARREL || part == GunPart.SPRINGS || part == GunPart.STRIKER)
-                && parts.has(GunPart.SLIDE) && dragging() != GunPart.SLIDE;
+        boolean under = slot.part.underSlide(typeOf(gun)) && parts.has(GunPart.SLIDE) && dragging() != GunSlot.SLIDE;
         return !under;
     }
 
     @Override
-    protected boolean removable(GunPart part, ItemStack gun) {
-        return part != GunPart.FRAME || FirearmItem.parts(gun).parts().size() == 1;
+    protected boolean removable(GunSlot slot, ItemStack gun) {
+        return slot != GunSlot.FRAME || FirearmItem.parts(gun).parts().size() == 1;
     }
 
+    /** Een los onderdeel hoort bij één wapen; de sling past op elk lang wapen. */
     @Override
     protected boolean fits(ItemStack stack, ItemStack gun) {
-        return true;
+        FirearmType type = FirearmItem.typeOf(gun);
+        if (type == null) {
+            return false;
+        }
+        FirearmType partType = GunPartItem.typeOf(stack);
+        return partType == null ? type.longGun : partType == type;
     }
 
     @Override
-    protected AABB bounds(ItemStack gun, GunPart part) {
-        return FirearmRig.bounds(part);
+    protected AABB bounds(ItemStack gun, GunSlot slot) {
+        FirearmType type = typeOf(gun);
+        if (slot.part == null) {
+            return type.longGun ? FirearmRig.slingBounds(type) : new AABB(7, 7, 7, 9, 9, 9);
+        }
+        return FirearmRig.bounds(type, slot.part);
     }
 
     @Override
-    protected Vector3f exploded(ItemStack gun, GunPart part) {
-        return FirearmRig.exploded(part);
+    protected Vector3f exploded(ItemStack gun, GunSlot slot) {
+        return slot.part == null ? FirearmRig.slingExploded() : FirearmRig.exploded(typeOf(gun), slot.part);
     }
 
     @Override
     protected Vector3f centre(ItemStack gun) {
-        return new Vector3f(8, 8, 7.6f);
+        FirearmType type = FirearmItem.typeOf(gun);
+        if (type == null || type == FirearmType.GLOCK_19) {
+            return new Vector3f(8, 8, 7.6f);
+        }
+        AABB box = FirearmRig.whole(type);
+        return new Vector3f((float) box.getCenter().x, (float) box.getCenter().y, (float) box.getCenter().z);
     }
 
+    /** De Glock zoals altijd; een lang wapen zo ver uitgezoomd dat het met zijn losse onderdelen op de tafel past. */
     @Override
     protected float zoom(ItemStack gun) {
-        return ZOOM;
+        FirearmType type = FirearmItem.typeOf(gun);
+        if (type == null || type == FirearmType.GLOCK_19) {
+            return ZOOM;
+        }
+        AABB box = FirearmRig.whole(type);
+        return (float) Math.min(ZOOM, Math.min((VIEW_W - 16) / box.getZsize(), (VIEW_H - 44) / (box.getYsize() + 27)));
     }
 
     @Override
-    protected void renderInstalled(PoseStack pose, MultiBufferSource buffers, ItemStack gun, @Nullable GunPart skip) {
+    protected void renderInstalled(PoseStack pose, MultiBufferSource buffers, ItemStack gun, @Nullable GunSlot skip) {
         FirearmType type = FirearmItem.typeOf(gun);
         if (type == null) {
             return;
@@ -128,23 +183,31 @@ public class GunsmithScreen extends PartsTableScreen<GunPart> {
         GunParts parts = FirearmItem.parts(gun);
         for (GunPart part : GunPart.values()) {
             PartState state = parts.get(part);
-            if (state == null || part == skip) {
+            if (state == null || (skip != null && skip.part == part)) {
                 continue;
             }
-            pose.pushPose();
             FirearmModels.render(pose, buffers, FirearmModels.part(type, part, state.material()), LightTexture.FULL_BRIGHT,
                     OverlayTexture.NO_OVERLAY);
-            pose.popPose();
+            for (String extra : FirearmModels.extras(type, part)) {
+                FirearmModels.render(pose, buffers, FirearmModels.extra(type, extra, state.material()), LightTexture.FULL_BRIGHT,
+                        OverlayTexture.NO_OVERLAY);
+            }
         }
-        if (FirearmItem.hasMagazine(gun)) {
+        if (!type.tube() && FirearmItem.hasMagazine(gun)) {
             FirearmModels.render(pose, buffers, FirearmModels.magazine(type), LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
+        }
+        if (type.longGun && FirearmItem.hasSling(gun) && skip != GunSlot.SLING) {
+            FirearmModels.render(pose, buffers, FirearmModels.sling(type), LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
         }
     }
 
     @Override
-    protected ItemStack partStack(ItemStack gun, GunPart part) {
-        PartState state = FirearmItem.parts(gun).get(part);
-        return state == null ? ItemStack.EMPTY : GunPartItem.of(part, state.material(), state.condition());
+    protected ItemStack partStack(ItemStack gun, GunSlot slot) {
+        if (slot.part == null) {
+            return FirearmItem.hasSling(gun) ? new ItemStack(ModItems.GUN_SLING.get()) : ItemStack.EMPTY;
+        }
+        PartState state = FirearmItem.parts(gun).get(slot.part);
+        return state == null ? ItemStack.EMPTY : GunPartItem.of(typeOf(gun), slot.part, state.material(), state.condition());
     }
 
     @Override
@@ -153,9 +216,18 @@ public class GunsmithScreen extends PartsTableScreen<GunPart> {
         return type == null ? Component.translatable("screen.imttech.gunsmith.empty") : type.text();
     }
 
+    /**
+     * De bovenste regel van een rij links. Bij de Glock het materiaal (zoals altijd); bij de andere wapens het onderdeel
+     * zelf ("Bolt Carrier"), want het wapen en het materiaal staan eronder en samen passen ze niet op één regel.
+     */
     @Override
     protected String rowName(Row row) {
-        return row.gun() ? row.stack().getHoverName().getString() : GunPartItem.materialOf(row.stack()).text().getString();
+        GunPart part = GunPartItem.partOf(row.stack());
+        FirearmType type = GunPartItem.typeOf(row.stack());
+        if (row.gun() || part == null || type == null) {
+            return row.stack().getHoverName().getString();
+        }
+        return type == FirearmType.GLOCK_19 ? GunPartItem.materialOf(row.stack()).text().getString() : part.text(type).getString();
     }
 
     @Override
@@ -164,8 +236,18 @@ public class GunsmithScreen extends PartsTableScreen<GunPart> {
             return FirearmItem.parts(row.stack()).complete() ? "complete" : "incomplete";
         }
         GunPart part = GunPartItem.partOf(row.stack());
+        FirearmType type = GunPartItem.typeOf(row.stack());
+        if (part == null || type == null) {
+            return "for a long gun"; // de Gun Sling
+        }
         int condition = GunPartItem.conditionOf(row.stack());
-        return (part == null ? "" : part.text().getString()) + (condition < PartState.NEW ? " " + condition + "%" : "");
+        String worn = condition < PartState.NEW ? " " + condition + "%" : "";
+        if (type == FirearmType.GLOCK_19) {
+            return part.text().getString() + worn;
+        }
+        // Het wapen en het materiaal ("MP5, steel"); is het versleten, dan zijn conditie in plaats van het materiaal.
+        return type.text().getString() + (worn.isEmpty() ? ", " + GunPartItem.materialOf(row.stack()).text().getString().toLowerCase(java.util.Locale.ROOT)
+                : "," + worn);
     }
 
     @Override
@@ -179,9 +261,13 @@ public class GunsmithScreen extends PartsTableScreen<GunPart> {
             return "Missing: " + parts.missing().size() + " part(s).";
         }
         if (!parts.broken().isEmpty()) {
-            return "Broken: " + parts.broken().getFirst().text().getString() + ". Replace it.";
+            return "Broken: " + parts.broken().getFirst().text(type).getString() + ". Replace it.";
         }
-        return FirearmItem.hasMagazine(gun) ? "Ready, with a magazine." : "Ready. Needs a magazine.";
+        String sling = !type.longGun ? "" : FirearmItem.hasSling(gun) ? " Has a sling." : " A sling fits too.";
+        if (type.tube()) {
+            return "Ready." + sling;
+        }
+        return (FirearmItem.hasMagazine(gun) ? "Ready, with a magazine." : "Ready. Needs a magazine.") + sling;
     }
 
     @Override
@@ -204,23 +290,28 @@ public class GunsmithScreen extends PartsTableScreen<GunPart> {
 
     @Override
     protected String[] emptyTray() {
-        return new String[]{"No parts or pistols", "in your inventory."};
+        return new String[]{"No parts or guns", "in your inventory."};
     }
 
     @Override
     protected String hint() {
-        return "turn: scroll on the table   drag parts onto the pistol, or off it";
+        return "turn: scroll on the table   drag parts onto the gun, or off it";
     }
 
     @Override
-    protected @Nullable Component coveredTooltip(GunPart part, ItemStack gun) {
+    protected @Nullable Component coveredTooltip(GunSlot slot, ItemStack gun) {
         return Component.translatable("screen.imttech.gunsmith.under_slide");
     }
 
     @Override
-    protected List<Component> partTooltip(ItemStack gun, GunPart part, PartState state) {
+    protected List<Component> partTooltip(ItemStack gun, GunSlot slot, PartState state) {
+        if (slot.part == null) {
+            return List.of(Component.translatable("item.imttech.gun_sling"), Component.translatable("screen.imttech.gunsmith.drag_off"));
+        }
+        FirearmType type = typeOf(gun);
         return List.of(
-                Component.translatable("item.imttech.gun_part", state.material().text(), part.text()),
+                type == FirearmType.GLOCK_19 ? Component.translatable("item.imttech.gun_part", state.material().text(), slot.part.text())
+                        : Component.translatable("item.imttech.firearm_part", state.material().text(), type.text(), slot.part.text(type)),
                 Component.translatable("tooltip.imttech.gun_part.condition", state.condition()),
                 Component.translatable("screen.imttech.gunsmith.drag_off"));
     }

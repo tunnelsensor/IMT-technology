@@ -9,22 +9,25 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Een los onderdeel van een pistool (hoofdstuk 52): de slede, de loop, de veren, de slagpin, de trekker of het frame.
- * Eén item per onderdeel; waar het van gemaakt is, staat in het data component GUN_MATERIAL (een "Steel Slide" en een
- * "Titanium Slide" zijn hetzelfde item met een ander materiaal; het plaatje wisselt mee, zie
- * client/guns/FirearmModels). Een onderdeel dat uit een gebruikt pistool komt, houdt zijn conditie (PART_CONDITION);
- * een nieuw onderdeel heeft dat component niet en is 100.
+ * Een los onderdeel van een vuurwapen (hoofdstuk 52): de slede, de loop, de veren, de slagpin, de trekker of het frame.
+ * Eén item per onderdeel per wapen (hoofdstuk 103: een Bolt Carrier van een MP5 past niet in een Glock); waar het van
+ * gemaakt is, staat in het data component GUN_MATERIAL (een "Steel Slide" en een "Titanium Slide" zijn hetzelfde item
+ * met een ander materiaal; het plaatje wisselt mee, zie client/guns/FirearmModels). Een onderdeel dat uit een gebruikt
+ * wapen komt, houdt zijn conditie (PART_CONDITION); een nieuw onderdeel heeft dat component niet en is 100.
  *
- * Op de Gunsmith Table sleep je ze in het pistool (zie GunsmithTableBlockEntity), en sinds hoofdstuk 78 maak je ze daar
+ * Op de Gunsmith Table sleep je ze in het wapen (zie GunsmithTableBlockEntity), en sinds hoofdstuk 78 maak je ze daar
  * ook (het tabblad "Make parts", zie GunsmithRecipe): in de crafting table kan het niet meer.
  */
 public class GunPartItem extends Item {
+    private final FirearmType type;
     private final GunPart part;
 
-    public GunPartItem(Properties properties, GunPart part) {
+    public GunPartItem(Properties properties, FirearmType type, GunPart part) {
         super(properties.stacksTo(16));
+        this.type = type;
         this.part = part;
     }
 
@@ -32,9 +35,19 @@ public class GunPartItem extends Item {
         return part;
     }
 
+    /** Van welk wapen dit onderdeel is. */
+    public FirearmType type() {
+        return type;
+    }
+
     /** Welk onderdeel dit item is, of null als het geen onderdeel is. */
     public static GunPart partOf(ItemStack stack) {
         return stack.getItem() instanceof GunPartItem item ? item.part : null;
+    }
+
+    /** Van welk wapen dit onderdeel is, of null als het geen onderdeel is. */
+    public static @Nullable FirearmType typeOf(ItemStack stack) {
+        return stack.getItem() instanceof GunPartItem item ? item.type : null;
     }
 
     /** Van welk materiaal (staal als het er niet bij staat). */
@@ -49,9 +62,9 @@ public class GunPartItem extends Item {
         return condition == null ? PartState.NEW : Math.max(0, Math.min(PartState.NEW, condition));
     }
 
-    /** Een onderdeel van dit materiaal, zo heel als {@code condition}. */
-    public static ItemStack of(GunPart part, GunMaterial material, int condition) {
-        ItemStack stack = new ItemStack(ModItems.gunPart(part));
+    /** Een onderdeel van dit wapen van dit materiaal, zo heel als {@code condition}. */
+    public static ItemStack of(FirearmType type, GunPart part, GunMaterial material, int condition) {
+        ItemStack stack = new ItemStack(ModItems.gunPart(type, part));
         stack.set(ModDataComponents.GUN_MATERIAL.get(), material);
         if (condition < PartState.NEW) {
             stack.set(ModDataComponents.PART_CONDITION.get(), Math.max(0, condition));
@@ -59,19 +72,31 @@ public class GunPartItem extends Item {
         return stack;
     }
 
+    public static ItemStack of(FirearmType type, GunPart part, GunMaterial material) {
+        return of(type, part, material, PartState.NEW);
+    }
+
+    /** Een onderdeel van de Glock van dit materiaal, zo heel als {@code condition}. */
+    public static ItemStack of(GunPart part, GunMaterial material, int condition) {
+        return of(FirearmType.GLOCK_19, part, material, condition);
+    }
+
     public static ItemStack of(GunPart part, GunMaterial material) {
         return of(part, material, PartState.NEW);
     }
 
-    /** Het onderdeel zoals het in een pistool komt te zitten. */
+    /** Het onderdeel zoals het in een wapen komt te zitten. */
     public static PartState stateOf(ItemStack stack) {
         return new PartState(materialOf(stack), conditionOf(stack));
     }
 
-    /** "Steel Slide", "Polymer Frame"... */
+    /** "Steel Slide", "Polymer Frame" (de Glock); "Steel MP5 Bolt Carrier" (de andere wapens). */
     @Override
     public Component getName(ItemStack stack) {
-        return Component.translatable("item.imttech.gun_part", materialOf(stack).text(), part.text());
+        if (type == FirearmType.GLOCK_19) {
+            return Component.translatable("item.imttech.gun_part", materialOf(stack).text(), part.text());
+        }
+        return Component.translatable("item.imttech.firearm_part", materialOf(stack).text(), type.text(), part.text(type));
     }
 
     @Override
@@ -94,6 +119,9 @@ public class GunPartItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         GunMaterial material = materialOf(stack);
         tooltip.add(Component.translatable("tooltip.imttech.gun_part." + part.id).withStyle(ChatFormatting.GRAY));
+        if (type != FirearmType.GLOCK_19) {
+            tooltip.add(Component.translatable("tooltip.imttech.gun_part.for", type.text()).withStyle(ChatFormatting.GRAY));
+        }
         tooltip.add(Component.translatable("tooltip.imttech.gun_part.material", material.text(),
                 String.format(java.util.Locale.ROOT, "%.1f", material.wearChance())).withStyle(ChatFormatting.DARK_AQUA));
         int condition = conditionOf(stack);

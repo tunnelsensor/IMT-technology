@@ -1,0 +1,258 @@
+package com.senne.imttech.gametest;
+
+import com.senne.imttech.ImtTech;
+import com.senne.imttech.config.ImtConfig;
+import com.senne.imttech.guns.Caliber;
+import com.senne.imttech.guns.FirearmItem;
+import com.senne.imttech.guns.FirearmType;
+import com.senne.imttech.guns.Firearms;
+import com.senne.imttech.guns.Gear;
+import com.senne.imttech.guns.GearItem;
+import com.senne.imttech.guns.GunMaterial;
+import com.senne.imttech.guns.GunPart;
+import com.senne.imttech.guns.GunPartItem;
+import com.senne.imttech.guns.GunParts;
+import com.senne.imttech.guns.GunSlot;
+import com.senne.imttech.guns.GunsmithTableBlockEntity;
+import com.senne.imttech.guns.MagazineItem;
+import com.senne.imttech.registry.ModBlocks;
+import com.senne.imttech.registry.ModItems;
+import net.minecraft.core.BlockPos;
+import net.minecraft.gametest.framework.GameTest;
+import net.minecraft.gametest.framework.GameTestAssertException;
+import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.monster.Husk;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+
+/**
+ * Tests voor de grote update (hoofdstuk 103, 12 november). Jouw wens: "meer guns, deze werken net zoals de Glock": de
+ * MP5 (en daarna de AK-47, de AWP en de Remington 870), elk uit zijn eigen zes onderdelen, met zijn eigen magazijn, zijn
+ * kaliber, zijn keuzeschakelaar (jouw keuze: met "safe") en een sling om het te dragen.
+ */
+@GameTestHolder(ImtTech.MODID)
+@PrefixGameTestTemplate(false)
+public final class FirearmGameTests {
+    private FirearmGameTests() {}
+
+    private static final String ARENA = "empty";
+
+    private static void check(boolean ok, String message) {
+        if (!ok) {
+            throw new GameTestAssertException(message);
+        }
+    }
+
+    /** Alles voorspelbaar: geen storingen, geen slijtage, geen spreiding. */
+    private static void deterministic() {
+        ImtConfig.Guns.JAM_CHANCE = 0;
+        ImtConfig.Guns.MISFIRE_CHANCE = 0;
+        ImtConfig.Guns.WEAR_CHANCE = new float[]{0, 0, 0, 0};
+        ImtConfig.Guns.SPREAD = new float[]{0, 0, 0, 0, 0};
+        ImtConfig.Guns.SPREAD_AIMING = new float[]{0, 0, 0, 0, 0};
+    }
+
+    private static void restore() {
+        ImtConfig.Guns.JAM_CHANCE = 0.4f;
+        ImtConfig.Guns.MISFIRE_CHANCE = 0.15f;
+        ImtConfig.Guns.WEAR_CHANCE = new float[]{4.0f, 2.0f, 0.8f, 0.3f};
+        ImtConfig.Guns.SPREAD = new float[]{3.5f, 3.0f, 4.0f, 6.0f, 2.5f};
+        ImtConfig.Guns.SPREAD_AIMING = new float[]{0.8f, 0.7f, 0.5f, 0.05f, 1.5f};
+    }
+
+    /** Een speler (survival) met dit item in zijn hand (vakje 0), op deze plek, die naar {@code look} kijkt. */
+    private static ServerPlayer holder(GameTestHelper helper, String name, BlockPos at, ItemStack held, Vec3 look) {
+        ServerPlayer player = ImtTechGameTests.makeSurvivalOwner(helper, at, name);
+        player.getAbilities().instabuild = false;
+        player.getInventory().selected = 0;
+        player.setItemInHand(InteractionHand.MAIN_HAND, held);
+        player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, look);
+        Firearms.forgetCooldown(player);
+        return player;
+    }
+
+    private static Firearms.Result fire(ServerPlayer player) {
+        return Firearms.fire(player, player.getYRot(), player.getXRot(), false);
+    }
+
+    // ================================================================ De MP5: schieten en de keuzeschakelaar
+
+    /**
+     * De MP5 schiet 9mm zoals de Glock (30 + 1), maar sneller: twee schoten vlak na elkaar gaat niet (de server houdt het
+     * tempo van het wapen aan), twee ticks later wel. De keuzeschakelaar (jouw keuze: "met ook safe") gaat rond: semi,
+     * 3 schoten, auto, safe, en weer semi. Op safe doet de trekker niets. De Glock heeft geen schakelaar.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "firearms")
+    public static void mp5_fires_and_obeys_its_fire_selector(GameTestHelper helper) {
+        deterministic();
+        Husk husk = helper.spawn(EntityType.HUSK, new BlockPos(4, 2, 12));
+        husk.setNoAi(true);
+        float before = husk.getHealth();
+        ServerPlayer player = holder(helper, "mp5-shooter", new BlockPos(4, 2, 4),
+                FirearmItem.loaded(FirearmType.MP5, GunMaterial.STEEL), helper.absoluteVec(new Vec3(4.5, 3.2, 12.5)));
+        ItemStack gun = player.getMainHandItem();
+        check(FirearmType.MP5.caliber == Caliber.MM9 && FirearmType.MP5.capacity() == 30, "De MP5 hoort 30 patronen 9mm te hebben");
+        check(FirearmItem.fireMode(gun) == FirearmType.FireMode.SEMI, "Een nieuwe MP5 hoort op semi te staan");
+        check(fire(player) == Firearms.Result.FIRED, "De MP5 schoot niet");
+        check(FirearmItem.roundsInMagazine(gun) == 29 && FirearmItem.chambered(gun), "Na een schot hoort er 29 + 1 in te zitten");
+        check(fire(player) == Firearms.Result.TOO_SOON, "Twee schoten in dezelfde tick: de server hoort het tempo te bewaken");
+        helper.startSequence()
+                .thenIdle(3)
+                .thenExecute(() -> {
+                    check(fire(player) == Firearms.Result.FIRED, "Na 3 ticks hoort de MP5 weer te schieten");
+                    check(FirearmItem.roundsInMagazine(gun) == 28, "Er horen nu 28 patronen in het magazijn te zitten");
+                    check(husk.getHealth() < before, "De kogels raakten de husk niet");
+                    // De schakelaar rond.
+                    check(Firearms.selectFire(player) == FirearmType.FireMode.BURST, "Na semi hoort 3 schoten te komen");
+                    check(Firearms.selectFire(player) == FirearmType.FireMode.AUTO, "Na 3 schoten hoort auto te komen");
+                    check(Firearms.selectFire(player) == FirearmType.FireMode.SAFE, "Na auto hoort safe te komen");
+                    Firearms.forgetCooldown(player);
+                    check(fire(player) == Firearms.Result.SAFE, "Op safe schoot de MP5 toch");
+                    check(FirearmItem.roundsInMagazine(gun) == 28 && FirearmItem.chambered(gun), "Op safe ging er een patroon weg");
+                    check(Firearms.selectFire(player) == FirearmType.FireMode.SEMI, "Na safe hoort weer semi te komen");
+                    Firearms.forgetCooldown(player);
+                    check(fire(player) == Firearms.Result.FIRED, "Terug op semi schoot de MP5 niet");
+                    // De Glock heeft geen schakelaar.
+                    player.setItemInHand(InteractionHand.MAIN_HAND, FirearmItem.loaded(FirearmType.GLOCK_19, GunMaterial.STEEL));
+                    check(Firearms.selectFire(player) == null, "De Glock hoort geen keuzeschakelaar te hebben");
+                    check(FirearmItem.fireMode(player.getMainHandItem()) == FirearmType.FireMode.SEMI, "De Glock hoort op een schot te staan");
+                    restore();
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * De MP5 en de Glock schieten dezelfde patronen, maar hun magazijnen zijn niet dezelfde: een MP5-magazijn vul je met
+     * 9mm Rounds (R, een per keer, tot 30), een Glock-magazijn past niet in een MP5, en met het MP5-magazijn erin laadt
+     * de MP5 zelf door (de spanhendel): 1 in de kamer.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "firearms")
+    public static void mp5_takes_9mm_rounds_but_only_its_own_magazine(GameTestHelper helper) {
+        deterministic();
+        ServerPlayer player = holder(helper, "mp5-loader", new BlockPos(4, 2, 4), MagazineItem.of(FirearmType.MP5, 0),
+                helper.absoluteVec(new Vec3(4.5, 3.2, 12.5)));
+        player.getInventory().setItem(1, new ItemStack(ModItems.ROUND_9MM.get(), 8));
+        player.getInventory().setItem(2, FirearmItem.withParts(FirearmType.MP5, GunParts.classic(FirearmType.MP5)));
+        player.getInventory().setItem(3, MagazineItem.of(FirearmType.GLOCK_19, 15));
+        check(MagazineItem.capacityOf(player.getMainHandItem()) == 30, "Een MP5-magazijn hoort 30 patronen te houden");
+        for (int i = 0; i < 3; i++) {
+            check(Firearms.request(player, Firearms.ActionKind.LOAD_ROUND, 0), "Patroon " + (i + 1) + " ging er niet in");
+            Firearms.finishNow(player);
+        }
+        check(MagazineItem.rounds(player.getMainHandItem()) == 3, "Er horen 3 patronen in het magazijn te zitten");
+        check(player.getInventory().getItem(1).getCount() == 5, "Er horen 5 losse patronen over te zijn");
+        // Een Glock-magazijn past niet in de MP5.
+        player.getInventory().selected = 3;
+        check(!Firearms.insertMagazine(player, InteractionHand.MAIN_HAND), "Een Glock-magazijn ging in de MP5");
+        // Het eigen magazijn wel; daarna laadt de MP5 zelf door.
+        player.getInventory().selected = 0;
+        check(Firearms.insertMagazine(player, InteractionHand.MAIN_HAND), "Het MP5-magazijn ging er niet in");
+        Firearms.finishNow(player);
+        ItemStack gun = player.getInventory().getItem(2);
+        check(FirearmItem.hasMagazine(gun) && FirearmItem.roundsInMagazine(gun) == 3, "Het magazijn zit niet in de MP5");
+        check(player.getInventory().getItem(0).isEmpty(), "Het magazijn bleef in je hand");
+        player.getInventory().selected = 2;
+        helper.startSequence()
+                .thenIdle(2)
+                .thenExecute(() -> {
+                    check(Firearms.currentAction(player) == Firearms.ActionKind.SLIDE_RELEASE, "De MP5 laadde niet vanzelf door");
+                    Firearms.finishNow(player);
+                    check(FirearmItem.chambered(gun) && FirearmItem.roundsInMagazine(gun) == 2,
+                            "Na het doorladen hoort er 2 + 1 in te zitten");
+                    restore();
+                })
+                .thenSucceed();
+    }
+
+    // ================================================================ De Gunsmith Table: elk wapen zijn eigen onderdelen
+
+    /**
+     * Op de lege tafel zegt het frame welk wapen het wordt: een MP5 Receiver maakt een MP5. Een onderdeel van de Glock
+     * past er niet in. De veer en de slagpin zitten achter de Bolt Carrier (eerst die eraf); de loop van een lang wapen
+     * steekt gewoon uit. Met alle zes is hij compleet, en de onderdelen komen terug als onderdelen van de MP5.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "firearms")
+    public static void gunsmith_table_builds_an_mp5_from_its_own_parts(GameTestHelper helper) {
+        BlockPos at = new BlockPos(4, 2, 4);
+        helper.setBlock(at, ModBlocks.GUNSMITH_TABLE.get());
+        GunsmithTableBlockEntity table = (GunsmithTableBlockEntity) helper.getBlockEntity(at);
+        ServerPlayer player = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(4, 2, 6), "mp5-smith");
+        GunPart[] order = {GunPart.FRAME, GunPart.BARREL, GunPart.SPRINGS, GunPart.STRIKER, GunPart.TRIGGER, GunPart.SLIDE};
+        for (int i = 0; i < order.length; i++) {
+            player.getInventory().setItem(i, GunPartItem.of(FirearmType.MP5, order[i], i == 5 ? GunMaterial.TITANIUM : GunMaterial.STEEL));
+        }
+        player.getInventory().setItem(8, GunPartItem.of(GunPart.SLIDE, GunMaterial.STEEL));
+        check(!table.install(player, 1), "Een loop ging erin zonder frame");
+        check(table.install(player, 0), "De MP5 Receiver ging er niet in");
+        check(FirearmItem.typeOf(table.gun()) == FirearmType.MP5, "Een MP5 Receiver hoort een MP5 te maken");
+        check(!table.install(player, 8), "Een slede van de Glock ging in de MP5");
+        for (int i = 1; i < order.length; i++) {
+            check(table.install(player, i), "Onderdeel " + order[i] + " ging er niet in");
+        }
+        GunParts parts = FirearmItem.parts(table.gun());
+        check(parts.complete(), "De MP5 hoort compleet te zijn, er ontbreekt " + parts.missing());
+        check(parts.get(GunPart.SLIDE).material() == GunMaterial.TITANIUM, "De Bolt Carrier hield zijn materiaal niet");
+        // De veer zit achter de Bolt Carrier; de loop niet.
+        check(!table.remove(player, GunPart.SPRINGS), "De veer kon eruit terwijl de Bolt Carrier erin zat");
+        check(table.remove(player, GunPart.BARREL), "De loop van een lang wapen hoort er zo uit te kunnen");
+        check(table.remove(player, GunPart.SLIDE), "De Bolt Carrier ging er niet uit");
+        check(table.remove(player, GunPart.SPRINGS), "Zonder Bolt Carrier hoort de veer eruit te kunnen");
+        ItemStack carrier = ItemStack.EMPTY;
+        for (ItemStack stack : player.getInventory().items) {
+            if (GunPartItem.partOf(stack) == GunPart.SLIDE && GunPartItem.typeOf(stack) == FirearmType.MP5) {
+                carrier = stack;
+            }
+        }
+        check(!carrier.isEmpty() && GunPartItem.materialOf(carrier) == GunMaterial.TITANIUM,
+                "De Bolt Carrier kwam niet terug als titanium onderdeel van de MP5");
+        check(carrier.getHoverName().getString().equals("Titanium MP5 Bolt Carrier"),
+                "Het onderdeel heet '" + carrier.getHoverName().getString() + "', verwacht 'Titanium MP5 Bolt Carrier'");
+        helper.succeed();
+    }
+
+    // ================================================================ Dragen: de sling
+
+    /**
+     * Een lang wapen past niet in de holster. Met een Gun Sling eraan (het vak "sling" op de Gunsmith Table) past het in
+     * een sling-vakje, zoals de lasergeweren; zonder niet. Op een pistool past geen sling. Haal je de sling eraf, dan
+     * krijg je hem terug.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "firearms")
+    public static void mp5_needs_a_sling_to_hang_on_your_back(GameTestHelper helper) {
+        BlockPos at = new BlockPos(4, 2, 4);
+        helper.setBlock(at, ModBlocks.GUNSMITH_TABLE.get());
+        GunsmithTableBlockEntity table = (GunsmithTableBlockEntity) helper.getBlockEntity(at);
+        ServerPlayer player = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(4, 2, 6), "mp5-sling");
+        ItemStack bare = FirearmItem.withParts(FirearmType.MP5, GunParts.classic(FirearmType.MP5));
+        check(!GearItem.Kind.HOLSTER.accepts(bare), "De MP5 hoort niet in de holster te passen");
+        check(GearItem.Kind.HOLSTER.accepts(FirearmItem.loaded(FirearmType.GLOCK_19, GunMaterial.STEEL)), "De Glock hoort in de holster te passen");
+        check(!Gear.slingAccepts(bare), "Een MP5 zonder sling hoort niet in een sling-vakje te passen");
+        check(Gear.needsSling(bare), "De MP5 hoort een sling nodig te hebben");
+        player.getInventory().setItem(0, bare);
+        player.getInventory().setItem(1, new ItemStack(ModItems.GUN_SLING.get(), 2));
+        check(table.putGun(player, 0), "De MP5 ging niet op de tafel");
+        check(table.install(player, 1), "De sling ging niet aan de MP5");
+        check(FirearmItem.hasSling(table.gun()), "De MP5 heeft geen sling");
+        check(!table.install(player, 1), "Er ging een tweede sling aan");
+        check(player.getInventory().getItem(1).getCount() == 1, "Er hoort precies een sling gebruikt te zijn");
+        check(Gear.slingAccepts(table.gun()), "Een MP5 met sling hoort in een sling-vakje te passen");
+        check(table.remove(player, GunSlot.SLING.ordinal()), "De sling ging er niet af");
+        check(!FirearmItem.hasSling(table.gun()), "De sling hangt er nog aan");
+        check(player.getInventory().countItem(ModItems.GUN_SLING.get()) == 2, "De sling kwam niet terug");
+        check(table.takeGun(player), "De MP5 kon niet mee");
+        // Op een pistool past geen sling.
+        ItemStack glock = FirearmItem.withParts(FirearmType.GLOCK_19, GunParts.classic());
+        player.getInventory().setItem(5, glock);
+        check(table.putGun(player, 5), "De Glock ging niet op de tafel");
+        int slingSlot = player.getInventory().findSlotMatchingItem(new ItemStack(ModItems.GUN_SLING.get()));
+        check(slingSlot >= 0 && !table.install(player, slingSlot), "Er ging een sling aan de Glock");
+        // Een geladen MP5 (creative) heeft zijn sling al.
+        check(Gear.slingAccepts(FirearmItem.loaded(FirearmType.MP5, GunMaterial.STEEL)), "Een geladen MP5 hoort een sling te hebben");
+        helper.succeed();
+    }
+}

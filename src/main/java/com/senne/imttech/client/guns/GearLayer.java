@@ -225,10 +225,12 @@ public final class GearLayer extends RenderLayer<AbstractClientPlayer, PlayerMod
             if (type != null) {
                 pose.pushPose();
                 pose.translate(at[0] / 16f, at[1] / 16f, at[2] / 16f);
-                pose.scale(MAG_SCALE / 16f, MAG_SCALE / 16f, MAG_SCALE / 16f);
-                // Het magazijn staat in zijn model schuin (zoals in de greep); hier rechtop, met het midden van zijn
-                // bodemplaat op de voet van het vakje (FirearmRig.magazineUpright, hoofdstuk 74). Leeg = leeg getekend.
-                pose.mulPose(FirearmRig.magazineUpright());
+                // Hoofdstuk 103: een lang magazijn (de MP5) iets kleiner, zodat het niet ver boven de pouch uitsteekt.
+                float magScale = MAG_SCALE * FirearmRig.magazineFit(type);
+                pose.scale(magScale / 16f, magScale / 16f, magScale / 16f);
+                // Het magazijn staat in zijn model zoals in het wapen (bij de Glock schuin); hier rechtop, met het midden van
+                // zijn bodemplaat op de voet van het vakje (FirearmRig.magazineUpright, hoofdstuk 74). Leeg = leeg getekend.
+                pose.mulPose(FirearmRig.magazineUpright(type));
                 pose.scale(16, 16, 16);
                 FirearmModels.render(pose, buffers, FirearmModels.magazine(stack), light, OverlayTexture.NO_OVERLAY);
                 pose.popPose();
@@ -266,6 +268,16 @@ public final class GearLayer extends RenderLayer<AbstractClientPlayer, PlayerMod
         pose.translate(0, 0.36, 0.265 * side + shift);
         pose.mulPose(Axis.ZP.rotationDegrees(180 - 40 * side));
         pose.mulPose(Axis.YP.rotationDegrees(90 * side));
+        FirearmType firearm = FirearmItem.typeOf(gun);
+        if (firearm != null) {
+            // Hoofdstuk 103: een lang vuurwapen (de MP5...) uit zijn onderdelen, om zijn eigen midden, op zijn eigen grootte.
+            FirearmRig rig = FirearmRig.of(firearm);
+            pose.scale(rig.slingScale, rig.slingScale, rig.slingScale);
+            pose.translate(-rig.slingPivot.x / 16f, -rig.slingPivot.y / 16f, -rig.slingPivot.z / 16f);
+            FirearmModels.renderParts(pose, buffers, gun, light, true, null);
+            pose.popPose();
+            return;
+        }
         pose.scale(SLING_SCALE, SLING_SCALE, SLING_SCALE);
         pose.translate(-0.5, -0.62, -0.32);
         LaserGunModels.render(pose, buffers, gun, light, true, null);

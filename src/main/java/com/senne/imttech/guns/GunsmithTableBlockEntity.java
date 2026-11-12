@@ -72,37 +72,71 @@ public class GunsmithTableBlockEntity extends BlockEntity implements MenuProvide
 
     // ================================================================ De regels
 
-    /** Een onderdeel uit dit vakje van je inventaris in het pistool. */
+    /** Welke plek dit item vult: een los onderdeel van een vuurwapen of (hoofdstuk 103) een Gun Sling; anders null. */
+    public static @Nullable GunSlot slotOf(ItemStack stack) {
+        if (stack.getItem() instanceof com.senne.imttech.weapons.GunSlingItem) {
+            return GunSlot.SLING;
+        }
+        GunPart part = GunPartItem.partOf(stack);
+        return part == null ? null : GunSlot.of(part);
+    }
+
+    /** Een onderdeel (of een sling) uit dit vakje van je inventaris in het wapen. */
     public boolean install(ServerPlayer player, int inventorySlot) {
         Inventory inventory = player.getInventory();
         if (inventorySlot < 0 || inventorySlot >= inventory.items.size()) {
             return false;
         }
         ItemStack stack = inventory.getItem(inventorySlot);
-        GunPart part = GunPartItem.partOf(stack);
-        if (part == null) {
+        GunSlot slot = slotOf(stack);
+        if (slot == null) {
             return false;
         }
         ItemStack gun = gun();
         if (gun.isEmpty()) {
-            if (part != GunPart.FRAME) {
+            // Het frame is de basis, en het zegt welk wapen het wordt (hoofdstuk 103).
+            FirearmType type = GunPartItem.typeOf(stack);
+            if (slot != GunSlot.FRAME || type == null) {
                 tell(player, Component.translatable("gunsmith.imttech.frame_first"));
                 return false;
             }
-            gun = FirearmItem.withParts(FirearmType.GLOCK_19, GunParts.EMPTY.with(part, GunPartItem.stateOf(stack)));
+            gun = FirearmItem.withParts(type, GunParts.EMPTY.with(GunPart.FRAME, GunPartItem.stateOf(stack)));
             items.setItem(0, gun);
         } else {
-            GunParts parts = FirearmItem.parts(gun);
-            if (parts.has(part)) {
-                tell(player, Component.translatable("gunsmith.imttech.occupied", part.text()));
+            FirearmType type = FirearmItem.typeOf(gun);
+            if (type == null) {
                 return false;
             }
-            if (underSlide(part, parts)) {
-                tell(player, Component.translatable("gunsmith.imttech.under_slide"));
-                return false;
+            if (slot == GunSlot.SLING) {
+                if (!type.longGun) {
+                    tell(player, Component.translatable("gunsmith.imttech.no_sling", type.text()));
+                    return false;
+                }
+                if (FirearmItem.hasSling(gun)) {
+                    tell(player, Component.translatable("gunsmith.imttech.occupied", slot.text(type)));
+                    return false;
+                }
+                FirearmItem.setSling(gun, true);
+                items.setChanged();
+            } else {
+                GunPart part = slot.part;
+                FirearmType partType = GunPartItem.typeOf(stack);
+                if (partType != type) {
+                    tell(player, Component.translatable("gunsmith.imttech.other_gun", partType == null ? "" : partType.text()));
+                    return false;
+                }
+                GunParts parts = FirearmItem.parts(gun);
+                if (parts.has(part)) {
+                    tell(player, Component.translatable("gunsmith.imttech.occupied", part.text(type)));
+                    return false;
+                }
+                if (underSlide(type, part, parts)) {
+                    tell(player, Component.translatable("gunsmith.imttech.under_slide"));
+                    return false;
+                }
+                FirearmItem.setParts(gun, parts.with(part, GunPartItem.stateOf(stack)));
+                items.setChanged();
             }
-            FirearmItem.setParts(gun, parts.with(part, GunPartItem.stateOf(stack)));
-            items.setChanged();
         }
         stack.shrink(1);
         click(player);
@@ -114,19 +148,42 @@ public class GunsmithTableBlockEntity extends BlockEntity implements MenuProvide
      * net als bij een echte Glock. Eerst de slede eraf.
      */
     public static boolean underSlide(GunPart part, GunParts parts) {
-        return (part == GunPart.BARREL || part == GunPart.SPRINGS || part == GunPart.STRIKER) && parts.has(GunPart.SLIDE);
+        return underSlide(FirearmType.GLOCK_19, part, parts);
     }
 
-    /** Het menu zegt een nummer (zie PartsTable): het onderdeel in de volgorde van GunPart. */
+    /** Hetzelfde voor elk wapen (hoofdstuk 103): bij een lang wapen steekt de loop gewoon uit, de veer en de slagpin niet. */
+    public static boolean underSlide(FirearmType type, GunPart part, GunParts parts) {
+        return part.underSlide(type) && parts.has(GunPart.SLIDE);
+    }
+
+    /** Het menu zegt een nummer (zie PartsTable): de plek in de volgorde van GunSlot (de zes onderdelen, dan de sling). */
     @Override
     public boolean remove(ServerPlayer player, int partIndex) {
-        return partIndex >= 0 && partIndex < GunPart.values().length && remove(player, GunPart.values()[partIndex]);
+        GunSlot slot = GunSlot.byId(partIndex);
+        if (slot == null) {
+            return false;
+        }
+        return slot.part == null ? removeSling(player) : remove(player, slot.part);
     }
 
-    /** Dit onderdeel uit het pistool, terug in je inventaris. */
+    /** De sling van het wapen af, terug in je inventaris. */
+    public boolean removeSling(ServerPlayer player) {
+        ItemStack gun = gun();
+        if (gun.isEmpty() || !FirearmItem.hasSling(gun)) {
+            return false;
+        }
+        FirearmItem.setSling(gun, false);
+        items.setChanged();
+        Firearms.give(player, new ItemStack(com.senne.imttech.registry.ModItems.GUN_SLING.get()));
+        click(player);
+        return true;
+    }
+
+    /** Dit onderdeel uit het wapen, terug in je inventaris. */
     public boolean remove(ServerPlayer player, GunPart part) {
         ItemStack gun = gun();
-        if (gun.isEmpty()) {
+        FirearmType type = FirearmItem.typeOf(gun);
+        if (type == null) {
             return false;
         }
         GunParts parts = FirearmItem.parts(gun);
@@ -138,20 +195,25 @@ public class GunsmithTableBlockEntity extends BlockEntity implements MenuProvide
             tell(player, Component.translatable("gunsmith.imttech.frame_last"));
             return false;
         }
-        if (underSlide(part, parts)) {
+        if (underSlide(type, part, parts)) {
             tell(player, Component.translatable("gunsmith.imttech.under_slide"));
             return false;
         }
         GunParts rest = parts.without(part);
-        Firearms.give(player, GunPartItem.of(part, state.material(), state.condition()));
+        Firearms.give(player, GunPartItem.of(type, part, state.material(), state.condition()));
         if (rest.parts().isEmpty()) {
-            // Het laatste onderdeel (het frame) eruit: het pistool bestaat niet meer; wat erin zat, krijg je terug.
+            // Het laatste onderdeel (het frame) eruit: het wapen bestaat niet meer; wat erin zat, krijg je terug.
             ItemStack magazine = FirearmItem.magazine(gun);
             if (!magazine.isEmpty()) {
                 Firearms.give(player, magazine);
+            } else if (type.tube() && FirearmItem.roundsInMagazine(gun) > 0) {
+                Firearms.give(player, new ItemStack(type.caliber.round(), FirearmItem.roundsInMagazine(gun)));
             }
             if (FirearmItem.chambered(gun)) {
-                Firearms.give(player, new ItemStack(com.senne.imttech.registry.ModItems.ROUND_9MM.get()));
+                Firearms.give(player, new ItemStack(type.caliber.round()));
+            }
+            if (FirearmItem.hasSling(gun)) {
+                Firearms.give(player, new ItemStack(com.senne.imttech.registry.ModItems.GUN_SLING.get()));
             }
             items.setItem(0, ItemStack.EMPTY);
         } else {

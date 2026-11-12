@@ -87,16 +87,19 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.EMP_TRIGGER.get());
                 output.accept(ModItems.REMOTE_FRAG.get());
                 output.accept(ModItems.FRAG_TRIGGER.get());
-                // De vuurwapens (hoofdstuk 52): een geladen Glock 19, zijn onderdelen per materiaal, munitie en de banken.
-                output.accept(com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.GLOCK_19,
-                        com.senne.imttech.guns.GunMaterial.STEEL));
-                output.accept(com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.GLOCK_19, 0));
-                output.accept(com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.GLOCK_19,
-                        com.senne.imttech.guns.FirearmType.GLOCK_19.capacity()));
-                for (com.senne.imttech.guns.GunPart part : com.senne.imttech.guns.GunPart.values()) {
-                    for (com.senne.imttech.guns.GunMaterial material : com.senne.imttech.guns.GunMaterial.values()) {
-                        if (part.accepts(material)) {
-                            output.accept(com.senne.imttech.guns.GunPartItem.of(part, material));
+                // De vuurwapens (hoofdstuk 52 en 103): elk wapen geladen, zijn magazijn (leeg en vol), en zijn onderdelen
+                // per materiaal; daarna de munitie en de banken.
+                for (com.senne.imttech.guns.FirearmType type : com.senne.imttech.guns.FirearmType.values()) {
+                    output.accept(com.senne.imttech.guns.FirearmItem.loaded(type, com.senne.imttech.guns.GunMaterial.STEEL));
+                    if (!type.tube()) {
+                        output.accept(com.senne.imttech.guns.MagazineItem.of(type, 0));
+                        output.accept(com.senne.imttech.guns.MagazineItem.of(type, type.capacity()));
+                    }
+                    for (com.senne.imttech.guns.GunPart part : com.senne.imttech.guns.GunPart.values()) {
+                        for (com.senne.imttech.guns.GunMaterial material : com.senne.imttech.guns.GunMaterial.values()) {
+                            if (part.accepts(type, material)) {
+                                output.accept(com.senne.imttech.guns.GunPartItem.of(type, part, material));
+                            }
                         }
                     }
                 }

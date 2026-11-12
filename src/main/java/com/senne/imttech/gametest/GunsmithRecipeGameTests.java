@@ -92,9 +92,15 @@ public final class GunsmithRecipeGameTests {
     public static void gunsmith_table_has_one_recipe_per_part(GameTestHelper helper) {
         var registries = helper.getLevel().registryAccess();
         List<ItemStack> wanted = new ArrayList<>();
-        for (GunPart part : GunPart.values()) {
-            for (GunMaterial material : part.materials()) {
-                wanted.add(GunPartItem.of(part, material));
+        // Hoofdstuk 103: elk vuurwapen zijn eigen onderdelen (in de materialen waarin ze bestaan) en zijn eigen magazijn.
+        for (com.senne.imttech.guns.FirearmType firearm : com.senne.imttech.guns.FirearmType.values()) {
+            for (GunPart part : GunPart.values()) {
+                for (GunMaterial material : part.materials(firearm)) {
+                    wanted.add(GunPartItem.of(firearm, part, material));
+                }
+            }
+            if (!firearm.tube()) {
+                wanted.add(new ItemStack(ModItems.magazine(firearm)));
             }
         }
         for (GunType type : GunType.values()) {
@@ -104,7 +110,6 @@ public final class GunsmithRecipeGameTests {
             }
         }
         wanted.add(new ItemStack(ModItems.GUN_SLING.get()));
-        wanted.add(new ItemStack(ModItems.GLOCK_19_MAGAZINE.get()));
         var all = GunsmithRecipe.all(helper.getLevel().getRecipeManager());
         for (ItemStack want : wanted) {
             List<ResourceLocation> found = new ArrayList<>();

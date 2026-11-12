@@ -59,17 +59,18 @@ public final class GunGameTests {
     private static void deterministic() {
         ImtConfig.Guns.JAM_CHANCE = 0;
         ImtConfig.Guns.MISFIRE_CHANCE = 0;
-        ImtConfig.Guns.WEAR_CHANCE = new float[]{0, 0, 0};
-        ImtConfig.Guns.SPREAD = new float[]{0};
-        ImtConfig.Guns.SPREAD_AIMING = new float[]{0};
+        ImtConfig.Guns.WEAR_CHANCE = new float[]{0, 0, 0, 0};
+        // Hoofdstuk 103: een getal per vuurwapen (Glock 19, MP5, AK-47, AWP, Remington 870).
+        ImtConfig.Guns.SPREAD = new float[]{0, 0, 0, 0, 0};
+        ImtConfig.Guns.SPREAD_AIMING = new float[]{0, 0, 0, 0, 0};
     }
 
     private static void restore() {
         ImtConfig.Guns.JAM_CHANCE = 0.4f;
         ImtConfig.Guns.MISFIRE_CHANCE = 0.15f;
-        ImtConfig.Guns.WEAR_CHANCE = new float[]{4.0f, 2.0f, 0.8f};
-        ImtConfig.Guns.SPREAD = new float[]{3.5f};
-        ImtConfig.Guns.SPREAD_AIMING = new float[]{0.8f};
+        ImtConfig.Guns.WEAR_CHANCE = new float[]{4.0f, 2.0f, 0.8f, 0.3f};
+        ImtConfig.Guns.SPREAD = new float[]{3.5f, 3.0f, 4.0f, 6.0f, 2.5f};
+        ImtConfig.Guns.SPREAD_AIMING = new float[]{0.8f, 0.7f, 0.5f, 0.05f, 1.5f};
         ImtConfig.Guns.BULLETS_BREAK_GLASS = true;
     }
 
@@ -230,7 +231,7 @@ public final class GunGameTests {
         ItemStack gun = FirearmItem.loaded(FirearmType.GLOCK_19, GunMaterial.STEEL);
         FirearmItem.setParts(gun, FirearmItem.parts(gun).with(GunPart.BARREL, new PartState(GunMaterial.STEEL, 2)));
         ServerPlayer player = holder(helper, "gun-wearer", new BlockPos(4, 2, 4), gun, helper.absoluteVec(new Vec3(4.5, 3, 14.5)));
-        ImtConfig.Guns.WEAR_CHANCE = new float[]{100, 100, 100};
+        ImtConfig.Guns.WEAR_CHANCE = new float[]{100, 100, 100, 100};
         check(fire(player) == Firearms.Result.FIRED, "Schot 1 ging niet af");
         ItemStack held = player.getMainHandItem();
         check(FirearmItem.parts(held).get(GunPart.BARREL).condition() == 1, "De loop sleet niet een punt");

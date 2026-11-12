@@ -18,25 +18,50 @@ import net.minecraft.world.level.Level;
  * Een magazijn (hoofdstuk 52, jouw wens: "het magazijn kogel per kogel laden"). Hoeveel patronen erin zitten, staat
  * in het data component MAG_ROUNDS; magazijnen stapelen daarom niet (elk heeft zijn eigen inhoud, net als een
  * energiecel). Vullen: houd het magazijn vast en druk <b>R</b>: elke druk duwt er één patroon uit je inventaris in (zie
- * Firearms.loadRound). In een pistool: <b>rechtsklik</b> met het magazijn in je hand, dan gaat het in het pistool in
- * je werkbalk dat er geen heeft (jouw keuze voor wie geen magazijnpouch heeft: R op het pistool gooit het oude eruit,
- * dan scrollen naar het magazijn, rechtsklikken, en terug naar het pistool).
+ * Firearms.loadRound). In een wapen: <b>rechtsklik</b> met het magazijn in je hand, dan gaat het in het wapen in je
+ * werkbalk dat er geen heeft (jouw keuze voor wie geen magazijnpouch heeft: R op het wapen gooit het oude eruit, dan
+ * scrollen naar het magazijn, rechtsklikken, en terug naar het wapen).
+ *
+ * Hoofdstuk 103: elk wapen heeft zijn eigen magazijn (dat van een MP5 past niet in een Glock, ook al zijn de patronen
+ * dezelfde), en de <b>extended mag</b> is een eigen, groter magazijn (jouw keuze): hetzelfde wapen, meer patronen.
  */
 public class MagazineItem extends Item {
     private final FirearmType type;
+    private final boolean extended;
 
-    public MagazineItem(Properties properties, FirearmType type) {
+    public MagazineItem(Properties properties, FirearmType type, boolean extended) {
         super(properties.stacksTo(1));
         this.type = type;
+        this.extended = extended;
     }
 
     public FirearmType type() {
         return type;
     }
 
-    /** Voor welk pistool dit magazijn is, of null als het geen magazijn is. */
+    /** Is dit het lange magazijn (de extended mag)? */
+    public boolean extended() {
+        return extended;
+    }
+
+    /** Zoveel patronen gaan erin. */
+    public int capacity() {
+        return type.capacity(extended);
+    }
+
+    /** Voor welk wapen dit magazijn is, of null als het geen magazijn is. */
     public static FirearmType typeOf(ItemStack stack) {
         return stack.getItem() instanceof MagazineItem item ? item.type : null;
+    }
+
+    /** Is dit een lang magazijn (extended mag)? */
+    public static boolean extendedOf(ItemStack stack) {
+        return stack.getItem() instanceof MagazineItem item && item.extended;
+    }
+
+    /** Zoveel patronen gaan er in dit magazijn (0 als het geen magazijn is). */
+    public static int capacityOf(ItemStack stack) {
+        return stack.getItem() instanceof MagazineItem item ? item.capacity() : 0;
     }
 
     /** Zoveel patronen zitten erin. */
@@ -46,24 +71,26 @@ public class MagazineItem extends Item {
     }
 
     public static void setRounds(ItemStack stack, int rounds) {
-        FirearmType type = typeOf(stack);
-        int capacity = type == null ? 0 : type.capacity();
-        stack.set(ModDataComponents.MAG_ROUNDS.get(), Math.max(0, Math.min(capacity, rounds)));
+        stack.set(ModDataComponents.MAG_ROUNDS.get(), Math.max(0, Math.min(capacityOf(stack), rounds)));
     }
 
-    /** Een magazijn met zoveel patronen. */
+    /** Een gewoon magazijn met zoveel patronen. */
     public static ItemStack of(FirearmType type, int rounds) {
-        ItemStack stack = new ItemStack(ModItems.magazine(type));
+        return of(type, false, rounds);
+    }
+
+    /** Een magazijn (gewoon of lang) met zoveel patronen. */
+    public static ItemStack of(FirearmType type, boolean extended, int rounds) {
+        ItemStack stack = new ItemStack(ModItems.magazine(type, extended));
         setRounds(stack, rounds);
         return stack;
     }
 
     public static boolean isFull(ItemStack stack) {
-        FirearmType type = typeOf(stack);
-        return type != null && rounds(stack) >= type.capacity();
+        return typeOf(stack) != null && rounds(stack) >= capacityOf(stack);
     }
 
-    /** Rechtsklik: in het pistool in je werkbalk dat er geen heeft (de server doet het, met een korte animatie). */
+    /** Rechtsklik: in het wapen in je werkbalk dat er geen heeft (de server doet het, met een korte animatie). */
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         if (player instanceof ServerPlayer serverPlayer) {
@@ -79,7 +106,7 @@ public class MagazineItem extends Item {
 
     @Override
     public int getBarWidth(ItemStack stack) {
-        return Math.round(13 * rounds(stack) / (float) Math.max(1, type.capacity()));
+        return Math.round(13 * rounds(stack) / (float) Math.max(1, capacity()));
     }
 
     @Override
@@ -89,9 +116,15 @@ public class MagazineItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("tooltip.imttech.magazine.rounds", rounds(stack), type.capacity())
+        tooltip.add(Component.translatable("tooltip.imttech.magazine.rounds", rounds(stack), capacity())
                 .withStyle(rounds(stack) == 0 ? ChatFormatting.RED : ChatFormatting.GOLD));
-        tooltip.add(Component.translatable("tooltip.imttech.magazine").withStyle(ChatFormatting.GRAY));
+        if (type == FirearmType.GLOCK_19 && !extended) {
+            tooltip.add(Component.translatable("tooltip.imttech.magazine").withStyle(ChatFormatting.GRAY));
+        } else {
+            // Hoofdstuk 103: voor welk wapen, en welke patroon erin gaat.
+            tooltip.add(Component.translatable("tooltip.imttech.magazine.for", type.text(), type.caliber.text())
+                    .withStyle(ChatFormatting.GRAY));
+        }
         tooltip.add(Component.translatable("tooltip.imttech.magazine.keys").withStyle(ChatFormatting.DARK_GRAY));
         // Hoofdstuk 78: je maakt het op de Gunsmith Table, niet meer in de crafting table.
         tooltip.add(Component.translatable("tooltip.imttech.gunsmith.made").withStyle(ChatFormatting.DARK_GRAY));

@@ -34,6 +34,7 @@ from PIL import Image, ImageDraw
 import glock19_model as glock
 import gunmesh as gm
 import model_display as md
+import mp5_model
 
 ROOT = Path(__file__).resolve().parent.parent / "src" / "main" / "resources"
 ASSETS = ROOT / "assets" / "imttech"
@@ -231,7 +232,7 @@ def write(rel, data):
     path = ASSETS / rel
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=1) + "\n", encoding="utf-8", newline="\n")
-    print("geschreven:", path.relative_to(ROOT))
+    print("geschreven:", path.relative_to(ROOT) if path.is_relative_to(ROOT) else path)
 
 
 def part_model(elements):
@@ -263,13 +264,13 @@ def display(gui_scale, gui_translation, hand_scale, ground_scale, gui_rotation=(
     }
 
 
-def gun_display(points, grip, gui_rotation=(4, -90, 0), ground_scale=0.6):
+def gun_display(points, grip, gui_rotation=(4, -90, 0), ground_scale=0.6, hand=0.75, max_scale=1.2):
     """
     De houdingen van het hele pistool. In je inventaris de rechterkant (de loop naar rechts, zoals op de foto), een
     tikje van boven; in je hand (derde persoon) met de greep in je hand, zoals de lasergeweren
-    (generate_weapon_models.gun_display).
+    (generate_weapon_models.gun_display). {hand}: hoe groot het in je hand is (de lange wapens van hoofdstuk 103 zijn
+    op de schaal van de Glock getekend en zouden anders drie blokken lang zijn).
     """
-    hand = 0.75
     turn = -17
     a = math.radians(turn)
     gx, gy, gz = (hand * (g - 8) for g in grip)
@@ -277,7 +278,7 @@ def gun_display(points, grip, gui_rotation=(4, -90, 0), ground_scale=0.6):
     rz = -gx * math.sin(a) + gz * math.cos(a)
     third = ((0, turn, 0), (round(-rx, 2), round(-gy, 2), round(-rz, 2)))
     elements = glock.points_as_elements(points)
-    gui_scale, shift = md.fit(elements, gui_rotation, size=15.6, max_scale=1.2)
+    gui_scale, shift = md.fit(elements, gui_rotation, size=15.6, max_scale=max_scale)
     disp = display(gui_scale, shift, hand, ground_scale, gui_rotation=gui_rotation, third=third)
     disp["fixed"] = {"rotation": [0, -90, 0], "translation": md.fit(elements, (0, -90, 0), scale=gui_scale)[1],
                      "scale": [gui_scale] * 3}
@@ -311,12 +312,13 @@ GLOCK_TEX = "imttech:item/glock_19/"
 GLOCK_GRIP = (8, 7.8, 11.4)  # waar je hand de greep vasthoudt (derde persoon)
 
 
-def obj_model(obj, textures, display=None, overrides=None, gui_light="front"):
+def obj_model(obj, textures, display=None, overrides=None, gui_light="front", folder="glock_19"):
     """
     Een json dat een OBJ-model inlaadt met NeoForge's "obj"-lader. {textures}: de namen uit glock_19.mtl ("gun",
     "polymer", "steel", "mag") en hun plaatje. Daarna gedraagt het zich als elk ander model (houdingen, overrides).
+    {folder}: de map van het wapen onder models/firearm (hoofdstuk 103: elk wapen zijn eigen map).
     """
-    model = {"loader": "neoforge:obj", "model": f"imttech:models/firearm/glock_19/{obj}.obj",
+    model = {"loader": "neoforge:obj", "model": f"imttech:models/firearm/{folder}/{obj}.obj",
              "automatic_culling": False, "flip_v": False, "emissive_ambient": True,
              "textures": dict(textures, particle=list(textures.values())[0])}
     if gui_light:
@@ -398,6 +400,78 @@ def glock_19():
     # De maten voor FirearmRig (Java): de doos om elk onderdeel.
     for name, (lo, hi) in glock.rig(parts, mags).items():
         print(f"  {name:9s} van {[round(float(v), 2) for v in lo]} tot {[round(float(v), 2) for v in hi]}")
+
+
+# ---------------------------------------------------------------- De lange vuurwapens (hoofdstuk 103)
+
+# De zes onderdelen van elk vuurwapen (de rollen van GunPart in de mod), en hun nummer voor de "override" per materiaal
+# (GunMaterial: 0 = polymeer, 1 = staal, 2 = titanium).
+PART_IDS = ("frame", "slide", "barrel", "springs", "striker", "trigger")
+MATERIAL_INDEX = {"polymer": 0, "steel": 1, "titanium": 2}
+
+
+def long_gun(mod):
+    """
+    Eén vuurwapen van hoofdstuk 103 (de MP5, AK-47, AWP of Remington 870) uit zijn modelbestand (tools/mp5_model.py
+    enz., gebouwd met tools/longgun.py): de plaatjes per materiaal, elk onderdeel als OBJ, en de json-bestandjes: elk
+    onderdeel (en zijn losse bewegende stukken) per materiaal, de magazijnen, het hele wapen als item, het magazijn als
+    item, en de zes losse onderdelen als item met een override per materiaal.
+    """
+    gun = mod.build()
+    counts = gun.write(ASSETS)
+    print(f"{gun.id}: vlakken per model:", counts, "texture", gun.gun_size, "magazijn", gun.mag_size)
+    tex = f"imttech:item/{gun.id}/"
+    for name in gun.parts:
+        for skin in gun.skins:
+            write(f"models/firearm/{gun.id}/{name}_{skin}.json",
+                  obj_model(name, {"gun": tex + skin}, gui_light=None, folder=gun.id))
+    for name in gun.mags:
+        write(f"models/firearm/{gun.id}/{name}.json",
+              obj_model(name, {"mag": tex + "magazine"}, gui_light=None, folder=gun.id))
+    # Het hele wapen: in je inventaris schuin (de loop naar rechtsboven, zoals een zwaard), zodat het zijn vakje vult.
+    view = euler_xyz(gm.rot_z(38) @ gm.rot_y(-90))
+    textures = {gun.classic: tex + gun.classic, "mag": tex + "magazine"}
+    write(f"models/item/{gun.id}.json", obj_model(
+        "whole", textures, folder=gun.id,
+        display=gun_display(gun.whole_points(), mod.GRIP, gui_rotation=view, ground_scale=mod.HAND_SCALE * 0.8,
+                            hand=mod.HAND_SCALE, max_scale=1.0)))
+    # De magazijnen als item: rechtop, een beetje gedraaid; leeg = het model zonder patroon.
+    note = f"Gemaakt door tools/generate_gun_models.py (tools/{gun.id}_model.py), hoofdstuk 103. Niet met de hand aanpassen."
+    for name in gun.mags:
+        if name.endswith("_empty"):
+            continue
+        item = f"{gun.id}_{name}"
+        disp = centred_display(glock.points_as_elements(gun.mags[name].points()), gui_rotation=(8, -68, 0), size=14.5,
+                               max_scale=2.2, hand_scale=0.5, ground_scale=0.42)
+        write(f"models/item/{item}_empty.json", obj_model(f"{name}_empty", {"mag": tex + "magazine"}, display=disp,
+                                                          folder=gun.id))
+        write(f"models/item/{item}.json", obj_model(
+            name, {"mag": tex + "magazine"}, display=disp, folder=gun.id,
+            overrides=[{"predicate": {"imttech:empty": 1}, "model": f"imttech:item/{item}_empty"}]))
+    # De losse onderdelen als item: het onderdeel met zijn bewegende stukken ("slide" + "slide_handle") in één OBJ.
+    plain = {"gun": "gun", "glow": "glow"}
+    folder = ASSETS / "models" / "firearm" / gun.id
+    for part in PART_IDS:
+        names = [n for n in gun.parts if n == part or n.startswith(part + "_")]
+        gm.write_obj(folder / f"item_{part}.obj", [(n, gun.parts[n], plain) for n in names], f"{gun.id}.mtl",
+                     *gun.gun_size, note)
+        points = [p for n in names for p in gun.parts[n].points()]
+        disp = centred_display(glock.points_as_elements(points))
+        overrides = []
+        for skin in gun.skins:
+            write(f"models/item/{gun.id}_{part}_{skin}.json",
+                  obj_model(f"item_{part}", {"gun": tex + skin}, display=disp, folder=gun.id))
+            overrides.append({"predicate": {"imttech:material": MATERIAL_INDEX[skin]},
+                              "model": f"imttech:item/{gun.id}_{part}_{skin}"})
+        write(f"models/item/{gun.id}_{part}.json", obj_model(f"item_{part}", {"gun": tex + gun.classic}, display=disp,
+                                                             folder=gun.id, overrides=overrides))
+    # De maten voor FirearmRig (Java): de doos om elk onderdeel.
+    for name, (lo, hi) in gun.bounds().items():
+        print(f"  {name:16s} van {lo} tot {hi}")
+    return gun
+
+
+LONG_GUNS = {"mp5": mp5_model}
 
 
 # ---------------------------------------------------------------- Holster en pouches (hoofdstuk 52, stap 2)
@@ -713,8 +787,29 @@ def laser_workbench():
 # ---------------------------------------------------------------- Alles
 
 def main():
+    """
+    Zonder iets erbij: alles. Met namen erbij alleen die wapens ("python tools/generate_gun_models.py mp5"), en met
+    "--assets <map>" naar een proefmap (om een model te bekijken met tools/preview_obj.py --assets, zonder de mod aan te
+    raken).
+    """
+    import sys
+    global ASSETS
+    args = sys.argv[1:]
+    if "--assets" in args:
+        at = args.index("--assets")
+        ASSETS = Path(args[at + 1]) / "imttech"
+        del args[at:at + 2]
+    if args:
+        for name in args:
+            if name == "glock_19":
+                glock_19()
+            else:
+                long_gun(LONG_GUNS[name])
+        return
     materials()
     glock_19()
+    for mod in LONG_GUNS.values():
+        long_gun(mod)
     gear()
     resources()
     gunsmith_table()

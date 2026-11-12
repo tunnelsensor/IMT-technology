@@ -3,8 +3,8 @@ package com.senne.imttech.guns;
 import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.network.FirearmActionPayload;
 import com.senne.imttech.network.ModNetwork;
-import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.registry.ModSounds;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -40,15 +40,29 @@ import org.jetbrains.annotations.Nullable;
  * een slechte patroon en moet je een tap-rack doen). De huls springt er rechts uit ({@link CasingEntity}), het
  * magazijn duwt de volgende patroon in de kamer. Soms blijft de huls klem zitten (een "stovepipe"): ook een tap-rack.
  * Elk schot heeft per onderdeel een kans om een punt te slijten (van zijn materiaal); versleten onderdelen geven meer
- * storingen, en een kapot onderdeel legt het pistool stil tot je het vervangt op de Gunsmith Table.
+ * storingen, en een kapot onderdeel legt het wapen stil tot je het vervangt op de Gunsmith Table.
  *
  * <b>Herladen</b> (jouw keuze): met een magazijnpouch kies je een magazijn uit de pouch (hoofdstuk 52, stap 2). Zonder
  * pouch: R gooit het magazijn eruit (het komt in je inventaris), je scrolt naar een magazijn, rechtsklik duwt het in
- * het pistool, en als je het pistool weer pakt, laat je de slede los. Dat duurt langer, en zo hoort het.
+ * het wapen, en als je het wapen weer pakt, laat je de slede los. Dat duurt langer, en zo hoort het.
  *
- * <b>Unload</b> (hoofdstuk 54, jouw wens): <b>U</b> met het pistool gooit het magazijn eruit (ook met een pouch: het gaat
+ * <b>Unload</b> (hoofdstuk 54, jouw wens): <b>U</b> met het wapen gooit het magazijn eruit (ook met een pouch: het gaat
  * erin als er plek is, anders in je inventaris); zonder magazijn trekt U de patroon uit de kamer. <b>U met een magazijn in
  * je hand</b> haalt er één patroon uit (inhouden = doorgaan), in je inventaris.
+ *
+ * <b>Hoofdstuk 103</b> (de grote update): meer wapens ({@link FirearmType}), elk met zijn kaliber en zijn werking.
+ * <ul>
+ *   <li><b>De keuzeschakelaar</b> (X): safe, één schot, drie schoten of automatisch. Op "safe" schiet het wapen niet.
+ *       Automatisch en drie schoten doet jouw spel (het haalt de trekker telkens opnieuw over); hier telt alleen dat er
+ *       genoeg tijd tussen twee schoten zit.</li>
+ *   <li><b>Zelf doorladen</b> (jouw keuze: "je moet na elk schot op R drukken ... bij wapens die niet semi-auto zijn"):
+ *       bij een grendel (de AWP) of een pomp (de Remington 870) blijft de lege huls na het schot in de kamer. R laadt
+ *       door: de huls eruit, de volgende patroon erin ({@link ActionKind#CYCLE}). Een storing gebeurt daar bij het
+ *       doorladen: de huls zit vast, nog eens R.</li>
+ *   <li><b>De buis</b> van de 870: geen magazijn; R duwt er een patroon in ({@link ActionKind#LOAD_TUBE}), U haalt er
+ *       een uit.</li>
+ *   <li><b>Hagel</b>: een shotgun schiet meer korrels per schot, die uit elkaar waaieren.</li>
+ * </ul>
  */
 public final class Firearms {
     private Firearms() {}
@@ -56,14 +70,17 @@ public final class Firearms {
     /** Hoe ver (graden) je eigen kijkrichting mag afwijken van wat de server denkt. */
     private static final double MAX_AIM_DIFFERENCE = 25;
 
-    /** Wat er gebeurde toen je de trekker overhaalde (voor de tests). */
-    public enum Result { FIRED, NO_GUN, INCOMPLETE, BROKEN, JAMMED, TOO_SOON, EMPTY, BUSY, MISFIRE }
+    /** Wat er gebeurde toen je de trekker overhaalde (voor de tests). SAFE (hoofdstuk 103): de schakelaar staat op safe. */
+    public enum Result { FIRED, NO_GUN, INCOMPLETE, BROKEN, JAMMED, TOO_SOON, EMPTY, BUSY, MISFIRE, SAFE }
 
-    /** De handelingen die even duren. Dezelfde volgorde als in jouw spel (client/guns/FirearmControl). */
+    /**
+     * De handelingen die even duren. Dezelfde volgorde als in jouw spel (client/guns/FirearmControl). Nieuwe komen
+     * ONDERAAN: het nummer gaat over het netwerk.
+     */
     public enum ActionKind {
         /** R zonder pouch: het magazijn eruit, in je inventaris. */
         EJECT_MAG,
-        /** Rechtsklik met een magazijn: in het pistool in je werkbalk dat er geen heeft. */
+        /** Rechtsklik met een magazijn: in het wapen in je werkbalk dat er geen heeft. */
         INSERT_MAG,
         /** De slede loslaten: de eerste patroon uit het magazijn gaat in de kamer (vanzelf, als dat nodig is). */
         SLIDE_RELEASE,
@@ -79,8 +96,16 @@ public final class Firearms {
         DRAW,
         /** U met een magazijn in je hand: één patroon eruit (hoofdstuk 54). */
         UNLOAD_ROUND,
-        /** U met een pistool zonder magazijn: de slede naar achteren, de patroon uit de kamer (hoofdstuk 54). */
-        UNLOAD_CHAMBER
+        /** U met een wapen zonder magazijn: de slede naar achteren, de patroon uit de kamer (hoofdstuk 54). */
+        UNLOAD_CHAMBER,
+        /** Hoofdstuk 103: R met een grendel of een pomp: doorladen (de lege huls eruit, de volgende patroon erin). */
+        CYCLE,
+        /** Hoofdstuk 103: R met de Remington 870: één patroon in de buis duwen. */
+        LOAD_TUBE,
+        /** Hoofdstuk 103: U met de Remington 870: één patroon uit de buis. */
+        UNLOAD_TUBE,
+        /** Hoofdstuk 103: X: de keuzeschakelaar één stand verder. Duurt niet: het gebeurt meteen. */
+        SELECT_FIRE
     }
 
     /** Het extra getal bij DRAW (hoofdstuk 55): uit de holster, of van je sling (dat duurt langer). */
@@ -100,12 +125,12 @@ public final class Firearms {
     /** Wanneer (speltijd) elke speler weer mag schieten. */
     private static final Map<UUID, Long> NEXT_SHOT = new HashMap<>();
     private static final Map<UUID, Action> ACTIONS = new HashMap<>();
-    /** In welk vakje elke speler het laatst een pistool vasthield (daar gaat een magazijn bij voorkeur in). */
+    /** In welk vakje elke speler het laatst een vuurwapen vasthield (daar gaat een magazijn bij voorkeur in). */
     private static final Map<UUID, Integer> LAST_GUN_SLOT = new HashMap<>();
 
     // ================================================================ De trekker
 
-    /** De trekker overhalen van het pistool in je hand, kijkend naar ({@code yaw}, {@code pitch}). */
+    /** De trekker overhalen van het wapen in je hand, kijkend naar ({@code yaw}, {@code pitch}). */
     public static Result fire(ServerPlayer player, float yaw, float pitch, boolean aiming) {
         ItemStack gun = player.getMainHandItem();
         FirearmType type = FirearmItem.typeOf(gun);
@@ -124,9 +149,14 @@ public final class Firearms {
         }
         List<GunPart> broken = parts.broken();
         if (!broken.isEmpty()) {
-            tell(player, Component.translatable("gun.imttech.broken", broken.getFirst().text()));
+            tell(player, Component.translatable("gun.imttech.broken", broken.getFirst().text(type)));
             click(player);
             return Result.BROKEN;
+        }
+        // Hoofdstuk 103: de schakelaar op safe: de trekker doet niets.
+        if (FirearmItem.fireMode(gun) == FirearmType.FireMode.SAFE) {
+            tell(player, Component.translatable("gun.imttech.safe"));
+            return Result.SAFE;
         }
         if (FirearmItem.jam(gun) != FirearmItem.JAM_NONE) {
             tell(player, Component.translatable("gun.imttech.jammed"));
@@ -139,6 +169,9 @@ public final class Firearms {
         }
         NEXT_SHOT.put(player.getUUID(), now + type.interval());
         if (!FirearmItem.chambered(gun)) {
+            if (type.manual() && FirearmItem.spent(gun)) {
+                tell(player, Component.translatable("gun.imttech.cycle_first"));
+            }
             click(player);
             return Result.EMPTY;
         }
@@ -160,14 +193,19 @@ public final class Firearms {
         }
         double spread = Math.toRadians(type.spread(aiming) * (1 + 0.5f * parts.wornFactor(GunPart.BARREL))
                 * GunSkillHooks.spreadFactor(player, type));
-        Vec3 direction = scatter(look, spread, random);
         float damage = type.damage() * parts.materialOf(GunPart.BARREL).damageFactor();
         damage *= 1 - 0.2f * Math.min(1, parts.wornFactor(GunPart.BARREL) / Math.max(0.01f, ImtConfig.Guns.WORN_JAM_FACTOR));
-        BulletEntity.shoot(level, player, type, damage, direction);
-        shotSound(level, player, player.getX(), player.getEyeY(), player.getZ(), SoundSource.PLAYERS,
+        // Hoofdstuk 103: hagel is een bundel korrels: één richting voor het schot, en elke korrel waaiert er nog wat af.
+        Vec3 aim = scatter(look, spread, random);
+        int pellets = type.pellets();
+        double fan = Math.toRadians(Math.max(0, ImtConfig.Guns.PELLET_SPREAD));
+        for (int i = 0; i < pellets; i++) {
+            BulletEntity.shoot(level, player, type, damage, pellets == 1 ? aim : scatter(aim, fan, random));
+        }
+        shotSound(level, player, type, player.getX(), player.getEyeY(), player.getZ(), SoundSource.PLAYERS,
                 0.95f + random.nextFloat() * 0.1f);
         // Hoofdstuk 60: de bewakers horen het (door de hele bunker).
-        com.senne.imttech.raven.Noises.make(level, player.position(), com.senne.imttech.config.ImtConfig.Guards.NOISE_GLOCK,
+        com.senne.imttech.raven.Noises.make(level, player.position(), type.noise(),
                 com.senne.imttech.raven.Noises.Kind.SHOT, player);
         if (player.isSprinting()) {
             player.setSprinting(false);
@@ -186,15 +224,20 @@ public final class Firearms {
             FirearmItem.setParts(gun, worn);
             List<GunPart> nowBroken = worn.broken();
             if (!nowBroken.isEmpty()) {
-                tell(player, Component.translatable("gun.imttech.just_broke", nowBroken.getFirst().text()));
+                tell(player, Component.translatable("gun.imttech.just_broke", nowBroken.getFirst().text(type)));
             }
+        }
+        if (type.manual()) {
+            // Een grendel of een pomp (jouw keuze): de lege huls blijft in de kamer tot je R drukt.
+            FirearmItem.setSpent(gun, true);
+            return Result.FIRED;
         }
         // De huls eruit en de volgende patroon erin; of een storing: de huls blijft klem zitten.
         if (random.nextFloat() * 100 < jamChance(worn)) {
             FirearmItem.setJam(gun, FirearmItem.JAM_STOVEPIPE);
             tell(player, Component.translatable("gun.imttech.stovepipe"));
         } else {
-            CasingEntity.eject(level, player);
+            CasingEntity.eject(level, player, type.caliber);
             if (FirearmItem.takeRoundFromMagazine(gun)) {
                 FirearmItem.setChambered(gun, true);
             }
@@ -249,20 +292,22 @@ public final class Firearms {
         return action == null ? null : action.kind();
     }
 
-    /** Zo lang (ticks) duurt deze handeling voor deze speler met dit pistool (het materiaal van het frame telt mee). */
+    /** Zo lang (ticks) duurt deze handeling voor deze speler met dit wapen (het materiaal van het frame telt mee). */
     public static int ticksFor(ServerPlayer player, ActionKind kind, @Nullable ItemStack gun) {
         return ticksFor(player, kind, 0, gun);
     }
 
     /**
      * Hetzelfde, met het extra getal van de handeling ({@code arg}: bij DRAW of je uit de holster of van je sling trekt).
-     * Sinds hoofdstuk 55 kan het "pistool" ook een lasergeweer zijn (trekken): dan telt zijn frame mee.
+     * Sinds hoofdstuk 55 kan het "wapen" ook een lasergeweer zijn (trekken): dan telt zijn frame mee.
      */
     public static int ticksFor(ServerPlayer player, ActionKind kind, int arg, @Nullable ItemStack gun) {
+        FirearmType type = gun == null ? null : FirearmItem.typeOf(gun);
         float base = switch (kind) {
             case EJECT_MAG -> ImtConfig.Guns.EJECT_TICKS;
             case INSERT_MAG -> ImtConfig.Guns.INSERT_TICKS;
-            case SLIDE_RELEASE -> ImtConfig.Guns.SLIDE_TICKS;
+            // Hoofdstuk 103: elk wapen laadt op zijn eigen tempo door (de slede, de spanhendel, de grendel, de pomp).
+            case SLIDE_RELEASE, CYCLE -> type == null ? ImtConfig.Guns.SLIDE_TICKS : type.cycleTicks();
             case TAP_RACK -> ImtConfig.Guns.TAP_RACK_TICKS;
             case CHAMBER_ROUND -> ImtConfig.Guns.CHAMBER_TICKS;
             case LOAD_ROUND -> ImtConfig.Guns.LOAD_ROUND_TICKS;
@@ -270,9 +315,12 @@ public final class Firearms {
             case DRAW -> arg == DRAW_FROM_SLING ? ImtConfig.Guns.SLING_DRAW_TICKS : ImtConfig.Guns.DRAW_TICKS;
             case UNLOAD_ROUND -> ImtConfig.Guns.UNLOAD_ROUND_TICKS;
             case UNLOAD_CHAMBER -> ImtConfig.Guns.UNLOAD_CHAMBER_TICKS;
+            case LOAD_TUBE -> ImtConfig.Guns.LOAD_SHELL_TICKS;
+            case UNLOAD_TUBE -> ImtConfig.Guns.UNLOAD_SHELL_TICKS;
+            case SELECT_FIRE -> 1;
         };
         float factor = 1;
-        if (gun != null && FirearmItem.typeOf(gun) != null && kind != ActionKind.LOAD_ROUND && kind != ActionKind.UNLOAD_ROUND) {
+        if (type != null && kind != ActionKind.LOAD_ROUND && kind != ActionKind.UNLOAD_ROUND) {
             factor *= FirearmItem.parts(gun).materialOf(GunPart.FRAME).handlingFactor();
         }
         if (gun != null && com.senne.imttech.weapons.LaserGunItem.typeOf(gun) != null) {
@@ -296,6 +344,13 @@ public final class Firearms {
             case RELOAD_POUCH -> GunGearHooks.reloadFromPouch(player, arg);
             case UNLOAD_ROUND -> unloadRound(player);
             case UNLOAD_CHAMBER -> unloadChamber(player);
+            case CYCLE -> cycle(player);
+            case LOAD_TUBE -> loadTube(player);
+            case UNLOAD_TUBE -> unloadTube(player);
+            case SELECT_FIRE -> {
+                selectFire(player);
+                yield false; // duurt niet: je spel hoeft op niets te wachten
+            }
             case INSERT_MAG, SLIDE_RELEASE, DRAW -> false; // die beginnen niet op verzoek
         };
         if (!started) {
@@ -318,7 +373,7 @@ public final class Firearms {
         return true;
     }
 
-    /** Het pistool in je hand, of null (met een melding als je er geen vasthoudt). */
+    /** Het vuurwapen in je hand, of null. */
     private static @Nullable ItemStack heldGun(ServerPlayer player) {
         ItemStack gun = player.getMainHandItem();
         return FirearmItem.typeOf(gun) == null ? null : gun;
@@ -330,15 +385,19 @@ public final class Firearms {
         if (gun == null || isBusy(player)) {
             return false;
         }
+        FirearmType type = FirearmItem.typeOf(gun);
+        if (type.tube()) {
+            return false; // een buis haal je er niet uit (hoofdstuk 103): U haalt er een patroon uit
+        }
         if (!FirearmItem.hasMagazine(gun)) {
             tell(player, Component.translatable("gun.imttech.no_magazine_hint"));
             return false;
         }
-        sound(player, ModSounds.GLOCK_MAG_OUT.get(), 0.8f);
+        sound(player, type.magOutSound(), 0.8f);
         return start(player, ActionKind.EJECT_MAG, player.getInventory().selected, 0, gun);
     }
 
-    /** Rechtsklik met een magazijn in je hand: in het pistool in je werkbalk dat er geen heeft. */
+    /** Rechtsklik met een magazijn in je hand: in het wapen in je werkbalk dat er geen heeft. */
     public static boolean insertMagazine(ServerPlayer player, InteractionHand hand) {
         ItemStack magazine = player.getItemInHand(hand);
         FirearmType type = MagazineItem.typeOf(magazine);
@@ -351,11 +410,11 @@ public final class Firearms {
             return false;
         }
         ItemStack gun = player.getInventory().getItem(gunSlot);
-        sound(player, ModSounds.GLOCK_MAG_IN.get(), 0.8f);
+        sound(player, type.magInSound(), 0.8f);
         return start(player, ActionKind.INSERT_MAG, player.getInventory().selected, gunSlot, gun);
     }
 
-    /** Het vakje met een pistool van dit soort zonder magazijn: eerst waar je het laatst een pistool vasthield, dan de werkbalk, dan de rest. */
+    /** Het vakje met een wapen van dit soort zonder magazijn: eerst waar je het laatst een wapen vasthield, dan de werkbalk, dan de rest. */
     private static int gunWithoutMagazine(ServerPlayer player, FirearmType type) {
         Inventory inventory = player.getInventory();
         Integer last = LAST_GUN_SLOT.get(player.getUUID());
@@ -397,26 +456,28 @@ public final class Firearms {
             tell(player, Component.translatable("gun.imttech.incomplete", FirearmItem.parts(gun).missing().size()));
             return false;
         }
-        if (findRound(player) < 0) {
-            tell(player, Component.translatable("gun.imttech.no_rounds"));
+        FirearmType type = FirearmItem.typeOf(gun);
+        if (findRound(player, type.caliber) < 0) {
+            tell(player, Component.translatable("gun.imttech.no_rounds_of", type.caliber.text()));
             return false;
         }
-        sound(player, ModSounds.GLOCK_SLIDE.get(), 0.7f);
+        sound(player, type.rackSound(), 0.7f);
         return start(player, ActionKind.CHAMBER_ROUND, player.getInventory().selected, 0, gun);
     }
 
     /** R met een magazijn in je hand: één patroon erin. */
     private static boolean loadRound(ServerPlayer player) {
         ItemStack magazine = player.getMainHandItem();
-        if (MagazineItem.typeOf(magazine) == null || isBusy(player)) {
+        FirearmType type = MagazineItem.typeOf(magazine);
+        if (type == null || isBusy(player)) {
             return false;
         }
         if (MagazineItem.isFull(magazine)) {
             tell(player, Component.translatable("gun.imttech.magazine_full"));
             return false;
         }
-        if (findRound(player) < 0) {
-            tell(player, Component.translatable("gun.imttech.no_rounds"));
+        if (findRound(player, type.caliber) < 0) {
+            tell(player, Component.translatable("gun.imttech.no_rounds_of", type.caliber.text()));
             return false;
         }
         return start(player, ActionKind.LOAD_ROUND, player.getInventory().selected, 0, null);
@@ -435,7 +496,7 @@ public final class Firearms {
         return start(player, ActionKind.UNLOAD_ROUND, player.getInventory().selected, 0, null);
     }
 
-    /** U met een pistool zonder magazijn: de patroon uit de kamer (hoofdstuk 54). Met een vol magazijn erin: eerst dat eruit. */
+    /** U met een wapen zonder magazijn: de patroon uit de kamer (hoofdstuk 54). Met een vol magazijn erin: eerst dat eruit. */
     private static boolean unloadChamber(ServerPlayer player) {
         ItemStack gun = heldGun(player);
         if (gun == null || isBusy(player)) {
@@ -449,28 +510,103 @@ public final class Firearms {
             tell(player, Component.translatable("gun.imttech.eject_first"));
             return false;
         }
-        if (!FirearmItem.chambered(gun)) {
+        if (!FirearmItem.chambered(gun) && !FirearmItem.spent(gun)) {
             tell(player, Component.translatable("gun.imttech.nothing_to_unload"));
             return false;
         }
-        sound(player, ModSounds.GLOCK_SLIDE.get(), 0.7f);
+        sound(player, FirearmItem.typeOf(gun).rackSound(), 0.7f);
         return start(player, ActionKind.UNLOAD_CHAMBER, player.getInventory().selected, 0, gun);
     }
 
-    /** Het vakje met patronen (niet je hand), of -1. */
-    private static int findRound(ServerPlayer player) {
+    // ================================================================ Hoofdstuk 103: doorladen, de buis, de schakelaar
+
+    /** Moet (en kan) dit wapen met R doorgeladen worden: een grendel of pomp zonder scherpe patroon in de kamer, met patronen klaar? */
+    public static boolean needsCycle(ItemStack gun) {
+        FirearmType type = FirearmItem.typeOf(gun);
+        return type != null && type.manual() && !FirearmItem.chambered(gun) && FirearmItem.jam(gun) == FirearmItem.JAM_NONE
+                && (FirearmItem.roundsInMagazine(gun) > 0 || FirearmItem.spent(gun));
+    }
+
+    /** R met een grendel of een pomp: doorladen. */
+    private static boolean cycle(ServerPlayer player) {
+        ItemStack gun = heldGun(player);
+        if (gun == null || isBusy(player) || !needsCycle(gun)) {
+            return false;
+        }
+        if (!FirearmItem.works(gun)) {
+            tell(player, Component.translatable("gun.imttech.incomplete", FirearmItem.parts(gun).missing().size()));
+            return false;
+        }
+        sound(player, FirearmItem.typeOf(gun).rackSound(), 0.85f);
+        return start(player, ActionKind.CYCLE, player.getInventory().selected, 0, gun);
+    }
+
+    /** R met de Remington 870: één patroon uit je inventaris in de buis. */
+    private static boolean loadTube(ServerPlayer player) {
+        ItemStack gun = heldGun(player);
+        if (gun == null || isBusy(player)) {
+            return false;
+        }
+        FirearmType type = FirearmItem.typeOf(gun);
+        if (!type.tube() || FirearmItem.jam(gun) != FirearmItem.JAM_NONE) {
+            return false;
+        }
+        if (FirearmItem.roundsInMagazine(gun) >= FirearmItem.capacity(gun)) {
+            tell(player, Component.translatable("gun.imttech.tube_full"));
+            return false;
+        }
+        if (findRound(player, type.caliber) < 0) {
+            tell(player, Component.translatable("gun.imttech.no_rounds_of", type.caliber.text()));
+            return false;
+        }
+        return start(player, ActionKind.LOAD_TUBE, player.getInventory().selected, 0, gun);
+    }
+
+    /** U met de Remington 870: één patroon uit de buis, in je inventaris. */
+    private static boolean unloadTube(ServerPlayer player) {
+        ItemStack gun = heldGun(player);
+        if (gun == null || isBusy(player)) {
+            return false;
+        }
+        FirearmType type = FirearmItem.typeOf(gun);
+        if (!type.tube() || FirearmItem.roundsInMagazine(gun) <= 0) {
+            return false;
+        }
+        return start(player, ActionKind.UNLOAD_TUBE, player.getInventory().selected, 0, gun);
+    }
+
+    /** X: de keuzeschakelaar één stand verder. Geeft de nieuwe stand, of null als dit wapen geen schakelaar heeft. */
+    public static @Nullable FirearmType.FireMode selectFire(ServerPlayer player) {
+        ItemStack gun = heldGun(player);
+        if (gun == null || isBusy(player)) {
+            return null;
+        }
+        FirearmType type = FirearmItem.typeOf(gun);
+        if (!type.selectable()) {
+            tell(player, Component.translatable("gun.imttech.no_selector", type.text()));
+            return null;
+        }
+        FirearmType.FireMode mode = FirearmItem.nextFireMode(gun);
+        sound(player, ModSounds.GUN_SELECTOR.get(), 0.6f);
+        player.displayClientMessage(Component.translatable("gun.imttech.fire_mode", mode.text())
+                .withStyle(mode == FirearmType.FireMode.SAFE ? ChatFormatting.GREEN : ChatFormatting.GOLD), true);
+        return mode;
+    }
+
+    /** Het vakje met patronen van dit kaliber (niet je hand), of -1. */
+    private static int findRound(ServerPlayer player, Caliber caliber) {
         Inventory inventory = player.getInventory();
         for (int slot = 0; slot < inventory.items.size(); slot++) {
-            if (slot != inventory.selected && inventory.getItem(slot).is(ModItems.ROUND_9MM.get())) {
+            if (slot != inventory.selected && inventory.getItem(slot).is(caliber.round())) {
                 return slot;
             }
         }
         return -1;
     }
 
-    /** Eén patroon uit je inventaris halen (geeft false als je er geen hebt). */
-    private static boolean takeRound(ServerPlayer player) {
-        int slot = findRound(player);
+    /** Eén patroon van dit kaliber uit je inventaris halen (geeft false als je er geen hebt). */
+    private static boolean takeRound(ServerPlayer player, Caliber caliber) {
+        int slot = findRound(player, caliber);
         if (slot < 0) {
             return false;
         }
@@ -478,11 +614,16 @@ public final class Firearms {
         return true;
     }
 
-    /** Zoveel patronen heb je bij je (los). */
+    /** Zoveel 9mm-patronen heb je bij je (los). */
     public static int roundsCarried(ServerPlayer player) {
+        return roundsCarried(player, Caliber.MM9);
+    }
+
+    /** Zoveel patronen van dit kaliber heb je bij je (los). */
+    public static int roundsCarried(ServerPlayer player, Caliber caliber) {
         int count = 0;
         for (ItemStack stack : player.getInventory().items) {
-            if (stack.is(ModItems.ROUND_9MM.get())) {
+            if (stack.is(caliber.round())) {
                 count += stack.getCount();
             }
         }
@@ -503,7 +644,7 @@ public final class Firearms {
             } else if (FirearmItem.typeOf(held) != null && needsSlideRelease(held)) {
                 // De slede staat open en er zit een vol magazijn in: loslaten (de eerste patroon gaat in de kamer).
                 // Hoofdstuk 74: het eigen geluid van de slide stop (alleen de klap naar voren, niet heen en weer).
-                sound(player, ModSounds.GLOCK_SLIDE_RELEASE.get(), 0.85f);
+                sound(player, FirearmItem.typeOf(held).releaseSound(), 0.85f);
                 start(player, ActionKind.SLIDE_RELEASE, player.getInventory().selected, 0, held);
             }
         }
@@ -515,9 +656,13 @@ public final class Firearms {
         }
     }
 
-    /** Moet de slede nog losgelaten worden: kamer leeg, patronen in het magazijn, geen storing, alles heel? */
+    /**
+     * Moet de slede nog losgelaten worden: kamer leeg, patronen in het magazijn, geen storing, alles heel? Alleen een
+     * zelfladend wapen doet dat vanzelf; een grendel of een pomp laad je zelf door met R (hoofdstuk 103, jouw keuze).
+     */
     private static boolean needsSlideRelease(ItemStack gun) {
-        return !FirearmItem.chambered(gun) && FirearmItem.roundsInMagazine(gun) > 0
+        FirearmType type = FirearmItem.typeOf(gun);
+        return type != null && !type.manual() && !FirearmItem.chambered(gun) && FirearmItem.roundsInMagazine(gun) > 0
                 && FirearmItem.jam(gun) == FirearmItem.JAM_NONE && FirearmItem.works(gun);
     }
 
@@ -569,28 +714,38 @@ public final class Firearms {
                 }
             }
             case TAP_RACK -> {
+                FirearmType type = FirearmItem.typeOf(held);
                 int jam = FirearmItem.jam(held);
                 FirearmItem.setJam(held, FirearmItem.JAM_NONE);
                 if (jam == FirearmItem.JAM_STOVEPIPE) {
-                    CasingEntity.eject(level, player);
+                    CasingEntity.eject(level, player, type.caliber);
                 }
                 // Een ketser gaat verloren (de slechte patroon valt eruit); de volgende komt uit het magazijn.
                 FirearmItem.setChambered(held, false);
+                FirearmItem.setSpent(held, false);
                 if (FirearmItem.takeRoundFromMagazine(held)) {
                     FirearmItem.setChambered(held, true);
                 }
                 GunSkillHooks.cleared(player, held);
             }
             case CHAMBER_ROUND -> {
-                if (!FirearmItem.chambered(held) && takeRound(player)) {
+                FirearmType type = FirearmItem.typeOf(held);
+                if (!FirearmItem.chambered(held) && takeRound(player, type.caliber)) {
+                    // Zat er nog een lege huls in (een grendel of pomp): die valt er eerst uit.
+                    if (FirearmItem.spent(held)) {
+                        FirearmItem.setSpent(held, false);
+                        CasingEntity.eject(level, player, type.caliber);
+                    }
                     FirearmItem.setChambered(held, true);
-                    sound(player, ModSounds.GLOCK_SLIDE.get(), 0.8f);
+                    sound(player, type.rackSound(), 0.8f);
                 }
             }
             case LOAD_ROUND -> {
                 // Hoofdstuk 67: uit een Ammo Box (rechtsklik inhouden met een magazijn), of uit je inventaris (R).
                 boolean fromBox = action.arg() == FROM_BOX;
-                if (!MagazineItem.isFull(held) && (fromBox ? com.senne.imttech.armory.AmmoBoxes.takeRound(player) : takeRound(player))) {
+                FirearmType type = MagazineItem.typeOf(held);
+                if (type != null && !MagazineItem.isFull(held)
+                        && (fromBox ? com.senne.imttech.armory.AmmoBoxes.takeRound(player) : takeRound(player, type.caliber))) {
                     MagazineItem.setRounds(held, MagazineItem.rounds(held) + 1);
                     sound(player, ModSounds.GLOCK_ROUND_LOAD.get(), 0.7f);
                     GunSkillHooks.roundLoaded(player);
@@ -606,21 +761,67 @@ public final class Firearms {
             case DRAW -> GunSkillHooks.drawn(player, held);
             case UNLOAD_ROUND -> {
                 int rounds = MagazineItem.rounds(held);
-                if (rounds > 0) {
+                FirearmType type = MagazineItem.typeOf(held);
+                if (rounds > 0 && type != null) {
                     MagazineItem.setRounds(held, rounds - 1);
                     // Hoofdstuk 67: met sneak op een Ammo Box gaat de patroon terug in de doos (is die vol, dan in je inventaris).
                     if (action.arg() != FROM_BOX || !com.senne.imttech.armory.AmmoBoxes.putRound(player)) {
-                        give(player, new ItemStack(ModItems.ROUND_9MM.get()));
+                        give(player, new ItemStack(type.caliber.round()));
                     }
                     sound(player, ModSounds.GLOCK_ROUND_LOAD.get(), 0.6f);
                 }
             }
             case UNLOAD_CHAMBER -> {
-                if (FirearmItem.chambered(held) && FirearmItem.roundsInMagazine(held) == 0) {
-                    FirearmItem.setChambered(held, false);
-                    give(player, new ItemStack(ModItems.ROUND_9MM.get()));
-                    sound(player, ModSounds.CASING_TINK.get(), 0.5f);
+                FirearmType type = FirearmItem.typeOf(held);
+                if (FirearmItem.roundsInMagazine(held) == 0) {
+                    if (FirearmItem.chambered(held)) {
+                        FirearmItem.setChambered(held, false);
+                        give(player, new ItemStack(type.caliber.round()));
+                        sound(player, ModSounds.CASING_TINK.get(), 0.5f);
+                    } else if (FirearmItem.spent(held)) {
+                        // Hoofdstuk 103: een lege huls uit de kamer van een grendel of pomp.
+                        FirearmItem.setSpent(held, false);
+                        CasingEntity.eject(level, player, type.caliber);
+                    }
                 }
+            }
+            case CYCLE -> {
+                FirearmType type = FirearmItem.typeOf(held);
+                if (!needsCycle(held)) {
+                    return;
+                }
+                // Een storing gebeurt bij een grendel of pomp hier: de lege huls blijft vastzitten.
+                if (FirearmItem.spent(held) && player.getRandom().nextFloat() * 100 < jamChance(FirearmItem.parts(held))) {
+                    FirearmItem.setJam(held, FirearmItem.JAM_STOVEPIPE);
+                    tell(player, Component.translatable("gun.imttech.stovepipe"));
+                    return;
+                }
+                if (FirearmItem.spent(held)) {
+                    FirearmItem.setSpent(held, false);
+                    CasingEntity.eject(level, player, type.caliber);
+                }
+                if (FirearmItem.takeRoundFromMagazine(held)) {
+                    FirearmItem.setChambered(held, true);
+                }
+            }
+            case LOAD_TUBE -> {
+                FirearmType type = FirearmItem.typeOf(held);
+                if (type.tube() && FirearmItem.roundsInMagazine(held) < FirearmItem.capacity(held)
+                        && takeRound(player, type.caliber)) {
+                    FirearmItem.setRoundsInMagazine(held, FirearmItem.roundsInMagazine(held) + 1);
+                    sound(player, ModSounds.GLOCK_ROUND_LOAD.get(), 0.8f);
+                    GunSkillHooks.roundLoaded(player);
+                }
+            }
+            case UNLOAD_TUBE -> {
+                FirearmType type = FirearmItem.typeOf(held);
+                if (type.tube() && FirearmItem.takeRoundFromMagazine(held)) {
+                    give(player, new ItemStack(type.caliber.round()));
+                    sound(player, ModSounds.GLOCK_ROUND_LOAD.get(), 0.6f);
+                }
+            }
+            case SELECT_FIRE -> {
+                // Duurt niet: zie request.
             }
         }
     }
@@ -638,29 +839,37 @@ public final class Firearms {
     public static final double SHOT_FAR_FROM = 12;
     public static final double SHOT_FAR = 128;
 
+    /** Het schot van een Glock (voor wie het wapen niet weet). */
+    public static void shotSound(net.minecraft.world.level.Level level, @Nullable Entity shooter, double x, double y, double z,
+                                 SoundSource source, float pitch) {
+        shotSound(level, shooter, FirearmType.GLOCK_19, x, y, z, source, pitch);
+    }
+
     /**
      * Het geluid van een schot voor iedereen behalve de schutter (die hoort het al in zijn eigen spel), zoals de "3p"-
      * geluiden van TACZ (hoofdstuk 74). Vroeger hoorde je een Glock maar tot 16 blokken ver. Nu: tot 32 blokken het
      * schot van dichtbij, en vanaf 12 tot 128 blokken het schot van ver weg (tussen 12 en 32 lopen ze in elkaar over).
-     * Minecraft laat elk geluid zelf zachter worden met de afstand.
+     * Minecraft laat elk geluid zelf zachter worden met de afstand. Sinds hoofdstuk 103 elk wapen zijn eigen schot.
      */
-    public static void shotSound(net.minecraft.world.level.Level level, @Nullable Entity shooter, double x, double y, double z,
-                                 SoundSource source, float pitch) {
+    public static void shotSound(net.minecraft.world.level.Level level, @Nullable Entity shooter, FirearmType type, double x,
+                                 double y, double z, SoundSource source, float pitch) {
         if (!(level instanceof ServerLevel server)) {
             return;
         }
         long seed = server.getRandom().nextLong();
+        var near = net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT.wrapAsHolder(type.fireSound());
+        var far = net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT.wrapAsHolder(type.fireFarSound());
         for (ServerPlayer listener : server.players()) {
             if (listener == shooter) {
                 continue;
             }
             int layers = shotLayers(Math.sqrt(listener.distanceToSqr(x, y, z)));
             if ((layers & SHOT_LAYER_NEAR) != 0) {
-                listener.connection.send(new net.minecraft.network.protocol.game.ClientboundSoundPacket(ModSounds.GLOCK_FIRE,
+                listener.connection.send(new net.minecraft.network.protocol.game.ClientboundSoundPacket(near,
                         source, x, y, z, 1.0f, pitch, seed));
             }
             if ((layers & SHOT_LAYER_FAR) != 0) {
-                listener.connection.send(new net.minecraft.network.protocol.game.ClientboundSoundPacket(ModSounds.GLOCK_FIRE_FAR,
+                listener.connection.send(new net.minecraft.network.protocol.game.ClientboundSoundPacket(far,
                         source, x, y, z, 1.0f, pitch, seed));
             }
         }
@@ -694,7 +903,7 @@ public final class Firearms {
             return;
         }
         ItemStack held = player.getMainHandItem();
-        if (!held.isEmpty() && !held.is(ModItems.CASING_9MM.get())) {
+        if (!held.isEmpty() && Caliber.ofCasing(held) == null) {
             return;
         }
         // Hoofdstuk 67: een klik op een Ammo Box of Pegboard is voor dat blok (hulzen erin, iets pakken), niet om op te rapen.
@@ -709,7 +918,7 @@ public final class Firearms {
         }
     }
 
-    /** Alle hulzen binnen {@code [guns] casingPickupRadius} van dit punt oprapen; geeft hoeveel. */
+    /** Alle hulzen binnen {@code [guns] casingPickupRadius} van dit punt oprapen (elk kaliber zijn eigen huls); geeft hoeveel. */
     public static int pickUpCasings(ServerPlayer player, Vec3 at) {
         double radius = ImtConfig.Guns.CASING_PICKUP_RADIUS;
         List<CasingEntity> casings = player.serverLevel().getEntitiesOfClass(CasingEntity.class,
@@ -717,10 +926,14 @@ public final class Firearms {
         if (casings.isEmpty()) {
             return 0;
         }
-        for (Entity casing : casings) {
+        Map<Caliber, Integer> counts = new EnumMap<>(Caliber.class);
+        for (CasingEntity casing : casings) {
+            counts.merge(casing.caliber(), 1, Integer::sum);
             casing.discard();
         }
-        give(player, new ItemStack(ModItems.CASING_9MM.get(), casings.size()));
+        for (Map.Entry<Caliber, Integer> entry : counts.entrySet()) {
+            give(player, new ItemStack(entry.getKey().casing(), entry.getValue()));
+        }
         sound(player, ModSounds.CASING_TINK.get(), 0.6f);
         player.displayClientMessage(Component.translatable("gun.imttech.casings_picked", casings.size())
                 .withStyle(ChatFormatting.GOLD), true);

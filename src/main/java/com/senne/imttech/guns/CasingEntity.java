@@ -4,6 +4,8 @@ import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.registry.ModEntities;
 import com.senne.imttech.registry.ModSounds;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
@@ -22,6 +24,8 @@ import net.minecraft.world.phys.Vec3;
  */
 public class CasingEntity extends Entity {
     private static final double GRAVITY = 0.05;
+    /** Hoofdstuk 103: van welk kaliber deze huls is (zo tekent je spel de juiste huls, en raap je de juiste op). */
+    private static final EntityDataAccessor<Byte> CALIBER = SynchedEntityData.defineId(CasingEntity.class, EntityDataSerializers.BYTE);
     private int age;
     /** Alleen in je spel: hoe hij ligt (draait als hij vliegt). */
     public float spin;
@@ -32,9 +36,15 @@ public class CasingEntity extends Entity {
         noCulling = false;
     }
 
-    /** Een huls die rechts uit het pistool van {@code shooter} springt. */
+    /** Een 9mm-huls die rechts uit het pistool van {@code shooter} springt. */
     public static CasingEntity eject(ServerLevel level, LivingEntity shooter) {
+        return eject(level, shooter, Caliber.MM9);
+    }
+
+    /** Een huls van dit kaliber die rechts uit het wapen van {@code shooter} springt. */
+    public static CasingEntity eject(ServerLevel level, LivingEntity shooter, Caliber caliber) {
         CasingEntity casing = new CasingEntity(ModEntities.CASING.get(), level);
+        casing.entityData.set(CALIBER, (byte) caliber.ordinal());
         Vec3 look = shooter.getViewVector(1.0f);
         Vec3 right = look.cross(new Vec3(0, 1, 0));
         right = right.lengthSqr() < 1.0E-6 ? new Vec3(1, 0, 0) : right.normalize();
@@ -53,6 +63,12 @@ public class CasingEntity extends Entity {
 
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        builder.define(CALIBER, (byte) 0);
+    }
+
+    /** Van welk kaliber deze huls is. */
+    public Caliber caliber() {
+        return Caliber.byId(entityData.get(CALIBER));
     }
 
     @Override
@@ -109,10 +125,12 @@ public class CasingEntity extends Entity {
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
         age = tag.getInt("age");
+        entityData.set(CALIBER, tag.getByte("caliber"));
     }
 
     @Override
     protected void addAdditionalSaveData(CompoundTag tag) {
         tag.putInt("age", age);
+        tag.putByte("caliber", entityData.get(CALIBER));
     }
 }

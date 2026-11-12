@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 537 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 541 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -7294,6 +7294,114 @@ HUD al weg was.
 - [x] **Gezien** (`gradlew runVisualCheck -Ponly=deadbattery`): een nieuwe foto `33a_battery_dead_last_words` (de HUD nog
       aan, rood, met de zin), daarna `33b` tot `33f` zoals voorheen. Geen nieuwe automatische test: het gebeurt alleen in je
       spel (de stem en de HUD).
+
+### 103. De grote update 2.0: MP5, AK-47, AWP en Remington 870, en attachments (12 november)
+
+Jouw wens: "Ik wil echt een supper coole grote update doen: ik wil meer guns, deze werken net zoals de Glock, de models
+zijn ook zoals de Glock. De guns die ik als eerste wil zijn MP5, AWP sniper rifle, een shotgun, AK-47. Wat ik ook wil is
+een attachment systeem, de attachments maak je net zoals de gun parts in de Gunsmith Table; attachments die ik wil zijn
+scopes (red dot, x2, x3, x4, x8 zoom sniperscope, ook moet je een verstelbare scope kunnen zoomen op verschillende
+standen), suppressors, extended mags en grips." Omdat jij het een grote update noemt, wordt dit **versie 2.0.0**.
+
+**Jouw antwoorden** (12 november, acht vragen):
+- **De shotgun is de Remington 870**: een pomp, met een buis onder de loop (6 + 1) die je patroon per patroon laadt. Geen
+  magazijn.
+- **Doorladen doe je zelf met R**: "je moet na elk schot op R drukken om terug een round in de chamber te doen bij wapens
+  die niet semi-auto zijn en zelf herladen door de recoil". De AWP (een grendel) en de 870 (een pomp) doen dus niets
+  vanzelf; de MP5 en de AK-47 laden zichzelf door, zoals de Glock.
+- **Kijkers**: alleen een **red dot** en **één sniperkijker die van 1x tot 10x gaat, en alles ertussenin**. De vaste 2x,
+  3x, 4x en 8x hoeven niet.
+- **Het beeld door een kijker**: je ziet altijd je wapen nog. De red dot zoals in TACZ; bij de sniperkijker kijk je erin,
+  maar je ziet het 3D-model nog een beetje (geen zwart beeld zoals de lasersniper nu heeft).
+- **Een extended mag is een eigen, groter magazijn** per wapen (Glock 33, MP5 40, AK-47 40, AWP 10 patronen), gemaakt op de
+  Gunsmith Table; je laadt en wisselt het zoals elk magazijn. De 870 krijgt een verlengbuis op het wapen (+2).
+- **Attachments zet je er alleen op de Gunsmith Table op en af** (slepen en vastklikken, zoals de onderdelen).
+- **Een keuzeschakelaar op een toets, met "safe"**: AK-47 safe, semi of auto; MP5 safe, semi, 3 schoten of auto; safe ook
+  op de AWP en de 870.
+- **Dit wil je er ook bij**: Raven-soldaten met de nieuwe wapens, attachments in buit (kisten van bunkers en torens, dode
+  soldaten), attachments ook op de lasergeweren (red dot, sniperkijker en grips; geen suppressor of extended mag), en een
+  tweepoot voor de AWP (sneak je, dan staat hij op zijn pootjes).
+
+**Mijn invulling** (zeg het als je het anders wil):
+- **De modellen**: zoals de Glock (hoofdstuk 74): OBJ-modellen uit `tools/gunmesh.py`, de omtrek nagemeten van een foto
+  van het echte wapen, de texture door het script geschilderd. Alle wapens op dezelfde schaal als de Glock (1 pixel van
+  het model = 12,8 mm), zodat een patroon, een red dot of een suppressor op elk wapen even groot is. De **MP5** is de A3
+  (uitschuifbare kolf), de **AK-47** de klassieke met hout, de **AWP** de groene Arctic Warfare uit CS, de **870** met hout.
+- **Munitie**: de MP5 schiet dezelfde **9mm** als de Glock. Nieuw: **7.62x39mm** (AK-47), **.338 Lapua Magnum** (AWP) en
+  **12 Gauge Shell** met hagel (870: 8 korrels per schot). Elk met zijn eigen huls en kogelpunt, geperst op de Reloading
+  Bench; de hulzen vliegen eruit en je raapt ze op, zoals bij de Glock. Bij de AWP en de 870 komt de huls er pas uit als
+  je doorlaadt.
+- **Onderdelen**: elk wapen uit zijn eigen zes onderdelen in dezelfde zes rollen als de Glock (frame, slede, loop, veren,
+  slagpin, trekker), met de namen van dat wapen (bij de AK-47: Receiver, Bolt Carrier, Barrel, Recoil Spring, Firing Pin,
+  Trigger Group). Een onderdeel van een AK past niet in een MP5. Staal en titanium; polymeer blijft iets van de Glock.
+  Slijtage en storingen zoals bij de Glock; bij een grendel of pomp gebeurt een storing bij het doorladen (de huls zit
+  vast: nog eens R).
+- **R bij de AWP en de 870**: moet er doorgeladen worden (een lege huls in de kamer, of een lege kamer, en er zitten
+  patronen in het magazijn of de buis), dan laadt R door. Anders doet R wat hij bij de Glock doet (AWP: magazijn kiezen of
+  uitwerpen) of duwt hij een patroon in de buis (870; inhouden = doorgaan). Sneak + R steekt een patroon met de hand in de
+  kamer. U haalt bij de 870 een patroon uit de buis.
+- **De keuzeschakelaar**: toets **X** (alleen met een vuurwapen in je hand; V is al de zoomtoets van de bril). Een nieuw
+  wapen staat op semi. De Glock heeft geen schakelaar (een echte Glock heeft geen veiligheidspal).
+- **Dragen**: de MP5, AK-47, AWP en 870 krijgen op de Gunsmith Table een Gun Sling en gaan dan in je sling-vakjes (rug en
+  borst), zoals de lasergeweren. De Glock blijft in de holster.
+- **Attachments**: vier plekken op een wapen: **kijker** (Red Dot Sight of Sniper Scope), **loop** (suppressor),
+  **onder de loop** (Vertical Grip, Angled Grip of Bipod) en bij de 870 de **buis** (Tube Extension). Drie suppressors
+  naar kaliber: 9mm (Glock, MP5), Rifle (AK-47, AWP) en Shotgun (870). Wat past waar: de Glock alleen red dot en
+  suppressor; de MP5 en AK-47 alles behalve de tweepoot; de AWP beide kijkers, suppressor en tweepoot; de 870 red dot,
+  suppressor en verlengbuis. Wat ze doen: red dot = sneller en preciezer richten; sniperkijker = zoomen met het scrollwiel
+  terwijl je richt; suppressor = veel stiller (bewakers horen het pas van dichtbij, geen vlam), een tikje minder schade;
+  Vertical Grip = minder terugslag; Angled Grip = sneller richten en trekken; tweepoot = sneak en sta stil: bijna geen
+  terugslag. Attachments slijten niet.
+- **Alle getallen** (schade, snelheid, bereik, magazijnen, terugslag) per wapen in de config onder `[guns]`.
+
+**De stappen** (elke stap: code, modellen, geluiden, tests, screenshots, en een eigen commit):
+- [x] **1. Het systeem voor meer vuurwapens, en de MP5** (12 november, versie 2.0.0, protocol 40) —
+      **Het systeem** (`guns/`): `FirearmType` kent nu per wapen zijn kaliber (`Caliber`), zijn werking (`Action`:
+      zelfladend, grendel, pomp), zijn vuurstanden (`FireMode`), of het een lang wapen is, en zijn geluiden; elk rijtje
+      onder `[guns]` heeft vijf getallen (Glock 19, MP5, AK-47, AWP, Remington 870), plus nieuw `extendedCapacity`,
+      `pellets`, `pelletSpread`, `cycleTicks`, `noise`, `burstShots`, `loadShellTicks`, `unloadShellTicks`. Onderdelen
+      zijn een item per wapen (`GunPartItem(type, part)`: de Glock houdt `gun_slide`, de MP5 heet `mp5_slide`), met de
+      namen van dat wapen (`GunPart.text(type)`); magazijnen ook per wapen, met alvast een plek voor het lange magazijn
+      (`GunMagazine(rounds, extended)`). Drie nieuwe data components: `gun_fire_mode`, `gun_spent` (een lege huls in de
+      kamer van een grendel of pomp) en `gun_sling`. `Firearms`: de stand "safe", automatisch en 3 schoten (je spel haalt
+      de trekker telkens over en doet alvast wat de server doet, zodat het niet hapert), en alvast de handelingen voor
+      stap 3 en 4: `CYCLE` (doorladen met R), `LOAD_TUBE`, `UNLOAD_TUBE`, en `SELECT_FIRE` (X). Hulzen weten van welk
+      kaliber ze zijn (`CasingEntity`). De Gunsmith Table (`GunSlot`: de zes onderdelen en de sling): het frame zegt welk
+      wapen het wordt, een onderdeel van een ander wapen past niet, en bij een lang wapen zitten alleen de veer en de
+      slagpin achter de grendel. `Gear`: een lang vuurwapen met een sling past in een sling-vakje, niet in de holster.
+      **In je spel** (`client/guns/`): `FirearmRig` per wapen (met de hendel om door te laden en de maten van het
+      magazijn), `FirearmRenderer` voor lange wapens (je linkerhand onder de handbeschermer, aan de spanhendel, bij het
+      magazijn), `FirearmModels` (onderdelen per wapen, losse bewegende stukken zoals `slide_handle`, de sling, het hele
+      wapen op je rug), `FirearmControl` (X, automatisch, salvo's, R voor grendel en pomp), `FirearmHud` (de stand links
+      van de naam), `GunsmithScreen` (elk wapen; een lang wapen van opzij; alleen de plekken van dat wapen in de lijst,
+      zodat de tafel van de Glock bleef zoals hij was), `GunsmithMakePanel` (de groep MP5; acht rijen passen),
+      `GearLayer` (een vuurwapen aan je sling), het Pegboard (8 x 4 gaatjes).
+      **De MP5** (`tools/mp5_model.py`, met de nieuwe bouwdoos `tools/longgun.py` en `tools/trace_outline.py` om de
+      omtrek van een foto te halen): de MP5A3 met uitgeschoven kolf, nagemeten van een foto (Wikimedia "HK MP5 noBG"),
+      2.350 vlakken, twee plaatjes (staal en titanium). Zijn geluiden (`generate_sounds.py`: `firearm_shot` met knoppen
+      per wapen, `mp5_fire` in drie varianten en van ver, `mp5_charge`, `rifle_mag_out`/`_in`, `gun_selector`), 13
+      recepten (elk onderdeel in staal en titanium met polymeer als kenmerk, en het magazijn), teksten, het tabblad
+      Weapons, de Curios-tag "sling". De MP5-items horen voorlopig bij de onderwerpen "Glock 19" en "Gunsmith Table" van
+      How it works (hun eigen uitleg komt in stap 9).
+      **Tests** (nieuw: `FirearmGameTests`): `mp5_fires_and_obeys_its_fire_selector` (29 + 1, het tempo van het wapen,
+      de schakelaar rond, safe schiet niet, de Glock heeft er geen), `mp5_takes_9mm_rounds_but_only_its_own_magazine`,
+      `gunsmith_table_builds_an_mp5_from_its_own_parts` en `mp5_needs_a_sling_to_hang_on_your_back`;
+      `gunsmith_table_has_one_recipe_per_part` telt nu elk wapen. **Gezien** (`gradlew runVisualCheck -Ponly=mp5`:
+      `mp01` tot `mp17`: heup, richten door de ring, schot, de schakelaar op AUTO, automatisch vuur, magazijn eruit en
+      erin, een patroon met de hand in de kamer, bekijken, een magazijn in je hand, de Gunsmith Table van opzij, Make
+      parts, derde persoon, en op je rug aan zijn sling), en `-Ponly=glock` ter controle: de Glock is zoals hij was.
+      **Mijn invullingen erbij**: de schakelaar staat op **X** (V is de zoomtoets van de bril); de MP5 is de A3 met de
+      uitschuifbare kolf (de foto die er was), niet de A2; het vizier is een ring waar je doorheen kijkt, groter dan het
+      echte gaatje; elk onderdeel kost polymeer erbij.
+- [ ] **2. De AK-47** — met 7.62x39mm op de Reloading Bench en in de Ammo Box.
+- [ ] **3. De AWP** — met .338 Lapua Magnum, de grendel op R, en een eenvoudig ijzeren vizier zolang er geen kijker op zit.
+- [ ] **4. De Remington 870** — met 12 Gauge Shells, de pomp op R, de buis patroon per patroon, en hagel.
+- [ ] **5. Attachments: het systeem, de Red Dot Sight en de Sniper Scope (1x tot 10x)** — maken op "Make parts", op het
+      wapen slepen, en het beeld door de kijker met het wapen nog in beeld.
+- [ ] **6. Suppressors, grips, de tweepoot, de extended mags en de verlengbuis.**
+- [ ] **7. Attachments op de lasergeweren** (red dot, sniperkijker, grips, op de Laser Workbench).
+- [ ] **8. Raven-soldaten met de nieuwe wapens, en attachments in buit.**
+- [ ] **9. How it works, de showcase, LEESMIJ.md en de changelog van 2.0.0.**
 
 ## Nog nooit in het spel bekeken
 
