@@ -13,6 +13,7 @@ import com.senne.imttech.security.zone.ZoneBox;
 import com.senne.imttech.security.zone.ZoneApp;
 import com.senne.imttech.security.zone.ZoneData;
 import com.senne.imttech.security.zone.ZoneMarkerItem;
+import com.senne.imttech.security.zone.ZoneNames;
 import com.senne.imttech.security.zone.ZoneSelection;
 import com.senne.imttech.security.zone.ZoneShape;
 import com.senne.imttech.security.zone.ZoneSync;
@@ -535,6 +536,47 @@ public final class ZoneGameTests {
         core.powerTick(level);
         if (!seesZone(owner, coreAbs, false)) {
             throw new GameTestAssertException("Zonder stroom zou de eigenaar de zone nog krijgen, als 'uit'");
+        }
+        finish(helper, core);
+    }
+
+    /**
+     * Hoofdstuk 99: in een actieve zone ziet een vreemde je naam niet (zo verraadt je naamtag je basis niet), wie er mag
+     * bouwen wel (de eigenaar en een vertrouwde speler), ook die van een indringer. Buiten de zone, of zonder stroom, ziet
+     * iedereen je naam.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "zones")
+    public static void nametag_hidden_in_an_active_zone(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(8, 3, 8), "zone-owner");
+        ServerPlayer outsider = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(14, 3, 14), "zone-outsider");
+        ServerPlayer friend = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(16, 3, 14), "zone-friend");
+        SecurityCoreBlockEntity core = zoneCore(helper, owner);
+        core.addTrusted(friend.getUUID(), friend.getGameProfile().getName());
+        if (!ZoneNames.hiddenFor(owner, outsider)) {
+            throw new GameTestAssertException("Een vreemde ziet de naam van de eigenaar in zijn zone");
+        }
+        if (ZoneNames.hiddenFor(owner, friend)) {
+            throw new GameTestAssertException("Een vertrouwde speler ziet de naam van de eigenaar in zijn zone niet");
+        }
+        if (ZoneNames.hiddenFor(outsider, owner) || ZoneNames.hiddenFor(friend, outsider)) {
+            throw new GameTestAssertException("Buiten de zone is een naam verborgen");
+        }
+        // De vreemde loopt de basis in: de eigenaar en zijn vriend zien zijn naam (een indringer), een andere vreemde niet.
+        ServerPlayer stranger = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(16, 3, 16), "zone-stranger");
+        Vec3 inside = helper.absoluteVec(new Vec3(10.5, 3, 10.5));
+        outsider.moveTo(inside.x, inside.y, inside.z);
+        if (ZoneNames.hiddenFor(outsider, owner) || ZoneNames.hiddenFor(outsider, friend)) {
+            throw new GameTestAssertException("De eigenaar of zijn vriend ziet de naam van een indringer niet");
+        }
+        if (!ZoneNames.hiddenFor(outsider, stranger)) {
+            throw new GameTestAssertException("Een andere vreemde ziet de naam van iemand in de zone");
+        }
+        // Zonder stroom beschermt de zone niet: dan ziet iedereen weer iedereen.
+        power(helper, false);
+        core.powerTick(level);
+        if (ZoneNames.hiddenFor(owner, stranger) || ZoneNames.hiddenFor(outsider, stranger)) {
+            throw new GameTestAssertException("Zonder stroom is een naam toch verborgen");
         }
         finish(helper, core);
     }

@@ -1275,6 +1275,12 @@ beendermeel mogen niet. Al de rest is gewoon
 bruikbaar, net als in het echt: wie binnen is, kan kisten openen, deuren gebruiken en stelen. Een
 houten deur is dus geen slot; een ijzeren deur met een keycard-lezer of codepaneel buiten wel.
 
+**Geen naamtag in een zone** (sinds 12 november). Sta je in een zone die beschermt (met stroom), dan ziet niemand je naam
+boven je hoofd, behalve wie er mag bouwen: de eigenaar, zijn team en zijn vertrouwde spelers (en wie in creative speelt).
+Zo vindt een vreemde je basis niet meer aan een naam die door de muren schijnt; de eigenaar en zijn vrienden zien wel de
+naam van een indringer. Buiten de zone, of als de zone geen stroom heeft, zie je iedereen gewoon. De lijst met spelers
+(Tab) blijft zoals hij is.
+
 **Wat er nog meer doorkomt.** Een frag komt altijd door een zone (zie "Inbreken met frags" hieronder). **TNT** en
 de raketten van het **satellietbombardement** ook, maar zwak: ze werken in een zone met breekpunten zoals een frag
 (TNT 3, een satellietraket 6, een frag 8). TNT naast een

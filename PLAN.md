@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 532 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 533 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -7195,11 +7195,35 @@ mods lieten vallen.
       er in 3 s af op je rug, en het lege lichaam verdwijnt) en `body_everything_back_takes_the_pack_along` (met al een rugzak
       op je rug komt die van het lichaam in je inventaris). Screenshot `pk40b_body_pack_slot` (`-Ponly=backpack`).
 
+### 99. Geen naamtag in een beschermde zone (12 november)
+
+Jouw wens: "vanaf je in een protected zone bent staat je nametag uit, dit maakt dat je niet zo makkelijk iemand zijn bunker
+vind door dat je de nametag ziet". Jouw keuze: wie in de zone mag bouwen (team en vertrouwden) ziet je naam nog wel.
+
+- [x] **Wanneer** (`security/zone/ZoneNames`): je staat met je voeten in een zone die beschermt, dus een security core met
+      stroom (dezelfde regel als voor bouwen en breken; zonder stroom beschermt een zone niet, en dan zie je ook gewoon
+      namen). Een toeschouwer telt niet.
+- [x] **Wie je naam nog ziet**: wie in die zone mag bouwen, dus de eigenaar, zijn team, zijn vertrouwde spelers en wie in
+      creative speelt. Iedereen anders ziet geen naam boven je hoofd, ook niet door de muren heen. Dat geldt voor iedereen
+      in de zone: de eigenaar en zijn vrienden zien de naam van een indringer wel, een andere vreemde niet.
+- [x] **Hoe**: twee keer per seconde rekent de server per speler uit van wie hij de naam niet mag zien, en stuurt dat alleen
+      als het veranderde (`HiddenNamesPayload`); je spel tekent die namen dan niet (`client/zone/HiddenNames`, met het
+      naamtag-event van NeoForge). Loop je een zone in of uit, dan duurt het hooguit een halve seconde. Protocol 38 (server
+      en spelers moeten deze versie hebben).
+- [x] **Wat bleef** (mijn invulling): de lijst met spelers (Tab), chatberichten en de doelwit-analyse van de bril (die
+      toont de naam van wie je recht aankijkt; dan heb je hem toch al gevonden).
+- [x] **Test** `nametag_hidden_in_an_active_zone`: de eigenaar in zijn zone (een vreemde ziet zijn naam niet, zijn vriend
+      wel), een indringer (de eigenaar en zijn vriend zien zijn naam, een andere vreemde niet), en zonder stroom ziet iedereen
+      alles weer. Niet op screenshots: de rondleiding heeft maar één echte speler.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **Geen naamtag in een zone (hoofdstuk 99)**: alleen met een test gecontroleerd, want het heeft twee spelers nodig.
+      Probeer op je server met een vriend: ga in je zone staan (ziet hij je naam niet meer, ook niet door een muur?),
+      vertrouw hem in de app Access (ziet hij hem dan wel?), en zet de stroom van je kern uit.
 - [ ] **Het rugzakvakje van een lichaam (hoofdstuk 98)**: gezien op `pk40b_body_pack_slot`, niet met de muis gespeeld,
       en nooit met Curios. Probeer met Curios (jouw profiel): ga dood met een rugzak, holster en pouches om (ligt de
       rugzak op de rug van je lichaam?), klik op het rugzakvakje, en probeer Everything back (gaat alles terug in je

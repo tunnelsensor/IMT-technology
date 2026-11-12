@@ -345,6 +345,11 @@ public final class ClientPayloadHandlers {
         com.senne.imttech.client.zone.ZoneClientState.set(payload.zones());
     }
 
+    /** Hoofdstuk 99: van wie je de naam niet ziet (ze staan in een zone waar jij niet mag bouwen). */
+    public static void onHiddenNames(com.senne.imttech.network.HiddenNamesPayload payload, IPayloadContext context) {
+        com.senne.imttech.client.zone.HiddenNames.set(payload.players());
+    }
+
     /** Hoofdstuk 44: de verstevigde blokken in je buurt (je houdt de Block Reinforcer vast). */
     public static void onReinforcedBlocks(com.senne.imttech.network.ReinforcedBlocksPayload payload, IPayloadContext context) {
         com.senne.imttech.client.repair.ReinforcedRenderer.set(payload.blocks());

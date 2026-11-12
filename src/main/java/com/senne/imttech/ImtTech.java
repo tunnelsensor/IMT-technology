@@ -345,6 +345,10 @@ public class ImtTech {
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.Zones::onServerStopped);
         // De rand van je zone: de server stuurt je zones naar jou en je vrienden.
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.ZoneSync::onServerTick);
+        // Hoofdstuk 99: in een actieve zone ziet alleen wie er mag bouwen je naam boven je hoofd.
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.ZoneNames::onServerTick);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.ZoneNames::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.ZoneNames::onServerStopped);
         // De barsten van een klap blijven zichtbaar zolang ze er zijn (tot je ze herstelt).
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.breach.Cracks::onServerTick);
         // Een blok met barsten weghakken geeft een gebarsten blok. Als laatste: pas als niemand het

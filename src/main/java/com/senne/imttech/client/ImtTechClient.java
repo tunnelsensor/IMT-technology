@@ -101,6 +101,10 @@ public class ImtTechClient {
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.zone.ZoneMarkerControl::onInteraction);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent.LoggingOut event) ->
                 com.senne.imttech.client.zone.ZoneClientState.clear());
+        // Hoofdstuk 99: geen naamtag boven wie in een zone staat die niet van jou is.
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.zone.HiddenNames::onRenderNameTag);
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent.LoggingOut event) ->
+                com.senne.imttech.client.zone.HiddenNames.clear());
         NeoForge.EVENT_BUS.addListener(ImtClientEvents::onClientTickPre);
         NeoForge.EVENT_BUS.addListener(ImtClientEvents::onComputeFov);
         NeoForge.EVENT_BUS.addListener(ImtClientEvents::onPlayerTurn);
