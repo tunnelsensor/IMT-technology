@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 529 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 530 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -7133,11 +7133,48 @@ elke knop, meldingen over je basis en je drones), en G opende gewoon het menu.
       `33c_battery_dead_line`, `33d_battery_dead_nothing`, `33e_battery_dead_g_does_nothing` en
       `33f_battery_recharged_boots`.
 
+### 97. Nu markeren, later iets op afsturen: acties nemen je laatst gemarkeerde doelwit (12 november)
+
+Jouw wens: "de dingen die 'no target in sight' zeggen moeten ook op een target kunnen gaan als je maar 1 target hebt
+gemarkt met r, zo kun je makkelijk iemand marken en later pas bv een raket op sturen". Jouw keuzes: met meer markeringen
+het laatst gemarkeerde; een markering blijft staan "tot hij dood is of weg"; en de satelliet richt op het gemarkeerde
+doelwit, ook als je naar een blok kijkt.
+
+Hoe het was: één drone en de spionagedrone namen al een markering als je naar niets keek, maar de eerste (oudste) in
+plaats van de laatste; iemand vervoeren en de satelliet keken alleen naar wat je aankeek (de satelliet viel dan terug op
+het blok, en je kijkt altijd wel naar een blok). En een markering verdween zodra het doelwit 128 blokken van je weg was,
+dus "later" lukte vaak niet.
+
+- [x] **Het laatst gemarkeerde doelwit** (`ImtServer.lookedOrMarked`, `lastMarked`): kijk je naar geen wezen, dan gaan
+      **één drone**, de **spionagedrone** en **iemand vervoeren** op het doelwit dat je het laatst markeerde. Elke actie
+      houdt haar eigen bereik (één drone en de spion 96 blokken, vervoeren 64, zoals ze al zochten); is je markering
+      verder, dan zegt I.M.T "Steve is too far away: 230 blocks (max 96)." en gebeurt er niets. Geen wezen en geen
+      markering: nog steeds "No target in sight.".
+- [x] **De satelliet** (precisieraket en bombardement): een wezen waar je naar kijkt gaat voor, dan je laatst gemarkeerde
+      doelwit (de raket volgt het, zoals bij een wezen dat je aankijkt), en pas dan het blok, je waypoint of je ping. Is
+      je markering buiten het bereik van je satelliet (zijn upgrade "richten"), dan zegt I.M.T hoe ver en vuurt hij niet:
+      wil je dan een plek raken, doe eerst **Clear marks**. De **schuivende laser** niet: die trek je van punt naar punt.
+- [x] **Een markering blijft staan** (`allMarkedTargets`, `cleanUpMarks`, `onLivingDeath`): tot het doelwit doodgaat (ook
+      als een speler meteen weer opstaat), uitlogt, naar een andere wereld gaat of in een stuk wereld komt dat niet meer
+      geladen is, of tot jij Clear marks of Stand down doet. Hoe ver het wegloopt, maakt niet meer uit. Je HUD telt alle
+      markeringen ("Marked: 2"); de haakjes rond een doelwit zie je zolang je spel het nog kent.
+- [x] **Wat bleef** (mijn invulling): je **zwerm** en de **raketten** van je harnas gaan alleen achter markeringen binnen
+      128 blokken aan (anders vloog een zwerm de hele wereld door achter iemand aan). **Hacken** blijft "kijk naar een
+      speler": een hack moet hem toch in het zicht houden, anders stopt hij meteen. Markeren zelf blijft "wat je aankijkt".
+- [x] De spraakbesturing weet het ook: de uitleg bij "single drone", "spy drone", "carry someone" en "satellite strike"
+      zegt nu "or your last marked target".
+- [x] **Test** `last_marked_target_when_you_look_at_nothing`: twee doelwitten markeren, naar de lucht kijken, de
+      spionagedrone gaat op het tweede; dat loopt 150 blokken weg en blijft gemarkeerd (maar niet voor de zwerm); het gaat
+      dood en dan is het eerste weer het laatst gemarkeerde.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **Markeren en later afsturen (hoofdstuk 97)**: alleen met een test gecontroleerd. Probeer: markeer een vriend
+      (met PvP aan) of een dier, kijk naar de lucht en kies de precisieraket of een spionagedrone; laat hem wegrennen
+      (staat "Marked: 1" nog in je HUD?), en kijk wat I.M.T zegt als hij buiten het bereik is.
 - [ ] **De lege bril (hoofdstuk 96)**: het uitvalbeeld gezien op screenshots (`-Ponly=deadbattery`), maar haar laatste
       zin en het uitschakelgeluid nooit gehoord. Probeer: laat je bril leeglopen terwijl je hem draagt (klinkt het zacht
       genoeg, en zegt ze "Battery depleted"?), druk dan op G en je andere brilknoppen (gebeurt er echt niets?), en laad

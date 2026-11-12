@@ -486,14 +486,9 @@ public final class ImtServer {
         if (!checkCooldown(player, state, ImtCooldown.STRIKE)) {
             return;
         }
-        // Eerst kijken waar je naar kijkt; zie je niets, dan het eerste gemarkeerde doelwit.
-        LivingEntity target = findLookTarget(player, ImtConfig.Drones.STRIKE_RANGE);
+        // Eerst kijken waar je naar kijkt; zie je niets, dan je laatst gemarkeerde doelwit (hoofdstuk 97; was het eerste).
+        LivingEntity target = lookedOrMarked(player, ImtConfig.Drones.STRIKE_RANGE);
         if (target == null) {
-            List<LivingEntity> marked = getMarkedTargets(player);
-            target = marked.isEmpty() ? null : marked.getFirst();
-        }
-        if (target == null) {
-            send(player, Component.translatable("imt.imttech.msg.no_target_in_sight"), ImtMessagePayload.Level.WARNING);
             return;
         }
         if (!ImtTargeting.canTarget(player, target)) {
@@ -583,9 +578,9 @@ public final class ImtServer {
     /** Pakt het wezen waar je naar kijkt op en zet het bij je bestemming neer. */
     private static void carry(ServerPlayer player, ItemStack glasses) {
         PlayerState state = state(player);
-        LivingEntity target = findLookTarget(player, ImtConfig.Glasses.TARGET_RANGE);
+        // Wie je aankijkt, of anders je laatst gemarkeerde doelwit binnen 64 blokken (hoofdstuk 97).
+        LivingEntity target = lookedOrMarked(player, ImtConfig.Glasses.TARGET_RANGE);
         if (target == null) {
-            send(player, Component.translatable("imt.imttech.msg.no_target_in_sight"), ImtMessagePayload.Level.WARNING);
             return;
         }
         if (!requireDrone(player) || !checkCooldown(player, state, ImtCooldown.TRANSPORT)
@@ -609,14 +604,10 @@ public final class ImtServer {
         if (!checkCooldown(player, state, ImtCooldown.SPY)) {
             return;
         }
-        // Spioneren mag op iedereen en alles (het doet geen pijn), behalve op je eigen drones.
-        LivingEntity target = findLookTarget(player, ImtConfig.Recon.SPY_RANGE);
+        // Spioneren mag op iedereen en alles (het doet geen pijn), behalve op je eigen drones. Zie je niemand, dan je laatst
+        // gemarkeerde doelwit (hoofdstuk 97; was het eerste).
+        LivingEntity target = lookedOrMarked(player, ImtConfig.Recon.SPY_RANGE);
         if (target == null) {
-            List<LivingEntity> marked = getMarkedTargets(player);
-            target = marked.isEmpty() ? null : marked.getFirst();
-        }
-        if (target == null) {
-            send(player, Component.translatable("imt.imttech.msg.no_target_in_sight"), ImtMessagePayload.Level.WARNING);
             return;
         }
         if (!requireDrone(player) || !payEnergy(player, glasses, ImtConfig.Recon.SPY_COST)) {
@@ -717,8 +708,29 @@ public final class ImtServer {
         send(player, Component.translatable("imt.imttech.msg.marks_cleared"), ImtMessagePayload.Level.INFO);
     }
 
-    /** De gemarkeerde doelwitten die nog leven en in de buurt zijn. Wordt ook door drones gebruikt. */
+    /** Zo ver gaan je zwerm en je raketten achter een markering aan (blokken); verder weg blijft hij wel staan. */
+    private static final double NEAR_MARK = 128;
+
+    /**
+     * De gemarkeerde doelwitten die nog leven en in de buurt zijn (128 blokken). Wordt ook door drones gebruikt: een zwerm
+     * vliegt niet achter een markering aan die ver weg is (zie {@link #allMarkedTargets} voor alles).
+     */
     public static List<LivingEntity> getMarkedTargets(ServerPlayer player) {
+        List<LivingEntity> result = new ArrayList<>();
+        for (LivingEntity living : allMarkedTargets(player)) {
+            if (living.distanceToSqr(player) < NEAR_MARK * NEAR_MARK) {
+                result.add(living);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Hoofdstuk 97: al je markeringen die nog gelden, op elke afstand in jouw wereld, op volgorde van markeren. Een markering
+     * blijft staan tot het doelwit doodgaat, uitlogt of naar een andere wereld gaat, of tot jij "Clear marks" of "Stand down"
+     * doet (jouw keuze; vroeger was hij weg zodra het doelwit 128 blokken van je weg was).
+     */
+    public static List<LivingEntity> allMarkedTargets(ServerPlayer player) {
         PlayerState state = STATES.get(player.getUUID());
         if (state == null || state.marked.isEmpty()) {
             return List.of();
@@ -733,11 +745,62 @@ public final class ImtServer {
         return result;
     }
 
-    private static boolean isMarkStillValid(ServerPlayer player, LivingEntity target) {
-        return target.isAlive() && ImtTargeting.canTarget(player, target) && target.distanceToSqr(player) < 128 * 128;
+    /** Hoofdstuk 97: het doelwit dat je het laatst markeerde (en dat nog geldt), of null. */
+    public static @Nullable LivingEntity lastMarked(ServerPlayer player) {
+        List<LivingEntity> marked = allMarkedTargets(player);
+        return marked.isEmpty() ? null : marked.getLast();
     }
 
-    /** Haalt dode, verdwenen of te verre doelwitten uit de lijst. */
+    /**
+     * Hoofdstuk 97 (jouw wens: "de dingen die 'no target in sight' zeggen moeten ook op een target kunnen gaan als je maar 1
+     * target hebt gemarkt met r, zo kun je makkelijk iemand marken en later pas bv een raket op sturen"): het wezen waar je
+     * naar kijkt, en kijk je naar niets, dan je laatst gemarkeerde doelwit (met meer markeringen: het laatste, jouw keuze).
+     * Elke actie houdt haar eigen bereik: is je markering verder weg dan {@code range}, dan zegt I.M.T hoe ver, en gebeurt
+     * er niets. Geen wezen en geen markering: "No target in sight.". Geeft dan null.
+     */
+    private static @Nullable LivingEntity lookedOrMarked(ServerPlayer player, double range) {
+        LivingEntity looked = findLookTarget(player, range);
+        if (looked != null) {
+            return looked;
+        }
+        LivingEntity marked = lastMarked(player);
+        if (marked == null) {
+            send(player, Component.translatable("imt.imttech.msg.no_target_in_sight"), ImtMessagePayload.Level.WARNING);
+            return null;
+        }
+        if (!inReach(player, marked, range)) {
+            return null;
+        }
+        return marked;
+    }
+
+    /** Is dit gemarkeerde doelwit binnen {@code range}? Zo niet, dan zegt I.M.T hoe ver het is (hoofdstuk 97). */
+    private static boolean inReach(ServerPlayer player, LivingEntity marked, double range) {
+        double distance = marked.distanceTo(player);
+        if (distance <= range) {
+            return true;
+        }
+        send(player, Component.translatable("imt.imttech.msg.mark_out_of_range", marked.getDisplayName(),
+                Math.round(distance), Math.round(range)), ImtMessagePayload.Level.WARNING);
+        return false;
+    }
+
+    /** Hoofdstuk 97: wie doodgaat, is voor niemand meer gemarkeerd (ook niet als hij meteen weer opstaat). */
+    public static void onLivingDeath(net.neoforged.neoforge.event.entity.living.LivingDeathEvent event) {
+        UUID dead = event.getEntity().getUUID();
+        for (PlayerState state : STATES.values()) {
+            state.marked.remove(dead);
+        }
+    }
+
+    private static boolean isMarkStillValid(ServerPlayer player, LivingEntity target) {
+        return target.isAlive() && ImtTargeting.canTarget(player, target);
+    }
+
+    /**
+     * Haalt dode en verdwenen doelwitten uit de lijst (uitgelogd, in een andere wereld, of in een stuk wereld dat niet meer
+     * geladen is). Hoe ver ze zijn, maakt sinds hoofdstuk 97 niet meer uit.
+     */
     private static void cleanUpMarks(ServerPlayer player, PlayerState state) {
         ServerLevel level = player.serverLevel();
         Iterator<UUID> it = state.marked.iterator();
@@ -783,9 +846,12 @@ public final class ImtServer {
      *
      * Waar hij op richt, in deze volgorde:
      * 1. het WEZEN waar je naar kijkt (dan volgt de raket het, ook als het wegloopt);
-     * 2. het blok waar je naar kijkt (tot 500 blokken ver);
-     * 3. je bestemming uit de navigatie;
-     * 4. je laatste ping.
+     * 2. hoofdstuk 97: je laatst gemarkeerde doelwit (ook als je naar een blok kijkt, jouw keuze), als het binnen het bereik
+     *    van je satelliet is; is het verder, dan zegt I.M.T hoe ver en vuurt hij niet (haal je markering weg met "Clear
+     *    marks" om een plek te raken). Niet voor de laserlijn (C): die trek je van punt naar punt;
+     * 3. het blok waar je naar kijkt (tot 500 blokken ver);
+     * 4. je bestemming uit de navigatie;
+     * 5. je laatste ping.
      */
     private static void satelliteStrike(ServerPlayer player, ItemStack glasses, SatelliteMode mode) {
         if (!SatelliteWorkshop.get(player).unlocked(mode)) {
@@ -810,6 +876,16 @@ public final class ImtServer {
         if (looked != null && ImtTargeting.canTarget(player, looked)) {
             locked = looked.getUUID();
             target = looked.position();
+        }
+        if (target == null && mode != SatelliteMode.SWEEP) {
+            LivingEntity marked = lastMarked(player);
+            if (marked != null) {
+                if (!inReach(player, marked, range)) {
+                    return;
+                }
+                locked = marked.getUUID();
+                target = marked.position();
+            }
         }
         if (target == null) {
             HitResult hit = player.pick(range, 1.0f, true);
@@ -1081,7 +1157,8 @@ public final class ImtServer {
     private static void sendStatus(ServerPlayer player, PlayerState state) {
         int swarm = ImtDrones.find(player, DroneEntity.Mode.ATTACK).size();
         int guards = ImtDrones.find(player, DroneEntity.Mode.GUARD).size();
-        List<Integer> markedIds = getMarkedTargets(player).stream().map(Entity::getId).toList();
+        // Hoofdstuk 97: alle markeringen, ook die ver weg (je HUD telt ze; markeren kan je spel alleen wat het kent).
+        List<Integer> markedIds = allMarkedTargets(player).stream().map(Entity::getId).toList();
         SatelliteStrikes.Strike strike = SatelliteStrikes.pendingFor(player.getUUID());
         List<Integer> cooldowns = new ArrayList<>(ImtCooldown.COUNT);
         for (ImtCooldown cooldown : ImtCooldown.values()) {

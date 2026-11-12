@@ -261,7 +261,17 @@ Hoe hoog precies staat in `config/imttech.toml` (`drones.orbitHeight`). Hoeveel 
 zwerm passen staat daar ook (standaard zwerm 16 en escorte 8) — maar je arsenaal bepaalt
 hoeveel het er echt worden.
 
-- **Zwerm**: valt je gemarkeerde doelwitten aan, of verdedigt je.
+- **Markeren** (G > Drones > Mark target, of je eigen toets, bv. R): wat in je vizier staat (nog eens = weg, tot
+  10 tegelijk). Een markering blijft staan tot het doelwit doodgaat, uitlogt of naar een andere wereld gaat, of
+  tot je **Clear marks** of **Stand down** doet, hoe ver het ook wegloopt (sinds 12 november; vroeger was hij weg
+  op 128 blokken). Kijk je naar niets, dan gaan **één drone**, de **spionagedrone**, **iemand vervoeren** en de
+  satelliet (**precisieraket** en **bombardement**) op je **laatst gemarkeerde** doelwit: markeer iemand en stuur
+  er later iets op af. Elk houdt zijn eigen bereik (één drone en de spion 96 blokken, vervoeren 64, de satelliet
+  zijn upgrade); is je markering verder, dan zegt I.M.T hoe ver. Kijk je naar een wezen, dan gaat het altijd op
+  dat wezen. De satelliet richt op je markering ook als je naar een blok kijkt: wil je een plek raken, doe dan
+  eerst Clear marks. De schuivende laser trek je altijd van punt naar punt. Hacken blijft "kijk naar een speler":
+  die moet je toch in het oog houden.
+- **Zwerm**: valt je gemarkeerde doelwitten aan (die binnen 128 blokken), of verdedigt je.
 - **Eén drone**: goedkoop, jaagt op één doelwit tot het dood is.
 - **Escorte**: vliegt met je mee en schiet op wat jou aanvalt. Met **G > Drones > Formation**
   kies je de vorm: **Orbit** (rondcirkelen), **Shield** (een snel draaiende ring dicht om je

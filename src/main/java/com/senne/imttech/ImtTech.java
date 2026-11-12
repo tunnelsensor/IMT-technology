@@ -175,6 +175,8 @@ public class ImtTech {
         });
         NeoForge.EVENT_BUS.addListener(ImtServer::onServerStopped);
         NeoForge.EVENT_BUS.addListener(ImtServer::onLivingDamaged);
+        // Hoofdstuk 97: wie doodgaat, is voor niemand meer gemarkeerd (als laatste: een totem die je redt, gaat voor).
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST, ImtServer::onLivingDeath);
         // Onthouden wie jou raakte, zodat de dreigingsscan alleen echte aanvallers toont
         NeoForge.EVENT_BUS.addListener(ImtThreats::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(ImtComms::onServerStopped);

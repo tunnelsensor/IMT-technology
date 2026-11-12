@@ -3287,6 +3287,59 @@ public final class ImtTechGameTests {
         helper.succeed();
     }
 
+    /**
+     * Hoofdstuk 97: kijk je naar niets, dan gaat een actie (hier de spionagedrone) op je laatst gemarkeerde doelwit. Een
+     * markering blijft staan als het doelwit 150 blokken wegloopt (vroeger was hij weg op 128 blokken), maar je zwerm gaat er
+     * dan niet achteraan. Gaat het doelwit dood, dan is de markering weg.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "glasses")
+    public static void last_marked_target_when_you_look_at_nothing(GameTestHelper helper) {
+        ServerPlayer owner = makeImtOwner(helper, new BlockPos(1, 3, 1));
+        Husk first = spawnDummyEnemy(helper, new BlockPos(3, 3, 1));
+        Husk second = spawnDummyEnemy(helper, new BlockPos(1, 3, 3));
+        first.setCustomName(net.minecraft.network.chat.Component.literal("First"));
+        second.setCustomName(net.minecraft.network.chat.Component.literal("Second"));
+        ServerLevel level = helper.getLevel();
+        BlockPos far = owner.blockPosition().east(150);
+        level.setChunkForced(far.getX() >> 4, far.getZ() >> 4, true);
+        AtomicBoolean started = new AtomicBoolean();
+        whenEntityTicking(helper, List.of(owner.blockPosition(), far), () -> {
+            if (started.getAndSet(true)) {
+                return;
+            }
+            try {
+                ImtServer.handleMark(owner, first.getId());
+                ImtServer.handleMark(owner, second.getId());
+                helper.assertTrue(ImtServer.lastMarked(owner) == second, "Het laatst gemarkeerde doelwit is niet het tweede.");
+                // Naar de lucht kijken: niets in zicht. Dan gaat de spionagedrone op het laatst gemarkeerde doelwit.
+                owner.setXRot(-90);
+                ImtServer.handleAction(owner, ImtAction.SPY_DRONE.ordinal());
+                ImtSpy.Mission mission = ImtSpy.of(owner);
+                helper.assertTrue(mission != null && mission.targetName().getString().equals("Second"),
+                        "De spionagedrone ging niet op het laatst gemarkeerde doelwit: "
+                                + (mission == null ? "geen opdracht" : mission.targetName().getString()));
+                ImtSpy.stop(owner, "imt.imttech.spy.log.end_recalled");
+
+                // 150 blokken weg: de markering blijft (ook na het opruimen, elke seconde), alleen niet voor de zwerm.
+                second.teleportTo(far.getX() + 0.5, far.getY(), far.getZ() + 0.5);
+                owner.tickCount = 20;
+                ImtServer.onPlayerTick(new PlayerTickEvent.Post(owner));
+                helper.assertTrue(ImtServer.allMarkedTargets(owner).contains(second),
+                        "De markering was weg toen het doelwit 150 blokken wegliep.");
+                helper.assertFalse(ImtServer.getMarkedTargets(owner).contains(second),
+                        "De zwerm zou achter een markering op 150 blokken aan gaan.");
+
+                // Dood: weg.
+                second.kill();
+                helper.assertTrue(ImtServer.lastMarked(owner) == first,
+                        "Na de dood van het tweede doelwit is het eerste niet het laatst gemarkeerde.");
+                helper.succeed();
+            } finally {
+                level.setChunkForced(far.getX() >> 4, far.getZ() >> 4, false);
+            }
+        });
+    }
+
     // ================================================================ Fase 15: het harnas
 
     /**
