@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 528 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 529 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -7097,11 +7097,51 @@ wapen, dan bleef de hele vorm opgevuld staan (de schaduw), lichtgrijs, bijna wit
       stond de wand weer zoals altijd. De eerste versie (zonder schaduw-lijntje) ook met jouw Sodium-jar (0.8.13) even in
       `run-visual/mods`: hetzelfde beeld, daarna weer weggehaald. Geen nieuwe automatische test: het is alleen beeld.
 
+### 96. Een lege bril is echt uit: geen HUD, geen stem, geen G (12 november)
+
+Jouw wens: "zorg dat als power van de bril op is echt de hele HUD weg is en er niets meer gezegd word, G werk dan ook niet
+meer". Jouw keuze voor het moment dat hij leegloopt: "uitval beeld en nog 1 zin".
+
+Hoe het was: met een lege batterij bleef de bril half aan. Je zag een rode rand, het paneel links (met je batterij op 0),
+je meldingen en in het midden "BATTERY DEPLETED - RECHARGE REQUIRED". I.M.T bleef alles zeggen ("Not enough energy" bij
+elke knop, meldingen over je basis en je drones), en G opende gewoon het menu.
+
+- [x] **Leeglopen terwijl je hem draagt** (`ImtClientEvents.trackBattery`, `ShutdownOverlay`): de HUD valt uit in iets minder
+      dan twee seconden. De rand knippert rood en in het midden staat "BATTERY DEPLETED" met daaronder "I.M.T is shutting
+      down"; dan krimpt het beeld tot een lichtstreep en een puntje, zoals een oude tv. Je hoort een zacht uitschakelgeluid
+      (nieuw: `imt_shutdown`, een brom die wegzakt met een tikje op het eind, geen geknetter zoals bij een EMP) en haar
+      laatste zin: "Battery depleted. Recharge me at a Charging Station." Wat ze nog aan het zeggen was, breekt ze af. Stond
+      het G-menu of een scherm van de bril open (navigatie, comms, arsenaal, satelliet...), dan gaat dat dicht.
+- [x] **Daarna niets** (`ImtHud`): geen rand, geen paneel, geen kompas, geen coördinaten, geen meldingen, ook geen
+      EMP-ruis. De oude rode regel (`NoPowerWidget`) is weg.
+- [x] **Ze zegt niets meer** (`ImtServer.send`, `ClientPayloadHandlers`, `ImtSpeech.say`, `ImtClientState.addNotification`):
+      de server stuurt een lege bril geen meldingen meer (ook niet over je basis, je drones of een raid), en je spel toont
+      of zegt niets wat toch nog binnenkomt: geen pings, geen scan, geen piepjes. Zonder bril op gaan meldingen door zoals
+      altijd.
+- [x] **G en alle toetsen van de bril doen niets** (`handleKeys`, `openIfAuthorized`, `sendAction`, en op de server
+      `handleAction`), ook zonder geluid. Hun klikken gooien we weg, anders gingen ze allemaal tegelijk af zodra de bril
+      weer stroom heeft. De spraaktoets (Z) doet ook niets. De skilltree (F6) hoort bij je wapens en werkt wel. Een
+      laserkanon dat aan stond, gaat stil uit.
+- [x] **Wat er stopt** (mijn invulling): door je verkenningsdrone kijken en meekijken met je spionagedrone; je zat anders
+      zonder HUD in de drone en kon niet terug. Nachtzicht ging al uit. Hang je onder een drone, dan zet die je nog
+      steeds netjes neer (dat is geen melding maar veiligheid).
+- [x] **Een lege bril opzetten**: niets, ook geen opstart-animatie en geen welkomstzin (mijn invulling: hij is gewoon uit).
+- [x] **Weer stroom terwijl je hem draagt**: hij start opnieuw op met de opstart-animatie, zonder welkomstzin (zoals na een
+      EMP).
+- [x] **Test** `empty_glasses_do_nothing` (een lege bril zet geen nachtzicht aan, met stroom wel), en een nieuw stukje
+      rondleiding (`gradlew runVisualCheck -Ponly=deadbattery`): `33_battery_full`, `33b_battery_dead_shutdown`,
+      `33c_battery_dead_line`, `33d_battery_dead_nothing`, `33e_battery_dead_g_does_nothing` en
+      `33f_battery_recharged_boots`.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **De lege bril (hoofdstuk 96)**: het uitvalbeeld gezien op screenshots (`-Ponly=deadbattery`), maar haar laatste
+      zin en het uitschakelgeluid nooit gehoord. Probeer: laat je bril leeglopen terwijl je hem draagt (klinkt het zacht
+      genoeg, en zegt ze "Battery depleted"?), druk dan op G en je andere brilknoppen (gebeurt er echt niets?), en laad
+      hem op met de bril op je hoofd als dat kan (start hij opnieuw op?).
 - [ ] **Camerabeelden van ver, op je server (hoofdstuk 94)**: gezien in de rondleiding (ook met Sodium), nooit op een echte
       server met vrienden. Probeer: een camera aan een lange kabel (meer dan 200 blokken) en kijk met de laptop van ver;
       een schermmuur van 8 x 6 vol camera's (laggt het, of duurt het lang voor alles beeld heeft?); een vriend die voor een

@@ -967,6 +967,28 @@ public final class VisualCheck {
             t.view(0, 0.5, -60, -3.2, 0, 22);
         }
 
+        // --- Hoofdstuk 96: de batterij van de bril loopt leeg. Nog even het uitvalbeeld (en haar laatste zin), daarna is de
+        // HUD helemaal weg en doet G niets meer. Weer stroom: de bril start opnieuw op.
+        if (want("deadbattery")) {
+            t.view(10, 0.5, -60, -3.2, 0, 22);
+            t.shot(20, "33_battery_full");
+            t.onServer(0, player -> com.senne.imttech.imt.ImtData.setEnergy(
+                    com.senne.imttech.imt.ImtData.getWornGlasses(player), 0));
+            t.waitUntil(40, () -> com.senne.imttech.client.ImtClientState.batteryDead);
+            t.shot(6, "33b_battery_dead_shutdown");
+            t.shot(17, "33c_battery_dead_line");
+            t.shot(40, "33d_battery_dead_nothing");
+            // G (de toets van het menu) indrukken: er gaat niets open.
+            t.step(0, () -> net.minecraft.client.KeyMapping.click(com.senne.imttech.client.ImtKeys.MENU.getKey()));
+            t.shot(10, "33e_battery_dead_g_does_nothing");
+            t.onServer(0, player -> {
+                net.minecraft.world.item.ItemStack glasses = com.senne.imttech.imt.ImtData.getWornGlasses(player);
+                com.senne.imttech.imt.ImtData.setEnergy(glasses, com.senne.imttech.imt.ImtData.getMaxEnergy(glasses));
+            });
+            t.shot(30, "33f_battery_recharged_boots");
+            t.pause(120); // de opstart-animatie afwachten, anders staat die op de volgende foto's
+        }
+
         // --- Het harnas
         if (want("suit")) {
             t.onServer(0, VisualCheck::wearSuit);

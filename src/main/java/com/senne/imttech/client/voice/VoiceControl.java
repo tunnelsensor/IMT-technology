@@ -70,8 +70,8 @@ public final class VoiceControl {
     }
 
     private static void startListening() {
-        if (!ImtClientState.wearing) {
-            return; // zonder bril doet de toets niets
+        if (!ImtClientState.wearing || ImtClientState.batteryDead) {
+            return; // zonder bril doet de toets niets, en met een lege bril ook niet (hoofdstuk 96: geen geluid)
         }
         // Praat ze nog? Dan zwijgt ze nu: jij bent aan het woord.
         ImtSpeech.stopSpeaking();

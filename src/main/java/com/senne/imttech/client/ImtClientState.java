@@ -48,6 +48,13 @@ public final class ImtClientState {
     public static @Nullable Component bootGreeting;
     /** Heeft de animatie van deze opstart de zin al gezegd? */
     public static boolean bootGreetingSaid;
+    /**
+     * Hoofdstuk 96: je draagt je eigen bril, maar de batterij is leeg. Dan is de bril helemaal uit: geen HUD, geen
+     * meldingen, geen stem, en geen enkele toets van de bril (ook G niet). Zie ImtClientEvents.onClientTick.
+     */
+    public static boolean batteryDead;
+    /** Wanneer (ms) de batterij leegliep terwijl je hem droeg, voor het uitvalbeeld; 0 = geen uitvalbeeld (zie ShutdownOverlay). */
+    public static long shutdownStartMillis;
 
     // ---------------------------------------------------------------- Meldingen
 
@@ -70,6 +77,10 @@ public final class ImtClientState {
      * niets zien, dus dan tonen we het toch.
      */
     public static void addNotification(Component text, ImtMessagePayload.Level level, boolean speak) {
+        // Hoofdstuk 96: een lege bril zegt en toont niets meer.
+        if (batteryDead) {
+            return;
+        }
         if (ImtClientConfig.voiceTextInHud() || !ImtSpeech.available()) {
             NOTIFICATIONS.add(new Notification(text, level, Util.getMillis()));
             while (NOTIFICATIONS.size() > MAX_NOTIFICATIONS) {
@@ -247,6 +258,8 @@ public final class ImtClientState {
         wearing = false;
         authorized = false;
         operational = false;
+        batteryDead = false;
+        shutdownStartMillis = 0;
         NOTIFICATIONS.clear();
         oreMarkers = List.of();
         target = null;

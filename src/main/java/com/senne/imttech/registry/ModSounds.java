@@ -18,6 +18,8 @@ public final class ModSounds {
     public static final DeferredRegister<SoundEvent> SOUNDS = DeferredRegister.create(Registries.SOUND_EVENT, ImtTech.MODID);
 
     public static final DeferredHolder<SoundEvent, SoundEvent> IMT_BOOT = register("imt.boot");
+    /** Hoofdstuk 96: de batterij van de bril is leeg en hij valt uit (zacht, zonder geknetter). */
+    public static final DeferredHolder<SoundEvent, SoundEvent> IMT_SHUTDOWN = register("imt.shutdown");
     /** Een piepje bij elke regel van de systeemcheck als de bril opstart. */
     public static final DeferredHolder<SoundEvent, SoundEvent> IMT_BLIP = register("imt.blip");
     /** "Identiteit bevestigd" na de irisscan. */

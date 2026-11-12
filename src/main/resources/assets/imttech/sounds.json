@@ -7,6 +7,14 @@
       }
     ]
   },
+  "imt.shutdown": {
+    "subtitle": "subtitles.imttech.imt.shutdown",
+    "sounds": [
+      {
+        "name": "imttech:imt_shutdown"
+      }
+    ]
+  },
   "imt.notify": {
     "subtitle": "subtitles.imttech.imt.notify",
     "sounds": [

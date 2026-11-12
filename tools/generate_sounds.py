@@ -222,6 +222,25 @@ def imt_boot():
     return finish(total, peak=0.7)
 
 
+def imt_shutdown():
+    """
+    Hoofdstuk 96: de batterij van de bril is leeg en hij valt uit. Het omgekeerde van imt_boot, maar zacht: de warme brom
+    zakt weg (zoals een condensator die leegloopt), met een klein tikje als het beeld uitgaat. Geen geknetter: het moet
+    rustig klinken, niet als een EMP (dat is emp_power_down).
+    """
+    duration = 1.1
+    t = seconds(duration)
+    drop = sweep(196, 55, duration, curve=0.6)
+    hum = (np.sin(drop) + 0.45 * np.sin(2 * drop) + 0.2 * np.sin(3 * drop)) * decay(duration, 2.6)
+    whine_down = whine(1400, 180, 0.6, curve=0.7) * decay(0.6, 5) * 0.18
+    tick = bandpass(noise(0.03), 1500, 5000) * decay(0.03, 120) * 0.35
+    total = np.zeros(int(RATE * (duration + 0.1)))
+    place(total, fade(hum * (1 + 0.1 * np.sin(2 * np.pi * 5 * t)) * 0.5, 0.01, 0.3), 0.0)
+    place(total, fade(whine_down, 0.01, 0.2), 0.0)
+    place(total, tick, 0.75)
+    return finish(lowpass(total, 6000), peak=0.45)
+
+
 def imt_blip():
     """Een klein elektrisch zapje: bij elke stap van de laadbalk."""
     t = seconds(0.05)
@@ -1324,6 +1343,7 @@ def backpack_zip():
 
 SOUNDS = {
     "imt_boot": imt_boot,
+    "imt_shutdown": imt_shutdown,
     "imt_blip": imt_blip,
     "imt_confirm": imt_confirm,
     "imt_notify": imt_notify,

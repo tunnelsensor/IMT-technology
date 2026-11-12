@@ -361,6 +361,11 @@ public final class ClientPayloadHandlers {
     }
 
     public static void onMessage(ImtMessagePayload payload, IPayloadContext context) {
+        // Hoofdstuk 96: een lege bril toont en zegt niets, en piept ook niet. (De server stuurt dan al niets meer; dit vangt
+        // wat er nog onderweg was op het moment dat hij leegliep.)
+        if (ImtClientState.batteryDead) {
+            return;
+        }
         // De welkomstzin bij het opzetten: die zegt de opstart-animatie zelf, op het moment dat
         // je identiteit bevestigd is. Is die animatie al voorbij, dan gewoon meteen.
         // Let op: bij het inloggen komt de zin vaak binnen voordat jouw spel zelf gezien heeft dat
@@ -401,6 +406,10 @@ public final class ClientPayloadHandlers {
     }
 
     public static void onPing(PingMarkerPayload payload, IPayloadContext context) {
+        // Hoofdstuk 96: een lege bril ziet en hoort geen pings.
+        if (ImtClientState.batteryDead) {
+            return;
+        }
         long now = Util.getMillis();
         ImtClientState.pings.removeIf(ping -> ping.sender().equals(payload.sender()));
         ImtClientState.pings.add(new ImtClientState.Ping(payload.sender(), payload.pos(), now,
@@ -434,6 +443,10 @@ public final class ClientPayloadHandlers {
         ImtClientState.spyReportTarget = payload.targetName();
         ImtClientState.spyReport = payload.lines();
         Minecraft mc = Minecraft.getInstance();
+        // Hoofdstuk 96: met een lege bril bewaren we het rapport wel, maar het scherm gaat niet open.
+        if (ImtClientState.batteryDead) {
+            return;
+        }
         if (mc.screen == null) {
             mc.setScreen(new SpyReportScreen(payload.targetName(), payload.lines()));
         }
@@ -441,6 +454,9 @@ public final class ClientPayloadHandlers {
     }
 
     public static void onOreScan(OreScanPayload payload, IPayloadContext context) {
+        if (ImtClientState.batteryDead) {
+            return; // hoofdstuk 96: een lege bril scant niet
+        }
         ImtClientEvents.playUi(ModSounds.IMT_SCAN.get(), 1.0f);
         int found = OreScanner.scan(payload.radius());
         ImtClientState.addNotification(Component.translatable("imt.imttech.msg.scan_complete", found, payload.radius()),

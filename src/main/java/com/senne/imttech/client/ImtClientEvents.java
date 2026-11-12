@@ -58,6 +58,7 @@ public final class ImtClientEvents {
         ImtClientState.authorized = ImtClientState.wearing && ImtData.isAuthorized(glasses, player);
         ImtClientState.operational = ImtClientState.authorized && ImtData.getEnergy(glasses) > 0
                 && !com.senne.imttech.weapons.Emp.isJammed(player);
+        trackBattery(ImtClientState.authorized && ImtData.getEnergy(glasses) <= 0, wasWearing);
 
         if (ImtClientState.wearing && !wasWearing) {
             ImtClientState.bootPending = true;
@@ -114,6 +115,54 @@ public final class ImtClientEvents {
     }
 
     /**
+     * Hoofdstuk 96 (jouw wens: "zorg dat als power van de bril op is echt de hele HUD weg is en er niets meer gezegd word, G
+     * werkt dan ook niet meer"): houdt bij of je bril leeg is.
+     * <ul>
+     *   <li><b>Loopt hij leeg terwijl je hem draagt</b>: nog één keer het uitvalbeeld (ShutdownOverlay) met een zacht
+     *       uitschakelgeluid, en haar laatste zin, "Battery depleted. Recharge me at a Charging Station." (jouw keuze: allebei).
+     *       Wat ze nog aan het zeggen was, breekt ze af. Daarna niets meer.</li>
+     *   <li><b>Zet je een lege bril op</b>: niets, ook geen opstart-animatie (mijn invulling: hij is gewoon uit).</li>
+     *   <li><b>Krijgt hij weer stroom terwijl je hem draagt</b>: hij start opnieuw op, zoals na een EMP (zonder welkomstzin).</li>
+     * </ul>
+     *
+     * @param dead       je eigen bril, met een lege batterij
+     * @param wasWearing droeg je hem de tick hiervoor al?
+     */
+    private static void trackBattery(boolean dead, boolean wasWearing) {
+        if (dead && !ImtClientState.batteryDead) {
+            ImtClientState.NOTIFICATIONS.clear();
+            if (wasWearing) {
+                // Stond het G-menu of een scherm van de bril open? Dat gaat dicht: de bril is uit.
+                Minecraft mc = Minecraft.getInstance();
+                if (isGlassesScreen(mc.screen)) {
+                    mc.setScreen(null);
+                }
+                ImtClientState.shutdownStartMillis = Util.getMillis();
+                playUi(ModSounds.IMT_SHUTDOWN.get(), 1.0f);
+                // De laatste zin, NET voordat de bril "dood" telt: daarna zegt ImtSpeech niets meer.
+                com.senne.imttech.client.voice.ImtSpeech.stopSpeaking();
+                com.senne.imttech.client.voice.ImtSpeech.say(Component.translatable("imt.imttech.msg.battery_empty"),
+                        ImtMessagePayload.Level.ALERT);
+            } else {
+                ImtClientState.shutdownStartMillis = 0;
+            }
+        } else if (!dead && ImtClientState.batteryDead && ImtClientState.wearing && wasWearing) {
+            ImtClientState.bootStartMillis = Util.getMillis();
+            ImtClientState.bootGreetingSaid = true;
+        }
+        ImtClientState.batteryDead = dead;
+    }
+
+    /** Het G-menu, of een scherm dat je uit het G-menu (of met een toets van de bril) opent. */
+    private static boolean isGlassesScreen(@org.jetbrains.annotations.Nullable net.minecraft.client.gui.screens.Screen screen) {
+        return screen instanceof ImtMenuScreen || screen instanceof NavigationScreen || screen instanceof CommsScreen
+                || screen instanceof RelayListScreen || screen instanceof RelayEditScreen || screen instanceof ArsenalScreen
+                || screen instanceof SatelliteScreen || screen instanceof MusicScreen || screen instanceof BrainScreen
+                || screen instanceof SpyReportScreen || screen instanceof WaypointEditScreen
+                || screen instanceof com.senne.imttech.client.voice.VoiceCommandsScreen;
+    }
+
+    /**
      * P is in gewoon Minecraft "sociale interacties" (op een server opent dat een scherm). Draag
      * je een werkende bril en zit het bombardement op dezelfde toets, dan is P van I.M.T:
      * dan slikken we de klik van Minecraft in, vóór Minecraft hem zelf verwerkt (deze "Pre"-tick
@@ -142,7 +191,29 @@ public final class ImtClientEvents {
         }
     }
 
+    /** De toetsen van de bril (hoofdstuk 96: met een lege batterij doen ze allemaal niets). */
+    private static final net.minecraft.client.KeyMapping[] GLASSES_KEYS = {
+            ImtKeys.MENU, ImtKeys.NIGHT_VISION, ImtKeys.ORE_SCAN, ImtKeys.THREAT_SCAN, ImtKeys.MARK_TARGET,
+            ImtKeys.LAUNCH_DRONES, ImtKeys.DRONE_STRIKE, ImtKeys.SPY_DRONE, ImtKeys.STAND_DOWN, ImtKeys.SATELLITE,
+            ImtKeys.SATELLITE_BOMBARDMENT, ImtKeys.SATELLITE_SWEEP, ImtKeys.DRONE_CAMERA, ImtKeys.PING, ImtKeys.NAVIGATION,
+            ImtKeys.COMMS, ImtKeys.REDSTONE, ImtKeys.HACK, ImtKeys.LASER_CANNON, ImtKeys.ROCKETS, ImtKeys.CABLE_XRAY,
+            ImtKeys.ZONE_BORDER, ImtKeys.COORDINATES};
+
     private static void handleKeys(Minecraft mc) {
+        // Hoofdstuk 96: een lege bril is uit. Geen enkele toets van de bril doet nog iets (G ook niet), zonder geluid; we
+        // gooien de klikken weg, anders gingen ze allemaal tegelijk af zodra de bril weer stroom heeft. De skilltree (F6)
+        // hoort bij je wapens, niet bij de bril: die werkt gewoon.
+        if (ImtClientState.batteryDead) {
+            for (net.minecraft.client.KeyMapping key : GLASSES_KEYS) {
+                while (key.consumeClick()) {
+                    // weggooien
+                }
+            }
+            while (ImtKeys.SKILL_TREE.consumeClick()) {
+                mc.setScreen(new com.senne.imttech.client.guns.SkillTreeScreen());
+            }
+            return;
+        }
         // consumeClick() geeft true voor elke keer dat de toets is ingedrukt.
         while (ImtKeys.MENU.consumeClick()) {
             // Het ronde menu in het midden; de HUD links verdwijnt zolang het open is (zie ImtMenuScreen).
@@ -300,7 +371,8 @@ public final class ImtClientEvents {
 
     /** Opent een I.M.T-scherm, maar alleen als je de bril draagt en de eigenaar bent. */
     public static void openIfAuthorized(Minecraft mc, net.minecraft.client.gui.screens.Screen screen) {
-        if (!ImtClientState.wearing || mc.screen != null) {
+        // Hoofdstuk 96: een lege bril opent niets (en maakt geen geluid).
+        if (!ImtClientState.wearing || mc.screen != null || ImtClientState.batteryDead) {
             return;
         }
         if (ImtClientState.authorized) {
@@ -361,7 +433,9 @@ public final class ImtClientEvents {
 
     /** Vraagt de server om een actie uit te voeren (alleen als je de bril draagt). */
     public static void sendAction(ImtAction action) {
-        if (ImtClientState.wearing) {
+        // Hoofdstuk 96: een lege bril doet niets. Alleen "het brein is klaar met nadenken" gaat nog naar de server, zodat je
+        // datacenter niet blijft rekenen.
+        if (ImtClientState.wearing && (!ImtClientState.batteryDead || action == ImtAction.BRAIN_DONE)) {
             PacketDistributor.sendToServer(new ImtActionPayload(action.ordinal()));
         }
     }

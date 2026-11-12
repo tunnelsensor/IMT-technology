@@ -86,6 +86,11 @@ public final class LaserCannonControl {
             setArmed(player, false);
             return;
         }
+        // Hoofdstuk 96: de batterij van de bril is leeg: dan gaat hij stil uit (de bril maakt zijn eigen uitvalgeluid).
+        if (ImtClientState.batteryDead) {
+            armed = false;
+            return;
+        }
         if (mc.screen == null && mc.options.keyAttack.isDown() && !DroneCamera.isActive()) {
             tryFire(player);
         }

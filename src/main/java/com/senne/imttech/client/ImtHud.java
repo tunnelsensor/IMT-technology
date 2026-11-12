@@ -10,7 +10,6 @@ import com.senne.imttech.client.hud.HudStyle;
 import com.senne.imttech.client.hud.HudWidget;
 import com.senne.imttech.client.hud.MarkedTargetsWidget;
 import com.senne.imttech.client.hud.NavigationMarkerWidget;
-import com.senne.imttech.client.hud.NoPowerWidget;
 import com.senne.imttech.client.hud.NotificationWidget;
 import com.senne.imttech.client.hud.OreMarkerWidget;
 import com.senne.imttech.client.hud.PingWidget;
@@ -71,7 +70,6 @@ public class ImtHud implements LayeredDraw.Layer {
             new LaserCannonWidget(),
             new FlightWidget(),
             new com.senne.imttech.client.hud.LandingPadWidget(),
-            new NoPowerWidget(),
             new StatusPanelWidget(),
             NOTIFICATIONS);
 
@@ -107,6 +105,15 @@ public class ImtHud implements LayeredDraw.Layer {
         if (ImtClientState.bootPending) {
             return;
         }
+        // Hoofdstuk 96: de batterij is leeg, dus de bril is uit. Liep hij net leeg, dan nog even het uitvalbeeld; daarna
+        // helemaal niets (geen rand, geen paneel, geen meldingen). Een EMP op een lege bril zie je dus ook niet.
+        if (ImtClientState.batteryDead) {
+            long age = now - ImtClientState.shutdownStartMillis;
+            if (ImtClientState.shutdownStartMillis > 0 && age < com.senne.imttech.client.hud.ShutdownOverlay.MILLIS) {
+                com.senne.imttech.client.hud.ShutdownOverlay.render(g, mc.font, w, h, age);
+            }
+            return;
+        }
         // Een EMP-granaat (hoofdstuk 35): alleen ruis. Is hij voorbij, dan start de bril opnieuw op (zonder welkomstzin).
         if (com.senne.imttech.weapons.Emp.isJammed(player)) {
             com.senne.imttech.client.hud.EmpStaticOverlay.render(g, mc.font, w, h, now,
@@ -126,6 +133,7 @@ public class ImtHud implements LayeredDraw.Layer {
         }
 
         projection.begin(w, h, deltaTracker.getGameTimeDeltaPartialTick(false));
+        // Hier is er altijd stroom (een lege bril tekent hierboven al niets meer, hoofdstuk 96).
         boolean powered = ImtData.getEnergy(glasses) > 0;
         // Is het ronde G-menu open? Dan verdwijnt alles wat plat op je scherm staat (het paneel
         // links, het kompas, meldingen...), zodat niets de cirkel in het midden in de weg zit.

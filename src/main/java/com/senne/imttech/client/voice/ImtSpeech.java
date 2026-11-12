@@ -109,7 +109,8 @@ public final class ImtSpeech {
      * niet geïnstalleerd is, of als het volume op 0 staat.
      */
     public static void say(Component message, ImtMessagePayload.Level level) {
-        if (!available()) {
+        // Hoofdstuk 96: een lege bril zwijgt. (Haar laatste zin zegt ImtClientEvents net voordat de bril "dood" telt.)
+        if (!available() || com.senne.imttech.client.ImtClientState.batteryDead) {
             return;
         }
         if ((level == ImtMessagePayload.Level.INFO || level == ImtMessagePayload.Level.BOOT) && Util.getMillis() < holdInfoUntil) {

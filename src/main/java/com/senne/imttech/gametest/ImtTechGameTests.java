@@ -2593,6 +2593,27 @@ public final class ImtTechGameTests {
     }
 
     /**
+     * Hoofdstuk 96: met een lege batterij is de bril uit. Een knop doet dan niets (ook nachtzicht, dat niets kost om aan te
+     * zetten), en zodra er weer stroom in zit wel.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60)
+    public static void empty_glasses_do_nothing(GameTestHelper helper) {
+        ServerPlayer owner = makeImtOwner(helper, new BlockPos(2, 2, 2));
+        ItemStack glasses = ImtData.getWornGlasses(owner);
+        ImtData.setEnergy(glasses, 0);
+        helper.assertTrue(ImtData.isBatteryDead(owner), "Een eigen bril zonder energie telt als uit.");
+        ImtServer.handleAction(owner, ImtAction.TOGGLE_NIGHT_VISION.ordinal());
+        helper.assertFalse(ImtData.isEnabled(glasses, com.senne.imttech.imt.ImtFeature.NIGHT_VISION),
+                "Een lege bril zette toch nachtzicht aan.");
+        ImtData.setEnergy(glasses, ImtData.getMaxEnergy(glasses));
+        helper.assertFalse(ImtData.isBatteryDead(owner), "Een opgeladen bril telt nog als uit.");
+        ImtServer.handleAction(owner, ImtAction.TOGGLE_NIGHT_VISION.ordinal());
+        helper.assertTrue(ImtData.isEnabled(glasses, com.senne.imttech.imt.ImtFeature.NIGHT_VISION),
+                "Met stroom ging nachtzicht niet aan.");
+        helper.succeed();
+    }
+
+    /**
      * Het woordenboek van de spraakbesturing: herkent I.M.T de zinnen die erin staan,
      * en haalt ze de juiste waarde uit een zin met een invulplek?
      */

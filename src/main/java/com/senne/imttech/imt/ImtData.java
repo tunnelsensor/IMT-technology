@@ -188,6 +188,15 @@ public final class ImtData {
      * Werkt de bril op dit moment voor deze speler? Dat is zo als hij hem draagt,
      * de eigenaar is, en er nog energie in zit.
      */
+    /**
+     * Hoofdstuk 96: draagt deze speler zijn eigen bril, maar is de batterij leeg? Dan is de bril helemaal uit: geen HUD, geen
+     * meldingen, geen stem en geen acties. (Een bril van iemand anders telt niet: die zegt "toegang geweigerd".)
+     */
+    public static boolean isBatteryDead(Player player) {
+        ItemStack glasses = getWornGlasses(player);
+        return !glasses.isEmpty() && isAuthorized(glasses, player) && getEnergy(glasses) <= 0;
+    }
+
     public static boolean isOperational(Player player) {
         ItemStack glasses = getWornGlasses(player);
         // Na een EMP-granaat (hoofdstuk 35) start de bril opnieuw op: even niets.

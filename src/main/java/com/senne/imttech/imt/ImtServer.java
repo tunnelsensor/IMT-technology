@@ -80,7 +80,6 @@ public final class ImtServer {
         /** Van wie de bril was die de speler vorige tick op had (null = van niemand, of geen bril). */
         @Nullable UUID wornOwner;
         boolean warnedLowBattery;
-        boolean warnedEmptyBattery;
         /** Wanneer elke functie weer mag (speltijd in ticks), op de volgorde van ImtCooldown. */
         final long[] readyAt = new long[ImtCooldown.COUNT];
         /** Gemarkeerde doelwitten (op volgorde van markeren). */
@@ -150,8 +149,11 @@ public final class ImtServer {
         state.wasWearing = wearing;
         state.wornOwner = owner;
 
-        // Verkenningsdrone kwijt (neergeschoten, bril af...)? Dan terug naar je lichaam.
-        if (state.scoutId != null && (!wearing || !ImtData.isAuthorized(glasses, player) || getScout(player, state) == null)) {
+        // Verkenningsdrone kwijt (neergeschoten, bril af...)? Dan terug naar je lichaam. Hoofdstuk 96: ook als de batterij
+        // leeg is, want dan is de bril uit (je keek anders zonder HUD door de drone, en kon niet meer terug).
+        boolean batteryDead = wearing && ImtData.getEnergy(glasses) <= 0;
+        if (state.scoutId != null && (!wearing || !ImtData.isAuthorized(glasses, player) || getScout(player, state) == null
+                || batteryDead)) {
             endScout(player, "imt.imttech.msg.scout_lost", ImtMessagePayload.Level.WARNING);
         }
 
@@ -160,7 +162,7 @@ public final class ImtServer {
             boolean droneGone = !(player.serverLevel().getEntity(state.viewDroneId) instanceof DroneEntity drone)
                     || !drone.isAlive()
                     || drone.distanceToSqr(player) > (ImtConfig.Recon.SPY_VIEW_RANGE + 40) * (ImtConfig.Recon.SPY_VIEW_RANGE + 40);
-            if (!wearing || droneGone) {
+            if (!wearing || droneGone || batteryDead) {
                 stopWatching(player);
             }
         }
@@ -220,12 +222,8 @@ public final class ImtServer {
             send(player, Component.translatable("imt.imttech.msg.transfer_complete", owner.name(), name), ImtMessagePayload.Level.BOOT);
         } else {
             send(player, Component.translatable("imt.imttech.msg.access_denied", owner.name()), ImtMessagePayload.Level.ALERT);
-            return;
         }
-
-        if (ImtData.getEnergy(glasses) <= 0) {
-            send(player, Component.translatable("imt.imttech.msg.battery_empty"), ImtMessagePayload.Level.WARNING);
-        }
+        // (Een lege bril opzetten: hoofdstuk 96, dan zegt hij niets, ook niet "Battery depleted": send() zwijgt dan.)
     }
 
     /** Eén keer per seconde: energie verbruiken, waarschuwingen, nachtzicht, drones. */
@@ -249,15 +247,8 @@ public final class ImtServer {
             ImtData.setEnergy(glasses, energy);
         }
 
-        // Waarschuwing: batterij leeg.
-        if (energy <= 0) {
-            if (!state.warnedEmptyBattery) {
-                send(player, Component.translatable("imt.imttech.msg.battery_empty"), ImtMessagePayload.Level.ALERT);
-                state.warnedEmptyBattery = true;
-            }
-        } else {
-            state.warnedEmptyBattery = false;
-        }
+        // Batterij leeg: dat zegt je spel zelf, met het uitvalbeeld, als laatste zin (hoofdstuk 96, zie
+        // ImtClientEvents.trackBattery). Vanaf dan zegt de server niets meer (zie send).
 
         // Waarschuwing: batterij bijna leeg.
         float fraction = ImtData.getEnergyFraction(glasses);
@@ -344,6 +335,11 @@ public final class ImtServer {
         }
         ItemStack glasses = authorizedGlasses(player);
         if (glasses == null) {
+            return;
+        }
+        // Hoofdstuk 96: een lege bril is uit. Hij doet niets en zegt niets (ook geen "Not enough energy"); je spel stuurt dan
+        // zelf al niets meer, dit is het vangnet. Alleen "het brein is klaar met nadenken" komt nog door.
+        if (ImtData.getEnergy(glasses) <= 0 && action != ImtAction.BRAIN_DONE) {
             return;
         }
         // Na een EMP-granaat (hoofdstuk 35) start de bril opnieuw op: tot dan doet hij niets.
@@ -1115,6 +1111,11 @@ public final class ImtServer {
     }
 
     public static void send(ServerPlayer player, Component message, ImtMessagePayload.Level level) {
+        // Hoofdstuk 96: een lege bril zegt niets meer, ook niet over je basis of je drones. (Haar laatste zin, "Battery
+        // depleted", zegt je spel zelf op het moment dat hij leegloopt.) Zonder bril gaan meldingen door, zoals altijd.
+        if (ImtData.isBatteryDead(player)) {
+            return;
+        }
         ModNetwork.sendTo(player, new ImtMessagePayload(message, level));
     }
 }

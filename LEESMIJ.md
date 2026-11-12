@@ -42,6 +42,11 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (445 automati
   gaat er geen redstone meer in): zet een **zonnepaneel** of een **warmtegenerator** neer en verbind
   die met **stroomkabels** (zie "Stroom en kabels"). Upgrades (batterij, scanner, drones) bouw je in
   aan de **harnas-werkbank**: de bril is daar het vierde stuk op het hologram (zie "Het harnas").
+- **Batterij leeg = de bril is uit** (sinds 12 november). Loopt hij leeg terwijl je hem draagt, dan flikkert de HUD
+  nog even uit ("BATTERY DEPLETED") met een zacht uitschakelgeluid, en zegt I.M.T één laatste zin. Daarna zie je
+  niets meer van de bril, zegt ze niets meer (ook geen meldingen over je basis of je drones), en doen **G** en
+  alle andere toetsen van de bril niets. Een verkenningsdrone of spionagebeeld waar je doorkeek, stopt. Laad hem op
+  in het laadstation; krijgt hij weer stroom terwijl je hem draagt, dan start hij opnieuw op.
 - Zoek een **Biebia's Industries Tower** in je wereld: een wolkenkrabber van 41 x 110 blokken met een
   verlicht BIEBIA-logo en een blauwe lichtstraal uit de kroon (die zie je van ver). Binnen: een
   lobby met receptie, een lab, een archief, een hangar, een woonverdieping, de beveiliging,
