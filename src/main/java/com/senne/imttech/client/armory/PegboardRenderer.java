@@ -528,7 +528,11 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
         }
         q.rotateY((float) Math.toRadians(turn == Pegboard.Turn.RIGHT ? -90 : 90));
         if (MagazineItem.typeOf(stack) != null) {
-            q.rotateX((float) Math.toRadians(-22.5));
+            // Hoofdstuk 101 (jouw melding: "de glock magazijn op de pegboards zijn mini"): het magazijn uit de foto
+            // (hoofdstuk 74) leunt in zijn model de andere kant op dan het oude blokjesmodel. Met -22,5 graden leunde het
+            // daardoor dubbel zo schuin (7,7 pixels breed), en zo klein als in zijn 1 x 3 gaatjes past werd het een
+            // dwerg. Met +22,5 staat het rechtop (2,8 breed, 8,9 hoog) en hangt het even groot als een Energy Cell.
+            q.rotateX((float) Math.toRadians(22.5));
         } else if (stack.getItem() instanceof GunSlingItem) {
             q.rotateZ((float) Math.toRadians(90));
         }
@@ -553,8 +557,18 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
         if (stack.is(ModItems.FLASHBANG.get())) {
             return FRAG.get();
         }
+        // Hoofdstuk 101: een leeg magazijn heeft zijn eigen model, zonder de patronen die bovenuit steken. Zo groot als in
+        // zijn gaatjes past werd het daardoor een paar procent groter dan een vol. Nu krijgt het de grootte en de plek van
+        // een vol magazijn (de onderkant ligt in beide modellen even laag), zodat ze naast elkaar even groot hangen.
+        FirearmType magazine = MagazineItem.typeOf(stack);
+        if (magazine != null && MagazineItem.rounds(stack) == 0) {
+            return FULL_MAGAZINES.computeIfAbsent(magazine, type -> MagazineItem.of(type, type.capacity()));
+        }
         return stack;
     }
+
+    /** Een vol magazijn per pistool om de grootte van te meten (zie {@link #sizedLike}). */
+    private static final Map<FirearmType, ItemStack> FULL_MAGAZINES = new java.util.EnumMap<>(FirearmType.class);
 
     /** Een Sticky EMP en een Sticky Frag om de grootte van te meten (één keer gemaakt, niet elk beeld een nieuwe). */
     private static final Supplier<ItemStack> STICKY_EMP = Suppliers.memoize(() -> new ItemStack(ModItems.STICKY_EMP_GRENADE.get()));

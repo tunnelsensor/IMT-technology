@@ -7252,6 +7252,23 @@ naar de slot", en een zakkenroller mag de kaart aan je nek ook pakken.
       `neck_card_goes_into_the_body_and_back` (doodgaan met de kaart in je hand: het zwaard in de werkbalk, de kaart op de
       plek van je nek; Everything back) en `pickpocket_takes_the_neck_card`.
 
+### 101. Glock-magazijnen op het Pegboard even groot als de cellen (12 november)
+
+Jouw melding: "de glock magazijn op de pegboards zijn mini, zorg dat ze ook zijn zoals de cells".
+
+- [x] **Waarom ze zo klein waren**: een magazijn staat in zijn model schuin (zoals in de greep), en het Pegboard zet het
+      eerst rechtop: 22,5 graden draaien. Dat klopte voor het oude blokjesmodel, maar het magazijn uit de foto (hoofdstuk
+      74) leunt de andere kant op. Het leunde daardoor dubbel zo schuin (7,7 pixels breed in plaats van 2,8), en zo groot
+      als in zijn 1 x 3 gaatjes past werd het maar 1,7 pixel van het paneel hoog. Een Energy Cell is 5,4 pixels hoog.
+- [x] **Nu** (`PegboardRenderer.rotation`): de andere kant op draaien, dan staat het rechtop en hangt het 5,4 pixels hoog,
+      net als een cel. Dat geldt ook voor de geverfde omtrek van een vastgezet magazijn en voor How it works.
+- [x] **Leeg en vol even groot** (`PegboardRenderer.sizedLike`, mijn invulling): een leeg magazijn heeft zijn eigen model
+      zonder de patronen die bovenuit steken, en werd daardoor een paar procent groter getekend dan een vol. Nu krijgt het
+      de grootte van een vol magazijn.
+- [x] **Gezien** op de screenshots van `-Ponly=armory` (`ar03_wall_right_close`: drie magazijnen rechtop naast drie
+      cellen, even hoog; ook die op de zijmuur). Een leeg magazijn hangt niet in die rondleiding, dat stuk is alleen
+      uitgerekend.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
