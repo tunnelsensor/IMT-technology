@@ -6903,6 +6903,32 @@ daar staat mag gewoon weg".
 - [x] **Gezien** op screenshots (`gradlew runVisualCheck -Ponly=backpack`): `pk22_ifak_open` en nieuw
       `pk22b_utility_pouch_open` (een schaar en 12 fakkels, "2 / 4"). Geen nieuwe automatische test: het is alleen beeld.
 
+### 91. In singleplayer weer schieten nadat je op een server was (12 november)
+
+Jouw melding: "ik weet niet waarom maar in sigleplayer kan ik niet schieten met een glock op geen enkele manier, in
+multiplayer server lukt dit wel".
+
+Hoe het komt: je spel onthoudt wanneer je weer mag schieten (`FirearmControl.nextShot`: het tijdstip van je laatste schot
+plus 6 ticks), in de speltijd van de wereld waar je bent. Maar elke wereld heeft zijn eigen klok: je server draait dag en
+nacht en staat op miljoenen ticks, je wereld "Test" stond op 1178. Bij het verlaten van een wereld zette je spel veel
+terug, maar die tijd niet. Na één schot op de server wachtte je spel in singleplayer dus op een tijd die daar pas na
+dagen spelen komt: geen schot, geen klik, geen melding (en de trekker bleef ingedrukt getekend). Op de server ging het
+wel, want daar staat de klok altijd verder dan in je eigen wereld. In de logs van je Modrinth-profiel: elke keer dat je
+in singleplayer ging, had je eerst op de server gespeeld zonder het spel ertussen opnieuw te starten.
+
+- [x] **Alle tijden terug als je een wereld verlaat** (`FirearmControl.reset`): ook `nextShot`, en die van de animaties
+      (het pakken, het schot, de klik, R inhouden). `reset` draait nu ook zolang je in geen wereld zit (het titelscherm,
+      tussen twee werelden): Minecraft speelt na Disconnect nog een paar ticks in de oude wereld af, en die konden er
+      anders weer een oude tijd in zetten. Het zit alleen in je spel; de server hoeft niet mee (het protocol bleef 35).
+- [x] **De lasergeweren hadden hetzelfde** (`GunControl.nextShot`), op dezelfde manier opgelost. De Laser Cannon zette
+      zijn tijd al terug, en de server vergat de tijden al bij het uitloggen: daar was niets mis.
+- [x] **Gezien** met een nieuw stukje rondleiding (`gradlew runVisualCheck -Ponly=worldclock`; alleen als je erom vraagt,
+      want je verlaat de testwereld): een schot met de Glock en met het laserpistool in een wereld met de klok op 5
+      miljoen, Disconnect, een nieuwe wereld (klok 0) en daar weer. Zonder de oplossing ging in de nieuwe wereld niets
+      af (de Glock hield 16 patronen, het laserpistool 20 van 20 schoten), met de oplossing allebei wel (screenshot
+      `wc02_shot_in_new_world`: "14 +1"). Geen nieuwe automatische test: die draaien op een server zonder spelvenster, en
+      dit zat in je spel.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het

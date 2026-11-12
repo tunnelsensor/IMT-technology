@@ -146,7 +146,8 @@ public final class GunControl {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (player == null || mc.level == null) {
-            held = null;
+            // Geen wereld (het titelscherm, of tussen twee werelden): alles terug, ook de tijden (zie reset).
+            reset();
             return;
         }
         ItemStack main = player.getMainHandItem();
@@ -424,12 +425,21 @@ public final class GunControl {
         PacketDistributor.sendToServer(payload);
     }
 
-    /** Uit de wereld: alles terug. */
+    /**
+     * Uit de wereld: alles terug, ook alle tijden. Elke wereld heeft zijn eigen klok (zie FirearmControl.reset): een
+     * nextShot van een server die al lang draait, liet je in je eigen wereld niet meer schieten (hoofdstuk 91).
+     */
     public static void reset() {
         held = null;
         heldSlot = -1;
         aim = aimO = sprint = sprintO = 0;
         reloadAt = -1;
         inspectAt = -1;
+        nextShot = 0;
+        drawnAt = shotAt = emptyAt = -100;
+        drawTicks = DRAW_TICKS;
+        cyclePlayed = true;
+        triggerWasDown = false;
+        wasAiming = false;
     }
 }

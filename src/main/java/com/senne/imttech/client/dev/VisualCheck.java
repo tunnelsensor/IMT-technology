@@ -4586,7 +4586,76 @@ public final class VisualCheck {
         if (ONLY.contains("howtoall")) {
             HowToTour.allScenes(t, ONLY);
         }
+
+        // --- Hoofdstuk 91: schieten in een wereld met een vroegere klok. Alleen als je erom vraagt (-Ponly=worldclock):
+        // je verlaat de testwereld, en de rest van de rondleiding verwacht die nog.
+        if (ONLY.contains("worldclock")) {
+            worldClock(t);
+        }
 }
+
+    /**
+     * Hoofdstuk 91 (-Ponly=worldclock): eerst een schot in een wereld waarvan de klok op 5 miljoen ticks staat (zoals een
+     * server die al dagen draait), dan weg met Disconnect, een nieuwe wereld (klok op 0) en daar weer een schot. Vroeger
+     * wachtte je spel daar op de klok van de eerste wereld en ging het tweede schot niet af. Telkens met de Glock en met
+     * het laserpistool; in de log staat per schot of hij afging.
+     */
+    private static void worldClock(DevScript t) {
+        t.onServer(0, player -> player.server.getWorldData().overworldData().setGameTime(5_000_000L));
+        t.waitUntil(100, () -> Minecraft.getInstance().level != null && Minecraft.getInstance().level.getGameTime() > 4_000_000L);
+        clockShot(t, "wc01_shot_in_old_world");
+        // Weg uit de wereld zoals de knop Disconnect, en een nieuwe wereld maken. Allebei via de wachtrij van het spel
+        // (tell): ze spelen zelf ticks af, en dat mag niet midden in een stap van dit draaiboek.
+        t.step(0, () -> Minecraft.getInstance().tell(() -> {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.level != null) {
+                mc.level.disconnect();
+            }
+            mc.disconnect(new net.minecraft.client.gui.screens.GenericMessageScreen(Component.literal("Saving world")));
+            mc.setScreen(new TitleScreen());
+        }));
+        t.waitUntil(1200, () -> Minecraft.getInstance().level == null && Minecraft.getInstance().screen instanceof TitleScreen);
+        t.step(10, () -> Minecraft.getInstance().tell(() -> DevWorld.createFlatWorld(Minecraft.getInstance(), WORLD + "Clock")));
+        t.waitUntil(2400, () -> {
+            Minecraft mc = Minecraft.getInstance();
+            return mc.player != null && mc.level != null && mc.getSingleplayerServer() != null && mc.screen == null;
+        });
+        t.pause(60);
+        clockShot(t, "wc02_shot_in_new_world");
+    }
+
+    /**
+     * Een geladen Glock in vakje 1 en een geladen laserpistool in vakje 2: elk pakken, wachten tot hij omhoog is, één
+     * klik, en in de log of hij afging (een patroon of een schot minder dan een nieuwe).
+     */
+    private static void clockShot(DevScript t, String name) {
+        t.onServer(0, player -> {
+            player.getInventory().clearContent();
+            player.getInventory().setItem(0, com.senne.imttech.guns.FirearmItem.loaded(
+                    com.senne.imttech.guns.FirearmType.GLOCK_19, com.senne.imttech.guns.GunMaterial.STEEL));
+            player.getInventory().setItem(1, com.senne.imttech.weapons.LaserGunItem.loaded(com.senne.imttech.weapons.GunType.PISTOL));
+        });
+        t.step(0, () -> selectSlot(0));
+        t.look(20, 0, 0);
+        t.key(0, () -> Minecraft.getInstance().options.keyAttack, true);
+        t.key(2, () -> Minecraft.getInstance().options.keyAttack, false);
+        t.onServer(10, player -> {
+            int rounds = com.senne.imttech.guns.FirearmItem.totalRounds(player.getMainHandItem());
+            ImtTech.LOGGER.info("[visual check] {}: klok {}, Glock: nog {} patronen ({})", name,
+                    player.serverLevel().getGameTime(), rounds, rounds < 16 ? "afgegaan" : "NIET afgegaan");
+        });
+        t.shot(0, name);
+        t.step(0, () -> selectSlot(1));
+        t.key(20, () -> Minecraft.getInstance().options.keyAttack, true);
+        t.key(2, () -> Minecraft.getInstance().options.keyAttack, false);
+        t.onServer(10, player -> {
+            int shots = com.senne.imttech.weapons.LaserGunItem.shotsLeft(player.getMainHandItem());
+            int full = com.senne.imttech.weapons.LaserGunItem.shotsLeft(
+                    com.senne.imttech.weapons.LaserGunItem.loaded(com.senne.imttech.weapons.GunType.PISTOL));
+            ImtTech.LOGGER.info("[visual check] {}: laserpistool: nog {} van {} schoten ({})", name, shots, full,
+                    shots < full ? "afgegaan" : "NIET afgegaan");
+        });
+    }
 
     /**
      * Een beveiligingskern van deze speler op {@code core}, met stroom en een serverrack ernaast (dan hebben robots en

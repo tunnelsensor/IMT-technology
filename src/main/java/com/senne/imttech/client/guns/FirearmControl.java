@@ -141,8 +141,8 @@ public final class FirearmControl {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (player == null || mc.level == null) {
-            held = null;
-            heldMagazine = false;
+            // Geen wereld (het titelscherm, of tussen twee werelden): alles terug, ook de tijden (zie reset).
+            reset();
             return;
         }
         ItemStack main = player.getMainHandItem();
@@ -434,7 +434,12 @@ public final class FirearmControl {
                 volume, 0.95f + player.getRandom().nextFloat() * 0.1f, false);
     }
 
-    /** Uit de wereld: alles terug. */
+    /**
+     * Uit de wereld: alles terug, ook alle tijden. Die zijn speltijd van de wereld waar je in zat, en elke wereld heeft
+     * zijn eigen klok: een server die al weken draait staat op miljoenen ticks, een nieuwe singleplayerwereld op een paar
+     * duizend. Bleef nextShot staan, dan wachtte je na een schot op de server in je eigen wereld op een tijd die daar pas
+     * over dagen komt: je kon er niet meer schieten, zonder klik of melding (hoofdstuk 91).
+     */
     public static void reset() {
         held = null;
         heldMagazine = false;
@@ -443,5 +448,11 @@ public final class FirearmControl {
         inspectAt = -1;
         action = null;
         waiting = false;
+        nextShot = 0;
+        repeatAt = 0;
+        waitingSince = 0;
+        drawnAt = shotAt = clickAt = -100;
+        triggerWasDown = false;
+        wasAiming = false;
     }
 }
