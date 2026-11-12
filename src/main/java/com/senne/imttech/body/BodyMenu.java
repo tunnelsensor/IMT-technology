@@ -19,6 +19,7 @@ import net.neoforged.neoforge.network.payload.AdvancedOpenScreenPayload;
  * (zoals een dubbele kist). Iedereen mag eruit halen; erin leggen kan niet (het is een lichaam, geen kist). De eigenaar
  * heeft rechtsboven de knop "Everything back" (PlayerBodies.startRestore).
  * <pre>
+ *  rechtsboven  de rugzak (hoofdstuk 98): klikken = hem eraf halen, 3 s stilstaan (voor iedereen, jouw keuze)
  *  rij 0   harnas (hoofd, borst, benen, voeten), andere hand, holster, granaatpouch, magazijnpouch, geweer op je rug
  *  rij 1-3 je inventaris
  *  rij 4   je werkbalk
@@ -26,11 +27,17 @@ import net.neoforged.neoforge.network.payload.AdvancedOpenScreenPayload;
  * </pre>
  */
 public class BodyMenu extends AbstractContainerMenu {
-    public static final int TOP = 18;
+    /** Hoofdstuk 98: 6 pixels lager dan vroeger (18), zodat het rugzakvakje rechtsboven past. */
+    public static final int TOP = 24;
+    /** Waar het rugzakvakje staat (rechtsboven, boven de laatste kolom). */
+    public static final int PACK_X = 152;
+    public static final int PACK_Y = 4;
 
     private final Container container;
     private final PlayerBodyEntity body;
     private final boolean owner;
+    /** Het rugzakvakje: het laatste vakje van dit scherm (na je inventaris). */
+    private final Slot packSlot;
 
     /** Op de client: of jij de eigenaar bent komt van de server mee. */
     public BodyMenu(int containerId, Inventory inventory, RegistryFriendlyByteBuf extra) {
@@ -71,6 +78,58 @@ public class BodyMenu extends AbstractContainerMenu {
         }
         for (int column = 0; column < 9; column++) {
             addSlot(new Slot(inventory, column, 8 + column * 18, inventoryY + 58));
+        }
+        // Hoofdstuk 98: de rugzak op de rug van het lichaam, als laatste vakje.
+        packSlot = addSlot(new PackSlot(new PackContainer(body), PACK_X, PACK_Y));
+    }
+
+    /** Het rugzakvakje (om in BodyScreen te zien of je erop klikt). */
+    public Slot packSlot() {
+        return packSlot;
+    }
+
+    /**
+     * De rugzak van het lichaam als een vakje (hoofdstuk 98). Op de server is het de rugzak zelf (PlayerBodyEntity.pack), zodat
+     * je spel hem ziet zodra hij verandert; in jouw spel een gewoon vakje dat de server vult.
+     */
+    private static final class PackContainer extends SimpleContainer {
+        private final PlayerBodyEntity body;
+
+        PackContainer(PlayerBodyEntity body) {
+            super(1);
+            this.body = body;
+        }
+
+        @Override
+        public ItemStack getItem(int slot) {
+            return body != null ? body.pack() : super.getItem(slot);
+        }
+
+        @Override
+        public void setItem(int slot, ItemStack stack) {
+            if (body == null) {
+                super.setItem(slot, stack);
+            }
+        }
+    }
+
+    /**
+     * Het rugzakvakje: je pakt hem er niet zomaar uit. Klikken laat BodyScreen de server vragen hem eraf te halen: 3 s
+     * stilstaan, zoals sneak + rechtsklik op de rugzak (PlayerBodies.takePack).
+     */
+    private static final class PackSlot extends Slot {
+        PackSlot(Container container, int x, int y) {
+            super(container, 0, x, y);
+        }
+
+        @Override
+        public boolean mayPlace(ItemStack stack) {
+            return false;
+        }
+
+        @Override
+        public boolean mayPickup(Player player) {
+            return false;
         }
     }
 

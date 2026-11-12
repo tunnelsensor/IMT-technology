@@ -411,6 +411,15 @@ final class BackpackTour {
         });
         t.step(5, () -> HowToTour.mouseTo(2, 2));
         t.shot(8, "pk40_own_body_everything_back");
+        // Hoofdstuk 98: de muis op het rugzakvakje (rechtsboven): de rugzak, en dat een klik hem eraf haalt (3 s).
+        t.step(0, () -> {
+            if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.body.BodyScreen screen) {
+                HowToTour.mouseTo(screen.getGuiLeft() + com.senne.imttech.body.BodyMenu.PACK_X + 8,
+                        screen.getGuiTop() + com.senne.imttech.body.BodyMenu.PACK_Y + 8);
+            }
+        });
+        t.shot(4, "pk40b_body_pack_slot");
+        t.step(0, () -> HowToTour.mouseTo(2, 2));
         t.onServer(0, player -> {
             if (player.containerMenu instanceof com.senne.imttech.body.BodyMenu menu && menu.body() != null) {
                 com.senne.imttech.body.PlayerBodies.startRestore(player, menu.body());

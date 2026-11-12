@@ -798,6 +798,62 @@ public final class BackpackGameTests {
         });
     }
 
+    /**
+     * Hoofdstuk 98: het rugzakvakje in het scherm van een lichaam. Het toont de rugzak, maar je pakt hem er niet zomaar uit;
+     * een klik erop (TAKE_BODY_PACK) sluit het scherm en haalt hem er in 3 s af, op je rug. Daarna is het lichaam leeg en
+     * verdwijnt het (vroeger bleef de rugzak liggen als je de rest eruit haalde).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 160, batch = "bodies")
+    public static void body_pack_slot_takes_it_off(GameTestHelper helper) {
+        ServerPlayer owner = player(helper, "body-slot-owner", new BlockPos(1, 2, 1));
+        ServerPlayer looter = player(helper, "body-slot-looter", new BlockPos(3, 2, 2));
+        com.senne.imttech.body.PlayerBodyEntity body = body(helper, owner, new BlockPos(3, 2, 4), 9, new ItemStack(Items.APPLE, 3));
+        body.setPack(pack(BackpackItem.Size.ASSAULT, new ItemStack(Items.EMERALD, 2)));
+        com.senne.imttech.body.BodyMenu.open(looter, body);
+        check(looter.containerMenu instanceof com.senne.imttech.body.BodyMenu, "Het lichaam ging niet open");
+        com.senne.imttech.body.BodyMenu menu = (com.senne.imttech.body.BodyMenu) looter.containerMenu;
+        check(BackpackItem.sizeOf(menu.packSlot().getItem()) == BackpackItem.Size.ASSAULT, "Het rugzakvakje toont de rugzak niet");
+        check(!menu.packSlot().mayPickup(looter), "Je kon de rugzak zomaar uit het vakje pakken (zonder 3 s)");
+        menu.quickMoveStack(looter, 9);
+        check(looter.getInventory().countItem(Items.APPLE) == 3, "De appels kwamen niet uit het lichaam");
+        check(com.senne.imttech.body.PlayerBodies.takePackFromScreen(looter), "Een klik op het rugzakvakje begon niets");
+        check(looter.containerMenu == looter.inventoryMenu, "Het scherm van het lichaam bleef open");
+        check(BackpackZip.busy(looter), "Er liep geen 3 s om de rugzak eraf te halen");
+        int take = Math.round(ImtConfig.Backpacks.BODY_TAKE_PACK_SECONDS * 20) + 4;
+        helper.runAfterDelay(take, () -> {
+            check(!body.hasPack(), "De rugzak ligt nog op het lichaam");
+            check(BackpackItem.sizeOf(Gear.back(looter)) == BackpackItem.Size.ASSAULT
+                    && BackpackItem.contents(Gear.back(looter)).getFirst().is(Items.EMERALD), "De rugzak (met inhoud) is niet op je rug");
+        });
+        helper.runAfterDelay(take + 30, () -> {
+            check(body.isRemoved(), "Het lege lichaam ligt er nog");
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Hoofdstuk 98: "Everything back" neemt de rugzak altijd mee. Draag je al een rugzak, dan komt die van je lichaam in je
+     * inventaris (vroeger bleef hij dan op het lichaam liggen).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "bodies")
+    public static void body_everything_back_takes_the_pack_along(GameTestHelper helper) {
+        ServerPlayer owner = player(helper, "body-two-packs", new BlockPos(3, 2, 3));
+        Gear.setBack(owner, pack(BackpackItem.Size.PATROL));
+        com.senne.imttech.body.PlayerBodyEntity body = body(helper, owner, new BlockPos(3, 2, 4));
+        body.setPack(pack(BackpackItem.Size.RUCKSACK, new ItemStack(Items.GOLD_INGOT, 5)));
+        com.senne.imttech.body.PlayerBodies.restore(owner, body);
+        check(!body.hasPack(), "De rugzak bleef op het lichaam, terwijl er plek in je inventaris was");
+        check(BackpackItem.sizeOf(Gear.back(owner)) == BackpackItem.Size.PATROL, "De rugzak op je rug is weg");
+        boolean inInventory = false;
+        for (ItemStack stack : owner.getInventory().items) {
+            inInventory |= BackpackItem.sizeOf(stack) == BackpackItem.Size.RUCKSACK
+                    && BackpackItem.contents(stack).getFirst().is(Items.GOLD_INGOT);
+        }
+        check(inInventory, "De rugzak van het lichaam (met inhoud) zit niet in je inventaris");
+        body.discard();
+        helper.succeed();
+    }
+
     /** Doorzoeken: eruit halen mag, erin leggen niet; en een leeg lichaam verdwijnt vanzelf. */
     @GameTest(template = ARENA, timeoutTicks = 80, batch = "bodies")
     public static void empty_body_disappears(GameTestHelper helper) {

@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 530 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 532 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -7167,11 +7167,43 @@ dus "later" lukte vaak niet.
       spionagedrone gaat op het tweede; dat loopt 150 blokken weg en blijft gemarkeerd (maar niet voor de zwerm); het gaat
       dood en dan is het eerste weer het laatst gemarkeerde.
 
+### 98. Een lichaam leeghalen: de rugzak gaat mee (12 november)
+
+Jouw melding: "als je je body leegmaakt blijft je backpack zitten, kun je dat oplossen". Jouw keuze: de rugzak komt in het
+scherm van het lichaam, en eraf halen kost voor iedereen 3 seconden stilstaan.
+
+Hoe het kwam: de rugzak zit los op de rug van het lichaam (jouw ontwerp: "de rugzak is een apart deel van de body"). In het
+scherm stond hij niet, dus haalde je alles eruit, dan bleef het lichaam liggen met de rugzak erop; eraf halen kon alleen met
+sneak + rechtsklik precies op de rugzak, en dat zag je nergens. "Everything back" nam hem ook alleen mee als je rug leeg was.
+En met Curios (jouw Modrinth-profiel) lag de rugzak niet eens op de rug van je lichaam, maar als los ding tussen wat andere
+mods lieten vallen.
+
+- [x] **Een rugzakvakje** rechtsboven in het scherm van het lichaam (`BodyMenu.packSlot`, `BodyScreen`), met een vaag
+      Assault Pack als er geen rugzak is. Je muis erop: de rugzak (met wat erin zit) en "Click: take the backpack off (3 s,
+      stand still)". Klik erop (ook met shift): het scherm gaat dicht en je staat 3 s stil, net als met sneak + rechtsklik
+      (`PlayerBodies.takePackFromScreen`); hij gaat op je rug, of in je inventaris als je al een rugzak draagt. Daarna is
+      het lichaam leeg en verdwijnt het. Om plek te maken staan de vakjes van het lichaam 6 pixels lager, en de knop
+      "Everything back" links van het rugzakvakje.
+- [x] **"Everything back" neemt de rugzak altijd mee**: op je rug, of (draag je er al een) in je inventaris. Alleen als daar
+      ook geen plek is, blijft hij op het lichaam.
+- [x] **Met Curios** (`PlayerBodies.onDeath`): je holster, pouches, slings en rugzak gaan nu ook met Curios op hun eigen
+      plek in je lichaam (de rugzak op zijn rug), en "Everything back" legt ze terug in je Curios-slots. Vroeger liet Curios
+      ze zelf vallen en kwamen ze tussen "wat andere mods lieten vallen" (en de rugzak dan in je inventaris in plaats van op
+      je rug). Niet getest met Curios (de tests draaien zonder); de code gebruikt dezelfde weg als je holster en rugzak met
+      Curios al gebruikten.
+- [x] **Tests** `body_pack_slot_takes_it_off` (het vakje toont de rugzak, je pakt hem er niet zomaar uit, een klik haalt hem
+      er in 3 s af op je rug, en het lege lichaam verdwijnt) en `body_everything_back_takes_the_pack_along` (met al een rugzak
+      op je rug komt die van het lichaam in je inventaris). Screenshot `pk40b_body_pack_slot` (`-Ponly=backpack`).
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **Het rugzakvakje van een lichaam (hoofdstuk 98)**: gezien op `pk40b_body_pack_slot`, niet met de muis gespeeld,
+      en nooit met Curios. Probeer met Curios (jouw profiel): ga dood met een rugzak, holster en pouches om (ligt de
+      rugzak op de rug van je lichaam?), klik op het rugzakvakje, en probeer Everything back (gaat alles terug in je
+      Curios-slots?).
 - [ ] **Markeren en later afsturen (hoofdstuk 97)**: alleen met een test gecontroleerd. Probeer: markeer een vriend
       (met PvP aan) of een dier, kijk naar de lucht en kies de precisieraket of een spionagedrone; laat hem wegrennen
       (staat "Marked: 1" nog in je HUD?), en kijk wat I.M.T zegt als hij buiten het bereik is.

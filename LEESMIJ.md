@@ -2372,10 +2372,13 @@ tijd verdwijnt: `bodyMinutes`), en je moet het **zelf terugvinden**: geen coörd
   zoals een Raven-soldaat.
 - **Rechtsklik op de rugzak** (het bovenste stuk van zijn rug): openritsen, zoals elke rugzak. **Sneak + rechtsklik op de
   rugzak**: hem eraf halen (3 s stilstaan, `bodyTakePackSeconds`); hij gaat op je rug als die leeg is, anders in je
-  inventaris. Kijk je naar een lichaam, dan zegt een hint onder je vizier wat je klik doet.
+  inventaris. Hetzelfde met een klik op het **rugzakvakje** rechtsboven in het scherm van het lichaam (sinds 12 november):
+  het scherm gaat dicht en je staat 3 s stil, ook als het je eigen lichaam is. Kijk je naar een lichaam, dan zegt een hint
+  onder je vizier wat je klik doet.
 - **Je eigen lichaam** heeft in het scherm de knop **Everything back**: na 3 s stilstaan (`bodyRestoreSeconds`) zit alles
   weer op zijn plek (je harnas aan, je holster en pouches om, je rugzak op je rug, je werkbalk zoals hij was). Ligt er al
-  iets op een plek, dan blijft dat ding in het lichaam.
+  iets op een plek, dan blijft dat ding in het lichaam. De rugzak gaat altijd mee: draag je er al een, dan komt hij in
+  je inventaris.
 - Een leeg lichaam verdwijnt vanzelf. Uitzetten kan met `playerBodies` onder `[backpacks]` (dan vallen je spullen weer op
   de grond).
 

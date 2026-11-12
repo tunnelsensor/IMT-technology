@@ -18,7 +18,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
 /**
  * Een lichaam doorzoeken (hoofdstuk 72, stap 4, zie BodyMenu): 6 rijen met wat erin zit (bovenaan het harnas, de andere
  * hand, de holster, de pouches en de geweren, met een vaag plaatje in een lege plek), eronder je inventaris. Is het jouw
- * lichaam, dan staat rechtsboven de knop "Everything back".
+ * lichaam, dan staat rechtsboven de knop "Everything back". Helemaal rechtsboven (hoofdstuk 98) het vakje van de rugzak:
+ * klik erop en je haalt hem eraf (3 s stilstaan, het scherm gaat dicht).
  */
 public class BodyScreen extends AbstractContainerScreen<BodyMenu> {
     private static final int PANEL = 0x10141A;
@@ -29,9 +30,9 @@ public class BodyScreen extends AbstractContainerScreen<BodyMenu> {
     public BodyScreen(BodyMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
         imageWidth = 176;
-        imageHeight = 222;
+        imageHeight = 228;
         inventoryLabelY = BodyMenu.TOP + 6 * 18 + 2;
-        titleLabelY = 6;
+        titleLabelY = 9;
     }
 
     /** Het vage plaatje in een lege plek van rij 0 (en het geweer voor je borst), of leeg. */
@@ -50,10 +51,19 @@ public class BodyScreen extends AbstractContainerScreen<BodyMenu> {
         };
     }
 
+    /** De knop "Everything back": links van het rugzakvakje (hoofdstuk 98), op de hoogte van de titel. */
     private int[] button() {
         Component label = Component.translatable("body.imttech.everything_back");
         int w = (int) (font.width(label) * 0.75f) + 10;
-        return new int[]{leftPos + imageWidth - 8 - w, topPos + 4, w};
+        return new int[]{leftPos + BodyMenu.PACK_X - 5 - w, topPos + 7, w};
+    }
+
+    /** Staat je muis op het rugzakvakje? */
+    private boolean overPack(double mouseX, double mouseY) {
+        Slot pack = menu.packSlot();
+        int x = leftPos + pack.x;
+        int y = topPos + pack.y;
+        return mouseX >= x - 1 && mouseX < x + 17 && mouseY >= y - 1 && mouseY < y + 17;
     }
 
     private boolean overButton(double mouseX, double mouseY) {
@@ -74,8 +84,10 @@ public class BodyScreen extends AbstractContainerScreen<BodyMenu> {
             int sy = y + slot.y;
             g.fill(sx - 1, sy - 1, sx + 17, sy + 17, HudStyle.argb(255, SLOT));
             g.renderOutline(sx - 1, sy - 1, 18, 18, HudStyle.argb(255, FRAME));
-            if (i < PlayerBodyEntity.SIZE && !slot.hasItem()) {
-                ItemStack ghost = ghost(slot.getContainerSlot());
+            boolean bodySlot = i < PlayerBodyEntity.SIZE || slot == menu.packSlot();
+            if (bodySlot && !slot.hasItem()) {
+                ItemStack ghost = slot == menu.packSlot() ? new ItemStack(com.senne.imttech.backpack.BackpackRegistry.ASSAULT_PACK.get())
+                        : ghost(slot.getContainerSlot());
                 if (!ghost.isEmpty()) {
                     g.renderFakeItem(ghost, sx, sy);
                     g.pose().pushPose();
@@ -111,15 +123,39 @@ public class BodyScreen extends AbstractContainerScreen<BodyMenu> {
         if (overButton(mouseX, mouseY)) {
             g.renderTooltip(font, Component.translatable("body.imttech.everything_back_hint",
                     Math.round(ImtConfig.Backpacks.BODY_RESTORE_SECONDS * 10) / 10.0f), mouseX, mouseY);
+        } else if (overPack(mouseX, mouseY)) {
+            packTooltip(g, mouseX, mouseY);
         } else {
             renderTooltip(g, mouseX, mouseY);
         }
+    }
+
+    /** Hoofdstuk 98: de tooltip van de rugzak, met eronder hoe je hem eraf haalt (of "No backpack"). */
+    private void packTooltip(GuiGraphics g, int mouseX, int mouseY) {
+        ItemStack pack = menu.packSlot().getItem();
+        java.util.List<Component> lines = new java.util.ArrayList<>();
+        if (pack.isEmpty()) {
+            lines.add(Component.translatable("body.imttech.pack_slot_empty"));
+        } else {
+            lines.addAll(getTooltipFromContainerItem(pack));
+            lines.add(Component.translatable("body.imttech.pack_slot_hint",
+                    Math.round(ImtConfig.Backpacks.BODY_TAKE_PACK_SECONDS * 10) / 10.0f)
+                    .withStyle(net.minecraft.ChatFormatting.AQUA));
+        }
+        g.renderComponentTooltip(font, lines, mouseX, mouseY);
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0 && overButton(mouseX, mouseY)) {
             PacketDistributor.sendToServer(new BackpackActionPayload(BackpackActionPayload.RESTORE_BODY, 0));
+            return true;
+        }
+        // Hoofdstuk 98: op de rugzak klikken (ook met shift of rechts) = hem eraf halen; de server sluit het scherm en telt 3 s af.
+        if (overPack(mouseX, mouseY)) {
+            if (menu.packSlot().hasItem()) {
+                PacketDistributor.sendToServer(new BackpackActionPayload(BackpackActionPayload.TAKE_BODY_PACK, 0));
+            }
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);

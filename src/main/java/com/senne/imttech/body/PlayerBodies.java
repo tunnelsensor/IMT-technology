@@ -31,11 +31,13 @@ import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
  *       viel, elk ding op zijn eigen vakje (zie PlayerBodyEntity), je rugzak apart op zijn rug. Wat een andere mod nog laat
  *       vallen (Curios...) gaat er ook in ({@link #onDrops}). Spullen met de vloek van verdwijnen verdwijnen, zoals altijd.
  *       Viel je in de void, dan ligt het lichaam waar je het laatst op de grond stond.</li>
- *   <li><b>De rugzak eraf halen</b> ({@link #takePack}): 3 s stilstaan (jouw keuze), dan op je rug als die leeg is, anders
- *       in je inventaris.</li>
+ *   <li><b>De rugzak eraf halen</b> ({@link #takePack}): met sneak + rechtsklik op de rugzak, of (hoofdstuk 98) met een klik
+ *       op het rugzakvakje in het scherm van het lichaam. 3 s stilstaan (jouw keuze, voor iedereen), dan op je rug als die
+ *       leeg is, anders in je inventaris.</li>
  *   <li><b>Alles terug</b> ({@link #restore}, de knop van de eigenaar): 3 s stilstaan, dan legt het alles terug op zijn
  *       plek (je harnas aan, je holster en pouches om, je rugzak op je rug, je werkbalk zoals hij was); wat niet past
- *       (daar ligt al iets) blijft in het lichaam.</li>
+ *       (daar ligt al iets) blijft in het lichaam. De rugzak gaat sinds hoofdstuk 98 altijd mee: draag je er al een, dan
+ *       komt hij in je inventaris.</li>
  * </ul>
  */
 public final class PlayerBodies {
@@ -84,19 +86,20 @@ public final class PlayerBodies {
         }
         body.loot().setItem(PlayerBodyEntity.OFFHAND, keep(inventory.offhand.getFirst()));
         inventory.clearContent();
-        if (!Gear.curios()) {
-            GearItem.Kind[] kinds = GearItem.Kind.values();
-            for (int i = 0; i < kinds.length; i++) {
-                body.loot().setItem(PlayerBodyEntity.GEAR + i, keep(Gear.get(player, kinds[i])));
-                Gear.set(player, kinds[i], ItemStack.EMPTY);
-            }
-            for (int i = 0; i < Gear.SLINGS; i++) {
-                body.loot().setItem(PlayerBodyEntity.GEAR + kinds.length + i, keep(Gear.sling(player, i)));
-                Gear.setSling(player, i, ItemStack.EMPTY);
-            }
-            body.setPack(keep(Gear.back(player)));
-            Gear.setBack(player, ItemStack.EMPTY);
+        // Je holster, pouches, slings en rugzak: ook met Curios (hoofdstuk 98; vroeger liet Curios ze dan zelf vallen, en lag je
+        // rugzak als los ding tussen wat andere mods lieten vallen in plaats van op de rug van je lichaam). Gear leest en
+        // schrijft de Curios-slots zelf; we halen ze leeg voordat Curios ze zou laten vallen, dus niets komt dubbel.
+        GearItem.Kind[] kinds = GearItem.Kind.values();
+        for (int i = 0; i < kinds.length; i++) {
+            body.loot().setItem(PlayerBodyEntity.GEAR + i, keep(Gear.get(player, kinds[i])));
+            Gear.set(player, kinds[i], ItemStack.EMPTY);
         }
+        for (int i = 0; i < Gear.SLINGS; i++) {
+            body.loot().setItem(PlayerBodyEntity.GEAR + kinds.length + i, keep(Gear.sling(player, i)));
+            Gear.setSling(player, i, ItemStack.EMPTY);
+        }
+        body.setPack(keep(Gear.back(player)));
+        Gear.setBack(player, ItemStack.EMPTY);
         Vec3 at = player.position();
         if (at.y < level.getMinBuildHeight()) {
             at = LAST_GROUND.getOrDefault(player.getUUID(), Vec3.atBottomCenterOf(level.getSharedSpawnPos()));
@@ -164,6 +167,20 @@ public final class PlayerBodies {
                 });
     }
 
+    /**
+     * Hoofdstuk 98 (jouw melding: "als je je body leegmaakt blijft je backpack zitten"): het rugzakvakje in het scherm van een
+     * lichaam. Het scherm gaat dicht en je staat 3 s stil, net als met sneak + rechtsklik op de rugzak (jouw keuze: voor
+     * iedereen, ook de eigenaar). Geeft false als er geen lichaam open staat of het geen rugzak heeft.
+     */
+    public static boolean takePackFromScreen(ServerPlayer player) {
+        if (!(player.containerMenu instanceof BodyMenu menu) || menu.body() == null || !menu.body().hasPack()) {
+            return false;
+        }
+        PlayerBodyEntity body = menu.body();
+        player.closeContainer();
+        return takePack(player, body);
+    }
+
     // ================================================================ Alles terug
 
     /** De knop "Everything back" (alleen de eigenaar): 3 s stilstaan, dan alles terug op zijn plek. */
@@ -209,7 +226,7 @@ public final class PlayerBodies {
                     placed = true;
                 }
             } else if (slot < PlayerBodyEntity.EXTRA) {
-                placed = !Gear.curios() && restoreGear(player, slot - PlayerBodyEntity.GEAR, stack);
+                placed = restoreGear(player, slot - PlayerBodyEntity.GEAR, stack);
             } else {
                 placed = inventory.add(stack.copy());
             }
@@ -218,9 +235,14 @@ public final class PlayerBodies {
                 back++;
             }
         }
-        if (body.hasPack() && Gear.back(player).isEmpty() && Gear.setBack(player, body.pack().copy())) {
-            body.setPack(ItemStack.EMPTY);
-            back++;
+        // Hoofdstuk 98: de rugzak gaat altijd mee: op je rug, of (draag je al een rugzak) in je inventaris. Alleen als daar
+        // ook geen plek is, blijft hij op het lichaam.
+        if (body.hasPack()) {
+            ItemStack pack = body.pack().copy();
+            if ((Gear.back(player).isEmpty() && Gear.setBack(player, pack)) || inventory.add(pack)) {
+                body.setPack(ItemStack.EMPTY);
+                back++;
+            }
         }
         player.inventoryMenu.broadcastChanges();
         player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.ARMOR_EQUIP_GENERIC.value(),

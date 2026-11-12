@@ -74,6 +74,7 @@ public final class Backpacks {
                             com.senne.imttech.body.PlayerBodies.startRestore(player, menu.body());
                         }
                     }
+                    case BackpackActionPayload.TAKE_BODY_PACK -> com.senne.imttech.body.PlayerBodies.takePackFromScreen(player);
                     default -> { }
                 }
             }

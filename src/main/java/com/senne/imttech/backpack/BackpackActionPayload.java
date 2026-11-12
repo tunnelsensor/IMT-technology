@@ -18,6 +18,8 @@ public record BackpackActionPayload(int action, int arg) implements CustomPacket
     public static final int SORT = 1;
     /** Stap 4: "Everything back" bij je eigen lichaam (het scherm ervan is open). */
     public static final int RESTORE_BODY = 2;
+    /** Hoofdstuk 98: het rugzakvakje in het scherm van een lichaam: de rugzak eraf halen (3 s stilstaan). */
+    public static final int TAKE_BODY_PACK = 3;
 
     public static final Type<BackpackActionPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "backpack_action"));
 

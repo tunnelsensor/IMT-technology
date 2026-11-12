@@ -2110,6 +2110,8 @@
   "body.imttech.title": "%s's body",
   "body.imttech.everything_back": "Everything back",
   "body.imttech.everything_back_hint": "Put everything back where it was (%s s, stand still). What doesn't fit stays here",
+  "body.imttech.pack_slot_hint": "Click: take the backpack off (%s s, stand still)",
+  "body.imttech.pack_slot_empty": "No backpack on this body",
   "body.imttech.taking_pack": "Taking the backpack...",
   "body.imttech.restoring": "Putting everything back...",
   "body.imttech.took_pack": "%s is yours now",
