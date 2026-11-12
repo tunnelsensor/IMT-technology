@@ -2,6 +2,8 @@ package com.senne.imttech.howto.scenes;
 
 import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.energy.CableKind;
+import com.senne.imttech.furnace.ElectricFurnaceBlock;
+import com.senne.imttech.furnace.ElectricFurnaceBlockEntity;
 import com.senne.imttech.howto.HowToCue.Side;
 import com.senne.imttech.howto.HowToScene;
 import com.senne.imttech.howto.HowToSceneBuilder;
@@ -391,6 +393,68 @@ public final class PowerScenes {
             x += 0.55;
         }
         s.item(duration, new Vec3(2.6, y, 2.5), out, 0.5f);
+    }
+
+    // ================================================================ De Electric Furnace (hoofdstuk 87)
+
+    static BlockState electricFurnace(boolean working) {
+        return ModBlocks.ELECTRIC_FURNACE.get().defaultBlockState().setValue(ElectricFurnaceBlock.FACING, Direction.WEST)
+                .setValue(ElectricFurnaceBlock.WORKING, working);
+    }
+
+    /**
+     * De Electric Furnace (hoofdstuk 87, jouw wens: "een electrische furnace zodat je net zoals een crusher dingen kunt
+     * smelten op power"): tegen een generator smelt hij ruw ijzer tot een ijzerstaaf, zonder brandstof en sneller dan een
+     * oven; daarna een trechter erop (erin van boven of opzij, eruit van onder), en de ervaring die hij voor je bewaart.
+     */
+    public static List<HowToScene> electricFurnace() {
+        HowToSceneBuilder s = new HowToSceneBuilder("electric_furnace", "Electric Furnace").plate(5, 4).height(3);
+        BlockPos gen = new BlockPos(3, 1, 2);
+        BlockPos furnace = new BlockPos(2, 1, 2);
+        BlockPos hopper = new BlockPos(2, 2, 2);
+        int smelt = ElectricFurnaceBlockEntity.ticksFor(200);
+        Vec3 above = HowToSceneBuilder.top(furnace).add(0, 0.45, 0);
+        Vec3 front = HowToSceneBuilder.face(furnace, Direction.WEST);
+        s.idle(6);
+
+        s.chapter("Smelting on power");
+        s.place(gen, heat(Direction.WEST));
+        s.idle(4);
+        s.place(furnace, electricFurnace(false));
+        s.idle(10);
+        s.item(smelt / 2, above, new ItemStack(Items.RAW_IRON), 0.5f);
+        s.change(furnace, electricFurnace(true));
+        s.text(120, front, Side.RIGHT,
+                "The *Electric Furnace* smelts everything a furnace smelts, without fuel: on mains power, %s times as fast (%s"
+                        + " seconds for an ore). Right against a generator it needs no cable.",
+                HowToSceneBuilder.number(ElectricFurnaceBlockEntity.speed()), HowToSceneBuilder.number(smelt / 20.0));
+        s.idle(smelt / 2);
+        s.change(furnace, electricFurnace(false));
+        s.item(60, above, new ItemStack(Items.IRON_INGOT), 0.5f);
+        s.idle(65);
+
+        s.chapter("Hoppers");
+        s.place(hopper, Blocks.HOPPER.defaultBlockState().setValue(net.minecraft.world.level.block.HopperBlock.FACING,
+                Direction.DOWN));
+        s.idle(8);
+        s.item(smelt / 2, HowToSceneBuilder.top(hopper).add(0, 0.45, 0), new ItemStack(Items.SAND, 16), 0.5f);
+        s.change(furnace, electricFurnace(true));
+        s.text(115, front, Side.RIGHT,
+                "Hoppers put things in from above or the side, and a hopper below takes the result out. Pipes and belts of"
+                        + " other mods work too.");
+        s.idle(smelt / 2);
+        s.item(smelt / 2, HowToSceneBuilder.top(hopper).add(0, 0.45, 0), new ItemStack(Items.GLASS), 0.5f);
+        s.idle(smelt / 2 + 10);
+        s.change(furnace, electricFurnace(false));
+
+        s.chapter("Experience");
+        s.rightClick(front, ItemStack.EMPTY);
+        s.idle(10);
+        s.text(100, front, Side.RIGHT,
+                "Take the result out and you get the *experience*, like from a furnace. Break it, and the experience it kept"
+                        + " pops out.");
+        s.idle(105);
+        return List.of(s.build());
     }
 
     // ================================================================ Netwerkkabels en PoE

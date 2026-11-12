@@ -112,6 +112,12 @@ public final class ModBlockEntities {
                     () -> new BlockEntityType<>(com.senne.imttech.plastic.PolymerizerBlockEntity::new,
                             java.util.Set.of(ModBlocks.POLYMERIZER.get()), null));
 
+    /** De binnenkant van de Electric Furnace (hoofdstuk 87): zijn twee vakjes, hoe ver hij is en de opgespaarde ervaring. */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.furnace.ElectricFurnaceBlockEntity>> ELECTRIC_FURNACE =
+            BLOCK_ENTITIES.register("electric_furnace",
+                    () -> new BlockEntityType<>(com.senne.imttech.furnace.ElectricFurnaceBlockEntity::new,
+                            java.util.Set.of(ModBlocks.ELECTRIC_FURNACE.get()), null));
+
     /** De bewakingscamera: zijn naam en hoe hij gedraaid en gekanteld is. */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.security.CameraBlockEntity>> SECURITY_CAMERA =
             BLOCK_ENTITIES.register("security_camera",

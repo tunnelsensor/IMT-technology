@@ -161,6 +161,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.CRUSHER.get());
                 output.accept(ModItems.COMPACTOR.get());
                 output.accept(ModItems.POLYMERIZER.get());
+                output.accept(ModItems.ELECTRIC_FURNACE.get());
                 output.accept(ModItems.CHARGING_STATION.get());
                 output.accept(ModItems.DRONE_DOCK.get());
                 output.accept(ModItems.LANDING_PAD.get());

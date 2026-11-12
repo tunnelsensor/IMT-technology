@@ -189,14 +189,14 @@ Elk item dat meer doet dan in een recept gaan, krijgt een animatie die laat zien
   **wijs je een blok aan**, dan zie je hoe het heet. Heeft een item meer animaties, dan blader je met de
   pijltjes bovenaan. **Esc** brengt je terug naar je inventaris, met alles nog zoals het was. In je eigen
   wereld staat het spel stil terwijl je kijkt.
-- **Alles is er** (53 van de 53), per tabblad:
+- **Alles is er** (57 van de 57), per tabblad:
   - *Equipment*: de bril, het harnas (minder schade, vliegen, landen, de laser cannon), de mini-raketten, de
     drones van je arsenaal en de Illusion Jammer.
   - *Weapons*: de lasergeweren, lasergeweren uit onderdelen, de Ion Blaster, EMP-granaten, fraggranaten, rook en
     de flashbang, de Remote EMP en Remote Frag, granaten terugwerpen (en ladingen verplaatsen), de Glock 19, de
     Gunsmith Table, de Reloading Bench, de holster, de pouches en de slings, en de armory (het Pegboard en de Ammo Box).
   - *Power*: de Power Battery, stroom maken (zonnepaneel en warmtegenerator), kabels maken (koperdraad, de
-    Polymerizer en plastic), stroomkabels, netwerkkabels met PoE en de switch, en de stroomkast.
+    Polymerizer en plastic), de Electric Furnace, stroomkabels, netwerkkabels met PoE en de switch, en de stroomkast.
   - *Interior*: de holotafel, de harnas-werkbank met zijn upgrades, barsten herstellen (Repair Paste, de Crusher en
     de Compactor), het laadstation, het landingsplatform, de Arc Lamp met de lichtschakelaar, en relais.
   - *Security*: de Security Core, computer en monitor, zones, de Block Reinforcer, handboeien, keycards en lezers,
@@ -370,6 +370,19 @@ eerst bij de generator die het meest heeft.
 - **PoE Cable**: een stroomkabel + een netwerkkabel + plastic = 2 PoE-kabels.
 
 De getallen van de Crusher en de Polymerizer staan in `config/imttech.toml` onder `[materials]`.
+
+**De Electric Furnace (sinds 12 november).** Een oven op netstroom in plaats van brandstof, dezelfde soort
+kast als de Crusher (ijzer, 2 koperdraad, een oven en een computerchip). Hij smelt **alles wat een gewone
+oven smelt** (erts, eten, zand, polymeer tot plastic, ook de recepten van andere mods), **twee keer zo
+snel** (5 seconden per erts), voor 40 FE per tick, alleen zolang hij smelt. Zet hem tegen een generator of
+sluit hem aan met een stroomkabel (geen PoE: hij hoort niet in een netwerk). Terwijl hij werkt, gloeien de
+spiralen achter zijn venster oranje en geeft hij licht zoals een brandende oven. Zijn scherm: links wat
+erin gaat (leeg: om de beurt een vaag ruw ijzer, zand en polymeer), een pijl die oranje volloopt, de
+gloeispiraal eronder, en rechts het resultaat. De **ervaring** krijg je als je het resultaat eruit haalt,
+net als bij een oven; breek je hem af, dan komt de opgespaarde ervaring vrij. Trechters doen er van boven
+of opzij iets in en halen het resultaat er van onder uit (buizen en lopende banden van Create ook). Hoe
+snel hij is, staat onder `[materials]` (`electricFurnaceSpeed`, 1 = even snel als een oven), en zijn
+stroom onder `[power]` (`electricFurnace`).
 
 **Forge Energy (sinds 4 november).** Alle stroom is **FE**, dezelfde eenheid als Create Crafts &
 Additions, Mekanism en de meeste andere techmods, en met dezelfde schaal: een zonnepaneel maakt

@@ -82,7 +82,7 @@ package com.senne.imttech.config;
  *   Logic ........ serverkasten en het datacenter: snelheid, warmte, brand, backups
  *   Breach ....... hoe sterk blokken zijn tegen frags, en TNT en de satelliet tegen een beschermde zone
  *   Repair ....... barsten herstellen (Crusher, Compactor, Repair Paste)
- *   Materials .... de grondstoffen van de kabels: koperdraad, polymeer en plastic (hoofdstuk 85)
+ *   Materials .... de grondstoffen van de kabels: koperdraad, polymeer en plastic (hoofdstuk 85), en de Electric Furnace (87)
  *   Bypass ....... inbreken met de Bypass Kit, en zakkenrollen
  *   Lights ....... de Arc Lamp
  *   Robots ....... guard robots: wat elk onderdeel doet (hoofdstuk 21)
@@ -358,6 +358,9 @@ public final class ImtConfig {
         /** Hoofdstuk 85: stroom per tick van de Polymerizer zolang hij polymeer maakt (net zoveel als de Crusher). */
         @Tunable(value = "Grid energy per tick the Polymerizer uses while it makes polymer", energy = true)
         public static float POLYMERIZER = 40.0f;
+        /** Hoofdstuk 87: stroom per tick van de Electric Furnace zolang hij smelt (net zoveel als de Crusher). */
+        @Tunable(value = "Grid energy per tick the Electric Furnace uses while it smelts", energy = true)
+        public static float ELECTRIC_FURNACE = 40.0f;
         /** Stroom die één serverkast elke twee seconden haalt (zonder tellen zijn onderdelen niet mee). */
         @Tunable(value = "Grid energy one server rack uses every two seconds (without it, its parts do not count)", energy = true)
         public static float SERVER_RACK_UPKEEP = 100.0f;
@@ -1554,8 +1557,8 @@ public final class ImtConfig {
 
     // =============================================================================================== Materials
 
-    @Section("What cables are made of: copper wire (Crusher), polymer (Polymerizer) and plastic (furnace). "
-            + "The power the Polymerizer uses is under [power]")
+    @Section("What cables are made of: copper wire (Crusher), polymer (Polymerizer) and plastic (furnace), and the Electric "
+            + "Furnace. The power the Polymerizer and the Electric Furnace use is under [power]")
     public static final class Materials {
         private Materials() {}
 
@@ -1578,6 +1581,13 @@ public final class ImtConfig {
         /** Zoveel water past er in zijn tank (4000 = 4 emmers). */
         @Tunable(value = "Water the Polymerizer's tank holds (mB: a bucket is 1000)", min = 1000, max = 32000)
         public static float POLYMERIZER_TANK = 4000.0f;
+        /**
+         * Hoofdstuk 87 (jouw wens: "een electrische furnace zodat je net zoals een crusher dingen kunt smelten op power"):
+         * zoveel keer sneller dan een gewone oven smelt de Electric Furnace (mijn invulling: 2, dus 5 seconden per erts in
+         * plaats van 10). 1 = even snel als een oven.
+         */
+        @Tunable(value = "How many times faster than a normal furnace the Electric Furnace smelts (1 = just as fast)", min = 0.1, max = 20)
+        public static float ELECTRIC_FURNACE_SPEED = 2.0f;
     }
 
     // =============================================================================================== Bypass

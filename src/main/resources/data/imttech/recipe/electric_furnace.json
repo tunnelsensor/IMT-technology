@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "W": {
+      "tag": "c:wires/copper"
+    },
+    "C": {
+      "item": "imttech:computer_chip"
+    },
+    "F": {
+      "item": "minecraft:furnace"
+    }
+  },
+  "pattern": [
+    "III",
+    "WFW",
+    "ICI"
+  ],
+  "result": {
+    "id": "imttech:electric_furnace",
+    "count": 1
+  }
+}

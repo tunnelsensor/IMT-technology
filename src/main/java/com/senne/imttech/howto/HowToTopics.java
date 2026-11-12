@@ -94,6 +94,8 @@ public final class HowToTopics {
             // Hoofdstuk 85: waar de kabels van gemaakt zijn (koperdraad, polymeer, plastic) en de Polymerizer.
             topic("making_cables", "power", "Making cables", PowerScenes::makingCables, ModItems.POLYMERIZER, ModItems.COPPER_WIRE,
                     ModItems.PLASTIC, ModItems.POLYMER),
+            // Hoofdstuk 87: de Electric Furnace (smelten op netstroom).
+            topic("electric_furnace", "power", "Electric Furnace", PowerScenes::electricFurnace, ModItems.ELECTRIC_FURNACE),
             topic("power_cables", "power", "Power cables", PowerScenes::cables, ModItems.CABLE),
             topic("network_cables", "power", "Network cables and PoE", PowerScenes::network, ModItems.NETWORK_CABLE, ModItems.POE_CABLE,
                     ModItems.NETWORK_SWITCH),

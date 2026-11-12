@@ -210,6 +210,7 @@ public class ImtTechClient {
         event.register(ModMenus.LANDING_PAD.get(), com.senne.imttech.client.LandingPadScreen::new);
         event.register(ModMenus.CRACK_MACHINE.get(), com.senne.imttech.client.repair.CrackMachineScreen::new);
         event.register(ModMenus.POLYMERIZER.get(), com.senne.imttech.client.plastic.PolymerizerScreen::new);
+        event.register(ModMenus.ELECTRIC_FURNACE.get(), com.senne.imttech.client.furnace.ElectricFurnaceScreen::new);
         event.register(ModMenus.ROBOT_ASSEMBLER.get(), com.senne.imttech.client.robot.RobotAssemblerScreen::new);
         event.register(ModMenus.GUNSMITH_TABLE.get(), com.senne.imttech.client.guns.GunsmithScreen::new);
         event.register(ModMenus.LASER_WORKBENCH.get(), com.senne.imttech.client.weapons.LaserWorkbenchScreen::new);

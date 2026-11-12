@@ -272,6 +272,9 @@ public final class ModItems {
     /** Hoofdstuk 85: de Polymerizer (kool en water worden polymeer). */
     public static final DeferredItem<BlockItem> POLYMERIZER = ITEMS.registerSimpleBlockItem("polymerizer",
             ModBlocks.POLYMERIZER, new Item.Properties());
+    /** Hoofdstuk 87: de Electric Furnace (smelten op netstroom). */
+    public static final DeferredItem<BlockItem> ELECTRIC_FURNACE = ITEMS.registerSimpleBlockItem("electric_furnace",
+            ModBlocks.ELECTRIC_FURNACE, new Item.Properties());
     /** De Arc Lamp (9 oktober): lichtniveau 100 op netstroom. */
     public static final DeferredItem<BlockItem> ARC_LAMP = ITEMS.registerSimpleBlockItem("arc_lamp",
             ModBlocks.ARC_LAMP, new Item.Properties().rarity(Rarity.UNCOMMON));

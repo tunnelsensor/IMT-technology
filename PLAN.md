@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 510 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 512 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -6830,10 +6830,58 @@ je ook GPU's gebruiken, dat is dan dubbel zoveel voor hetzelfde effect."
       niets met het datacenter). Een eerdere ronde had meer rood doordat je dev-client met een oude versie tegelijk
       `run/config/imttech.toml` steeds terugschreef.
 
+### 87. De Electric Furnace: smelten op netstroom (12 november)
+
+Jouw wens: "Voeg een electrische furnace toe zodat je net zoals een crusher enzo dingen kunt smelten op power".
+
+**Mijn invulling** (zeg het als je het anders wil; de getallen staan in de config):
+- **Wat hij smelt**: alles wat een gewone oven smelt, met dezelfde recepten (`minecraft:smelting`, dus ook die van andere
+  mods): erts, eten, zand, klei, polymeer tot plastic... Geen brandstof: hij werkt op netstroom, net als de Crusher (via
+  een stroomkabel, of direct tegen een generator). Geen PoE: hij hoort niet in een netwerk.
+- **Snelheid en stroom**: **twee keer zo snel** als een oven (5 seconden per erts in plaats van 10, `electricFurnaceSpeed`
+  bij `[materials]`), voor **40 FE per tick** zolang hij smelt (net als de Crusher, `electricFurnace` bij `[power]`). Eén
+  erts kost zo 4.000 FE; een warmtegenerator maakt op één kool genoeg voor veel meer dan de 8 van een gewone oven.
+- **Ervaring** zoals bij een oven: hij spaart ze op, en je krijgt ze als je het resultaat eruit haalt (ook met shift-klik),
+  of als je hem afbreekt.
+- **Twee vakjes**: erin en eruit (geen brandstofvakje). Trechters doen er van boven of opzij iets in (alleen wat smelt) en
+  halen het resultaat er van onder uit; buizen en lopende banden van andere mods ook (de item-capability).
+- **Recept**: drie ijzer, koperdraad - oven - koperdraad, ijzer - computerchip - ijzer (de koperdraad uit hoofdstuk 85).
+- **Hoe hij eruitziet**: de kast van de Crusher, met achter het venster twee gloeispiralen: uit dof koper, aan oranje met
+  gele hete puntjes en een donkerrood venster. Opzij luchtgaten en een koperen stroomaansluiting, bovenop een rooster
+  waar af en toe een dun rookpluimpje uit komt. Terwijl hij werkt geeft hij **licht 13**, zoals een brandende oven. Geen
+  geknetter: er brandt niets.
+
+- [x] **Het blok** — `furnace/ElectricFurnaceBlock` (draait naar wie hem neerzet, `working` voor de gloed en het licht,
+      comparator leest hoe vol hij zit, afbreken laat alles vallen en geeft de ervaring) en
+      `furnace/ElectricFurnaceBlockEntity` (zoekt het recept met een `RecipeManager.CachedCheck` zoals een gewone oven, de
+      tijd is de kooktijd van het recept gedeeld door de snelheid, wacht zonder stroom of met een vol vakje eruit en
+      vergeet niet hoe ver hij was). Een nieuwe oven gloeit niet eerst even op voor hij iets gedaan heeft.
+- [x] **Het scherm** — `ElectricFurnaceMenu` en `client/furnace/ElectricFurnaceScreen`, met de vakjes op dezelfde plek als
+      bij de Crusher. Leeg vakje erin: om de beurt een vaag ruw ijzer, zand en polymeer. De pijl loopt oranje vol, en
+      eronder gloeit een spiraal zolang hij smelt. Onderaan "Smelting...", "Anything a furnace smelts. No fuel needed.",
+      "No power: connect it with power cables." of "Output full: take it out." (over twee regels als het niet past).
+- [x] **Overal bij** — de creative-tab (na de Polymerizer), de pickaxe-tag, de loot table, de textures
+      (`electric_furnace_textures()` in `tools/generate_textures.py`, alleen die functie gedraaid), en de config.
+- [x] **De uitleg** — W op de Electric Furnace: "Electric Furnace" in het tabblad Power (onderwerp 57): ruw ijzer wordt een
+      ijzerstaaf tegen een generator, een trechter erop met zand (glas eruit), en de ervaring.
+- [x] **Screenshots** — `gradlew runVisualCheck -Ponly=repair`: `r12_electric_furnace_working` (de gloed naast de
+      Polymerizer), `r13_electric_furnace_screen`, `r14_electric_furnace_empty` en `r15_electric_furnace_no_power`.
+- [x] **Tests** — `electric_furnace_smelts_on_power` (twee ruw goud: na 100 ticks één goudstaaf, stroom gebruikt, aan en
+      licht 13, 1 ervaring bewaard; shift-klik op de goudstaaf zet hem in je inventaris en laat 1 ervaring vrij; aarde mag
+      er niet in, polymeer wel) en `electric_furnace_waits_and_takes_hoppers` (zonder stroom "No power" en niet aan, met
+      een vol vakje "Output full", een trechter van boven en opzij doet ruw ijzer erin maar geen aarde, van onder haalt
+      hij de ijzerstaven eruit en van boven niets, en afbreken laat het ruwe koper vallen met 3 ervaring). Volledige ronde:
+      516 tests (met het werk van de andere sessies), alle groen.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
+
+- [ ] **De Electric Furnace (hoofdstuk 87)**: niet met de muis gespeeld. Probeer: iets smelten tegen een generator en met
+      een stroomkabel, shift-klik op het resultaat (krijg je de ervaring?), trechters erboven, opzij en eronder, en kijk of
+      hij gloeit en licht geeft terwijl hij werkt en weer uitgaat als hij klaar is. Is twee keer zo snel als een oven
+      goed, of wil je hem sneller of trager (`electricFurnaceSpeed`)?
 
 - [ ] **Kabels maken en de drie soorten kabels (hoofdstuk 85)**: het scherm van de Polymerizer en de Crusher met koper
       zijn gezien op screenshots, maar niet met de muis gespeeld. Probeer: rechtsklik met een emmer water (tot de tank

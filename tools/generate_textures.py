@@ -1127,6 +1127,70 @@ def polymerizer_textures():
     save(side, "block/polymerizer_side.png")
 
 
+def electric_furnace_textures():
+    """
+    De Electric Furnace (hoofdstuk 87): dezelfde soort kast als de Crusher, met in het venster twee gloeispiralen. Uit
+    zijn ze dof koper op een donkere achtergrond; werkt hij, dan gloeien ze oranje met gele hete puntjes, kleurt het venster
+    donkerrood en brandt het lampje blauw. Opzij luchtgaten en een koperen stroomaansluiting, bovenop een rooster waar de
+    warmte uit komt (daar komt ook het rookpluimpje uit).
+    """
+    window = (24, 26, 30, 255)
+    window_hot = (72, 22, 12, 255)
+    halo = (120, 40, 18, 255)
+    coil_off = (96, 62, 50, 255)
+    coil_off_hi = (124, 84, 66, 255)
+    coil_on = (255, 132, 40, 255)
+    coil_hot = (255, 214, 96, 255)
+    copper = (184, 115, 51, 255)
+    for name, on in (("electric_furnace_front", False), ("electric_furnace_front_on", True)):
+        im = img(16, 16, METAL_2)
+        d = ImageDraw.Draw(im)
+        d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
+        d.rectangle([2, 2, 13, 10], fill=window_hot if on else window, outline=METAL_3)
+        # Twee spiralen: een zigzag over de breedte van het venster (y 4-5 en 7-8).
+        for base in (4, 7):
+            for x in range(3, 13):
+                y = base + (x % 2)
+                if on:
+                    # Een vage gloed rond de spiraal, en hier en daar een geel heet puntje.
+                    px(im, [(x, y - 1 if x % 2 else y + 1)], halo)
+                    px(im, [(x, y)], coil_hot if (x + base) % 4 == 0 else coil_on)
+                else:
+                    px(im, [(x, y)], coil_off_hi if x % 3 == 0 else coil_off)
+        # De klemmen links en rechts waar de spiralen aan vast zitten.
+        for y in (4, 5, 7, 8):
+            px(im, [(3, y), (12, y)], copper if on else METAL_3)
+        for x in range(1, 15):
+            px(im, [(x, 13), (x, 14)], (220, 170, 40, 255) if (x // 2) % 2 == 0 else METAL_DARK)
+        d.rectangle([11, 11, 13, 11], fill=CYAN if on else (90, 30, 26, 255))
+        save(im, "block/%s.png" % name)
+
+    side = img(16, 16, METAL_2)
+    d = ImageDraw.Draw(side)
+    d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
+    px(side, [(2, 2), (13, 2), (2, 13), (13, 13)], METAL_3)
+    # Vier luchtgaten boven elkaar.
+    for y in (3, 5, 7, 9):
+        d.line([4, y, 11, y], fill=METAL_DARK)
+        d.line([4, y + 1, 11, y + 1], fill=METAL_3)
+    # De stroomaansluiting: een koperen stekkerdoos onderaan.
+    d.rectangle([6, 11, 9, 12], fill=copper)
+    px(side, [(7, 12), (8, 12)], METAL_DARK)
+    d.line([1, 14, 14, 14], fill=CYAN_DIM)
+    save(side, "block/electric_furnace_side.png")
+
+    top = img(16, 16, METAL_1)
+    d = ImageDraw.Draw(top)
+    d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
+    px(top, [(1, 1), (14, 1), (1, 14), (14, 14)], METAL_3)
+    d.rectangle([3, 3, 12, 12], fill=METAL_3)
+    # Een rooster van 3 x 3 gaten.
+    for gx in (4, 7, 10):
+        for gy in (4, 7, 10):
+            d.rectangle([gx, gy, gx + 1, gy + 1], fill=(16, 18, 22, 255))
+    save(top, "block/electric_furnace_top.png")
+
+
 def cable_material_items():
     """
     De grondstoffen van de kabels (hoofdstuk 85): koperdraad (een rol koperdraad, schuin, met een los eindje) en plastic
@@ -4300,6 +4364,7 @@ if __name__ == "__main__":
     crushed_gunpowder_item()
     compactor_textures()
     polymerizer_textures()
+    electric_furnace_textures()
     cable_material_items()
     arc_lamp_textures()
     light_switch_textures()

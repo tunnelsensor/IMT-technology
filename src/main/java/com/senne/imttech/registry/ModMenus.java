@@ -33,6 +33,9 @@ public final class ModMenus {
     /** Het scherm van de Polymerizer (hoofdstuk 85): kool, een emmer water, zijn tank en het polymeer. */
     public static final DeferredHolder<MenuType<?>, MenuType<com.senne.imttech.plastic.PolymerizerMenu>> POLYMERIZER =
             MENUS.register("polymerizer", () -> IMenuTypeExtension.create(com.senne.imttech.plastic.PolymerizerMenu::new));
+    /** Het scherm van de Electric Furnace (hoofdstuk 87): erin, eruit en hoe ver hij is. */
+    public static final DeferredHolder<MenuType<?>, MenuType<com.senne.imttech.furnace.ElectricFurnaceMenu>> ELECTRIC_FURNACE =
+            MENUS.register("electric_furnace", () -> IMenuTypeExtension.create(com.senne.imttech.furnace.ElectricFurnaceMenu::new));
     /** Het scherm van een landingsplatform: zijn batterij (zie LandingPadMenu). */
     public static final DeferredHolder<MenuType<?>, MenuType<com.senne.imttech.suit.LandingPadMenu>> LANDING_PAD =
             MENUS.register("landing_pad", () -> IMenuTypeExtension.create(com.senne.imttech.suit.LandingPadMenu::new));

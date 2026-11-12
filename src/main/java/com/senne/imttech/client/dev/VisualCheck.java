@@ -3814,6 +3814,35 @@ public final class VisualCheck {
             });
             t.shot(15, "r11_polymerizer_no_water");
             t.close(5);
+            // Hoofdstuk 87: de Electric Furnace rechts van de Polymerizer: gloeiend aan het werk, zijn scherm (ruw ijzer erin,
+            // ijzerstaven eruit), leeg (het vage voorbeeld en de regel onderaan), en zonder stroom ("No power").
+            t.onServer(0, VisualCheck::buildFurnaceCorner);
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.stand(10, ELECTRIC_FURNACE.getX() + 0.5, ELECTRIC_FURNACE.getY(), ELECTRIC_FURNACE.getZ() + 4.5, 180, 15);
+            t.lookAt(5, new Vec3(ELECTRIC_FURNACE.getX(), ELECTRIC_FURNACE.getY() + 0.4, ELECTRIC_FURNACE.getZ() + 0.8));
+            t.shot(40, "r12_electric_furnace_working");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(ELECTRIC_FURNACE) instanceof com.senne.imttech.furnace.ElectricFurnaceBlockEntity furnace) {
+                    player.openMenu(furnace);
+                }
+            });
+            t.shot(20, "r13_electric_furnace_screen");
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(ELECTRIC_FURNACE) instanceof com.senne.imttech.furnace.ElectricFurnaceBlockEntity furnace) {
+                    furnace.clearContent();
+                }
+            });
+            t.shot(15, "r14_electric_furnace_empty");
+            t.onServer(0, player -> {
+                player.serverLevel().removeBlock(ELECTRIC_FURNACE.west(), false);
+                if (player.serverLevel().getBlockEntity(ELECTRIC_FURNACE) instanceof com.senne.imttech.furnace.ElectricFurnaceBlockEntity furnace) {
+                    furnace.setItem(com.senne.imttech.furnace.ElectricFurnaceBlockEntity.SLOT_IN,
+                            new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.RAW_IRON, 3));
+                }
+            });
+            t.shot(15, "r15_electric_furnace_no_power");
+            t.close(5);
         }
 
         // --- De Block Reinforcer (hoofdstuk 44): het linker kwartsmuurtje is verstevigd (een randje door je
@@ -5235,6 +5264,29 @@ public final class VisualCheck {
         inventory.setItem(0, new net.minecraft.world.item.ItemStack(ModItems.COPPER_WIRE.get(), 12));
         inventory.setItem(1, new net.minecraft.world.item.ItemStack(ModItems.PLASTIC.get(), 8));
         inventory.setItem(2, new net.minecraft.world.item.ItemStack(ModItems.POLYMER.get(), 5));
+    }
+
+    /** De Electric Furnace in de rondleiding (hoofdstuk 87): rechts van de Polymerizer, met een generator links ervan. */
+    static final BlockPos ELECTRIC_FURNACE = POLYMERIZER.east(2);
+
+    /**
+     * Een Electric Furnace (voorkant naar het zuiden) tegen een volle generator, met twaalf ruw ijzer erin en al drie
+     * ijzerstaven eruit: hij werkt dus (en gloeit).
+     */
+    static void buildFurnaceCorner(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        level.setBlockAndUpdate(ELECTRIC_FURNACE.west(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+        if (level.getBlockEntity(ELECTRIC_FURNACE.west()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
+            generator.fill(200_000);
+        }
+        level.setBlockAndUpdate(ELECTRIC_FURNACE, ModBlocks.ELECTRIC_FURNACE.get().defaultBlockState()
+                .setValue(com.senne.imttech.furnace.ElectricFurnaceBlock.FACING, Direction.SOUTH));
+        if (level.getBlockEntity(ELECTRIC_FURNACE) instanceof com.senne.imttech.furnace.ElectricFurnaceBlockEntity furnace) {
+            furnace.setItem(com.senne.imttech.furnace.ElectricFurnaceBlockEntity.SLOT_IN,
+                    new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.RAW_IRON, 12));
+            furnace.setItem(com.senne.imttech.furnace.ElectricFurnaceBlockEntity.SLOT_OUT,
+                    new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_INGOT, 3));
+        }
     }
 
     /** De kern van de basis met een zone in de rondleiding (zie buildZoneBase). */

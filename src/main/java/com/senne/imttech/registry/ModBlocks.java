@@ -349,6 +349,20 @@ public final class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.METAL));
 
+    /**
+     * De Electric Furnace (hoofdstuk 87): smelt alles wat een oven smelt, op netstroom in plaats van brandstof. Net zo sterk
+     * als de Crusher; terwijl hij werkt geeft hij licht, zoals een brandende oven.
+     */
+    public static final DeferredBlock<com.senne.imttech.furnace.ElectricFurnaceBlock> ELECTRIC_FURNACE = BLOCKS.registerBlock(
+            "electric_furnace", com.senne.imttech.furnace.ElectricFurnaceBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(3.5f, 6.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)
+                    .lightLevel(state -> state.getValue(com.senne.imttech.furnace.ElectricFurnaceBlock.WORKING)
+                            ? com.senne.imttech.furnace.ElectricFurnaceBlock.LIGHT : 0));
+
     /** De bewakingscamera: aan de muur, het plafond of de vloer; zijn beeld zie je op de Security OS-desktop. */
     public static final DeferredBlock<com.senne.imttech.security.CameraBlock> SECURITY_CAMERA = BLOCKS.registerBlock(
             "security_camera", com.senne.imttech.security.CameraBlock::new,

@@ -109,6 +109,13 @@ public class ImtTech {
             event.registerBlockEntity(net.neoforged.neoforge.capabilities.Capabilities.FluidHandler.BLOCK,
                     ModBlockEntities.POLYMERIZER.get(), (machine, side) -> machine.water());
         });
+        // Hoofdstuk 87: de Electric Furnace. Trechters en buizen zoals bij een oven: erin van boven of opzij, het resultaat
+        // eruit van onder.
+        modEventBus.addListener((net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent event) ->
+                event.registerBlockEntity(net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.BLOCK,
+                        ModBlockEntities.ELECTRIC_FURNACE.get(), (furnace, side) -> side == null
+                                ? new net.neoforged.neoforge.items.wrapper.InvWrapper(furnace)
+                                : new net.neoforged.neoforge.items.wrapper.SidedInvWrapper(furnace, side)));
 
         // Hoofdstuk 46: Forge Energy. Elk blok van ons met een blokentiteit praat via de energie-capability met de kabels en
         // machines van andere mods (Create Crafts & Additions, Mekanism...).

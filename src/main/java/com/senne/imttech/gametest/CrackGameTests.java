@@ -5,6 +5,9 @@ import com.senne.imttech.breach.Blast;
 import com.senne.imttech.breach.CrackData;
 import com.senne.imttech.breach.Cracks;
 import com.senne.imttech.config.ImtConfig;
+import com.senne.imttech.furnace.ElectricFurnaceBlock;
+import com.senne.imttech.furnace.ElectricFurnaceBlockEntity;
+import com.senne.imttech.furnace.ElectricFurnaceMenu;
 import com.senne.imttech.guns.CrushedGunpowderItem;
 import com.senne.imttech.guns.ReloadingBenchBlockEntity;
 import com.senne.imttech.plastic.CableMaterials;
@@ -674,6 +677,122 @@ public final class CrackGameTests {
         check(smelt.isPresent() && smelt.get().value().getResultItem(level.registryAccess()).is(ModItems.PLASTIC.get()),
                 "Polymeer smelt in een oven niet tot plastic");
         helper.succeed();
+    }
+
+    // ================================================================ Hoofdstuk 87: de Electric Furnace
+
+    /** Een Electric Furnace op deze plek, met (als {@code power}) een warmtegenerator vol stroom ernaast. */
+    private static ElectricFurnaceBlockEntity electricFurnace(GameTestHelper helper, BlockPos pos, boolean power) {
+        helper.setBlock(pos, ModBlocks.ELECTRIC_FURNACE.get());
+        if (power) {
+            helper.setBlock(pos.west(), ModBlocks.HEAT_GENERATOR.get());
+            ((ChargerBlockEntity) helper.getBlockEntity(pos.west())).fill(5_000);
+        }
+        return (ElectricFurnaceBlockEntity) helper.getBlockEntity(pos);
+    }
+
+    /**
+     * Hoofdstuk 87 (jouw wens: "een electrische furnace zodat je net zoals een crusher dingen kunt smelten op power"): twee
+     * ruw goud in een Electric Furnace tegen een generator; na de helft van de tijd van een oven (5 seconden) ligt er een
+     * goudstaaf in het vakje eruit, zit er nog één ruw goud in, gloeit hij (en geeft hij licht) en gebruikte hij stroom. Hij
+     * neemt alleen aan wat in een oven smelt (ook polymeer, voor plastic). Haal je de goudstaaf eruit met shift-klik, dan
+     * komt de ervaring vrij (ruw goud: precies 1).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "cracks")
+    public static void electric_furnace_smelts_on_power(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(6, 2, 6);
+        ElectricFurnaceBlockEntity furnace = electricFurnace(helper, pos, true);
+        ChargerBlockEntity generator = (ChargerBlockEntity) helper.getBlockEntity(pos.west());
+        int before = generator.energy();
+        int ticks = ElectricFurnaceBlockEntity.ticksFor(200);
+        check(ticks == Math.round(200 / ImtConfig.Materials.ELECTRIC_FURNACE_SPEED),
+                "Een erts zou " + Math.round(200 / ImtConfig.Materials.ELECTRIC_FURNACE_SPEED) + " ticks moeten duren, niet " + ticks);
+        check(furnace.canPlaceItem(ElectricFurnaceBlockEntity.SLOT_IN, new ItemStack(Items.RAW_GOLD)), "Ruw goud mag er niet in");
+        check(furnace.canPlaceItem(ElectricFurnaceBlockEntity.SLOT_IN, new ItemStack(ModItems.POLYMER.get())), "Polymeer mag er niet in");
+        check(!furnace.canPlaceItem(ElectricFurnaceBlockEntity.SLOT_IN, new ItemStack(Items.DIRT)), "Aarde (smelt niet) mag erin");
+        check(!furnace.canPlaceItem(ElectricFurnaceBlockEntity.SLOT_OUT, new ItemStack(Items.RAW_GOLD)), "Iets mag in het vakje eruit");
+        furnace.setItem(ElectricFurnaceBlockEntity.SLOT_IN, new ItemStack(Items.RAW_GOLD, 2));
+        helper.runAfterDelay(ticks + 5, () -> {
+            ItemStack out = furnace.getItem(ElectricFurnaceBlockEntity.SLOT_OUT);
+            check(out.is(Items.GOLD_INGOT) && out.getCount() == 1, "Na " + ticks + " ticks zou er één goudstaaf uit moeten komen, niet " + out);
+            check(furnace.getItem(ElectricFurnaceBlockEntity.SLOT_IN).getCount() == 1, "Er zou nog één ruw goud in moeten zitten");
+            int used = before - generator.energy();
+            check(used >= ticks * ImtConfig.Power.ELECTRIC_FURNACE, "De Electric Furnace gebruikte te weinig stroom: " + used);
+            helper.assertBlockProperty(pos, ElectricFurnaceBlock.WORKING, true);
+            check(helper.getBlockState(pos).getLightEmission() == ElectricFurnaceBlock.LIGHT, "Een werkende Electric Furnace geeft geen licht");
+            check(Math.abs(furnace.experience() - 1.0f) < 0.001f, "Hij zou 1 ervaring moeten bewaren, niet " + furnace.experience());
+
+            // Shift-klik op de goudstaaf in zijn scherm: hij gaat naar je inventaris en de ervaring komt vrij.
+            ServerPlayer player = helper.makeMockServerPlayerInLevel();
+            player.setGameMode(GameType.SURVIVAL);
+            ElectricFurnaceMenu menu = new ElectricFurnaceMenu(0, player.getInventory(), furnace,
+                    new net.minecraft.world.inventory.SimpleContainerData(ElectricFurnaceBlockEntity.DATA_COUNT));
+            menu.quickMoveStack(player, ElectricFurnaceBlockEntity.SLOT_OUT);
+            check(player.getInventory().countItem(Items.GOLD_INGOT) == 1, "De goudstaaf ging niet naar je inventaris");
+            check(furnace.experience() == 0, "De ervaring bleef in de oven na het eruit halen");
+            int orbs = helper.getLevel().getEntitiesOfClass(net.minecraft.world.entity.ExperienceOrb.class,
+                    player.getBoundingBox().inflate(2)).stream().mapToInt(net.minecraft.world.entity.ExperienceOrb::getValue).sum();
+            check(orbs == 1, "Bij het eruit halen zou er 1 ervaring vrij moeten komen, niet " + orbs);
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Zonder stroom wacht hij ("No power"), en met een vol vakje eruit ook ("Output full"). Trechters (de item-capability):
+     * van boven gaat wat smelt erin, aarde niet; van onder komt het resultaat eruit, van boven niet. Breek je hem af, dan
+     * vallen zijn spullen eruit en komt zijn opgespaarde ervaring vrij.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "cracks")
+    public static void electric_furnace_waits_and_takes_hoppers(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos darkPos = new BlockPos(6, 2, 6);
+        ElectricFurnaceBlockEntity dark = electricFurnace(helper, darkPos, false);
+        dark.setItem(ElectricFurnaceBlockEntity.SLOT_IN, new ItemStack(Items.RAW_IRON));
+        ElectricFurnaceBlockEntity full = electricFurnace(helper, new BlockPos(10, 2, 6), true);
+        full.setItem(ElectricFurnaceBlockEntity.SLOT_OUT, new ItemStack(Items.GOLD_INGOT, 64));
+        full.setItem(ElectricFurnaceBlockEntity.SLOT_IN, new ItemStack(Items.RAW_GOLD));
+
+        // Een trechter of buis: de item-capability.
+        BlockPos pipePos = new BlockPos(14, 2, 6);
+        ElectricFurnaceBlockEntity piped = electricFurnace(helper, pipePos, false);
+        piped.setItem(ElectricFurnaceBlockEntity.SLOT_OUT, new ItemStack(Items.IRON_INGOT, 5));
+        var capability = net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.BLOCK;
+        var top = level.getCapability(capability, helper.absolutePos(pipePos), Direction.UP);
+        var side = level.getCapability(capability, helper.absolutePos(pipePos), Direction.NORTH);
+        var bottom = level.getCapability(capability, helper.absolutePos(pipePos), Direction.DOWN);
+        check(top != null && side != null && bottom != null, "De Electric Furnace heeft geen item-capability");
+        check(top.insertItem(0, new ItemStack(Items.DIRT), false).getCount() == 1, "Een trechter kon aarde erin doen");
+        check(top.insertItem(0, new ItemStack(Items.RAW_IRON, 3), false).isEmpty()
+                && piped.getItem(ElectricFurnaceBlockEntity.SLOT_IN).getCount() == 3, "Een trechter kon er van boven geen ruw ijzer in doen");
+        check(side.insertItem(0, new ItemStack(Items.RAW_IRON, 2), false).isEmpty()
+                && piped.getItem(ElectricFurnaceBlockEntity.SLOT_IN).getCount() == 5, "Een trechter kon er opzij geen ruw ijzer in doen");
+        check(top.extractItem(0, 64, false).isEmpty(), "Een trechter haalde er van boven iets uit");
+        ItemStack taken = bottom.extractItem(0, 64, false);
+        check(taken.is(Items.IRON_INGOT) && taken.getCount() == 5, "Een trechter kon er van onder de ijzerstaven niet uithalen: " + taken);
+
+        // Afbreken: de spullen vallen eruit en de ervaring komt vrij.
+        BlockPos breakPos = new BlockPos(18, 2, 6);
+        ElectricFurnaceBlockEntity broken = electricFurnace(helper, breakPos, false);
+        broken.setItem(ElectricFurnaceBlockEntity.SLOT_IN, new ItemStack(Items.RAW_COPPER, 4));
+        broken.setExperience(3.0f);
+        BlockPos breakAbs = helper.absolutePos(breakPos);
+        level.destroyBlock(breakAbs, true);
+        AABB around = new AABB(breakAbs).inflate(2);
+        check(level.getEntitiesOfClass(ItemEntity.class, around).stream()
+                        .anyMatch(item -> item.getItem().is(Items.RAW_COPPER) && item.getItem().getCount() == 4),
+                "Het ruwe koper viel er niet uit bij het afbreken");
+        int orbs = level.getEntitiesOfClass(net.minecraft.world.entity.ExperienceOrb.class, around).stream()
+                .mapToInt(net.minecraft.world.entity.ExperienceOrb::getValue).sum();
+        check(orbs == 3, "Bij het afbreken zou er 3 ervaring vrij moeten komen, niet " + orbs);
+
+        helper.runAfterDelay(ElectricFurnaceBlockEntity.ticksFor(200) + 10, () -> {
+            check(dark.getItem(ElectricFurnaceBlockEntity.SLOT_OUT).isEmpty() && dark.status() == ElectricFurnaceBlockEntity.Status.NO_POWER,
+                    "Zonder stroom zou hij moeten wachten met 'No power', niet " + dark.status());
+            helper.assertBlockProperty(darkPos, ElectricFurnaceBlock.WORKING, false);
+            check(full.getItem(ElectricFurnaceBlockEntity.SLOT_OUT).getCount() == 64 && full.status() == ElectricFurnaceBlockEntity.Status.FULL,
+                    "Met een vol vakje eruit zou hij moeten wachten met 'Output full', niet " + full.status());
+            helper.succeed();
+        });
     }
 
     /** Wat deze voorwerpen op een rij in een werkbank maken (of EMPTY als er geen recept is) moet {@code expected} zijn. */
