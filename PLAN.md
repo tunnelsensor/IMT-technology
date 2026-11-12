@@ -6651,6 +6651,24 @@ De bril liet je coördinaten nog nergens zien (alleen I.M.T zei ze als je ernaar
       Geen nieuwe automatische test: het is alleen beeld en een instelling van je eigen spel, en die draaien de tests
       (zonder beeld) niet.
 
+### 83. Het laadstation zegt niets meer over upgrades (12 november)
+
+Jouw wens: "bij chargin station niks zeggen over dat de upgrades ergns ander zijn, die oranje tekst moet dus weg".
+
+- [x] **De oranje regel is weg** uit het scherm van het laadstation: "Upgrades: on the Suit Workbench" stond er sinds
+      hoofdstuk 54 linksonder, over de energiebalk van het station heen. De tekst zelf
+      (`screen.imttech.station.upgrades_moved`) is ook weg uit `en_us.json`.
+- [x] **De uitleg van de bril** (W houden), hoofdstuk "Energy": de ballon bij het laadstation zegt nu alleen "Charge them
+      in a *Charging Station*." en niet meer dat de upgrades aan de Suit Workbench ingebouwd worden. Dat staat al in de
+      uitleg van de Suit Workbench (hoofdstuk "Glasses upgrades"), en die krijg je ook als je W houdt op een upgrade.
+- [x] **Ook opgelost**: de tooltip van de Battery, Scanner en Drone Upgrade zei nog "Install it in a Charging Station",
+      maar dat kan daar sinds hoofdstuk 54 niet meer. Nu staat er "Hold it and right-click the glasses on the Suit
+      Workbench hologram", zoals bij de upgrades van het harnas. (Mijn keuze: zonder de oranje regel stuurde de tooltip
+      je anders naar het laadstation, waar niets over upgrades staat.)
+- [x] **Gezien** op screenshots (`gradlew runVisualCheck -Ponly=numbers`: `nb04_station_plain`, `_space` en `_short`):
+      het scherm heeft alleen nog de balk van het station, het vakje met de bril en de energie ernaast. Geen nieuwe
+      automatische test: het is alleen tekst, en die draaien de tests (zonder beeld) niet.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het

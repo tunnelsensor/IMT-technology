@@ -68,8 +68,9 @@ public final class EquipmentScenes {
         s.rightClick(front, glasses);
         s.idle(14);
         s.meter(90, HowToSceneBuilder.top(station).add(0, 0.5, 0), "GLASSES", 0.2f, 1.0f, HowToSceneBuilder.CYAN);
-        s.text(85, front, Side.RIGHT,
-                "Charge them in a *Charging Station*. Upgrades (battery, scanner, drones) go in at the *Suit Workbench*.");
+        // Alleen het laden: bij het laadstation zeggen we niets over upgrades (hoofdstuk 83). Die staan in het onderwerp van
+        // de harnas-werkbank, hoofdstuk "Glasses upgrades".
+        s.text(85, front, Side.RIGHT, "Charge them in a *Charging Station*.");
         s.idle(95);
         return List.of(s.build());
     }

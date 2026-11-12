@@ -18,7 +18,8 @@ import net.minecraft.world.item.ItemStack;
  * Het scherm van het laadstation. De achtergrond is een plaatje (textures/gui/charging_station.png); de balk tekenen
  * we er zelf overheen. Sinds hoofdstuk 54 (jouw notitie) is het kaal: links de balk met wat het station heeft, in het
  * midden het vakje voor de bril (of een energiecel) met ernaast hoe vol die is. Geen redstone-vakje, geen balk onder
- * de bril en geen upgrade-pijl meer: upgrades bouw je in aan de harnas-werkbank.
+ * de bril en geen upgrade-pijl meer: upgrades bouw je in aan de harnas-werkbank. Sinds hoofdstuk 83 (jouw wens) zegt het
+ * scherm daar ook niets meer over: de oranje regel "Upgrades: on the Suit Workbench" is weg.
  */
 public class ChargingStationScreen extends AbstractContainerScreen<ChargingStationMenu> {
     private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "textures/gui/charging_station.png");
@@ -77,7 +78,6 @@ public class ChargingStationScreen extends AbstractContainerScreen<ChargingStati
         } else {
             small(g, Component.translatable("screen.imttech.station.empty").getString(), textX, ChargingStationMenu.GLASSES_Y + 2, dim);
         }
-        small(g, Component.translatable("screen.imttech.station.upgrades_moved").getString(), 8, 63, HudStyle.argb(140, HudStyle.ORANGE));
     }
 
     /** Kleine tekst (75%). */
