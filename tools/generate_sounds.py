@@ -1369,6 +1369,48 @@ def mp5_charge():
     return finish_hard(total, peak=0.78)
 
 
+AK47_SHOT = dict(body_hz=165.0, thump=(82, 36), boom=1.35, crack=1.15, tail=1.1, far_tail=2.0,
+                 mech=((0.006, 0.45), (0.062, 0.55)))
+
+
+def ak47_fire():
+    """
+    Een schot met de AK-47 (hoofdstuk 103, stap 2): 7.62x39mm. Lager, langer en zwaarder dan de 9mm van de MP5, met de
+    zware grendeldrager die hoorbaar tegen zijn aanslag en weer naar voren klapt.
+    """
+    return firearm_shot(7601, **AK47_SHOT)
+
+
+def ak47_fire_2():
+    return firearm_shot(7602, **AK47_SHOT)
+
+
+def ak47_fire_3():
+    return firearm_shot(7603, **AK47_SHOT)
+
+
+def ak47_fire_far():
+    return firearm_shot(7604, far=True, **AK47_SHOT)
+
+
+def ak47_charge():
+    """
+    De spanhendel van de AK-47: de grendeldrager in een lange haal naar achteren (staal over staal), een tik tegen de
+    aanslag, en loslaten: hij slaat met een doffe, zware klap naar voren. Meer staal dan bij de MP5, dus lager.
+    """
+    r = np.random.default_rng(7610)
+    total = np.zeros(int(RATE * 0.62))
+    place(total, impact(r, 0.03, [(1700, 240, 0.3)], snap=0.3, snap_from=1100), 0.0)
+    back = scrape(r, 0.16, 1500, 10000, ticks=360, grit=0.65, shape=lambda x: np.sin(np.pi * x) ** 0.5 * (0.4 + 0.6 * x))
+    place(total, back * 0.6, 0.02)
+    place(total, impact(r, 0.08, [(1900, 100, 0.55), (3600, 140, 0.4), (6400, 200, 0.2)], snap=0.8, thud=0.3,
+                        thud_hz=420) * 0.75, 0.18)
+    place(total, scrape(r, 0.05, 1600, 9500, ticks=620, grit=0.65) * 0.4, 0.29)
+    place(total, slam(r, 1.3), 0.34)
+    place(total, impact(r, 0.08, [(1300, 110, 0.5), (2700, 160, 0.35)], snap=0.4, thud=0.6, thud_hz=380) * 0.6, 0.35)
+    return finish_hard(total, peak=0.8)
+
+
 def rifle_mag_out():
     """Het magazijn van een lang wapen eruit: de pal klikt, het stalen magazijn glijdt uit de schacht en tikt in je hand."""
     r = np.random.default_rng(7520)
@@ -1534,6 +1576,11 @@ SOUNDS = {
     "mp5_fire_3": mp5_fire_3,
     "mp5_fire_far": mp5_fire_far,
     "mp5_charge": mp5_charge,
+    "ak47_fire": ak47_fire,
+    "ak47_fire_2": ak47_fire_2,
+    "ak47_fire_3": ak47_fire_3,
+    "ak47_fire_far": ak47_fire_far,
+    "ak47_charge": ak47_charge,
     "rifle_mag_out": rifle_mag_out,
     "rifle_mag_in": rifle_mag_in,
     "gun_selector": gun_selector,

@@ -3,6 +3,7 @@ package com.senne.imttech.gametest;
 import com.senne.imttech.ImtTech;
 import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.guns.Caliber;
+import com.senne.imttech.guns.CasingEntity;
 import com.senne.imttech.guns.FirearmItem;
 import com.senne.imttech.guns.FirearmType;
 import com.senne.imttech.guns.Firearms;
@@ -15,8 +16,11 @@ import com.senne.imttech.guns.GunParts;
 import com.senne.imttech.guns.GunSlot;
 import com.senne.imttech.guns.GunsmithTableBlockEntity;
 import com.senne.imttech.guns.MagazineItem;
+import com.senne.imttech.guns.ReloadingBenchBlockEntity;
+import com.senne.imttech.guns.ReloadingBenchMenu;
 import com.senne.imttech.registry.ModBlocks;
 import com.senne.imttech.registry.ModItems;
+import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
@@ -253,6 +257,161 @@ public final class FirearmGameTests {
         check(slingSlot >= 0 && !table.install(player, slingSlot), "Er ging een sling aan de Glock");
         // Een geladen MP5 (creative) heeft zijn sling al.
         check(Gear.slingAccepts(FirearmItem.loaded(FirearmType.MP5, GunMaterial.STEEL)), "Een geladen MP5 hoort een sling te hebben");
+        helper.succeed();
+    }
+
+    // ================================================================ De AK-47 (stap 2): 7.62x39mm
+
+    /**
+     * De AK-47 schiet zijn eigen patroon (7.62x39mm, 30 + 1) en raakt harder dan de MP5. De huls die eruit springt is een
+     * 7.62-huls, en zo raap je hem ook op. Zijn schakelaar heeft geen stand voor drie schoten: semi, auto, safe.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "firearms")
+    public static void ak47_fires_762_and_ejects_its_own_casing(GameTestHelper helper) {
+        deterministic();
+        Husk husk = helper.spawn(EntityType.HUSK, new BlockPos(4, 2, 12));
+        husk.setNoAi(true);
+        float before = husk.getHealth();
+        ServerPlayer player = holder(helper, "ak-shooter", new BlockPos(4, 2, 4),
+                FirearmItem.loaded(FirearmType.AK_47, GunMaterial.STEEL), helper.absoluteVec(new Vec3(4.5, 3.2, 12.5)));
+        player.getInventory().clearContent();
+        player.setItemInHand(InteractionHand.MAIN_HAND, FirearmItem.loaded(FirearmType.AK_47, GunMaterial.STEEL));
+        ItemStack gun = player.getMainHandItem();
+        check(FirearmType.AK_47.caliber == Caliber.R762 && FirearmType.AK_47.capacity() == 30,
+                "De AK-47 hoort 30 patronen 7.62x39mm te hebben");
+        check(FirearmType.AK_47.damage() > FirearmType.MP5.damage(), "De AK-47 hoort harder te raken dan de MP5");
+        check(FirearmItem.fireMode(gun) == FirearmType.FireMode.SEMI, "Een nieuwe AK-47 hoort op semi te staan");
+        check(fire(player) == Firearms.Result.FIRED, "De AK-47 schoot niet");
+        check(FirearmItem.roundsInMagazine(gun) == 29 && FirearmItem.chambered(gun), "Na een schot hoort er 29 + 1 in te zitten");
+        List<CasingEntity> casings = helper.getLevel().getEntitiesOfClass(CasingEntity.class, helper.getBounds().inflate(4));
+        check(casings.size() == 1 && casings.getFirst().caliber() == Caliber.R762,
+                "Er hoort een 7.62-huls uit de AK-47 te springen");
+        helper.startSequence()
+                .thenIdle(4)
+                .thenExecute(() -> {
+                    check(husk.getHealth() < before, "De kogel raakte de husk niet");
+                    // De schakelaar: geen drie schoten.
+                    check(Firearms.selectFire(player) == FirearmType.FireMode.AUTO, "Na semi hoort bij de AK-47 auto te komen");
+                    check(Firearms.selectFire(player) == FirearmType.FireMode.SAFE, "Na auto hoort safe te komen");
+                    Firearms.forgetCooldown(player);
+                    check(fire(player) == Firearms.Result.SAFE, "Op safe schoot de AK-47 toch");
+                    check(Firearms.selectFire(player) == FirearmType.FireMode.SEMI, "Na safe hoort weer semi te komen");
+                    // Oprapen: een 7.62-huls, geen 9mm.
+                    int picked = Firearms.pickUpCasings(player, casings.getFirst().position());
+                    check(picked == 1, "Oprapen gaf " + picked + " hulzen");
+                    check(player.getInventory().countItem(ModItems.CASING_762.get()) == 1
+                            && player.getInventory().countItem(ModItems.CASING_9MM.get()) == 0,
+                            "De huls van de AK-47 kwam niet als 7.62x39mm Casing in je inventaris");
+                    restore();
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * In een AK-magazijn gaan alleen 7.62-patronen: met alleen 9mm in je inventaris gebeurt er niets. Een MP5-magazijn
+     * past niet in een AK-47, zijn eigen magazijn wel.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "firearms")
+    public static void ak47_magazine_takes_only_762_rounds(GameTestHelper helper) {
+        deterministic();
+        ServerPlayer player = holder(helper, "ak-loader", new BlockPos(4, 2, 4), MagazineItem.of(FirearmType.AK_47, 0),
+                helper.absoluteVec(new Vec3(4.5, 3.2, 12.5)));
+        player.getInventory().clearContent();
+        player.setItemInHand(InteractionHand.MAIN_HAND, MagazineItem.of(FirearmType.AK_47, 0));
+        player.getInventory().setItem(1, new ItemStack(ModItems.ROUND_9MM.get(), 8));
+        player.getInventory().setItem(2, FirearmItem.withParts(FirearmType.AK_47, GunParts.classic(FirearmType.AK_47)));
+        player.getInventory().setItem(3, MagazineItem.of(FirearmType.MP5, 30));
+        check(MagazineItem.capacityOf(player.getMainHandItem()) == 30, "Een AK-magazijn hoort 30 patronen te houden");
+        check(!Firearms.request(player, Firearms.ActionKind.LOAD_ROUND, 0), "Zonder 7.62-patronen begon het laden toch");
+        check(MagazineItem.rounds(player.getMainHandItem()) == 0 && player.getInventory().getItem(1).getCount() == 8,
+                "Een 9mm-patroon ging in een AK-magazijn");
+        player.getInventory().setItem(4, new ItemStack(ModItems.ROUND_762.get(), 5));
+        for (int i = 0; i < 2; i++) {
+            check(Firearms.request(player, Firearms.ActionKind.LOAD_ROUND, 0), "Patroon " + (i + 1) + " ging er niet in");
+            Firearms.finishNow(player);
+        }
+        check(MagazineItem.rounds(player.getMainHandItem()) == 2, "Er horen 2 patronen in het magazijn te zitten");
+        check(player.getInventory().getItem(4).getCount() == 3 && player.getInventory().getItem(1).getCount() == 8,
+                "Er horen 3 patronen 7.62 en nog alle 8 patronen 9mm over te zijn");
+        // Een MP5-magazijn past niet in de AK-47.
+        player.getInventory().selected = 3;
+        check(!Firearms.insertMagazine(player, InteractionHand.MAIN_HAND), "Een MP5-magazijn ging in de AK-47");
+        player.getInventory().selected = 0;
+        check(Firearms.insertMagazine(player, InteractionHand.MAIN_HAND), "Het AK-magazijn ging er niet in");
+        Firearms.finishNow(player);
+        ItemStack gun = player.getInventory().getItem(2);
+        check(FirearmItem.hasMagazine(gun) && FirearmItem.roundsInMagazine(gun) == 2, "Het magazijn zit niet in de AK-47");
+        restore();
+        helper.succeed();
+    }
+
+    /**
+     * De Gunsmith Table houdt de wapens uit elkaar: een AK-47 Receiver maakt een AK-47, een Bolt Carrier van de MP5 past
+     * er niet in, zijn eigen wel, en er kan een sling aan. De onderdelen heten naar hun wapen.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "firearms")
+    public static void gunsmith_table_keeps_ak47_and_mp5_parts_apart(GameTestHelper helper) {
+        BlockPos at = new BlockPos(4, 2, 4);
+        helper.setBlock(at, ModBlocks.GUNSMITH_TABLE.get());
+        GunsmithTableBlockEntity table = (GunsmithTableBlockEntity) helper.getBlockEntity(at);
+        ServerPlayer player = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(4, 2, 6), "ak-smith");
+        player.getInventory().setItem(0, GunPartItem.of(FirearmType.AK_47, GunPart.FRAME, GunMaterial.STEEL));
+        player.getInventory().setItem(1, GunPartItem.of(FirearmType.MP5, GunPart.SLIDE, GunMaterial.STEEL));
+        player.getInventory().setItem(2, GunPartItem.of(FirearmType.AK_47, GunPart.SLIDE, GunMaterial.TITANIUM));
+        player.getInventory().setItem(3, new ItemStack(ModItems.GUN_SLING.get()));
+        String name = player.getInventory().getItem(2).getHoverName().getString();
+        check(name.equals("Titanium AK-47 Bolt Carrier"), "Het onderdeel heet '" + name + "', verwacht 'Titanium AK-47 Bolt Carrier'");
+        check(table.install(player, 0), "De AK-47 Receiver ging er niet in");
+        check(FirearmItem.typeOf(table.gun()) == FirearmType.AK_47, "Een AK-47 Receiver hoort een AK-47 te maken");
+        check(!table.install(player, 1), "Een Bolt Carrier van de MP5 ging in de AK-47");
+        check(table.install(player, 2), "De Bolt Carrier van de AK-47 ging er niet in");
+        check(table.install(player, 3) && FirearmItem.hasSling(table.gun()), "De sling ging niet aan de AK-47");
+        check(GunParts.classic(FirearmType.AK_47).complete(), "Een AK-47 uit de creative tab hoort compleet te zijn");
+        helper.succeed();
+    }
+
+    // ================================================================ De Reloading Bench: elk kaliber
+
+    /**
+     * De Reloading Bench perst elk kaliber: de huls zegt welke patroon het wordt en de kogelpunt moet erbij passen. Een
+     * 7.62-patroon kost twee Crushed Gunpowder (een 9mm een): met 5 kruit pers je er dus 2. Een 9mm-kogelpunt bij een
+     * 7.62-huls geeft niets.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "firearms")
+    public static void reloading_bench_presses_each_caliber(GameTestHelper helper) {
+        BlockPos at = new BlockPos(4, 2, 4);
+        helper.setBlock(at, ModBlocks.RELOADING_BENCH.get());
+        ReloadingBenchBlockEntity bench = (ReloadingBenchBlockEntity) helper.getBlockEntity(at);
+        ServerPlayer player = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(4, 2, 6), "ak-reloader");
+        player.getInventory().clearContent();
+        bench.items().setItem(ReloadingBenchBlockEntity.SLOT_CASING, new ItemStack(ModItems.CASING_762.get(), 4));
+        bench.items().setItem(ReloadingBenchBlockEntity.SLOT_BULLET, new ItemStack(ModItems.BULLET_762.get(), 4));
+        bench.items().setItem(ReloadingBenchBlockEntity.SLOT_POWDER, new ItemStack(ModItems.CRUSHED_GUNPOWDER.get(), 5));
+        check(ReloadingBenchBlockEntity.caliber(bench.items()) == Caliber.R762, "De bank ziet geen 7.62 in de huls en de kogelpunt");
+        check(ReloadingBenchBlockEntity.pressable(bench.items()) == 2,
+                "Met 5 kruit hoor je 2 patronen 7.62 te kunnen persen, niet " + ReloadingBenchBlockEntity.pressable(bench.items()));
+        ReloadingBenchMenu menu = new ReloadingBenchMenu(1, player.getInventory(), bench.items());
+        check(menu.getSlot(ReloadingBenchMenu.RESULT_SLOT).getItem().is(ModItems.ROUND_762.get()), "Er ligt geen 7.62-patroon klaar");
+        check(!menu.quickMoveStack(player, ReloadingBenchMenu.RESULT_SLOT).isEmpty(), "De eerste patroon kon niet gepakt worden");
+        check(!menu.quickMoveStack(player, ReloadingBenchMenu.RESULT_SLOT).isEmpty(), "De tweede patroon kon niet gepakt worden");
+        check(menu.getSlot(ReloadingBenchMenu.RESULT_SLOT).getItem().isEmpty(), "Met 1 kruit ligt er toch een 7.62-patroon klaar");
+        check(player.getInventory().countItem(ModItems.ROUND_762.get()) == 2, "Je kreeg niet precies 2 patronen 7.62");
+        check(bench.items().getItem(ReloadingBenchBlockEntity.SLOT_CASING).getCount() == 2
+                && bench.items().getItem(ReloadingBenchBlockEntity.SLOT_BULLET).getCount() == 2
+                && bench.items().getItem(ReloadingBenchBlockEntity.SLOT_POWDER).getCount() == 1,
+                "Na 2 patronen 7.62 horen er 2 hulzen, 2 kogelpunten en 1 kruit over te zijn");
+        // Een 9mm-kogelpunt bij een 7.62-huls: er komt niets uit.
+        bench.items().setItem(ReloadingBenchBlockEntity.SLOT_BULLET, new ItemStack(ModItems.BULLET_9MM.get(), 4));
+        bench.items().setItem(ReloadingBenchBlockEntity.SLOT_POWDER, new ItemStack(ModItems.CRUSHED_GUNPOWDER.get(), 8));
+        menu.slotsChanged(bench.items());
+        check(ReloadingBenchBlockEntity.mismatch(bench.items()) && ReloadingBenchBlockEntity.pressable(bench.items()) == 0
+                && menu.getSlot(ReloadingBenchMenu.RESULT_SLOT).getItem().isEmpty(),
+                "Een 9mm-kogelpunt op een 7.62-huls gaf toch een patroon");
+        // 9mm bij 9mm: een kruit per patroon.
+        bench.items().setItem(ReloadingBenchBlockEntity.SLOT_CASING, new ItemStack(ModItems.CASING_9MM.get(), 4));
+        menu.slotsChanged(bench.items());
+        check(menu.getSlot(ReloadingBenchMenu.RESULT_SLOT).getItem().is(ModItems.ROUND_9MM.get())
+                && ReloadingBenchBlockEntity.pressable(bench.items()) == 4, "9mm bij 9mm hoort 4 patronen te geven");
         helper.succeed();
     }
 }

@@ -31,8 +31,11 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
+import ak47_model
+import ammo_models
 import glock19_model as glock
 import gunmesh as gm
+import longgun as lg
 import model_display as md
 import mp5_model
 
@@ -471,7 +474,46 @@ def long_gun(mod):
     return gun
 
 
-LONG_GUNS = {"mp5": mp5_model}
+LONG_GUNS = {"mp5": mp5_model, "ak_47": ak47_model}
+
+
+def ammo(caliber):
+    """
+    De munitie van een kaliber van hoofdstuk 103 (tools/ammo_models.py): de patroon, de lege huls en de kogelpunt als
+    OBJ met hun eigen plaatje (textures/item/ammo/<kaliber>.png), als item, en de losse modellen voor in je hand en op
+    de grond. Ze staan rechtop met hun midden op dezelfde plek als de 9mm (8, 8,3, 8) en (8, 7,65, 8), zodat
+    FirearmRenderer en CasingRenderer ze op dezelfde manier neerleggen.
+    """
+    c = ammo_models.CALIBERS[caliber]
+    meshes = {
+        f"round_{caliber}": ammo_models.round_mesh(caliber, (8, 8.3 - c["length"] / 2, 8), (0, 1, 0)),
+        f"casing_{caliber}": ammo_models.casing_mesh(caliber, (8, 7.65 - c["case_length"] / 2, 8), (0, 1, 0)),
+        f"bullet_{caliber}": ammo_models.bullet_mesh(caliber, (8, 8 - (c["length"] - c["case_length"] + 0.55) / 2, 8), (0, 1, 0)),
+    }
+    islands = [i for m in meshes.values() for i in m.islands]
+    size = lg.auto_pack(islands)
+
+    def paint(skin, isl, p, n, tx, ty):
+        return (*lg.round_paint(isl, p, n, isl.kind, lg.noise(p) - 0.5), 255)
+    tex = ASSETS / "textures" / "item" / "ammo"
+    tex.mkdir(parents=True, exist_ok=True)
+    gm.paint(islands, *size, paint, "ammo").save(tex / f"{caliber}.png")
+    folder = ASSETS / "models" / "firearm" / "ammo"
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / "ammo.mtl").write_text("# De munitie van hoofdstuk 103.\nnewmtl mag\nmap_Kd #mag\n", encoding="utf-8", newline="\n")
+    note = "Gemaakt door tools/generate_gun_models.py (tools/ammo_models.py), hoofdstuk 103. Niet met de hand aanpassen."
+    texture = {"mag": f"imttech:item/ammo/{caliber}"}
+    small = dict(gui_rotation=(20, -35, 0), hand_scale=0.45, ground_scale=0.5)
+    for name, mesh in meshes.items():
+        gm.write_obj(folder / f"{name}.obj", [(name, mesh, {"gun": "mag", "glow": "mag"})], "ammo.mtl", *size, note)
+        disp = centred_display(glock.points_as_elements(mesh.points()), size=13.0, max_scale=5.0, **small)
+        write(f"models/item/{name}.json", obj_model(name, texture, display=disp, folder="ammo"))
+        if not name.startswith("bullet"):
+            write(f"models/firearm/{name}.json", obj_model(name, texture, gui_light=None, folder="ammo"))
+    print(f"munitie {caliber}: texture {size}")
+
+
+AMMO = ("762",)
 
 
 # ---------------------------------------------------------------- Holster en pouches (hoofdstuk 52, stap 2)
@@ -803,6 +845,8 @@ def main():
         for name in args:
             if name == "glock_19":
                 glock_19()
+            elif name in AMMO:
+                ammo(name)
             else:
                 long_gun(LONG_GUNS[name])
         return
@@ -810,6 +854,8 @@ def main():
     glock_19()
     for mod in LONG_GUNS.values():
         long_gun(mod)
+    for caliber in AMMO:
+        ammo(caliber)
     gear()
     resources()
     gunsmith_table()

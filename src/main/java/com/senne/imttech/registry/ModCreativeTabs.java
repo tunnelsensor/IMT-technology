@@ -103,9 +103,11 @@ public final class ModCreativeTabs {
                         }
                     }
                 }
-                output.accept(ModItems.ROUND_9MM.get());
-                output.accept(ModItems.CASING_9MM.get());
-                output.accept(ModItems.BULLET_9MM.get());
+                for (com.senne.imttech.guns.Caliber caliber : com.senne.imttech.guns.Caliber.values()) {
+                    output.accept(caliber.round());
+                    output.accept(caliber.casing());
+                    output.accept(caliber.bullet());
+                }
                 output.accept(ModItems.CRUSHED_GUNPOWDER.get());
                 output.accept(ModItems.HOLSTER.get());
                 output.accept(ModItems.GRENADE_POUCH.get());

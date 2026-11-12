@@ -10,10 +10,13 @@ import org.jetbrains.annotations.Nullable;
  * Een kaliber (hoofdstuk 103): welke patroon een vuurwapen schiet. Elk kaliber heeft zijn eigen patroon, zijn eigen
  * lege huls (die springt uit het wapen en raap je op) en zijn eigen kogelpunt; op de Reloading Bench pers je er weer een
  * patroon van. De Glock 19 en de MP5 schieten allebei <b>9mm</b>: hun patronen zijn dezelfde, hun magazijnen niet.
+ * De AK-47 schiet <b>7.62x39mm</b>: een grotere patroon, die twee Crushed Gunpowder kost in plaats van een.
  */
 public enum Caliber {
     /** 9x19mm Parabellum: de Glock 19 en de MP5. */
-    MM9("9mm", "round_9mm", "casing_9mm", "bullet_9mm", 1);
+    MM9("9mm", "round_9mm", "casing_9mm", "bullet_9mm", 1),
+    /** 7.62x39mm: de AK-47. Een geweerpatroon met een flessenhals: langer en dikker dan 9mm. */
+    R762("762", "round_762", "casing_762", "bullet_762", 2);
 
     /** De naam in de bestanden ("9mm"). */
     public final String id;

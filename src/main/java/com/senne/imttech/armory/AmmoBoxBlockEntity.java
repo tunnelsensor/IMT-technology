@@ -1,6 +1,7 @@
 package com.senne.imttech.armory;
 
 import com.senne.imttech.config.ImtConfig;
+import com.senne.imttech.guns.Caliber;
 import com.senne.imttech.guns.MagazineItem;
 import com.senne.imttech.registry.ModBlockEntities;
 import com.senne.imttech.registry.ModItems;
@@ -46,7 +47,8 @@ public class AmmoBoxBlockEntity extends BlockEntity {
 
     /** Mag dit in een Ammo Box (ongeacht wat er al in zit)? */
     public static boolean accepts(ItemStack stack) {
-        return stack.is(ModItems.ROUND_9MM.get()) || stack.is(ModItems.CASING_9MM.get()) || stack.is(ModItems.BULLET_9MM.get())
+        // Hoofdstuk 103: de patronen, hulzen en kogelpunten van elk kaliber (elk kaliber is zijn eigen soort).
+        return Caliber.ofRound(stack) != null || Caliber.ofCasing(stack) != null || Caliber.ofBullet(stack) != null
                 || MagazineItem.typeOf(stack) != null || stack.is(ModItems.ENERGY_CELL.get());
     }
 

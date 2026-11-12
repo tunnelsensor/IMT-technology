@@ -100,18 +100,17 @@ public final class FirearmModels {
         return magazine(type == null ? FirearmType.GLOCK_19 : type, MagazineItem.rounds(magazine) == 0);
     }
 
-    /** Het model van een losse patroon van dit kaliber (hoofdstuk 103). */
+    /**
+     * Het model van een losse patroon van dit kaliber (hoofdstuk 103): de 9mm houdt zijn oude naam ("round"), de andere
+     * heten naar hun kaliber ("round_762", zie tools/generate_gun_models.py: ammo).
+     */
     public static ModelResourceLocation round(Caliber caliber) {
-        return switch (caliber) {
-            case MM9 -> location("round");
-        };
+        return location(caliber == Caliber.MM9 ? "round" : "round_" + caliber.id);
     }
 
     /** Het model van een lege huls van dit kaliber (hoofdstuk 103). */
     public static ModelResourceLocation casing(Caliber caliber) {
-        return switch (caliber) {
-            case MM9 -> location("casing");
-        };
+        return location(caliber == Caliber.MM9 ? "casing" : "casing_" + caliber.id);
     }
 
     /** Bij het opstarten: zeg Minecraft dat het deze modellen moet inladen. */
@@ -133,8 +132,10 @@ public final class FirearmModels {
                 event.register(magazine(type, true));
             }
         }
-        event.register(location("casing"));
-        event.register(location("round"));
+        for (Caliber caliber : Caliber.values()) {
+            event.register(casing(caliber));
+            event.register(round(caliber));
+        }
         for (String gear : GEAR) {
             event.register(location(gear));
         }

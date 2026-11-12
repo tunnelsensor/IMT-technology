@@ -147,6 +147,10 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> MP5_FIRE_FAR = register("mp5.fire_far");
     /** ...en de spanhendel: naar achteren en met een klap naar voren. */
     public static final DeferredHolder<SoundEvent, SoundEvent> MP5_CHARGE = register("mp5.charge");
+    /** Hoofdstuk 103, stap 2: de AK-47. Een zwaardere knal dan de MP5, en zijn spanhendel (meer staal, een hardere klap). */
+    public static final DeferredHolder<SoundEvent, SoundEvent> AK47_FIRE = register("ak47.fire");
+    public static final DeferredHolder<SoundEvent, SoundEvent> AK47_FIRE_FAR = register("ak47.fire_far");
+    public static final DeferredHolder<SoundEvent, SoundEvent> AK47_CHARGE = register("ak47.charge");
     /** Hoofdstuk 103: het magazijn van een lang wapen dat eruit komt en erin klikt (zwaarder dan dat van een pistool). */
     public static final DeferredHolder<SoundEvent, SoundEvent> RIFLE_MAG_OUT = register("rifle.mag_out");
     public static final DeferredHolder<SoundEvent, SoundEvent> RIFLE_MAG_IN = register("rifle.mag_in");

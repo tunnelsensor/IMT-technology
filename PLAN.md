@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 541 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 547 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -7393,7 +7393,46 @@ standen), suppressors, extended mags en grips." Omdat jij het een grote update n
       **Mijn invullingen erbij**: de schakelaar staat op **X** (V is de zoomtoets van de bril); de MP5 is de A3 met de
       uitschuifbare kolf (de foto die er was), niet de A2; het vizier is een ring waar je doorheen kijkt, groter dan het
       echte gaatje; elk onderdeel kost polymeer erbij.
-- [ ] **2. De AK-47** — met 7.62x39mm op de Reloading Bench en in de Ammo Box.
+- [x] **2. De AK-47** (12 november, versie 2.1.0) — met 7.62x39mm op de Reloading Bench en in de Ammo Box.
+      **Het wapen**: `FirearmType.AK_47` (7.62x39mm, zelfladend, de schakelaar safe, semi, auto: geen 3 schoten), de items
+      `ak_47` en `ak_47_magazine` (30 patronen), en zijn zes onderdelen (`ak_47_frame`... met de namen Receiver, Bolt
+      Carrier, Barrel, Recoil Spring, Firing Pin, Trigger Group) in staal en titanium; 13 recepten op de Gunsmith Table
+      (de aantallen van de MP5, met planken als kenmerk), de Curios-tag "sling", het Pegboard (10 x 4 gaatjes).
+      **Munitie per kaliber**: `Caliber.R762` met `round_762`, `casing_762` en `bullet_762` (2 koper = 8 hulzen, 3
+      ijzerklompjes = 4 kogelpunten) en twee Crushed Gunpowder per patroon (`Caliber.powder`). Wat nog vastzat aan 9mm, weet
+      nu van welk kaliber iets is: de **Reloading Bench** (`ReloadingBenchBlockEntity.caliber`: de huls zegt welke
+      patroon, de kogelpunt moet passen, het kruit per kaliber; het scherm toont het kaliber boven het resultaat en zegt
+      in het rood als ze niet passen of als er te weinig kruit ligt), de **Ammo Box** (elk kaliber een eigen soort; een
+      magazijn laadt alleen uit een doos met de patronen van zijn wapen: `AmmoBoxes.takeRound(player, caliber)`), de
+      **dump pouch** (`Molle.tickDump`: elke huls als zijn eigen soort, ook over twee pouches), de huls in de wereld
+      (`CasingRenderer`: het model van zijn kaliber, en een lange huls krimpt met de wortel van zijn lengte, anders is
+      een 7.62-huls een staaf van 16 cm), het tabblad Weapons en de HUD van een magazijn.
+      **Het model** (`tools/ak47_model.py`, de munitie in `tools/ammo_models.py`): de klassieke AK-47 met hout, nagemeten
+      van een foto (Wikimedia "AK-47 type II noBG"), 2.530 vlakken. Op die foto hangt de voorkant (de loop, de gasbuis,
+      het gasblok, de korreltoren) 2,7 graden omlaag tegenover de behuizing; het model zet hem recht (`DROOP`, `front`),
+      anders staat de korrel te laag om hem door het vizier te zien. De vizierlijn ligt een paar millimeter hoger dan op
+      de foto en het vizier is donker, zodat het afsteekt tegen de grijze kap.
+      **In je spel**: `FirearmRig.AK_47` (het oog 0,45 blok achter het vizier: achter de kap, zodat die het beeld niet
+      vult). De spanhendel zit rechts (`FirearmRig.handleRight`): je **rechterhand** laadt door (`rightHandRack`: van de
+      greep naar de hendel, achter het wapen langs), je linkerhand blijft vooraan, en het wapen rolt 20 graden naar links
+      (`rollForHandle`). De HUD zegt bij een lang wapen "CHARGING" in plaats van "SLIDE RELEASE". De Gunsmith Table: de
+      losse onderdelen liggen bij een langer wapen verder uit elkaar (`FirearmRig.explodedScale`), lange namen ("Trigger
+      Group") krijgen het materiaal een regel lager, en een lange regel in de lijst links krimpt (`smallFit`) in plaats
+      van afgekapt te worden. Make parts: de groep AK-47, en de lijst met wapens krimpt zodra er meer dan zeven staan
+      (`listStep`). Geluiden: `ak47_fire` (drie varianten), `ak47_fire_far`, `ak47_charge`.
+      **Tests** (zes nieuw, 547 in totaal): `ak47_fires_762_and_ejects_its_own_casing`,
+      `ak47_magazine_takes_only_762_rounds`, `gunsmith_table_keeps_ak47_and_mp5_parts_apart` en
+      `reloading_bench_presses_each_caliber` (FirearmGameTests), `ammo_box_keeps_calibers_apart` (ArmoryGameTests) en
+      `dump_pouch_keeps_each_caliber` (BackpackGameTests). **Gezien** (`gradlew runVisualCheck -Ponly=ak47`: `ak01` tot
+      `ak22`: heup, richten, schot, automatisch vuur met 7.62-hulzen, magazijn eruit en erin, doorladen met de rechterhand
+      (`ak07b`), een patroon met de hand in de kamer, bekijken, de Gunsmith Table, Make parts, op je rug, de Reloading
+      Bench met 7.62 en met een verkeerde kogelpunt, en het Pegboard met de AK-47, de MP5 en de Glock). De rondleiding
+      van een lang wapen is nu één gedeelde routine (`longGunTour`); `-Ponly=mp5` ter controle: de MP5 is zoals hij was,
+      met zijn betere lijst rechts op de tafel.
+      **Mijn invullingen erbij**: hout (planken, eender welke soort) als kenmerk in de recepten; twee kruit per
+      7.62-patroon; de schakelaar gaat semi, auto, safe (bij een echte AK staat auto in het midden); je rechterhand laadt
+      door (de hendel zit rechts en een arm over de kap verborg het hele wapen); het vizier is wat groter en hoger dan
+      het echte; versie 2.1.0 omdat het een nieuw wapen is.
 - [ ] **3. De AWP** — met .338 Lapua Magnum, de grendel op R, en een eenvoudig ijzeren vizier zolang er geen kijker op zit.
 - [ ] **4. De Remington 870** — met 12 Gauge Shells, de pomp op R, de buis patroon per patroon, en hagel.
 - [ ] **5. Attachments: het systeem, de Red Dot Sight en de Sniper Scope (1x tot 10x)** — maken op "Make parts", op het

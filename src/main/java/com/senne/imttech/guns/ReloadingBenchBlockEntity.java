@@ -23,6 +23,9 @@ import org.jetbrains.annotations.Nullable;
  * De binnenkant van de Reloading Bench (hoofdstuk 52): drie vakjes, een huls, een kogelpunt en Crushed Gunpowder. Eén
  * van elk geeft één 9mm-patroon (zie ReloadingBenchMenu).
  *
+ * Hoofdstuk 103 (de grote update): de bank perst elk kaliber. De huls zegt welke patroon het wordt; de kogelpunt moet van
+ * hetzelfde kaliber zijn, en een grotere patroon kost meer kruit ({@link Caliber#powder}: 9mm één, 7.62x39mm twee).
+ *
  * Hoofdstuk 76 (jouw wens: "voor kogels te maken heb je nu crushed gunpowder nodig"): gewoon buskruit past niet meer in
  * het derde vakje; dat gaat eerst door de Crusher, die er 10 Crushed Gunpowder van maakt (zie CrushedGunpowderItem).
  * Zo is één buskruit tien patronen. Lag er in een oude wereld nog buskruit in dat vakje, dan kun je het er gewoon uit
@@ -60,24 +63,41 @@ public class ReloadingBenchBlockEntity extends BlockEntity implements MenuProvid
         return items;
     }
 
-    /** Wat in welk vakje mag. */
+    /** Wat in welk vakje mag: een huls en een kogelpunt van eender welk kaliber, en Crushed Gunpowder. */
     public static boolean fits(int slot, ItemStack stack) {
         return switch (slot) {
-            case SLOT_CASING -> stack.is(ModItems.CASING_9MM.get());
-            case SLOT_BULLET -> stack.is(ModItems.BULLET_9MM.get());
+            case SLOT_CASING -> Caliber.ofCasing(stack) != null;
+            case SLOT_BULLET -> Caliber.ofBullet(stack) != null;
             case SLOT_POWDER -> stack.is(ModItems.CRUSHED_GUNPOWDER.get());
             default -> false;
         };
     }
 
-    /** Zoveel patronen kun je nu persen (het minste van de drie). */
+    /**
+     * Het kaliber dat de bank nu perst (hoofdstuk 103): dat van de huls, als de kogelpunt van hetzelfde kaliber is.
+     * Ligt er geen huls, geen kogelpunt, of passen ze niet bij elkaar: null.
+     */
+    public static @Nullable Caliber caliber(Container items) {
+        Caliber casing = Caliber.ofCasing(items.getItem(SLOT_CASING));
+        return casing != null && casing == Caliber.ofBullet(items.getItem(SLOT_BULLET)) ? casing : null;
+    }
+
+    /** Liggen er een huls en een kogelpunt van een verschillend kaliber (dan komt er niets uit)? */
+    public static boolean mismatch(Container items) {
+        Caliber casing = Caliber.ofCasing(items.getItem(SLOT_CASING));
+        Caliber bullet = Caliber.ofBullet(items.getItem(SLOT_BULLET));
+        return casing != null && bullet != null && casing != bullet;
+    }
+
+    /** Zoveel patronen kun je nu persen: het minste van de drie (het kruit geteld per patroon van dit kaliber). */
     public static int pressable(Container items) {
-        int count = Integer.MAX_VALUE;
-        for (int slot = 0; slot < SIZE; slot++) {
-            ItemStack stack = items.getItem(slot);
-            count = Math.min(count, fits(slot, stack) ? stack.getCount() : 0);
+        Caliber caliber = caliber(items);
+        if (caliber == null) {
+            return 0;
         }
-        return count == Integer.MAX_VALUE ? 0 : count;
+        ItemStack powder = items.getItem(SLOT_POWDER);
+        int byPowder = fits(SLOT_POWDER, powder) ? powder.getCount() / Math.max(1, caliber.powder) : 0;
+        return Math.min(Math.min(items.getItem(SLOT_CASING).getCount(), items.getItem(SLOT_BULLET).getCount()), byPowder);
     }
 
     @Override

@@ -401,8 +401,10 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
                     g.renderItemDecorations(font, row.stack, x + TRAY_X + 3, rowY + 2);
                 }
             }
-            small(g, rowName(row), x + TRAY_X + 22, rowY + 3, HudStyle.argb(255, HudStyle.WHITE));
-            small(g, rowSub(row), x + TRAY_X + 22, rowY + 11, HudStyle.argb(200, row.gun ? HudStyle.ORANGE : HudStyle.CYAN));
+            // Hoofdstuk 103: een lange regel ("AK-47, titanium") krimpt tot hij in de lijst past, in plaats van afgekapt.
+            smallFit(g, rowName(row), x + TRAY_X + 22, rowY + 3, HudStyle.argb(255, HudStyle.WHITE), TRAY_W - 25);
+            smallFit(g, rowSub(row), x + TRAY_X + 22, rowY + 11, HudStyle.argb(200, row.gun ? HudStyle.ORANGE : HudStyle.CYAN),
+                    TRAY_W - 25);
             rowY += ROW_H;
         }
         if (rows.isEmpty()) {
@@ -599,6 +601,12 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
         g.drawString(font, gunTitle(gun), x, y - 4, HudStyle.argb(255, HudStyle.ORANGE), false);
         int rowY = y + 12;
         int step = rowStep();
+        // Hoofdstuk 103: de namen van een lang wapen ("Recoil Spring", "Trigger Group") zijn te lang om het materiaal
+        // ernaast te zetten. Dan staat het materiaal een regel lager, rechts van een korter balkje.
+        boolean wide = false;
+        for (P part : all) {
+            wide |= listed(part, gun) && font.width(partName(part).getString()) * 0.75f > 38;
+        }
         for (P part : all) {
             if (!listed(part, gun)) {
                 continue;
@@ -606,14 +614,21 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
             PartState state = state(gun, part);
             boolean allowed = allowed(part, gun);
             small(g, partName(part).getString(), x, rowY, HudStyle.argb(allowed ? 220 : 90, HudStyle.WHITE));
+            int noteX = wide ? x : x + 42;
+            int noteY = wide ? rowY + 7 : rowY;
             if (state == null) {
-                small(g, allowed ? "-" : "", x + 42, rowY, HudStyle.argb(120, HudStyle.WHITE));
+                small(g, allowed ? "-" : "", noteX, noteY, HudStyle.argb(120, HudStyle.WHITE));
             } else if (hasMaterial(part)) {
-                small(g, state.material().text().getString(), x + 34, rowY, HudStyle.argb(255, state.material().colour));
                 int colour = state.broken() ? HudStyle.RED : state.worn() ? HudStyle.ORANGE : HudStyle.GREEN;
-                HudStyle.bar(g, x, rowY + 9, SIDE_W - 16, 3, state.condition() / (float) PartState.NEW, colour);
+                if (wide) {
+                    HudStyle.bar(g, x, rowY + 9, 36, 3, state.condition() / (float) PartState.NEW, colour);
+                    small(g, state.material().text().getString(), x + 40, rowY + 7, HudStyle.argb(255, state.material().colour));
+                } else {
+                    small(g, state.material().text().getString(), x + 34, rowY, HudStyle.argb(255, state.material().colour));
+                    HudStyle.bar(g, x, rowY + 9, SIDE_W - 16, 3, state.condition() / (float) PartState.NEW, colour);
+                }
             } else {
-                small(g, "in", x + 42, rowY, HudStyle.argb(255, HudStyle.GREEN));
+                small(g, "in", noteX, noteY, HudStyle.argb(255, HudStyle.GREEN));
             }
             rowY += step;
         }
@@ -628,6 +643,16 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
             g.pose().popPose();
             wrapY += 7;
         }
+    }
+
+    /** Kleine tekst die nooit breder wordt dan {@code maxWidth}: past hij niet, dan wordt hij nog wat kleiner. */
+    protected final void smallFit(GuiGraphics g, String text, int x, int y, int colour, int maxWidth) {
+        float scale = Math.min(0.75f, maxWidth / (float) Math.max(1, font.width(text)));
+        g.pose().pushPose();
+        g.pose().translate(x, y + (0.75f - scale) * 4, 0);
+        g.pose().scale(scale, scale, 1.0f);
+        g.drawString(font, text, 0, 0, colour, false);
+        g.pose().popPose();
     }
 
     protected final void small(GuiGraphics g, String text, int x, int y, int colour) {

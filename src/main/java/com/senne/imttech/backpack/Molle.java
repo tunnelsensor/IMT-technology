@@ -255,20 +255,21 @@ public final class Molle {
 
     // ================================================================ De dump pouch
 
-    /** Elke paar ticks: de hulzen rond je voeten in je dump pouch (als die plek heeft). */
+    /**
+     * Elke paar ticks: de hulzen rond je voeten in je dump pouch (als die plek heeft). Hoofdstuk 103: elk kaliber is zijn
+     * eigen huls (9mm, 7.62x39mm...), dus een pouch die vol zit met de ene soort kan nog plek hebben voor de andere;
+     * draag je er twee, dan gaat wat niet in de eerste past in de tweede.
+     */
     public static void tickDump(ServerPlayer player) {
         if (player.containerMenu instanceof MolleMenu || !player.isAlive() || player.isSpectator()) {
             return; // met een pouch open niet: dat scherm zou het straks weer overschrijven
         }
         List<ItemStack> pouches = worn(player);
-        int dump = -1;
-        for (int i = 0; i < pouches.size() && dump < 0; i++) {
-            if (MolleItem.kindOf(pouches.get(i)) == MolleItem.Kind.DUMP && freeIndex(MolleItem.contents(pouches.get(i)),
-                    new ItemStack(ModItems.CASING_9MM.get())) >= 0) {
-                dump = i;
-            }
+        boolean any = false;
+        for (ItemStack pouch : pouches) {
+            any |= MolleItem.kindOf(pouch) == MolleItem.Kind.DUMP;
         }
-        if (dump < 0) {
+        if (!any) {
             return;
         }
         double radius = ImtConfig.Backpacks.DUMP_POUCH_RADIUS;
@@ -278,27 +279,39 @@ public final class Molle {
         if (casings.isEmpty()) {
             return;
         }
-        ItemStack pouch = pouches.get(dump).copy();
-        List<ItemStack> contents = MolleItem.contents(pouch);
-        int picked = 0;
-        for (CasingEntity casing : casings) {
-            ItemStack one = new ItemStack(ModItems.CASING_9MM.get());
-            int index = freeIndex(contents, one);
-            if (index < 0) {
-                break;
+        boolean sound = false;
+        for (int dump = 0; dump < pouches.size(); dump++) {
+            if (MolleItem.kindOf(pouches.get(dump)) != MolleItem.Kind.DUMP) {
+                continue;
             }
-            ItemStack inside = contents.get(index);
-            if (inside.isEmpty()) {
-                contents.set(index, one);
-            } else {
-                inside.grow(1);
+            ItemStack pouch = pouches.get(dump).copy();
+            List<ItemStack> contents = MolleItem.contents(pouch);
+            int picked = 0;
+            for (CasingEntity casing : casings) {
+                if (casing.isRemoved()) {
+                    continue; // al in een vorige pouch
+                }
+                ItemStack one = new ItemStack(casing.caliber().casing());
+                int index = freeIndex(contents, one);
+                if (index < 0) {
+                    continue; // geen plek voor deze soort; een huls van een ander kaliber past misschien nog wel
+                }
+                ItemStack inside = contents.get(index);
+                if (inside.isEmpty()) {
+                    contents.set(index, one);
+                } else {
+                    inside.grow(1);
+                }
+                casing.discard();
+                picked++;
             }
-            casing.discard();
-            picked++;
+            if (picked > 0) {
+                MolleItem.setContents(pouch, contents);
+                setWorn(player, dump, pouch);
+                sound = true;
+            }
         }
-        if (picked > 0) {
-            MolleItem.setContents(pouch, contents);
-            setWorn(player, dump, pouch);
+        if (sound) {
             player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.CASING_TINK.get(),
                     SoundSource.PLAYERS, 0.35f, 1.3f);
         }

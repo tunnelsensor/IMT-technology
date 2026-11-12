@@ -1,0 +1,20 @@
+{
+  "type": "imttech:gunsmithing",
+  "ingredients": [
+    {
+      "item": "imttech:steel_ingot",
+      "count": 8
+    },
+    {
+      "tag": "minecraft:planks",
+      "count": 4
+    }
+  ],
+  "result": {
+    "id": "imttech:ak_47_frame",
+    "count": 1,
+    "components": {
+      "imttech:gun_material": "steel"
+    }
+  }
+}

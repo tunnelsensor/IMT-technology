@@ -104,6 +104,7 @@ public final class Pegboard {
             return switch (firearm) {
                 case GLOCK_19 -> new int[]{4, 3};
                 case MP5 -> new int[]{8, 4};
+                case AK_47 -> new int[]{10, 4};
             };
         }
         if (MagazineItem.typeOf(stack) != null || stack.is(ModItems.ENERGY_CELL.get())) {

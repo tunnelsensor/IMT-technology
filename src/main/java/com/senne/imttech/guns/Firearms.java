@@ -745,7 +745,7 @@ public final class Firearms {
                 boolean fromBox = action.arg() == FROM_BOX;
                 FirearmType type = MagazineItem.typeOf(held);
                 if (type != null && !MagazineItem.isFull(held)
-                        && (fromBox ? com.senne.imttech.armory.AmmoBoxes.takeRound(player) : takeRound(player, type.caliber))) {
+                        && (fromBox ? com.senne.imttech.armory.AmmoBoxes.takeRound(player, type.caliber) : takeRound(player, type.caliber))) {
                     MagazineItem.setRounds(held, MagazineItem.rounds(held) + 1);
                     sound(player, ModSounds.GLOCK_ROUND_LOAD.get(), 0.7f);
                     GunSkillHooks.roundLoaded(player);
@@ -765,7 +765,7 @@ public final class Firearms {
                 if (rounds > 0 && type != null) {
                     MagazineItem.setRounds(held, rounds - 1);
                     // Hoofdstuk 67: met sneak op een Ammo Box gaat de patroon terug in de doos (is die vol, dan in je inventaris).
-                    if (action.arg() != FROM_BOX || !com.senne.imttech.armory.AmmoBoxes.putRound(player)) {
+                    if (action.arg() != FROM_BOX || !com.senne.imttech.armory.AmmoBoxes.putRound(player, type.caliber)) {
                         give(player, new ItemStack(type.caliber.round()));
                     }
                     sound(player, ModSounds.GLOCK_ROUND_LOAD.get(), 0.6f);

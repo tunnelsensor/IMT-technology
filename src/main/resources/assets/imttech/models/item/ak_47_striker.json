@@ -1,0 +1,164 @@
+{
+ "loader": "neoforge:obj",
+ "model": "imttech:models/firearm/ak_47/item_striker.obj",
+ "automatic_culling": false,
+ "flip_v": false,
+ "emissive_ambient": true,
+ "textures": {
+  "gun": "imttech:item/ak_47/steel",
+  "particle": "imttech:item/ak_47/steel"
+ },
+ "gui_light": "front",
+ "display": {
+  "gui": {
+   "rotation": [
+    30,
+    225,
+    0
+   ],
+   "translation": [
+    -19.088,
+    -10.141,
+    -27.722
+   ],
+   "scale": [
+    3.936,
+    3.936,
+    3.936
+   ]
+  },
+  "ground": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    0.0,
+    -0.858,
+    3.471
+   ],
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "fixed": {
+   "rotation": [
+    30,
+    225,
+    0
+   ],
+   "translation": [
+    -19.088,
+    -10.141,
+    -27.722
+   ],
+   "scale": [
+    3.936,
+    3.936,
+    3.936
+   ]
+  },
+  "head": {
+   "rotation": [
+    0,
+    180,
+    0
+   ],
+   "translation": [
+    0,
+    13,
+    7
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ]
+  },
+  "thirdperson_righthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    0.0,
+    -3.43,
+    4.166
+   ],
+   "scale": [
+    0.6,
+    0.6,
+    0.6
+   ]
+  },
+  "thirdperson_lefthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    0.0,
+    -3.43,
+    4.166
+   ],
+   "scale": [
+    0.6,
+    0.6,
+    0.6
+   ]
+  },
+  "firstperson_righthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    0.0,
+    -3.43,
+    4.166
+   ],
+   "scale": [
+    0.6,
+    0.6,
+    0.6
+   ]
+  },
+  "firstperson_lefthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    0.0,
+    -3.43,
+    4.166
+   ],
+   "scale": [
+    0.6,
+    0.6,
+    0.6
+   ]
+  }
+ },
+ "overrides": [
+  {
+   "predicate": {
+    "imttech:material": 1
+   },
+   "model": "imttech:item/ak_47_striker_steel"
+  },
+  {
+   "predicate": {
+    "imttech:material": 2
+   },
+   "model": "imttech:item/ak_47_striker_titanium"
+  }
+ ]
+}

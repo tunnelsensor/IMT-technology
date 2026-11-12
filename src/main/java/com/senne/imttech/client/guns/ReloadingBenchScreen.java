@@ -2,6 +2,7 @@ package com.senne.imttech.client.guns;
 
 import com.senne.imttech.ImtTech;
 import com.senne.imttech.client.hud.HudStyle;
+import com.senne.imttech.guns.Caliber;
 import com.senne.imttech.guns.CrushedGunpowderItem;
 import com.senne.imttech.guns.ReloadingBenchBlockEntity;
 import com.senne.imttech.guns.ReloadingBenchMenu;
@@ -18,6 +19,9 @@ import net.minecraft.world.inventory.Slot;
  * Het scherm van de Reloading Bench (hoofdstuk 52): drie vakjes op een rij (huls, kogelpunt, en sinds hoofdstuk 76
  * Crushed Gunpowder), een pijl naar de pers, en het vakje met de patroon die klaarligt. Onder de vakjes staat hoeveel je
  * er nog kunt persen.
+ *
+ * Hoofdstuk 103: boven het resultaat staat het kaliber dat de bank nu perst (dat van de huls en de kogelpunt), en de
+ * regel eronder zegt het als ze niet bij elkaar passen of als er te weinig kruit ligt voor één patroon.
  */
 public class ReloadingBenchScreen extends AbstractContainerScreen<ReloadingBenchMenu> {
     private static final ResourceLocation TEXTURE =
@@ -63,14 +67,30 @@ public class ReloadingBenchScreen extends AbstractContainerScreen<ReloadingBench
         small(g, "CASING", ReloadingBenchMenu.CASING_X - 3, ReloadingBenchMenu.INPUT_Y - 9, label);
         small(g, "BULLET", ReloadingBenchMenu.BULLET_X - 3, ReloadingBenchMenu.INPUT_Y - 9, label);
         small(g, "POWDER", ReloadingBenchMenu.POWDER_X - 4, ReloadingBenchMenu.INPUT_Y - 9, label);
-        small(g, "9MM", ReloadingBenchMenu.RESULT_X + 2, ReloadingBenchMenu.INPUT_Y - 9, label);
+        Caliber caliber = ReloadingBenchBlockEntity.caliber(menu.items());
+        String what = caliber == null ? "ROUND" : caliber.text().getString().toUpperCase(java.util.Locale.ROOT);
+        // Gecentreerd boven het vakje (een lang kaliber als "7.62X39MM" is breder dan het vakje).
+        small(g, what, ReloadingBenchMenu.RESULT_X + 8 - Math.round(font.width(what) * 0.3f), ReloadingBenchMenu.INPUT_Y - 9, label);
         int count = ReloadingBenchBlockEntity.pressable(menu.items());
-        Component line = count == 0 ? Component.translatable("screen.imttech.reloading_bench.need")
-                : Component.translatable("screen.imttech.reloading_bench.ready", count);
+        boolean bad = false;
+        Component line;
+        if (count > 0) {
+            line = Component.translatable("screen.imttech.reloading_bench.ready", count);
+        } else if (ReloadingBenchBlockEntity.mismatch(menu.items())) {
+            line = Component.translatable("screen.imttech.reloading_bench.mismatch");
+            bad = true;
+        } else if (caliber != null && caliber.powder > 1
+                && !menu.items().getItem(ReloadingBenchBlockEntity.SLOT_POWDER).isEmpty()) {
+            // Er ligt kruit, maar te weinig voor één patroon van dit kaliber.
+            line = Component.translatable("screen.imttech.reloading_bench.powder", caliber.text(), caliber.powder);
+            bad = true;
+        } else {
+            line = Component.translatable("screen.imttech.reloading_bench.need");
+        }
         // Te lang voor één regel (sinds hoofdstuk 76 staat er "crushed gunpowder"): dan op twee regels, nooit over de rand.
         int left = ReloadingBenchMenu.CASING_X - 4;
         List<FormattedCharSequence> lines = font.split(line, Math.round((imageWidth - left - 8) / 0.75f));
-        int colour = HudStyle.argb(220, count == 0 ? HudStyle.WHITE : HudStyle.GREEN);
+        int colour = HudStyle.argb(220, bad ? HudStyle.RED : count == 0 ? HudStyle.WHITE : HudStyle.GREEN);
         g.pose().pushPose();
         g.pose().translate(left, ReloadingBenchMenu.INPUT_Y + 22, 0);
         g.pose().scale(0.75f, 0.75f, 1);
@@ -98,14 +118,23 @@ public class ReloadingBenchScreen extends AbstractContainerScreen<ReloadingBench
     protected void renderTooltip(GuiGraphics g, int mouseX, int mouseY) {
         Slot slot = hoveredSlot;
         if (slot != null && !slot.hasItem() && slot.index <= ReloadingBenchMenu.RESULT_SLOT && menu.getCarried().isEmpty()) {
-            String what = switch (slot.index) {
-                case ReloadingBenchBlockEntity.SLOT_CASING -> "9mm Casing";
-                case ReloadingBenchBlockEntity.SLOT_BULLET -> "9mm Bullet";
-                case ReloadingBenchBlockEntity.SLOT_POWDER -> "Crushed Gunpowder (Crusher: 1 gunpowder = "
-                        + CrushedGunpowderItem.perGunpowder() + ")";
-                default -> "The pressed 9mm Round comes here (shift-click for a stack)";
+            // Hoofdstuk 103: elk kaliber past; de namen en het kruit per patroon komen uit Caliber.
+            StringBuilder calibers = new StringBuilder();
+            StringBuilder powder = new StringBuilder();
+            for (Caliber each : Caliber.values()) {
+                String name = each.text().getString();
+                calibers.append(calibers.isEmpty() ? "" : ", ").append(name);
+                powder.append(powder.isEmpty() ? "" : ", ").append(name).append(": ").append(each.powder);
+            }
+            List<Component> what = switch (slot.index) {
+                case ReloadingBenchBlockEntity.SLOT_CASING -> List.of(Component.literal("Casing (" + calibers + ")"));
+                case ReloadingBenchBlockEntity.SLOT_BULLET -> List.of(Component.literal("Bullet of the same caliber as the casing"));
+                case ReloadingBenchBlockEntity.SLOT_POWDER -> List.of(
+                        Component.literal("Crushed Gunpowder (Crusher: 1 gunpowder = " + CrushedGunpowderItem.perGunpowder() + ")"),
+                        Component.literal("Per round: " + powder).withStyle(net.minecraft.ChatFormatting.GRAY));
+                default -> List.of(Component.literal("The pressed round comes here (shift-click for a stack)"));
             };
-            g.renderTooltip(font, Component.literal(what), mouseX, mouseY);
+            g.renderTooltip(font, what, java.util.Optional.empty(), mouseX, mouseY);
             return;
         }
         super.renderTooltip(g, mouseX, mouseY);

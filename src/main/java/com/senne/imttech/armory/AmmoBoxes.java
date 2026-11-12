@@ -1,5 +1,6 @@
 package com.senne.imttech.armory;
 
+import com.senne.imttech.guns.Caliber;
 import com.senne.imttech.guns.FirearmItem;
 import com.senne.imttech.guns.FirearmType;
 import com.senne.imttech.guns.Firearms;
@@ -80,7 +81,10 @@ public final class AmmoBoxes {
         }
         ItemStack sort = box.sort();
         boolean sneak = player.isSecondaryUseActive();
-        if (MagazineItem.typeOf(held) != null && sort.is(ModItems.ROUND_9MM.get())) {
+        // Hoofdstuk 103: een magazijn laadt alleen uit een doos met de patronen van zijn eigen wapen (een magazijn van de
+        // AK-47 op een doos 9mm krijgt de melding van WRONG hieronder).
+        FirearmType magazine = MagazineItem.typeOf(held);
+        if (magazine != null && sort.is(magazine.caliber.round())) {
             return sneak ? Use.UNLOAD : Use.LOAD;
         }
         FirearmType gun = FirearmItem.typeOf(held);
@@ -229,7 +233,8 @@ public final class AmmoBoxes {
             tell(player, Component.translatable("gun.imttech.magazine_empty"));
             return;
         }
-        if (box.room(new ItemStack(ModItems.ROUND_9MM.get())) <= 0) {
+        FirearmType type = MagazineItem.typeOf(magazine);
+        if (type == null || box.room(new ItemStack(type.caliber.round())) <= 0) {
             tellFull(player, box);
             return;
         }
@@ -246,19 +251,22 @@ public final class AmmoBoxes {
         return player.level().getBlockEntity(pos) instanceof AmmoBoxBlockEntity box ? box : null;
     }
 
-    /** De handeling is klaar: één patroon uit de doos (geeft false als hij leeg is of je er niet meer bij kunt). */
-    public static boolean takeRound(ServerPlayer player) {
+    /**
+     * De handeling is klaar: één patroon van dit kaliber uit de doos (geeft false als hij leeg is, er een ander kaliber
+     * in ligt, of je er niet meer bij kunt).
+     */
+    public static boolean takeRound(ServerPlayer player, Caliber caliber) {
         AmmoBoxBlockEntity box = source(player);
-        if (box == null || !box.sort().is(ModItems.ROUND_9MM.get())) {
+        if (box == null || !box.sort().is(caliber.round())) {
             return false;
         }
         return !box.take(1).isEmpty();
     }
 
     /** De handeling is klaar: één patroon terug in de doos (geeft false als hij vol is; dan gaat hij in je inventaris). */
-    public static boolean putRound(ServerPlayer player) {
+    public static boolean putRound(ServerPlayer player, Caliber caliber) {
         AmmoBoxBlockEntity box = source(player);
-        return box != null && box.insert(new ItemStack(ModItems.ROUND_9MM.get()), 1) == 1;
+        return box != null && box.insert(new ItemStack(caliber.round()), 1) == 1;
     }
 
     // ================================================================ Wisselen: een magazijn of een cel

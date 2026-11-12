@@ -2,6 +2,7 @@ package com.senne.imttech.gametest;
 
 import com.senne.imttech.ImtTech;
 import com.senne.imttech.armory.AmmoBoxBlockEntity;
+import com.senne.imttech.armory.AmmoBoxes;
 import com.senne.imttech.armory.Pegboard;
 import com.senne.imttech.armory.PegboardBlock;
 import com.senne.imttech.armory.PegboardBlockEntity;
@@ -209,6 +210,44 @@ public final class ArmoryGameTests {
         click(player, mags, false);
         check(mags.count() == 1 && player.getMainHandItem().isEmpty(), "Het magazijn ging niet in de lege kist");
         check(MagazineItem.rounds(mags.contents().getFirst()) == 2, "Het magazijn in de kist verloor zijn patronen");
+        helper.succeed();
+    }
+
+    /**
+     * Hoofdstuk 103: elk kaliber is zijn eigen soort. In een kist met 7.62-patronen past geen 9mm; een AK-magazijn laadt
+     * eruit (en met sneak terug), een MP5-magazijn niet (dat krijgt de melding dat de kist iets anders houdt). Ook de
+     * hulzen en kogelpunten van 7.62 mogen in een kist.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "armory")
+    public static void ammo_box_keeps_calibers_apart(GameTestHelper helper) {
+        AmmoBoxBlockEntity box = box(helper, new BlockPos(4, 2, 4));
+        box.insert(new ItemStack(ModItems.ROUND_762.get(), 20), 20);
+        check(!box.fits(new ItemStack(ModItems.ROUND_9MM.get())), "9mm past bij 7.62 in dezelfde kist");
+        ServerPlayer player = player(helper, "armory-ak", new BlockPos(4, 2, 2), MagazineItem.of(FirearmType.AK_47, 0));
+        click(player, box, false);
+        check(Firearms.currentAction(player) == Firearms.ActionKind.LOAD_ROUND, "Een AK-magazijn laadde niet uit een kist 7.62");
+        Firearms.finishNow(player);
+        check(MagazineItem.rounds(player.getMainHandItem()) == 1 && box.count() == 19, "De patroon ging niet uit de kist in het magazijn");
+        click(player, box, true);
+        check(Firearms.currentAction(player) == Firearms.ActionKind.UNLOAD_ROUND, "Sneak + rechtsklik begon niet met lossen");
+        Firearms.finishNow(player);
+        check(MagazineItem.rounds(player.getMainHandItem()) == 0 && box.count() == 20, "De patroon ging niet terug in de kist");
+        check(count(player, ModItems.ROUND_762.get()) == 0, "De patroon kwam in je inventaris in plaats van in de kist");
+        // Een MP5-magazijn (9mm) op een kist 7.62: niets.
+        player.setItemInHand(InteractionHand.MAIN_HAND, MagazineItem.of(FirearmType.MP5, 0));
+        check(AmmoBoxes.useFor(player, player.getMainHandItem(), box) == AmmoBoxes.Use.WRONG,
+                "Een MP5-magazijn op een kist 7.62 hoort de melding 'andere soort' te geven");
+        click(player, box, false);
+        check(Firearms.currentAction(player) != Firearms.ActionKind.LOAD_ROUND && box.count() == 20
+                && MagazineItem.rounds(player.getMainHandItem()) == 0, "Een MP5-magazijn laadde 7.62-patronen");
+        check(!player.getMainHandItem().isEmpty(), "Het MP5-magazijn ging in de kist met patronen");
+        // De hulzen en kogelpunten van 7.62 mogen ook in een kist; 9mm-hulzen niet bij 7.62-hulzen.
+        check(AmmoBoxBlockEntity.accepts(new ItemStack(ModItems.BULLET_762.get())), "Een 7.62-kogelpunt mag niet in een Ammo Box");
+        AmmoBoxBlockEntity casings = box(helper, new BlockPos(6, 2, 4));
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.CASING_762.get(), 12));
+        click(player, casings, false);
+        check(casings.count() == 12 && casings.sort().is(ModItems.CASING_762.get()), "De 7.62-hulzen gingen niet in de lege kist");
+        check(!casings.fits(new ItemStack(ModItems.CASING_9MM.get())), "9mm-hulzen passen bij 7.62-hulzen in dezelfde kist");
         helper.succeed();
     }
 

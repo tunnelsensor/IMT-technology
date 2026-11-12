@@ -136,7 +136,10 @@ public final class FirearmHud implements LayeredDraw.Layer {
             int barW = 70;
             g.fill(right - barW, y0, right, y0 + 3, argb(0.5f, 0x2A2010));
             g.fill(right - barW, y0, right - barW + Math.round(barW * progress), y0 + 3, argb(0.95f, GOLD));
-            Component text = Component.translatable("hud.imttech.firearm.action." + action.name().toLowerCase(java.util.Locale.ROOT));
+            // Een lang wapen heeft geen slede: daar heet het doorladen na een nieuw magazijn "CHARGING" (de spanhendel).
+            String doing = action == Firearms.ActionKind.SLIDE_RELEASE && type.longGun ? "charge"
+                    : action.name().toLowerCase(java.util.Locale.ROOT);
+            Component text = Component.translatable("hud.imttech.firearm.action." + doing);
             g.drawString(font, text, right - font.width(text), y0 - 10, argb(0.9f, WHITE), true);
             return;
         }
@@ -202,7 +205,7 @@ public final class FirearmHud implements LayeredDraw.Layer {
         g.drawString(font, name, right - font.width(name), bottom - 38, argb(0.9f, GOLD), true);
         // Onderaan alleen nog iets als het nodig is (hoofdstuk 89: de grijze regel "R: load a round" en "Full" zijn weg).
         // Hoofdstuk 67: kijk je naar een Ammo Box met patronen, dan laad je daaruit (rechtsklik inhouden).
-        int inBox = com.senne.imttech.client.armory.ArmoryClient.roundsInBox();
+        int inBox = com.senne.imttech.client.armory.ArmoryClient.roundsInBox(type.caliber);
         Component hint = null;
         boolean bad = false;
         if (MagazineItem.isFull(magazine)) {
@@ -210,7 +213,7 @@ public final class FirearmHud implements LayeredDraw.Layer {
         } else if (inBox > 0) {
             hint = Component.translatable("hud.imttech.magazine.load_box", inBox);
         } else if (loose == 0) {
-            hint = Component.translatable("hud.imttech.magazine.no_rounds");
+            hint = Component.translatable("gun.imttech.no_rounds_of", type.caliber.text());
             bad = true;
         }
         if (hint != null) {

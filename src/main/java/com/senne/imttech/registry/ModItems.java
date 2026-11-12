@@ -505,6 +505,14 @@ public final class ModItems {
             properties -> new com.senne.imttech.guns.MagazineItem(properties, com.senne.imttech.guns.FirearmType.MP5, false),
             new Item.Properties());
 
+    /** Hoofdstuk 103, stap 2: de AK-47, en zijn gebogen magazijn van 30 patronen (7.62x39mm, zijn eigen patroon). */
+    public static final DeferredItem<com.senne.imttech.guns.FirearmItem> AK_47 = ITEMS.registerItem("ak_47",
+            properties -> new com.senne.imttech.guns.FirearmItem(properties, com.senne.imttech.guns.FirearmType.AK_47),
+            new Item.Properties().rarity(Rarity.UNCOMMON));
+    public static final DeferredItem<com.senne.imttech.guns.MagazineItem> AK_47_MAGAZINE = ITEMS.registerItem("ak_47_magazine",
+            properties -> new com.senne.imttech.guns.MagazineItem(properties, com.senne.imttech.guns.FirearmType.AK_47, false),
+            new Item.Properties());
+
     /**
      * Hoofdstuk 52: de zes onderdelen (elk in zijn materialen, zie GunPartItem). Sinds hoofdstuk 103 per wapen: de Glock
      * houdt zijn oude namen ("gun_slide"), de andere wapens heten naar hun wapen ("mp5_slide").
@@ -539,6 +547,7 @@ public final class ModItems {
         return switch (type) {
             case GLOCK_19 -> GLOCK_19.get();
             case MP5 -> MP5.get();
+            case AK_47 -> AK_47.get();
         };
     }
 
@@ -552,30 +561,34 @@ public final class ModItems {
         return switch (type) {
             case GLOCK_19 -> GLOCK_19_MAGAZINE.get();
             case MP5 -> MP5_MAGAZINE.get();
+            case AK_47 -> AK_47_MAGAZINE.get();
         };
     }
 
     /** Alle magazijnen van alle vuurwapens (voor de modellen en het Pegboard). */
     public static java.util.List<com.senne.imttech.guns.MagazineItem> magazines() {
-        return java.util.List.of(GLOCK_19_MAGAZINE.get(), MP5_MAGAZINE.get());
+        return java.util.List.of(GLOCK_19_MAGAZINE.get(), MP5_MAGAZINE.get(), AK_47_MAGAZINE.get());
     }
 
     /** Hoofdstuk 103: de patroon, de lege huls en de kogelpunt van dit kaliber. */
     public static Item round(com.senne.imttech.guns.Caliber caliber) {
         return switch (caliber) {
             case MM9 -> ROUND_9MM.get();
+            case R762 -> ROUND_762.get();
         };
     }
 
     public static Item casing(com.senne.imttech.guns.Caliber caliber) {
         return switch (caliber) {
             case MM9 -> CASING_9MM.get();
+            case R762 -> CASING_762.get();
         };
     }
 
     public static Item bullet(com.senne.imttech.guns.Caliber caliber) {
         return switch (caliber) {
             case MM9 -> BULLET_9MM.get();
+            case R762 -> BULLET_762.get();
         };
     }
 
@@ -585,6 +598,10 @@ public final class ModItems {
     public static final DeferredItem<Item> CASING_9MM = ITEMS.registerSimpleItem("casing_9mm", new Item.Properties());
     /** De kogelpunt (koper om lood). */
     public static final DeferredItem<Item> BULLET_9MM = ITEMS.registerSimpleItem("bullet_9mm", new Item.Properties());
+    /** Hoofdstuk 103, stap 2: de patroon van de AK-47 (7.62x39mm), zijn lege huls en zijn kogelpunt. */
+    public static final DeferredItem<Item> ROUND_762 = ITEMS.registerSimpleItem("round_762", new Item.Properties());
+    public static final DeferredItem<Item> CASING_762 = ITEMS.registerSimpleItem("casing_762", new Item.Properties());
+    public static final DeferredItem<Item> BULLET_762 = ITEMS.registerSimpleItem("bullet_762", new Item.Properties());
     /** Hoofdstuk 76: fijngemalen buskruit uit de Crusher (1 buskruit = 10), één per 9mm-patroon op de Reloading Bench. */
     public static final DeferredItem<com.senne.imttech.guns.CrushedGunpowderItem> CRUSHED_GUNPOWDER = ITEMS.registerItem(
             "crushed_gunpowder", com.senne.imttech.guns.CrushedGunpowderItem::new, new Item.Properties());

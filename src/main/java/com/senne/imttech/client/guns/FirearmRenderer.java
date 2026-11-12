@@ -161,6 +161,15 @@ public final class FirearmRenderer {
         rotX += 12 * tilt;
         rotY += 10 * tilt;
         place.add(-0.06f * tilt, 0.07f * tilt, 0.03f * tilt);
+        // Hoofdstuk 103, stap 2: zit de hendel rechts (de AK-47), dan laadt je rechterhand door (zie rightHandRack). Het
+        // wapen rolt daarbij wat naar links: zijn rechterkant komt naar boven, zodat je de spanhendel ziet bewegen.
+        boolean rightRack = lng && rig.handleRight();
+        if (rightRack) {
+            float roll = rollForHandle(action, progress);
+            rotZ += 20 * roll;
+            rotY -= 5 * roll;
+            place.add(-0.03f * roll, 0.02f * roll, 0);
+        }
         if (inspect >= 0) {
             float side = ease(Mth.clamp(inspect / 0.15f, 0, 1)) * ease(Mth.clamp((1 - inspect) / 0.15f, 0, 1));
             float top = ease(Mth.clamp((inspect - 0.48f) / 0.14f, 0, 1)) * ease(Mth.clamp((0.88f - inspect) / 0.12f, 0, 1));
@@ -277,7 +286,7 @@ public final class FirearmRenderer {
 
         // ---- Je armen.
         boolean suit = player.getItemBySlot(EquipmentSlot.CHEST).getItem() instanceof TechSuitItem;
-        Vector3f right = gun.transformPosition(new Vector3f(rig.grip));
+        Vector3f right = gun.transformPosition(rightRack ? rightHandRack(rig, action, progress, handleBack) : new Vector3f(rig.grip));
         Vector3f left = gun.transformPosition(lng ? leftHandLong(rig, action, progress, handleBack, magOut)
                 : leftHand(rig, action, progress, slideBack, magOut, hasMag));
         HumanoidArm main = player.getMainArm();
@@ -332,6 +341,23 @@ public final class FirearmRenderer {
             back = rig.cycle * (1 - ease((t - 0.8f) / 0.2f)) * (FirearmItem.chambered(stack) ? 0 : 1);
         }
         return back;
+    }
+
+    /**
+     * Hoe ver een wapen met de hendel rechts (de AK-47) naar links gerold is tijdens een handeling (0 tot 1): op tijd voor
+     * je hand bij de hendel is, en terug als de hendel los is.
+     */
+    private static float rollForHandle(@Nullable Firearms.ActionKind action, float t) {
+        if (action == null) {
+            return 0;
+        }
+        return switch (action) {
+            case SLIDE_RELEASE, CYCLE -> ease(Mth.clamp(t / 0.18f, 0, 1)) * ease(Mth.clamp((1 - t) / 0.25f, 0, 1));
+            case TAP_RACK -> ease(Mth.clamp((t - 0.33f) / 0.12f, 0, 1)) * ease(Mth.clamp((1 - t) / 0.18f, 0, 1));
+            case CHAMBER_ROUND -> ease(Mth.clamp(t / 0.14f, 0, 1)) * ease(Mth.clamp((1 - t) / 0.12f, 0, 1));
+            case UNLOAD_CHAMBER -> ease(Mth.clamp(t / 0.14f, 0, 1)) * ease(Mth.clamp((1 - t) / 0.22f, 0, 1));
+            default -> 0;
+        };
     }
 
     /**
@@ -454,6 +480,9 @@ public final class FirearmRenderer {
         Vector3f axis = rig.magazineAxis;
         Vector3f atMag = new Vector3f(rig.magazine).add(new Vector3f(axis).mul(Math.min(magOut, 18) + 5.5f)).add(-1.0f, 0, 0.3f);
         Vector3f atHandle = new Vector3f(rig.handle).add(-0.3f, -0.2f, handleBack);
+        // Hoofdstuk 103, stap 2: zit de hendel rechts (de AK-47), dan doet je rechterhand het doorladen (rightHandRack) en
+        // blijft je linkerhand het wapen vooraan vasthouden.
+        boolean rightRack = rig.handleRight();
         switch (action) {
             case EJECT_MAG -> {
                 if (t < 0.25f) return lerp(rest, atMag, ease(t / 0.25f));
@@ -468,6 +497,7 @@ public final class FirearmRenderer {
                 return magOut < 40 ? atMag : rest;
             }
             case SLIDE_RELEASE, CYCLE -> {
+                if (rightRack) return rest;
                 // Naar de hendel (tot 0,2), trekken en loslaten (de hand blijft even achter), en terug naar voren.
                 if (t < 0.2f) return lerp(rest, atHandle, ease(t / 0.2f));
                 if (t < 0.58f) return atHandle;
@@ -480,6 +510,7 @@ public final class FirearmRenderer {
                 Vector3f base = new Vector3f(rig.magazineFoot).add(-0.6f, -1.2f, 0.4f);
                 if (t < 0.15f) return lerp(rest, base, ease(t / 0.15f));
                 if (t < 0.35f) return base;
+                if (rightRack) return lerp(base, rest, ease(Mth.clamp((t - 0.35f) / 0.15f, 0, 1)));
                 if (t < 0.45f) return lerp(base, atHandle, ease((t - 0.35f) / 0.1f));
                 if (t < 0.66f) return atHandle;
                 Vector3f released = new Vector3f(rig.handle).add(-0.3f, -0.2f, rig.handleTravel);
@@ -487,6 +518,7 @@ public final class FirearmRenderer {
                 return lerp(released, rest, ease((t - 0.8f) / 0.2f));
             }
             case UNLOAD_CHAMBER -> {
+                if (rightRack) return rest;
                 if (t < 0.15f) return lerp(rest, atHandle, ease(t / 0.15f));
                 if (t < 0.75f) return atHandle;
                 return lerp(atHandle, rest, ease((t - 0.75f) / 0.25f));
@@ -494,6 +526,9 @@ public final class FirearmRenderer {
             case CHAMBER_ROUND -> {
                 // De hendel naar achteren, de patroon van boven in de uitwerpopening, en de hendel los.
                 Vector3f port = new Vector3f(rig.port.x + 1.6f, rig.port.y + 1.4f, rig.port.z + 0.6f);
+                if (rightRack) {
+                    return rest; // je rechterhand trekt de hendel naar achteren en duwt de patroon in de kamer
+                }
                 if (t < 0.15f) return lerp(rest, atHandle, ease(t / 0.15f));
                 if (t < 0.32f) return atHandle;
                 if (t < 0.42f) return lerp(atHandle, port, ease((t - 0.32f) / 0.1f));
@@ -504,6 +539,50 @@ public final class FirearmRenderer {
             }
             default -> {
                 return rest;
+            }
+        }
+    }
+
+    /**
+     * Hoofdstuk 103, stap 2: waar je rechterhand is bij een wapen met de hendel rechts (de AK-47). Ze ligt op de greep, en
+     * bij het doorladen laat ze die even los: naar de spanhendel (vlak boven de greep), naar achteren trekken, loslaten en
+     * terug. Dezelfde tijden als rack: de hand is er voor de hendel beweegt en blijft er tot hij los is.
+     */
+    private static Vector3f rightHandRack(FirearmRig rig, @Nullable Firearms.ActionKind action, float t, float handleBack) {
+        Vector3f grip = new Vector3f(rig.grip);
+        if (action == null) {
+            return grip;
+        }
+        // De vingers om de knop gehaakt: de hand zit rechts onder de hendel, achter het wapen. Zo zie je de hendel
+        // bewegen en blijft de kap vrij (een hand is in je beeld veel breder dan de behuizing).
+        Vector3f atHandle = new Vector3f(rig.handle).add(1.9f, -3.0f, 0.6f + handleBack);
+        Vector3f released = new Vector3f(rig.handle).add(1.9f, -3.0f, 0.6f + rig.handleTravel);
+        switch (action) {
+            case SLIDE_RELEASE, CYCLE -> {
+                if (t < 0.2f) return lerp(grip, atHandle, ease(t / 0.2f));
+                if (t < 0.58f) return atHandle;
+                if (t < 0.72f) return released;
+                return lerp(released, grip, ease((t - 0.72f) / 0.28f));
+            }
+            case TAP_RACK -> {
+                if (t < 0.35f) return grip;
+                if (t < 0.45f) return lerp(grip, atHandle, ease((t - 0.35f) / 0.1f));
+                if (t < 0.66f) return atHandle;
+                if (t < 0.8f) return released;
+                return lerp(released, grip, ease((t - 0.8f) / 0.2f));
+            }
+            case UNLOAD_CHAMBER -> {
+                if (t < 0.15f) return lerp(grip, atHandle, ease(t / 0.15f));
+                if (t < 0.75f) return atHandle;
+                return lerp(atHandle, grip, ease((t - 0.75f) / 0.25f));
+            }
+            case CHAMBER_ROUND -> {
+                if (t < 0.15f) return lerp(grip, atHandle, ease(t / 0.15f));
+                if (t < 0.86f) return atHandle;
+                return lerp(atHandle, grip, ease((t - 0.86f) / 0.14f));
+            }
+            default -> {
+                return grip;
             }
         }
     }

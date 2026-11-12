@@ -39,13 +39,16 @@ public final class ArmoryClient {
         return false;
     }
 
-    /** Zoveel patronen zitten in de Ammo Box waar je naar kijkt (binnen bereik), of 0 (voor de HUD van een magazijn). */
-    public static int roundsInBox() {
+    /**
+     * Zoveel patronen van dit kaliber zitten in de Ammo Box waar je naar kijkt (binnen bereik), of 0 (voor de HUD van een
+     * magazijn: een doos met een ander kaliber telt niet).
+     */
+    public static int roundsInBox(com.senne.imttech.guns.Caliber caliber) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || !(mc.hitResult instanceof BlockHitResult hit) || hit.getType() != HitResult.Type.BLOCK
                 || !(mc.level.getBlockEntity(hit.getBlockPos()) instanceof AmmoBoxBlockEntity box)) {
             return 0;
         }
-        return box.sort().is(com.senne.imttech.registry.ModItems.ROUND_9MM.get()) ? box.count() : 0;
+        return box.sort().is(caliber.round()) ? box.count() : 0;
     }
 }

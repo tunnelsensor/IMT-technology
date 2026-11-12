@@ -1,6 +1,5 @@
 package com.senne.imttech.guns;
 
-import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.registry.ModMenus;
 import com.senne.imttech.registry.ModSounds;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -18,6 +17,9 @@ import net.minecraft.world.item.ItemStack;
  * Het menu van de Reloading Bench (hoofdstuk 52): drie vakjes (huls, kogelpunt, Crushed Gunpowder) en rechts de pers met het
  * resultaat. Zolang er van alle drie iets ligt, ligt er één 9mm-patroon klaar; pak je hem, dan gaat er van elk één af
  * en ligt de volgende klaar. Shift-klik op het resultaat perst er zoveel als er in passen.
+ *
+ * Hoofdstuk 103: welke patroon er klaarligt, hangt af van de huls en de kogelpunt (zie
+ * {@link ReloadingBenchBlockEntity#caliber}); van het kruit gaat er zoveel af als dat kaliber kost.
  */
 public class ReloadingBenchMenu extends AbstractContainerMenu {
     public static final int CASING_X = 20, BULLET_X = 50, POWDER_X = 80, INPUT_Y = 35;
@@ -62,10 +64,15 @@ public class ReloadingBenchMenu extends AbstractContainerMenu {
 
             @Override
             public void onTake(Player player, ItemStack stack) {
-                // Eén patroon gepakt: van elk ingrediënt één eraf, en de volgende klaarleggen.
-                for (int slot = 0; slot < ReloadingBenchBlockEntity.SIZE; slot++) {
-                    items.getItem(slot).shrink(1);
+                // Eén patroon gepakt: een huls en een kogelpunt eraf, het kruit dat dit kaliber kost, en de volgende
+                // klaarleggen. Het kaliber lezen we uit de bank zelf: bij shift-klik is "stack" hier al leeg.
+                Caliber caliber = ReloadingBenchBlockEntity.caliber(items);
+                if (caliber == null) {
+                    caliber = Caliber.ofRound(stack);
                 }
+                items.getItem(ReloadingBenchBlockEntity.SLOT_CASING).shrink(1);
+                items.getItem(ReloadingBenchBlockEntity.SLOT_BULLET).shrink(1);
+                items.getItem(ReloadingBenchBlockEntity.SLOT_POWDER).shrink(caliber == null ? 1 : Math.max(1, caliber.powder));
                 items.setChanged();
                 player.level().playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.GLOCK_ROUND_LOAD.get(),
                         SoundSource.BLOCKS, 0.5f, 0.8f);
@@ -88,11 +95,12 @@ public class ReloadingBenchMenu extends AbstractContainerMenu {
         return items;
     }
 
-    /** Het resultaat klaarleggen: één patroon als van alle drie iets ligt. */
+    /** Het resultaat klaarleggen: één patroon (van het kaliber van de huls en de kogelpunt) als er genoeg ligt. */
     private void refresh() {
-        boolean ready = ReloadingBenchBlockEntity.pressable(items) > 0;
-        if (ready != result.getItem(0).is(ModItems.ROUND_9MM.get())) {
-            result.setItem(0, ready ? new ItemStack(ModItems.ROUND_9MM.get()) : ItemStack.EMPTY);
+        Caliber caliber = ReloadingBenchBlockEntity.pressable(items) > 0 ? ReloadingBenchBlockEntity.caliber(items) : null;
+        ItemStack now = result.getItem(0);
+        if (caliber == null ? !now.isEmpty() : !now.is(caliber.round())) {
+            result.setItem(0, caliber == null ? ItemStack.EMPTY : new ItemStack(caliber.round()));
         }
     }
 

@@ -58,13 +58,14 @@ public final class GunsmithMakePanel {
      * Een wapen in de lijst links: de Glock, (hoofdstuk 103) de MP5, elk lasergeweer, en "Other" voor recepten die een
      * datapack toevoegt.
      */
-    public enum Group { GLOCK, MP5, PISTOL, RIFLE, SNIPER, SHOTGUN, OTHER }
+    public enum Group { GLOCK, MP5, AK47, PISTOL, RIFLE, SNIPER, SHOTGUN, OTHER }
 
     /** Het vuurwapen van deze groep, of null (een lasergeweer of "Other"). */
     private static @Nullable FirearmType firearm(Group group) {
         return switch (group) {
             case GLOCK -> FirearmType.GLOCK_19;
             case MP5 -> FirearmType.MP5;
+            case AK47 -> FirearmType.AK_47;
             default -> null;
         };
     }
@@ -73,6 +74,7 @@ public final class GunsmithMakePanel {
         return switch (type) {
             case GLOCK_19 -> Group.GLOCK;
             case MP5 -> Group.MP5;
+            case AK_47 -> Group.AK47;
         };
     }
 
@@ -230,6 +232,7 @@ public final class GunsmithMakePanel {
         return switch (group) {
             case GLOCK -> FirearmType.GLOCK_19.text();
             case MP5 -> FirearmType.MP5.text();
+            case AK47 -> FirearmType.AK_47.text();
             case PISTOL -> Component.translatable("item.imttech." + GunType.PISTOL.id);
             case RIFLE -> Component.translatable("item.imttech." + GunType.RIFLE.id);
             case SNIPER -> Component.translatable("item.imttech." + GunType.SNIPER.id);
@@ -242,7 +245,7 @@ public final class GunsmithMakePanel {
     private static List<GunMaterial> columns(Group group) {
         return switch (group) {
             case GLOCK -> List.of(GunMaterial.POLYMER, GunMaterial.STEEL, GunMaterial.TITANIUM);
-            case MP5 -> List.of(GunMaterial.STEEL, GunMaterial.TITANIUM);
+            case MP5, AK47 -> List.of(GunMaterial.STEEL, GunMaterial.TITANIUM);
             case OTHER -> List.of();
             default -> List.of(GunMaterial.TITANIUM, GunMaterial.NETHERITE);
         };
@@ -358,22 +361,39 @@ public final class GunsmithMakePanel {
         g.fill(x, y, x + w, y + LIST_H, TRAY_BG);
         g.renderOutline(x, y, w, LIST_H, PartsTableScreen.FRAME);
         int rowY = y + 2;
+        int step = listStep();
+        // Hoofdstuk 103: met meer dan zeven wapens staan de rijen dichter op elkaar; het plaatje krimpt mee.
+        float icon = Math.min(1.0f, (step - 2) / 16.0f);
         for (Group each : groups()) {
             boolean active = each == group;
             if (active) {
-                g.fill(x + 1, rowY, x + w - 1, rowY + ROW_H, HudStyle.argb(70, HudStyle.CYAN));
-            } else if (inside(mouseX, mouseY, x, rowY, w, ROW_H)) {
-                g.fill(x + 1, rowY, x + w - 1, rowY + ROW_H, HudStyle.argb(35, HudStyle.CYAN));
+                g.fill(x + 1, rowY, x + w - 1, rowY + step, HudStyle.argb(70, HudStyle.CYAN));
+            } else if (inside(mouseX, mouseY, x, rowY, w, step)) {
+                g.fill(x + 1, rowY, x + w - 1, rowY + step, HudStyle.argb(35, HudStyle.CYAN));
             }
-            g.renderItem(icons.getOrDefault(each, ItemStack.EMPTY), x + 3, rowY + 2);
-            small(g, groupName(each).getString(), x + 22, rowY + 3,
+            g.pose().pushPose();
+            g.pose().translate(x + 3, rowY + (step - 16 * icon) / 2f, 0);
+            g.pose().scale(icon, icon, 1);
+            g.renderItem(icons.getOrDefault(each, ItemStack.EMPTY), 0, 0);
+            g.pose().popPose();
+            int textY = rowY + (step - 15) / 2;
+            small(g, groupName(each).getString(), x + 22, textY + 1,
                     HudStyle.argb(255, active ? HudStyle.CYAN : HudStyle.WHITE), w - 24);
             int count = ready.getOrDefault(each, 0);
             small(g, count > 0 ? Component.translatable("screen.imttech.gunsmith.make.ready", count).getString()
                             : Component.translatable("screen.imttech.gunsmith.make.none").getString(),
-                    x + 22, rowY + 11, count > 0 ? HudStyle.argb(220, HudStyle.GREEN) : HudStyle.argb(120, HudStyle.WHITE), w - 24);
-            rowY += ROW_H;
+                    x + 22, textY + 9, count > 0 ? HudStyle.argb(220, HudStyle.GREEN) : HudStyle.argb(120, HudStyle.WHITE), w - 24);
+            rowY += step;
         }
+    }
+
+    /**
+     * Zo hoog is een rij in de lijst met wapens: 20 pixels zoals altijd, en lager als er meer dan zeven wapens staan
+     * (hoofdstuk 103: de Glock, de MP5, de AK-47... en de vier lasergeweren), zodat ze allemaal in de lijst passen.
+     */
+    private int listStep() {
+        int count = Math.max(1, groups().size());
+        return Math.min(ROW_H, (LIST_H - 4) / count);
     }
 
     /** Midden: de tegels, een rij per onderdeel en een kolom per materiaal. */
@@ -531,8 +551,9 @@ public final class GunsmithMakePanel {
     public boolean mouseClicked(int left, int top, double mouseX, double mouseY) {
         int x = left + LIST_X;
         int rowY = top + LIST_Y + 2;
+        int step = listStep();
         for (Group each : groups()) {
-            if (inside(mouseX, mouseY, x, rowY, LIST_W, ROW_H)) {
+            if (inside(mouseX, mouseY, x, rowY, LIST_W, step)) {
                 if (each != group) {
                     group = each;
                     lastGroup = each;
@@ -541,7 +562,7 @@ public final class GunsmithMakePanel {
                 }
                 return true;
             }
-            rowY += ROW_H;
+            rowY += step;
         }
         Tile tile = tileAt(left, top, mouseX, mouseY);
         if (tile != null) {

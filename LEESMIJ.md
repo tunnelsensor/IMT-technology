@@ -127,7 +127,7 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (445 automati
 | **Linker Alt** | Het wiel om snel te trekken (vasthouden) |
 | **F6** | De skilltree van je vuurwapens |
 | **R / U / H** (met een geweer of magazijn in je hand) | Herladen / unload / bekijken (zie "Vuurwapens") |
-| **X** (met een vuurwapen in je hand) | De keuzeschakelaar: safe, semi, 3 schoten, auto (zie "De grote update 2.0") |
+| **X** (met een vuurwapen in je hand) | De keuzeschakelaar: safe, semi, 3 schoten (MP5), auto (zie "De grote update 2.0") |
 | **W** (vasthouden, in een scherm, met je muis op een item) | How it works: de animatie van dat item |
 
 **De snelacties van de bril hebben standaard geen toets** (sinds 2026-11-10, zo blijven er letters vrij
@@ -2182,8 +2182,8 @@ punten verdelen, zodat je kiest waar je goed in wordt. Wat je leert blijft na je
 
 ### De grote update 2.0: meer vuurwapens, te beginnen met de MP5
 Jouw wens (hoofdstuk 103, 12 november): "meer guns, deze werken net zoals de Glock, de models zijn ook zoals de Glock":
-de **MP5**, de AK-47, de AWP en de Remington 870, en attachments. Dit is de grote update, dus **versie 2.0**. De wapens
-komen er één voor één bij; wat hier staat, is er al. Alles wat bij "Vuurwapens: de Glock 19" staat (zes onderdelen die
+de **MP5**, de **AK-47**, de AWP en de Remington 870, en attachments. Dit is de grote update, dus **versie 2.0**. De wapens
+komen er één voor één bij; wat hier staat, is er al (de MP5 en de AK-47). Alles wat bij "Vuurwapens: de Glock 19" staat (zes onderdelen die
 slijten, storingen en de tap-rack, een patroon in de kamer, een magazijn dat je kogel per kogel vult, hulzen die eruit
 springen, de magazijnpouch, de skills) geldt ook voor de nieuwe wapens. Dit is wat anders is.
 
@@ -2222,15 +2222,47 @@ de onderdelen van de MP5 ("Bolt Carrier" met eronder "MP5, steel").
 en trek je het met het wiel (linker Alt), net als een lasergeweer. Zonder sling zegt het wiel "needs a sling". Een
 wapen uit het creative-menu heeft zijn sling al. De sling eraf slepen geeft hem terug.
 
+**De AK-47** (versie 2.1). Het aanvalsgeweer met de houten kolf, greep en handbeschermer, ook een echt 3D-model
+nagemeten van een foto. Hij schiet zijn eigen patroon, de **7.62x39mm Round**, uit een gebogen **AK-47 Magazine** van
+**30** (30 + 1 met de kamer). Een schot doet **9** schade (de MP5 4,5, de Glock 5), draagt verder (volle schade tot 50
+blokken) en bewakers horen het van verder (72 blokken), maar hij schopt harder en schiet vanuit de heup minder precies.
+Zijn schakelaar (X) heeft drie standen: **SEMI**, **AUTO** en **SAFE**; drie schoten per klik heeft hij niet. Je richt
+door de keep van het achterste vizier (dat zit bij een AK ver naar voren, voor de kap) op de korrel tussen zijn twee
+oren. De **spanhendel zit rechts** op de grendeldrager en beweegt bij elk schot mee; na een nieuw magazijn met een lege
+kamer laat je rechterhand de greep even los en trekt ze de hendel naar achteren (je linkerhand houdt het wapen vast, en
+het wapen kantelt een beetje zodat je de hendel ziet). Het magazijn kantelt schuin naar voren uit de behuizing. Zijn zes
+onderdelen heten zoals bij de MP5 (Receiver, Bolt Carrier, Barrel, Recoil Spring, Firing Pin, Trigger Group), in
+**staal** of **titanium**, en passen alleen in een AK-47. Je maakt ze onder **AK-47** op het tabblad "Make parts": dezelfde
+aantallen staal of titanium als bij de MP5, maar met **planken** in plaats van polymeer (4 voor de Receiver, 1 voor de
+rest; eender welk hout): hout is het kenmerk van de AK. Het **AK-47 Magazine**: 8 staal en een AK-47 Recoil Spring. Met
+een Gun Sling eraan hangt hij op je rug of voor je borst, en op het Pegboard neemt hij 10 x 4 gaatjes in.
+
+**Munitie per kaliber.** Elk kaliber heeft zijn eigen patroon, zijn eigen lege huls en zijn eigen kogelpunt, en ze
+passen niet door elkaar: een AK-magazijn neemt alleen 7.62x39mm, een Glock- of MP5-magazijn alleen 9mm (heb je de
+verkeerde bij, dan zegt het spel "No 7.62x39mm rounds in your inventory").
+- **Maken**: **7.62x39mm Casing**: 2 koperstaven geven er 8 (een 9mm-huls: 1 koperstaaf voor 8). **7.62x39mm Bullet**: 3
+  ijzerklompjes geven er 4 (9mm: 2 voor 4). Zonder vorm, in de gewone crafting table.
+- **De Reloading Bench perst elk kaliber.** De huls zegt welke patroon het wordt; de kogelpunt moet van hetzelfde kaliber
+  zijn. Een 7.62-patroon kost **twee** Crushed Gunpowder, een 9mm één (met 7 kruit pers je dus 3 patronen 7.62). Boven
+  het vakje rechts staat welk kaliber er uitkomt. Past de kogelpunt niet bij de huls, dan staat er in het rood "The
+  casing and the bullet are not the same caliber"; ligt er te weinig kruit voor één patroon, dan zegt de bank hoeveel er
+  nodig is.
+- **De hulzen** die uit de AK-47 springen zijn 7.62-hulzen: je raapt ze op als 7.62x39mm Casing, en de **dump pouch**
+  houdt de twee soorten uit elkaar (elk in zijn eigen stapel).
+- **De Ammo Box**: elk kaliber is zijn eigen soort (een doos 7.62 neemt geen 9mm). Houd je een magazijn tegen een doos,
+  dan laadt het alleen als de patronen in de doos van zijn wapen zijn; anders zegt de doos wat erin zit.
+
 **De getallen** staan in `config/imttech.toml` onder `[guns]`: elk rijtje heeft nu vijf getallen, in de volgorde Glock
 19, MP5, AK-47, AWP, Remington 870 (schade, tempo, bereik, kogelsnelheid, magazijn, het lange magazijn, spreiding,
 terugslag, korrels per schot, hoe lang doorladen duurt, hoe ver bewakers het horen). Had je al een configbestand, dan
 krijgen die rijtjes hun nieuwe standaardwaarden.
 
-**Voor wie de modellen wil aanpassen.** Elk wapen heeft zijn eigen bestand (`tools/mp5_model.py`), gebouwd met
-`tools/longgun.py` en `tools/gunmesh.py`; `python tools/generate_gun_models.py mp5` schrijft alleen dat wapen opnieuw,
-en met `--assets <map>` naar een proefmap die je met `tools/preview_obj.py --assets <map>` bekijkt. De omtrek van een
-foto halen doet `tools/trace_outline.py`. De geluiden: `py -3.12 tools/generate_sounds.py mp5_fire mp5_charge ...`.
+**Voor wie de modellen wil aanpassen.** Elk wapen heeft zijn eigen bestand (`tools/mp5_model.py`,
+`tools/ak47_model.py`), gebouwd met `tools/longgun.py` en `tools/gunmesh.py`; `python tools/generate_gun_models.py mp5`
+(of `ak_47`) schrijft alleen dat wapen opnieuw, en met `--assets <map>` naar een proefmap die je met
+`tools/preview_obj.py --assets <map>` bekijkt. De omtrek van een foto halen doet `tools/trace_outline.py`. De patroon, de
+huls en de kogelpunt van een nieuw kaliber staan in `tools/ammo_models.py` (`python tools/generate_gun_models.py 762`).
+De geluiden: `py -3.12 tools/generate_sounds.py mp5_fire mp5_charge ak47_fire ak47_charge ...`.
 
 ### Lasergeweren uit onderdelen: de Laser Workbench, de Nether Star, de slings
 Jouw wens (hoofdstuk 55): de lasergeweren horen in hetzelfde systeem als de Glock: uit onderdelen gebouwd op een nieuwe

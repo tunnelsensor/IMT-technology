@@ -68,7 +68,7 @@ public class MolleItem extends Item {
             return switch (this) {
                 case MAG -> MagazineItem.typeOf(stack) != null || stack.getItem() instanceof EnergyCellItem;
                 case GRENADE -> stack.getItem() instanceof GrenadeItem && !GrenadeItem.isLive(stack);
-                case DUMP -> stack.is(ModItems.CASING_9MM.get());
+                case DUMP -> com.senne.imttech.guns.Caliber.ofCasing(stack) != null; // hoofdstuk 103: elk kaliber
                 case IFAK -> healing(stack);
                 case UTILITY -> !(stack.getItem() instanceof MolleItem) && BackpackItem.mayHold(stack);
             };

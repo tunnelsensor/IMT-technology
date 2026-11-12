@@ -487,6 +487,40 @@ public final class BackpackGameTests {
         });
     }
 
+    /**
+     * Hoofdstuk 103: de dump pouch raapt de hulzen van elk kaliber op, elk als zijn eigen huls (een 9mm-huls en twee
+     * 7.62-hulzen worden geen drie 9mm-hulzen).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "backpacks")
+    public static void dump_pouch_keeps_each_caliber(GameTestHelper helper) {
+        check(!Gear.curios(), "Deze test is voor zonder Curios");
+        ServerPlayer player = player(helper, "molle-calibers", new BlockPos(3, 2, 3));
+        check(Gear.setBack(player, packWith(BackpackItem.Size.ASSAULT, pouch(com.senne.imttech.backpack.MolleItem.Kind.DUMP))),
+                "De rugzak ging niet op je rug");
+        com.senne.imttech.guns.Caliber[] kinds = {com.senne.imttech.guns.Caliber.MM9, com.senne.imttech.guns.Caliber.R762,
+                com.senne.imttech.guns.Caliber.R762};
+        for (int i = 0; i < kinds.length; i++) {
+            com.senne.imttech.guns.CasingEntity casing = com.senne.imttech.guns.CasingEntity.eject(helper.getLevel(), player, kinds[i]);
+            casing.setPos(player.getX() + 0.6 + i * 0.3, player.getY() + 0.1, player.getZ() + 0.4);
+            casing.setDeltaMovement(net.minecraft.world.phys.Vec3.ZERO);
+        }
+        helper.runAfterDelay(10, () -> {
+            ItemStack dump = BackpackItem.molle(Gear.back(player)).getFirst();
+            int nine = 0;
+            int rifle = 0;
+            for (ItemStack stack : com.senne.imttech.backpack.MolleItem.contents(dump)) {
+                if (stack.is(ModItems.CASING_9MM.get())) {
+                    nine += stack.getCount();
+                }
+                if (stack.is(ModItems.CASING_762.get())) {
+                    rifle += stack.getCount();
+                }
+            }
+            check(nine == 1 && rifle == 2, "De dump pouch heeft " + nine + " hulzen 9mm en " + rifle + " hulzen 7.62, niet 1 en 2");
+            helper.succeed();
+        });
+    }
+
     /** De IFAK: een gouden appel uit het wiel geneest meteen (absorptie), en daarna even wachten. */
     @GameTest(template = ARENA, timeoutTicks = 40, batch = "backpacks")
     public static void ifak_heals_and_then_waits(GameTestHelper helper) {

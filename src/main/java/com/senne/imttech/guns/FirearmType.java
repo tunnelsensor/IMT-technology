@@ -15,7 +15,12 @@ public enum FirearmType {
     /** Het pistool: 9mm, zelfladend, één schot per klik. Geen schakelaar (een echte Glock heeft geen veiligheidspal). */
     GLOCK_19("glock_19", Caliber.MM9, Action.SEMI, false, 1.15f, FireMode.SEMI),
     /** De MP5 (hoofdstuk 103): 9mm, zelfladend, met een schakelaar: safe, één schot, drie schoten of automatisch. */
-    MP5("mp5", Caliber.MM9, Action.SEMI, true, 1.25f, FireMode.SAFE, FireMode.SEMI, FireMode.BURST, FireMode.AUTO);
+    MP5("mp5", Caliber.MM9, Action.SEMI, true, 1.25f, FireMode.SAFE, FireMode.SEMI, FireMode.BURST, FireMode.AUTO),
+    /**
+     * De AK-47 (hoofdstuk 103, stap 2): 7.62x39mm, zelfladend, met een schakelaar: safe, één schot of automatisch. Harder
+     * en verder dan de MP5, maar hij schopt meer en zijn patronen zijn duurder.
+     */
+    AK_47("ak_47", Caliber.R762, Action.SEMI, true, 1.25f, FireMode.SAFE, FireMode.SEMI, FireMode.AUTO);
 
     /**
      * Hoe een wapen de volgende patroon in de kamer krijgt (jouw keuze, hoofdstuk 103: "je moet na elk schot op R drukken
@@ -202,6 +207,7 @@ public enum FirearmType {
         return switch (this) {
             case GLOCK_19 -> ModSounds.GLOCK_FIRE.get();
             case MP5 -> ModSounds.MP5_FIRE.get();
+            case AK_47 -> ModSounds.AK47_FIRE.get();
         };
     }
 
@@ -210,6 +216,7 @@ public enum FirearmType {
         return switch (this) {
             case GLOCK_19 -> ModSounds.GLOCK_FIRE_FAR.get();
             case MP5 -> ModSounds.MP5_FIRE_FAR.get();
+            case AK_47 -> ModSounds.AK47_FIRE_FAR.get();
         };
     }
 
@@ -218,6 +225,7 @@ public enum FirearmType {
         return switch (this) {
             case GLOCK_19 -> ModSounds.GLOCK_SLIDE.get();
             case MP5 -> ModSounds.MP5_CHARGE.get();
+            case AK_47 -> ModSounds.AK47_CHARGE.get();
         };
     }
 
@@ -226,6 +234,7 @@ public enum FirearmType {
         return switch (this) {
             case GLOCK_19 -> ModSounds.GLOCK_SLIDE_RELEASE.get();
             case MP5 -> ModSounds.MP5_CHARGE.get();
+            case AK_47 -> ModSounds.AK47_CHARGE.get();
         };
     }
 

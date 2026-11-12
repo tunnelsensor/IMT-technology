@@ -121,11 +121,36 @@ public final class FirearmRig {
             new Vector3f(8, -1.2f, -3.1f), new Vector3f(8, 13.36f, 1.4f), 0,
             0.36f, new Vector3f(8, 12.5f, 8.5f));
 
+    /**
+     * De AK-47 (hoofdstuk 103, stap 2, tools/ak47_model.py): je rechterhand op de houten greep, je linkerhand onder de
+     * handbeschermer, de keep van het achterste vizier voor je oog (dat zit bij een AK ver naar voren, voor de kap), de
+     * spanhendel <b>rechts</b> op de grendeldrager (hij beweegt bij elk schot mee, dus even ver als de grendel), en het
+     * gebogen magazijn dat schuin naar voren uit de behuizing kantelt.
+     */
+    private static final FirearmRig AK_47 = new FirearmRig(0.34f,
+            new Vector3f(8, 5.9f, 12.6f), new Vector3f(8, 8.9f, -11.6f), new Vector3f(8, 15.88f, -3.75f),
+            new Vector3f(8, 11.88f, -34.06f), new Vector3f(8, 10.62f, 1.08f), new Vector3f(0, -0.94f, -0.34f),
+            new Vector3f(9.28f, 13.79f, 0.96f),
+            new Vector3f(0.20f, -0.32f, -0.40f), 0.45f, 5.0f, 2, 0.05f, 4.5f,
+            new Vector3f(10.3f, 13.5f, 1.1f), 5.0f,
+            new Vector3f(8, -1.83f, -6.0f), new Vector3f(8, 10.98f, 1.04f), -0.515f,
+            0.36f, new Vector3f(8, 10.5f, 4.0f));
+
     public static FirearmRig of(FirearmType type) {
         return switch (type) {
             case GLOCK_19 -> GLOCK_19;
             case MP5 -> MP5;
+            case AK_47 -> AK_47;
         };
+    }
+
+    /**
+     * Zit de hendel rechts op het wapen (de AK-47)? Dan laadt je <b>rechterhand</b> door (ze laat de greep even los en
+     * pakt de hendel, vlak boven de greep), terwijl je linkerhand het wapen vooraan vasthoudt; het wapen kantelt een
+     * beetje, zodat je de hendel ziet.
+     */
+    public boolean handleRight() {
+        return handle.x > 8.6f;
     }
 
     // ================================================================ Het magazijn los (in je hand, in de pouch)
@@ -266,7 +291,7 @@ public final class FirearmRig {
      */
     public static Vector3f exploded(FirearmType type, GunPart part) {
         if (type != FirearmType.GLOCK_19) {
-            return new Vector3f(LONG_EXPLODED.get(part));
+            return new Vector3f(LONG_EXPLODED.get(part)).mul(explodedScale(type));
         }
         return switch (part) {
             case FRAME -> new Vector3f(0, 0, 0);
@@ -279,7 +304,21 @@ public final class FirearmRig {
     }
 
     /** Waar de sling ligt als hij er nog niet aan hangt: helemaal onder het wapen. */
-    public static Vector3f slingExploded() {
-        return new Vector3f(0, -13.0f, 0);
+    public static Vector3f slingExploded(FirearmType type) {
+        return new Vector3f(0, -13.0f, 0).mul(explodedScale(type));
+    }
+
+    /** Zo lang is de MP5 (pixels): daarvoor zijn de afstanden van {@link #LONG_EXPLODED} gekozen. */
+    private static final float EXPLODED_LENGTH = 55.0f;
+
+    /**
+     * Hoeveel verder de losse onderdelen van dit wapen uit elkaar liggen dan bij de MP5. Een langer wapen (de AK-47)
+     * staat verder uitgezoomd op de tafel; zonder dit zouden de namen boven de vakken over elkaar heen staan.
+     */
+    public static float explodedScale(FirearmType type) {
+        if (type == FirearmType.GLOCK_19) {
+            return 1.0f;
+        }
+        return Math.max(1.0f, (float) whole(type).getZsize() / EXPLODED_LENGTH);
     }
 }

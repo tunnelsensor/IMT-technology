@@ -150,7 +150,7 @@ public class GunsmithScreen extends PartsTableScreen<GunSlot> {
 
     @Override
     protected Vector3f exploded(ItemStack gun, GunSlot slot) {
-        return slot.part == null ? FirearmRig.slingExploded() : FirearmRig.exploded(typeOf(gun), slot.part);
+        return slot.part == null ? FirearmRig.slingExploded(typeOf(gun)) : FirearmRig.exploded(typeOf(gun), slot.part);
     }
 
     @Override
@@ -171,7 +171,9 @@ public class GunsmithScreen extends PartsTableScreen<GunSlot> {
             return ZOOM;
         }
         AABB box = FirearmRig.whole(type);
-        return (float) Math.min(ZOOM, Math.min((VIEW_W - 16) / box.getZsize(), (VIEW_H - 44) / (box.getYsize() + 27)));
+        // 27: zo ver steken de losse onderdelen boven en onder het wapen uit (bij een langer wapen iets meer).
+        return (float) Math.min(ZOOM, Math.min((VIEW_W - 16) / box.getZsize(),
+                (VIEW_H - 44) / (box.getYsize() + 27 * FirearmRig.explodedScale(type))));
     }
 
     @Override
