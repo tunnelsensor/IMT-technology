@@ -6873,6 +6873,21 @@ Jouw wens: "Voeg een electrische furnace toe zodat je net zoals een crusher enzo
       hij de ijzerstaven eruit en van boven niets, en afbreken laat het ruwe koper vallen met 3 ervaring). Volledige ronde:
       516 tests (met het werk van de andere sessies), alle groen.
 
+### 89. Met een magazijn in je hand: geen grijze regel meer rechtsonder (12 november)
+
+Jouw wens: "r to reload mag... de gray tekst rechtsonder als je een mag vast hebt mag weg".
+
+- [x] **"R: load a round (23 rounds in your inventory)" is weg** (`FirearmHud.magazine`). Rechtsonder staan nu alleen de
+      naam van het magazijn en hoe vol het is ("0 / 15"). Ook "Full" (op dezelfde plek, ook grijs) is weg: dat zie je al
+      aan "15 / 15", en drukken op R zegt het ook ("The magazine is full"). De twee teksten zijn ook weg uit
+      `en_us.json`.
+- [x] **Wat er wel nog staat** (mijn keuze, zeg het als die ook weg mogen): de rode regel "No 9mm Rounds in your
+      inventory" als je geen losse patronen hebt, en "Hold right-click: 120 in box" als je naar een Ammo Box kijkt
+      (hoofdstuk 67). Die verschijnen alleen als er iets bijzonders is.
+- [x] **Gezien** op screenshots (`gradlew runVisualCheck -Ponly=glock`): `gl13_magazine_in_hand` (23 patronen bij je,
+      niets onder "0 / 15") en `gl14_magazine_loading` (alleen het blauwe balkje erboven). Geen nieuwe automatische test:
+      het is alleen beeld.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het

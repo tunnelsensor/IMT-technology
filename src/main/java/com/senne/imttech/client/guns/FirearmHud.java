@@ -186,21 +186,22 @@ public final class FirearmHud implements LayeredDraw.Layer {
         g.pose().popPose();
         Component name = magazine.getHoverName();
         g.drawString(font, name, right - font.width(name), bottom - 38, argb(0.9f, GOLD), true);
+        // Onderaan alleen nog iets als het nodig is (hoofdstuk 89: de grijze regel "R: load a round" en "Full" zijn weg).
         // Hoofdstuk 67: kijk je naar een Ammo Box met patronen, dan laad je daaruit (rechtsklik inhouden).
         int inBox = com.senne.imttech.client.armory.ArmoryClient.roundsInBox();
-        Component hint;
-        boolean bad;
+        Component hint = null;
+        boolean bad = false;
         if (MagazineItem.isFull(magazine)) {
-            hint = Component.translatable("hud.imttech.magazine.full");
-            bad = false;
+            hint = null;
         } else if (inBox > 0) {
             hint = Component.translatable("hud.imttech.magazine.load_box", inBox);
-            bad = false;
-        } else {
-            hint = Component.translatable(loose == 0 ? "hud.imttech.magazine.no_rounds" : "hud.imttech.magazine.load", loose);
-            bad = loose == 0;
+        } else if (loose == 0) {
+            hint = Component.translatable("hud.imttech.magazine.no_rounds");
+            bad = true;
         }
-        g.drawString(font, hint, right - font.width(hint), bottom - 6, argb(0.8f, bad ? RED : WHITE), true);
+        if (hint != null) {
+            g.drawString(font, hint, right - font.width(hint), bottom - 6, argb(0.8f, bad ? RED : WHITE), true);
+        }
         float progress = FirearmControl.action(pt);
         if (FirearmControl.action() == Firearms.ActionKind.LOAD_ROUND && progress >= 0) {
             int barW = 70;
