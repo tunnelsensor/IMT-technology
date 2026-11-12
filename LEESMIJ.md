@@ -195,8 +195,8 @@ Elk item dat meer doet dan in een recept gaan, krijgt een animatie die laat zien
   - *Weapons*: de lasergeweren, lasergeweren uit onderdelen, de Ion Blaster, EMP-granaten, fraggranaten, rook en
     de flashbang, de Remote EMP en Remote Frag, granaten terugwerpen (en ladingen verplaatsen), de Glock 19, de
     Gunsmith Table, de Reloading Bench, de holster, de pouches en de slings, en de armory (het Pegboard en de Ammo Box).
-  - *Power*: de Power Battery, stroom maken (zonnepaneel en warmtegenerator), stroomkabels, netwerkkabels met PoE en
-    de switch, en de stroomkast.
+  - *Power*: de Power Battery, stroom maken (zonnepaneel en warmtegenerator), kabels maken (koperdraad, de
+    Polymerizer en plastic), stroomkabels, netwerkkabels met PoE en de switch, en de stroomkast.
   - *Interior*: de holotafel, de harnas-werkbank met zijn upgrades, barsten herstellen (Repair Paste, de Crusher en
     de Compactor), het laadstation, het landingsplatform, de Arc Lamp met de lichtschakelaar, en relais.
   - *Security*: de Security Core, computer en monitor, zones, de Block Reinforcer, handboeien, keycards en lezers,
@@ -349,10 +349,27 @@ hij moet in je beeld staan). Max 3 spelers tegelijk. Server-eigenaars kunnen dit
 `rules.hackAllowed = false` in `config/imttech.toml`.
 
 ### Stroom en kabels
-Zonnepanelen en warmtegeneratoren maken stroom. Met **stroomkabel** (koper, redstone, koper
-geeft 8 stuks) breng je die naar alles wat stroom gebruikt: het laadstation, de laserzender, de
-holotafel, de schildkoepel, de torentjes... Een apparaat dat direct tegen een generator staat,
-heeft geen kabel nodig. Een apparaat haalt zijn stroom eerst bij de generator die het meest heeft.
+Zonnepanelen en warmtegeneratoren maken stroom. Met **stroomkabel** breng je die naar alles wat
+stroom gebruikt: het laadstation, de laserzender, de holotafel, de schildkoepel, de torentjes... Een
+apparaat dat direct tegen een generator staat, heeft geen kabel nodig. Een apparaat haalt zijn stroom
+eerst bij de generator die het meest heeft.
+
+**Kabels maken (sinds 12 november).** Een kabel is koperdraad met plastic eromheen:
+- **Copper Wire**: een koperstaaf in de **Crusher** geeft 3 koperdraad (zie "Barsten herstellen"
+  voor de Crusher zelf). Koperdraad van een andere mod (de tag `c:wires/copper`) werkt ook.
+- **Polymer**: uit de **Polymerizer** (ijzer, een emmer, glas, een computerchip en een oven), een
+  machine op netstroom zoals de Crusher. Hij heeft een **watertank** van 4 emmers: rechtsklik met een
+  emmer water (je houdt de lege emmer over), leg een emmer water in zijn emmervakje (de lege emmer
+  blijft liggen), of pomp water erin met buizen van een andere mod (Create...). Kool of houtskool erin:
+  per kool gaan er 250 mB water uit en komen er 2 polymeer bij, in 5 seconden, voor 40 FE per tick.
+  Zijn scherm toont de tank (met de muis erop: hoeveel mB). Trechters doen van boven of opzij kool en
+  emmers water erin, en halen van onder het polymeer en de lege emmers eruit.
+- **Plastic**: polymeer smelten in een **oven**.
+- **Power Cable**: koperdraad + plastic = 8 stroomkabels.
+- **Network Cable**: koperdraad + een stroomkabel + plastic = 4 netwerkkabels.
+- **PoE Cable**: een stroomkabel + een netwerkkabel + plastic = 2 PoE-kabels.
+
+De getallen van de Crusher en de Polymerizer staan in `config/imttech.toml` onder `[materials]`.
 
 **Forge Energy (sinds 4 november).** Alle stroom is **FE**, dezelfde eenheid als Create Crafts &
 Additions, Mekanism en de meeste andere techmods, en met dezelfde schaal: een zonnepaneel maakt
@@ -401,8 +418,10 @@ Kabels zijn **geen blokken**: je **tekent** ze.
 - Neem de kabel in je hand, **houd de rechtermuisknop ingedrukt** en kijk rond: waar je kijkt,
   komt een dun kabeltje te liggen, over de vloer, tegen een muur op, onder een plafond. Kijk je
   een stuk verder, dan trekt hij netjes een lijn (langs de oppervlakken). Elk stukje kost één kabel.
-- Kabels die naast elkaar liggen zitten aan elkaar vast; een apparaat naast een kabel (of er
-  bovenop gezet) ook.
+- Kabels **van dezelfde soort** die naast elkaar liggen zitten aan elkaar vast; een apparaat naast
+  een kabel (of er bovenop gezet) ook. Een stroomkabel, een netwerkkabel en een PoE-kabel zitten
+  **nooit** aan elkaar vast (sinds 12 november): van de ene soort naar de andere gaat het alleen via
+  een blok, zoals de Security Core die met één stroomkabel al zijn PoE-kabels voedt.
 - Omdat het geen blok is, kun je er gewoon **blokken overheen bouwen**: bouw een muur of vloer
   over een kabel en hij loopt erin door. Zo werk je kabels weg. Verborgen kabels zie je alleen
   **met de bril op**: dan lichten ze op door de muur heen (tot 24 blokken ver): een stroomkabel
@@ -412,8 +431,11 @@ Kabels zijn **geen blokken**: je **tekent** ze.
   (een kabel in de kamer ernaast), en de stroom en signalen die erover lopen.
 - Er zijn **drie soorten kabel**: de stroomkabel (grijs), de **netwerkkabel** (wit) en de
   **PoE-kabel** (groen, stroom en netwerk samen). Ze mogen op dezelfde plek liggen (dan liggen ze
-  netjes boven elkaar) zonder elkaar te raken. Over de netwerkkabel en de PoE-kabel lees je meer
-  bij **Het netwerk** hieronder.
+  netjes boven elkaar) zonder elkaar te raken. Een blok dat in een netwerk kan (de kern, lezers,
+  panelen, camera's, torentjes, laserzenders, racks, computers, de switch...) neemt alle drie de
+  soorten. Elk ander blok (een Crusher, een generator, een stroomkast, een lichtschakelaar...) neemt
+  **alleen een stroomkabel**: zo'n blok krijgt nooit stroom via PoE. Over de netwerkkabel en de
+  PoE-kabel lees je meer bij **Het netwerk** hieronder.
 - **Stroom die loopt, zie je**: een apparaat dat stroom haalt, laat gele streepjes van de
   generator naar zich toe lopen, over de kabels (aan of uit met G > Information > Power flow).
 - **Shift + rechtsklik** met kabel in je hand op een kabel: oprapen. Een **schaar** (rechtsklik)
@@ -647,12 +669,12 @@ Bijvoorbeeld: generatoren aan de achterkant, torentjes links, lasers rechts.
 - In de Biebia's Industries Tower en de Biebia's Industries-bunker staat er een op een goed bewaakte plek.
 
 ### Het netwerk: netwerkkabels, PoE, de switch, knoppen en hendels
-Je beveiliging is echt bekabeld. Een **Network Cable** (wit; koper, kwarts, koper geeft 8 stuks)
+Je beveiliging is echt bekabeld. Een **Network Cable** (wit; koperdraad, een stroomkabel en plastic geven er 4)
 loopt van de desktop (de **Security Core**) naar elk beveiligingsapparaat: keycardlezer, codepaneel,
 camera, beveiligingstorentje, serverrek, laserpoort en laserbrug. Pas dan staat het apparaat in de
 app **Devices** van de desktop, en hoort het bij die kern.
 - Je **tekent** hem net als een stroomkabel (rechtermuisknop ingedrukt), en hij zit net zo vast:
-  kabels naast elkaar, en een apparaat naast een kabel. Een apparaat dat direct tegen de kern staat,
+  netwerkkabels naast elkaar (niet aan een stroom- of PoE-kabel), en een apparaat naast een kabel. Een apparaat dat direct tegen de kern staat,
   heeft geen kabel nodig. Serverracks, laserzenders en brugzenders geven het netwerk door aan wie
   ertegenaan staat (een kast vol racks of een hele laserpoort heeft genoeg aan één kabel).
 - **Zonder netwerkkabel doet een beveiligingsapparaat niets**: een lezer of paneel geeft een rood
@@ -666,9 +688,11 @@ app **Devices** van de desktop, en hoort het bij die kern.
 - Raakt een net twee kernen, dan hoort een apparaat bij de dichtstbijzijnde langs de kabel. Knip je
   een kabel door (met een schaar), dan valt alles erachter uit. In een EMP-puls geeft een open kabel
   even niets door.
-- **PoE Cable** (groen; een stroomkabel, een netwerkkabel en limoenverf geven er 2): stroom en
+- **PoE Cable** (groen; een stroomkabel, een netwerkkabel en plastic geven er 2): stroom en
   netwerk in één kabel. Hang één stroomkabel (of een generator) aan de kern: dan voedt de kern al zijn
-  PoE-kabels, en een camera aan een PoE-kabel heeft beeld zonder eigen stroomkabel.
+  PoE-kabels, en een camera aan een PoE-kabel heeft beeld zonder eigen stroomkabel. Een PoE-kabel
+  sluit alleen op netwerkapparaten aan: een generator ertegen voedt hem niet, en een Crusher of een
+  ander blok zonder netwerk haalt er geen stroom uit.
 - **Network Switch** (ijzer, netwerkkabels, redstone en een Computer Chip): een punt waar netwerk- en
   PoE-kabels van alle zes kanten samenkomen, zoals de stroomkast. Achter het deurtje (rechtsklik) zet
   je **elke poort aan of uit**; een poort die uit staat, knipt de tak erachter af. De switch heeft
@@ -1262,7 +1286,8 @@ direct tegen een generator). Elk heeft een vakje erin, een vakje eruit en een pi
 
 - De **Crusher** (ijzer, een slijpsteen, een computerchip en een zuiger) maakt van een gebarsten blok
   **poeder** in de kleur van het blok. Hij maalt ook **buskruit**: 1 buskruit = 10 **Crushed Gunpowder**, voor de
-  9mm-patronen op de Reloading Bench (zie "Patronen en de Reloading Bench").
+  9mm-patronen op de Reloading Bench (zie "Patronen en de Reloading Bench"), en **koper**: 1 koperstaaf = 3
+  **Copper Wire**, voor de kabels (zie "Stroom en kabels").
 - De **Compactor** (ijzer, een aambeeld, twee zuigers en een computerchip) perst dat poeder tot een
   **volledig nieuw blok** van hetzelfde soort, zonder barsten en weer helemaal sterk.
 
@@ -1983,8 +2008,8 @@ blokken ver als een doffe knal met echo's.
 **Zes onderdelen, drie materialen.** Een Glock bestaat uit een **frame** (met de greep), een **slede**, een **loop**, de
 **veren** (de terugslagveer op zijn stang), een **slagpin** (een Glock heeft geen hamer) en een **trekker**. Elk
 onderdeel maak je op de **Gunsmith Table** (het tabblad "Make parts", hieronder; in de crafting table kan het niet meer)
-van **polymeer** (alleen het frame en de trekker, zoals bij de echte Glock), **staal** of **titanium**: polymeer = 2
-slijmballen + kool, staal = een Steel Blend (ijzer + 2 kool) smelten, titanium = een Titanium Blend (2 ijzer, een
+van **polymeer** (alleen het frame en de trekker, zoals bij de echte Glock), **staal** of **titanium**: polymeer uit
+de Polymerizer (kool en water, zie "Stroom en kabels"), staal = een Steel Blend (ijzer + 2 kool) smelten, titanium = een Titanium Blend (2 ijzer, een
 diamant, goud) smelten. Wat het kost, in het materiaal van het onderdeel: frame 4, slede 5, loop 2, trekker 3, veren 1
 en 3 ijzerklompjes, slagpin 1 en een ijzerklompje. Hoe beter het materiaal, hoe kleiner de kans per schot dat het
 onderdeel een punt slijt (polymeer 4%, staal 2%, titanium 0,8%), en: titanium geeft minder storingen, een titanium

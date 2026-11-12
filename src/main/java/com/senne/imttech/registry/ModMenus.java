@@ -30,6 +30,9 @@ public final class ModMenus {
     /** Het scherm van een Crusher of Compactor (hoofdstuk 11): met welke machine het is erbij (zie CrackMachineMenu). */
     public static final DeferredHolder<MenuType<?>, MenuType<com.senne.imttech.repair.CrackMachineMenu>> CRACK_MACHINE =
             MENUS.register("crack_machine", () -> IMenuTypeExtension.create(com.senne.imttech.repair.CrackMachineMenu::new));
+    /** Het scherm van de Polymerizer (hoofdstuk 85): kool, een emmer water, zijn tank en het polymeer. */
+    public static final DeferredHolder<MenuType<?>, MenuType<com.senne.imttech.plastic.PolymerizerMenu>> POLYMERIZER =
+            MENUS.register("polymerizer", () -> IMenuTypeExtension.create(com.senne.imttech.plastic.PolymerizerMenu::new));
     /** Het scherm van een landingsplatform: zijn batterij (zie LandingPadMenu). */
     public static final DeferredHolder<MenuType<?>, MenuType<com.senne.imttech.suit.LandingPadMenu>> LANDING_PAD =
             MENUS.register("landing_pad", () -> IMenuTypeExtension.create(com.senne.imttech.suit.LandingPadMenu::new));

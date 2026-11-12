@@ -45,6 +45,9 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.TITANIUM_BLEND.get());
                 output.accept(ModItems.TITANIUM_INGOT.get());
                 output.accept(ModItems.POLYMER.get());
+                // De grondstoffen van de kabels (hoofdstuk 85).
+                output.accept(ModItems.COPPER_WIRE.get());
+                output.accept(ModItems.PLASTIC.get());
             });
 
     /** Wat je draagt of bij je hebt: de bril, het harnas, het raketpakket en de drone. */
@@ -157,6 +160,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.SUIT_WORKBENCH.get());
                 output.accept(ModItems.CRUSHER.get());
                 output.accept(ModItems.COMPACTOR.get());
+                output.accept(ModItems.POLYMERIZER.get());
                 output.accept(ModItems.CHARGING_STATION.get());
                 output.accept(ModItems.DRONE_DOCK.get());
                 output.accept(ModItems.LANDING_PAD.get());

@@ -64,6 +64,7 @@ public final class ImtConfigLoader {
             ImtConfig.Logic.class,
             ImtConfig.Breach.class,
             ImtConfig.Repair.class,
+            ImtConfig.Materials.class,
             ImtConfig.Bypass.class,
             ImtConfig.Handcuffs.class,
             ImtConfig.Lights.class,

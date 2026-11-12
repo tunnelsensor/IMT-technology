@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "B": {
+      "item": "minecraft:bucket"
+    },
+    "G": {
+      "tag": "c:glass_blocks"
+    },
+    "C": {
+      "item": "imttech:computer_chip"
+    },
+    "F": {
+      "item": "minecraft:furnace"
+    }
+  },
+  "pattern": [
+    "IBI",
+    "GCG",
+    "IFI"
+  ],
+  "result": {
+    "id": "imttech:polymerizer",
+    "count": 1
+  }
+}

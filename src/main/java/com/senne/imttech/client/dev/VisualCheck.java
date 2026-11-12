@@ -3765,6 +3765,55 @@ public final class VisualCheck {
             t.shot(10, "r06_crusher_empty_a");
             t.shot(30, "r06_crusher_empty_b");
             t.close(5);
+            // Hoofdstuk 85: koper in de Crusher (koperdraad eruit), en de Polymerizer: zijn voorkant naast de Compactor, zijn
+            // scherm (kool, een halve tank, polymeer eruit), de tank met de muis erop, leeg (de vage kool en emmer en de regel
+            // onderaan) en met kool maar zonder water ("No water"). In je hotbar koperdraad, plastic en polymeer.
+            t.onServer(0, VisualCheck::buildPolymerCorner);
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(r) instanceof com.senne.imttech.repair.CrackMachineBlockEntity machine) {
+                    machine.setItem(com.senne.imttech.repair.CrackMachineBlockEntity.SLOT_IN,
+                            new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COPPER_INGOT, 4));
+                    machine.setItem(com.senne.imttech.repair.CrackMachineBlockEntity.SLOT_OUT,
+                            new net.minecraft.world.item.ItemStack(ModItems.COPPER_WIRE.get(), 6));
+                    player.openMenu(machine, buf -> buf.writeVarInt(machine.kind().ordinal()));
+                }
+            });
+            t.shot(20, "r07_crusher_copper");
+            t.close(5);
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.stand(10, r.getX() + 4.5, r.getY(), r.getZ() + 4.5, 180, 15);
+            t.lookAt(5, new Vec3(r.getX() + 4.0, r.getY() + 0.4, r.getZ() + 0.8));
+            t.shot(40, "r08_polymerizer_working");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(POLYMERIZER) instanceof com.senne.imttech.plastic.PolymerizerBlockEntity machine) {
+                    player.openMenu(machine);
+                }
+            });
+            t.shot(20, "r09_polymerizer_screen");
+            // De muis op de tank (32 + 7, 17 + 20 in het scherm): de tooltip met het water.
+            t.step(5, () -> {
+                if (Minecraft.getInstance().screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> screen) {
+                    HowToTour.mouseTo(screen.getGuiLeft() + 39, screen.getGuiTop() + 37);
+                }
+            });
+            t.shot(3, "r09b_polymerizer_tank");
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(POLYMERIZER) instanceof com.senne.imttech.plastic.PolymerizerBlockEntity machine) {
+                    machine.clearContent();
+                    machine.setWater(0);
+                }
+            });
+            t.step(5, () -> HowToTour.mouseTo(1, 1));
+            t.shot(10, "r10_polymerizer_empty");
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(POLYMERIZER) instanceof com.senne.imttech.plastic.PolymerizerBlockEntity machine) {
+                    machine.setItem(com.senne.imttech.plastic.PolymerizerBlockEntity.SLOT_COAL,
+                            new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COAL, 3));
+                }
+            });
+            t.shot(15, "r11_polymerizer_no_water");
+            t.close(5);
         }
 
         // --- De Block Reinforcer (hoofdstuk 44): het linker kwartsmuurtje is verstevigd (een randje door je
@@ -5157,6 +5206,35 @@ public final class VisualCheck {
             inventory.setItem(4 + i, com.senne.imttech.repair.FromBlockItem.of(powder, powders[i], 2 + i));
         }
         inventory.setItem(8, new net.minecraft.world.item.ItemStack(ModItems.REPAIR_PASTE.get(), 16));
+    }
+
+    /** De Polymerizer in de rondleiding (hoofdstuk 85): twee blokken rechts van de Compactor, met een generator links ervan. */
+    static final BlockPos POLYMERIZER = REPAIR.east(5);
+
+    /**
+     * Een Polymerizer (voorkant naar het zuiden) tegen een volle generator, met vijf kool erin, een halve tank water (2000
+     * mB) en al vier polymeer eruit: hij werkt dus. In je hotbar koperdraad, plastic en polymeer (in plaats van de
+     * gebarsten blokken).
+     */
+    static void buildPolymerCorner(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        level.setBlockAndUpdate(POLYMERIZER.west(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+        if (level.getBlockEntity(POLYMERIZER.west()) instanceof com.senne.imttech.station.ChargerBlockEntity generator) {
+            generator.fill(200_000);
+        }
+        level.setBlockAndUpdate(POLYMERIZER, ModBlocks.POLYMERIZER.get().defaultBlockState()
+                .setValue(com.senne.imttech.plastic.PolymerizerBlock.FACING, Direction.SOUTH));
+        if (level.getBlockEntity(POLYMERIZER) instanceof com.senne.imttech.plastic.PolymerizerBlockEntity machine) {
+            machine.setItem(com.senne.imttech.plastic.PolymerizerBlockEntity.SLOT_COAL,
+                    new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.COAL, 5));
+            machine.setItem(com.senne.imttech.plastic.PolymerizerBlockEntity.SLOT_OUT,
+                    new net.minecraft.world.item.ItemStack(ModItems.POLYMER.get(), 4));
+            machine.setWater(2000);
+        }
+        net.minecraft.world.entity.player.Inventory inventory = player.getInventory();
+        inventory.setItem(0, new net.minecraft.world.item.ItemStack(ModItems.COPPER_WIRE.get(), 12));
+        inventory.setItem(1, new net.minecraft.world.item.ItemStack(ModItems.PLASTIC.get(), 8));
+        inventory.setItem(2, new net.minecraft.world.item.ItemStack(ModItems.POLYMER.get(), 5));
     }
 
     /** De kern van de basis met een zone in de rondleiding (zie buildZoneBase). */

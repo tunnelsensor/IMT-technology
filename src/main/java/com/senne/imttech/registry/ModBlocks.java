@@ -337,6 +337,18 @@ public final class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .sound(SoundType.METAL));
 
+    /**
+     * De Polymerizer (hoofdstuk 85): maakt polymeer van kool en water, op netstroom. Net zo sterk als de Crusher en de
+     * Compactor.
+     */
+    public static final DeferredBlock<com.senne.imttech.plastic.PolymerizerBlock> POLYMERIZER = BLOCKS.registerBlock(
+            "polymerizer", com.senne.imttech.plastic.PolymerizerBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(3.5f, 6.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL));
+
     /** De bewakingscamera: aan de muur, het plafond of de vloer; zijn beeld zie je op de Security OS-desktop. */
     public static final DeferredBlock<com.senne.imttech.security.CameraBlock> SECURITY_CAMERA = BLOCKS.registerBlock(
             "security_camera", com.senne.imttech.security.CameraBlock::new,

@@ -99,6 +99,16 @@ public class ImtTech {
                         ModBlockEntities.CRACK_MACHINE.get(), (machine, side) -> side == null
                                 ? new net.neoforged.neoforge.items.wrapper.InvWrapper(machine)
                                 : new net.neoforged.neoforge.items.wrapper.SidedInvWrapper(machine, side)));
+        // Hoofdstuk 85: de Polymerizer. Trechters en buizen zoals bij de Crusher (kool en emmers water erin, polymeer en lege
+        // emmers eruit), en buizen van andere mods (Create, Mekanism...) pompen water in zijn tank.
+        modEventBus.addListener((net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent event) -> {
+            event.registerBlockEntity(net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.BLOCK,
+                    ModBlockEntities.POLYMERIZER.get(), (machine, side) -> side == null
+                            ? new net.neoforged.neoforge.items.wrapper.InvWrapper(machine)
+                            : new net.neoforged.neoforge.items.wrapper.SidedInvWrapper(machine, side));
+            event.registerBlockEntity(net.neoforged.neoforge.capabilities.Capabilities.FluidHandler.BLOCK,
+                    ModBlockEntities.POLYMERIZER.get(), (machine, side) -> machine.water());
+        });
 
         // Hoofdstuk 46: Forge Energy. Elk blok van ons met een blokentiteit praat via de energie-capability met de kabels en
         // machines van andere mods (Create Crafts & Additions, Mekanism...).

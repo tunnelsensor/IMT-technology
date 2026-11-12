@@ -106,6 +106,12 @@ public final class ModBlockEntities {
                     () -> new BlockEntityType<>(com.senne.imttech.repair.CrackMachineBlockEntity::new,
                             java.util.Set.of(ModBlocks.CRUSHER.get(), ModBlocks.COMPACTOR.get()), null));
 
+    /** De binnenkant van de Polymerizer (hoofdstuk 85): zijn drie vakjes, zijn watertank en hoe ver hij is. */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.plastic.PolymerizerBlockEntity>> POLYMERIZER =
+            BLOCK_ENTITIES.register("polymerizer",
+                    () -> new BlockEntityType<>(com.senne.imttech.plastic.PolymerizerBlockEntity::new,
+                            java.util.Set.of(ModBlocks.POLYMERIZER.get()), null));
+
     /** De bewakingscamera: zijn naam en hoe hij gedraaid en gekanteld is. */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.security.CameraBlockEntity>> SECURITY_CAMERA =
             BLOCK_ENTITIES.register("security_camera",

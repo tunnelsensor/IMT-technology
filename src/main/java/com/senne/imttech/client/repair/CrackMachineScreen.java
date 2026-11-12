@@ -58,8 +58,8 @@ public class CrackMachineScreen extends AbstractContainerScreen<CrackMachineMenu
     }
 
     /**
-     * Het vage voorbeeld in het lege vakje erin: elke anderhalve seconde het volgende (bij de Crusher een gebarsten blok
-     * en dan buskruit, hoofdstuk 76), zodat je ziet wat hij allemaal aanneemt.
+     * Het vage voorbeeld in het lege vakje erin: elke anderhalve seconde het volgende (bij de Crusher een gebarsten blok,
+     * buskruit (hoofdstuk 76) en een koperstaaf (hoofdstuk 85)), zodat je ziet wat hij allemaal aanneemt.
      */
     private ItemStack example() {
         List<ItemStack> examples = menu.kind().examples();
@@ -102,7 +102,7 @@ public class CrackMachineScreen extends AbstractContainerScreen<CrackMachineMenu
         renderTooltip(g, mouseX, mouseY);
     }
 
-    /** De naam bovenaan (licht, want de achtergrond is donker), en onderaan wat hij doet. */
+    /** De naam bovenaan (licht, want de achtergrond is donker), en onderaan wat hij doet (desnoods over twee regels). */
     @Override
     protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {
         g.drawString(font, title, titleLabelX, titleLabelY, HudStyle.argb(230, HudStyle.WHITE), false);
@@ -119,6 +119,13 @@ public class CrackMachineScreen extends AbstractContainerScreen<CrackMachineMenu
             case NO_POWER, FULL -> HudStyle.argb(230, HudStyle.ORANGE);
             case EMPTY -> HudStyle.argb(170, HudStyle.WHITE);
         };
-        g.drawString(font, text, 8, 71, colour, false);
+        // Hoofdstuk 85: past de regel niet op het scherm (zoals "No power: connect it with power cables."), dan breekt hij af
+        // over twee regels; de onderste blijft op dezelfde plek, de bovenste komt tussen de vakjes en de regel in.
+        List<net.minecraft.util.FormattedCharSequence> lines = font.split(text, imageWidth - 16);
+        int lineY = 71 - (lines.size() - 1) * 10;
+        for (net.minecraft.util.FormattedCharSequence line : lines) {
+            g.drawString(font, line, 8, lineY, colour, false);
+            lineY += 10;
+        }
     }
 }

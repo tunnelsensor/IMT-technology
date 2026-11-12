@@ -155,6 +155,8 @@ public class CableSpoolItem extends Item {
         tooltip.add(Component.translatable("tooltip.imttech.cable.draw").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.imttech.cable.take").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.imttech.cable.cut").withStyle(ChatFormatting.DARK_AQUA));
+        // Hoofdstuk 85: de drie soorten zitten niet aan elkaar vast.
+        tooltip.add(Component.translatable("tooltip.imttech.cable.apart").withStyle(ChatFormatting.DARK_GRAY));
     }
 
     // ================================================================ Waar kijk je naar?

@@ -82,6 +82,7 @@ package com.senne.imttech.config;
  *   Logic ........ serverkasten en het datacenter: snelheid, warmte, brand, backups
  *   Breach ....... hoe sterk blokken zijn tegen frags, en TNT en de satelliet tegen een beschermde zone
  *   Repair ....... barsten herstellen (Crusher, Compactor, Repair Paste)
+ *   Materials .... de grondstoffen van de kabels: koperdraad, polymeer en plastic (hoofdstuk 85)
  *   Bypass ....... inbreken met de Bypass Kit, en zakkenrollen
  *   Lights ....... de Arc Lamp
  *   Robots ....... guard robots: wat elk onderdeel doet (hoofdstuk 21)
@@ -354,6 +355,9 @@ public final class ImtConfig {
         /** Stroom per tick van de Crusher en de Compactor zolang ze werken. */
         @Tunable(value = "Grid energy per tick the Crusher and the Compactor use while they work", energy = true)
         public static float CRUSHER_COMPACTOR = 40.0f;
+        /** Hoofdstuk 85: stroom per tick van de Polymerizer zolang hij polymeer maakt (net zoveel als de Crusher). */
+        @Tunable(value = "Grid energy per tick the Polymerizer uses while it makes polymer", energy = true)
+        public static float POLYMERIZER = 40.0f;
         /** Stroom die één serverkast elke twee seconden haalt (zonder tellen zijn onderdelen niet mee). */
         @Tunable(value = "Grid energy one server rack uses every two seconds (without it, its parts do not count)", energy = true)
         public static float SERVER_RACK_UPKEEP = 100.0f;
@@ -1546,6 +1550,34 @@ public final class ImtConfig {
         /** ...maar nooit zwakker dan dit deel van zijn normale sterkte (0.4 = 40%). */
         @Tunable(value = "Filling cracks never makes a block weaker than this (0.4 = 40% of its normal strength)", max = 1)
         public static float PATCH_WEAKEST = 0.40f;
+    }
+
+    // =============================================================================================== Materials
+
+    @Section("What cables are made of: copper wire (Crusher), polymer (Polymerizer) and plastic (furnace). "
+            + "The power the Polymerizer uses is under [power]")
+    public static final class Materials {
+        private Materials() {}
+
+        /**
+         * Hoofdstuk 85 (jouw wens: "een cabel word gemaakt van copper wire en plastic, dit krijg je door copper te crushen
+         * in een crusher"): zoveel koperdraad maakt de Crusher van één koperstaaf. Hij doet er net zo lang over als over een
+         * gebarsten blok (MACHINE_TICKS bij [repair]).
+         */
+        @Tunable(value = "Copper wire the Crusher makes from one copper ingot", min = 1, max = 64)
+        public static float COPPER_WIRE_PER_INGOT = 3.0f;
+        /** Zoveel polymeer maakt de Polymerizer van één kool (of houtskool) en een beetje water (jouw wens: "coal met water")... */
+        @Tunable(value = "Polymer the Polymerizer makes from one coal (or charcoal)", min = 1, max = 64)
+        public static float POLYMER_PER_COAL = 2.0f;
+        /** ...zoveel water (in mB: een emmer is 1000) gaat er per kool uit zijn tank... */
+        @Tunable(value = "Water the Polymerizer uses for each coal (mB: a bucket is 1000)", min = 1, max = 32000)
+        public static float WATER_PER_COAL = 250.0f;
+        /** ...en zo lang doet hij erover (100 = 5 seconden). */
+        @Tunable(value = "How long the Polymerizer takes for one coal (ticks)", min = 1)
+        public static float POLYMERIZER_TICKS = 100.0f;
+        /** Zoveel water past er in zijn tank (4000 = 4 emmers). */
+        @Tunable(value = "Water the Polymerizer's tank holds (mB: a bucket is 1000)", min = 1000, max = 32000)
+        public static float POLYMERIZER_TANK = 4000.0f;
     }
 
     // =============================================================================================== Bypass

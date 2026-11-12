@@ -1,19 +1,19 @@
 {
-  "type": "minecraft:crafting_shaped",
+  "type": "minecraft:crafting_shapeless",
   "category": "redstone",
-  "key": {
-    "C": {
-      "tag": "c:ingots/copper"
+  "ingredients": [
+    {
+      "tag": "c:wires/copper"
     },
-    "Q": {
-      "tag": "c:gems/quartz"
+    {
+      "item": "imttech:cable"
+    },
+    {
+      "item": "imttech:plastic"
     }
-  },
-  "pattern": [
-    "CQC"
   ],
   "result": {
     "id": "imttech:network_cable",
-    "count": 8
+    "count": 4
   }
 }

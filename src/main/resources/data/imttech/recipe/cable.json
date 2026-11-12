@@ -1,16 +1,13 @@
 {
-  "type": "minecraft:crafting_shaped",
+  "type": "minecraft:crafting_shapeless",
   "category": "redstone",
-  "key": {
-    "C": {
-      "tag": "c:ingots/copper"
+  "ingredients": [
+    {
+      "tag": "c:wires/copper"
     },
-    "R": {
-      "tag": "c:dusts/redstone"
+    {
+      "item": "imttech:plastic"
     }
-  },
-  "pattern": [
-    "CRC"
   ],
   "result": {
     "id": "imttech:cable",

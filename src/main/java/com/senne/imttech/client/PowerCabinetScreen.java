@@ -156,8 +156,8 @@ public class PowerCabinetScreen extends Screen {
             g.pose().popPose();
             // Zit er iets aan deze kant?
             BlockPos next = pos.relative(side);
-            // Een stroomkabel of een PoE-kabel (hoofdstuk 38: die geeft ook stroom door).
-            boolean wired = mc.level != null && (com.senne.imttech.energy.Cables.carriesPower(mc.level, next)
+            // Een stroomkabel. (Een PoE-kabel sluit sinds hoofdstuk 85 niet meer op een stroomkast aan: die is geen netwerkblok.)
+            boolean wired = mc.level != null && (com.senne.imttech.energy.Cables.has(com.senne.imttech.energy.CableKind.POWER, mc.level, next)
                     || mc.level.getBlockState(next).getBlock() instanceof PowerConnectable
                     || mc.level.getBlockEntity(next) instanceof EnergySource);
             g.drawString(font, Component.translatable(wired ? "screen.imttech.cabinet.wired" : "screen.imttech.cabinet.nothing"),

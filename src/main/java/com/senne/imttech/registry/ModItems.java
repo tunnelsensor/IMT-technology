@@ -269,6 +269,9 @@ public final class ModItems {
             ModBlocks.CRUSHER, new Item.Properties());
     public static final DeferredItem<BlockItem> COMPACTOR = ITEMS.registerSimpleBlockItem("compactor",
             ModBlocks.COMPACTOR, new Item.Properties());
+    /** Hoofdstuk 85: de Polymerizer (kool en water worden polymeer). */
+    public static final DeferredItem<BlockItem> POLYMERIZER = ITEMS.registerSimpleBlockItem("polymerizer",
+            ModBlocks.POLYMERIZER, new Item.Properties());
     /** De Arc Lamp (9 oktober): lichtniveau 100 op netstroom. */
     public static final DeferredItem<BlockItem> ARC_LAMP = ITEMS.registerSimpleBlockItem("arc_lamp",
             ModBlocks.ARC_LAMP, new Item.Properties().rarity(Rarity.UNCOMMON));
@@ -523,12 +526,21 @@ public final class ModItems {
     public static final DeferredItem<com.senne.imttech.guns.CrushedGunpowderItem> CRUSHED_GUNPOWDER = ITEMS.registerItem(
             "crushed_gunpowder", com.senne.imttech.guns.CrushedGunpowderItem::new, new Item.Properties());
 
-    /** Hoofdstuk 52: de materialen. Staal en titanium smelt je uit een blend; polymeer maak je van slijm en kool. */
+    /**
+     * Hoofdstuk 52: de materialen. Staal en titanium smelt je uit een blend. Polymeer maakte je van slijm en kool; sinds
+     * hoofdstuk 85 maakt de Polymerizer het van kool en water.
+     */
     public static final DeferredItem<Item> STEEL_BLEND = ITEMS.registerSimpleItem("steel_blend", new Item.Properties());
     public static final DeferredItem<Item> STEEL_INGOT = ITEMS.registerSimpleItem("steel_ingot", new Item.Properties());
     public static final DeferredItem<Item> TITANIUM_BLEND = ITEMS.registerSimpleItem("titanium_blend", new Item.Properties());
     public static final DeferredItem<Item> TITANIUM_INGOT = ITEMS.registerSimpleItem("titanium_ingot", new Item.Properties().rarity(Rarity.UNCOMMON));
     public static final DeferredItem<Item> POLYMER = ITEMS.registerSimpleItem("polymer", new Item.Properties());
+    /**
+     * Hoofdstuk 85 (jouw wens: "een cabel word gemaakt van copper wire en plastic"): koperdraad (de Crusher maakt het van een
+     * koperstaaf) en plastic (polymeer, gesmolten in een oven). Ze gaan alleen in de recepten van de kabels.
+     */
+    public static final DeferredItem<Item> COPPER_WIRE = ITEMS.registerSimpleItem("copper_wire", new Item.Properties());
+    public static final DeferredItem<Item> PLASTIC = ITEMS.registerSimpleItem("plastic", new Item.Properties());
 
     /** Hoofdstuk 52: de Gunsmith Table (het pistool in elkaar slepen) en de Reloading Bench (patronen persen). */
     public static final DeferredItem<BlockItem> GUNSMITH_TABLE = ITEMS.registerSimpleBlockItem("gunsmith_table",

@@ -7,6 +7,8 @@ import com.senne.imttech.howto.HowToScene;
 import com.senne.imttech.howto.HowToSceneBuilder;
 import com.senne.imttech.lan.NetworkSwitchBlock;
 import com.senne.imttech.logic.InputLight;
+import com.senne.imttech.plastic.CableMaterials;
+import com.senne.imttech.plastic.PolymerizerBlock;
 import com.senne.imttech.security.CameraBlock;
 import com.senne.imttech.registry.ModBlocks;
 import com.senne.imttech.registry.ModItems;
@@ -16,9 +18,11 @@ import java.util.List;
 import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.FurnaceBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
@@ -283,6 +287,112 @@ public final class PowerScenes {
         return List.of(s.build());
     }
 
+    // ================================================================ Kabels maken (hoofdstuk 85)
+
+    /** Het blauw van het water in de tank van de Polymerizer (zoals op zijn scherm). */
+    private static final int WATER_BLUE = 0x3F76E4;
+
+    static BlockState polymerizer(boolean working) {
+        return ModBlocks.POLYMERIZER.get().defaultBlockState().setValue(PolymerizerBlock.FACING, Direction.WEST)
+                .setValue(PolymerizerBlock.WORKING, working);
+    }
+
+    /**
+     * Kabels maken (hoofdstuk 85, jouw wens van 12 november): de Crusher maalt een koperstaaf tot koperdraad, de Polymerizer
+     * maakt polymeer van kool en water (zijn tank vul je met een emmer), een oven smelt polymeer tot plastic, en van
+     * koperdraad, plastic en de kabels zelf maak je de drie soorten kabels.
+     */
+    public static List<HowToScene> makingCables() {
+        HowToSceneBuilder s = new HowToSceneBuilder("making_cables", "Making cables").plate(7, 5).height(3);
+        BlockPos gen = new BlockPos(5, 1, 2);
+        BlockPos crusher = new BlockPos(5, 1, 1);
+        BlockPos poly = new BlockPos(5, 1, 3);
+        BlockPos furnace = new BlockPos(2, 1, 3);
+        int crush = Math.round(ImtConfig.Repair.MACHINE_TICKS);
+        int brew = CableMaterials.ticks();
+        s.idle(6);
+
+        s.chapter("Copper wire");
+        s.place(gen, heat(Direction.WEST));
+        s.idle(4);
+        s.place(crusher, InteriorItemScenes.machine(ModBlocks.CRUSHER.get(), false));
+        s.idle(10);
+        Vec3 aboveCrusher = HowToSceneBuilder.top(crusher).add(0, 0.45, 0);
+        s.item(crush / 2, aboveCrusher, new ItemStack(Items.COPPER_INGOT), 0.5f);
+        s.change(crusher, InteriorItemScenes.machine(ModBlocks.CRUSHER.get(), true));
+        s.text(110, HowToSceneBuilder.top(crusher).add(0, 0.6, 0), Side.LEFT,
+                "The *Crusher* grinds a copper ingot into %s *Copper Wire*. Right against a generator it needs no cable.",
+                CableMaterials.wirePerIngot());
+        s.idle(crush / 2);
+        s.change(crusher, InteriorItemScenes.machine(ModBlocks.CRUSHER.get(), false));
+        s.sound(SoundEvents.COPPER_BREAK, 0.4f, 1.0f);
+        s.item(60, aboveCrusher, new ItemStack(ModItems.COPPER_WIRE.get(), CableMaterials.wirePerIngot()), 0.5f);
+        s.idle(65);
+
+        s.chapter("Polymer");
+        s.place(poly, polymerizer(false));
+        s.idle(12);
+        s.rightClick(HowToSceneBuilder.face(poly, Direction.WEST), new ItemStack(Items.WATER_BUCKET));
+        s.sound(SoundEvents.BUCKET_EMPTY, 0.5f, 1.0f);
+        s.meter(110, HowToSceneBuilder.top(poly).add(0, 0.9, 0), "WATER", 0.0f,
+                (float) CableMaterials.BUCKET / CableMaterials.tank(), WATER_BLUE, CableMaterials.tank(), " mB");
+        s.text(110, HowToSceneBuilder.face(poly, Direction.WEST), Side.RIGHT,
+                "The *Polymerizer* has a water tank. Right-click it with a water bucket, put buckets in its bucket slot, or pump"
+                        + " water in with pipes.");
+        s.idle(115);
+        Vec3 abovePoly = HowToSceneBuilder.top(poly).add(0, 0.45, 0);
+        s.item(brew / 2, abovePoly, new ItemStack(Items.COAL), 0.5f);
+        s.change(poly, polymerizer(true));
+        s.text(110, HowToSceneBuilder.face(poly, Direction.WEST), Side.RIGHT,
+                "Put in coal (or charcoal). With %s mB of water it makes %s *Polymer*, on mains power like the Crusher.",
+                CableMaterials.waterPerCoal(), CableMaterials.polymerPerCoal());
+        s.idle(brew / 2);
+        s.change(poly, polymerizer(false));
+        s.sound(SoundEvents.BREWING_STAND_BREW, 0.3f, 1.3f);
+        s.item(60, abovePoly, new ItemStack(ModItems.POLYMER.get(), CableMaterials.polymerPerCoal()), 0.5f);
+        s.idle(65);
+
+        s.chapter("Plastic");
+        s.place(furnace, Blocks.FURNACE.defaultBlockState().setValue(FurnaceBlock.FACING, Direction.WEST)
+                .setValue(FurnaceBlock.LIT, true));
+        s.idle(10);
+        Vec3 aboveFurnace = HowToSceneBuilder.top(furnace).add(0, 0.45, 0);
+        s.item(50, aboveFurnace, new ItemStack(ModItems.POLYMER.get()), 0.5f);
+        s.text(105, HowToSceneBuilder.face(furnace, Direction.WEST), Side.LEFT,
+                "Smelt the polymer in a *furnace*: that gives *Plastic*.");
+        s.idle(50);
+        s.item(55, aboveFurnace, new ItemStack(ModItems.PLASTIC.get()), 0.5f);
+        s.idle(60);
+
+        s.chapter("The cables");
+        s.remove(furnace);
+        s.idle(8);
+        // Drie recepten onder elkaar: links wat erin gaat, rechts wat eruit komt.
+        ItemStack wire = new ItemStack(ModItems.COPPER_WIRE.get());
+        ItemStack plastic = new ItemStack(ModItems.PLASTIC.get());
+        ItemStack power = new ItemStack(ModItems.CABLE.get());
+        ItemStack network = new ItemStack(ModItems.NETWORK_CABLE.get());
+        int show = 170;
+        recipe(s, show, 2.6, List.of(wire, plastic), new ItemStack(ModItems.CABLE.get(), 8));
+        recipe(s, show, 1.95, List.of(wire, power, plastic), new ItemStack(ModItems.NETWORK_CABLE.get(), 4));
+        recipe(s, show, 1.3, List.of(power, network, plastic), new ItemStack(ModItems.POE_CABLE.get(), 2));
+        s.text(show, new Vec3(3.6, 1.9, 2.5), Side.RIGHT,
+                "*Copper Wire* + *Plastic*: 8 *Power Cables*. Add a power cable: 4 *Network Cables*. A power cable, a network"
+                        + " cable and plastic: 2 *PoE Cables*.");
+        s.idle(show + 5);
+        return List.of(s.build());
+    }
+
+    /** Eén recept als zwevende voorwerpen op een rij (op hoogte {@code y}): de ingrediënten, en rechts het resultaat. */
+    private static void recipe(HowToSceneBuilder s, int duration, double y, List<ItemStack> in, ItemStack out) {
+        double x = 0.7;
+        for (ItemStack stack : in) {
+            s.item(duration, new Vec3(x, y, 2.5), stack, 0.4f);
+            x += 0.55;
+        }
+        s.item(duration, new Vec3(2.6, y, 2.5), out, 0.5f);
+    }
+
     // ================================================================ Netwerkkabels en PoE
 
     /**
@@ -325,9 +435,10 @@ public final class PowerScenes {
         s.cable(CableKind.POE, 26, green);
         s.idle(28);
         s.change(camera, SecurityScenes.camera(Direction.SOUTH));
-        s.text(85, new Vec3(2.5, 1.05, 1.0), Side.LEFT,
-                "A *PoE Cable* (green) carries network and power at once: the core feeds it from its own power.");
-        s.idle(90);
+        s.text(125, new Vec3(2.5, 1.05, 1.0), Side.LEFT,
+                "A *PoE Cable* (green) carries network and power at once: the core feeds it from its own power. It only fits"
+                        + " network devices, and power, network and PoE cables never join each other.");
+        s.idle(130);
 
         s.chapter("Signals");
         s.signal(16, NETWORK_WHITE, whiteBack);

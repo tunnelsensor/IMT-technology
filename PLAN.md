@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 505 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 510 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -6692,6 +6692,92 @@ onder het vakje".
       en `nb04_station_cell` (een energiecel), naast `nb04_station_plain`, `_space` en `_short` (met de bril). Het midden
       van het opschrift en van het vakje liggen op dezelfde pixel. Geen nieuwe automatische test: het is alleen beeld.
 
+### 85. Kabels van koperdraad en plastic, de Polymerizer, en drie soorten kabels die niet aan elkaar vastzitten (12 november)
+
+Jouw wens: "Verander de cable, netwerkcable en POE cable recepie: ik wil dat een cabel word gemaakt van copper wire en
+plastic, dit krijg je door copper te crushen in een crusher, plastic krijg je van polymers, polymers krijg je van coal met
+water in een nieuwe machiene zoals een crusher. Een netwerkkabel krijg je van een copper wire met een power cable en
+plastic. Een poe krijg je van powerkable met netwerk cable en plastic."
+
+En daarna: "Zorg ook dat al de blokken die niet in een netwerk horen, denk aan een crusher, geen power kunnen krijgen via
+een POE. Elke blok die in een netwerk kan, kan een power, netwerk en poe kabel hebben. Iets dat niet in een netwerk kan,
+kan enkel een powercable, geen netwerk of poe. Zorg ook dat power cable, netwerk en poe niet connecten aan elkaar."
+
+De weg van koper en kool naar een kabel:
+
+```
+koperstaaf      --Crusher------->  3 Copper Wire
+kool + 250 mB   --Polymerizer--->  2 Polymer
+Polymer         --oven---------->  Plastic
+
+Copper Wire + Plastic                    =  8 Power Cables
+Copper Wire + Power Cable + Plastic      =  4 Network Cables
+Power Cable + Network Cable + Plastic    =  2 PoE Cables
+```
+
+- [x] **Copper Wire uit de Crusher** (`CrackMachineBlock.Kind.convert`): één koperstaaf wordt 3 Copper Wire, in 5 seconden,
+      net als een gebarsten blok. Elke koperstaaf telt (de tag `c:ingots/copper`), ook die van een andere mod. Het vage
+      voorbeeld in het lege vakje toont nu ook een koperstaaf, en onderaan staat "Cracked blocks, gunpowder or copper
+      ingots.". Een regel die te lang is voor het scherm breekt nu af over twee regels (dat was ook al nodig voor "No power:
+      connect it with power cables.", die rechts uit het scherm liep).
+- [x] **De Polymerizer** (nieuw blok, `plastic/PolymerizerBlock`): een kast op netstroom zoals de Crusher, met een vakje
+      voor kool (of houtskool), een emmervakje, een vakje eruit, en een **watertank** van 4 emmers. Water erin doe je met
+      rechtsklik met een emmer water (je houdt de lege emmer over), met een emmer in het emmervakje (de lege emmer blijft
+      daar liggen, een trechter eronder haalt hem eruit), of met buizen van een andere mod zoals Create (hij heeft de
+      vloeistof-capability; alleen water, en eruit halen kan niet). Per kool gaat er 250 mB water uit en komen er 2 Polymer
+      bij, in 5 seconden, voor 40 stroom per tick. Zijn scherm: links de tank (met de muis erop: "Water: 750 / 4000 mB"),
+      dan kool en emmer, een pijl en het polymeer; onderaan "Making polymer...", "No water: add a water bucket.", "No
+      power" of "Output full". Trechters: kool en emmers water van boven of opzij, polymeer en lege emmers van onder.
+      Recept: ijzer, een emmer, glas, een computerchip en een oven. Hij staat in het tabblad Interior, naast de Crusher.
+- [x] **Plastic**: Polymer in een oven smelten. Het oude recept van polymeer (slijm en kool) is weg: polymeer komt nu
+      alleen nog uit de Polymerizer (ook voor de polymeer-onderdelen van de Glock en de rugzakken).
+- [x] **De recepten van de kabels** (`cable.json`, `network_cable.json`, `poe_cable.json`): zoals hierboven. Koperdraad
+      zit in de tag `c:wires/copper`, dus de koperdraad van een andere mod (Create Crafts & Additions, Immersive Engineering)
+      werkt ook. De oude recepten (koper + redstone, koper + kwarts, PoE met groene kleurstof) zijn weg.
+- [x] **De drie soorten kabels zitten niet meer aan elkaar vast** (`CableKind.joins`): een stroomkabel loopt alleen verder
+      in een stroomkabel, een netwerkkabel in een netwerkkabel, een PoE-kabel in een PoE-kabel. Liggen ze tegen elkaar aan,
+      dan gaat er niets over en tekent de kabel ook geen verbindingsstukje meer. Van de ene soort naar de andere gaat het
+      alleen via een blok: één stroomkabel op de Security Core voedt zijn PoE-kabels, zoals eerst. Het stroomnet
+      (`PowerGrid`) en het netwerk (`LanGrid`) zoeken daarvoor nu per soort kabel: op één plek kunnen een stroomkabel en
+      een PoE-kabel liggen, en dat zijn dan twee aparte kabels.
+- [x] **PoE alleen voor netwerkblokken** (`CableKind.connectsTo`, `PowerGrid.takesPoe`): een blok dat in een netwerk kan
+      (de kern, lezers, panelen, camera's, torentjes, laserzenders, bruggen, racks, monitors, computers, de switch, de
+      netwerkknop en -hendel) neemt een stroomkabel, een netwerkkabel en een PoE-kabel. Elk ander blok (een Crusher, de
+      Polymerizer, een generator, een stroomkast, een lichtschakelaar, een drone-dock...) alleen een stroomkabel. Zo'n blok
+      krijgt nooit stroom via PoE, ook niet als het op de PoE-kabel staat, en een generator tegen een PoE-kabel voedt die
+      kabel niet. Het scherm van de stroomkast telt een PoE-kabel ernaast niet meer als "wired".
+- [x] **Tooltips**: elke kabelrol zegt nu "Power, network and PoE cables never join each other", en de PoE-kabel "Power and
+      network in one cable for network devices, fed by a Security Core that has power".
+- [x] **How it works**: een nieuw onderwerp **Making cables** (tabblad Power; W op de Polymerizer, Copper Wire, Plastic of
+      Polymer): de Crusher maalt koper, de Polymerizer krijgt een emmer water en maakt polymeer, de oven maakt plastic, en
+      de drie recepten zweven op een rij. In "Network cables and PoE" zegt de PoE-ballon nu ook dat PoE alleen op
+      netwerkapparaten past en dat de drie soorten niet aan elkaar vastzitten.
+- [x] **Config** (`[materials]`, nieuw): `copperWirePerIngot` (3), `polymerPerCoal` (2), `waterPerCoal` (250 mB),
+      `polymerizerTicks` (100) en `polymerizerTank` (4000 mB). Bij `[power]`: `polymerizer` (40 per tick).
+- [x] **Mijn invullingen** (zeg het als je het anders wilt): 3 koperdraad per koperstaaf; 2 polymeer per kool met 250 mB
+      water; plastic uit een gewone oven (jij zei niet hoe); de aantallen van de recepten (8 stroomkabels, 4 netwerkkabels,
+      2 PoE-kabels, zoals de PoE eerst ook 2 gaf); de tank van 4 emmers; houtskool telt als kool; het recept van de
+      Polymerizer; en dat een blok dat stroom doorgeeft (een drone-dock, een rack...) nog steeds stroom doorgeeft aan een
+      blok dat ertegen staat.
+- [x] **Tests**: `crusher_grinds_copper_into_wire`, `polymerizer_makes_polymer_from_coal_and_water`,
+      `polymerizer_needs_water_and_power` (ook rechtsklik met emmers tot de tank vol is, en een buis die water maar geen lava
+      in de tank pompt), `cable_recipes_use_copper_wire_and_plastic` (de nieuwe recepten maken het juiste aantal, de oude
+      niets meer, polymeer smelt tot plastic), `power_network_and_poe_cables_do_not_join` (vervangt
+      `poe_joins_power_and_network_cables`, die het omgekeerde testte) en `poe_only_powers_network_devices` (een Crusher
+      aan of op een PoE-kabel heeft geen stroom, een lezer aan dezelfde kabel wel, en een generator tegen een PoE-kabel
+      voedt niets). 514 tests, twee rondes (de tweede door een andere
+      sessie, met dit hoofdstuk erin): in de ene alleen de bekende wisselvallige `raven_soldier_shoots` rood, in de
+      andere alleen de wisselvallige `a_guard_who_sees_a_body_calls_it_in`.
+- [x] **Gezien** op screenshots (`gradlew runVisualCheck -Ponly=repair`): `r07_crusher_copper` (koper erin, koperdraad
+      eruit), `r08_polymerizer_working` (de voorkant naast de Compactor), `r09_polymerizer_screen` (kool, een halve tank,
+      polymeer eruit), `r09b_polymerizer_tank` ("Water: 1750 / 4000 mB"), `r10_polymerizer_empty` en
+      `r11_polymerizer_no_water`, en `r06_crusher_empty_b` (de regel van de Crusher over twee regels). Niets valt over
+      elkaar.
+- [x] **Onderweg gevonden**: tijdens de eerste testrondes stond er een dev-client open in `run/` (met de oude versie van
+      de mod). Die en de testserver "verbeterden" om beurten `run/config/imttech.toml` naar hun eigen versie, honderden
+      keren, en elke keer gingen de getallen terug naar die uit het bestand. Tests die even een getal veranderen (de
+      generator, de rookgranaat, de handboeien...) faalden daardoor. Sluit de dev-client voor je de tests draait.
+
 ### 86. Diagrammen: 1 CPU per 10 apparaten, en I.M.T het dubbele (12 november)
 
 Jouw wens: "ik wil dat het gebruik van diagrams simpeler is, het is logisch dat je voor weinig devices ook maar weinig
@@ -6748,6 +6834,12 @@ je ook GPU's gebruiken, dat is dan dubbel zoveel voor hetzelfde effect."
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
+
+- [ ] **Kabels maken en de drie soorten kabels (hoofdstuk 85)**: het scherm van de Polymerizer en de Crusher met koper
+      zijn gezien op screenshots, maar niet met de muis gespeeld. Probeer: rechtsklik met een emmer water (tot de tank
+      vol is), een emmer in het emmervakje, shift-klik met kool, trechters erboven en eronder, en buizen van Create die
+      water in de tank pompen. Kijk ook of een PoE-kabel naast een stroomkabel of een Crusher er echt los van ligt (geen
+      verbindingsstukje meer), en bekijk de nieuwe uitleg "Making cables" (W op de Polymerizer).
 
 - [ ] **Diagrammen: 1 CPU per 10 apparaten (hoofdstuk 86)**: de rekenregel is getest en de app Monitor gezien op een
       screenshot, maar niet gespeeld. Probeer een basis met 1 CPU: tot 10 apparaten in je diagrammen gaat alles meteen;

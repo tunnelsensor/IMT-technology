@@ -1,6 +1,7 @@
 package com.senne.imttech.lan;
 
 import com.senne.imttech.config.ImtConfig;
+import com.senne.imttech.energy.CableKind;
 import com.senne.imttech.energy.Cables;
 import com.senne.imttech.registry.ModBlocks;
 import com.senne.imttech.security.SecurityCoreBlock;
@@ -29,7 +30,8 @@ import org.jetbrains.annotations.Nullable;
  * Hoe het werkt (net als het stroomnet, zie PowerGrid):
  * <ul>
  *   <li>Een apparaat hangt aan het netwerk als er een netwerkkabel (of PoE-kabel) naast ligt, of als het er bovenop
- *       staat. Kabels die tegen elkaar aan liggen, zitten aan elkaar vast.</li>
+ *       staat. Kabels van dezelfde soort die tegen elkaar aan liggen, zitten aan elkaar vast; een netwerkkabel en een
+ *       PoE-kabel niet (hoofdstuk 85).</li>
  *   <li>We zoeken vanaf het apparaat langs de kabels, net als water door buizen, tot we bij een Security Core komen
  *       (de desktop). Staat het apparaat er direct tegenaan, dan heeft het geen kabel nodig.</li>
  *   <li>Serverracks, laserzenders, brugzenders en Camera Monitors geven het netwerk ook door aan wie ertegenaan staat: een
@@ -142,43 +144,61 @@ public final class LanGrid {
     // ================================================================ Zoeken
 
     /**
+     * Een plek in de zoektocht (hoofdstuk 85): een stukje kabel van één soort ({@code kind} is NETWORK of POE), of een blok
+     * zelf ({@code kind} is null): het apparaat, de kern, of een blok dat het netwerk doorgeeft (een rack, een zender, een
+     * switch...). Liggen een netwerkkabel en een PoE-kabel op dezelfde plek, dan zijn dat twee aparte plekken in de
+     * zoektocht: ze zitten niet aan elkaar vast.
+     */
+    private record Node(BlockPos pos, @Nullable CableKind kind) {}
+
+    /** De kabels die het netwerk doorgeven: de netwerkkabel en de PoE-kabel. */
+    private static final CableKind[] NETWORK_KINDS = {CableKind.NETWORK, CableKind.POE};
+
+    /**
      * Zoekt de kern: eerst de zes buren van het apparaat, en dan langs elke kabel verder, van dichtbij naar ver. De eerste
      * kern die we tegenkomen is de dichtstbijzijnde langs de kabel.
      *
      * Een Network Switch (stap 6): je komt er alleen in via een poort die aan staat, en je gaat er alleen door als hij
      * stroom heeft, en dan alleen naar poorten die aan staan. Is het apparaat zelf een switch, dan zoekt hij via zijn
      * eigen poorten die aan staan (ook zonder stroom: dan hangt hij er nog wel aan, maar laat hij niets door).
+     *
+     * Hoofdstuk 85 (jouw wens: "zorg ook dat power cable, netwerk en poe niet connecten aan elkaar"): een netwerkkabel loopt
+     * alleen verder in een netwerkkabel, een PoE-kabel alleen in een PoE-kabel. Van de ene soort naar de andere kom je
+     * alleen via een blok (de kern, een switch, een rack...). Elk netwerkblok neemt allebei de soorten aan.
      */
-    private static @Nullable BlockPos searchCore(Level level, BlockPos device, @Nullable Map<BlockPos, BlockPos> parents) {
-        Set<BlockPos> seen = new HashSet<>();
-        ArrayDeque<BlockPos> todo = new ArrayDeque<>();
-        seen.add(device.immutable());
-        todo.add(device.immutable());
+    private static @Nullable BlockPos searchCore(Level level, BlockPos device, @Nullable Map<Node, Node> parents) {
+        Set<Node> seen = new HashSet<>();
+        ArrayDeque<Node> todo = new ArrayDeque<>();
+        Node start = new Node(device.immutable(), null);
+        seen.add(start);
+        todo.add(start);
         int followed = 0;
         while (!todo.isEmpty() && followed++ < MAX_NODES) {
-            BlockPos at = todo.poll();
-            BlockState atState = level.getBlockState(at);
+            Node at = todo.poll();
+            BlockState atState = level.getBlockState(at.pos());
             for (Direction direction : Direction.values()) {
                 if (closedPort(atState, direction)) {
                     continue;
                 }
-                BlockPos next = at.relative(direction);
-                if (seen.contains(next) || !level.isLoaded(next)) {
+                BlockPos next = at.pos().relative(direction);
+                if (!level.isLoaded(next)) {
                     continue;
                 }
                 BlockState state = level.getBlockState(next);
                 if (closedPort(state, direction.getOpposite())) {
                     continue; // de poort aan deze kant staat uit: misschien komen we er via een andere kant wel in
                 }
-                seen.add(next);
-                if (parents != null) {
-                    parents.put(next, at);
+                followCables(level, at, next, state, seen, todo, parents);
+                Node block = new Node(next.immutable(), null);
+                if (!seen.add(block)) {
+                    continue;
                 }
+                remember(parents, block, at);
                 if (state.getBlock() instanceof SecurityCoreBlock) {
                     return next;
                 }
                 if (conducts(level, next, state)) {
-                    todo.add(next);
+                    todo.add(block);
                 }
             }
         }
@@ -192,35 +212,40 @@ public final class LanGrid {
      */
     private static Set<BlockPos> searchDevices(Level level, BlockPos core) {
         Set<BlockPos> devices = new LinkedHashSet<>();
-        Set<BlockPos> seen = new HashSet<>();
-        ArrayDeque<BlockPos> todo = new ArrayDeque<>();
-        seen.add(core.immutable());
-        todo.add(core.immutable());
+        Set<Node> seen = new HashSet<>();
+        ArrayDeque<Node> todo = new ArrayDeque<>();
+        Node start = new Node(core.immutable(), null);
+        seen.add(start);
+        todo.add(start);
         int followed = 0;
         while (!todo.isEmpty() && followed++ < MAX_NODES) {
-            BlockPos at = todo.poll();
-            BlockState atState = level.getBlockState(at);
+            Node at = todo.poll();
+            BlockState atState = level.getBlockState(at.pos());
             for (Direction direction : Direction.values()) {
                 if (closedPort(atState, direction)) {
                     continue;
                 }
-                BlockPos next = at.relative(direction);
-                if (seen.contains(next) || !level.isLoaded(next)) {
+                BlockPos next = at.pos().relative(direction);
+                if (!level.isLoaded(next)) {
                     continue;
                 }
                 BlockState state = level.getBlockState(next);
                 if (closedPort(state, direction.getOpposite())) {
                     continue;
                 }
-                seen.add(next);
                 if (state.getBlock() instanceof SecurityCoreBlock) {
                     continue; // een andere kern: daar gaan we niet doorheen
                 }
+                followCables(level, at, next, state, seen, todo, null);
+                Node block = new Node(next.immutable(), null);
+                if (!seen.add(block)) {
+                    continue;
+                }
                 if (state.getBlock() instanceof NetworkConnectable) {
-                    devices.add(next);
+                    devices.add(next.immutable());
                 }
                 if (conducts(level, next, state)) {
-                    todo.add(next);
+                    todo.add(block);
                 }
             }
         }
@@ -229,19 +254,52 @@ public final class LanGrid {
     }
 
     /**
+     * Volgt de kabels op {@code next} vanaf {@code at} (hoofdstuk 85): vanaf een stukje kabel alleen dezelfde soort, vanaf
+     * een blok elke netwerksoort. Een open kabel in een EMP-puls geeft even niets door; een kabel door een switch heen ook
+     * niet (de switch beslist zelf, met zijn poorten en zijn stroom).
+     */
+    private static void followCables(Level level, Node at, BlockPos next, BlockState state, Set<Node> seen,
+                                     ArrayDeque<Node> todo, @Nullable Map<Node, Node> parents) {
+        if (state.getBlock() instanceof NetworkSwitchBlock || com.senne.imttech.weapons.Emp.cutsCable(level, next)) {
+            return;
+        }
+        for (CableKind kind : NETWORK_KINDS) {
+            if (at.kind() != null && at.kind() != kind) {
+                continue;
+            }
+            Node cable = new Node(next.immutable(), kind);
+            if (!seen.contains(cable) && Cables.has(kind, level, next)) {
+                seen.add(cable);
+                remember(parents, cable, at);
+                todo.add(cable);
+            }
+        }
+    }
+
+    /** Onthoudt (als we een weg zoeken) dat we {@code next} vanaf {@code from} bereikten. */
+    private static void remember(@Nullable Map<Node, Node> parents, Node next, Node from) {
+        if (parents != null) {
+            parents.putIfAbsent(next, from);
+        }
+    }
+
+    /**
      * De weg langs de kabels van dit apparaat naar zijn kern (de dichtstbijzijnde langs de kabel): elke plek, van het
      * apparaat tot en met de kern. Leeg als het nergens aan hangt. Voor de signalen die je over de kabel ziet lopen (zie
      * CableTraffic); dit wordt niet onthouden.
      */
     public static List<BlockPos> path(Level level, BlockPos device) {
-        Map<BlockPos, BlockPos> parents = new HashMap<>();
+        Map<Node, Node> parents = new HashMap<>();
         BlockPos core = searchCore(level, device, parents);
         if (core == null) {
             return List.of();
         }
         List<BlockPos> path = new ArrayList<>();
-        for (BlockPos at = core; at != null; at = parents.get(at)) {
-            path.add(at);
+        for (Node at = new Node(core, null); at != null; at = parents.get(at)) {
+            // Een blok op een kabel is twee plekken in de zoektocht maar één plek in de wereld: die maar één keer.
+            if (path.isEmpty() || !path.getLast().equals(at.pos())) {
+                path.add(at.pos());
+            }
         }
         java.util.Collections.reverse(path);
         return path;
@@ -253,19 +311,16 @@ public final class LanGrid {
     }
 
     /**
-     * Geeft deze plek het netwerk door? Een netwerk- of PoE-kabel (behalve een open kabel in een EMP-puls), een serverrack,
-     * een laser- of brugzender, een Camera Monitor (19 oktober: een heel scherm aan één kabel), of een switch met stroom (zie NetworkSwitchBlock.passes; de poorten kijkt de zoektocht zelf
-     * na).
+     * Geeft dit blok het netwerk door aan wie ertegen staat? Een serverrack, een laser- of brugzender, een Camera Monitor (19
+     * oktober: een heel scherm aan één kabel), of een switch met stroom (zie NetworkSwitchBlock.passes; de poorten kijkt de
+     * zoektocht zelf na). De kabels zelf volgt {@link #followCables}.
      */
     private static boolean conducts(Level level, BlockPos pos, BlockState state) {
         if (state.is(ModBlocks.SERVER_RACK.get()) || state.is(ModBlocks.LASER_EMITTER.get())
                 || state.is(ModBlocks.LASER_BRIDGE.get()) || state.is(ModBlocks.CAMERA_MONITOR.get())) {
             return true;
         }
-        if (state.getBlock() instanceof NetworkSwitchBlock) {
-            return NetworkSwitchBlock.passes(level, pos, state);
-        }
-        return Cables.carriesNetwork(level, pos) && !com.senne.imttech.weapons.Emp.cutsCable(level, pos);
+        return state.getBlock() instanceof NetworkSwitchBlock && NetworkSwitchBlock.passes(level, pos, state);
     }
 
     /** Bij het afsluiten van de wereld: alles vergeten. */

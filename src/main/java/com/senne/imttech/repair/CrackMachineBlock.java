@@ -38,11 +38,12 @@ import org.jetbrains.annotations.Nullable;
  * een vakje erin, een vakje eruit en een balkje hoe ver hij is (zie {@link CrackMachineBlockEntity}):
  * <ul>
  *   <li>de <b>Crusher</b> maakt van een gebarsten blok poeder, en (hoofdstuk 76) van één buskruit 10
- *       <b>Crushed Gunpowder</b> voor de Reloading Bench (zie {@link com.senne.imttech.guns.CrushedGunpowderItem});</li>
+ *       <b>Crushed Gunpowder</b> voor de Reloading Bench (zie {@link com.senne.imttech.guns.CrushedGunpowderItem}), en
+ *       (hoofdstuk 85) van een koperstaaf <b>koperdraad</b> voor de kabels (zie {@link com.senne.imttech.plastic.CableMaterials});</li>
  *   <li>de <b>Compactor</b> perst dat poeder tot een volledig nieuw, sterk blok (jouw wens: "die kun
  *       je compacten tot een volledig nieuwe sterke blok").</li>
  * </ul>
- * Telkens één op één: 1 gebarsten blok = 1 poeder = 1 nieuw blok (mijn invulling). Alleen buskruit geeft er meer.
+ * Telkens één op één: 1 gebarsten blok = 1 poeder = 1 nieuw blok (mijn invulling). Alleen buskruit en koper geven er meer.
  * Ze werken op netstroom (via kabels, of direct tegen een generator aan) en trechters kunnen erin
  * doen (van boven of opzij) en eruit halen (van onder), zoals bij een oven. De voorkant kijkt naar wie
  * hem neerzet, en verandert als hij werkt.
@@ -57,7 +58,7 @@ public class CrackMachineBlock extends HorizontalDirectionalBlock implements Ent
 
     /** Welke machine het is, en wat hij van wat maakt. */
     public enum Kind implements StringRepresentable {
-        /** Gebarsten blok -> poeder van hetzelfde blok; buskruit -> 10 Crushed Gunpowder (hoofdstuk 76). */
+        /** Gebarsten blok -> poeder van hetzelfde blok; buskruit -> 10 Crushed Gunpowder (hoofdstuk 76); koper -> koperdraad (85). */
         CRUSHER("crusher"),
         /** Poeder -> een nieuw blok (zonder barsten, nooit geplamuurd). */
         COMPACTOR("compactor");
@@ -80,6 +81,12 @@ public class CrackMachineBlock extends HorizontalDirectionalBlock implements Ent
             // Crushed Gunpowder zelf zit niet in die tag, dus dat neemt hij niet nog eens aan.
             if (this == CRUSHER && input.is(Tags.Items.GUNPOWDERS)) {
                 return new ItemStack(ModItems.CRUSHED_GUNPOWDER.get(), CrushedGunpowderItem.perGunpowder());
+            }
+            // Hoofdstuk 85 (jouw wens: "copper wire ... dit krijg je door copper te crushen in een crusher"): één koperstaaf
+            // wordt koperdraad (3, het getal staat bij [materials] in de config). Elke koperstaaf telt, ook die van een andere
+            // mod (de tag c:ingots/copper).
+            if (this == CRUSHER && input.is(Tags.Items.INGOTS_COPPER)) {
+                return new ItemStack(ModItems.COPPER_WIRE.get(), com.senne.imttech.plastic.CableMaterials.wirePerIngot());
             }
             Block block = FromBlockItem.block(input);
             if (block == null) {
@@ -108,6 +115,9 @@ public class CrackMachineBlock extends HorizontalDirectionalBlock implements Ent
         public @Nullable SoundEvent doneSound(ItemStack input) {
             Block block = FromBlockItem.block(input);
             if (block == null) {
+                if (input.is(Tags.Items.INGOTS_COPPER)) {
+                    return SoundEvents.COPPER_BREAK; // hoofdstuk 85: koper dat tot draad gemalen wordt
+                }
                 return input.is(Tags.Items.GUNPOWDERS) ? SoundEvents.SAND_BREAK : null;
             }
             net.minecraft.world.level.block.SoundType sound = block.defaultBlockState().getSoundType();
@@ -119,12 +129,12 @@ public class CrackMachineBlock extends HorizontalDirectionalBlock implements Ent
 
         /**
          * Voorbeelden van wat erin hoort: het scherm toont ze om de beurt vaag in het lege vakje. De Crusher
-         * neemt een gebarsten blok of (hoofdstuk 76) buskruit.
+         * neemt een gebarsten blok, (hoofdstuk 76) buskruit of (hoofdstuk 85) een koperstaaf.
          */
         public List<ItemStack> examples() {
             return switch (this) {
                 case CRUSHER -> List.of(FromBlockItem.of(ModItems.CRACKED_BLOCK.get(), Blocks.STONE_BRICKS, 1),
-                        new ItemStack(Items.GUNPOWDER));
+                        new ItemStack(Items.GUNPOWDER), new ItemStack(Items.COPPER_INGOT));
                 case COMPACTOR -> List.of(FromBlockItem.of(ModItems.BLOCK_POWDER.get(), Blocks.STONE_BRICKS, 1));
             };
         }

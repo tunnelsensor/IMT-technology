@@ -91,6 +91,9 @@ public final class HowToTopics {
             topic("power_battery", "power", "Power Battery", PowerScenes::battery, ModItems.BATTERY_CASING, ModItems.BATTERY_GLASS,
                     ModItems.BATTERY_CELL, ModItems.BATTERY_PORT),
             topic("making_power", "power", "Making power", PowerScenes::makingPower, ModItems.SOLAR_PANEL, ModItems.HEAT_GENERATOR),
+            // Hoofdstuk 85: waar de kabels van gemaakt zijn (koperdraad, polymeer, plastic) en de Polymerizer.
+            topic("making_cables", "power", "Making cables", PowerScenes::makingCables, ModItems.POLYMERIZER, ModItems.COPPER_WIRE,
+                    ModItems.PLASTIC, ModItems.POLYMER),
             topic("power_cables", "power", "Power cables", PowerScenes::cables, ModItems.CABLE),
             topic("network_cables", "power", "Network cables and PoE", PowerScenes::network, ModItems.NETWORK_CABLE, ModItems.POE_CABLE,
                     ModItems.NETWORK_SWITCH),
@@ -149,7 +152,7 @@ public final class HowToTopics {
      */
     public static Set<Item> craftingOnly() {
         return Set.of(ModItems.COMPUTER_CHIP.get(), ModItems.RAVEN_CIRCUIT.get(), ModItems.STEEL_BLEND.get(),
-                ModItems.STEEL_INGOT.get(), ModItems.TITANIUM_BLEND.get(), ModItems.TITANIUM_INGOT.get(), ModItems.POLYMER.get(),
+                ModItems.STEEL_INGOT.get(), ModItems.TITANIUM_BLEND.get(), ModItems.TITANIUM_INGOT.get(),
                 ModItems.GUARD_ROBOT_SPAWN_EGG.get(), ModItems.RAVEN_SOLDIER_SPAWN_EGG.get(), ModItems.RAVEN_TURRET.get());
     }
 

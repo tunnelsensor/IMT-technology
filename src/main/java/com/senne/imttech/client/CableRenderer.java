@@ -9,9 +9,7 @@ import com.senne.imttech.energy.CableGeometry;
 import com.senne.imttech.energy.CableKind;
 import com.senne.imttech.energy.Cables;
 import com.senne.imttech.energy.EnergySource;
-import com.senne.imttech.energy.PowerConnectable;
 import com.senne.imttech.energy.PowerCables;
-import com.senne.imttech.lan.NetworkConnectable;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -24,7 +22,6 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
@@ -269,8 +266,8 @@ public final class CableRenderer {
     }
 
     /**
-     * Naar welke kanten loopt de kabel: naar kabels waar hij aan vastzit (dezelfde soort; een PoE-kabel ook naar een
-     * stroom- of netwerkkabel, zie CableKind.joins), en naar apparaten die op deze soort aansluiten.
+     * Naar welke kanten loopt de kabel: naar kabels waar hij aan vastzit (alleen dezelfde soort sinds hoofdstuk 85, zie
+     * CableKind.joins), en naar apparaten die op deze soort aansluiten.
      */
     private static EnumSet<Direction> linksOf(ClientLevel level, BlockPos cell, CableKind kind) {
         EnumSet<Direction> links = EnumSet.noneOf(Direction.class);
@@ -283,7 +280,7 @@ public final class CableRenderer {
         return links;
     }
 
-    /** De kabel op {@code next} waar een kabel van soort {@code kind} aan vastzit (liefst dezelfde soort), of null. */
+    /** De kabel op {@code next} waar een kabel van soort {@code kind} aan vastzit (dezelfde soort), of null. */
     private static @Nullable CableKind neighbourKind(ClientLevel level, BlockPos next, CableKind kind) {
         if (Cables.has(kind, level, next)) {
             return kind;
@@ -296,13 +293,13 @@ public final class CableRenderer {
         return null;
     }
 
-    /** Sluit het blok op {@code next} aan op deze soort kabel? Stroom: apparaten met stroom; netwerk: netwerkapparaten. */
+    /**
+     * Sluit het blok op {@code next} aan op deze soort kabel? Een stroomkabel: apparaten met stroom; een netwerk- of PoE-kabel:
+     * alleen netwerkapparaten (hoofdstuk 85, zie CableKind.connectsTo). Een PoE-kabel naast een Crusher loopt er dus niet
+     * meer naartoe.
+     */
     private static boolean connectsDevice(ClientLevel level, BlockPos next, CableKind kind) {
-        Block block = level.getBlockState(next).getBlock();
-        if (kind.carriesPower() && (block instanceof PowerConnectable || level.getBlockEntity(next) instanceof EnergySource)) {
-            return true;
-        }
-        return kind.carriesNetwork() && block instanceof NetworkConnectable;
+        return kind.connectsTo(level.getBlockState(next), level.getBlockEntity(next) instanceof EnergySource);
     }
 
     /** Van {@code from} naar {@code to} in rechte stukken langs de assen (zie CableGeometry.corners). */

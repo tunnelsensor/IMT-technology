@@ -1074,6 +1074,98 @@ def compactor_textures():
         save(im, "block/%s.png" % name)
 
 
+
+def polymerizer_textures():
+    """
+    De Polymerizer (hoofdstuk 85): dezelfde soort kast als de Crusher, met in het venster een glazen vat met water en
+    donkere korrels polymeer op de bodem. Werkt hij, dan stijgen er belletjes op, liggen er meer korrels en brandt het
+    lampje blauw. Opzij een kijkglas met het waterpeil en een waterleiding met een kraantje; de bovenkant deelt hij met de
+    Crusher (de trechter voor de kool).
+    """
+    window = (24, 26, 30, 255)
+    glass = (150, 190, 210, 255)
+    water = (52, 98, 196, 255)
+    water_hi = (92, 140, 232, 255)
+    bubble = (190, 222, 255, 255)
+    pellet = (48, 50, 56, 255)
+    pellet_hi = (84, 86, 94, 255)
+    for name, on in (("polymerizer_front", False), ("polymerizer_front_on", True)):
+        im = img(16, 16, METAL_2)
+        d = ImageDraw.Draw(im)
+        d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
+        d.rectangle([2, 2, 13, 10], fill=window, outline=METAL_3)
+        # Het vat: glazen wanden, water tot boven, met een lichtere waterspiegel.
+        d.rectangle([4, 3, 11, 9], fill=water, outline=glass)
+        d.line([5, 4, 10, 4], fill=water_hi)
+        # Korrels polymeer op de bodem (werkt hij, dan meer).
+        grains = [(5, 8), (7, 8), (9, 8), (10, 8)] + ([(6, 8), (8, 8), (6, 7), (9, 7)] if on else [])
+        px(im, grains, pellet)
+        px(im, [(7, 8)] + ([(9, 7)] if on else []), pellet_hi)
+        if on:
+            px(im, [(6, 5), (8, 6), (10, 5), (7, 4)], bubble)
+        for x in range(1, 15):
+            px(im, [(x, 13), (x, 14)], (220, 170, 40, 255) if (x // 2) % 2 == 0 else METAL_DARK)
+        d.rectangle([11, 11, 13, 11], fill=CYAN if on else (90, 30, 26, 255))
+        save(im, "block/%s.png" % name)
+
+    side = img(16, 16, METAL_2)
+    d = ImageDraw.Draw(side)
+    d.rectangle([0, 0, 15, 15], outline=METAL_DARK)
+    px(side, [(2, 2), (13, 2), (2, 13), (13, 13)], METAL_3)
+    # Het kijkglas: onderaan water, bovenaan leeg, met streepjes.
+    d.rectangle([3, 3, 6, 12], fill=window, outline=METAL_3)
+    d.rectangle([4, 7, 5, 11], fill=water)
+    px(side, [(4, 7), (5, 7)], water_hi)
+    for y in (5, 8, 11):
+        px(side, [(6, y)], glass)
+    # De waterleiding: van boven naar een kraantje.
+    d.rectangle([10, 1, 11, 8], fill=(96, 120, 150, 255))
+    d.line([10, 1, 10, 8], fill=(130, 156, 186, 255))
+    d.rectangle([8, 8, 13, 9], fill=METAL_3)
+    px(side, [(12, 7), (13, 7)], (200, 40, 40, 255))
+    d.line([1, 14, 14, 14], fill=CYAN_DIM)
+    save(side, "block/polymerizer_side.png")
+
+
+def cable_material_items():
+    """
+    De grondstoffen van de kabels (hoofdstuk 85): koperdraad (een rol koperdraad, schuin, met een los eindje) en plastic
+    (een stapeltje witte platen, zoals de isolatie van een kabel).
+    """
+    copper = (214, 120, 76, 255)
+    copper_hi = (246, 174, 124, 255)
+    copper_dark = (140, 70, 44, 255)
+    wire = img(16, 16)
+    d = ImageDraw.Draw(wire)
+    # Vijf windingen schuin naast elkaar: elk een ovaaltje, de achterkant donkerder.
+    for i in range(5):
+        x0 = 2 + i * 2
+        y0 = 9 - i * 2
+        d.ellipse([x0, y0, x0 + 4, y0 + 5], outline=copper_dark)
+        d.arc([x0, y0, x0 + 4, y0 + 5], 90, 270, fill=copper)
+        px(wire, [(x0 + 1, y0 + 1)], copper_hi)
+    # Het losse eindje naar rechtsonder.
+    px(wire, [(12, 9), (13, 10), (14, 11), (14, 12)], copper)
+    px(wire, [(15, 12)], copper_hi)
+    save(wire, "item/copper_wire.png")
+
+    sheet = (226, 230, 236, 255)
+    sheet_hi = (250, 252, 255, 255)
+    edge = (164, 172, 184, 255)
+    edge_dark = (120, 128, 140, 255)
+    plastic = img(16, 16)
+    d = ImageDraw.Draw(plastic)
+    # Een stapeltje van drie platen, schuin van boven bekeken: de zijkant in laagjes, de bovenkant licht met een glans.
+    for k in range(1, 5):
+        colour = edge if k % 2 == 1 else edge_dark
+        d.line([(1, 7 + k), (8, 11 + k)], fill=colour)
+        d.line([(8, 11 + k), (15, 7 + k)], fill=colour)
+    d.polygon([(1, 7), (8, 3), (15, 7), (8, 11)], fill=sheet, outline=edge)
+    d.line([(5, 6), (8, 4)], fill=sheet_hi)
+    px(plastic, [(9, 5), (10, 5)], sheet_hi)
+    save(plastic, "item/plastic.png")
+
+
 def arc_lamp_textures():
     """
     De Arc Lamp (9 oktober): een stalen kast met aan vier kanten een groot glas met een reflectorrooster.
@@ -4207,6 +4299,8 @@ if __name__ == "__main__":
     block_powder_item()
     crushed_gunpowder_item()
     compactor_textures()
+    polymerizer_textures()
+    cable_material_items()
     arc_lamp_textures()
     light_switch_textures()
     network_control_textures()

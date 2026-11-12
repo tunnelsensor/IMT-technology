@@ -506,27 +506,72 @@ public final class NetworkGameTests {
     }
 
     /**
-     * Een PoE-kabel sluit aan op een stroomkabel ernaast (de stroom gaat erdoor) en op een netwerkkabel ernaast (het netwerk
-     * gaat erdoor). Een lezer aan het eind van een netwerkkabel die tegen de PoE-kabel ligt, hangt aan de kern; een
-     * apparaat aan het eind van een stroomkabel die tegen de PoE-kabel ligt, krijgt stroom.
+     * Hoofdstuk 85 (jouw wens: "zorg ook dat power cable, netwerk en poe niet connecten aan elkaar"): een PoE-kabel zit niet
+     * meer vast aan een stroomkabel of een netwerkkabel ernaast. Een lezer aan het eind van een netwerkkabel die tegen de
+     * PoE-kabel ligt, hangt niet aan de kern; een lezer aan het eind van een stroomkabel die tegen de PoE-kabel ligt, krijgt
+     * er geen stroom van. Van de ene soort naar de andere gaat het alleen via een blok: een netwerkkabel aan de kern zelf
+     * werkt wel. Ook een netwerkkabel en een stroomkabel tegen elkaar geven niets door.
      */
     @GameTest(template = ARENA, timeoutTicks = 40, batch = "lan")
-    public static void poe_joins_power_and_network_cables(GameTestHelper helper) {
+    public static void power_network_and_poe_cables_do_not_join(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 18), null);
         line(helper, CableKind.POE, new BlockPos(3, 3, 18), new BlockPos(8, 3, 18));
-        // Een netwerkkabel verder naar een lezer, en een stroomkabel de andere kant op naar een lege plek.
+        // Een netwerkkabel verder naar een lezer, en een stroomkabel de andere kant op naar een tweede lezer.
         line(helper, CableKind.NETWORK, new BlockPos(8, 3, 19), new BlockPos(8, 3, 22));
         BlockPos reader = new BlockPos(8, 3, 23);
         helper.setBlock(reader, ModBlocks.KEYCARD_READER.get());
         line(helper, CableKind.POWER, new BlockPos(9, 3, 18), new BlockPos(14, 3, 18));
-        BlockPos device = new BlockPos(15, 3, 18);
-        check(coreOf(helper, reader) == core, "Een netwerkkabel tegen een PoE-kabel geeft het netwerk niet door");
-        check(PowerGrid.available(level, helper.absolutePos(device)) > 0,
-                "Een stroomkabel tegen een PoE-kabel geeft de stroom van de desktop niet door");
-        // Een netwerkkabel geeft geen stroom door: de lezer heeft (zonder eigen stroom) geen stroom.
-        check(!com.senne.imttech.lan.DevicePower.hasPower(level, helper.absolutePos(reader)),
-                "Over een netwerkkabel kwam stroom");
+        BlockPos powered = new BlockPos(15, 3, 18);
+        helper.setBlock(powered, ModBlocks.KEYCARD_READER.get());
+        check(coreOf(helper, reader) == null, "Een netwerkkabel tegen een PoE-kabel geeft het netwerk toch door");
+        check(PowerGrid.available(level, helper.absolutePos(powered)) == 0,
+                "Een stroomkabel tegen een PoE-kabel geeft de stroom van de desktop toch door");
+        // Via de kern zelf wel: een netwerkkabel van de kern naar een lezer.
+        line(helper, CableKind.NETWORK, new BlockPos(2, 3, 19), new BlockPos(2, 3, 21));
+        BlockPos direct = new BlockPos(2, 3, 22);
+        helper.setBlock(direct, ModBlocks.KEYCARD_READER.get());
+        check(coreOf(helper, direct) == core, "Een netwerkkabel aan de kern zelf geeft geen netwerk");
+        // Een stroomkabel van een generator tegen een netwerkkabel naar een lezer: geen stroom voor de lezer.
+        generator(helper, new BlockPos(12, 3, 2));
+        line(helper, CableKind.POWER, new BlockPos(12, 3, 3), new BlockPos(12, 3, 5));
+        line(helper, CableKind.NETWORK, new BlockPos(13, 3, 5), new BlockPos(15, 3, 5));
+        BlockPos far = new BlockPos(16, 3, 5);
+        helper.setBlock(far, ModBlocks.KEYCARD_READER.get());
+        check(PowerGrid.available(level, helper.absolutePos(far)) == 0, "Over een netwerkkabel tegen een stroomkabel kwam stroom");
+        helper.succeed();
+    }
+
+    /**
+     * Hoofdstuk 85 (jouw wens: "zorg dat al de blokken die niet in een netwerk horen, denk aan een crusher, geen power kunnen
+     * krijgen via een POE"): een Crusher aan een PoE-kabel van een kern met stroom krijgt geen stroom, ook niet als hij op de
+     * kabel staat; een lezer aan dezelfde kabel wel (de PoE-kabel loopt onder de Crusher door). Met een stroomkabel krijgt de
+     * Crusher wel stroom. En een generator tegen een PoE-kabel voedt die niet: een generator is geen netwerkblok, alleen de
+     * kern voedt PoE.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "lan")
+    public static void poe_only_powers_network_devices(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), null);
+        line(helper, CableKind.POE, new BlockPos(3, 3, 2), new BlockPos(9, 3, 2));
+        BlockPos onCable = new BlockPos(6, 3, 2);
+        helper.setBlock(onCable, ModBlocks.CRUSHER.get());
+        BlockPos crusher = new BlockPos(10, 3, 2);
+        helper.setBlock(crusher, ModBlocks.CRUSHER.get());
+        BlockPos reader = new BlockPos(9, 3, 3);
+        helper.setBlock(reader, ModBlocks.KEYCARD_READER.get());
+        check(PowerGrid.available(level, helper.absolutePos(reader)) > 0, "Een lezer aan de PoE-kabel krijgt geen stroom");
+        check(PowerGrid.available(level, helper.absolutePos(crusher)) == 0, "Een Crusher kreeg stroom over een PoE-kabel");
+        check(PowerGrid.available(level, helper.absolutePos(onCable)) == 0, "Een Crusher op een PoE-kabel kreeg er stroom van");
+        // Een stroomkabel van een generator naar de Crusher: dan wel.
+        generator(helper, new BlockPos(10, 3, 6));
+        line(helper, CableKind.POWER, new BlockPos(10, 3, 3), new BlockPos(10, 3, 5));
+        check(PowerGrid.available(level, helper.absolutePos(crusher)) > 0, "Een Crusher aan een stroomkabel krijgt geen stroom");
+        // Een generator tegen een PoE-kabel zonder kern: de camera aan het eind krijgt niets.
+        generator(helper, new BlockPos(2, 3, 12));
+        line(helper, CableKind.POE, new BlockPos(3, 3, 12), new BlockPos(6, 3, 12));
+        BlockPos camera = placeCamera(helper, new BlockPos(6, 4, 12));
+        check(PowerGrid.available(level, helper.absolutePos(camera)) == 0, "Een generator voedde een PoE-kabel zonder kern");
         helper.succeed();
     }
 

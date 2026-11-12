@@ -231,6 +231,18 @@ public final class PowerGrid {
     }
 
     /**
+     * Een plek in de zoektocht (hoofdstuk 85): een stukje kabel van één soort ({@code kind} is POWER of POE), of een blok
+     * zelf ({@code kind} is null): het apparaat dat stroom zoekt, of een blok dat stroom doorgeeft (een drone-dock, een
+     * laserzender, de kern...). Op één plek kunnen een stroomkabel en een PoE-kabel allebei liggen: dat zijn dan twee
+     * aparte plekken in de zoektocht, want ze zitten niet aan elkaar vast.
+     */
+    private record Node(BlockPos pos, @Nullable CableKind kind) {}
+
+    /** De kabels die stroom doorgeven: de stroomkabel en de PoE-kabel. */
+    private static final CableKind[] POWER_KINDS = {CableKind.POWER, CableKind.POE};
+    private static final CableKind[] NO_KINDS = {};
+
+    /**
      * Zoekt de leveranciers: eerst de zes buren van het apparaat, en dan langs elke kabel verder.
      * (Door een leverancier of een ander apparaat heen lopen we niet: alleen kabels, drone-docks,
      * laserzenders, brugzenders (hoofdstuk 34), serverracks, Camera Monitors en lichtschakelaars die aan staan geleiden.
@@ -240,23 +252,52 @@ public final class PowerGrid {
      * Hoofdstuk 38: een PoE-kabel geeft ook stroom door (stroom en netwerk in één kabel), en de Security Core (de
      * desktop) geeft zijn stroom door aan wat erop aangesloten is. Jouw wens: "PoE werkt als je een power cable aan de
      * desktop hebt hangen, en dan vertrekt die van de desktop": één stroomkabel op de kern voedt zo al zijn PoE-kabels.
+     *
+     * Hoofdstuk 85 (jouw wens: "zorg ook dat power cable, netwerk en poe niet connecten aan elkaar", en "iets dat niet in
+     * een netwerk kan, kan enkel een powercable"):
+     * <ul>
+     *   <li>een stroomkabel loopt alleen verder in een stroomkabel, een PoE-kabel alleen in een PoE-kabel. Liggen ze tegen
+     *       elkaar aan, dan gaat er niets over: van de ene soort naar de andere kom je alleen via een blok (de kern);</li>
+     *   <li>een PoE-kabel geeft alleen stroom aan een blok dat in een netwerk kan ({@link #takesPoe}): de kern, een lezer,
+     *       een camera, een rack... Een Crusher, een generator of een stroomkast sluit alleen op een stroomkabel aan. Is het
+     *       apparaat dat stroom zoekt zelf geen netwerkblok, dan slaan we elke PoE-kabel over (ook verderop, achter een
+     *       rack): zo krijgt het nooit stroom via PoE.</li>
+     * </ul>
      */
-    private static List<BlockPos> search(Level level, BlockPos device, @Nullable Map<BlockPos, BlockPos> parents) {
+    private static List<BlockPos> search(Level level, BlockPos device, @Nullable Map<Node, Node> parents) {
         List<BlockPos> sources = new ArrayList<>();
-        Set<BlockPos> seen = new HashSet<>();
-        ArrayDeque<BlockPos> cables = new ArrayDeque<>();
-        seen.add(device);
-        // Staat het apparaat zelf op een kabel (erbovenop gebouwd)? Dan hangt het daar ook aan.
-        if (Cables.carriesPower(level, device) && !com.senne.imttech.weapons.Emp.cutsCable(level, device)) {
-            cables.add(device);
+        Set<Node> seen = new HashSet<>();
+        ArrayDeque<Node> todo = new ArrayDeque<>();
+        Node start = new Node(device.immutable(), null);
+        seen.add(start);
+        boolean poe = takesPoe(level.getBlockState(device));
+        // Staat het apparaat zelf op een kabel (erbovenop gebouwd)? Dan hangt het daar ook aan (aan een PoE-kabel alleen als
+        // het een netwerkblok is).
+        for (CableKind kind : POWER_KINDS) {
+            if ((kind != CableKind.POE || poe) && Cables.has(kind, level, device)
+                    && !com.senne.imttech.weapons.Emp.cutsCable(level, device)) {
+                Node onIt = new Node(device.immutable(), kind);
+                seen.add(onIt);
+                remember(parents, onIt, start);
+                todo.add(onIt);
+            }
         }
-        look(level, device, sources, seen, cables, true, parents);
+        look(level, start, poe, sources, seen, todo, true, parents);
         int followed = 0;
-        while (!cables.isEmpty() && followed < MAX_CABLES) {
-            look(level, cables.poll(), sources, seen, cables, false, parents);
+        while (!todo.isEmpty() && followed < MAX_CABLES) {
+            look(level, todo.poll(), poe, sources, seen, todo, false, parents);
             followed++;
         }
         return List.copyOf(sources);
+    }
+
+    /**
+     * Mag dit blok stroom uit een PoE-kabel halen (hoofdstuk 85)? Alleen een blok dat in een netwerk kan: de Security Core en
+     * alles waar een netwerkkabel op aansluit (zie NetworkConnectable). Zo'n blok kan een stroomkabel, een netwerkkabel en
+     * een PoE-kabel hebben; elk ander blok alleen een stroomkabel.
+     */
+    public static boolean takesPoe(BlockState state) {
+        return state.getBlock() instanceof com.senne.imttech.lan.NetworkConnectable;
     }
 
     /**
@@ -265,30 +306,37 @@ public final class PowerGrid {
      * over een kabel ziet lopen (hoofdstuk 38, zie lan/CableTraffic); dit wordt niet onthouden.
      */
     public static List<BlockPos> path(Level level, BlockPos device) {
-        Map<BlockPos, BlockPos> parents = new HashMap<>();
+        Map<Node, Node> parents = new HashMap<>();
         List<BlockPos> sources = search(level, device, parents);
         if (sources.isEmpty()) {
             return List.of();
         }
         List<BlockPos> path = new ArrayList<>();
-        for (BlockPos at = sources.getFirst(); at != null; at = parents.get(at)) {
-            path.add(at);
+        for (Node at = new Node(sources.getFirst(), null); at != null; at = parents.get(at)) {
+            // Een apparaat op een kabel is twee plekken in de zoektocht maar één plek in de wereld: die maar één keer.
+            if (path.isEmpty() || !path.getLast().equals(at.pos())) {
+                path.add(at.pos());
+            }
         }
         return path;
     }
 
     /**
-     * Bekijkt de zes buren van {@code from}: een leverancier onthouden we, een kabel volgen we. {@code start}: dit is het
-     * apparaat zelf (dat zoekt zijn stroom aan alle kanten, ook een switch).
+     * Bekijkt de zes buren van {@code from}: een leverancier onthouden we, een kabel of een blok dat stroom doorgeeft volgen
+     * we. {@code start}: dit is het apparaat zelf (dat zoekt zijn stroom aan alle kanten, ook een switch). {@code poe}: mag
+     * de zoektocht over PoE-kabels (is het apparaat een netwerkblok, zie {@link #takesPoe})?
      */
-    private static void look(Level level, BlockPos from, List<BlockPos> sources, Set<BlockPos> seen,
-                             ArrayDeque<BlockPos> cables, boolean start, @Nullable Map<BlockPos, BlockPos> parents) {
-        BlockState fromState = level.getBlockState(from);
+    private static void look(Level level, Node from, boolean poe, List<BlockPos> sources, Set<Node> seen,
+                             ArrayDeque<Node> todo, boolean start, @Nullable Map<Node, Node> parents) {
+        BlockPos at = from.pos();
+        BlockState fromState = level.getBlockState(at);
         boolean fromCabinet = fromState.getBlock() instanceof PowerCabinetBlock;
         // Hoofdstuk 38: door een Network Switch gaat alleen PoE-stroom, van een PoE-kabel naar de PoE-kabels aan de andere
         // poorten die aan staan (niet naar een gewone stroomkabel of een apparaat ertegen).
-        boolean fromSwitch = !start && fromState.getBlock() instanceof com.senne.imttech.lan.NetworkSwitchBlock;
-        boolean fromPoe = Cables.has(CableKind.POE, level, from);
+        boolean fromSwitch = !start && from.kind() == null
+                && fromState.getBlock() instanceof com.senne.imttech.lan.NetworkSwitchBlock;
+        // Hoofdstuk 85: van een stukje PoE-kabel gaat de stroom alleen naar PoE-kabels en netwerkblokken.
+        boolean fromPoe = from.kind() == CableKind.POE;
         for (Direction direction : Direction.values()) {
             // Uit een stroomkast gaat de stroom alleen naar de kanten waarvan de schakelaar aan staat.
             if (fromCabinet && !PowerCabinetBlock.isOn(fromState, direction)) {
@@ -297,67 +345,98 @@ public final class PowerGrid {
             if (fromSwitch && !com.senne.imttech.lan.NetworkSwitchBlock.isOn(fromState, direction)) {
                 continue;
             }
-            BlockPos next = from.relative(direction);
-            if (seen.contains(next) || !level.isLoaded(next)) {
-                continue;
-            }
-            if (fromSwitch && !Cables.has(CableKind.POE, level, next)) {
+            BlockPos next = at.relative(direction);
+            if (!level.isLoaded(next)) {
                 continue;
             }
             BlockState state = level.getBlockState(next);
+            // Een switch, een lichtschakelaar en een stroomkast beslissen zelf wat erdoor gaat (hieronder), ook als er een
+            // getekende kabel door loopt.
+            boolean gate = state.getBlock() instanceof com.senne.imttech.lan.NetworkSwitchBlock
+                    || state.getBlock() instanceof com.senne.imttech.light.LightSwitchBlock
+                    || state.getBlock() instanceof PowerCabinetBlock;
+            // Eerst de kabels op de buurplek: alleen dezelfde soort als waar we op lopen (hoofdstuk 85). Komen we uit een
+            // blok, dan elke soort waar dat blok op aansluit (een PoE-kabel alleen bij een netwerkblok, en uit een switch
+            // alleen een PoE-kabel).
+            for (CableKind kind : gate ? NO_KINDS : POWER_KINDS) {
+                if (kind == CableKind.POE && !poe) {
+                    continue;
+                }
+                boolean joins = from.kind() != null ? from.kind() == kind
+                        : kind == CableKind.POWER ? !fromSwitch : takesPoe(fromState);
+                Node cable = new Node(next.immutable(), kind);
+                if (joins && !seen.contains(cable) && Cables.has(kind, level, next)
+                        && !com.senne.imttech.weapons.Emp.cutsCable(level, next)) {
+                    seen.add(cable);
+                    remember(parents, cable, from);
+                    todo.add(cable);
+                }
+            }
+            if (fromSwitch) {
+                continue; // uit een switch alleen in een PoE-kabel (hierboven), niet in een blok ertegen
+            }
+            Node block = new Node(next.immutable(), null);
+            if (seen.contains(block)) {
+                continue;
+            }
             // In een switch kom je alleen vanaf een PoE-kabel, door een poort die aan staat.
             if (state.getBlock() instanceof com.senne.imttech.lan.NetworkSwitchBlock) {
                 if (fromPoe && com.senne.imttech.lan.NetworkSwitchBlock.isOn(state, direction.getOpposite())) {
-                    seen.add(next);
-                    remember(parents, next, from);
-                    cables.add(next);
+                    seen.add(block);
+                    remember(parents, block, from);
+                    todo.add(block);
                 }
+                continue;
+            }
+            // Hoofdstuk 85: een PoE-kabel sluit alleen op netwerkblokken aan. Een generator, een lichtschakelaar, een
+            // stroomkast of een drone-dock ernaast doet niets.
+            if (fromPoe && !takesPoe(state)) {
                 continue;
             }
             // Een lichtschakelaar is een stukje kabel dat aan of uit kan: aan = de stroom gaat erdoor,
             // uit = hier houdt het op (ook als er een getekende kabel door de schakelaar loopt).
             if (state.getBlock() instanceof com.senne.imttech.light.LightSwitchBlock) {
-                seen.add(next);
-                remember(parents, next, from);
+                seen.add(block);
+                remember(parents, block, from);
                 if (com.senne.imttech.light.LightSwitchBlock.isOn(state)) {
-                    cables.add(next);
+                    todo.add(block);
                 }
                 continue;
             }
             // In een stroomkast kom je alleen via een kant die aan staat.
             if (state.getBlock() instanceof PowerCabinetBlock) {
                 if (PowerCabinetBlock.isOn(state, direction.getOpposite())) {
-                    seen.add(next);
-                    remember(parents, next, from);
-                    cables.add(next);
+                    seen.add(block);
+                    remember(parents, block, from);
+                    todo.add(block);
                 }
                 continue;
             }
-            seen.add(next);
-            remember(parents, next, from);
             // Een leverancier kan ook OP een kabel staan: dan is de plek allebei. Hoofdstuk 46: een leverancier van een
             // andere mod (via de energie-capability) telt ook.
             BlockEntity entity = level.getBlockEntity(next);
             if (entity instanceof EnergySource || entity != null && FeBridge.foreignSource(level, next, direction.getOpposite()) != null) {
-                sources.add(next);
+                seen.add(block);
+                remember(parents, block, from);
+                sources.add(next.immutable());
             }
-            // Een kabel die open ligt binnen een EMP-puls (hoofdstuk 35) geeft even niets door; een kabel in een muur wel.
-            // Een stroomkabel of een PoE-kabel (hoofdstuk 38).
-            boolean cable = Cables.carriesPower(level, next) && !com.senne.imttech.weapons.Emp.cutsCable(level, next);
-            // De Security Core geeft stroom door aan wat erop aangesloten is (zijn PoE-kabels, hoofdstuk 38).
-            if (cable || state.is(ModBlocks.DRONE_DOCK.get())
+            // Blokken die de stroom doorgeven aan wie ertegen staat. De Security Core geeft stroom door aan wat erop
+            // aangesloten is (zijn PoE-kabels, hoofdstuk 38).
+            if (state.is(ModBlocks.DRONE_DOCK.get())
                     || state.is(ModBlocks.LASER_EMITTER.get()) || state.is(ModBlocks.LASER_BRIDGE.get())
                     || state.is(ModBlocks.SERVER_RACK.get()) || state.is(ModBlocks.SECURITY_CORE.get())
                     || state.is(ModBlocks.CAMERA_MONITOR.get())) {
-                cables.add(next);
+                seen.add(block);
+                remember(parents, block, from);
+                todo.add(block);
             }
         }
     }
 
     /** Onthoudt (als we een weg zoeken) dat we {@code next} vanaf {@code from} bereikten. */
-    private static void remember(@Nullable Map<BlockPos, BlockPos> parents, BlockPos next, BlockPos from) {
+    private static void remember(@Nullable Map<Node, Node> parents, Node next, Node from) {
         if (parents != null) {
-            parents.put(next.immutable(), from.immutable());
+            parents.putIfAbsent(next, from);
         }
     }
 

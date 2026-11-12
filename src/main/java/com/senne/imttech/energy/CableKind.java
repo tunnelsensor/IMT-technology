@@ -16,6 +16,8 @@ import net.neoforged.neoforge.attachment.AttachmentType;
  *   <li><b>POE</b>: "Power over Ethernet" (groen): stroom en netwerk in één kabel. De desktop voedt hem met zijn eigen
  *       stroom.</li>
  * </ul>
+ * Sinds hoofdstuk 85 zitten de drie soorten niet meer aan elkaar vast (zie {@link #joins}), en sluiten een netwerkkabel en
+ * een PoE-kabel alleen op netwerkblokken aan (zie {@link #connectsTo}).
  */
 public enum CableKind {
     POWER("imttech_cable"),
@@ -56,12 +58,27 @@ public enum CableKind {
     }
 
     /**
-     * Zitten twee kabels van deze soorten aan elkaar vast als ze tegen elkaar aan liggen? Dezelfde soort altijd. Een
-     * PoE-kabel ook aan een stroomkabel (dan gaat de stroom erdoor) en aan een netwerkkabel (dan gaat het netwerk
-     * erdoor). Een stroomkabel en een netwerkkabel niet: die hebben niets met elkaar te maken.
+     * Zitten twee kabels van deze soorten aan elkaar vast als ze tegen elkaar aan liggen? Alleen dezelfde soort. Hoofdstuk 85
+     * (jouw wens: "zorg ook dat power cable, netwerk en poe niet connecten aan elkaar"): een PoE-kabel zit dus niet meer vast
+     * aan een stroom- of netwerkkabel. Van de ene soort naar de andere gaat het alleen via een blok: één stroomkabel op de
+     * Security Core voedt zijn PoE-kabels (zie PowerGrid).
      */
     public boolean joins(CableKind other) {
-        return this == other || this == POE || other == POE;
+        return this == other;
+    }
+
+    /**
+     * Sluit deze soort kabel aan op dit blok (hoofdstuk 85, jouw wens: "elke blok die in een netwerk kan, kan een power,
+     * netwerk en poe kabel hebben. Iets dat niet in een netwerk kan, kan enkel een powercable")? Een stroomkabel op elk blok
+     * dat stroom gebruikt of maakt; een netwerkkabel en een PoE-kabel alleen op een netwerkblok (zie NetworkConnectable).
+     * Zo krijgt een Crusher of een generator nooit stroom via PoE. Het tekenen van de kabels (CableRenderer) en de
+     * zoektochten van het stroomnet (PowerGrid) en het netwerk (LanGrid) houden zich hieraan.
+     */
+    public boolean connectsTo(net.minecraft.world.level.block.state.BlockState state, boolean energySource) {
+        if (state.getBlock() instanceof com.senne.imttech.lan.NetworkConnectable) {
+            return true;
+        }
+        return this == POWER && (energySource || state.getBlock() instanceof PowerConnectable);
     }
 
     /** De rol van deze soort: wat je terugkrijgt als je een stukje opraapt of doorknipt. */

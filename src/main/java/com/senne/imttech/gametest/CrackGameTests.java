@@ -7,6 +7,9 @@ import com.senne.imttech.breach.Cracks;
 import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.guns.CrushedGunpowderItem;
 import com.senne.imttech.guns.ReloadingBenchBlockEntity;
+import com.senne.imttech.plastic.CableMaterials;
+import com.senne.imttech.plastic.PolymerizerBlock;
+import com.senne.imttech.plastic.PolymerizerBlockEntity;
 import com.senne.imttech.registry.ModBlocks;
 import com.senne.imttech.registry.ModItems;
 import com.senne.imttech.repair.CrackMachineBlock;
@@ -516,5 +519,169 @@ public final class CrackGameTests {
                             "Het nieuwe obsidiaan zou weer helemaal sterk moeten zijn, niet " + strength(helper, BLOCK));
                 })
                 .thenSucceed();
+    }
+
+    // ================================================================ Hoofdstuk 85: koperdraad, polymeer en plastic
+
+    /**
+     * Hoofdstuk 85 (jouw wens: "copper wire ... dit krijg je door copper te crushen in een crusher"): twee koperstaven in de
+     * Crusher; na vijf seconden liggen er 3 Copper Wire (het getal uit de config) in het vakje eruit en zit er nog één
+     * koperstaaf in. De Compactor neemt geen koper, en koperdraad hoort bij de tag c:wires/copper (zo telt ook de koperdraad
+     * van een andere mod in de recepten van de kabels).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "cracks")
+    public static void crusher_grinds_copper_into_wire(GameTestHelper helper) {
+        CrackMachineBlockEntity crusher = crusher(helper, new BlockPos(6, 2, 6), true);
+        CrackMachineBlockEntity compactor = machine(helper, ModBlocks.COMPACTOR.get(), new BlockPos(10, 2, 6), false);
+        int per = CableMaterials.wirePerIngot();
+        check(!compactor.canPlaceItem(CrackMachineBlockEntity.SLOT_IN, new ItemStack(Items.COPPER_INGOT)), "De Compactor neemt koper aan");
+        check(!crusher.canPlaceItem(CrackMachineBlockEntity.SLOT_IN, new ItemStack(ModItems.COPPER_WIRE.get())),
+                "De Crusher neemt koperdraad aan");
+        check(new ItemStack(ModItems.COPPER_WIRE.get()).is(net.minecraft.tags.ItemTags.create(
+                        net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("c", "wires/copper"))),
+                "Copper Wire staat niet in de tag c:wires/copper");
+        crusher.setItem(CrackMachineBlockEntity.SLOT_IN, new ItemStack(Items.COPPER_INGOT, 2));
+        helper.runAfterDelay(Math.round(ImtConfig.Repair.MACHINE_TICKS) + 5, () -> {
+            ItemStack out = crusher.getItem(CrackMachineBlockEntity.SLOT_OUT);
+            check(out.is(ModItems.COPPER_WIRE.get()) && out.getCount() == per,
+                    "Na vijf seconden zouden er " + per + " Copper Wire uit moeten komen, niet " + out);
+            check(crusher.getItem(CrackMachineBlockEntity.SLOT_IN).getCount() == 1, "Er zou nog één koperstaaf in moeten zitten");
+            helper.succeed();
+        });
+    }
+
+    /** Een Polymerizer op deze plek, met (als {@code power}) een warmtegenerator vol stroom ernaast. */
+    private static PolymerizerBlockEntity polymerizer(GameTestHelper helper, BlockPos pos, boolean power) {
+        helper.setBlock(pos, ModBlocks.POLYMERIZER.get());
+        if (power) {
+            helper.setBlock(pos.west(), ModBlocks.HEAT_GENERATOR.get());
+            ((ChargerBlockEntity) helper.getBlockEntity(pos.west())).fill(5_000);
+        }
+        return (PolymerizerBlockEntity) helper.getBlockEntity(pos);
+    }
+
+    /**
+     * Hoofdstuk 85 (jouw wens: "polymers krijg je van coal met water in een nieuwe machine zoals een crusher"): een emmer
+     * water in het emmervakje gaat in de tank (de lege emmer blijft liggen), en met twee kool erin liggen er na vijf seconden
+     * 2 Polymer in het vakje eruit. Er ging één kool en 250 mB water uit, hij draait, en hij gebruikte stroom. Houtskool telt
+     * ook als kool.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "cracks")
+    public static void polymerizer_makes_polymer_from_coal_and_water(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(6, 2, 6);
+        PolymerizerBlockEntity machine = polymerizer(helper, pos, true);
+        ChargerBlockEntity generator = (ChargerBlockEntity) helper.getBlockEntity(pos.west());
+        int before = generator.energy();
+        check(machine.canPlaceItem(PolymerizerBlockEntity.SLOT_COAL, new ItemStack(Items.CHARCOAL)), "Houtskool mag er niet in");
+        check(!machine.canPlaceItem(PolymerizerBlockEntity.SLOT_COAL, new ItemStack(Items.STONE)), "Steen mag in het koolvakje");
+        check(!machine.canPlaceItem(PolymerizerBlockEntity.SLOT_BUCKET, new ItemStack(Items.LAVA_BUCKET)), "Lava mag in het emmervakje");
+        machine.setItem(PolymerizerBlockEntity.SLOT_BUCKET, new ItemStack(Items.WATER_BUCKET));
+        machine.setItem(PolymerizerBlockEntity.SLOT_COAL, new ItemStack(Items.COAL, 2));
+        helper.runAfterDelay(CableMaterials.ticks() + 5, () -> {
+            ItemStack out = machine.getItem(PolymerizerBlockEntity.SLOT_OUT);
+            check(out.is(ModItems.POLYMER.get()) && out.getCount() == CableMaterials.polymerPerCoal(),
+                    "Na vijf seconden zou er " + CableMaterials.polymerPerCoal() + " polymeer uit moeten komen, niet " + out);
+            check(machine.getItem(PolymerizerBlockEntity.SLOT_COAL).getCount() == 1, "Er zou nog één kool in moeten zitten");
+            check(machine.getItem(PolymerizerBlockEntity.SLOT_BUCKET).is(Items.BUCKET), "De lege emmer ligt niet in het emmervakje");
+            check(machine.waterAmount() == CableMaterials.BUCKET - CableMaterials.waterPerCoal(),
+                    "Er zou " + (CableMaterials.BUCKET - CableMaterials.waterPerCoal()) + " mB water over moeten zijn, niet "
+                            + machine.waterAmount());
+            int used = before - generator.energy();
+            check(used >= CableMaterials.ticks() * ImtConfig.Power.POLYMERIZER, "De Polymerizer gebruikte te weinig stroom: " + used);
+            helper.assertBlockProperty(pos, PolymerizerBlock.WORKING, true);
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Zonder water wacht hij ("No water"), en zonder stroom ook ("No power"). Rechtsklik met een emmer water vult de tank
+     * (je houdt een lege emmer over), tot hij vol is: dan blijft je emmer vol. Een buis van een andere mod pompt water in
+     * zijn tank (de vloeistof-capability), maar geen lava, en eruit halen kan niet.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "cracks")
+    public static void polymerizer_needs_water_and_power(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        PolymerizerBlockEntity dry = polymerizer(helper, new BlockPos(6, 2, 6), true);
+        dry.setItem(PolymerizerBlockEntity.SLOT_COAL, new ItemStack(Items.COAL));
+        BlockPos darkPos = new BlockPos(10, 2, 6);
+        PolymerizerBlockEntity dark = polymerizer(helper, darkPos, false);
+        dark.setItem(PolymerizerBlockEntity.SLOT_COAL, new ItemStack(Items.COAL));
+        dark.setWater(CableMaterials.BUCKET);
+
+        // Rechtsklik met een emmer water, tot de tank vol is.
+        BlockPos fillPos = new BlockPos(14, 2, 6);
+        PolymerizerBlockEntity fill = polymerizer(helper, fillPos, false);
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        player.setGameMode(GameType.SURVIVAL);
+        int buckets = CableMaterials.tank() / CableMaterials.BUCKET;
+        BlockPos fillAbs = helper.absolutePos(fillPos);
+        BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(fillAbs), Direction.UP, fillAbs, false);
+        for (int i = 0; i <= buckets; i++) {
+            player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.WATER_BUCKET));
+            level.getBlockState(fillAbs).useItemOn(player.getMainHandItem(), level, player, InteractionHand.MAIN_HAND, hit);
+            boolean full = i == buckets;
+            check(player.getMainHandItem().is(full ? Items.WATER_BUCKET : Items.BUCKET),
+                    full ? "Een volle tank nam toch nog een emmer" : "Na een emmer water hield je geen lege emmer over");
+        }
+        check(fill.waterAmount() == buckets * CableMaterials.BUCKET, "De tank zou vol moeten zijn, niet " + fill.waterAmount());
+
+        // Een buis (de vloeistof-capability): water erin, lava niet, en eruit niets.
+        BlockPos pipePos = new BlockPos(18, 2, 6);
+        PolymerizerBlockEntity piped = polymerizer(helper, pipePos, false);
+        var tank = level.getCapability(net.neoforged.neoforge.capabilities.Capabilities.FluidHandler.BLOCK,
+                helper.absolutePos(pipePos), Direction.UP);
+        check(tank != null, "De Polymerizer heeft geen vloeistof-capability");
+        var action = net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE;
+        check(tank.fill(new net.neoforged.neoforge.fluids.FluidStack(net.minecraft.world.level.material.Fluids.LAVA, 500), action) == 0,
+                "De tank nam lava aan");
+        check(tank.fill(new net.neoforged.neoforge.fluids.FluidStack(net.minecraft.world.level.material.Fluids.WATER, 500), action) == 500
+                && piped.waterAmount() == 500, "Een buis kon geen 500 mB water in de tank pompen");
+        check(tank.drain(500, action).isEmpty() && piped.waterAmount() == 500, "Een buis haalde water uit de tank");
+
+        helper.runAfterDelay(CableMaterials.ticks() + 10, () -> {
+            check(dry.getItem(PolymerizerBlockEntity.SLOT_OUT).isEmpty() && dry.status() == PolymerizerBlockEntity.Status.NO_WATER,
+                    "Zonder water zou hij moeten wachten met 'No water', niet " + dry.status());
+            check(dark.getItem(PolymerizerBlockEntity.SLOT_OUT).isEmpty() && dark.status() == PolymerizerBlockEntity.Status.NO_POWER,
+                    "Zonder stroom zou hij moeten wachten met 'No power', niet " + dark.status());
+            helper.succeed();
+        });
+    }
+
+    /**
+     * De recepten van hoofdstuk 85 (jouw wens): koperdraad + plastic = 8 stroomkabels; koperdraad + stroomkabel + plastic = 4
+     * netwerkkabels; stroomkabel + netwerkkabel + plastic = 2 PoE-kabels; polymeer in een oven = plastic. De oude recepten
+     * (koper + redstone, koper + kwarts, groene kleurstof, slijm + kool voor polymeer) bestaan niet meer.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "cracks")
+    public static void cable_recipes_use_copper_wire_and_plastic(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ItemStack wire = new ItemStack(ModItems.COPPER_WIRE.get());
+        ItemStack plastic = new ItemStack(ModItems.PLASTIC.get());
+        ItemStack power = new ItemStack(ModItems.CABLE.get());
+        ItemStack network = new ItemStack(ModItems.NETWORK_CABLE.get());
+        checkCraft(level, List.of(wire, plastic), new ItemStack(ModItems.CABLE.get(), 8));
+        checkCraft(level, List.of(wire, power, plastic), new ItemStack(ModItems.NETWORK_CABLE.get(), 4));
+        checkCraft(level, List.of(power, network, plastic), new ItemStack(ModItems.POE_CABLE.get(), 2));
+        checkCraft(level, List.of(new ItemStack(Items.COPPER_INGOT), new ItemStack(Items.REDSTONE), new ItemStack(Items.COPPER_INGOT)),
+                ItemStack.EMPTY);
+        checkCraft(level, List.of(new ItemStack(Items.COPPER_INGOT), new ItemStack(Items.QUARTZ), new ItemStack(Items.COPPER_INGOT)),
+                ItemStack.EMPTY);
+        checkCraft(level, List.of(power, network, new ItemStack(Items.LIME_DYE)), ItemStack.EMPTY);
+        checkCraft(level, List.of(new ItemStack(Items.SLIME_BALL), new ItemStack(Items.SLIME_BALL), new ItemStack(Items.COAL)),
+                ItemStack.EMPTY);
+        var smelt = level.getRecipeManager().getRecipeFor(net.minecraft.world.item.crafting.RecipeType.SMELTING,
+                new net.minecraft.world.item.crafting.SingleRecipeInput(new ItemStack(ModItems.POLYMER.get())), level);
+        check(smelt.isPresent() && smelt.get().value().getResultItem(level.registryAccess()).is(ModItems.PLASTIC.get()),
+                "Polymeer smelt in een oven niet tot plastic");
+        helper.succeed();
+    }
+
+    /** Wat deze voorwerpen op een rij in een werkbank maken (of EMPTY als er geen recept is) moet {@code expected} zijn. */
+    private static void checkCraft(ServerLevel level, List<ItemStack> row, ItemStack expected) {
+        var input = net.minecraft.world.item.crafting.CraftingInput.of(row.size(), 1, row);
+        ItemStack made = level.getRecipeManager().getRecipeFor(net.minecraft.world.item.crafting.RecipeType.CRAFTING, input, level)
+                .map(recipe -> recipe.value().assemble(input, level.registryAccess())).orElse(ItemStack.EMPTY);
+        check(ItemStack.isSameItem(made, expected) && made.getCount() == expected.getCount(),
+                row + " zou " + expected + " moeten maken, niet " + made);
     }
 }
