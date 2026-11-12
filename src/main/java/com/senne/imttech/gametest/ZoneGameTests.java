@@ -539,6 +539,51 @@ public final class ZoneGameTests {
         finish(helper, core);
     }
 
+    /**
+     * Hoofdstuk 92: met de bril zie je door een muur heen alleen je eigen kabels (waar ook) en alle kabels in een zone waar
+     * je mag bouwen (de zones die de server je stuurt voor de rand). Een vreemde ziet de kabels in de basis van een ander
+     * niet, ook niet die van niemand; wel een kabel die hij er zelf legde. De vriend van de eigenaar ziet ze allemaal.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "zones")
+    public static void cable_xray_only_yours_or_in_your_zone(GameTestHelper helper) {
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(3, 3, 7), "zone-owner");
+        ServerPlayer outsider = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(14, 3, 14), "zone-outsider");
+        ServerPlayer friend = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(16, 3, 14), "zone-friend");
+        SecurityCoreBlockEntity core = zoneCore(helper, owner);
+        core.addTrusted(friend.getUUID(), friend.getGameProfile().getName());
+        BlockPos inZone = helper.absolutePos(new BlockPos(8, 3, 8));
+        BlockPos outside = helper.absolutePos(new BlockPos(1, 3, 14));
+        java.util.UUID o = owner.getUUID();
+        java.util.UUID x = outsider.getUUID();
+        // De eigenaar: zijn eigen kabels overal, en alles in zijn zone (ook van de vreemde, en oude van niemand).
+        checkXray(owner, o, outside, true, "de eigenaar zijn eigen kabel buiten de zone");
+        checkXray(owner, o, inZone, true, "de eigenaar zijn eigen kabel in zijn zone");
+        checkXray(owner, x, inZone, true, "de eigenaar de kabel die een vreemde in zijn zone legde");
+        checkXray(owner, null, inZone, true, "de eigenaar een kabel van niemand in zijn zone");
+        checkXray(owner, x, outside, false, "de eigenaar de kabel van een vreemde buiten zijn zone");
+        checkXray(owner, null, outside, false, "de eigenaar een kabel van niemand buiten een zone");
+        // De vreemde: niets van de eigenaar, ook niet in de zone; wel wat hij er zelf legde.
+        checkXray(outsider, o, inZone, false, "de vreemde de kabel van de eigenaar in diens zone");
+        checkXray(outsider, o, outside, false, "de vreemde de kabel van de eigenaar buiten de zone");
+        checkXray(outsider, null, inZone, false, "de vreemde een kabel van niemand in de zone van een ander");
+        checkXray(outsider, x, inZone, true, "de vreemde zijn eigen kabel in de zone van een ander");
+        // De vriend (vertrouwd op de kern): alles in de zone, niet de kabels van de eigenaar erbuiten.
+        checkXray(friend, o, inZone, true, "de vriend de kabel van de eigenaar in diens zone");
+        checkXray(friend, null, inZone, true, "de vriend een kabel van niemand in de zone");
+        checkXray(friend, o, outside, false, "de vriend de kabel van de eigenaar buiten de zone");
+        finish(helper, core);
+    }
+
+    /** Ziet {@code viewer} (met de zones die de server hem stuurt) een kabel van {@code cableOwner} op {@code cell} door de muur? */
+    private static void checkXray(ServerPlayer viewer, @org.jetbrains.annotations.Nullable java.util.UUID cableOwner,
+                                  BlockPos cell, boolean expected, String what) {
+        boolean sees = com.senne.imttech.energy.CableSight.mayXray(cableOwner, viewer.getUUID(), ZoneSync.visibleTo(viewer), cell);
+        if (sees != expected) {
+            throw new GameTestAssertException("Met de bril zou " + what
+                    + (expected ? " door de muur moeten zien" : " niet door de muur mogen zien"));
+        }
+    }
+
     /** Krijgt deze speler van de server de zone van de kern op {@code core} (actief of niet)? */
     private static boolean seesZone(ServerPlayer player, BlockPos core, boolean active) {
         return ZoneSync.visibleTo(player).stream().anyMatch(view -> view.core().equals(core) && view.active() == active);

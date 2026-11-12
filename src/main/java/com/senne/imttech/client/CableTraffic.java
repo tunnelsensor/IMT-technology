@@ -4,7 +4,9 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.senne.imttech.energy.CableGeometry;
+import com.senne.imttech.client.zone.ZoneClientState;
 import com.senne.imttech.energy.CableKind;
+import com.senne.imttech.energy.CableSight;
 import com.senne.imttech.energy.Cables;
 import com.senne.imttech.energy.PowerCables;
 import com.senne.imttech.network.CableTrafficPayload;
@@ -32,7 +34,8 @@ import org.jetbrains.annotations.Nullable;
  *       een PoE-kabel;</li>
  *   <li><b>stroom</b>: gele streepjes die van de leverancier naar het apparaat lopen, over stroom- en PoE-kabels.</li>
  * </ul>
- * Over een kabel in een muur zie je het alleen met de kabel-xray van de bril aan (net als de kabel zelf). In een blok
+ * Over een kabel in een muur zie je het alleen met de kabel-xray van de bril aan (net als de kabel zelf), en dan alleen
+ * over je eigen kabels en die in een zone waar je mag bouwen (hoofdstuk 92, zie CableSight). In een blok
  * (een switch, de kern) zie je het vakje niet: dat zit dan binnenin. Aan of uit in G > Information (Cable signals,
  * Power flow).
  */
@@ -83,8 +86,11 @@ public final class CableTraffic {
         }
     }
 
-    /** Een plek van de weg: ligt er een kabel om op te tekenen, zit die in een muur, en in welke kleur. */
-    private record Cell(boolean cable, boolean hidden, int colour) {}
+    /**
+     * Een plek van de weg: ligt er een kabel om op te tekenen, zit die in een muur, in welke kleur, en mag jij hem door een
+     * muur heen zien (je eigen kabel, of een in je zone: hoofdstuk 92).
+     */
+    private record Cell(boolean cable, boolean hidden, int colour, boolean yours) {}
 
     /** Een hele weg: de stukjes, de plekken, hoe lang hij is, en een punt om te kijken of hij dichtbij is. */
     private record Route(List<Segment> segments, List<Cell> cells, double length, Vec3 centre) {}
@@ -132,11 +138,14 @@ public final class CableTraffic {
         List<Cell> cells = new ArrayList<>();
         double length = 0;
         Vec3 last = null;
+        var player = Minecraft.getInstance().player;
         for (int i = 0; i < path.size(); i++) {
             BlockPos pos = path.get(i);
             CableKind kind = kindAt(level, pos, power);
             boolean hidden = kind != null && PowerCables.isSolid(level, pos);
-            cells.add(new Cell(kind != null, hidden, power ? YELLOW : kind == CableKind.POE ? GREEN : WHITE));
+            boolean yours = kind != null && player != null
+                    && CableSight.mayXray(Cables.owner(kind, level, pos), player.getUUID(), ZoneClientState.zones(), pos);
+            cells.add(new Cell(kind != null, hidden, power ? YELLOW : kind == CableKind.POE ? GREEN : WHITE, yours));
             for (Vec3 point : points(level, path, i, kind, hidden)) {
                 if (last != null && point.distanceToSqr(last) > 1.0E-8) {
                     double piece = last.distanceTo(point);
@@ -204,7 +213,8 @@ public final class CableTraffic {
             return;
         }
         // Eerst gewoon (alleen over open kabels, achter een muur onzichtbaar); met de kabel-xray aan daarna nog eens door
-        // alles heen, over ALLE kabels (ook open kabels in een andere kamer, hoofdstuk 54).
+        // alles heen, over ALLE kabels (ook open kabels in een andere kamer, hoofdstuk 54) die van jou zijn of in je zone
+        // liggen (hoofdstuk 92).
         for (boolean through : new boolean[] {false, true}) {
             if (through && !xray) {
                 continue;
@@ -250,7 +260,7 @@ public final class CableTraffic {
                 continue;
             }
             Cell cell = route.cells().get(segment.cell());
-            if (cell.cable() && (through || !cell.hidden())) {
+            if (cell.cable() && (through ? cell.yours() : !cell.hidden())) {
                 Vec3 p = segment.at(distance);
                 cuboid(m, vc, p, p, 0.07, cell.colour(), 230);
                 cuboid(m, vc, p, p, 0.14, cell.colour(), 70);
@@ -270,7 +280,7 @@ public final class CableTraffic {
         double offset = (now * FLOW_SPEED) % DASH_PERIOD;
         for (Segment segment : route.segments()) {
             Cell cell = route.cells().get(segment.cell());
-            if (!cell.cable() || (!through && cell.hidden()) || segment.length() <= 0) {
+            if (!cell.cable() || (through ? !cell.yours() : cell.hidden()) || segment.length() <= 0) {
                 continue;
             }
             double end = segment.from() + segment.length();

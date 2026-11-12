@@ -141,7 +141,7 @@ I.M.T**:
 
 Had je de mod al, dan zet hij je oude toetsen bij het eerste opstarten één keer om (alleen de toetsen
 die nog op hun oude letter stonden; zelf gekozen toetsen blijven). In Opties > Besturing > I.M.T staan
-ook "Cable X-ray on/off" (verborgen kabels door muren heen zien), "Zone border on/off" (de rand van je
+ook "Cable X-ray on/off" (je eigen verborgen kabels door muren heen zien), "Zone border on/off" (de rand van je
 zones), "Coordinates on/off" (je coördinaten in de bril), en de quickdraws en pouches van de vuurwapens
 ("Quickdraw: pistol", "Quickdraw: grenade", "Open the holster", "Open the grenade pouch", "Open the
 magazine pouch"), ook allemaal standaard zonder toets.
@@ -159,7 +159,7 @@ magazine pouch"), ook allemaal standaard zonder toets.
 | **Transport** | Zelf vliegen, autopiloot, vrachtdrone, iemand vervoeren |
 | **Tech** | Redstone-relais, muziek (Spotify), hacken |
 | **Illusion** | Valse muur, nep-leger, onzichtbaar veld, stoppen |
-| **Information** | Ertsen-scan, dreigingsscan, doelwit-analyse, kabel-xray (verborgen kabels zien), zonerand, Numbers (hoe grote getallen eruitzien: 5 000, 5.000, 5k...) |
+| **Information** | Ertsen-scan, dreigingsscan, doelwit-analyse, kabel-xray (je eigen verborgen kabels zien), zonerand, Numbers (hoe grote getallen eruitzien: 5 000, 5.000, 5k...) |
 | **Navigation** | Waypoints, ping, comms, coördinaten aan/uit (X, Y en Z rechtsboven; de icoontjes van drankeffecten staan dan eronder) |
 | **Systems** | Eigendom overdragen, stem, spraakbesturing, commando's bewerken, spraaktekst, nachtzicht |
 
@@ -442,6 +442,11 @@ Kabels zijn **geen blokken**: je **tekent** ze.
   **G > Information > Cable X-ray** (of geef het een eigen toets in Opties > Besturing > I.M.T:
   "Cable X-ray on/off"). Met de xray aan zie je dichtbij ook **open** kabels door een muur heen
   (een kabel in de kamer ernaast), en de stroom en signalen die erover lopen.
+- Door een muur heen zie je alleen **je eigen kabels** (die jij legde, waar ze ook liggen) en **alle kabels in
+  een zone waar jij mag bouwen** (je eigen zones en die van wie jou vertrouwt). De kabels van een ander buiten
+  jouw zones zie je niet door de muur, en ook de stroom en signalen erover niet: zo kijk je niet zomaar in
+  iemands basis. Kabels van vóór 12 november zijn van niemand: die zie je alleen nog in je zone (of leg ze
+  opnieuw).
 - Er zijn **drie soorten kabel**: de stroomkabel (grijs), de **netwerkkabel** (wit) en de
   **PoE-kabel** (groen, stroom en netwerk samen). Ze mogen op dezelfde plek liggen (dan liggen ze
   netjes boven elkaar) zonder elkaar te raken. Een blok dat in een netwerk kan (de kern, lezers,

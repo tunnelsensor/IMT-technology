@@ -47,10 +47,10 @@ public final class ImtClientConfig {
     /**
      * Zie je verborgen kabels (in een muur of vloer) door de muur heen als je de bril draagt? Stroomkabels grijs,
      * netwerkkabels wit, PoE-kabels gloeiend groen (hoofdstuk 38). Aan/uit via G > Information > Cable X-ray (of een
-     * eigen toets).
+     * eigen toets). Sinds hoofdstuk 92 alleen je eigen kabels en die in een zone waar je mag bouwen (zie CableSight).
      */
     public static final ModConfigSpec.BooleanValue CABLE_XRAY = BUILDER
-            .comment("With the I.M.T glasses on, see hidden power, network and PoE cables glow through walls (G > Information > Cable X-ray)")
+            .comment("With the I.M.T glasses on, see your own hidden power, network and PoE cables (and all cables in zones where you may build) glow through walls (G > Information > Cable X-ray)")
             .define("cableXray", true);
 
     /**

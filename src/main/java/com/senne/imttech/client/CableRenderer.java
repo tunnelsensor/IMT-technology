@@ -4,15 +4,19 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import com.senne.imttech.client.zone.ZoneClientState;
 import com.senne.imttech.energy.CableCells;
 import com.senne.imttech.energy.CableGeometry;
 import com.senne.imttech.energy.CableKind;
+import com.senne.imttech.energy.CableSight;
 import com.senne.imttech.energy.Cables;
 import com.senne.imttech.energy.EnergySource;
 import com.senne.imttech.energy.PowerCables;
+import com.senne.imttech.network.ZoneSyncPayload;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.UUID;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.LevelRenderer;
@@ -44,6 +48,9 @@ import org.jetbrains.annotations.Nullable;
  * Zit een kabel IN een blok (je bouwde er een muur overheen), dan zie je hem niet: het blok zit ervoor. Draag je de bril,
  * dan licht hij door de muur heen op (tot 24 blokken ver), zodat je weet waar de stroom en het netwerk lopen, en waar je
  * moet knippen. Die "kabel-xray" zet je aan of uit in G > Information (zie ImtClientConfig.CABLE_XRAY).
+ *
+ * Sinds hoofdstuk 92 alleen je <b>eigen</b> kabels, en alle kabels in een zone waar je mag bouwen (zie CableSight): zo kun
+ * je niet meer door de muren van de basis van een ander kijken waar zijn stroom en netwerk lopen.
  */
 public final class CableRenderer {
     private CableRenderer() {}
@@ -127,7 +134,10 @@ public final class CableRenderer {
         MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
         VertexConsumer solid = buffers.getBuffer(CABLE);
         // Verborgen kabels alleen met een werkende bril op, en alleen als de kabel-xray aan staat.
-        boolean xray = ImtClientState.operational && ImtClientConfig.cableXray();
+        boolean xray = ImtClientState.operational && ImtClientConfig.cableXray() && mc.player != null;
+        // Door de muur heen alleen jouw kabels en die in een zone waar je mag bouwen (hoofdstuk 92).
+        UUID me = mc.player != null ? mc.player.getUUID() : null;
+        List<ZoneSyncPayload.View> buildZones = ZoneClientState.zones();
         List<Hidden> hidden = new ArrayList<>();
 
         ChunkPos centre = new ChunkPos(BlockPos.containing(cam));
@@ -148,8 +158,10 @@ public final class CableRenderer {
                             drawCell(m, solid, level, cell, kind, LevelRenderer.getLightColor(level, cell), false);
                         }
                         // Met de xray aan tekenen we dichtbij ALLE kabels nog eens door alles heen: ook een kabel die open
-                        // ligt, maar achter een muur of in een andere kamer (hoofdstuk 54, jouw notitie).
-                        if (xray && cell.distToCenterSqr(cam) < XRAY_RANGE * XRAY_RANGE) {
+                        // ligt, maar achter een muur of in een andere kamer (hoofdstuk 54, jouw notitie). Alleen de
+                        // jouwe en die in je zones (hoofdstuk 92).
+                        if (xray && cell.distToCenterSqr(cam) < XRAY_RANGE * XRAY_RANGE
+                                && CableSight.mayXray(cells.owner(cell), me, buildZones, cell)) {
                             hidden.add(new Hidden(cell, kind, inWall));
                         }
                     });

@@ -1,6 +1,7 @@
 package com.senne.imttech.gametest;
 
 import com.senne.imttech.ImtTech;
+import com.senne.imttech.energy.CableCells;
 import com.senne.imttech.energy.CableGeometry;
 import com.senne.imttech.energy.CableKind;
 import com.senne.imttech.energy.CableSpoolItem;
@@ -201,6 +202,71 @@ public final class NetworkGameTests {
     }
 
     /**
+     * Hoofdstuk 92: elk stuk kabel onthoudt wie het legde. Met de rol is het van jou; legt een ander zijn rol over jouw
+     * kabel, dan blijft hij van jou; een kabel zonder speler (een gebouw) is van niemand. Dat blijft zo na opslaan en laden
+     * (ook een oude wereld, met alleen de plekken, laadt nog: die kabels zijn van niemand) en komt zo bij je spel aan.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "lan")
+    public static void cables_remember_who_laid_them(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer alice = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(8, 4, 12), "lan-owner-a");
+        ServerPlayer bob = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(8, 4, 12), "lan-owner-b");
+        BlockPos floor = new BlockPos(8, 2, 12);
+        helper.setBlock(floor, Blocks.STONE);
+        BlockPos cell = helper.absolutePos(floor.above());
+        CableSpoolItem spool = (CableSpoolItem) ModItems.NETWORK_CABLE.get();
+        for (ServerPlayer player : List.of(alice, bob)) {
+            ZoneGameTests.lookDownAt(helper, player, floor);
+            ItemStack cables = new ItemStack(ModItems.NETWORK_CABLE.get(), 4);
+            player.setItemInHand(InteractionHand.MAIN_HAND, cables);
+            spool.onUseTick(level, player, cables, 0);
+            spool.releaseUsing(cables, level, player, 0);
+        }
+        check(Cables.has(CableKind.NETWORK, level, cell), "De rol legde geen netwerkkabel");
+        check(alice.getUUID().equals(Cables.owner(CableKind.NETWORK, level, cell)),
+                "De kabel is niet van wie hem legde (maar van " + Cables.owner(CableKind.NETWORK, level, cell) + ")");
+        // Een stroomkabel zonder speler op dezelfde plek: die is van niemand, de netwerkkabel blijft van Alice.
+        Cables.add(CableKind.POWER, level, cell);
+        check(Cables.owner(CableKind.POWER, level, cell) == null, "Een kabel zonder speler heeft toch een eigenaar");
+        check(alice.getUUID().equals(Cables.owner(CableKind.NETWORK, level, cell)), "De netwerkkabel veranderde van eigenaar");
+        // Weg en opnieuw gelegd door Bob: nu van Bob.
+        Cables.remove(CableKind.NETWORK, level, cell);
+        check(Cables.owner(CableKind.NETWORK, level, cell) == null, "Een weggehaalde kabel heeft nog een eigenaar");
+        Cables.add(CableKind.NETWORK, level, cell, bob.getUUID());
+        check(bob.getUUID().equals(Cables.owner(CableKind.NETWORK, level, cell)), "De nieuwe kabel is niet van Bob");
+
+        // Opslaan en laden (zoals met de chunk), en naar je spel sturen.
+        BlockPos a = new BlockPos(1, 2, 3);
+        BlockPos b = new BlockPos(-4, 70, 9);
+        BlockPos c = new BlockPos(5, -60, -2);
+        CableCells cells = CableCells.EMPTY.with(a, alice.getUUID()).with(b).with(c, bob.getUUID());
+        net.minecraft.nbt.Tag saved = CableCells.CODEC.encodeStart(net.minecraft.nbt.NbtOps.INSTANCE, cells).getOrThrow();
+        CableCells loaded = CableCells.CODEC.parse(net.minecraft.nbt.NbtOps.INSTANCE, saved).getOrThrow();
+        checkOwners(loaded, a, b, c, alice, bob, "na opslaan en laden");
+        io.netty.buffer.ByteBuf buf = io.netty.buffer.Unpooled.buffer();
+        CableCells.STREAM_CODEC.encode(buf, cells);
+        CableCells sent = CableCells.STREAM_CODEC.decode(buf);
+        checkOwners(sent, a, b, c, alice, bob, "na het versturen");
+        check(!buf.isReadable(), "Na het versturen bleef er iets over in het bericht");
+        // Een oude wereld: alleen de plekken (een rij getallen).
+        net.minecraft.nbt.Tag old = new net.minecraft.nbt.LongArrayTag(new long[] {a.asLong(), b.asLong()});
+        CableCells fromOld = CableCells.CODEC.parse(net.minecraft.nbt.NbtOps.INSTANCE, old).getOrThrow();
+        check(fromOld.size() == 2 && fromOld.contains(a) && fromOld.contains(b), "Een oude wereld laadt zijn kabels niet");
+        check(fromOld.owner(a) == null && fromOld.owner(b) == null, "Een kabel uit een oude wereld heeft toch een eigenaar");
+        check(cells.without(a).owner(a) == null && cells.without(a).owner(c) != null, "Weghalen nam de verkeerde eigenaar mee");
+        helper.succeed();
+    }
+
+    /** Liggen de drie plekken er, met Alice, niemand en Bob als eigenaar? */
+    private static void checkOwners(CableCells cells, BlockPos a, BlockPos b, BlockPos c, ServerPlayer alice, ServerPlayer bob,
+                                    String when) {
+        check(cells.size() == 3 && cells.contains(a) && cells.contains(b) && cells.contains(c),
+                "De kabels kloppen niet meer " + when + " (" + cells.size() + ")");
+        check(alice.getUUID().equals(cells.owner(a)) && cells.owner(b) == null && bob.getUUID().equals(cells.owner(c)),
+                "De eigenaars kloppen niet meer " + when);
+    }
+
+    /**
      * Een schaar knipt per klik één kabel door, ook als er twee soorten op dezelfde plek liggen. Er valt een stukje van die
      * soort uit (een netwerkkabel geeft een rol netwerkkabel, geen stroomkabel).
      */
@@ -249,6 +315,8 @@ public final class NetworkGameTests {
         check(Cables.has(CableKind.NETWORK, level, pos) && Cables.has(CableKind.POE, level, pos),
                 "De marker werd geen netwerk- en PoE-kabel: " + Cables.at(level, pos));
         check(!Cables.has(CableKind.POWER, level, pos), "De marker werd ook een stroomkabel");
+        check(Cables.owner(CableKind.NETWORK, level, pos) == null && Cables.owner(CableKind.POE, level, pos) == null,
+                "Een kabel uit een gebouw is van iemand (hoofdstuk 92: van niemand, dus niet door de muur te zien)");
         check(level.getEntitiesOfClass(Marker.class, new AABB(pos).inflate(1)).isEmpty(), "De marker staat nog in de wereld");
         helper.succeed();
     }

@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 512 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 513 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -6928,6 +6928,45 @@ in singleplayer ging, had je eerst op de server gespeeld zonder het spel ertusse
       af (de Glock hield 16 patronen, het laserpistool 20 van 20 schoten), met de oplossing allebei wel (screenshot
       `wc02_shot_in_new_world`: "14 +1"). Geen nieuwe automatische test: die draaien op een server zonder spelvenster, en
       dit zat in je spel.
+
+### 92. De kabel-xray toont alleen je eigen kabels (12 november)
+
+Jouw wens: "Kun je zorgen dat je enkel je eigen dingen kunt x-rayen zoals kabels en signalen omdat je ander makkelijk
+kunt x-rayen naar ander mensen hun base".
+
+Hoe het was: met de bril op en de kabel-xray aan zag je tot 24 blokken ver **alle** kabels door muren en vloeren heen,
+ook die in de basis van een ander, en de signalen en de stroom die erover liepen. Zo zag je van buitenaf waar zijn kern,
+zijn lezers en zijn stroom zaten, en waar je moest knippen.
+
+- [x] **Elk stuk kabel onthoudt wie het legde** (`CableCells`, `Cables.owner`): leg je een kabel met de rol, dan is hij
+      van jou. Ligt er al een kabel van die soort, dan blijft hij van wie hem eerst legde. De kabels van de gebouwen van
+      deze mod (de toren, de bunker) zijn van niemand. Het wordt met de chunk bewaard; een oude wereld laadt gewoon, maar
+      de kabels van vóór vandaag zijn van niemand (de wereld wist niet wie ze legde).
+- [x] **Door een muur heen zie je nu** (`CableSight`, mijn keuze, zeg het als je het anders wilt):
+      - de kabels die **jij** legde, waar ze ook liggen;
+      - **alle** kabels in een **zone waar jij mag bouwen**: je eigen zones en die van wie jou vertrouwt of in je team
+        zit, dezelfde zones waarvan je de rand ziet. Daar zie je ook de kabels van je vrienden, je oude kabels (van
+        niemand), en een kabel die een vreemde in je basis legde om je stroom af te tappen.
+
+      De rest (de kabels van een ander buiten jouw zones, en die in de toren en de bunker) zie je alleen nog als ze open
+      liggen en je ze gewoon ziet, niet meer door een muur heen. Je oude kabels **buiten** een zone zie je dus ook niet
+      meer door de muur: leg ze opnieuw (shift + rechtsklik met de rol raapt ze op), of trek een zone over je basis.
+- [x] **Signalen en stroom** (Cable signals, Power flow) volgen dezelfde regel (`client/CableTraffic`): door de muur heen
+      alleen over jouw kabels en die in je zones. Over een open kabel die je gewoon ziet liggen, zie je ze nog wel (dat
+      zie je ook zonder bril).
+- [x] **Dit beslist je eigen spel**: het kent de eigenaar van elke kabel en de zones waar je mag bouwen (die stuurt de
+      server al voor de rand, `ZoneSync`). Omdat de kabels nu met hun eigenaar naar je spel gaan, is het protocol 36
+      geworden: de server en iedereen die meespeelt moeten deze versie hebben.
+- [x] **Rondleiding en showcase**: de kabels die de testwereld legt, zijn nu van de speler van de rondleiding (anders
+      zou de xray daar niets meer tonen). Nieuw screenshot (`gradlew runVisualCheck -Ponly=network`):
+      `nw03b_cable_xray_only_yours`, links drie verborgen kabels van een ander (lichten niet op), rechts dezelfde drie
+      van jou (wel).
+- [x] **Tests** — `cables_remember_who_laid_them` (de rol, iemand anders over jouw kabel, een kabel zonder speler,
+      opslaan en laden, een oude wereld, versturen) en `cable_xray_only_yours_or_in_your_zone` (de eigenaar, een vreemde
+      en een vertrouwde vriend, binnen en buiten de zone, met kabels van alle drie en van niemand). En
+      `structure_markers_lay_every_kind_of_cable` kijkt nu ook of een kabel uit een gebouw van niemand is. Volledige ronde:
+      524 tests (met het werk van de andere sessies), de eerste keer alleen de bekende wisselvallige
+      `raven_soldier_shoots` rood, de tweede keer alle 524 groen.
 
 ## Nog nooit in het spel bekeken
 

@@ -4308,7 +4308,7 @@ final class ShowcaseFeatures {
         }
         // PoE van de kern naar de switch, de switch met een grijze stroomkabel.
         for (int dx = 1; dx <= 2; dx++) {
-            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, y.east(dx));
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, y.east(dx), player.getUUID());
         }
         level.setBlockAndUpdate(NET_SWITCH, com.senne.imttech.registry.ModBlocks.NETWORK_SWITCH.get().defaultBlockState()
                 .setValue(com.senne.imttech.lan.NetworkSwitchBlock.FACING, net.minecraft.core.Direction.SOUTH));
@@ -4317,24 +4317,24 @@ final class ShowcaseFeatures {
             be.setName("Hall switch");
         }
         for (int dz = 1; dz <= 2; dz++) {
-            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POWER, level, NET_SWITCH.south(dz));
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POWER, level, NET_SWITCH.south(dz), player.getUUID());
         }
         // De netwerkkabel naar de lezer; het middelste stukje onder een blok gepolijst andesiet.
         for (int dx = 1; dx <= 2; dx++) {
-            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.NETWORK, level, NET_SWITCH.east(dx));
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.NETWORK, level, NET_SWITCH.east(dx), player.getUUID());
         }
         level.setBlockAndUpdate(NET_SWITCH.east(2), Blocks.POLISHED_ANDESITE.defaultBlockState());
         placeInput(level, NET_READER, com.senne.imttech.registry.ModBlocks.KEYCARD_READER.get().defaultBlockState(), "Hall door");
         // PoE van de switch naar een camera (noord).
         for (int dz = 1; dz <= 2; dz++) {
-            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, NET_SWITCH.north(dz));
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, NET_SWITCH.north(dz), player.getUUID());
         }
         level.setBlockAndUpdate(NET_SWITCH.north(3), com.senne.imttech.registry.ModBlocks.SECURITY_CAMERA.get().defaultBlockState()
                 .setValue(com.senne.imttech.security.CameraBlock.FACE, net.minecraft.world.level.block.state.properties.AttachFace.FLOOR)
                 .setValue(com.senne.imttech.security.CameraBlock.FACING, net.minecraft.core.Direction.SOUTH));
         // PoE naar het noorden, met de hendel en de knop op de vloer ernaast.
         for (int dz = 1; dz <= 2; dz++) {
-            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, y.north(dz));
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, y.north(dz), player.getUUID());
         }
         placeControl(level, player, NET_LEVER, com.senne.imttech.registry.ModBlocks.NETWORK_LEVER.get().defaultBlockState(), "Night mode");
         placeControl(level, player, NET_BUTTON, com.senne.imttech.registry.ModBlocks.NETWORK_BUTTON.get().defaultBlockState(), "Doorbell");
@@ -4491,11 +4491,11 @@ final class ShowcaseFeatures {
             generator.fill(200_000);
         }
         for (int x = 1; x <= 7; x++) {
-            com.senne.imttech.energy.PowerCables.add(level, y.east(x));
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POWER, level, y.east(x), player.getUUID());
         }
         for (int up = 0; up < 4; up++) {
             level.setBlockAndUpdate(y.east(7).above(up), Blocks.POLISHED_ANDESITE.defaultBlockState());
-            com.senne.imttech.energy.PowerCables.add(level, y.east(7).above(up));
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POWER, level, y.east(7).above(up), player.getUUID());
         }
         level.setBlockAndUpdate(y.east(7).above(4), com.senne.imttech.registry.ModBlocks.ARC_LAMP.get().defaultBlockState());
         level.setBlockAndUpdate(y.east(3), com.senne.imttech.registry.ModBlocks.LIGHT_SWITCH.get().defaultBlockState()

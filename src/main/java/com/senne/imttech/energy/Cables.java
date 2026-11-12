@@ -4,12 +4,14 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.LevelChunk;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Waar de kabels van elke soort liggen (hoofdstuk 38): opvragen, leggen en weghalen. Wat PowerCables vroeger voor de
@@ -19,6 +21,9 @@ import net.minecraft.world.level.chunk.LevelChunk;
  * Een kabel ligt op een blokplek (zie CableCells). Op die plek mag ook een blok staan: dan zit de kabel in dat blok (in een
  * muur, een vloer). Elke soort heeft zijn eigen lijst per chunk, dus op één plek kunnen een stroomkabel, een netwerkkabel
  * en een PoE-kabel tegelijk liggen.
+ *
+ * Sinds hoofdstuk 92 onthoudt elk stuk kabel wie het legde (zie owner en CableSight): met de bril zie je alleen je eigen
+ * kabels door een muur heen, en die in een zone waar je mag bouwen.
  */
 public final class Cables {
     private Cables() {}
@@ -40,6 +45,15 @@ public final class Cables {
         LevelChunk chunk = level.getChunkAt(pos);
         // Eerst hasData: getData op een chunk zonder lijst maakt er een (lege) aan, en die gaat dan naar iedereen.
         return chunk.hasData(kind.attachment()) && chunk.getData(kind.attachment()).contains(pos);
+    }
+
+    /** Wie het stuk kabel van deze soort op deze plek legde, of null (van niemand, of er ligt er geen). */
+    public static @Nullable UUID owner(CableKind kind, Level level, BlockPos pos) {
+        if (!level.isLoaded(pos)) {
+            return null;
+        }
+        LevelChunk chunk = level.getChunkAt(pos);
+        return chunk.hasData(kind.attachment()) ? chunk.getData(kind.attachment()).owner(pos) : null;
     }
 
     /** Ligt hier een kabel die stroom doorgeeft (een stroomkabel of een PoE-kabel)? */
@@ -80,14 +94,25 @@ public final class Cables {
 
     // ================================================================ Leggen en weghalen
 
-    /** Legt een stuk kabel van deze soort op deze plek. Geeft false als er al een lag. */
+    /**
+     * Legt een stuk kabel van deze soort op deze plek, van niemand (een gebouw van deze mod legt zo zijn kabels). Geeft
+     * false als er al een lag.
+     */
     public static boolean add(CableKind kind, ServerLevel level, BlockPos pos) {
+        return add(kind, level, pos, null);
+    }
+
+    /**
+     * Legt een stuk kabel van deze soort op deze plek, gelegd door {@code owner} (null = van niemand). Geeft false als er
+     * al een lag: die blijft van wie hem legde.
+     */
+    public static boolean add(CableKind kind, ServerLevel level, BlockPos pos, @Nullable UUID owner) {
         LevelChunk chunk = level.getChunkAt(pos);
         CableCells cells = in(kind, chunk);
         if (cells.contains(pos)) {
             return false;
         }
-        store(kind, chunk, cells.with(pos.immutable()));
+        store(kind, chunk, cells.with(pos.immutable(), owner));
         return true;
     }
 

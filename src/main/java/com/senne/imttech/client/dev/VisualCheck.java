@@ -1041,6 +1041,11 @@ public final class VisualCheck {
             t.step(0, com.senne.imttech.client.ImtClientEvents::toggleCableXray);
             t.shot(20, "nw04_cable_xray_off");
             t.step(0, com.senne.imttech.client.ImtClientEvents::toggleCableXray);
+            // Hoofdstuk 92: links van jouw verborgen kabels liggen dezelfde drie van een ander (niet in een zone van jou):
+            // die lichten met de xray niet op, de jouwe wel.
+            t.view(0, y.getX() - 1.5, y.getY() + 6, y.getZ() + 24.5, 0, 0);
+            t.lookAt(5, new Vec3(y.getX() - 1.0, y.getY(), y.getZ() + 13.5));
+            t.shot(20, "nw03b_cable_xray_only_yours");
             // Een kern met een Network Switch ernaast (stap 6): het blok met zijn lampjes, het deurtje met de zes
             // poorten, en de app Devices met de poorten van de switch open (de bovenste poort staat uit).
             BlockPos desk = NETWORK_DESK;
@@ -2328,7 +2333,7 @@ public final class VisualCheck {
                     }
                 }
                 for (int z = 1; z <= 7; z++) {
-                    com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, core.south(z));
+                    com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, core.south(z), player.getUUID());
                 }
             });
             t.onServer(5, player -> com.senne.imttech.security.wall.CameraWall.open(player, core.offset(4, 0, 8)));
@@ -2533,8 +2538,8 @@ public final class VisualCheck {
                 level.setBlockAndUpdate(at, ModBlocks.POWER_CABINET.get().defaultBlockState());
                 level.setBlockAndUpdate(at.north(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
                 for (int i = 1; i <= 3; i++) {
-                    com.senne.imttech.energy.PowerCables.add(level, at.east(i));
-                    com.senne.imttech.energy.PowerCables.add(level, at.west(i));
+                    com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POWER, level, at.east(i), player.getUUID());
+                    com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POWER, level, at.west(i), player.getUUID());
                 }
                 if (level.getBlockEntity(at) instanceof com.senne.imttech.energy.PowerCabinetBlockEntity cabinet) {
                     cabinet.setOwner(player.getUUID());
@@ -4918,11 +4923,11 @@ public final class VisualCheck {
             generator.fill(200_000);
         }
         for (int x = 1; x <= 7; x++) {
-            com.senne.imttech.energy.PowerCables.add(level, y.east(x));
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POWER, level, y.east(x), player.getUUID());
         }
         for (int up = 0; up < 4; up++) {
             level.setBlockAndUpdate(y.east(7).above(up), Blocks.POLISHED_ANDESITE.defaultBlockState());
-            com.senne.imttech.energy.PowerCables.add(level, y.east(7).above(up));
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POWER, level, y.east(7).above(up), player.getUUID());
         }
         level.setBlockAndUpdate(y.east(7).above(4), ModBlocks.ARC_LAMP.get().defaultBlockState());
         level.setBlockAndUpdate(y.east(3), ModBlocks.LIGHT_SWITCH.get().defaultBlockState()
@@ -5949,17 +5954,17 @@ public final class VisualCheck {
         path.add(new BlockPos(25, -60, -20));
         path.add(new BlockPos(26, -60, -20));
         for (BlockPos pos : path) {
-            com.senne.imttech.energy.PowerCables.add(level, pos);
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POWER, level, pos, player.getUUID());
         }
         level.setBlockAndUpdate(new BlockPos(27, -60, -20), ModBlocks.CHARGING_STATION.get().defaultBlockState());
         // De verborgen kabel: over de vloer, en dan stenen erbovenop gebouwd.
         for (int x = 20; x <= 26; x++) {
             BlockPos pos = new BlockPos(x, -60, -17);
-            com.senne.imttech.energy.PowerCables.add(level, pos);
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POWER, level, pos, player.getUUID());
             level.setBlockAndUpdate(pos, Blocks.POLISHED_ANDESITE.defaultBlockState());
         }
-        com.senne.imttech.energy.PowerCables.add(level, new BlockPos(20, -60, -18));
-        com.senne.imttech.energy.PowerCables.add(level, new BlockPos(20, -60, -19));
+        com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POWER, level, new BlockPos(20, -60, -18), player.getUUID());
+        com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POWER, level, new BlockPos(20, -60, -19), player.getUUID());
     }
 
     /** Hoofdstuk 38: het veldje met de drie soorten kabels (ver weg van de rest, zodat niets erdoorheen loopt). */
@@ -6037,7 +6042,7 @@ public final class VisualCheck {
             }
         }
         for (int z = 1; z <= 6; z++) {
-            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, core.north(z));
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, core.north(z), player.getUUID());
         }
         // De drie camera's langs de kabel, en iets om naar te kijken.
         Object[][] cameras = {{core.offset(1, 0, -3), Direction.EAST, "Lobby"}, {core.offset(-1, 0, -3), Direction.WEST, "Vault"},
@@ -6146,10 +6151,10 @@ public final class VisualCheck {
         coreEntity.powerTick(level);
         computerDeskIp = coreEntity.ip();
         for (int dx = 1; dx <= 3; dx++) {
-            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.NETWORK, level, core.east(dx));
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.NETWORK, level, core.east(dx), player.getUUID());
         }
-        com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.NETWORK, level, core.west());
-        com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, core.north());
+        com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.NETWORK, level, core.west(), player.getUUID());
+        com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, core.north(), player.getUUID());
         level.setBlockAndUpdate(reader, ModBlocks.KEYCARD_READER.get().defaultBlockState()
                 .setValue(com.senne.imttech.logic.InputDeviceBlock.FACING, Direction.SOUTH));
         if (level.getBlockEntity(reader) instanceof com.senne.imttech.logic.InputDeviceBlockEntity be) {
@@ -6217,7 +6222,7 @@ public final class VisualCheck {
             be.setPassword("bitech1", level.random);
         }
         for (int dx = 1; dx <= 2; dx++) {
-            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, core.east(dx));
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, core.east(dx), player.getUUID());
         }
         level.setBlockAndUpdate(networkSwitch, ModBlocks.NETWORK_SWITCH.get().defaultBlockState()
                 .setValue(com.senne.imttech.lan.NetworkSwitchBlock.FACING, Direction.SOUTH));
@@ -6227,7 +6232,7 @@ public final class VisualCheck {
         }
         com.senne.imttech.lan.NetworkSwitches.setPort(level, networkSwitch, Direction.UP, false);
         for (int dx = 1; dx <= 2; dx++) {
-            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.NETWORK, level, networkSwitch.east(dx));
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.NETWORK, level, networkSwitch.east(dx), player.getUUID());
         }
         level.setBlockAndUpdate(reader, ModBlocks.KEYCARD_READER.get().defaultBlockState()
                 .setValue(com.senne.imttech.logic.InputDeviceBlock.FACING, Direction.SOUTH));
@@ -6235,7 +6240,7 @@ public final class VisualCheck {
             be.setName("Lobby door");
         }
         for (int dz = 1; dz <= 2; dz++) {
-            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, networkSwitch.north(dz));
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, networkSwitch.north(dz), player.getUUID());
         }
         level.setBlockAndUpdate(camera, ModBlocks.SECURITY_CAMERA.get().defaultBlockState()
                 .setValue(com.senne.imttech.security.CameraBlock.FACE, net.minecraft.world.level.block.state.properties.AttachFace.FLOOR)
@@ -6243,13 +6248,13 @@ public final class VisualCheck {
         // Achter de kern een laserbrug (stap 7) met een netwerkkabel ernaartoe: die staat in Devices bij LASER BRIDGES. Zijn
         // stroom komt over een stroomkabel van een generator verderop (stap 9: daar zie je de gele streepjes lopen).
         BlockPos bridge = core.north(2);
-        com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.NETWORK, level, core.north());
+        com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.NETWORK, level, core.north(), player.getUUID());
         level.setBlockAndUpdate(core.north(5), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
         if (level.getBlockEntity(core.north(5)) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
             charger.fill(200_000);
         }
-        com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POWER, level, core.north(3));
-        com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POWER, level, core.north(4));
+        com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POWER, level, core.north(3), player.getUUID());
+        com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POWER, level, core.north(4), player.getUUID());
         level.setBlockAndUpdate(bridge, ModBlocks.LASER_BRIDGE.get().defaultBlockState()
                 .setValue(com.senne.imttech.shield.LaserBridgeBlock.FACING, Direction.WEST));
         if (level.getBlockEntity(bridge) instanceof com.senne.imttech.shield.LaserBridgeBlockEntity be) {
@@ -6258,7 +6263,7 @@ public final class VisualCheck {
         // Links van de kern (stap 8): PoE-kabels naar een muurtje met een netwerkknop en een netwerkhendel (die staat aan),
         // en op de vloer nog een hendel en een knop (die is net ingedrukt).
         for (BlockPos poe : new BlockPos[] {core.west(), core.west().above(), core.west().south()}) {
-            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, poe);
+            com.senne.imttech.energy.Cables.add(com.senne.imttech.energy.CableKind.POE, level, poe, player.getUUID());
         }
         level.setBlockAndUpdate(core.west(3), Blocks.STONE_BRICKS.defaultBlockState());
         level.setBlockAndUpdate(core.west(3).above(), Blocks.STONE_BRICKS.defaultBlockState());
@@ -6286,7 +6291,8 @@ public final class VisualCheck {
     /**
      * Bij NETWORK_YARD: drie kabels naast elkaar over de vloer en een muurtje op (stroom, netwerk, PoE), dan alle drie op
      * dezelfde plekken (die liggen boven elkaar), en verder naar het zuiden dezelfde drie verborgen onder een strook
-     * gepolijst andesiet, en nog een strook met alle drie samen erin.
+     * gepolijst andesiet, en nog een strook met alle drie samen erin. Links daarvan (hoofdstuk 92) dezelfde drie verborgen
+     * kabels van een ander. De kabels van het veldje zijn van jou (de speler van de rondleiding).
      */
     private static void buildNetworkYard(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
@@ -6301,23 +6307,23 @@ public final class VisualCheck {
         // Drie kabels naast elkaar, over de vloer en tegen het muurtje op.
         for (int i = 0; i < kinds.length; i++) {
             for (int dx = 0; dx <= 5; dx++) {
-                com.senne.imttech.energy.Cables.add(kinds[i], level, y.offset(dx, 0, i * 2));
+                com.senne.imttech.energy.Cables.add(kinds[i], level, y.offset(dx, 0, i * 2), player.getUUID());
             }
             for (int dy = 1; dy <= 2; dy++) {
-                com.senne.imttech.energy.Cables.add(kinds[i], level, y.offset(5, dy, i * 2));
+                com.senne.imttech.energy.Cables.add(kinds[i], level, y.offset(5, dy, i * 2), player.getUUID());
             }
         }
         // Alle drie op dezelfde plekken: boven elkaar (de banen). Het eerste stuk alleen netwerk en PoE.
         for (int dx = 0; dx <= 5; dx++) {
             for (com.senne.imttech.energy.CableKind kind : kinds) {
                 if (dx >= 2 || kind != com.senne.imttech.energy.CableKind.POWER) {
-                    com.senne.imttech.energy.Cables.add(kind, level, y.offset(dx, 0, 7));
+                    com.senne.imttech.energy.Cables.add(kind, level, y.offset(dx, 0, 7), player.getUUID());
                 }
             }
         }
         for (int dy = 1; dy <= 2; dy++) {
             for (com.senne.imttech.energy.CableKind kind : kinds) {
-                com.senne.imttech.energy.Cables.add(kind, level, y.offset(5, dy, 7));
+                com.senne.imttech.energy.Cables.add(kind, level, y.offset(5, dy, 7), player.getUUID());
             }
         }
         // Verborgen onder stroken steen: elke soort apart (een blok uit elkaar, anders zit een PoE-kabel vast aan de
@@ -6325,14 +6331,24 @@ public final class VisualCheck {
         for (int dx = 0; dx <= 5; dx++) {
             for (int i = 0; i < kinds.length; i++) {
                 BlockPos pos = y.offset(dx, 0, 11 + i * 2);
-                com.senne.imttech.energy.Cables.add(kinds[i], level, pos);
+                com.senne.imttech.energy.Cables.add(kinds[i], level, pos, player.getUUID());
                 level.setBlockAndUpdate(pos, Blocks.POLISHED_ANDESITE.defaultBlockState());
             }
             BlockPos together = y.offset(dx, 0, 17);
             for (com.senne.imttech.energy.CableKind kind : kinds) {
-                com.senne.imttech.energy.Cables.add(kind, level, together);
+                com.senne.imttech.energy.Cables.add(kind, level, together, player.getUUID());
             }
             level.setBlockAndUpdate(together, Blocks.POLISHED_ANDESITE.defaultBlockState());
+        }
+        // Hoofdstuk 92: links ervan dezelfde drie verborgen kabels, gelegd door een ander. Met de bril zie je die niet door
+        // de vloer heen (ze liggen niet in een zone waar jij mag bouwen).
+        java.util.UUID stranger = java.util.UUID.nameUUIDFromBytes("imttech-visualcheck-stranger".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        for (int dx = -8; dx <= -3; dx++) {
+            for (int i = 0; i < kinds.length; i++) {
+                BlockPos pos = y.offset(dx, 0, 11 + i * 2);
+                com.senne.imttech.energy.Cables.add(kinds[i], level, pos, stranger);
+                level.setBlockAndUpdate(pos, Blocks.POLISHED_ANDESITE.defaultBlockState());
+            }
         }
     }
 

@@ -122,7 +122,8 @@ public class CableSpoolItem extends Item {
             if (!player.getAbilities().instabuild && stack.isEmpty()) {
                 break;
             }
-            if (Cables.add(kind, serverLevel, pos)) {
+            // Het stuk kabel is van jou: met de bril zie je het door een muur heen, een ander niet (hoofdstuk 92).
+            if (Cables.add(kind, serverLevel, pos, player.getUUID())) {
                 placed++;
                 if (!player.getAbilities().instabuild) {
                     stack.shrink(1);
