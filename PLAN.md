@@ -7052,6 +7052,30 @@ kabel alleen door stukken wereld die de server geladen had, en hooguit 512 stukj
       standaard uit staat. (`raid_starts_outside_a_base` en `security_core_launches_no_drones` vielen elk één keer om voor
       NetworkKeeper er was: wisselvallig.)
 
+### 95. De Armory: een dunner randje rond een vastgezet wapen (12 november)
+
+Jouw wens: "Kun je de outline van de armory subtiler maken, heel kleine smalle dunne lijn".
+
+Hoe het was: rond een vastgezet wapen lag een randje van een halve pixel, maar onder dat randje was de hele vorm van het
+wapen geverfd. Het wapen hangt een stukje voor het paneel, dus zodra je er een beetje schuin naar keek, zag je naast het
+wapen een brede lichte vlek in plaats van een randje (op `ar15_side_wall` een witte L naast het laserpistool). Alleen
+het randje dunner maken hielp daarom bijna niet; dat heb ik eerst geprobeerd en op de screenshots gezien.
+
+- [x] **Een echt lijntje** (`PegboardRenderer.paint`): eerst tekenen we het wapen plat en onzichtbaar net voor de verf
+      (een masker dat alleen diepte schrijft, `MASK`), dan de verf. Binnen de vorm van het wapen valt de verf zo weg en
+      blijft alleen het lijntje eromheen over, ook van opzij. Het lijntje is 0,15 pixel breed (`OUTLINE`, was 0,5). De
+      Ion Blaster (een plat plaatje) krijgt een masker met zijn plaatje (`MASK_FLAT`), zodat zijn doorzichtige pixels
+      niet meetellen.
+- [x] **Wat hetzelfde bleef**: de kleuren (grijs, en elke granaat de zijne), de kaders als je ernaar kijkt (blauw,
+      rood, wit, grijs), en de **schaduw** als je het wapen pakt: die blijft de hele geverfde vorm (mijn keuze, zeg het
+      als die ook alleen een lijntje moet worden), alleen een fractie kleiner rond de randen. Het geldt ook in How it
+      works.
+- [x] **Gezien** (`gradlew runVisualCheck -Ponly=armory,howtoall,howto:armory`): `ar11_rifle_locked` (een fijne lijn
+      onder de rifle, met het bord ertussen), `ar15_side_wall` (rond het laserpistool een lijntje in plaats van de witte
+      L), `ar12_shadow` en `ar14_corner` (de schaduwen zoals ze waren) en in How it works "Lock a spot" (`ha_armory_0_4a`
+      en `_4b`: een lijntje rond de Glock). Ook met jouw Sodium-jar (0.8.13) even in `run-visual/mods`: hetzelfde beeld,
+      daarna weer weggehaald. Geen nieuwe automatische test: het is alleen beeld.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het

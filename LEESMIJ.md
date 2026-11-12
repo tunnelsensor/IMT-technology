@@ -2254,7 +2254,8 @@ heeft 8 x 8 gaatjes, en alles klikt vast op dat raster.
   verder weg zie je geen kader en zegt een klik "Too far away". Breek je een paneel af, dan valt wat erop hing eraf, ook
   wat van een paneel ernaast over dit paneel hing.
 - **Vastzetten** (hoofdstuk 70 en 71): **sneak + linksklik** op wat hangt zet het vast: zijn **omtrek** wordt grijs op het
-  paneel geverfd (je ziet een grijs randje eromheen). Nog eens sneak + linksklik zet het weer los. Op een lege plek, of
+  paneel geverfd (je ziet een dun grijs lijntje eromheen, ook van opzij, hoofdstuk 95). Nog eens sneak + linksklik zet
+  het weer los. Op een lege plek, of
   zonder sneak, breekt linksklik gewoon het paneel. Pak je een vastgezet item, dan blijft de hele geverfde vorm op de
   plek (de **schaduw**). Daar kan alleen **hetzelfde soort** op: elke Glock op een Glock-plek, elk Glock-magazijn op een
   magazijnplek, elke Laser Rifle op een rifle-plek. **Rechtsklik op de schaduw** met zo'n item en het hangt er weer,

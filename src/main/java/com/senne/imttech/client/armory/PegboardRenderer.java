@@ -1,8 +1,10 @@
 package com.senne.imttech.client.armory;
 
 import com.google.common.base.Suppliers;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.math.Axis;
 import com.senne.imttech.ImtTech;
 import com.senne.imttech.armory.Pegboard;
@@ -28,12 +30,14 @@ import java.util.function.Supplier;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.Sheets;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.core.BlockPos;
@@ -69,13 +73,53 @@ import org.joml.Vector3f;
  * slotje maar een grijze omtrek op het bord): van een vastgezet wapen is de omtrek op het paneel geverfd, zoals op een
  * echt gereedschapsbord. Hangt het er, dan zie je een grijs randje eromheen; pak je het, dan blijft de hele vorm (de
  * schaduw). Elke soort granaat heeft zijn eigen kleur grijs (zie {@link #paintColour}), zodat je ziet wat waar hoort.
+ * Hoofdstuk 95: dat randje is een dun lijntje, ook als je er schuin naar kijkt (zie {@link #paint}).
  */
 public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity> {
     /** Het haakje (tools/generate_armory_models.py: models/armory/peg.json). */
     public static final ModelResourceLocation PEG = ModelResourceLocation.standalone(
             ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "armory/peg"));
-    /** Hoe breed het geverfde randje rond een vastgezet wapen is (pixels): zo ver steekt zijn omtrek eromheen uit. */
-    private static final float OUTLINE = 0.5f;
+    /**
+     * Hoe breed het geverfde randje rond een vastgezet wapen is (pixels): zo ver steekt zijn omtrek eromheen uit.
+     * Hoofdstuk 95 (jouw wens: "subtieler, heel kleine smalle dunne lijn"): was een halve pixel, nu een fijn lijntje.
+     */
+    private static final float OUTLINE = 0.15f;
+    /** Hoe ver de verf voor het paneel ligt (pixels). */
+    private static final float PAINT_Z = 0.12f;
+    /**
+     * Hoe ver het masker (zie {@link #paint}) voor de verf ligt (pixels): meer dan de platte verf zelf dik is (een
+     * honderdste pixel), en zo weinig dat het van opzij niet merkbaar verschuift.
+     */
+    private static final float MASK_Z = 0.03f;
+    /**
+     * Het masker: tekent geen kleur, alleen diepte. Wat daarna achter het masker getekend wordt, valt weg. Het schuift in
+     * de diepte een klein beetje naar je toe (POLYGON_OFFSET_LAYERING), zodat het ook van ver weg voor de verf blijft.
+     */
+    private static final RenderType MASK = RenderType.create("imttech_pegboard_mask", DefaultVertexFormat.POSITION_COLOR_LIGHTMAP,
+            VertexFormat.Mode.QUADS, 1536, false, false,
+            RenderType.CompositeState.builder()
+                    .setShaderState(RenderStateShard.RENDERTYPE_TEXT_BACKGROUND_SHADER)
+                    .setTextureState(RenderStateShard.NO_TEXTURE)
+                    .setCullState(RenderStateShard.NO_CULL)
+                    .setLightmapState(RenderStateShard.LIGHTMAP)
+                    .setWriteMaskState(RenderStateShard.DEPTH_WRITE)
+                    .setLayeringState(RenderStateShard.POLYGON_OFFSET_LAYERING)
+                    .createCompositeState(false));
+    /**
+     * Hetzelfde masker voor een plat plaatje (de Ion Blaster): met zijn plaatje, zodat de doorzichtige pixels geen diepte
+     * schrijven (zijn verf heeft daar ook geen kleur).
+     */
+    private static final RenderType MASK_FLAT = RenderType.create("imttech_pegboard_mask_flat", DefaultVertexFormat.NEW_ENTITY,
+            VertexFormat.Mode.QUADS, 1536, false, false,
+            RenderType.CompositeState.builder()
+                    .setShaderState(RenderStateShard.RENDERTYPE_ENTITY_CUTOUT_NO_CULL_SHADER)
+                    .setTextureState(new RenderStateShard.TextureStateShard(TextureAtlas.LOCATION_BLOCKS, false, false))
+                    .setCullState(RenderStateShard.NO_CULL)
+                    .setLightmapState(RenderStateShard.LIGHTMAP)
+                    .setOverlayState(RenderStateShard.OVERLAY)
+                    .setWriteMaskState(RenderStateShard.DEPTH_WRITE)
+                    .setLayeringState(RenderStateShard.POLYGON_OFFSET_LAYERING)
+                    .createCompositeState(false));
     /**
      * De omtrek tekenen we 8 keer, telkens een randje opgeschoven (en voor een schaduw ook in het midden): zo wordt de
      * vorm overal even veel groter, ook bij een dunne loop.
@@ -209,15 +253,33 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
     /**
      * De geverfde omtrek van een vastgezet wapen (hoofdstuk 71): hetzelfde model, plat (een honderdste pixel dik) net voor
      * het paneel, in een kleur, en 8 keer een randje opgeschoven, zodat de vorm overal {@link #OUTLINE} groter is dan het
-     * wapen. {@code rimOnly}: het wapen hangt er nog, het midden zie je dan toch niet.
+     * wapen.
+     *
+     * {@code rimOnly}: het wapen hangt er nog. Dan tekenen we eerst het wapen zelf, plat en onzichtbaar, als masker
+     * ({@link #MASK}) net voor de verf: binnen de vorm van het wapen valt de verf weg en blijft alleen het lijntje
+     * eromheen over. Zonder masker zag je van opzij een brede vlek naast het wapen (hoofdstuk 95): het wapen hangt een
+     * stukje voor het paneel, dus van schuin zie je de verf achter het wapen, niet alleen het randje.
      */
     private static void paint(PoseStack pose, MultiBufferSource buffers, int light, Level level, ItemStack stack, BakedModel model,
                               ItemStack like, BakedModel likeModel, AABB box, Quaternionf turn, float scale, float cx, float cy,
                               boolean rimOnly) {
-        MultiBufferSource paint = painted(buffers, paintColour(stack), stack.is(ModItems.ION_BLASTER.get()));
+        boolean flat = stack.is(ModItems.ION_BLASTER.get());
+        if (rimOnly) {
+            pose.pushPose();
+            pose.translate(cx, cy, Pegboard.THICKNESS + PAINT_Z + MASK_Z);
+            pose.scale(16 * scale, 16 * scale, 0.01f);
+            placeModel(pose, box, turn, stack, like, model, likeModel);
+            draw(pose, masked(buffers, flat), light, level, stack, model);
+            pose.popPose();
+            // Het masker meteen tekenen: het moet in de diepte staan voor de verf getekend wordt.
+            if (buffers instanceof MultiBufferSource.BufferSource source) {
+                source.endBatch(flat ? MASK_FLAT : MASK);
+            }
+        }
+        MultiBufferSource paint = painted(buffers, paintColour(stack), flat);
         for (int i = rimOnly ? 1 : 0; i < SPREAD.length; i++) {
             pose.pushPose();
-            pose.translate(cx + SPREAD[i][0] * OUTLINE, cy + SPREAD[i][1] * OUTLINE, Pegboard.THICKNESS + 0.12f);
+            pose.translate(cx + SPREAD[i][0] * OUTLINE, cy + SPREAD[i][1] * OUTLINE, Pegboard.THICKNESS + PAINT_Z);
             pose.scale(16 * scale, 16 * scale, 0.01f);
             placeModel(pose, box, turn, stack, like, model, likeModel);
             draw(pose, paint, light, level, stack, model);
@@ -267,6 +329,14 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
             return type -> new Painted(buffers.getBuffer(type), 0, true);
         }
         return type -> new Painted(buffers.getBuffer(RenderType.textBackground()), rgb, false);
+    }
+
+    /** Alles wat hierin getekend wordt, komt in het masker (zie {@link #paint}): alleen diepte, geen kleur. */
+    private static MultiBufferSource masked(MultiBufferSource buffers, boolean flat) {
+        if (flat) {
+            return type -> buffers.getBuffer(MASK_FLAT);
+        }
+        return type -> new Painted(buffers.getBuffer(MASK), 0, false);
     }
 
     /**
