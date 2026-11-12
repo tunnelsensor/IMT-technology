@@ -172,7 +172,14 @@ public class ImtMenuScreen extends Screen {
             open("screen.imttech.menu.navigation", HudStyle.CYAN, NavigationScreen::new),
             new Option(Component.translatable("screen.imttech.menu.ping"),
                     glasses -> new Status(Component.translatable("screen.imttech.menu.here"), HudStyle.GREEN), ImtClientEvents::placePing),
-            open("screen.imttech.menu.comms", HudStyle.GREEN, CommsScreen::new));
+            open("screen.imttech.menu.comms", HudStyle.GREEN, CommsScreen::new),
+            // Hoofdstuk 82: je coördinaten in het paneel linksboven. Een instelling van je eigen spel (er gaat niets naar
+            // de server), net als de kabel-xray.
+            new Option(Component.translatable("screen.imttech.menu.coordinates"),
+                    glasses -> ImtClientConfig.coordinates()
+                            ? new Status(Component.translatable("screen.imttech.on"), HudStyle.GREEN)
+                            : new Status(Component.translatable("screen.imttech.off"), GREY),
+                    ImtClientEvents::toggleCoordinates));
 
     private static final List<Option> SYSTEMS = List.of(
             action(ImtAction.AUTHORIZE_TRANSFER),

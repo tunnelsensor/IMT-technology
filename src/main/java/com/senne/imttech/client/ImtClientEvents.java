@@ -230,6 +230,14 @@ public final class ImtClientEvents {
         while (ImtKeys.ZONE_BORDER.consumeClick()) {
             toggleZoneBorder();
         }
+        while (ImtKeys.COORDINATES.consumeClick()) {
+            toggleCoordinates();
+        }
+    }
+
+    /** Je coördinaten in het paneel linksboven aan of uit (G > Navigation > Coordinates of de eigen toets, hoofdstuk 82). */
+    public static void toggleCoordinates() {
+        toggleSetting(ImtClientConfig.COORDINATES, "screen.imttech.menu.coordinates");
     }
 
     /**

@@ -6632,6 +6632,25 @@ verkeerde: ook met een pickaxe brak je zo'n blok even traag als met je hand (ong
       zo komt deze fout bij een nieuw blok niet terug). 508 tests (met de vier van hoofdstuk 80 erbij), in één ronde
       allemaal groen.
 
+### 82. Je coördinaten in de bril, aan en uit te zetten (12 november)
+
+Jouw vraag: "Kun je zorgen dat je cords op IMT glasses kunt aan en uitzetten".
+
+De bril liet je coördinaten nog nergens zien (alleen I.M.T zei ze als je ernaar vroeg). Nu wel, en je zet ze zelf aan of uit.
+
+- [x] **In het paneel linksboven**, vlak onder de batterij: `X 0  Y -60  Z -4` (de letters cyaan, de getallen wit). Het
+      zijn de blokcoördinaten, dezelfde als "Block" in F3, gewoon als getal (zonder punten of "k" van G > Information >
+      Numbers). Altijd op dezelfde plek, dus de labeltjes en de rest van het paneel schuiven een regel naar onder. Zonder
+      stroom in de bril (OFFLINE) en met het G-menu open zie je ze niet, zoals de rest van het paneel.
+- [x] **Aan/uit** in **G > Navigation > Coordinates** (ON/OFF), of met een eigen toets in Opties > Besturing > I.M.T
+      ("Coordinates on/off", standaard geen toets, zoals de andere snelacties). I.M.T meldt het: "Coordinates enabled." /
+      "Coordinates disabled.". Het is een instelling van je eigen spel (`coordinates` in `imttech-client.toml`), er gaat
+      niets naar de server. **Standaard aan** (mijn keuze: zo zie je ze meteen; uitzetten is één klik).
+- [x] **Gezien** op screenshots (`gradlew runVisualCheck -Ponly=coords`: `32_coords_on` tot `32d_coords_back_on_moved`):
+      aan, uit (met de melding), het G-menu met de optie op OFF, en weer aan op een andere plek met negatieve getallen.
+      Geen nieuwe automatische test: het is alleen beeld en een instelling van je eigen spel, en die draaien de tests
+      (zonder beeld) niet.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het

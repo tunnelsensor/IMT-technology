@@ -78,6 +78,14 @@ public final class ImtClientConfig {
             .define("zoneBorder", true);
 
     /**
+     * Staan je coördinaten (X, Y, Z) in het paneel linksboven van de bril? Aan/uit via G > Navigation > Coordinates, of
+     * een eigen toets (hoofdstuk 82, jouw wens van 12 november).
+     */
+    public static final ModConfigSpec.BooleanValue COORDINATES = BUILDER
+            .comment("Show your coordinates (X, Y, Z) in the top-left panel of the I.M.T glasses (G > Navigation > Coordinates, or its own key)")
+            .define("coordinates", true);
+
+    /**
      * Het Client ID van JOUW gratis Spotify-app (zie het muziekscherm). Leeg = niet ingesteld.
      * Dit is geen wachtwoord; je logt zelf in op de site van Spotify.
      */
@@ -281,6 +289,11 @@ public final class ImtClientConfig {
         value.set(!value.get());
         SPEC.save();
         return value.get();
+    }
+
+    /** Staan je coördinaten in de bril? (Zolang de instellingen nog niet geladen zijn: ja.) */
+    public static boolean coordinates() {
+        return !SPEC.isLoaded() || COORDINATES.get();
     }
 
     /** Zie je de rand van zones? (Zolang de instellingen nog niet geladen zijn: ja.) */

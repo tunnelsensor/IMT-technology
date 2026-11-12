@@ -830,6 +830,29 @@ public final class VisualCheck {
             t.command(5, "kill @e[tag=imt_visual_threat]");
         }
 
+        // --- Hoofdstuk 82: je coördinaten in de bril (aan, uit, de optie in G > Navigation, en weer aan).
+        if (want("coords")) {
+            t.view(10, 0.5, -60, -3.2, 0, 22);
+            t.step(0, () -> {
+                if (!com.senne.imttech.client.ImtClientConfig.coordinates()) {
+                    com.senne.imttech.client.ImtClientEvents.toggleCoordinates();
+                }
+            });
+            t.shot(30, "32_coords_on");
+            t.step(0, com.senne.imttech.client.ImtClientEvents::toggleCoordinates);
+            t.shot(30, "32b_coords_off");
+            t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.NAVIGATION);
+            t.open(0, ImtMenuScreen::new);
+            t.shot(20, "32c_coords_menu_off");
+            t.close(0);
+            t.step(0, com.senne.imttech.client.ImtClientEvents::toggleCoordinates);
+            // Even ergens anders (dichtbij, zodat de wereld er al geladen is): de getallen lopen mee, ook negatieve.
+            t.view(0, -20.5, -55, -13.5, 90, 22);
+            t.shot(40, "32d_coords_back_on_moved");
+            t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.COMBAT);
+            t.view(0, 0.5, -60, -3.2, 0, 22);
+        }
+
         // --- Het harnas
         if (want("suit")) {
             t.onServer(0, VisualCheck::wearSuit);

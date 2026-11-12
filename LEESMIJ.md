@@ -142,9 +142,9 @@ I.M.T**:
 Had je de mod al, dan zet hij je oude toetsen bij het eerste opstarten één keer om (alleen de toetsen
 die nog op hun oude letter stonden; zelf gekozen toetsen blijven). In Opties > Besturing > I.M.T staan
 ook "Cable X-ray on/off" (verborgen kabels door muren heen zien), "Zone border on/off" (de rand van je
-zones), en de quickdraws en pouches van de vuurwapens ("Quickdraw: pistol", "Quickdraw: grenade",
-"Open the holster", "Open the grenade pouch", "Open the magazine pouch"), ook allemaal standaard zonder
-toets.
+zones), "Coordinates on/off" (je coördinaten in de bril), en de quickdraws en pouches van de vuurwapens
+("Quickdraw: pistol", "Quickdraw: grenade", "Open the holster", "Open the grenade pouch", "Open the
+magazine pouch"), ook allemaal standaard zonder toets.
 
 ---
 
@@ -160,7 +160,7 @@ toets.
 | **Tech** | Redstone-relais, muziek (Spotify), hacken |
 | **Illusion** | Valse muur, nep-leger, onzichtbaar veld, stoppen |
 | **Information** | Ertsen-scan, dreigingsscan, doelwit-analyse, kabel-xray (verborgen kabels zien), zonerand, Numbers (hoe grote getallen eruitzien: 5 000, 5.000, 5k...) |
-| **Navigation** | Waypoints, ping, comms |
+| **Navigation** | Waypoints, ping, comms, coördinaten aan/uit (X, Y en Z linksboven, onder de batterij) |
 | **Systems** | Eigendom overdragen, stem, spraakbesturing, commando's bewerken, spraaktekst, nachtzicht |
 
 Wisselen van tabblad: scrollen, de pijltjes links/rechts, of meteen met de cijfers **1** tot

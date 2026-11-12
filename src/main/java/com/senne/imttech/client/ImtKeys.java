@@ -100,6 +100,11 @@ public final class ImtKeys {
      * gebruik G > Information. Alleen met je eigen bril op.
      */
     public static final KeyMapping ZONE_BORDER = key("zone_border", InputConstants.UNKNOWN.getValue());
+    /**
+     * Je coördinaten in de bril aan/uit (hoofdstuk 82). Ook standaard op geen toets; kies er zelf een, of gebruik
+     * G > Navigation > Coordinates.
+     */
+    public static final KeyMapping COORDINATES = key("coordinates", NONE);
 
     /**
      * Hoofdstuk 35: herladen (R) en het geweer bekijken (H), zoals in TACZ. Ze doen alleen iets met een lasergeweer in je
@@ -198,6 +203,7 @@ public final class ImtKeys {
         event.register(ROCKETS);
         event.register(CABLE_XRAY);
         event.register(ZONE_BORDER);
+        event.register(COORDINATES);
         event.register(GUN_RELOAD);
         event.register(GEAR_WHEEL);
         event.register(SKILL_TREE);

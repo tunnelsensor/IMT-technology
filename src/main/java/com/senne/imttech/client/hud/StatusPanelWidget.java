@@ -9,6 +9,7 @@ import static com.senne.imttech.client.hud.HudStyle.WHITE;
 import static com.senne.imttech.client.hud.HudStyle.argb;
 import static com.senne.imttech.client.hud.HudStyle.bar;
 
+import com.senne.imttech.client.ImtClientConfig;
 import com.senne.imttech.client.ImtClientState;
 import com.senne.imttech.client.NavigationScreen;
 import com.senne.imttech.client.OreType;
@@ -68,6 +69,14 @@ public final class StatusPanelWidget implements HudWidget {
         y += 13;
         if (!c.powered) {
             return;
+        }
+
+        // Je coördinaten (hoofdstuk 82): altijd op dezelfde plek, vlak onder de batterij. De letters cyaan, de getallen wit.
+        // Aan/uit via G > Navigation > Coordinates.
+        if (ImtClientConfig.coordinates()) {
+            panelText(c, Component.translatable("hud.imttech.coords", coordinate(c.player.getBlockX()),
+                    coordinate(c.player.getBlockY()), coordinate(c.player.getBlockZ())), x, y, argb(255, CYAN));
+            y += LINE + 3;
         }
 
         // Regel 2: de functies die aan staan, als labeltjes (bv. NZ, DREIGING, DOEL, ESCORTE)
@@ -167,6 +176,11 @@ public final class StatusPanelWidget implements HudWidget {
                 y += LINE + 3;
             }
         }
+    }
+
+    /** Eén getal van je coördinaten, in het wit (gewoon het getal, zonder punten of "k", zoals in F3). */
+    private static Component coordinate(int value) {
+        return Component.literal(Integer.toString(value)).withColor(WHITE);
     }
 
     /** Tekent een regel in het paneel en onthoudt hoe breed het paneel daardoor wordt. */
