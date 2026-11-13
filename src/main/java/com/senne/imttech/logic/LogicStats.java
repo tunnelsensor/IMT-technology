@@ -157,6 +157,21 @@ public final class LogicStats {
         return Math.max(0, line(ImtConfig.Logic.BRAIN_MAX_DELAY_TICKS, brainPower, ImtConfig.Logic.BRAIN_FULL_SPEED_POWER));
     }
 
+    /**
+     * Andersom (hoofdstuk 106): ongeveer hoeveel breinkracht een datacenter heeft dat I.M.T zoveel ticks extra laat
+     * nadenken. Alleen voor een datacenter dat zijn kracht nog niet zelf meldde (een wereld van voor hoofdstuk 106, tot
+     * zijn stuk wereld weer geladen is): dan schat de bril het hieruit. Kan het niet denken (-1): 0. Denkt het meteen
+     * (0): minstens BRAIN_FULL_SPEED_POWER.
+     */
+    public static double brainPowerFor(int brainDelay) {
+        if (brainDelay < 0) {
+            return 0.0;
+        }
+        double max = Math.max(1.0, ImtConfig.Logic.BRAIN_MAX_DELAY_TICKS);
+        double share = 1.0 - Math.min(1.0, brainDelay / max);
+        return Math.max(0.05, Math.max(0.1, ImtConfig.Logic.BRAIN_FULL_SPEED_POWER) * share);
+    }
+
     /** De rechte lijn zelf: {@code max} bij kracht 0, 0 bij {@code instant} en meer (afgerond op hele ticks). */
     public static int line(double max, double power, double instant) {
         double left = 1.0 - power / Math.max(0.1, instant);

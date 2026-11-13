@@ -33,6 +33,9 @@ import org.jetbrains.annotations.Nullable;
  * Elke drone die je hier ziet vertrekken komt uit je arsenaal (zie ArsenalServer): hij wordt
  * uit zijn baan gehaald, doet zijn werk en meldt zich daarna weer terug. Heb je er geen meer
  * hangen, dan vertrekt er niets - dan moet je eerst nieuwe bouwen.
+ *
+ * Hoofdstuk 106: in de Nether en het End hangt geen baan (zie arsenal/Orbit). Daar komen ze uit de drones die met je
+ * meekwamen en bij je wachten ("With you"): die hangen hoog boven je, dus ze duiken op dezelfde manier naar beneden.
  */
 public final class ImtDrones {
     private ImtDrones() {}
@@ -373,7 +376,9 @@ public final class ImtDrones {
     public static void maintainGuards(ServerPlayer owner, ItemStack glasses) {
         List<DroneEntity> guards = find(owner, DroneEntity.Mode.GUARD);
         int wanted = ImtData.getGuardCount(glasses);
-        if (guards.size() < wanted) {
+        // Hoofdstuk 106: tel ook de escortedrones die net met je mee door een portaal kwamen (die laat Minecraft soms
+        // pas een tikje later zien): anders komt er daar eentje te veel bij.
+        if (Math.max(guards.size(), ArsenalServer.flying(owner, DroneEntity.Mode.GUARD)) < wanted) {
             ArsenalDrone available = ArsenalServer.checkOutOne(owner);
             if (available == null) {
                 return; // geen drones meer in een baan: dan blijft de escorte zo klein als hij is
@@ -469,8 +474,9 @@ public final class ImtDrones {
                                                     Vec3 position, ServerLevel level, boolean diving, ArsenalDrone fromArsenal) {
         DroneEntity drone = ModEntities.DRONE.get().create(level);
         if (drone == null) {
-            // De drone staat al als "bezig" geboekt, dus die boeking moeten we terugdraaien.
-            ArsenalServer.returnToOrbit(owner, fromArsenal.id(), fromArsenal.health());
+            // De drone staat al als "bezig" geboekt, dus die boeking moeten we terugdraaien: terug naar waar hij klaar
+            // hing (zijn baan, of in de Nether en het End bij jou; hoofdstuk 106).
+            ArsenalServer.returnHome(owner, fromArsenal.id(), fromArsenal.health(), owner.level());
             return null;
         }
         drone.setup(owner, mode, slot, lifeTicks);

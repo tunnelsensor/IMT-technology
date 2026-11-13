@@ -94,11 +94,15 @@ public final class ImtClientEvents {
 
         // Waar kijk je naar? (voor markeren en de doelwit-analyse)
         ImtClientState.lookTarget = ImtClientState.operational ? findTarget(player) : null;
-        ImtClientState.target = ImtData.isEnabled(glasses, ImtFeature.TARGET_ANALYSIS) ? ImtClientState.lookTarget : null;
+        // Hoofdstuk 106: de doelwit-analyse en de dreigingsscan rekenen op je datacenter. Heb je er geen (of draait het
+        // niet), dan tonen ze niets, ook al staan ze aan.
+        ImtClientState.target = ImtData.isEnabled(glasses, ImtFeature.TARGET_ANALYSIS) && ImtClientState.datacenterWorks()
+                ? ImtClientState.lookTarget : null;
 
         // Wie valt je aan? Dat weet alleen de server (welk doelwit een wezen heeft, ziet jouw
         // spel niet), dus die stuurt de nummers door; wij zoeken ze hier op.
-        if (ImtClientState.operational && ImtData.isEnabled(glasses, ImtFeature.THREAT_SCAN)) {
+        if (ImtClientState.operational && ImtData.isEnabled(glasses, ImtFeature.THREAT_SCAN)
+                && ImtClientState.datacenterWorks()) {
             ImtClientState.threatRadius = ImtData.getThreatRadius(glasses);
             List<Entity> threats = new ArrayList<>();
             for (int id : ImtClientState.threatIds) {

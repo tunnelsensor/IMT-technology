@@ -57,7 +57,9 @@ public class DroneItem extends Item {
                 player.getX(), player.getY() + 1.0, player.getZ(), 14, 0.3, 0.3, 0.3, 0.2);
         level.playSound(null, player.getX(), player.getY(), player.getZ(), ModSounds.DRONE_DEPLOY.get(),
                 SoundSource.PLAYERS, 0.9f, 0.9f);
-        ImtServer.send(serverPlayer, Component.translatable("arsenal.imttech.msg.launched", total),
+        // Hoofdstuk 106: in de Nether en het End is er geen baan om naartoe te vliegen: daar blijft hij bij je.
+        ImtServer.send(serverPlayer, Component.translatable(ArsenalServer.orbitHere(serverPlayer)
+                        ? "arsenal.imttech.msg.launched" : "arsenal.imttech.msg.launched_here", total),
                 ImtMessagePayload.Level.INFO);
         player.swing(hand);
         return InteractionResultHolder.consume(stack);

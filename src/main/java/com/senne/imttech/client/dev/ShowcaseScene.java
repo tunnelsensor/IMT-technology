@@ -210,6 +210,8 @@ final class ShowcaseScene {
         ServerLevel level = player.serverLevel();
         // Hoofdstuk 38: de oudere functies werken zonder netwerkkabels; de functies over het netwerk zetten het zelf aan.
         com.senne.imttech.lan.LanGrid.overrideRequired(false);
+        // Hoofdstuk 106: en zonder datacenter voor de bril; de functie over die regel zet hem zelf aan.
+        com.senne.imttech.logic.DatacenterGlasses.overrideRequired(false);
         player.stopRiding();
         if (ImtSpy.of(player) != null) {
             ImtSpy.stop(player, "imt.imttech.spy.log.end_recalled");

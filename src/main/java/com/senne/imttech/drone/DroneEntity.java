@@ -1190,7 +1190,8 @@ public class DroneEntity extends PathfinderMob implements com.senne.imttech.weap
         }
         ServerPlayer owner = ownerAnywhere(level);
         if (owner != null) {
-            ArsenalServer.returnToOrbit(owner, arsenalId, getHealth());
+            // Hoofdstuk 106: terug naar zijn baan, of (in de Nether of het End, waar geen baan is) bij jou wachten.
+            ArsenalServer.returnHome(owner, arsenalId, getHealth(), level);
         }
         settle();
     }
@@ -1221,10 +1222,62 @@ public class DroneEntity extends PathfinderMob implements com.senne.imttech.weap
         }
         ServerPlayer owner = ownerAnywhere(level);
         if (owner != null) {
-            ArsenalServer.returnToOrbit(owner, arsenalId, getHealth());
+            ArsenalServer.returnHome(owner, arsenalId, getHealth(), level);
         }
         settle();
         stale = true;
+    }
+
+    // ================================================================ Mee door een portaal (hoofdstuk 106)
+
+    /**
+     * Vliegt deze drone met zijn eigenaar mee, zodat hij ook meegaat door een portaal? Dat zijn de drones die bij je
+     * blijven: je escorte en je zwerm (jouw wens: "tenzij je met een bepaalde drone, vb escort drones, naar daar gaat").
+     * Een drone met een eigen opdracht ergens anders (vracht, spion, illusie, verkenner, vervoer) gaat niet mee, en ook
+     * geen drone die door een EMP uitgeschakeld is.
+     */
+    public boolean fliesWithOwner() {
+        Mode mode = getMode();
+        return isAlive() && isOnAJob() && (mode == Mode.GUARD || mode == Mode.ATTACK)
+                && !com.senne.imttech.weapons.Emp.isJammed(this);
+    }
+
+    /**
+     * Zijn eigenaar ging door een portaal (of kwam op een andere manier in een andere wereld): deze drone gaat mee. Hij
+     * verdwijnt hier en verschijnt vlak bij zijn eigenaar in de nieuwe wereld, met dezelfde taak, dezelfde plek in de
+     * formatie, dezelfde tijd die hij nog heeft en dezelfde schade. In je arsenaal blijft hij gewoon "On a job".
+     *
+     * Dit doet Minecraft niet zelf (zie canChangeDimensions): een drone die het spel door een portaal haalt, komt aan als
+     * een opgeslagen kopie, en zo'n kopie vliegt meteen weg (zie stale). Daarom maken we hier zelf een nieuwe drone in de
+     * andere wereld en halen we deze weg zonder iets te boeken.
+     *
+     * @return de drone in de nieuwe wereld, of null als het niet lukte (dan blijft deze hier, merkt hij dat je weg bent,
+     *         en vliegt hij naar zijn baan)
+     */
+    public @Nullable DroneEntity travelWith(ServerPlayer owner) {
+        if (!(level() instanceof ServerLevel) || !(owner.level() instanceof ServerLevel there) || there == level()
+                || !isOnAJob()) {
+            return null;
+        }
+        if (!(getType().create(there) instanceof DroneEntity copy)) {
+            return null;
+        }
+        copy.setup(owner, getMode(), slot, lifeTicks);
+        copy.setHealth(getHealth());
+        // Vlak bij je, waar zeker plaats is (je staat er zelf): daarna zoekt hij zijn plek in de formatie weer op.
+        copy.moveTo(owner.getX(), owner.getY() + owner.getBbHeight() * 0.5 + 0.2 * (slot % 3), owner.getZ(),
+                owner.getYRot(), 0.0f);
+        // Deze drone gaat hier weg zonder iets te boeken: zijn rit loopt door in de andere wereld.
+        UUID id = arsenalId;
+        settle();
+        discard();
+        copy.setArsenalId(id);
+        if (!there.addFreshEntity(copy)) {
+            // Hij kwam niet in de nieuwe wereld: dan boekt het vangnet van het arsenaal hem straks terug.
+            return null;
+        }
+        there.sendParticles(ParticleTypes.ELECTRIC_SPARK, copy.getX(), copy.getY(), copy.getZ(), 6, 0.2, 0.2, 0.2, 0.1);
+        return copy;
     }
 
     /**
@@ -1272,8 +1325,9 @@ public class DroneEntity extends PathfinderMob implements com.senne.imttech.weap
     }
 
     /**
-     * Een drone gaat nooit door een portaal: hij hoort bij jou, in jouw wereld. Ga jij door een portaal, dan vliegen je
-     * drones terug naar hun baan (zie customServerAiStep: hij vindt je niet meer).
+     * Een drone gaat nooit zelf door een portaal: hij hoort bij jou, in jouw wereld. Ga jij door een portaal, dan gaan
+     * je escorte en je zwerm met je mee (hoofdstuk 106, zie travelWith: dat doen we zelf, niet Minecraft), en de rest
+     * vliegt terug naar zijn baan (zie customServerAiStep: hij vindt je niet meer).
      */
     @Override
     public boolean canChangeDimensions(Level from, Level to) {

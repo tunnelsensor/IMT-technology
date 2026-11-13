@@ -208,7 +208,9 @@ public final class BootOverlay {
         HudStyle.smallText(g, font, percent, cx + width / 2 + 12, y, argb(fade * 220 / 255, colour));
 
         // Wat er nu geladen wordt; bij elke nieuwe stap een piepje.
-        int drones = player.getData(ModAttachments.ARSENAL).availableCount();
+        // Hoofdstuk 106: in de Nether en het End tellen alleen de drones die met je meekwamen (zie arsenal/Orbit).
+        int drones = player.getData(ModAttachments.ARSENAL)
+                .readyCount(com.senne.imttech.arsenal.Orbit.reachable(player.level()));
         int energy = Math.round(100f * ImtData.getEnergy(glasses) / Math.max(1, ImtData.getMaxEnergy(glasses)));
         long[] stepAt = {BAR_START, 1500, 2000, 2300, 2700, SCAN_START, CONFIRMED_AT, CONFIRMED_AT + 350};
         Component[] steps = {

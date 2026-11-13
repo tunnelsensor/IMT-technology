@@ -382,6 +382,15 @@ public class ImtMenuScreen extends Screen {
 
     /** Wat er onder een actie staat: AAN/UIT, de kosten, een wachttijd of de overdracht-status. */
     private static Status statusOf(ImtAction action, ItemStack glasses) {
+        // Hoofdstuk 106: wat op je datacenter rekent, kan niet zonder: dat staat er dan in het rood onder. En in de Nether
+        // en het End (geen baan) kan een drone-actie alleen met een drone die met je meekwam.
+        if (!ImtClientState.datacenterWorks() && needsDatacenter(action, glasses)) {
+            return new Status(Component.translatable(ImtClientState.datacenterLink == 3
+                    ? "screen.imttech.datacenter_offline" : "screen.imttech.no_datacenter"), HudStyle.RED);
+        }
+        if (takesDrone(action) && noDroneHere()) {
+            return new Status(Component.translatable("screen.imttech.no_drones_here"), HudStyle.RED);
+        }
         ImtFeature feature = action.toggles();
         if (feature != null) {
             boolean on = !glasses.isEmpty() && ImtData.isEnabled(glasses, feature);
@@ -466,6 +475,46 @@ public class ImtMenuScreen extends Screen {
             return new Status(Component.translatable("screen.imttech.sweep.pick_end"), HudStyle.ORANGE);
         }
         return costOrCooldown(mode.cost(), ImtClientState.cooldown(ImtCooldown.SATELLITE));
+    }
+
+    /**
+     * Hoofdstuk 106: heeft deze actie je datacenter nodig? Dezelfde lijst als op de server (ImtServer.datacenterNeed):
+     * alles wat nadenkt; niet wat iets stopt (landen, terugroepen, uitzetten).
+     */
+    private static boolean needsDatacenter(ImtAction action, ItemStack glasses) {
+        return switch (action) {
+            case ORE_SCAN, SATELLITE_STRIKE, STRIKE_PRECISION, STRIKE_BOMBARDMENT, STRIKE_SWEEP, LAUNCH_DRONES, DRONE_STRIKE,
+                 CARGO_DRONE, CARRY_ENTITY, ILLUSION_WALL, ILLUSION_ARMY, ILLUSION_CLOAK -> true;
+            case DRONE_CAMERA -> !DroneCamera.isActive();
+            case SPY_DRONE -> !ImtClientState.spyActive;
+            case TRANSPORT_RIDE, TRANSPORT_AUTOPILOT -> !ImtClientState.flying;
+            case HACK_PLAYER -> ImtClientState.hackedCount == 0;
+            case TOGGLE_THREAT_SCAN -> glasses.isEmpty() || !ImtData.isEnabled(glasses, ImtFeature.THREAT_SCAN);
+            case TOGGLE_TARGET_ANALYSIS -> glasses.isEmpty() || !ImtData.isEnabled(glasses, ImtFeature.TARGET_ANALYSIS);
+            case TOGGLE_GUARD_DRONES -> glasses.isEmpty() || !ImtData.isEnabled(glasses, ImtFeature.GUARD_DRONES);
+            default -> false;
+        };
+    }
+
+    /** Hoofdstuk 106: haalt deze actie een drone uit je arsenaal (als ze iets start)? */
+    private static boolean takesDrone(ImtAction action) {
+        return switch (action) {
+            case LAUNCH_DRONES, DRONE_STRIKE, CARGO_DRONE, CARRY_ENTITY, ILLUSION_WALL, ILLUSION_ARMY, ILLUSION_CLOAK -> true;
+            case DRONE_CAMERA -> !DroneCamera.isActive();
+            case SPY_DRONE -> !ImtClientState.spyActive;
+            case TRANSPORT_RIDE, TRANSPORT_AUTOPILOT -> !ImtClientState.flying;
+            default -> false;
+        };
+    }
+
+    /**
+     * Hoofdstuk 106: ben je in een wereld zonder baan (de Nether of het End, zie arsenal/Orbit) en wacht er geen enkele
+     * drone bij je? Dan kan daar geen drone-actie.
+     */
+    private static boolean noDroneHere() {
+        Minecraft mc = Minecraft.getInstance();
+        return mc.player != null && mc.level != null && !com.senne.imttech.arsenal.Orbit.reachable(mc.level)
+                && mc.player.getData(com.senne.imttech.registry.ModAttachments.ARSENAL).readyCount(false) == 0;
     }
 
     /** Kosten als de functie klaar is, anders de resterende wachttijd. */

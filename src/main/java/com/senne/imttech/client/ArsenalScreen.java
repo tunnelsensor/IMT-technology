@@ -132,9 +132,22 @@ public class ArsenalScreen extends Screen {
     private void addButton(ArsenalDrone drone, int y) {
         int x = listX + LIST_W - 46;
         switch (drone.state()) {
-            case ORBIT -> addRenderableWidget(Button.builder(Component.translatable("screen.imttech.arsenal.recall"),
-                            button -> send(ArsenalActionPayload.Op.RECALL, drone))
-                    .bounds(x, y + 1, 46, 14).build());
+            // Hoofdstuk 106: in de Nether en het End kun je een drone in zijn baan niet laten landen (hij kan er niet
+            // bij): dan staat er geen knop. Een drone die daar bij je wacht ("With you"), wel.
+            case ORBIT -> {
+                if (orbitHere()) {
+                    addRenderableWidget(Button.builder(Component.translatable("screen.imttech.arsenal.recall"),
+                                    button -> send(ArsenalActionPayload.Op.RECALL, drone))
+                            .bounds(x, y + 1, 46, 14).build());
+                }
+            }
+            case STANDBY -> {
+                if (!orbitHere()) {
+                    addRenderableWidget(Button.builder(Component.translatable("screen.imttech.arsenal.recall"),
+                                    button -> send(ArsenalActionPayload.Op.RECALL, drone))
+                            .bounds(x, y + 1, 46, 14).build());
+                }
+            }
             // Aan de grond: repareren doe je bij de drone zelf (rechtsklik), hier kun je hem
             // alleen terugsturen.
             case GROUNDED -> addRenderableWidget(Button.builder(
@@ -249,9 +262,11 @@ public class ArsenalScreen extends Screen {
         super.render(g, mouseX, mouseY, a);
 
         g.drawString(font, title, left + 6, top + 5, HudStyle.argb(255, HudStyle.CYAN), true);
-        // Rechtsboven: hoeveel er klaar hangen en hoeveel er onderweg zijn.
-        Component summary = Component.translatable("screen.imttech.arsenal.summary",
-                shown.availableCount(), shown.size(), shown.deployedCount());
+        // Rechtsboven: hoeveel er klaar hangen en hoeveel er onderweg zijn. Hoofdstuk 106: in de Nether en het End (geen
+        // baan) is "klaar" wat met je meekwam en bij je wacht; wat in je baan hangt, kan daar niet bij.
+        boolean hasOrbit = orbitHere();
+        Component summary = Component.translatable(hasOrbit ? "screen.imttech.arsenal.summary" : "screen.imttech.arsenal.summary_here",
+                shown.readyCount(hasOrbit), shown.size(), shown.deployedCount());
         g.drawString(font, summary, left + panelW - 6 - font.width(summary), top + 5,
                 HudStyle.argb(180, HudStyle.WHITE), true);
 
@@ -300,12 +315,18 @@ public class ArsenalScreen extends Screen {
         int color = healthColour(fraction);
         HudStyle.bar(g, x + 22, y + 6, 36, 4, fraction, color);
 
+        // Hoofdstuk 106: in een wereld zonder baan staat een drone in zijn baan er grijs bij ("Out of reach"), en een
+        // drone die bij je wacht ("With you") groen: die kun je daar sturen.
+        boolean outOfReach = drone.state() == ArsenalDrone.State.ORBIT && !orbitHere();
         int stateColor = switch (drone.state()) {
-            case ORBIT -> HudStyle.CYAN;
+            case ORBIT -> outOfReach ? 0x8A96A0 : HudStyle.CYAN;
             case DEPLOYED -> HudStyle.ORANGE;
             case GROUNDED -> HudStyle.WHITE;
+            case STANDBY -> HudStyle.GREEN;
         };
-        String where = font.plainSubstrByWidth(Component.translatable(drone.whereKey()).getString(), 62);
+        // "Out of reach" is breder dan de andere plekken, maar daar staat ook geen knop naast: dan mag de tekst tot daar.
+        String where = font.plainSubstrByWidth(Component.translatable(
+                outOfReach ? "arsenal.imttech.state.out_of_reach" : drone.whereKey()).getString(), outOfReach ? 104 : 62);
         g.drawString(font, where, x + 62, y + 4, HudStyle.argb(210, stateColor), true);
     }
 
@@ -329,5 +350,11 @@ public class ArsenalScreen extends Screen {
 
     private static int healthColour(float fraction) {
         return fraction >= 1.0f ? HudStyle.GREEN : fraction < 0.35f ? HudStyle.RED : HudStyle.ORANGE;
+    }
+
+    /** Hoofdstuk 106: hangt er boven de wereld waar je nu bent een baan? Niet boven de Nether en het End (zie Orbit). */
+    private static boolean orbitHere() {
+        Minecraft mc = Minecraft.getInstance();
+        return mc.level == null || com.senne.imttech.arsenal.Orbit.reachable(mc.level);
     }
 }

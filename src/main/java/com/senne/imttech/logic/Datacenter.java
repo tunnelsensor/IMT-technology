@@ -126,7 +126,10 @@ public final class Datacenter {
         return cpuLoad;
     }
 
-    /** Hoe hard het brein van I.M.T hier werkt (0..1), de laatste meting. */
+    /**
+     * Hoe hard I.M.T hier werkt (0..1), de laatste meting: het brein dat nadenkt (dan 1), en sinds hoofdstuk 106 ook wat
+     * de brillen vragen (hun deel van de rekenkracht, zie DatacenterGlasses).
+     */
     public double brainLoad() {
         return brainLoad;
     }
@@ -242,10 +245,16 @@ public final class Datacenter {
         double capacity = stats.online() ? logicCapacity(stats) : 0;
         cpuLoad = capacity > 0 ? Math.min(1.0, perSecond / capacity) : 0;
         int[] load = LogicRunner.load(level, core);
+        GlobalPos here = GlobalPos.of(level.dimension(), core.getBlockPos());
+        // Hoofdstuk 106: wat de brillen hier vragen, neemt ook RAM (zie DatacenterGlasses).
         ramLoad = stats.online() && stats.ramMb() > 0
-                ? Math.min(1.0, ramUsedMb(stats, load[0], Math.max(cpuLoad, brainLoad)) / stats.ramMb()) : 0;
-        // Denkt het brein van I.M.T hier nu na (voor iemand)? Dan werken de chips op vol.
-        brainLoad = DatacenterBrain.thinkingOn(level, GlobalPos.of(level.dimension(), core.getBlockPos())).isEmpty() ? 0.0 : 1.0;
+                ? Math.min(1.0, (ramUsedMb(stats, load[0], Math.max(cpuLoad, brainLoad))
+                        + DatacenterGlasses.usedRamMb(level.getServer(), here)) / stats.ramMb()) : 0;
+        // Denkt het brein van I.M.T hier nu na (voor iemand)? Dan werken de chips op vol. En hoofdstuk 106: wat de brillen
+        // hier vragen (een satellietaanval, een scan, navigeren...) neemt zijn deel van dezelfde rekenkracht.
+        double power = glassesPower(stats);
+        double glasses = power > 0 ? Math.min(1.0, DatacenterGlasses.usedPower(level.getServer(), here) / power) : 0.0;
+        brainLoad = Math.max(DatacenterBrain.thinkingOn(level, here).isEmpty() ? 0.0 : 1.0, glasses);
         history.addLast(new int[] {percent(cpuLoad), percent(brainLoad), percent(ramLoad), (int) Math.round(temperature)});
         while (history.size() > HISTORY) {
             history.removeFirst();
@@ -396,8 +405,17 @@ public final class Datacenter {
             datacenters.unreport(here);
             return;
         }
+        // Hoofdstuk 106: ook de rekenkracht en het RAM, voor de bril van de eigenaar (zie DatacenterGlasses).
         datacenters.report(here, new Datacenters.Summary(core.ownerId(), core.hostname(), core.ip(), stats.online(),
-                stats.capacity(), core.logic().blocks(), stats.brainDelayTicks()));
+                stats.capacity(), core.logic().blocks(), stats.brainDelayTicks(), glassesPower(stats), stats.ramMb()));
+    }
+
+    /**
+     * De rekenkracht voor de bril (hoofdstuk 106): dezelfde als die van het brein (een CPU 1, een GPU 2, maal wat het RAM
+     * voedt), en warm de helft. Draait de server niet: 0.
+     */
+    public static double glassesPower(LogicServer.Stats stats) {
+        return stats.online() ? stats.brainPower() / stats.slowdown() : 0.0;
     }
 
     // ================================================================ Slijten en brand

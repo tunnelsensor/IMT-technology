@@ -205,6 +205,11 @@ public class SatelliteScreen extends Screen {
         if (sending != null) {
             return Component.translatable("satellite.imttech.msg.busy");
         }
+        // Hoofdstuk 106: vanuit de Nether en het End kunnen je drones niet naar je satelliet.
+        if (Minecraft.getInstance().level != null
+                && !com.senne.imttech.arsenal.Orbit.reachable(Minecraft.getInstance().level)) {
+            return Component.translatable("satellite.imttech.msg.no_orbit");
+        }
         Inventory inventory = Minecraft.getInstance().player.getInventory();
         for (ItemStack needed : upgrade.costFor(next)) {
             if (have(inventory, needed) < needed.getCount()) {

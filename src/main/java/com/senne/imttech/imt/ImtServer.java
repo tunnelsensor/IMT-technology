@@ -19,6 +19,7 @@ import com.senne.imttech.comms.ImtComms;
 import com.senne.imttech.nav.ImtWaypoints;
 import com.senne.imttech.registry.ModAttachments;
 import com.senne.imttech.hack.ImtHack;
+import com.senne.imttech.logic.DatacenterGlasses;
 import com.senne.imttech.illusion.ImtIllusions;
 import com.senne.imttech.illusion.IllusionScene;
 import com.senne.imttech.satellite.SatelliteMode;
@@ -272,6 +273,9 @@ public final class ImtServer {
         }
 
         cleanUpMarks(player, state);
+        // Hoofdstuk 106: is je datacenter weg of draait het niet meer, dan stopt wat erop doorliep. En elke seconde hoort
+        // je datacenter wat er van jouw bril doorloopt (zie DatacenterGlasses).
+        datacenterSecond(player, glasses);
         ImtNavigation.tick(player);
         // Vliegen met drones kost energie; is de bril leeg, dan zet hij je neer.
         ImtTransport.tickRider(player, glasses);
@@ -346,11 +350,28 @@ public final class ImtServer {
             return;
         }
 
+        // Hoofdstuk 106 (jouw wens: "je hebt een datacenter nodig voor de IMT glasses"): alles wat nadenkt, draait op je
+        // datacenter. Heb je er geen, draait het niet, of past dit er nu niet bij, dan zegt I.M.T dat en gebeurt er niets:
+        // geen energie weg, en er begint geen wachttijd. Uitzetten, terugroepen en landen kan altijd.
+        DatacenterGlasses.Kind need = datacenterNeed(player, glasses, action);
+        if (need != null && !DatacenterGlasses.ready(player, need)) {
+            return;
+        }
+        double energyBefore = ImtData.getExactEnergy(glasses);
+
         ImtFeature feature = action.toggles();
         if (feature != null) {
             boolean on = ImtData.toggle(glasses, feature);
             String key = on ? "imt.imttech.msg.feature_on" : "imt.imttech.msg.feature_off";
             send(player, Component.translatable(key, Component.translatable(feature.translationKey())), ImtMessagePayload.Level.INFO);
+            // Wat doorloopt (de scans) neemt meteen zijn stuk van je datacenter, niet pas bij de volgende seconde.
+            reportStanding(player, glasses);
+            if (feature == ImtFeature.GUARD_DRONES && on && ArsenalServer.readyCount(player) <= 0
+                    && ImtDrones.find(player, DroneEntity.Mode.GUARD).isEmpty()) {
+                // Hoofdstuk 106: je zet je escorte aan, maar er is hier geen drone om te komen (in de Nether of het End
+                // alleen wat met je meekwam): zeg dat, anders gebeurt er stil niets.
+                ArsenalServer.tellNoneReady(player);
+            }
             if (feature == ImtFeature.NIGHT_VISION && !on) {
                 removeOurNightVision(player);
             }
@@ -408,6 +429,114 @@ public final class ImtServer {
             }
             default -> { }
         }
+        if (need != null) {
+            if (!need.standing() && ImtData.getExactEnergy(glasses) < energyBefore) {
+                // Het kostte energie, dus het verzoek ging echt door: je datacenter is er nu even mee bezig (hoofdstuk 106).
+                DatacenterGlasses.started(player, need);
+            }
+            // En wat doorloopt (een spion, een hack) neemt meteen zijn stuk.
+            reportStanding(player, glasses);
+        }
+    }
+
+    /**
+     * Hoofdstuk 106: wat deze actie van je datacenter vraagt, of null als ze er geen nodig heeft. Nodig heeft: alles wat
+     * nadenkt (de satelliet, de scans, opdrachten aan je drones, hacken, een spion, illusies). Niet nodig: wat de bril of
+     * het harnas zelf doet (nachtzicht, je schild, de laser cannon, de raketten, de formatie kiezen), en alles wat iets
+     * STOPT: uitzetten, terugroepen, landen en "stand down" werken altijd, ook zonder datacenter.
+     */
+    private static @Nullable DatacenterGlasses.Kind datacenterNeed(ServerPlayer player, ItemStack glasses, ImtAction action) {
+        return switch (action) {
+            case ORE_SCAN -> DatacenterGlasses.Kind.SCAN;
+            case SATELLITE_STRIKE, STRIKE_PRECISION, STRIKE_BOMBARDMENT, STRIKE_SWEEP -> DatacenterGlasses.Kind.SATELLITE;
+            case LAUNCH_DRONES, DRONE_STRIKE, CARGO_DRONE, CARRY_ENTITY, ILLUSION_WALL, ILLUSION_ARMY, ILLUSION_CLOAK ->
+                    DatacenterGlasses.Kind.ORDER;
+            // Aanzetten vraagt je datacenter; nog eens drukken is stoppen, en dat kan altijd.
+            case DRONE_CAMERA -> state(player).scoutId == null ? DatacenterGlasses.Kind.ORDER : null;
+            case SPY_DRONE -> ImtSpy.of(player) == null ? DatacenterGlasses.Kind.SPY : null;
+            case TRANSPORT_RIDE, TRANSPORT_AUTOPILOT ->
+                    ImtTransport.carrierOf(player) == null ? DatacenterGlasses.Kind.ORDER : null;
+            case HACK_PLAYER -> findLookTarget(player, ImtConfig.Hack.RANGE) instanceof ServerPlayer target
+                    && ImtHack.isHacking(player, target.getUUID()) ? null : DatacenterGlasses.Kind.HACK;
+            case TOGGLE_THREAT_SCAN ->
+                    ImtData.isEnabled(glasses, ImtFeature.THREAT_SCAN) ? null : DatacenterGlasses.Kind.THREAT_SCAN;
+            case TOGGLE_TARGET_ANALYSIS ->
+                    ImtData.isEnabled(glasses, ImtFeature.TARGET_ANALYSIS) ? null : DatacenterGlasses.Kind.TARGET_ANALYSIS;
+            case TOGGLE_GUARD_DRONES ->
+                    ImtData.isEnabled(glasses, ImtFeature.GUARD_DRONES) ? null : DatacenterGlasses.Kind.ORDER;
+            default -> null;
+        };
+    }
+
+    /**
+     * Hoofdstuk 106: zegt je datacenter wat er van jouw bril doorloopt (navigeren, de dreigingsscan, de doelwit-analyse,
+     * elke speler die je hackt, een spionagedrone) en hoeveel waypoints hij bewaart. Elke seconde, en meteen als je iets
+     * aan- of uitzet. Zie DatacenterGlasses.standing.
+     */
+    /**
+     * Elke seconde voor wie zijn bril op heeft: is je datacenter weg of draait het niet meer, dan stopt wat erop doorliep;
+     * en je datacenter hoort wat er van jouw bril doorloopt.
+     */
+    private static void datacenterSecond(ServerPlayer player, ItemStack glasses) {
+        if (!DatacenterGlasses.linked(player)) {
+            stopWhatNeedsTheDatacenter(player);
+        }
+        reportStanding(player, glasses);
+    }
+
+    /** Hetzelfde, voor de bril die deze speler op heeft (voor de automatische tests: een testspeler tikt niet vanzelf). */
+    public static void reportToDatacenter(ServerPlayer player) {
+        ItemStack glasses = ImtData.getWornGlasses(player);
+        if (!glasses.isEmpty() && ImtData.isAuthorized(glasses, player)) {
+            datacenterSecond(player, glasses);
+        }
+    }
+
+    private static void reportStanding(ServerPlayer player, ItemStack glasses) {
+        List<DatacenterGlasses.Kind> running = new ArrayList<>();
+        ImtWaypoints waypoints = player.getData(ModAttachments.WAYPOINTS);
+        if (ImtData.getEnergy(glasses) > 0) {
+            if (waypoints.active() != ImtWaypoints.NONE) {
+                running.add(DatacenterGlasses.Kind.NAVIGATION);
+            }
+            if (ImtData.isEnabled(glasses, ImtFeature.THREAT_SCAN)) {
+                running.add(DatacenterGlasses.Kind.THREAT_SCAN);
+            }
+            if (ImtData.isEnabled(glasses, ImtFeature.TARGET_ANALYSIS)) {
+                running.add(DatacenterGlasses.Kind.TARGET_ANALYSIS);
+            }
+            for (int i = 0; i < ImtHack.targetsOf(player).size(); i++) {
+                running.add(DatacenterGlasses.Kind.HACK);
+            }
+            if (ImtSpy.of(player) != null) {
+                running.add(DatacenterGlasses.Kind.SPY);
+            }
+        }
+        DatacenterGlasses.standing(player, running, waypoints.waypoints().size());
+    }
+
+    /**
+     * Hoofdstuk 106: je datacenter is weg of draait niet meer. Wat erop doorliep, stopt: je navigatie, je hacks en je
+     * spionagedrone. (De scans blijven "aan" staan in je bril, maar tonen niets tot je datacenter er weer is.)
+     */
+    private static void stopWhatNeedsTheDatacenter(ServerPlayer player) {
+        boolean stopped = false;
+        ImtWaypoints waypoints = player.getData(ModAttachments.WAYPOINTS);
+        if (waypoints.active() != ImtWaypoints.NONE) {
+            player.setData(ModAttachments.WAYPOINTS, waypoints.withActive(ImtWaypoints.NONE));
+            stopped = true;
+        }
+        if (!ImtHack.targetsOf(player).isEmpty()) {
+            ImtHack.stopAll(player, false);
+            stopped = true;
+        }
+        if (ImtSpy.of(player) != null) {
+            ImtSpy.stop(player, "imt.imttech.spy.log.end_no_datacenter");
+            stopped = true;
+        }
+        if (stopped) {
+            send(player, Component.translatable("imt.imttech.msg.datacenter_lost"), ImtMessagePayload.Level.ALERT);
+        }
     }
 
     private static void oreScan(ServerPlayer player, ItemStack glasses) {
@@ -416,7 +545,7 @@ public final class ImtServer {
                 || !payEnergy(player, glasses, ImtConfig.Scanner.ORE_SCAN_COST)) {
             return;
         }
-        startCooldown(player, state, ImtCooldown.ORE_SCAN, Math.round(ImtConfig.Scanner.ORE_SCAN_COOLDOWN));
+        startCooldown(player, state, ImtCooldown.ORE_SCAN, Math.round(ImtConfig.Scanner.ORE_SCAN_WAIT));
         ModNetwork.sendTo(player, new OreScanPayload(ImtData.getOreScanRadius(glasses)));
     }
 
@@ -440,10 +569,11 @@ public final class ImtServer {
      * begint geen wachttijd. Nieuwe drones bouw je met een recept; zie het arsenaal-scherm.
      */
     private static boolean requireDrone(ServerPlayer player) {
-        if (ArsenalServer.get(player).availableCount() > 0) {
+        // Hoofdstuk 106: in de Nether en het End tellen alleen de drones die met je meekwamen (zie arsenal/Orbit).
+        if (ArsenalServer.readyCount(player) > 0) {
             return true;
         }
-        send(player, Component.translatable("arsenal.imttech.msg.empty"), ImtMessagePayload.Level.WARNING);
+        ArsenalServer.tellNoneReady(player);
         return false;
     }
 
@@ -689,6 +819,10 @@ public final class ImtServer {
         }
         if (!ImtTargeting.canTarget(player, target)) {
             send(player, Component.translatable("imt.imttech.msg.cannot_mark", target.getDisplayName()), ImtMessagePayload.Level.WARNING);
+            return;
+        }
+        // Hoofdstuk 106: een doelwit onthouden doet je datacenter. (Een markering weghalen, hierboven, kan altijd.)
+        if (!DatacenterGlasses.requireLink(player)) {
             return;
         }
         if (state.marked.size() >= Math.round(ImtConfig.Glasses.MAX_MARKED_TARGETS)) {
@@ -1163,7 +1297,9 @@ public final class ImtServer {
         // Wie valt je aan? Alleen dat markeren we; zie ImtThreats.
         List<Integer> threatIds = List.of();
         ItemStack worn = ImtData.getWornGlasses(player);
-        if (ImtData.isEnabled(worn, ImtFeature.THREAT_SCAN)) {
+        // Hoofdstuk 106: de dreigingsscan rekent op je datacenter. Zonder (of als het niet draait) ziet hij niets.
+        DatacenterGlasses.Link link = DatacenterGlasses.link(player);
+        if (ImtData.isEnabled(worn, ImtFeature.THREAT_SCAN) && link.works()) {
             int radius = ImtData.getThreatRadius(worn);
             threatIds = new ArrayList<>();
             for (LivingEntity threat : ImtThreats.of(player, radius)) {
@@ -1180,7 +1316,9 @@ public final class ImtServer {
                 ImtHack.targetsOf(player).size(),
                 threatIds,
                 com.senne.imttech.logic.DatacenterBrain.delayFor(player),
-                com.senne.imttech.logic.DatacenterBrain.sourceFor(player)));
+                com.senne.imttech.logic.DatacenterBrain.sourceFor(player),
+                link.ordinal(),
+                DatacenterGlasses.loadPercent(player)));
     }
 
     public static void send(ServerPlayer player, Component message, ImtMessagePayload.Level level) {

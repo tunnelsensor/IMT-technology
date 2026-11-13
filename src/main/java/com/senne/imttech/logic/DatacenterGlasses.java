@@ -1,0 +1,528 @@
+package com.senne.imttech.logic;
+
+import com.senne.imttech.config.ImtConfig;
+import com.senne.imttech.imt.ImtServer;
+import com.senne.imttech.network.ImtMessagePayload;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
+import net.minecraft.core.GlobalPos;
+import net.minecraft.gametest.framework.GameTestServer;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import org.jetbrains.annotations.Nullable;
+
+/**
+ * De bril draait op je datacenter (hoofdstuk 106, jouw wens van 13 november: "IMT is te OP ... je hebt een datacenter
+ * nodig voor de IMT glasses zijn data. Elke satelliet request, waypoint gebruikt wat van de server: waypoint neemt enkel
+ * ssd en ram, cpu en/of gpu als je navigeert. Andere dingen die soort van nadenken gebruiken dus altijd cpu en/of gpu en
+ * ram. Data opslag moet op een ssd.").
+ *
+ * Hoe het werkt (alle getallen staan in {@link ImtConfig.Uplink}):
+ * <ul>
+ *   <li><b>Welk datacenter</b>: het sterkste datacenter van jezelf dat draait, waar het ook staat (hetzelfde als waar
+ *       het brein op draait, zie {@link DatacenterBrain#best}). Zonder datacenter doet de bril niets meer dat nadenkt of
+ *       iets bewaart. In creative heb je er geen nodig.</li>
+ *   <li><b>Rekenkracht</b> (CPU's en GPU's): een CPU telt 1, een GPU 2, maal wat het RAM voedt, en warm de helft (de
+ *       "power" van de tegel BRAIN in de app Monitor). Elk verzoek neemt daar een stukje van, zolang het bezig is.</li>
+ *   <li><b>Eenmalige verzoeken</b> (een satellietaanval, een ertsen-scan, een opdracht aan je drones, een hack starten,
+ *       een illusie, relais schakelen) houden het datacenter een paar seconden bezig. Past het er niet meer bij, dan
+ *       zegt I.M.T "Datacenter busy" en gebeurt er niets: je raakt geen energie kwijt en er begint geen wachttijd.</li>
+ *   <li><b>Wat doorloopt</b> (navigeren, de dreigingsscan, de doelwit-analyse, elke speler die je hackt, een
+ *       spionagedrone) neemt zijn stuk zolang het aan staat.</li>
+ *   <li><b>RAM</b>: elk verzoek neemt ook RAM zolang het bezig is, en elk waypoint een klein beetje zolang je bril op
+ *       staat.</li>
+ *   <li><b>SSD</b>: wat de bril bewaart (je waypoints) staat op de SSD's. Een nieuw waypoint heeft daar plaats nodig. Wat
+ *       je al had, blijft staan, ook zonder datacenter ("de dingen die spelers nu al in IMT glasses hebben bewaard zonder
+ *       datacenter blijven"); het telt wel mee zodra je een datacenter hebt.</li>
+ * </ul>
+ * Wat hier NIET onder valt (dat is de bril of het harnas zelf, geen nadenken of data): het beeld, nachtzicht, je schild,
+ * de laser cannon en de raketten, de camera van een drone, berichten en pings, en stoppen of landen (dat kan altijd).
+ *
+ * Alles hier staat in het geheugen van de server (zoals wachttijden): wie waar mee bezig is, vergeten we als de wereld
+ * sluit. Alleen hoeveel de bril van een speler bewaart, staat in {@link Datacenters}: zo telt het ook mee op de SSD's
+ * als die speler niet online is.
+ */
+public final class DatacenterGlasses {
+    private DatacenterGlasses() {}
+
+    /** Wat de bril van zijn datacenter kan vragen. */
+    public enum Kind {
+        /** Een satellietaanval (K, P of C). */
+        SATELLITE("satellite strike", false),
+        /** Een ertsen-scan. */
+        SCAN("ore scan", false),
+        /** Al het andere eenmalige: een opdracht aan je drones, een hack starten, een illusie, relais schakelen. */
+        ORDER("order", false),
+        /** Navigeren naar een waypoint of je sterfplek (zolang het aan staat). */
+        NAVIGATION("navigation", true),
+        /** De dreigingsscan (zolang hij aan staat). */
+        THREAT_SCAN("threat scan", true),
+        /** De doelwit-analyse (zolang ze aan staat). */
+        TARGET_ANALYSIS("target analysis", true),
+        /** Een speler die je hackt (per speler, zolang de hack loopt). */
+        HACK("hack", true),
+        /** Een spionagedrone (zolang hij volgt). */
+        SPY("spy drone", true);
+
+        private final String label;
+        private final boolean standing;
+
+        Kind(String label, boolean standing) {
+            this.label = label;
+            this.standing = standing;
+        }
+
+        /** Hoe dit in de app Monitor heet (Engels: je ziet het in het spel). */
+        public String label() {
+            return label;
+        }
+
+        /** Loopt dit door zolang het aan staat (true), of is het een eenmalig verzoek (false)? */
+        public boolean standing() {
+            return standing;
+        }
+
+        /** Hoeveel rekenkracht dit neemt (een CPU is 1, een GPU 2). */
+        public double power() {
+            return Math.max(0.0, switch (this) {
+                case SATELLITE -> ImtConfig.Uplink.SATELLITE_POWER;
+                case SCAN -> ImtConfig.Uplink.SCAN_POWER;
+                case ORDER -> ImtConfig.Uplink.ORDER_POWER;
+                case NAVIGATION -> ImtConfig.Uplink.NAVIGATION_POWER;
+                case THREAT_SCAN, TARGET_ANALYSIS -> ImtConfig.Uplink.SENSOR_POWER;
+                case HACK, SPY -> ImtConfig.Uplink.TRACKING_POWER;
+            });
+        }
+
+        /** Hoeveel MB RAM dit neemt zolang het bezig is. */
+        public double ramMb() {
+            return Math.max(0.0, switch (this) {
+                case SATELLITE -> ImtConfig.Uplink.SATELLITE_RAM_MB;
+                case SCAN -> ImtConfig.Uplink.SCAN_RAM_MB;
+                case ORDER -> ImtConfig.Uplink.ORDER_RAM_MB;
+                case NAVIGATION -> ImtConfig.Uplink.NAVIGATION_RAM_MB;
+                case THREAT_SCAN, TARGET_ANALYSIS -> ImtConfig.Uplink.SENSOR_RAM_MB;
+                case HACK, SPY -> ImtConfig.Uplink.TRACKING_RAM_MB;
+            });
+        }
+
+        /** Hoe lang (ticks) het datacenter met een eenmalig verzoek bezig is. */
+        public int ticks() {
+            return Math.max(1, Math.round(switch (this) {
+                case SATELLITE -> ImtConfig.Uplink.SATELLITE_TICKS;
+                case SCAN -> ImtConfig.Uplink.SCAN_TICKS;
+                default -> ImtConfig.Uplink.ORDER_TICKS;
+            }));
+        }
+    }
+
+    /** Hoe de bril van een speler met zijn datacenter verbonden is. */
+    public enum Link {
+        /** Hij heeft er geen nodig: creative, of de regel staat uit in de config. */
+        NOT_NEEDED,
+        /** Verbonden met zijn sterkste datacenter dat draait. */
+        OK,
+        /** Hij heeft geen datacenter. */
+        NONE,
+        /** Hij heeft er wel een (of meer), maar geen enkel draait. */
+        OFFLINE;
+
+        /** Kan de bril nu nadenken en bewaren? */
+        public boolean works() {
+            return this == NOT_NEEDED || this == OK;
+        }
+    }
+
+    // ================================================================ Geldt de regel?
+
+    /** Voor de tests en de rondleidingen: de regel aan (true) of uit (false), of null = de config beslist. */
+    private static @Nullable Boolean requiredOverride;
+
+    /**
+     * Heeft de bril een datacenter nodig ({@code [uplink] required} in de config)?
+     *
+     * Tijdens de automatische tests ({@code gradlew runGameTestServer}) geldt de oude regel, zodat alle tests van de bril
+     * van vóór hoofdstuk 106 geen datacenter hoeven te bouwen; de tests van deze regel zetten hem zelf aan (zoals het
+     * netwerk in LanGrid.required).
+     */
+    public static boolean required() {
+        Boolean override = requiredOverride;
+        if (override != null) {
+            return override;
+        }
+        if (ServerLifecycleHooks.getCurrentServer() instanceof GameTestServer) {
+            return false;
+        }
+        return ImtConfig.Uplink.REQUIRED;
+    }
+
+    /** Alleen voor de tests en de rondleidingen: de regel aan of uit zetten, of met null weer de config laten beslissen. */
+    public static void overrideRequired(@Nullable Boolean required) {
+        requiredOverride = required;
+    }
+
+    // ================================================================ Welk datacenter?
+
+    /** Het datacenter waar de bril van deze speler op draait: waar het staat, en hoe het ervoor staat. */
+    private record Server(GlobalPos pos, Datacenters.Summary summary) {
+        /** Rekenkracht voor de bril: een CPU 1, een GPU 2, maal wat het RAM voedt, warm de helft. */
+        double power() {
+            if (summary.power() >= 0) {
+                return summary.power();
+            }
+            // Een wereld van voor hoofdstuk 106: het datacenter meldde zijn kracht nog niet (dat doet het zodra zijn
+            // stuk wereld weer geladen is). Tot dan schatten we ze uit de vertraging van het brein.
+            return LogicStats.brainPowerFor(summary.brainDelay());
+        }
+
+        /** Zoveel MB RAM heeft het (oneindig als het dat nog niet meldde, zie power). */
+        double ramMb() {
+            return summary.ramMb() >= 0 ? summary.ramMb() : Double.POSITIVE_INFINITY;
+        }
+    }
+
+    private static @Nullable Server serving(MinecraftServer server, UUID owner) {
+        Map.Entry<GlobalPos, Datacenters.Summary> best = DatacenterBrain.best(server, owner);
+        return best == null ? null : new Server(best.getKey(), best.getValue());
+    }
+
+    /** Hoe de bril van deze speler met zijn datacenter verbonden is. */
+    public static Link link(ServerPlayer player) {
+        if (!required() || player.isCreative()) {
+            return Link.NOT_NEEDED;
+        }
+        if (serving(player.server, player.getUUID()) != null) {
+            return Link.OK;
+        }
+        return Datacenters.get(player.server).ownedBy(player.getUUID()).isEmpty() ? Link.NONE : Link.OFFLINE;
+    }
+
+    /** Kan de bril van deze speler nu nadenken en bewaren? (Zonder melding.) */
+    public static boolean linked(ServerPlayer player) {
+        return link(player).works();
+    }
+
+    /** Hetzelfde, maar zegt de speler waarom niet (geen datacenter, of het draait niet). */
+    public static boolean requireLink(ServerPlayer player) {
+        Link link = link(player);
+        if (link.works()) {
+            return true;
+        }
+        tellNoLink(player, link);
+        return false;
+    }
+
+    private static void tellNoLink(ServerPlayer player, Link link) {
+        ImtServer.send(player, Component.translatable(link == Link.OFFLINE
+                ? "imt.imttech.msg.datacenter_offline" : "imt.imttech.msg.datacenter_none"), ImtMessagePayload.Level.WARNING);
+    }
+
+    // ================================================================ Wat er bezig is
+
+    /** Een eenmalig verzoek waar een datacenter nog mee bezig is: van wie, wat, en tot wanneer. */
+    private record Job(UUID player, String name, Kind kind, long until) {}
+
+    /** Wat er van één speler doorloopt (elke seconde opnieuw gemeld, zie {@link #standing}). */
+    private record Standing(GlobalPos datacenter, String name, List<Kind> kinds, int waypoints, long until) {
+        double power() {
+            double total = 0;
+            for (Kind kind : kinds) {
+                total += kind.power();
+            }
+            return total;
+        }
+
+        double ramMb() {
+            double total = waypoints * Math.max(0.0, ImtConfig.Uplink.WAYPOINT_RAM_MB);
+            for (Kind kind : kinds) {
+                total += kind.ramMb();
+            }
+            return total;
+        }
+    }
+
+    private static final Map<GlobalPos, List<Job>> JOBS = new HashMap<>();
+    private static final Map<UUID, Standing> STANDING = new HashMap<>();
+
+    /** Zo lang (ticks) geldt wat een speler meldde dat doorloopt; zijn bril meldt het elke seconde opnieuw. */
+    private static final int STANDING_TICKS = 40;
+
+    private static long now(MinecraftServer server) {
+        return server.overworld().getGameTime();
+    }
+
+    /** De verzoeken waar dit datacenter nog mee bezig is (wat klaar is, gaat eruit). */
+    private static List<Job> jobs(GlobalPos datacenter, long now) {
+        List<Job> jobs = JOBS.get(datacenter);
+        if (jobs == null) {
+            return List.of();
+        }
+        // Ook weg als de tijd terug sprong (een ander getal dan we ooit konden zetten): dan klopt "tot wanneer" niet meer.
+        jobs.removeIf(job -> now >= job.until() || job.until() - now > 20L * 60 * 10);
+        if (jobs.isEmpty()) {
+            JOBS.remove(datacenter);
+            return List.of();
+        }
+        return jobs;
+    }
+
+    /** Wat er op dit datacenter doorloopt (van spelers wier bril het nog meldt). */
+    private static List<Standing> standingOn(GlobalPos datacenter, long now) {
+        List<Standing> found = new ArrayList<>();
+        Iterator<Standing> it = STANDING.values().iterator();
+        while (it.hasNext()) {
+            Standing standing = it.next();
+            if (now >= standing.until() || standing.until() - now > STANDING_TICKS) {
+                it.remove(); // de bril ging af, de speler is weg, of de tijd sprong
+            } else if (standing.datacenter().equals(datacenter)) {
+                found.add(standing);
+            }
+        }
+        return found;
+    }
+
+    /** Hoeveel rekenkracht de brillen nu van dit datacenter gebruiken (een CPU is 1, een GPU 2). */
+    public static double usedPower(MinecraftServer server, GlobalPos datacenter) {
+        long now = now(server);
+        double total = 0;
+        for (Job job : jobs(datacenter, now)) {
+            total += job.kind().power();
+        }
+        for (Standing standing : standingOn(datacenter, now)) {
+            total += standing.power();
+        }
+        return total;
+    }
+
+    /** Hoeveel MB RAM de brillen nu van dit datacenter gebruiken. */
+    public static double usedRamMb(MinecraftServer server, GlobalPos datacenter) {
+        long now = now(server);
+        double total = 0;
+        for (Job job : jobs(datacenter, now)) {
+            total += job.kind().ramMb();
+        }
+        for (Standing standing : standingOn(datacenter, now)) {
+            total += standing.ramMb();
+        }
+        return total;
+    }
+
+    /**
+     * Wat de brillen nu op dit datacenter doen, voor de lijst RUNNING van de app Monitor: "satellite strike (Senne)",
+     * "navigation (Senne)"...
+     */
+    public static List<String> running(MinecraftServer server, GlobalPos datacenter) {
+        long now = now(server);
+        List<String> lines = new ArrayList<>();
+        for (Job job : jobs(datacenter, now)) {
+            lines.add(job.kind().label() + " (" + job.name() + ")");
+        }
+        for (Standing standing : standingOn(datacenter, now)) {
+            for (Kind kind : standing.kinds()) {
+                lines.add(kind.label() + " (" + standing.name() + ")");
+            }
+        }
+        return lines;
+    }
+
+    /**
+     * Hoeveel MB de bril van de eigenaar op de SSD's van dit datacenter bewaart. Alleen als dit het datacenter is waar
+     * zijn bril op draait (zijn sterkste): anders staat het op een ander.
+     */
+    public static double storedMb(MinecraftServer server, GlobalPos datacenter, @Nullable UUID owner) {
+        if (owner == null || !required()) {
+            return 0;
+        }
+        Server serving = serving(server, owner);
+        return serving != null && serving.pos().equals(datacenter) ? Datacenters.get(server).glassesData(owner) : 0;
+    }
+
+    // ================================================================ Een verzoek
+
+    /**
+     * Kan de bril van deze speler dit nu vragen? Zo niet, dan zegt I.M.T waarom (geen datacenter, het draait niet, het
+     * is te zwak, het is bezig, of het RAM is vol) en geeft dit false: er gebeurt dan niets, en dat kost niets.
+     *
+     * Dit reserveert nog niets: gaat het verzoek echt door, roep dan {@link #started} aan.
+     */
+    public static boolean ready(ServerPlayer player, Kind kind) {
+        Link link = link(player);
+        if (link == Link.NOT_NEEDED) {
+            return true;
+        }
+        Server serving = serving(player.server, player.getUUID());
+        if (serving == null) {
+            tellNoLink(player, link);
+            return false;
+        }
+        String host = serving.summary().host();
+        double power = serving.power();
+        double need = kind.power();
+        if (need > power + 1.0e-6) {
+            ImtServer.send(player, Component.translatable("imt.imttech.msg.datacenter_weak", host, plain(need), plain(power)),
+                    ImtMessagePayload.Level.WARNING);
+            return false;
+        }
+        // Wat van dit soort van deze speler al doorloopt, telt niet nog eens (hij zet het aan terwijl het al gemeld is).
+        double used = usedPower(player.server, serving.pos()) - alreadyStanding(player, kind, serving.pos()) * need;
+        if (used + need > power + 1.0e-6) {
+            ImtServer.send(player, Component.translatable("imt.imttech.msg.datacenter_busy", host,
+                    percent(used, power), plain(need), plain(Math.max(0.0, power - used))), ImtMessagePayload.Level.WARNING);
+            return false;
+        }
+        double ram = serving.ramMb();
+        double ramUsed = usedRamMb(player.server, serving.pos()) - alreadyStanding(player, kind, serving.pos()) * kind.ramMb();
+        if (ramUsed + kind.ramMb() > ram + 1.0e-6) {
+            ImtServer.send(player, Component.translatable("imt.imttech.msg.datacenter_no_ram", host,
+                    LogicStats.bytes(kind.ramMb()), LogicStats.bytes(Math.max(0.0, ram - ramUsed))), ImtMessagePayload.Level.WARNING);
+            return false;
+        }
+        return true;
+    }
+
+    /** Hoe vaak dit soort al doorloopt voor deze speler op dit datacenter (0 als het daar niet gemeld is). */
+    private static int alreadyStanding(ServerPlayer player, Kind kind, GlobalPos datacenter) {
+        Standing standing = STANDING.get(player.getUUID());
+        if (!kind.standing() || standing == null || !standing.datacenter().equals(datacenter)
+                || now(player.server) >= standing.until()) {
+            return 0;
+        }
+        int count = 0;
+        for (Kind running : standing.kinds()) {
+            if (running == kind) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Een eenmalig verzoek gaat echt door (het kostte energie): het datacenter van deze speler is er nu {@link Kind#ticks}
+     * mee bezig. Je ziet het in de app Monitor (de tegel BRAIN en de lijst RUNNING), en de racks worden er warmer van.
+     */
+    public static void started(ServerPlayer player, Kind kind) {
+        if (kind.standing() || link(player) != Link.OK) {
+            return;
+        }
+        Server serving = serving(player.server, player.getUUID());
+        if (serving == null) {
+            return;
+        }
+        JOBS.computeIfAbsent(serving.pos(), pos -> new ArrayList<>()).add(new Job(player.getUUID(),
+                player.getGameProfile().getName(), kind, now(player.server) + kind.ticks()));
+    }
+
+    /**
+     * Elke seconde, vanuit de bril van een speler: dit loopt er nu door (navigeren, de scans, hacks, een spion), en
+     * zoveel waypoints bewaart hij. Zo lang het gemeld wordt, neemt het zijn stuk van het datacenter.
+     */
+    public static void standing(ServerPlayer player, List<Kind> kinds, int waypoints) {
+        if (link(player) != Link.OK) {
+            STANDING.remove(player.getUUID());
+            if (required() && !player.isCreative()) {
+                remember(player, waypoints); // ook zonder datacenter onthouden we hoeveel hij al bewaart
+            }
+            return;
+        }
+        Server serving = serving(player.server, player.getUUID());
+        if (serving == null) {
+            STANDING.remove(player.getUUID());
+            return;
+        }
+        STANDING.put(player.getUUID(), new Standing(serving.pos(), player.getGameProfile().getName(), List.copyOf(kinds),
+                waypoints, now(player.server) + STANDING_TICKS));
+        remember(player, waypoints);
+    }
+
+    /** Deze speler is weg (of zijn bril is af): niets van hem loopt nog door. */
+    public static void forget(UUID player) {
+        STANDING.remove(player);
+    }
+
+    /** De wereld sluit: niemand is nog ergens mee bezig. */
+    public static void clear() {
+        JOBS.clear();
+        STANDING.clear();
+    }
+
+    // ================================================================ Bewaren (op de SSD's)
+
+    /** Zoveel MB nemen zoveel waypoints in op de SSD's. */
+    public static double waypointsMb(int waypoints) {
+        return Math.max(0, waypoints) * Math.max(0.0, ImtConfig.Uplink.WAYPOINT_MB);
+    }
+
+    /** Onthoudt (in de wereld) hoeveel de bril van deze speler bewaart, zodat het ook meetelt als hij niet online is. */
+    private static void remember(ServerPlayer player, int waypoints) {
+        Datacenters.get(player.server).setGlassesData(player.getUUID(), waypointsMb(waypoints));
+    }
+
+    /**
+     * Is er plaats om nog {@code mb} MB te bewaren voor de bril van deze speler? Zo niet, dan zegt I.M.T waarom (geen
+     * datacenter, het draait niet, of de SSD's zijn vol) en geeft dit false.
+     *
+     * @param stored hoeveel waypoints hij nu al bewaart (die tellen mee, ook die van voor hij een datacenter had)
+     */
+    public static boolean roomToStore(ServerPlayer player, int stored, double mb) {
+        Link link = link(player);
+        if (link == Link.NOT_NEEDED) {
+            return true;
+        }
+        Server serving = serving(player.server, player.getUUID());
+        if (serving == null) {
+            tellNoLink(player, link);
+            return false;
+        }
+        double free = freeSsdMb(player.server, serving, waypointsMb(stored));
+        if (mb > free + 1.0e-6) {
+            ImtServer.send(player, Component.translatable("imt.imttech.msg.datacenter_full", serving.summary().host(),
+                    LogicStats.bytes(mb), LogicStats.bytes(Math.max(0.0, free))), ImtMessagePayload.Level.WARNING);
+            return false;
+        }
+        return true;
+    }
+
+    /** Zoveel MB is er nog vrij op de SSD's: wat erop past, min je diagrammen, de backups die er staan, en wat de bril al bewaart. */
+    private static double freeSsdMb(MinecraftServer server, Server serving, double glassesMb) {
+        Datacenters datacenters = Datacenters.get(server);
+        double used = LogicStats.blocksMb(serving.summary().ownBlocks() + datacenters.storedAt(serving.pos())) + glassesMb;
+        return LogicStats.blocksMb(serving.summary().capacity()) - used;
+    }
+
+    // ================================================================ Voor de HUD
+
+    /** Hoeveel procent van de rekenkracht van zijn datacenter nu in gebruik is door brillen (0 als hij er geen heeft). */
+    public static int loadPercent(ServerPlayer player) {
+        if (link(player) != Link.OK) {
+            return 0;
+        }
+        Server serving = serving(player.server, player.getUUID());
+        if (serving == null || serving.power() <= 0) {
+            return 0;
+        }
+        return (int) Math.round(Math.min(1.0, usedPower(player.server, serving.pos()) / serving.power()) * 100);
+    }
+
+    // ================================================================ Tekst
+
+    /** 0.5 blijft "0.5", 1.0 wordt "1", 0.25 blijft "0.25". */
+    private static String plain(double value) {
+        double rounded = Math.round(value * 100) / 100.0;
+        if (rounded == Math.rint(rounded)) {
+            return String.valueOf((long) rounded);
+        }
+        String text = String.format(Locale.ROOT, "%.2f", rounded);
+        return text.endsWith("0") ? text.substring(0, text.length() - 1) : text;
+    }
+
+    private static int percent(double used, double total) {
+        return total <= 0 ? 100 : (int) Math.round(Math.max(0.0, Math.min(1.0, used / total)) * 100);
+    }
+}

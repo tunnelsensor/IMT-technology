@@ -97,7 +97,8 @@ public final class DatacenterScenes {
         s.layers(racks(false), 8);
         s.text(90, HowToSceneBuilder.top(new BlockPos(3, 2, 2)), Side.RIGHT,
                 "*Server Racks* next to or on top of each other are one server: your *datacenter*. One rack against your"
-                        + " *Security Core* (or a network cable) links it. Your diagrams and I.M.T's brain run on it.");
+                        + " *Security Core* (or a network cable) links it. Your diagrams, I.M.T's brain and your *I.M.T glasses*"
+                        + " run on it.");
         s.idle(95);
 
         s.chapter("Its bays");
@@ -128,7 +129,7 @@ public final class DatacenterScenes {
         s.text(140, HowToSceneBuilder.top(new BlockPos(3, 3, 4)), Side.RIGHT,
                 "One *CPU* (or %s GPUs) lets your diagrams use *%s devices* at once, like keycard readers. Every device"
                         + " more makes them *%s%% slower*. I.M.T needs *%s CPUs* (or %s GPUs). Every 10 CPUs or GPUs need"
-                        + " *%s RAM*. *SSDs* only store your diagrams.",
+                        + " *%s RAM*. *SSDs* only store: your diagrams and the waypoints of your glasses.",
                 number(1.0 / Math.max(0.01, ImtConfig.Logic.GPU_LOGIC_POWER)), number(ImtConfig.Logic.LOGIC_DEVICES_PER_CPU),
                 number(ImtConfig.Logic.LOGIC_SLOWER_PER_DEVICE * 100.0),
                 number(ImtConfig.Logic.BRAIN_FULL_SPEED_POWER), number(ImtConfig.Logic.BRAIN_FULL_SPEED_POWER / ImtConfig.Logic.GPU_BRAIN_POWER),

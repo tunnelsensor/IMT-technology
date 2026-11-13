@@ -2,6 +2,7 @@ package com.senne.imttech.nav;
 
 import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.imt.ImtServer;
+import com.senne.imttech.logic.DatacenterGlasses;
 import com.senne.imttech.network.ImtMessagePayload;
 import com.senne.imttech.network.WaypointActionPayload;
 import com.senne.imttech.registry.ModAttachments;
@@ -33,6 +34,11 @@ public final class ImtNavigation {
                             ImtMessagePayload.Level.WARNING);
                     return;
                 }
+                // Hoofdstuk 106 (jouw wens: "data opslag moet op een ssd"): een nieuw waypoint staat op de SSD's van je
+                // datacenter. Zonder datacenter, of zonder plaats, kan er geen bij. Wat je al had, blijft staan.
+                if (!DatacenterGlasses.roomToStore(player, data.waypoints().size(), DatacenterGlasses.waypointsMb(1))) {
+                    return;
+                }
                 String name = cleanName(payload.name(), data.waypoints().size() + 1);
                 Waypoint waypoint = new Waypoint(name, player.level().dimension(), player.blockPosition(), validColor(payload.color()));
                 data = data.with(waypoint);
@@ -60,6 +66,11 @@ public final class ImtNavigation {
             case NAVIGATE -> {
                 int index = payload.index();
                 if (index == ImtWaypoints.DEATH && player.getLastDeathLocation().isEmpty()) {
+                    return;
+                }
+                // Hoofdstuk 106 (jouw wens: "cpu en/of gpu als je navigeert"): navigeren rekent op je datacenter.
+                // Stoppen met navigeren kan altijd.
+                if (index != ImtWaypoints.NONE && !DatacenterGlasses.ready(player, DatacenterGlasses.Kind.NAVIGATION)) {
                     return;
                 }
                 data = data.withActive(index);

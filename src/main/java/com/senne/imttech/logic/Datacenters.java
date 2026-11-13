@@ -46,9 +46,12 @@ public final class Datacenters extends SavedData {
      * @param capacity   zoveel blokjes passen op de SSD's
      * @param ownBlocks  zoveel blokjes gebruiken de eigen diagrammen
      * @param brainDelay zoveel ticks denkt het brein van I.M.T hier extra na (-1 = kan niet)
+     * @param power      hoofdstuk 106: de rekenkracht voor de bril (een CPU 1, een GPU 2, maal wat het RAM voedt, warm de
+     *                   helft; zie DatacenterGlasses). -1 = nog niet gemeld (een wereld van voor hoofdstuk 106)
+     * @param ramMb      hoofdstuk 106: zoveel MB RAM heeft het. -1 = nog niet gemeld
      */
     public record Summary(@Nullable UUID owner, String host, String ip, boolean online, int capacity, int ownBlocks,
-                          int brainDelay) {}
+                          int brainDelay, double power, double ramMb) {}
 
     /**
      * Eén backup: wat er op stond (de diagrammen en keycards, als LogicStore), van welk netwerk,
@@ -60,6 +63,11 @@ public final class Datacenters extends SavedData {
     private final Map<GlobalPos, Summary> summaries = new HashMap<>();
     private final List<Backup> backups = new ArrayList<>();
     private int nextId = 1;
+    /**
+     * Hoofdstuk 106: zoveel MB bewaart de bril van elke speler (zijn waypoints). Het staat op de SSD's van het datacenter
+     * waar zijn bril op draait (zie DatacenterGlasses), en telt daar mee, ook als die speler niet online is.
+     */
+    private final Map<UUID, Double> glassesData = new HashMap<>();
 
     public static Datacenters get(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(
@@ -115,6 +123,27 @@ public final class Datacenters extends SavedData {
         if (changed) {
             setDirty();
         }
+    }
+
+    // ================================================================ Wat de bril bewaart (hoofdstuk 106)
+
+    /** Zoveel MB bewaart de bril van deze speler (0 als hij niets bewaart). */
+    public double glassesData(@Nullable UUID owner) {
+        return owner == null ? 0.0 : glassesData.getOrDefault(owner, 0.0);
+    }
+
+    /** De bril van deze speler bewaart nu zoveel MB. Alleen als het veranderde, wordt het bewaard. */
+    public void setGlassesData(UUID owner, double mb) {
+        double before = glassesData.getOrDefault(owner, 0.0);
+        if (Math.abs(before - mb) < 1.0e-6) {
+            return;
+        }
+        if (mb <= 0) {
+            glassesData.remove(owner);
+        } else {
+            glassesData.put(owner, mb);
+        }
+        setDirty();
     }
 
     // ================================================================ Backups
@@ -287,9 +316,19 @@ public final class Datacenters extends SavedData {
             item.putInt("Cap", summary.capacity());
             item.putInt("Own", summary.ownBlocks());
             item.putInt("Brain", summary.brainDelay());
+            item.putDouble("Power", summary.power());
+            item.putDouble("RamMb", summary.ramMb());
             list.add(item);
         }
         tag.put("Datacenters", list);
+        ListTag glasses = new ListTag();
+        for (Map.Entry<UUID, Double> entry : glassesData.entrySet()) {
+            CompoundTag item = new CompoundTag();
+            item.putUUID("Owner", entry.getKey());
+            item.putDouble("Mb", entry.getValue());
+            glasses.add(item);
+        }
+        tag.put("Glasses", glasses);
         ListTag backupList = new ListTag();
         for (Backup backup : backups) {
             backupList.add(saveBackup(backup));
@@ -334,8 +373,17 @@ public final class Datacenters extends SavedData {
             CompoundTag item = (CompoundTag) element;
             GlobalPos pos = fromKey(item.getString("Pos"));
             if (pos != null) {
+                // Hoofdstuk 106: een wereld van daarvoor heeft "Power" en "RamMb" nog niet: -1 = nog niet gemeld.
                 data.summaries.put(pos, new Summary(item.hasUUID("Owner") ? item.getUUID("Owner") : null, item.getString("Host"),
-                        item.getString("Ip"), item.getBoolean("Online"), item.getInt("Cap"), item.getInt("Own"), item.getInt("Brain")));
+                        item.getString("Ip"), item.getBoolean("Online"), item.getInt("Cap"), item.getInt("Own"), item.getInt("Brain"),
+                        item.contains("Power") ? item.getDouble("Power") : -1.0,
+                        item.contains("RamMb") ? item.getDouble("RamMb") : -1.0));
+            }
+        }
+        for (Tag element : tag.getList("Glasses", Tag.TAG_COMPOUND)) {
+            CompoundTag item = (CompoundTag) element;
+            if (item.hasUUID("Owner") && item.getDouble("Mb") > 0) {
+                data.glassesData.put(item.getUUID("Owner"), item.getDouble("Mb"));
             }
         }
         for (Tag element : tag.getList("Backups", Tag.TAG_COMPOUND)) {

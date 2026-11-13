@@ -41,8 +41,16 @@ public final class DatacenterBrain {
 
     /** Het sterkste datacenter van deze speler dat draait (de kortste vertraging), of null als hij er geen heeft. */
     public static @Nullable Map.Entry<GlobalPos, Datacenters.Summary> best(ServerPlayer player) {
+        return best(player.server, player.getUUID());
+    }
+
+    /**
+     * Hetzelfde, voor een speler die misschien niet online is (hoofdstuk 106: op dit datacenter draait ook zijn bril, zie
+     * DatacenterGlasses, en wat die bewaart telt mee op de SSD's, ook als hij weg is).
+     */
+    public static @Nullable Map.Entry<GlobalPos, Datacenters.Summary> best(net.minecraft.server.MinecraftServer server, UUID owner) {
         Map.Entry<GlobalPos, Datacenters.Summary> best = null;
-        for (Map.Entry<GlobalPos, Datacenters.Summary> entry : Datacenters.get(player.serverLevel()).ownedBy(player.getUUID())) {
+        for (Map.Entry<GlobalPos, Datacenters.Summary> entry : Datacenters.get(server).ownedBy(owner)) {
             Datacenters.Summary summary = entry.getValue();
             if (!summary.online() || summary.brainDelay() < 0) {
                 continue;

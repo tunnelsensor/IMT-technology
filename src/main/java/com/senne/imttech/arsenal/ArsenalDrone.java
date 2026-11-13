@@ -33,7 +33,13 @@ public record ArsenalDrone(UUID id, float health, State state, boolean docked) {
         /** Nu in de wereld, bezig met een opdracht. */
         DEPLOYED,
         /** Teruggeroepen en aan de grond: je kunt hem repareren of weer omhoog sturen. */
-        GROUNDED;
+        GROUNDED,
+        /**
+         * Hoofdstuk 106: bij jou, in een wereld zonder baan (de Nether of het End, zie {@link Orbit}). Hij kwam met je mee
+         * door het portaal en wacht hier tot je hem nodig hebt: klaar voor gebruik, maar alleen daar. Ga je terug naar een
+         * wereld met een baan, dan hangt hij weer in zijn baan. (Nieuwe plekken altijd ONDERAAN: het nummer wordt bewaard.)
+         */
+        STANDBY;
 
         public static State byId(int id) {
             State[] all = values();
@@ -85,6 +91,19 @@ public record ArsenalDrone(UUID id, float health, State state, boolean docked) {
     /** Klaar om op pad te gaan: hij hangt in een baan en is niet tot schroot geschoten. */
     public boolean isAvailable() {
         return state == State.ORBIT && health > 0.0f;
+    }
+
+    /**
+     * Hoofdstuk 106: klaar om op pad te gaan in een wereld met een baan ({@code orbit} true: hij hangt in zijn baan) of
+     * zonder ({@code orbit} false, de Nether en het End: hij wacht bij jou). Zie {@link Orbit}.
+     */
+    public boolean isReady(boolean orbit) {
+        return state == home(orbit) && health > 0.0f;
+    }
+
+    /** Waar een drone klaar hangt: in zijn baan (een wereld met een baan), of bij jou (een wereld zonder). */
+    public static State home(boolean orbit) {
+        return orbit ? State.ORBIT : State.STANDBY;
     }
 
     public ArsenalDrone withState(State newState) {

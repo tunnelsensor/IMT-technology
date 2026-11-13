@@ -168,9 +168,8 @@ public final class ImtIllusions {
             case CLOAK -> IllusionScene.CLOAK_ONLY;
         };
         // Een illusie is ook gewoon een drone: zonder drone in een baan gebeurt er niets.
-        if (ArsenalServer.get(owner).availableCount() <= 0) {
-            ImtServer.send(owner, Component.translatable("arsenal.imttech.msg.empty"),
-                    ImtMessagePayload.Level.WARNING);
+        if (ArsenalServer.readyCount(owner) <= 0) {
+            ArsenalServer.tellNoneReady(owner); // hoofdstuk 106: in de Nether en het End alleen wat met je meekwam
             return;
         }
         // Betalen doen we pas bij het neerzetten, maar genoeg energie moet er nu al zijn.
@@ -235,6 +234,8 @@ public final class ImtIllusions {
             drone.recall(owner.serverLevel());
             return;
         }
+        // Hoofdstuk 106: de illusie staat er echt: je datacenter is er even mee bezig (zie DatacenterGlasses).
+        com.senne.imttech.logic.DatacenterGlasses.started(owner, com.senne.imttech.logic.DatacenterGlasses.Kind.ORDER);
         BlockPos anchor = IllusionScene.aimAnchor(drone.level(), drone.getEyePosition(),
                 aim.control.yaw(), aim.control.pitch());
         IllusionScene scene = aim.scene.facing(aim.control.yaw());

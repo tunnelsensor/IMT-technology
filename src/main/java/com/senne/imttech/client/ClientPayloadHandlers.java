@@ -408,6 +408,8 @@ public final class ClientPayloadHandlers {
         ImtClientState.threatIds = payload.threats();
         ImtClientState.brainDelayTicks = payload.brainDelay();
         ImtClientState.brainSource = payload.brainSource();
+        ImtClientState.datacenterLink = payload.link();
+        ImtClientState.datacenterLoad = payload.linkLoad();
     }
 
     public static void onPing(PingMarkerPayload payload, IPayloadContext context) {

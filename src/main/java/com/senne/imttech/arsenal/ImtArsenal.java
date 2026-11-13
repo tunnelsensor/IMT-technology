@@ -54,9 +54,28 @@ public record ImtArsenal(List<ArsenalDrone> drones) {
 
     /** Hoeveel drones er klaar in een baan hangen. */
     public int availableCount() {
+        return readyCount(true);
+    }
+
+    /**
+     * Hoofdstuk 106: hoeveel drones er klaar zijn om op pad te gaan in een wereld met een baan ({@code orbit} true: wat
+     * in een baan hangt) of zonder ({@code orbit} false, de Nether en het End: wat bij je wacht). Zie {@link Orbit}.
+     */
+    public int readyCount(boolean orbit) {
         int count = 0;
         for (ArsenalDrone drone : drones) {
-            if (drone.isAvailable()) {
+            if (drone.isReady(orbit)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /** Hoeveel drones er in een baan hangen (heel of niet): in de Nether en het End kun je daar niet bij. */
+    public int orbitCount() {
+        int count = 0;
+        for (ArsenalDrone drone : drones) {
+            if (drone.state() == ArsenalDrone.State.ORBIT) {
                 count++;
             }
         }
@@ -79,9 +98,14 @@ public record ImtArsenal(List<ArsenalDrone> drones) {
      * drones gebruikt die toch al beschadigd zijn en je beste drones heel blijven.
      */
     public List<ArsenalDrone> pickAvailable(int wanted) {
+        return pickReady(wanted, true);
+    }
+
+    /** Hetzelfde, maar uit wat klaar is in deze wereld: uit je baan ({@code orbit} true) of van bij jou (false). */
+    public List<ArsenalDrone> pickReady(int wanted, boolean orbit) {
         List<ArsenalDrone> ready = new ArrayList<>();
         for (ArsenalDrone drone : drones) {
-            if (drone.isAvailable()) {
+            if (drone.isReady(orbit)) {
                 ready.add(drone);
             }
         }
@@ -121,10 +145,39 @@ public record ImtArsenal(List<ArsenalDrone> drones) {
      * weer in een baan.
      */
     public ImtArsenal groundDeployed() {
+        return groundDeployed(true);
+    }
+
+    /**
+     * Hetzelfde, in een wereld met ({@code orbit} true) of zonder baan (false, hoofdstuk 106). Zonder baan: wat onderweg
+     * stond, was daar met je mee en wacht nu bij jou. Met een baan: ook wat bij je wachtte, hangt weer in zijn baan.
+     */
+    public ImtArsenal groundDeployed(boolean orbit) {
+        ArsenalDrone.State home = ArsenalDrone.home(orbit);
         List<ArsenalDrone> list = new ArrayList<>(drones.size());
         boolean changed = false;
         for (ArsenalDrone drone : drones) {
-            if (drone.state() == ArsenalDrone.State.DEPLOYED) {
+            boolean move = drone.state() == ArsenalDrone.State.DEPLOYED
+                    || (orbit && drone.state() == ArsenalDrone.State.STANDBY);
+            if (move) {
+                list.add(drone.withState(home));
+                changed = true;
+            } else {
+                list.add(drone);
+            }
+        }
+        return changed ? new ImtArsenal(list) : this;
+    }
+
+    /**
+     * Hoofdstuk 106: je bent in een wereld met een baan: wat bij je wachtte (in de Nether of het End) is met je
+     * meegekomen en hangt weer in zijn baan.
+     */
+    public ImtArsenal standbyToOrbit() {
+        List<ArsenalDrone> list = new ArrayList<>(drones.size());
+        boolean changed = false;
+        for (ArsenalDrone drone : drones) {
+            if (drone.state() == ArsenalDrone.State.STANDBY) {
                 list.add(drone.withState(ArsenalDrone.State.ORBIT));
                 changed = true;
             } else {

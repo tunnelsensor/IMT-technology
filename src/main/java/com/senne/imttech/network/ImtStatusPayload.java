@@ -25,10 +25,13 @@ import net.minecraft.world.phys.Vec3;
  * @param threats      nummers van wat jou op dit moment aanvalt (zie ImtThreats)
  * @param brainDelay   hoeveel ticks het brein extra nadenkt op je datacenter (-1 = geen datacenter: geen brein)
  * @param brainSource  op welk datacenter het brein draait ("creative" of "" = nergens)
+ * @param link         hoofdstuk 106: hoe de bril met zijn datacenter verbonden is (het nummer van
+ *                     DatacenterGlasses.Link: 0 = geen nodig, 1 = verbonden, 2 = geen datacenter, 3 = het draait niet)
+ * @param linkLoad     hoofdstuk 106: hoeveel procent van de rekenkracht van dat datacenter de brillen nu gebruiken
  */
 public record ImtStatusPayload(int swarmDrones, int guardDrones, List<Integer> cooldowns, List<Integer> marked,
                                  Optional<Vec3> strikeTarget, int strikeTicks, int hackedCount,
-                                 List<Integer> threats, int brainDelay, String brainSource)
+                                 List<Integer> threats, int brainDelay, String brainSource, int link, int linkLoad)
         implements CustomPacketPayload {
     public static final Type<ImtStatusPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "imt_status"));
 
@@ -50,6 +53,8 @@ public record ImtStatusPayload(int swarmDrones, int guardDrones, List<Integer> c
                     ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(32)).encode(buffer, payload.threats());
                     ByteBufCodecs.VAR_INT.encode(buffer, payload.brainDelay() + 1); // +1: -1 wordt 0 (klein over het netwerk)
                     ByteBufCodecs.stringUtf8(64).encode(buffer, payload.brainSource());
+                    ByteBufCodecs.VAR_INT.encode(buffer, payload.link());
+                    ByteBufCodecs.VAR_INT.encode(buffer, payload.linkLoad());
                 }
 
                 @Override
@@ -64,8 +69,10 @@ public record ImtStatusPayload(int swarmDrones, int guardDrones, List<Integer> c
                     List<Integer> threats = ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(32)).decode(buffer);
                     int brainDelay = ByteBufCodecs.VAR_INT.decode(buffer) - 1;
                     String brainSource = ByteBufCodecs.stringUtf8(64).decode(buffer);
+                    int link = ByteBufCodecs.VAR_INT.decode(buffer);
+                    int linkLoad = ByteBufCodecs.VAR_INT.decode(buffer);
                     return new ImtStatusPayload(swarm, guards, cooldowns, marked, strikeTarget, strikeTicks,
-                            hacked, threats, brainDelay, brainSource);
+                            hacked, threats, brainDelay, brainSource, link, linkLoad);
                 }
             };
 

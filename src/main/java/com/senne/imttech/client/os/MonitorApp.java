@@ -573,6 +573,16 @@ final class MonitorApp {
                     HudStyle.argb(255, BRAIN));
             py += 9;
         }
+        // Hoofdstuk 106: wat de brillen hier vragen ("satellite strike (Senne)"), samengeteld als het vaker loopt.
+        Map<String, Integer> glasses = new LinkedHashMap<>();
+        for (Tag element : server.getList("glassesProcs", Tag.TAG_STRING)) {
+            glasses.merge(element.getAsString(), 1, Integer::sum);
+        }
+        for (Map.Entry<String, Integer> entry : glasses.entrySet()) {
+            String line = "I.M.T " + entry.getKey() + (entry.getValue() > 1 ? "  x" + entry.getValue() : "");
+            small(g, font, OsDraw.fitRight(font, line, (int) (w / 0.75f)), x, py, HudStyle.argb(255, BRAIN));
+            py += 9;
+        }
         for (Map.Entry<String, Integer> entry : counts.entrySet()) {
             lines.add(entry.getKey() + (entry.getValue() > 1 ? "  x" + entry.getValue() : ""));
         }
@@ -585,7 +595,7 @@ final class MonitorApp {
         if (waiting > 0) {
             lines.add(waiting + " waiting for RAM");
         }
-        if (lines.isEmpty() && server.getList("brainProcs", Tag.TAG_STRING).isEmpty()) {
+        if (lines.isEmpty() && server.getList("brainProcs", Tag.TAG_STRING).isEmpty() && glasses.isEmpty()) {
             small(g, font, "Nothing right now", x, py, HudStyle.argb(255, OsDraw.GREY));
         }
         for (String line : lines) {

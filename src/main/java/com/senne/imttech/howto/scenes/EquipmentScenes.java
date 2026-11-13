@@ -72,6 +72,20 @@ public final class EquipmentScenes {
         // de harnas-werkbank, hoofdstuk "Glasses upgrades".
         s.text(85, front, Side.RIGHT, "Charge them in a *Charging Station*.");
         s.idle(95);
+
+        // Hoofdstuk 106 (jouw wens: "je hebt een datacenter nodig voor de IMT glasses"): de bril draait op je datacenter.
+        s.chapter("Your datacenter");
+        BlockPos rack = new BlockPos(1, 1, 0);
+        s.place(rack, DatacenterScenes.rack(true, com.senne.imttech.logic.RackBay.CPU, com.senne.imttech.logic.RackBay.GPU,
+                com.senne.imttech.logic.RackBay.RAM, com.senne.imttech.logic.RackBay.SSD,
+                com.senne.imttech.logic.RackBay.FAN, com.senne.imttech.logic.RackBay.FAN));
+        s.idle(10);
+        s.outline(110, rack, rack, HowToSceneBuilder.CYAN);
+        s.text(130, HowToSceneBuilder.top(rack), Side.RIGHT,
+                "Everything the glasses *think about* (the satellite, scans, drone orders, navigation) runs on the CPUs, GPUs"
+                        + " and RAM of your own *datacenter*, and what they *store* (your waypoints) sits on its SSDs. No"
+                        + " datacenter: the HUD says *NO DATACENTER* and only the HUD, night vision and your shield work.");
+        s.idle(135);
         return List.of(s.build());
     }
 }

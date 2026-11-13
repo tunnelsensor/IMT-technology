@@ -65,6 +65,8 @@ public final class Showcase {
         // Hoofdstuk 38: de oudere functies bouwen apparaten zonder netwerkkabel (lezers, camera's naast een kern). Die
         // laten we werken zoals vroeger; de functies over netwerkkabels zetten het netwerk zelf aan.
         com.senne.imttech.lan.LanGrid.overrideRequired(false);
+        // Hoofdstuk 106: en zonder datacenter voor de bril; de functie over die regel zet hem zelf aan.
+        com.senne.imttech.logic.DatacenterGlasses.overrideRequired(false);
         LINK.start();
         NeoForge.EVENT_BUS.addListener(Showcase::onClientTick);
     }

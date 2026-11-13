@@ -295,10 +295,17 @@ public final class LogicServer {
         tag.putDouble("ramNeedMb", stats.ramNeededMb());
         tag.putDouble("fed", stats.fed());
         int[] busy = LogicRunner.load(level, core);
-        tag.putDouble("ramUsedMb", Datacenter.ramUsedMb(stats, busy[0],
-                Math.max(core.datacenter().cpuLoad(), core.datacenter().brainLoad())));
-        tag.putDouble("ssdUsedMb", Datacenter.ssdUsedMb(stats, core.logic().blocks(),
-                Datacenters.get(level).storedAt(GlobalPos.of(level.dimension(), core.getBlockPos()))));
+        // Hoofdstuk 106: wat de brillen hier vragen neemt ook RAM, en wat de bril van de eigenaar bewaart (zijn waypoints)
+        // staat op de SSD's (zie DatacenterGlasses). Nooit meer dan er is.
+        GlobalPos here = GlobalPos.of(level.dimension(), core.getBlockPos());
+        double glassesRam = stats.online() ? DatacenterGlasses.usedRamMb(level.getServer(), here) : 0.0;
+        double glassesSsd = DatacenterGlasses.storedMb(level.getServer(), here, core.ownerId());
+        tag.putDouble("ramUsedMb", Math.min(stats.ramMb(), Datacenter.ramUsedMb(stats, busy[0],
+                Math.max(core.datacenter().cpuLoad(), core.datacenter().brainLoad())) + glassesRam));
+        tag.putDouble("ssdUsedMb", Math.min(stats.ssdMb(), Datacenter.ssdUsedMb(stats, core.logic().blocks(),
+                Datacenters.get(level).storedAt(here)) + glassesSsd));
+        tag.putDouble("glassesRamMb", glassesRam);
+        tag.putDouble("glassesSsdMb", glassesSsd);
         // Het datacenter: hoe warm, en waarom (zie Datacenter).
         Datacenter datacenter = core.datacenter();
         tag.putDouble("temp", datacenter.temperature());
@@ -344,6 +351,14 @@ public final class LogicServer {
             brains.add(net.minecraft.nbt.StringTag.valueOf(name));
         }
         tag.put("brainProcs", brains);
+        // Hoofdstuk 106: wat de brillen hier nu doen ("satellite strike (Senne)", "navigation (Senne)").
+        net.minecraft.nbt.ListTag glasses = new net.minecraft.nbt.ListTag();
+        if (stats.online()) {
+            for (String line : DatacenterGlasses.running(level.getServer(), here)) {
+                glasses.add(net.minecraft.nbt.StringTag.valueOf(line));
+            }
+        }
+        tag.put("glassesProcs", glasses);
         // Elk rack van de server: waar, of het meedraait, wat erin zit (en hoe versleten), hoe warm, en brand.
         net.minecraft.nbt.ListTag racks = new net.minecraft.nbt.ListTag();
         java.util.List<BlockPos> sorted = new java.util.ArrayList<>(stats.cluster());

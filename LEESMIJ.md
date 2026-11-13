@@ -234,6 +234,63 @@ Elk item dat meer doet dan in een recept gaan, krijgt een animatie die laat zien
   een plaatje uit het spel.
 - Het geluid (een blok dat neerkomt): `howToVolume` in `imttech-client.toml` (1 = normaal, 0 = uit).
 
+### De bril draait op je datacenter, en is minder sterk (sinds 13 november)
+I.M.T was te sterk. Drie dingen zijn daarom veranderd.
+
+**1. De ertsen-scan wacht een minuut.** Vroeger 10 seconden, terwijl de ertsen 15 seconden zichtbaar bleven: je zag ze
+dus altijd. Nu wacht hij 60 seconden (`scanner.oreScanWait`, in ticks).
+
+**2. Geen drones uit je baan in de Nether en het End.** Je arsenaal hangt in een baan om de gewone wereld. Boven de
+Nether en het End hangt niets, dus daar kun je geen drone oproepen. Wat wel kan: drones **meenemen**.
+- De drones die **om je heen vliegen** als je door het portaal stapt (je **escorte** en je **zwerm**, tot 48 blokken
+  van je af) gaan mee, en doen daar gewoon verder.
+- Is zo'n drone daar klaar (je zet je escorte uit, de zwerm is om), dan vliegt hij niet naar zijn baan maar **wacht
+  hij bij jou**: in je arsenaal staat hij op **With you**. Daarmee kun je daar **elke** drone-actie doen: een zwerm,
+  één drone, de escorte, de verkenner, een spion, vervoer, vracht, een illusie. Nam je er vier mee, dan heb je er daar
+  vier.
+- Een **Drone** die je daar zelf lanceert (als item in je rugzak meegenomen) blijft ook bij je.
+- Ga je **terug** naar de gewone wereld (door het portaal, of omdat je doodging), dan hangt alles weer in zijn baan.
+- In het G-menu staat onder een drone-actie **NO DRONES HERE** als er daar niets bij je wacht, en in het arsenaal
+  staan je drones in hun baan er grijs bij: **Out of reach**. De satelliet upgraden kan daar ook niet (je drones
+  kunnen niet naar je satelliet). Een satellietaanval verandert niet: in de Nether kon die al niet (geen open lucht), in
+  het End nog wel.
+- Uitzetten: `drones.noOrbitInNetherAndEnd = false` (dan is het zoals vroeger).
+
+**3. De bril heeft je datacenter nodig.** Alles wat de bril **uitrekent** of **bewaart**, draait op je eigen
+datacenter: het sterkste dat draait, waar het ook staat (hetzelfde als waar het brein op draait).
+- **Zonder datacenter** (of als het niet draait) staat er **NO DATACENTER** (of **DATACENTER OFFLINE**) in je HUD, en
+  werkt alleen nog wat de bril en het harnas zelf doen: het beeld, nachtzicht, je schild, de laser cannon en de
+  raketten, de camera van een drone waar je al door kijkt, berichten en pings. Stoppen kan altijd: uitzetten,
+  terugroepen, landen en Stand down.
+- **Wat het datacenter nodig heeft**: een satellietaanval, de ertsen-scan, elke opdracht aan je drones (zwerm, één
+  drone, escorte aanzetten, verkenner, vervoer, vracht, iemand vervoeren), een doelwit markeren, hacken, een spion,
+  illusies, relais van op afstand schakelen, navigeren, de dreigingsscan en de doelwit-analyse.
+- **Rekenkracht** (CPU's en GPU's): een CPU telt 1, een GPU 2, maal wat je RAM voedt, en warm de helft. Dat is de
+  "power" van de tegel BRAIN in de app Monitor. Elk verzoek neemt daar een stuk van zolang het bezig is:
+
+  | Verzoek | Rekenkracht | RAM | Hoe lang |
+  |---------|-------------|-----|----------|
+  | Satellietaanval | 0,5 | 2 GB | 10 s |
+  | Ertsen-scan | 0,5 | 1 GB | 5 s |
+  | Een opdracht aan je drones, een hack starten, een illusie, relais schakelen | 0,25 | 250 MB | 2 s |
+  | Navigeren | 0,25 | 500 MB | zolang je navigeert |
+  | Dreigingsscan, doelwit-analyse (elk) | 0,25 | 500 MB | zolang ze aan staan |
+  | Elke speler die je hackt, een spionagedrone | 0,25 | 500 MB | zolang het loopt |
+
+  **Past het er niet bij**, dan zegt I.M.T "Datacenter ... is busy" (of "too weak", of "out of RAM") en gebeurt er
+  niets: geen energie weg, en er begint geen wachttijd. Wacht even, zet iets uit, of steek er een CPU of GPU bij. Met
+  één CPU (kracht 1) kun je bijvoorbeeld de doelwit-analyse aan laten, navigeren en een satellietaanval doen, maar niet
+  alles tegelijk. In je HUD staat **DATACENTER 90%** (of meer) als het bijna vol is.
+- **Bewaren** (SSD): elk **waypoint** neemt 250 MB op je SSD's (en 16 MB RAM zolang je bril op staat). Een nieuw
+  waypoint heeft dus een datacenter met plaats nodig. **Wat je al had, blijft staan**, ook zonder datacenter: je kunt
+  het nog hernoemen en weghalen. Het telt wel mee zodra je een datacenter hebt.
+- **Valt je datacenter uit** terwijl je bezig bent, dan stoppen je navigatie, je hacks en je spionagedrone. De
+  dreigingsscan en de doelwit-analyse blijven aan staan in je bril, maar tonen niets tot je datacenter er weer is.
+- **In de app Monitor** zie je het: de tegel BRAIN telt mee wat de brillen vragen, RAM en SSD ook, en in de lijst
+  RUNNING staat wat er loopt ("I.M.T satellite strike (jouw naam)"). Het maakt je racks ook warmer.
+- **Creative** heeft geen datacenter nodig. Alleen **jouw eigen** datacenter telt (dat van een vriend niet).
+- Alle getallen staan onder `[uplink]` in `config/imttech.toml`; `uplink.required = false` zet de hele regel uit.
+
 ### Het drone-arsenaal
 Drones komen niet meer uit het niets: je moet ze **bouwen**. Craft een **drone**
 (een computerchip, 5 ijzer, 2 redstone en een amethist) en gebruik hem: hij schiet de lucht in
@@ -255,6 +312,9 @@ hij uithangt:
   ijzer uit je rugzak (één staaf is 3 levenspunten). Is hij weer heel, dan stijgt hij bij de
   volgende klik op. **Shift + rechtsklik** stuurt hem meteen omhoog, ook als hij nog stuk is
   (de knop **Launch** in het scherm doet hetzelfde).
+- **With you** — alleen in de Nether en het End (sinds 13 november): hij kwam met je mee door het portaal en wacht
+  bij jou. Daar is hij klaar voor gebruik (ook **Recall** werkt). Je drones **In orbit** staan er daar grijs bij als
+  **Out of reach**: die kunnen er niet bij. Zie "De bril draait op je datacenter, en is minder sterk" hierboven.
 
 Schade blijft bewaard: een drone die gehavend terugkomt, gaat gehavend weer de lucht in tot je
 hem repareert. **Vanzelf herstelt een drone nergens**, ook niet in zijn baan: alleen ijzer maakt hem
@@ -273,8 +333,8 @@ arsenaal.
 Een drone die bezig is, houdt het stukje wereld rond zich wakker, zoals een speler: zo vliegt een **vrachtdrone** ook
 naar een kist die ver weg staat gewoon door (vroeger viel hij stil zodra hij te ver van je weg was). De twee drones die
 met je **meevliegen** als drones je dragen, houden je bij: raken ze achterop (de autopiloot en sprinten zijn snel), dan
-geven ze gas, en zijn ze te ver weg, dan springen ze bij. Ga je door een **portaal**, dan vliegen je drones terug naar
-hun baan.
+geven ze gas, en zijn ze te ver weg, dan springen ze bij. Ga je door een **portaal**, dan gaan je escorte en je zwerm
+met je mee (sinds 13 november); de rest vliegt terug naar zijn baan.
 
 Hoe hoog precies staat in `config/imttech.toml` (`drones.orbitHeight`). Hoeveel drones er maximaal in een
 zwerm passen staat daar ook (standaard zwerm 16 en escorte 8) — maar je arsenaal bepaalt
@@ -1191,7 +1251,10 @@ De standaardwaarden staan in `config/imttech.toml` onder `[security]` (`authCode
 
 ### Het datacenter: warmte, backups en het brein
 Je racks samen zijn je **datacenter**. Het wordt warm, je kunt aflezen hoe hard het werkt, je maakt
-er backups van, en het brein van I.M.T draait erop.
+er backups van, en het brein van I.M.T draait erop. Sinds 13 november draait ook **je bril** erop: alles wat hij
+uitrekent (de satelliet, de scans, opdrachten aan je drones, navigeren) neemt rekenkracht en RAM, en je waypoints
+staan op je SSD's. Zonder datacenter kan de bril dat niet meer. Zie "De bril draait op je datacenter, en is minder
+sterk" bovenaan dit hoofdstuk.
 
 - **Warmte, per rack**: je CPU's, GPU's, RAM en SSD's werken samen als één server, maar **elk rack
   heeft zijn eigen temperatuur**. Elk onderdeel maakt warmte in zijn eigen rack (een CPU 2 W, een
@@ -2938,7 +3001,7 @@ beveiligingskern, zie "Het datacenter"); zonder luistert ze niet. In creative ho
 
 | Bestand | Wat |
 |---------|-----|
-| `config/imttech.toml` | **Alle getallen van de mod** (ruim 390), in hoofdstukken: wat mag er (`[rules]`: hacken, zakkenrollen, raids aan/uit), de bril, **alle stroom** (`[power]`: wat elk blok opwekt, opslaat en gebruikt), drones, de satelliet **per upgrade-niveau**, harnas, torentjes, beveiliging, datacenter, granaten en lasers, de Glock 19 (`[guns]`), guard robots, Raven, de bewakers zoals in Hitman (`[guards]`: zien, horen, de radio, het team, lichamen, de sluipaanval), de rugzakken (`[backpacks]`: de rits, traag lopen met de rugzak open), raids... |
+| `config/imttech.toml` | **Alle getallen van de mod** (ruim 390), in hoofdstukken: wat mag er (`[rules]`: hacken, zakkenrollen, raids aan/uit), de bril, **alle stroom** (`[power]`: wat elk blok opwekt, opslaat en gebruikt), drones, de satelliet **per upgrade-niveau**, harnas, torentjes, beveiliging, datacenter, wat de bril van je datacenter vraagt (`[uplink]`), granaten en lasers, de Glock 19 (`[guns]`), guard robots, Raven, de bewakers zoals in Hitman (`[guards]`: zien, horen, de radio, het team, lichamen, de sluipaanval), de rugzakken (`[backpacks]`: de rits, traag lopen met de rugzak open), raids... |
 | `config/imttech-client.toml` | Stem, volume, spraaktekst, Spotify Client ID, GPU voor de AI, hoe stroom en grote getallen eruitzien (`powerUnit`, `numberStyle`), het zachte zoemen van de rayshields (`rayshieldHumVolume`: 1 = normaal, 2 = dubbel zo hard, 0 = uit), het laadzoemen van de guard robots (`robotHumVolume`, net zo), de rotors van de security drones (`droneRotorVolume`, net zo), de geluidjes in de animaties van How it works (`howToVolume`, net zo), de rand van zones (`zoneBorder`) |
 | `config/imttech-voice.json` | Alle spraakcommando's (zelf uit te breiden) |
 | `config/imttech-spotify.json` | Je Spotify-token (niet delen) |

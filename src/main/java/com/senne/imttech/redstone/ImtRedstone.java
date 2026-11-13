@@ -4,6 +4,7 @@ import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.imt.ImtData;
 import com.senne.imttech.imt.ImtServer;
 import com.senne.imttech.imt.ImtAdvancements;
+import com.senne.imttech.logic.DatacenterGlasses;
 import com.senne.imttech.network.ImtMessagePayload;
 import com.senne.imttech.network.ModNetwork;
 import com.senne.imttech.network.RelayActionPayload;
@@ -296,7 +297,9 @@ public final class ImtRedstone {
                 }
             }
             case SWITCH -> {
-                if (glasses != null) {
+                // Hoofdstuk 106: van op afstand schakelen gaat via je datacenter. Zonder datacenter (of als het niet
+                // draait) schakel je alleen wat vlak bij je staat, zoals zonder bril.
+                if (glasses != null && DatacenterGlasses.linked(player)) {
                     switchRelays(player, glasses, data, payload);
                 } else {
                     switchNearby(player, data, payload);
@@ -456,11 +459,16 @@ public final class ImtRedstone {
                     ImtMessagePayload.Level.WARNING);
             return;
         }
+        // Hoofdstuk 106: een opdracht van op afstand gaat via je datacenter. Is het bezig, dan gebeurt er niets.
+        if (!DatacenterGlasses.ready(player, DatacenterGlasses.Kind.ORDER)) {
+            return;
+        }
         if (!ImtData.tryUseEnergy(glasses, ImtConfig.Relays.COST * targets.size())) {
             ImtServer.send(player, Component.translatable("imt.imttech.msg.not_enough_energy",
                     com.senne.imttech.config.Numbers.amount(player, ImtConfig.Relays.COST * targets.size())), ImtMessagePayload.Level.WARNING);
             return;
         }
+        DatacenterGlasses.started(player, DatacenterGlasses.Kind.ORDER);
         MinecraftServer server = player.getServer();
         int done = 0;
         int missing = 0;
@@ -496,6 +504,10 @@ public final class ImtRedstone {
             return;
         }
         if (!nearby(player, relay)) {
+            // Hoofdstuk 106: met je bril op maar zonder datacenter: zeg dat (in plaats van alleen "te ver").
+            if (ImtData.isOperational(player) && !DatacenterGlasses.requireLink(player)) {
+                return;
+            }
             tell(player, Component.translatable("imt.imttech.msg.relay_too_far"), ImtMessagePayload.Level.WARNING);
             return;
         }

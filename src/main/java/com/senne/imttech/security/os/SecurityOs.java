@@ -1674,6 +1674,7 @@ public final class SecurityOs {
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         SESSIONS.remove(event.getEntity().getUUID());
         com.senne.imttech.logic.DatacenterBrain.forget(event.getEntity().getUUID());
+        com.senne.imttech.logic.DatacenterGlasses.forget(event.getEntity().getUUID());
     }
 
     public static void onServerStopped(ServerStoppedEvent event) {
@@ -1689,5 +1690,6 @@ public final class SecurityOs {
         com.senne.imttech.logic.LogicEvents.clear();
         com.senne.imttech.logic.LogicRunner.clear();
         com.senne.imttech.logic.DatacenterBrain.clear();
+        com.senne.imttech.logic.DatacenterGlasses.clear();
     }
 }

@@ -158,10 +158,15 @@ public class ImtTech {
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.HowToGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.BackpackGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.ArsenalGameTests.class));
+        modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.UplinkGameTests.class));
         // Controle van de wereldgeneratie (alleen met "gradlew runStructureCheck").
         com.senne.imttech.gametest.StructureCheck.registerIfEnabled();
 
         // Gebeurtenissen tijdens het spelen.
+        // Hoofdstuk 106: ging je door een portaal, dan gaan je escorte en je zwerm mee. Dit staat VOOR de tick van de bril:
+        // die roept anders in de nieuwe wereld al nieuwe escortedrones bij voordat de oude er zijn.
+        NeoForge.EVENT_BUS.addListener(ArsenalServer::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(ArsenalServer::onLogout);
         NeoForge.EVENT_BUS.addListener(ImtServer::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(ImtServer::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(ArsenalServer::onLogin);

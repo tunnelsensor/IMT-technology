@@ -110,6 +110,9 @@ public final class VisualCheck {
         // Hoofdstuk 38: de rondleiding bouwt veel apparaten zonder netwerkkabel (lezers, camera's naast een kern). Die
         // laten we werken zoals vroeger; alleen de stukken over netwerkkabels zetten het netwerk aan.
         com.senne.imttech.lan.LanGrid.overrideRequired(false);
+        // Hoofdstuk 106: hetzelfde voor het datacenter van de bril: de rondleiding gebruikt de bril overal zonder
+        // datacenter. Alleen het stuk over die regel (-Ponly=uplink) zet hem aan.
+        com.senne.imttech.logic.DatacenterGlasses.overrideRequired(false);
         buildTour();
         NeoForge.EVENT_BUS.addListener(VisualCheck::onClientTick);
     }
@@ -989,6 +992,65 @@ public final class VisualCheck {
             });
             t.shot(30, "33f_battery_recharged_boots");
             t.pause(120); // de opstart-animatie afwachten, anders staat die op de volgende foto's
+        }
+
+        // --- Hoofdstuk 106: de bril zonder datacenter (de HUD en elk tabblad van het G-menu), en het arsenaal in de Nether
+        // (wat in je baan hangt kan er niet bij; wat je daar lanceert, wacht bij jou). Alleen met -Ponly=uplink: het zet
+        // je even in survival, met de regel van het datacenter aan, en in de Nether.
+        if (ONLY.contains("uplink")) {
+            t.view(0, 0.5, -60, -3.2, 0, 22);
+            t.command(0, "gamemode survival @a");
+            t.onServer(0, player -> {
+                com.senne.imttech.logic.DatacenterGlasses.overrideRequired(true);
+                DevWorld.freshArsenal(player, 4);
+            });
+            t.waitUntil(60, () -> !com.senne.imttech.client.ImtClientState.datacenterWorks());
+            t.shot(10, "ul01_hud_no_datacenter");
+            // Een scan zonder datacenter: de melding, en er gebeurt niets.
+            t.step(0, () -> com.senne.imttech.client.ImtClientEvents.sendAction(com.senne.imttech.imt.ImtAction.ORE_SCAN));
+            t.shot(12, "ul02_scan_refused");
+            t.open(20, ImtMenuScreen::new);
+            for (com.senne.imttech.client.MenuTab tab : com.senne.imttech.client.MenuTab.values()) {
+                t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = tab);
+                t.shot(10, String.format("ul03_menu_%02d_%s", tab.ordinal() + 1, tab.name().toLowerCase()));
+            }
+            t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.COMBAT);
+            t.close(0);
+            // Naar de Nether (bovenop het dak van bedrock, daar is ruimte): vier drones hangen in je baan, niets kwam mee.
+            t.onServer(10, player -> {
+                com.senne.imttech.logic.DatacenterGlasses.overrideRequired(false);
+                net.minecraft.server.level.ServerLevel nether = player.server.getLevel(net.minecraft.world.level.Level.NETHER);
+                if (nether != null) {
+                    player.teleportTo(nether, 0.5, 129, 0.5, 0, 0);
+                }
+            });
+            t.waitUntil(200, () -> Minecraft.getInstance().level != null
+                    && Minecraft.getInstance().level.dimension() == net.minecraft.world.level.Level.NETHER);
+            t.shot(40, "ul04_nether_arrived");
+            t.pause(120); // de melding van Minecraft ("We Need to Go Deeper") hangt anders over de teller rechtsboven
+            t.open(10, ArsenalScreen::new);
+            t.shot(20, "ul05_arsenal_out_of_reach");
+            t.open(0, ImtMenuScreen::new);
+            t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.DRONES);
+            t.shot(10, "ul06_menu_no_drones_here");
+            t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.COMBAT);
+            t.close(0);
+            // Twee drones daar lanceren: die wachten bij jou.
+            t.onServer(0, player -> {
+                com.senne.imttech.arsenal.ArsenalServer.add(player);
+                com.senne.imttech.arsenal.ArsenalServer.add(player);
+            });
+            t.open(20, ArsenalScreen::new);
+            t.shot(20, "ul07_arsenal_with_you");
+            t.close(0);
+            // Terug naar de gewone wereld: alles hangt weer in zijn baan.
+            t.onServer(0, player -> player.teleportTo(player.server.overworld(), 0.5, -60, -3.2, 0, 22));
+            t.waitUntil(200, () -> Minecraft.getInstance().level != null
+                    && Minecraft.getInstance().level.dimension() == net.minecraft.world.level.Level.OVERWORLD);
+            t.open(40, ArsenalScreen::new);
+            t.shot(20, "ul08_arsenal_back_in_orbit");
+            t.close(0);
+            t.command(0, "gamemode creative @a");
         }
 
         // --- Het harnas

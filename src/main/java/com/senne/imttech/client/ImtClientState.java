@@ -250,6 +250,19 @@ public final class ImtClientState {
      */
     public static int brainDelayTicks = -1;
     public static String brainSource = "";
+    /**
+     * Hoofdstuk 106: hoe je bril met je datacenter verbonden is (het nummer van DatacenterGlasses.Link: 0 = geen nodig,
+     * 1 = verbonden, 2 = geen datacenter, 3 = het draait niet), en hoeveel procent van zijn rekenkracht de brillen nu
+     * gebruiken. Komt met de status.
+     */
+    public static int datacenterLink;
+    public static int datacenterLoad;
+
+    /** Hoofdstuk 106: kan je bril nu nadenken en bewaren (hij heeft geen datacenter nodig, of het draait)? */
+    public static boolean datacenterWorks() {
+        return datacenterLink <= 1;
+    }
+
     /** Nummers van wat jou op dit moment aanvalt; de server stuurt ze (zie ImtThreats). */
     public static java.util.List<Integer> threatIds = java.util.List.of();
 
@@ -293,5 +306,7 @@ public final class ImtClientState {
         hackedCount = 0;
         brainDelayTicks = -1;
         brainSource = "";
+        datacenterLink = 0;
+        datacenterLoad = 0;
     }
 }

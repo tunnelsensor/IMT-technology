@@ -174,9 +174,13 @@ public final class ImtConfig {
         /** Kosten van één ertsen-scan. */
         @Tunable(value = "Energy cost of an ore scan", energy = true)
         public static float ORE_SCAN_COST = 4_000.0f;
-        /** Wachttijd tussen twee scans (200 = 10 seconden). */
-        @Tunable("Wait between two ore scans (ticks)")
-        public static float ORE_SCAN_COOLDOWN = 200.0f;
+        /**
+         * Wachttijd tussen twee scans (1200 = 1 minuut). Hoofdstuk 106 (jouw wens van 13 november: "IMT is te OP: scan
+         * cooldown omhoog"): was 200 (10 seconden), korter dan de ertsen zichtbaar blijven, dus je zag ze altijd. Het getal
+         * heet sindsdien oreScanWait (was oreScanCooldown), zodat ook een bestaand configbestand de nieuwe waarde krijgt.
+         */
+        @Tunable("Wait between two ore scans (ticks): 1200 = 1 minute")
+        public static float ORE_SCAN_WAIT = 1_200.0f;
         /** Hoe lang de gevonden ertsen zichtbaar blijven (300 = 15 seconden). */
         @Tunable("How long ore markers stay visible (ticks)")
         public static float ORE_SCAN_DURATION = 300.0f;
@@ -494,6 +498,15 @@ public final class ImtConfig {
          */
         @Tunable(value = "How high above you drones dive in from, and climb away to (blocks)", max = 320)
         public static float ORBIT_HEIGHT = 96.0f;
+        /**
+         * Hoofdstuk 106 (jouw wens van 13 november: "drones kun je niet in nether of end gebruiken tenzij je met een
+         * bepaalde drone, vb escort drones, naar daar gaat; dan blijft het aantal drones dat je meenam voor elke andere
+         * drone actie beschikbaar"): boven de Nether en het End hangt geen baan. Zie arsenal/Orbit.
+         */
+        @Tunable("Is there no orbit above the Nether and the End? true = there you cannot call drones from orbit: you only "
+                + "have the drones that came through the portal with you (your escort and your swarm) or that you launched "
+                + "there from a Drone item. false = the old rule: your whole arsenal everywhere")
+        public static boolean NO_ORBIT_IN_NETHER_AND_END = true;
         /** Een drone duikt in een boog: hij begint dit deel van de valhoogte opzij... */
         @Tunable(value = "A diving drone starts this share (0-1) of its fall height to the side, so it dives in an arc", max = 1)
         public static double DIVE_ARC_RATIO = 0.3;
@@ -1467,6 +1480,84 @@ public final class ImtConfig {
         public static final int RACK_SLOTS = 8;
         /** VAST: zoveel rijen vakjes staan er onder elkaar op de voorkant. */
         public static final int RACK_ROWS = 4;
+    }
+
+    // =============================================================================================== Uplink
+
+    /*
+     * Hoofdstuk 106 (jouw wens van 13 november: "IMT is te OP ... je hebt een datacenter nodig voor de IMT glasses zijn
+     * data. Elke satelliet request, waypoint gebruikt wat van de server: waypoint neemt enkel ssd en ram, cpu en/of gpu
+     * als je navigeert. Andere dingen die soort van nadenken gebruiken dus altijd cpu en/of gpu en ram. Data opslag moet
+     * op een ssd."): de bril draait op het sterkste datacenter van zijn eigenaar. Zie logic/DatacenterGlasses.
+     *
+     * "Rekenkracht" is hier dezelfde als de "power" van de tegel BRAIN in de app Monitor: een CPU telt 1, een GPU 2
+     * (gpuBrainPower), maal wat het RAM voedt, en warm de helft. Met één CPU, één latje RAM en één SSD heb je 1: genoeg
+     * voor de doelwit-analyse, navigeren en een satellietaanval tegelijk, maar niet voor alles tegelijk.
+     */
+    @Section("The I.M.T glasses on your datacenter. Everything the glasses think about or remember runs on the owner's own "
+            + "datacenter (a security core with server racks): the strongest one that is online, wherever it stands. "
+            + "Power = the 'power' of the BRAIN tile in the Monitor app: a CPU counts 1, a GPU counts gpuBrainPower (2), "
+            + "times what the RAM feeds, and half while a rack is warm. A request that does not fit is refused "
+            + "('Datacenter busy') and costs nothing. Creative mode needs no datacenter.")
+    public static final class Uplink {
+        private Uplink() {}
+
+        /** De hoofdschakelaar. Uit = zoals vroeger: de bril werkt zonder datacenter (alleen het brein had er een nodig). */
+        @Tunable("Do the I.M.T glasses need the owner's datacenter for everything that thinks or stores data (satellite "
+                + "strikes, the ore scan, drone orders, navigation and waypoints, the threat scan, target analysis, hacking, "
+                + "the spy drone, illusions, switching relays)? false = the old rule: the glasses work without one")
+        public static boolean REQUIRED = true;
+
+        // ------------------------------------------------------------------------- Eenmalige verzoeken
+        /** Een satellietaanval: de zwaarste. */
+        @Tunable("Power one satellite strike takes while the datacenter works on it")
+        public static double SATELLITE_POWER = 0.5;
+        @Tunable("RAM (MB) one satellite strike takes while the datacenter works on it")
+        public static float SATELLITE_RAM_MB = 2_000.0f;
+        @Tunable(value = "How long (ticks) the datacenter is busy with one satellite strike: 200 = 10 s", min = 1)
+        public static float SATELLITE_TICKS = 200.0f;
+
+        /** Een ertsen-scan. */
+        @Tunable("Power one ore scan takes while the datacenter works on it")
+        public static double SCAN_POWER = 0.5;
+        @Tunable("RAM (MB) one ore scan takes while the datacenter works on it")
+        public static float SCAN_RAM_MB = 1_000.0f;
+        @Tunable(value = "How long (ticks) the datacenter is busy with one ore scan: 100 = 5 s", min = 1)
+        public static float SCAN_TICKS = 100.0f;
+
+        /** Al het andere eenmalige: een opdracht aan je drones, een hack starten, een illusie, relais schakelen. */
+        @Tunable("Power every other request takes (an order to your drones, starting a hack, an illusion, switching relays)")
+        public static double ORDER_POWER = 0.25;
+        @Tunable("RAM (MB) every other request takes while the datacenter works on it")
+        public static float ORDER_RAM_MB = 250.0f;
+        @Tunable(value = "How long (ticks) the datacenter is busy with such a request: 40 = 2 s", min = 1)
+        public static float ORDER_TICKS = 40.0f;
+
+        // ------------------------------------------------------------------------- Wat doorloopt
+        /** Navigeren (jouw wens: "cpu en/of gpu als je navigeert"). */
+        @Tunable("Power navigating to a waypoint or your death point takes, for as long as you navigate")
+        public static double NAVIGATION_POWER = 0.25;
+        @Tunable("RAM (MB) navigating takes, for as long as you navigate")
+        public static float NAVIGATION_RAM_MB = 500.0f;
+
+        /** De dreigingsscan en de doelwit-analyse, elk apart. */
+        @Tunable("Power the threat scan takes while it is on, and the same again for target analysis")
+        public static double SENSOR_POWER = 0.25;
+        @Tunable("RAM (MB) the threat scan takes while it is on, and the same again for target analysis")
+        public static float SENSOR_RAM_MB = 500.0f;
+
+        /** Iemand volgen: elke speler die je hackt, en een spionagedrone. */
+        @Tunable("Power every player you hack takes while the hack runs, and the same for a spy drone while it follows")
+        public static double TRACKING_POWER = 0.25;
+        @Tunable("RAM (MB) every player you hack takes while the hack runs, and the same for a spy drone while it follows")
+        public static float TRACKING_RAM_MB = 500.0f;
+
+        // ------------------------------------------------------------------------- Bewaren
+        /** Een waypoint (jouw wens: "waypoint neemt enkel ssd en ram"). */
+        @Tunable("How many MB one saved waypoint takes on the SSDs of the datacenter (a new waypoint needs this much free)")
+        public static float WAYPOINT_MB = 250.0f;
+        @Tunable("How many MB of RAM one saved waypoint takes while you wear the glasses")
+        public static float WAYPOINT_RAM_MB = 16.0f;
     }
 
     // =============================================================================================== Breach

@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 568 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 572 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -7995,11 +7995,136 @@ Opgezocht (online en nagemeten):
   je hand niet veranderd, het laserpistool wel; een holster op de maat van zijn pistool. De versie blijft 2.9 (er komt
   niets nieuws bij, het staat alleen anders).
 
+### 106. I.M.T minder sterk: de scan wacht langer, geen drones uit je baan in de Nether en het End, en de bril draait op je datacenter (13 november)
+
+Jouw wens: "IMT is te OP: scan cooldown omhoog, drones kun je niet in nether of end gebruiken tenzij je met een bepaalde
+drone vb escord drones naar daar gaat dan blijf het aantal drones dat je meenam voor elke ander drone actie beschikbaar,
+je hebt een datacenter nodig voor de IMT glases zen data. Elke satelliet request, waypoint gebruikt wat van de server:
+waypoint neemt enkel ssd en ram cpu en/of gpu als je navigeert. Ander dingen die soort van nadenken gebruikt dus altijd
+cpu en of gpu en ram. Data opslag moet op een ssd. De dingen die spelers nu al in IMT glasses hebben bewaard zonder
+datacenter blijven, nieuwe dingen moet dit toepassen. Voor bijvoorbeeld satelliet gebruik moet dit al toegepast worden
+want dat heeft geen ssd nodig en onthoud niets."
+
+Drie dingen, elk met een schakelaar in `config/imttech.toml`.
+
+- [x] **De ertsen-scan wacht een minuut** (was 10 seconden). De ertsen blijven 15 seconden zichtbaar, dus met 10 seconden
+      wachten zag je ze altijd. Het getal heet nu `scanner.oreScanWait` (1200 ticks; was `oreScanCooldown`): door de
+      nieuwe naam krijgt ook een bestaand configbestand (dat van je server) de nieuwe waarde.
+- [x] **Geen drones uit je baan in de Nether en het End** (`arsenal/Orbit`). Je arsenaal hangt in een baan om de gewone
+      wereld; boven de Nether en het End hangt niets. Daar kun je dus geen drone oproepen, behalve wat je **meenam**:
+  - De drones die **om je heen vliegen** als je door het portaal gaat (je escorte en je zwerm, binnen 48 blokken van
+    waar je stond) gaan mee en doen daar verder (`ArsenalServer.changedWorld`, `DroneEntity.travelWith`). Dat doen we
+    zelf en niet via Minecraft: een drone die het spel door een portaal haalt, komt aan als een opgeslagen kopie, en
+    zo'n kopie vliegt meteen weg (hoofdstuk 88).
+  - Is zo'n drone daar klaar, dan kan hij niet naar zijn baan en **wacht hij bij jou**: een nieuwe plek in je arsenaal,
+    **With you** (`ArsenalDrone.State.STANDBY`, `ArsenalServer.returnHome`). Elke drone-actie neemt daar een drone die
+    bij je wacht in plaats van een uit je baan (`ArsenalServer.checkOut`): een zwerm, één drone, de escorte, de
+    verkenner, een spion, vervoer, vracht, een illusie. Nam je er vier mee, dan heb je er daar vier, voor alles.
+  - Een **Drone** die je daar lanceert (als item meegenomen) blijft bij je in plaats van naar een baan te vliegen.
+  - Terug in de gewone wereld (portaal, of je ging dood) hangt alles weer in zijn baan. Log je uit in de Nether met
+    drones om je heen, dan wachten ze bij je als je weer inlogt.
+  - Wat je ziet: komt je in de Nether aan, dan zegt I.M.T hoeveel drones meekwamen; in het G-menu staat onder een
+    drone-actie **NO DRONES HERE** als er niets bij je wacht; in het arsenaal staan je drones in hun baan er grijs bij
+    (**Out of reach**, zonder Recall-knop) en die bij je groen (**With you**), en rechtsboven staat "2 of 32 with you";
+    het opstartscherm van de bril telt alleen wat je daar hebt.
+  - De satelliet upgraden kan daar niet (je drones kunnen niet naar je satelliet). Een teruggeroepen drone die je in de
+    gewone wereld liet staan, kun je vanuit de Nether niet "bij je" laten komen: Launch stuurt hem naar zijn baan.
+  - Uit te zetten met `drones.noOrbitInNetherAndEnd = false`.
+- [x] **De bril draait op je datacenter** (`logic/DatacenterGlasses`). Alles wat de bril uitrekent of bewaart, draait op
+      je eigen datacenter: het sterkste dat draait, waar het ook staat (hetzelfde als waar het brein op draait).
+  - **Zonder datacenter** (of als het niet draait): "No datacenter. I.M.T needs your own datacenter for this", en er
+    gebeurt niets: geen energie weg, geen wachttijd. In je HUD staat **NO DATACENTER** (of **DATACENTER OFFLINE**), en
+    in het G-menu staat het in het rood onder elke actie die het nodig heeft.
+  - **Wat het nodig heeft** (wat "nadenkt"): een satellietaanval, de ertsen-scan, elke opdracht aan je drones (zwerm,
+    één drone, de escorte aanzetten, de verkenner, vervoer, vracht, iemand vervoeren), een doelwit markeren, hacken,
+    een spion, illusies, relais van op afstand schakelen (zonder datacenter kun je nog wel schakelen wat vlak bij je
+    staat), navigeren, de dreigingsscan en de doelwit-analyse.
+  - **Wat niet**: het beeld, nachtzicht, je schild, de laser cannon en de raketten, de camera van een drone waar je al
+    door kijkt, de formatie kiezen, berichten en pings, het arsenaalscherm, de satelliet upgraden. En alles wat iets
+    **stopt** kan altijd: uitzetten, terugroepen, landen, Stand down.
+  - **Rekenkracht** (CPU en/of GPU): dezelfde als de "power" van de tegel BRAIN (een CPU 1, een GPU 2, maal wat het RAM
+    voedt, warm de helft). Een satellietaanval neemt 0,5 voor 10 seconden, een ertsen-scan 0,5 voor 5 seconden, elk
+    ander verzoek 0,25 voor 2 seconden; navigeren, de dreigingsscan, de doelwit-analyse, elke speler die je hackt en
+    een spionagedrone elk 0,25 zolang ze lopen. Elk neemt ook **RAM** (2 GB, 1 GB, 250 MB, en 500 MB voor wat
+    doorloopt). **Past het er niet bij**, dan wordt het geweigerd: "Datacenter dev-lab is busy (75% in use): this needs
+    0.5 power and 0.25 is free" (of "too weak", of "out of RAM"). Dat kost niets. Met één CPU kun je de doelwit-analyse
+    aan laten, navigeren en een satellietaanval doen, maar niet alles tegelijk: dan moet er een CPU of GPU bij.
+  - **Bewaren** (SSD): elk waypoint neemt 250 MB op je SSD's, en 16 MB RAM zolang je bril op staat ("waypoint neemt
+    enkel ssd en ram"). Een nieuw waypoint heeft een datacenter met plaats nodig. **Wat je al had, blijft staan**, ook
+    zonder datacenter: hernoemen en weghalen kan altijd. Het telt wel mee zodra je een datacenter hebt (ook als je
+    niet online bent: `Datacenters.glassesData`).
+  - **Valt je datacenter uit**, dan stoppen je navigatie, je hacks en je spionagedrone ("Datacenter offline: navigation,
+    hacks and your spy drone stopped"). De scans blijven aan staan in je bril maar tonen niets tot het er weer is.
+  - **In de app Monitor**: de tegel BRAIN telt mee wat de brillen vragen, RAM en SSD ook, en in RUNNING staat wat er
+    loopt ("I.M.T satellite strike (naam)"). Omdat het rekenkracht kost, worden je racks er ook warmer van. In je HUD
+    staat **DATACENTER 90%** (of meer) als het bijna vol is.
+  - **Creative** heeft geen datacenter nodig (zoals het brein). Uit te zetten met `uplink.required = false`; alle
+    getallen staan onder `[uplink]`.
+  - Een datacenter in een wereld van voor dit hoofdstuk meldt zijn rekenkracht en RAM pas als zijn stuk wereld weer
+    geladen is; tot dan schat de bril ze uit de vertraging van het brein (`LogicStats.brainPowerFor`), zodat je bril
+    niet uitvalt omdat je datacenter ver weg staat.
+- [x] **How it works**: de bril heeft een nieuw hoofdstukje "Your datacenter"; bij de drones staat dat er boven de Nether
+      en het End geen baan hangt; bij de serverracks dat ook je bril erop draait en dat je waypoints op de SSD's staan.
+- [x] **LEESMIJ**: een nieuw stuk "De bril draait op je datacenter, en is minder sterk" (met de tabel van wat elk
+      verzoek kost), en het arsenaal, de drones, het datacenter en de instellingen bijgewerkt.
+- [x] **Tests** (vier nieuw, in `UplinkGameTests`): `ore_scan_waits_longer_than_the_ores_stay`,
+      `drones_in_the_nether_are_the_ones_you_brought` (twee escortedrones gaan mee naar de Nether, uit je baan vertrekt
+      daar niets, uitgezet wachten ze bij je, daarmee vertrekt een verkenner, en terug hangt alles in zijn baan),
+      `glasses_without_a_datacenter_think_and_store_nothing` (alles geweigerd zonder dat het iets kost, een oud waypoint
+      blijft, uitzetten en nachtzicht werken, creative heeft er geen nodig) en
+      `glasses_use_the_cpu_ram_and_ssd_of_your_datacenter` (een scan en een satellietaanval vullen één CPU, daarna wordt
+      alles geweigerd; de Monitor; een waypoint op de SSD en een volle SSD; navigeren; het datacenter valt uit). In de
+      andere tests staat de regel van het datacenter uit (zoals de netwerkkabels): anders moest elke test van de bril
+      een datacenter bouwen. De rondleidingen en de showcase net zo. Volledige ronde: 572 tests, alle groen (in de eerste
+      twee rondes faalde alleen de nieuwe Nether-test, door de test zelf: een testspeler kan niet met `teleportTo` naar
+      een andere wereld, en een drone in een stuk wereld dat nog niet actief is, is nog niet terug te vinden). In twee
+      rondes daarna viel telkens één bestaande test één keer om en was hij de ronde erna weer groen:
+      `datacenter_runs_the_brain` (het datacenter van die test draaide nog niet toen hij keek) en
+      `raven_soldier_flanks_around_a_wall` (een soldaat met willekeurig gedrag). De vier nieuwe tests waren in alle drie
+      de laatste rondes groen.
+- [x] **Gezien** met een nieuw stuk rondleiding, `gradlew runVisualCheck -Ponly=uplink` (ul01 tot ul08): NO DATACENTER in
+      het rood in je HUD, de melding bij een scan zonder datacenter, elk tabblad van het G-menu (in het rood onder de drie
+      satellietaanvallen, de zwerm, de losse drone, de escorte, de ertsen-scan en de dreigingsscan), aankomen in de Nether
+      ("No orbit above this world..."), het arsenaal daar (vier keer "Out of reach" in het grijs zonder knop, na twee
+      keer lanceren twee keer "With you" in het groen met Recall, en rechtsboven "2 of 6 with you"), NO DRONES HERE onder
+      de zwerm en de losse drone, en terug in de gewone wereld alles weer "In orbit". Daarbij bleek "Out of reach" net
+      niet in zijn kolom te passen: die tekst mag nu doorlopen tot waar anders de knop staat.
+- [ ] **Niet gedaan**: een review door andere lezers (drie stonden klaar, maar je gebruikslimiet was op), een plaatje van
+      de app Monitor met een bril die bezig is, een onderdeel in de showcase, en de teksten voor CurseForge (`publish/`).
+- **Mijn invullingen** (zeg het als je het anders wilt):
+  - De scan: **1 minuut**. Jij zei alleen "omhoog".
+  - Welke drones meegaan: **je escorte en je zwerm** (wat om je heen vliegt), niet een vrachtdrone, een spion, een
+    illusie of een verkenner. Een Drone-item daar lanceren telt ook als meenemen.
+  - Wat er gebeurt als je datacenter te zwak of te druk is: het verzoek wordt **geweigerd** (zoals een wachttijd), niet
+    vertraagd. Bij je diagrammen en het brein koos jij "trager"; hier vond ik weigeren duidelijker ("past er niet
+    bij"), en vertragen zou elke actie een wachtrij geven. Wil je liever trager, dan pas ik dat aan.
+  - Alle getallen (0,5 / 0,25 kracht, de GB's, de seconden, 250 MB per waypoint), en dat één CPU genoeg is voor gewoon
+    gebruik maar niet voor alles tegelijk.
+  - Wat ik wel en niet "nadenken" noem (de lijsten hierboven). Twijfelgevallen: **markeren** heeft een datacenter nodig
+    maar neemt er niets van; **berichten en pings** hebben er geen nodig; het **arsenaalscherm** (Recall, Launch) ook
+    niet.
+  - Alleen **waypoints** tellen als bewaarde data. Je relais, je satelliet-upgrades, je arsenaal en je landingsplatforms
+    niet: dat zijn dingen in de wereld, geen data van de bril.
+  - Alleen **je eigen** datacenter telt, niet dat van een vriend die je vertrouwt (zoals bij het brein).
+  - Een SSD die verbrandt, wist je waypoints **niet** (wel je diagrammen en keycards, zoals altijd).
+  - De **satelliet** zelf heb ik niet aangeraakt: in de Nether kon hij al niet (geen open lucht), in het End wel.
+  - Versie **2.10**: het is een nieuw systeem.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **I.M.T minder sterk (hoofdstuk 106)**: met tests gecontroleerd en de schermen gezien op screenshots
+      (`-Ponly=uplink`), maar niet gespeeld, en de app Monitor met een bril die bezig is heb ik niet gezien. Probeer:
+      (1) **zonder datacenter** in survival: staat er NO DATACENTER in je HUD en onder de acties in het
+      G-menu, en werken nachtzicht en je schild nog? (2) **met een datacenter van één CPU**: de doelwit-analyse aan,
+      navigeren en dan een satellietaanval (lukt), daarna meteen een ertsen-scan (zegt I.M.T "busy"?); kijk in de app
+      Monitor naar BRAIN, RAM, SSD en RUNNING terwijl je iets doet. Voelen de getallen goed (`[uplink]`), of is één CPU te
+      veel of te weinig? (3) **de Nether**: zet je escorte aan, ga door een portaal (komen ze mee, en zegt I.M.T hoeveel?),
+      probeer een zwerm (NO DRONES HERE), zet de escorte uit (staan ze op "With you" in je arsenaal?), stuur dan een
+      verkenner, en ga terug (hangt alles weer "In orbit"?). Ook in het End. (4) Voelt **1 minuut** wachten op de
+      ertsen-scan goed (`scanner.oreScanWait`)?
 - [ ] **De grote update (hoofdstuk 103)**: alles gezien op screenshots en met tests gecontroleerd, maar niet met de muis
       gespeeld en nooit met een vriend. Probeer: (1) luister naar de drie **gedempte schoten** (9mm, rifle en shotgun):
       die heb ik gemeten (dof en kort) maar niet kunnen beluisteren; (2) schiet met elk nieuw wapen en zeg het als de
@@ -8312,6 +8437,12 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
       "You shall not pass" heet nu "No trespassing". MALIBU en SHIELD in de wachtwoordlijst werden
       TUNNEL en BUNKER. Rayshield, de robotstijlen en de Ion Blaster blijven zo.
 - [ ] **Het harnas is rood en goud, de kleuren van Iron Man.** Andere kleuren? (nog niet gevraagd)
+- [ ] **Hoofdstuk 106, de bril op je datacenter: weigeren of trager?** Past een verzoek niet meer op je datacenter, dan
+      wordt het nu geweigerd ("Datacenter busy"). Bij je diagrammen en het brein koos jij "trager". Wil je dat hier ook
+      (elk verzoek lukt, maar wacht langer op een zwak of druk datacenter)?
+- [ ] **Hoofdstuk 106: moet de satelliet ook niet kunnen in het End?** Je drones uit je baan kunnen daar niet meer bij,
+      maar een satellietaanval lukt er nog wel (in de Nether niet: daar is geen open lucht). Ik heb alleen gedaan wat je
+      vroeg (de drones).
 
 ---
 

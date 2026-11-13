@@ -70,6 +70,11 @@ public final class SatelliteWorkshop {
         if (DELIVERIES.containsKey(player.getUUID())) {
             return Component.translatable("satellite.imttech.msg.busy");
         }
+        // Hoofdstuk 106: je drones brengen de onderdelen naar je satelliet in zijn baan. Vanuit de Nether en het End
+        // kunnen ze daar niet komen.
+        if (!ArsenalServer.orbitHere(player)) {
+            return Component.translatable("satellite.imttech.msg.no_orbit");
+        }
         for (ItemStack needed : upgrade.costFor(next)) {
             if (count(player.getInventory(), needed) < needed.getCount()) {
                 return Component.translatable("satellite.imttech.msg.missing", needed.getCount(), needed.getHoverName());
