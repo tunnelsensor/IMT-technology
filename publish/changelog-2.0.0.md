@@ -7,7 +7,7 @@ First public release.
 - Biebia's Industries Tower, bunker and crashed satellites in the world, with the only pair of
   glasses in the tower's vault.
 - Power grids, wireless redstone, the Arc Lamp, rayshields, shield domes and turrets.
-- Security cores with Security OS, cameras, keycards, code panels, protected zones and C4.
+- Security cores with Security OS, cameras, keycards, code panels, protected zones and remote charges.
 - Server racks you program with redstone diagrams or a small Python-like language.
 - Guard robots and security drones you build, solder and program, with squads and trainings.
 - The tech suit with flight, a laser cannon and mini rockets.

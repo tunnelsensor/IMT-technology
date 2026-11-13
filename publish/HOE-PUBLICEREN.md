@@ -6,7 +6,8 @@ Alles wat je nodig hebt, staat in deze map:
 |---------|----------|
 | `summary.txt` | De samenvatting (één zin) |
 | `description.md` | De beschrijving van je projectpagina (Engels, in Markdown) |
-| `changelog-2.0.0.md` | Wat er in deze versie zit (bij het uploaden van het bestand) |
+| `changelog-2.9.md` | Wat de grote update brengt (de vuurwapens en de attachments): plak dit bij het uploaden van de jar van 2.9 |
+| `changelog-2.0.0.md` | De changelog van de eerste versie (alles wat de mod kan, in het kort) |
 | `avatar-400.png` | Het projectplaatje (CurseForge wil precies 400 x 400) |
 | `release/imttech-<versie>.jar` | De jar om te uploaden (niet in git, zie stap 1) |
 | `screenshots/` | Echte screenshots uit het spel voor je galerij (niet in git) |
@@ -49,7 +50,8 @@ De jar staat dan in `build/libs/`, met de versie in de naam: bijvoorbeeld `imtte
   aanzet.)
 - **Game version**: **1.21.1**. **Mod loader**: **NeoForge**. **Java**: **21**.
   Vraagt het formulier naar de omgeving: **Client** en **Server** (de mod moet op allebei).
-- **Changelog**: plak de changelog van die versie (zoals `changelog-2.0.0.md` bij 2.0.0).
+- **Changelog**: plak de changelog van die versie (`changelog-2.9.md` bij de grote update; staat de mod nog niet
+  op CurseForge, zet er dan `changelog-2.0.0.md` onder: dat is de lijst van alles wat de mod kan).
 - **Dependencies**: geen (NeoForge zelf hoef je niet op te geven).
 
 Daarna kijkt een moderator van CurseForge je project na. Dat kan uren tot enkele dagen duren.

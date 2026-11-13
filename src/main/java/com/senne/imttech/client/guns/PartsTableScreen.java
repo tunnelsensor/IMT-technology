@@ -636,7 +636,9 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
                 int colour = state.broken() ? HudStyle.RED : state.worn() ? HudStyle.ORANGE : HudStyle.GREEN;
                 if (wide) {
                     HudStyle.bar(g, x, rowY + 9, 36, 3, state.condition() / (float) PartState.NEW, colour);
-                    small(g, state.material().text().getString(), x + 40, rowY + 7, HudStyle.argb(255, state.material().colour));
+                    // Tot aan het kruisje rechts (12 breed) en niet eroverheen: "Netherite" was er een pixel te lang voor.
+                    smallFit(g, state.material().text().getString(), x + 40, rowY + 7, HudStyle.argb(255, state.material().colour),
+                            SIDE_W - 12 - 40 - 2);
                 } else {
                     small(g, state.material().text().getString(), x + 34, rowY, HudStyle.argb(255, state.material().colour));
                     HudStyle.bar(g, x, rowY + 9, SIDE_W - 16, 3, state.condition() / (float) PartState.NEW, colour);

@@ -170,6 +170,30 @@ final class HowToTour {
                 }
             }
         }
+        // Met "at:awp:0:40" (en meer) in -Ponly ook een foto op een precies moment: hoofdstukje 0 van "awp", 40 ticks ver
+        // (de vaste foto's op 55% en 90% missen wat maar kort in beeld is: een schot, een voorwerp dat even zweeft).
+        for (String part : only) {
+            if (!part.startsWith("at:")) {
+                continue;
+            }
+            String[] pieces = part.split(":");
+            if (pieces.length != 4) {
+                continue;
+            }
+            com.senne.imttech.howto.HowToTopic topic = com.senne.imttech.howto.HowToTopics.byId(pieces[1]);
+            if (topic == null || !topic.ready()) {
+                continue;
+            }
+            int chapter = Integer.parseInt(pieces[2]);
+            int offset = Integer.parseInt(pieces[3]);
+            t.step(2, () -> {
+                Minecraft.getInstance().setScreen(null);
+                HowToScreen.open(topic);
+            });
+            t.step(2, () -> mouseTo(2, 2));
+            t.step(0, () -> howTo(screen -> screen.devShow(chapter, offset)));
+            t.shot(4, "hx_" + pieces[1] + "_" + chapter + "_" + offset);
+        }
         t.step(2, () -> Minecraft.getInstance().setScreen(null));
     }
 
@@ -661,6 +685,25 @@ final class HowToTour {
     /** Waar je staat voor de plaatjes van de wapens: de banken staan links van je (zie ShowcaseFeatures.buildGunBenches). */
     private static final BlockPos GUN_STAND = DEMO_CORE.offset(10, 0, 8);
 
+    /** Met "pic:<naam>" in -Ponly: alleen deze plaatjes worden (opnieuw) gemaakt; leeg = allemaal. */
+    private static final java.util.Set<String> WANTED_PICTURES = new java.util.HashSet<>();
+
+    /**
+     * Alleen de plaatjes van de wapens (-Ponly=howtopics:weapons), zonder de rest van de plaatjes eerst: je gaat er zelf
+     * heen en wacht tot de wereld daar draait. Met "pic:gun_skills" (en meer) erbij alleen die plaatjes, zodat de andere
+     * bestanden blijven zoals ze zijn.
+     */
+    static void weaponPicturesAlone(DevScript t, java.util.Set<String> only) {
+        for (String part : only) {
+            if (part.startsWith("pic:")) {
+                WANTED_PICTURES.add(part.substring("pic:".length()));
+            }
+        }
+        t.stand(0, GUN_STAND.getX() + 0.5, GUN_STAND.getY(), GUN_STAND.getZ() + 0.5, 0, 10);
+        t.waitUntil(200, () -> VisualCheck.raidLeaveTicking(GUN_STAND));
+        weaponPictures(t);
+    }
+
     /**
      * De plaatjes van de wapens (hoofdstuk 63, de wapens): de Gunsmith Table met een half pistool, de Reloading Bench, de
      * Laser Workbench met een half geweer, de skilltree, de HUD met een lasergeweer en met de Glock, je inventaris met de
@@ -683,7 +726,7 @@ final class HowToTour {
         t.onServer(5, player -> ShowcaseFeatures.openBench(player, GUN_STAND.offset(-2, 0, -2)));
         t.step(5, () -> ShowcaseFeatures.gunsmithTab(false, com.senne.imttech.client.guns.GunsmithMakePanel.Group.GLOCK, stack -> false));
         t.step(0, () -> mouseTo(1, 1));
-        t.step(25, () -> captureCentered("gunsmith_table", 328, 186));
+        t.step(25, () -> captureCentered("gunsmith_table", TABLE_W, TABLE_H));
         t.close(5);
         // Hoofdstuk 78: het tabblad "Make parts" van dezelfde tafel, met wat materiaal bij je (de stalen slede gekozen).
         t.onServer(5, ShowcaseFeatures::giveGunsmithMaterials);
@@ -694,7 +737,7 @@ final class HowToTour {
         t.step(0, () -> mouseTo(1, 1));
         // Het nieuwe materiaal gaf meldingen ("New Recipes Unlocked"): die liggen anders over de kosten rechts.
         t.step(20, HowToTour::noToasts);
-        t.step(5, () -> captureCentered("gunsmith_make", 328, 186));
+        t.step(5, () -> captureCentered("gunsmith_make", TABLE_W, TABLE_H));
         t.step(0, () -> ShowcaseFeatures.gunsmithTab(false, com.senne.imttech.client.guns.GunsmithMakePanel.Group.GLOCK, stack -> false));
         t.close(5);
         t.onServer(5, player -> ShowcaseFeatures.openBench(player, GUN_STAND.offset(-2, 0, 2)));
@@ -706,7 +749,16 @@ final class HowToTour {
         t.step(5, HowToTour::noToasts);
         t.onServer(5, player -> ShowcaseFeatures.openBench(player, GUN_STAND.offset(-2, 0, 0)));
         t.step(5, () -> mouseTo(1, 1));
-        t.step(25, () -> captureCentered("laser_workbench", 328, 186));
+        t.step(25, () -> captureCentered("laser_workbench", TABLE_W, TABLE_H));
+        t.close(5);
+        // Hoofdstuk 103: attachments op de Gunsmith Table. Een complete AWP met zijn kijker erop, en in je inventaris een
+        // demper en de tweepoot (die passen) en een greep en de verlengbuis (die niet).
+        t.onServer(5, HowToTour::attachmentsOnTheTable);
+        t.onServer(5, player -> ShowcaseFeatures.openBench(player, GUN_STAND.offset(-2, 0, -2)));
+        t.step(5, () -> ShowcaseFeatures.gunsmithTab(false, com.senne.imttech.client.guns.GunsmithMakePanel.Group.GLOCK, stack -> false));
+        t.step(0, () -> mouseTo(1, 1));
+        t.step(20, HowToTour::noToasts);
+        t.step(5, () -> captureCentered("gunsmith_attachments", TABLE_W, TABLE_H));
         t.close(5);
         // De skilltree, met punten om te verdelen en een paar niveaus geleerd.
         t.onServer(0, player -> {
@@ -732,6 +784,29 @@ final class HowToTour {
         t.step(5, () -> select(0));
         t.step(5, HowToTour::noToasts);
         t.step(30, () -> captureScreen("glock_hud"));
+        // Hoofdstuk 103: de MP5 met de schakelaar op BURST, de AWP na een schot (PRESS R), en het beeld door de Sniper
+        // Scope (4x) en door de Red Dot Sight, gericht op een husk verderop.
+        t.onServer(0, HowToTour::giveNewGuns);
+        t.step(5, () -> select(0));
+        t.step(5, HowToTour::noToasts);
+        t.step(30, () -> captureScreen("mp5_hud"));
+        // Even wachten: Minecraft toont de naam van wat je net pakte nog twee seconden boven je werkbalk.
+        t.step(0, () -> select(1));
+        t.step(70, () -> captureScreen("awp_hud"));
+        t.look(0, 0.0f, 1.0f);
+        t.step(0, () -> select(2));
+        t.step(0, () -> com.senne.imttech.client.guns.FirearmControl.setScopeZoom(4));
+        t.key(60, () -> Minecraft.getInstance().options.keyUse, true);
+        t.step(30, () -> captureScreen("scope_view"));
+        t.key(0, () -> Minecraft.getInstance().options.keyUse, false);
+        t.onServer(0, player -> targets(player, new int[][] {{0, 10}, {-3, 15}, {4, 20}}));
+        t.look(0, 0.0f, 2.5f);
+        t.step(12, () -> select(3));
+        t.key(60, () -> Minecraft.getInstance().options.keyUse, true);
+        t.step(25, () -> captureScreen("red_dot_view"));
+        t.key(0, () -> Minecraft.getInstance().options.keyUse, false);
+        t.onServer(5, HowToTour::removeTargets);
+        t.look(0, 0.0f, 12.0f);
         // De vakjes van je uitrusting in je inventaris: een holster met de Glock, twee pouches, en twee geweren aan een sling.
         t.onServer(0, player -> {
             ShowcaseFeatures.giveGear(player);
@@ -766,6 +841,89 @@ final class HowToTour {
         t.step(60, () -> Minecraft.getInstance().options.hideGui = false);
         t.command(0, "gamemode creative @a");
         t.look(0, 0.0f, 10.0f);
+    }
+
+    /** De Gunsmith Table en de Laser Workbench op het scherm (sinds hoofdstuk 103, stap 6: 40 breder en 28 hoger). */
+    private static final int TABLE_W = 368;
+    private static final int TABLE_H = 214;
+
+    /**
+     * Hoofdstuk 103: op de Gunsmith Table ligt een complete stalen AWP met de Sniper Scope erop. In je inventaris: een
+     * Rifle Suppressor en een Bipod (die passen), een Vertical Grip en een Tube Extension (die passen niet op een AWP), en
+     * een Red Dot Sight (past, maar de plek van de kijker is bezet).
+     */
+    private static void attachmentsOnTheTable(net.minecraft.server.level.ServerPlayer player) {
+        var inventory = player.getInventory();
+        inventory.clearContent();
+        com.senne.imttech.guns.Attachment[] carried = {com.senne.imttech.guns.Attachment.SUPPRESSOR_RIFLE,
+                com.senne.imttech.guns.Attachment.BIPOD, com.senne.imttech.guns.Attachment.RED_DOT,
+                com.senne.imttech.guns.Attachment.VERTICAL_GRIP, com.senne.imttech.guns.Attachment.TUBE_EXTENSION};
+        for (int i = 0; i < carried.length; i++) {
+            inventory.setItem(9 + i, new ItemStack(ModItems.attachment(carried[i])));
+        }
+        if (player.serverLevel().getBlockEntity(GUN_STAND.offset(-2, 0, -2))
+                instanceof com.senne.imttech.guns.GunsmithTableBlockEntity table) {
+            ItemStack awp = com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.AWP,
+                    com.senne.imttech.guns.GunMaterial.STEEL);
+            com.senne.imttech.guns.FirearmItem.setAttachment(awp, com.senne.imttech.guns.Attachment.SNIPER_SCOPE);
+            table.items().setItem(0, awp);
+        }
+    }
+
+    /**
+     * Hoofdstuk 103: de nieuwe wapens in je werkbalk, voor de plaatjes van de HUD en de kijkers: een MP5 met de schakelaar
+     * op BURST (vak 0), een AWP met een lege huls in de kamer (vak 1: PRESS R), een AWP met de Sniper Scope (vak 2) en een
+     * AK-47 met een Red Dot Sight (vak 3); verder magazijnen en losse patronen. Voor je staan husks stil om op te richten.
+     */
+    private static void giveNewGuns(net.minecraft.server.level.ServerPlayer player) {
+        var inventory = player.getInventory();
+        inventory.clearContent();
+        com.senne.imttech.guns.FirearmType mp5Type = com.senne.imttech.guns.FirearmType.MP5;
+        ItemStack mp5 = com.senne.imttech.guns.FirearmItem.loaded(mp5Type, com.senne.imttech.guns.GunMaterial.STEEL);
+        for (int i = 0; i < mp5Type.modes(); i++) {
+            if (mp5Type.mode(i) == com.senne.imttech.guns.FirearmType.FireMode.BURST) {
+                com.senne.imttech.guns.FirearmItem.setFireMode(mp5, i);
+            }
+        }
+        inventory.setItem(0, mp5);
+        ItemStack spent = com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.AWP,
+                com.senne.imttech.guns.GunMaterial.STEEL);
+        com.senne.imttech.guns.FirearmItem.setChambered(spent, false);
+        com.senne.imttech.guns.FirearmItem.setSpent(spent, true);
+        inventory.setItem(1, spent);
+        ItemStack scoped = com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.AWP,
+                com.senne.imttech.guns.GunMaterial.STEEL);
+        com.senne.imttech.guns.FirearmItem.setAttachment(scoped, com.senne.imttech.guns.Attachment.SNIPER_SCOPE);
+        inventory.setItem(2, scoped);
+        ItemStack ak = com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.AK_47,
+                com.senne.imttech.guns.GunMaterial.STEEL);
+        com.senne.imttech.guns.FirearmItem.setAttachment(ak, com.senne.imttech.guns.Attachment.RED_DOT);
+        inventory.setItem(3, ak);
+        inventory.setItem(4, com.senne.imttech.guns.MagazineItem.of(mp5Type, 30));
+        inventory.setItem(5, new ItemStack(ModItems.ROUND_9MM.get(), 40));
+        inventory.setItem(6, com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.AWP, 5));
+        inventory.setItem(7, new ItemStack(ModItems.ROUND_338.get(), 12));
+        inventory.setItem(8, com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.AK_47, 30));
+        inventory.setItem(9, new ItemStack(ModItems.ROUND_762.get(), 30));
+        // Ver weg voor de kijker (4x ingezoomd); voor de red dot komen ze dichterbij staan.
+        targets(player, new int[][] {{0, 30}, {-5, 38}, {5, 46}});
+    }
+
+    /** Husks die stilstaan om op te richten, op deze plekken (x naar links en rechts, z voor je uit); de vorige gaan weg. */
+    private static void targets(net.minecraft.server.level.ServerPlayer player, int[][] spots) {
+        removeTargets(player);
+        for (int[] spot : spots) {
+            DevWorld.spawnStill(player.serverLevel(), net.minecraft.world.entity.EntityType.HUSK,
+                    GUN_STAND.offset(spot[0], 0, spot[1]), 180);
+        }
+    }
+
+    /** De husks van de plaatjes door de kijkers weer weg. */
+    private static void removeTargets(net.minecraft.server.level.ServerPlayer player) {
+        for (net.minecraft.world.entity.monster.Husk husk : player.serverLevel().getEntitiesOfClass(
+                net.minecraft.world.entity.monster.Husk.class, new net.minecraft.world.phys.AABB(GUN_STAND).inflate(60))) {
+            husk.discard();
+        }
     }
 
     // ================================================================ De laatste beveiligingsitems
@@ -1159,6 +1317,9 @@ final class HowToTour {
      * het in de mod als {@code textures/gui/howto/<name>.png}.
      */
     static void capture(String name, int x, int y, int w, int h) {
+        if (!WANTED_PICTURES.isEmpty() && !WANTED_PICTURES.contains(name)) {
+            return; // -Ponly=...,pic:<naam>: alleen de gevraagde plaatjes, de rest blijft zoals het is
+        }
         Minecraft mc = Minecraft.getInstance();
         double scale = mc.getWindow().getGuiScale();
         int px = (int) Math.round(x * scale);

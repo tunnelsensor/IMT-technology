@@ -282,12 +282,12 @@ public final class WeaponScenes {
         s.idle(65);
         s.rightClick(HowToSceneBuilder.face(table, Direction.SOUTH), ItemStack.EMPTY);
         s.idle(14);
-        s.picture(150, "laser_workbench", 328, 186,
-                s.arrow(0.13f, 0.4f, "Your parts, Nether Stars, slings and laser guns"),
-                s.arrow(0.42f, 0.53f, "Drag a part onto the gun: start with a *frame*"),
-                s.arrow(0.5f, 0.41f, "What's missing is dotted"),
-                s.arrow(0.86f, 0.25f, "Each part with its quality and condition"),
-                s.arrow(0.85f, 0.9f, "*Take the gun*"));
+        s.picture(150, "laser_workbench", 368, 214,
+                s.arrow(0.12f, 0.4f, "Your parts, Nether Stars, slings and laser guns"),
+                s.arrow(0.48f, 0.55f, "Drag a part onto the gun: start with a *frame*"),
+                s.arrow(0.5f, 0.24f, "What's missing is dotted"),
+                s.arrow(0.85f, 0.2f, "Each part with its quality and condition"),
+                s.arrow(0.87f, 0.92f, "*Take the gun*"));
         s.idle(155);
 
         s.chapter("Wear, no jams");
@@ -463,17 +463,21 @@ public final class WeaponScenes {
         s.idle(100);
         s.picture(150, "gun_skills", 426, 240,
                 s.arrow(0.12f, 0.12f, "Your skill points"),
-                s.arrow(0.5f, 0.175f, "Pick a weapon"),
-                s.arrow(0.07f, 0.24f, "*Global*: for every gun"),
-                s.arrow(0.6f, 0.24f, "For this weapon only"),
-                s.arrow(0.45f, 0.33f, "Spend a point (each level costs one more)"));
+                s.arrow(0.5f, 0.2f, "Pick a weapon: firearms on top, laser guns below"),
+                s.arrow(0.07f, 0.3f, "*Global*: for every gun"),
+                s.arrow(0.57f, 0.3f, "For this weapon only"),
+                s.arrow(0.45f, 0.39f, "Spend a point (each level costs one more)"));
         s.idle(155);
         return List.of(s.build());
     }
 
     // ================================================================ De Gunsmith Table
 
-    /** De Gunsmith Table: zes onderdelen, drie materialen, de tafel (als plaatje), en slijtage. */
+    /**
+     * De Gunsmith Table: zes onderdelen, drie materialen, de tafel (als plaatje), en slijtage. Sinds hoofdstuk 103 bouw
+     * je er ook de MP5, de AK-47, de AWP en de Remington 870 op, en maak je er de attachments (die hebben hun eigen
+     * uitleg: zie GunScenes).
+     */
     public static List<HowToScene> gunsmith() {
         HowToSceneBuilder s = new HowToSceneBuilder("gunsmith", "Gunsmith Table").plate(5, 5).height(3);
         BlockPos table = new BlockPos(2, 1, 1);
@@ -506,25 +510,25 @@ public final class WeaponScenes {
         s.idle(10);
         s.rightClick(HowToSceneBuilder.face(table, Direction.SOUTH), ItemStack.EMPTY);
         s.idle(14);
-        s.picture(150, "gunsmith_table", 328, 186,
-                s.arrow(0.13f, 0.4f, "Your parts and pistols"),
+        s.picture(150, "gunsmith_table", 368, 214,
+                s.arrow(0.12f, 0.4f, "Your parts, guns and attachments"),
                 s.arrow(0.5f, 0.55f, "Drag a part to its place: it lights up and clicks on"),
-                s.arrow(0.41f, 0.27f, "What's missing is dotted"),
-                s.arrow(0.86f, 0.22f, "Each part with its material and condition"),
-                s.arrow(0.85f, 0.9f, "*Take the pistol*"));
+                s.arrow(0.42f, 0.3f, "What's missing is dotted"),
+                s.arrow(0.85f, 0.17f, "Each part with its material and condition"),
+                s.arrow(0.87f, 0.92f, "*Take the gun*"));
         s.idle(155);
 
         // Hoofdstuk 78: onderdelen maak je alleen nog hier (niet in de crafting table), op het tabblad "Make parts".
         s.chapter("Making parts");
         s.text(80, HowToSceneBuilder.top(table), Side.RIGHT,
                 "Gun parts aren't in the crafting table: you make them here, on the tab *Make parts*. Laser parts, the"
-                        + " *Gun Sling* and the *magazine* too.");
+                        + " *Gun Sling*, the *magazines* and the *attachments* too.");
         s.idle(85);
-        s.picture(150, "gunsmith_make", 328, 186,
-                s.arrow(0.14f, 0.35f, "Pick a weapon: the Glock or a laser gun"),
-                s.arrow(0.5f, 0.42f, "A row per part, a column per material"),
-                s.arrow(0.75f, 0.3f, "What it costs: green is enough"),
-                s.arrow(0.85f, 0.9f, "*Make*: it takes the materials from your inventory"));
+        s.picture(150, "gunsmith_make", 368, 214,
+                s.arrow(0.13f, 0.35f, "Pick a weapon, or *Attachments*"),
+                s.arrow(0.6f, 0.45f, "A row per part, a column per material"),
+                s.arrow(0.83f, 0.26f, "What it costs: green is enough"),
+                s.arrow(0.87f, 0.92f, "*Make*: it takes the materials from your inventory"));
         s.idle(155);
 
         s.chapter("Worn parts");

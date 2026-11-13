@@ -2761,6 +2761,7 @@ final class ShowcaseFeatures {
         addGear();
         addSkills();
         addLaserParts();
+        addBigUpdate();
     }
 
     /** Hoofdstuk 52, stap 3: de skilltree. */
@@ -3927,6 +3928,401 @@ final class ShowcaseFeatures {
                 .pause(60)
                 .camera(0, CameraType.FIRST_PERSON)
                 .onServer(0, player -> player.getInventory().clearContent()));
+    }
+
+
+    /**
+     * Hoofdstuk 103, de grote update: de MP5 en de AK-47 (de schakelaar), de AWP (de grendel, de kijker, de tweepoot), de
+     * Remington 870 (de pomp en de buis), de attachments op de Gunsmith Table en op de lasergeweren, en de
+     * Raven-soldaten met de nieuwe wapens.
+     */
+    private static void addBigUpdate() {
+        // ---------------------------------------------------------------- De grote update: meer vuurwapens en attachments (hoofdstuk 103)
+        BlockPos w = ShowcaseScene.WEAPONS;
+        Vec3 stand = new Vec3(w.getX() + 0.5, w.getY() + 1, w.getZ() + 0.5);
+        Supplier<KeyMapping> use = () -> Minecraft.getInstance().options.keyUse;
+        Supplier<KeyMapping> attack = () -> Minecraft.getInstance().options.keyAttack;
+        Supplier<KeyMapping> sneak = () -> Minecraft.getInstance().options.keyShift;
+        Runnable reload = () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey());
+        Runnable selector = () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_FIRE_MODE.getKey());
+        Runnable inspect = () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_INSPECT.getKey());
+        int bolt = Math.round(com.senne.imttech.guns.FirearmType.AWP.cycleTicks());
+        int pump = Math.round(com.senne.imttech.guns.FirearmType.REMINGTON_870.cycleTicks());
+        int shell = Math.round(com.senne.imttech.config.ImtConfig.Guns.LOAD_SHELL_TICKS);
+
+        add("MP5 and AK-47: the fire selector", "Hoofdstuk 103, de grote update. In je werkbalk een MP5 en een AK-47 (echte "
+                + "3D-modellen, nagemeten van een foto, zoals de Glock). Eerst de MP5: je richt door de ring van het vizier en "
+                + "schiet een keer (SEMI). Dan X: rechtsonder staat BURST, en een klik geeft drie schoten. Nog eens X: AUTO, en "
+                + "je houdt de knop in. Nog eens X: SAFE, de trekker doet niets ('Safety on'). Dan R: het magazijn valt eruit; "
+                + "je pakt het lange magazijn (het MP5 Extended Magazine, 40 patronen) en duwt het erin met rechtsklik: "
+                + "rechtsonder 40 + 1, en het steekt verder onder het wapen uit. Dan de AK-47: een schot, X (AUTO, de AK heeft "
+                + "geen BURST) en een salvo: hij klinkt zwaarder en schopt harder. Dan een AK-47 met een vol magazijn en een "
+                + "lege kamer: zodra je hem pakt, trekt je rechterhand de spanhendel. Dan H (bekijken) en de AK-47 in derde "
+                + "persoon.",
+                stand, 90, 3, s -> s
+                .onServer(0, ShowcaseScene::buildWeapons)
+                .onServer(0, ShowcaseFeatures::giveAutomatics)
+                .stand(0, stand.x, stand.y, stand.z, 90, 3)
+                .step(0, () -> hotbar(0))
+                .pause(50)
+                .key(0, use, true)
+                .pause(20)
+                .key(0, attack, true).key(2, attack, false)
+                .pause(20)
+                .step(0, selector)
+                .pause(20)
+                .key(0, attack, true).key(2, attack, false)
+                .pause(25)
+                .step(0, selector)
+                .pause(20)
+                .key(0, attack, true).key(24, attack, false)
+                .pause(15)
+                .key(0, use, false)
+                .step(10, selector)
+                .pause(20)
+                .key(0, attack, true).key(2, attack, false)
+                .pause(35)
+                .step(0, selector)
+                // R zonder pouch: het magazijn eruit; het lange magazijn erin.
+                .step(15, reload)
+                .pause(35)
+                .step(0, () -> hotbar(2))
+                .pause(25)
+                .tap(0, use)
+                .pause(45)
+                .step(0, () -> hotbar(0))
+                .pause(50)
+                // De AK-47.
+                .step(0, () -> hotbar(1))
+                .pause(50)
+                .key(0, use, true)
+                .pause(20)
+                .key(0, attack, true).key(2, attack, false)
+                .pause(20)
+                .step(0, selector)
+                .pause(20)
+                .key(0, attack, true).key(20, attack, false)
+                .pause(15)
+                .key(0, use, false)
+                .pause(20)
+                // Een AK-47 met een lege kamer: de spanhendel.
+                .step(0, () -> hotbar(5))
+                .pause(60)
+                .step(0, () -> hotbar(1))
+                .step(20, inspect)
+                .pause(70)
+                .camera(10, CameraType.THIRD_PERSON_FRONT)
+                .pause(60)
+                .camera(0, CameraType.FIRST_PERSON)
+                .onServer(0, player -> player.getInventory().clearContent()));
+
+        add("AWP: the bolt, the Sniper Scope and the bipod", "Hoofdstuk 103. Eerst een AWP zonder kijker: je richt over het "
+                + "ijzeren vizier en schiet. Rechtsonder staat nu in het rood PRESS R en de trekker doet niets: het is een "
+                + "grendelgeweer. R: je rechterhand tilt de knop op, trekt de grendel naar achteren (de huls springt eruit), "
+                + "duwt hem naar voren en drukt de knop omlaag. Dan de AWP met de Sniper Scope en de Bipod: je richt en kijkt "
+                + "door de ring met het dradenkruis (geen zwart beeld), en de zoom gaat van 2x naar 4x, 7x en 10x (in het spel "
+                + "scroll je; rechtsonder ZOOM). Een schot, en weer R. Dan sneak je en sta je stil: rechtsonder BIPOD DOWN, en "
+                + "het schot schopt bijna niet. Tot slot derde persoon terwijl je sneakt: anderen zien de pootjes uitgeklapt.",
+                stand, 90, 2, s -> s
+                .onServer(0, ShowcaseScene::buildWeapons)
+                .onServer(0, ShowcaseFeatures::giveSniper)
+                .stand(0, stand.x, stand.y, stand.z, 90, 2)
+                .step(0, () -> hotbar(1))
+                .pause(50)
+                .key(0, use, true)
+                .pause(25)
+                .key(0, attack, true).key(2, attack, false)
+                .pause(20)
+                .key(0, use, false)
+                .pause(25)
+                .key(0, attack, true).key(2, attack, false)
+                .pause(25)
+                .step(0, reload)
+                .pause(bolt + 20)
+                // Met de kijker: 2x, 4x, 7x, 10x.
+                .step(0, () -> hotbar(0))
+                .step(0, () -> com.senne.imttech.client.guns.FirearmControl.setScopeZoom(2))
+                .pause(45)
+                .key(0, use, true)
+                .pause(30)
+                .step(0, () -> com.senne.imttech.client.guns.FirearmControl.setScopeZoom(4))
+                .pause(20)
+                .step(0, () -> com.senne.imttech.client.guns.FirearmControl.setScopeZoom(7))
+                .pause(20)
+                .step(0, () -> com.senne.imttech.client.guns.FirearmControl.setScopeZoom(10))
+                .pause(30)
+                .key(0, attack, true).key(2, attack, false)
+                .pause(15)
+                .key(0, use, false)
+                .step(10, reload)
+                .pause(bolt + 15)
+                // De tweepoot: sneaken en stilstaan.
+                .step(0, () -> com.senne.imttech.client.guns.FirearmControl.setScopeZoom(4))
+                .key(0, sneak, true)
+                .pause(30)
+                .key(0, use, true)
+                .pause(30)
+                .key(0, attack, true).key(2, attack, false)
+                .pause(20)
+                .key(0, use, false)
+                .step(10, reload)
+                .pause(bolt + 10)
+                .camera(0, CameraType.THIRD_PERSON_FRONT)
+                .pause(70)
+                .key(0, sneak, false)
+                .pause(30)
+                .camera(0, CameraType.FIRST_PERSON)
+                .onServer(0, player -> player.getInventory().clearContent()));
+
+        add("Remington 870: the pump and the tube", "Hoofdstuk 103. Een pompgeweer: elk schot is acht korrels hagel die "
+                + "uitwaaieren (kijk naar de husks: van dichtbij raken ze allemaal). Na het schot staat er PRESS R: R trekt het "
+                + "voorhout naar achteren (de rode huls springt eruit) en duwt het weer naar voren. Nog een schot en nog eens "
+                + "pompen. Dan een lege 870: je houdt R in en je linkerhand duwt de patronen een voor een door de laadopening "
+                + "onderaan (het wapen kantelt), tot de buis vol is (6). R: pompen (5 + 1). U haalt er een patroon weer uit. "
+                + "Tot slot H (bekijken) en derde persoon.",
+                stand, 90, 3, s -> s
+                .onServer(0, ShowcaseScene::buildWeapons)
+                .onServer(0, player -> VisualCheck.giveLongGun(player, com.senne.imttech.guns.FirearmType.REMINGTON_870))
+                .stand(0, stand.x, stand.y, stand.z, 90, 3)
+                .step(0, () -> hotbar(0))
+                .pause(50)
+                .key(0, use, true)
+                .pause(20)
+                .key(0, attack, true).key(2, attack, false)
+                .pause(25)
+                .step(0, reload)
+                .pause(pump + 12)
+                .key(0, attack, true).key(2, attack, false)
+                .pause(20)
+                .key(0, use, false)
+                .step(5, reload)
+                .pause(pump + 20)
+                // Een lege 870: R inhouden (eerst ingedrukt, dan de klik: zie VisualCheck.longGunTour).
+                .step(0, () -> hotbar(5))
+                .pause(35)
+                .key(0, () -> com.senne.imttech.client.ImtKeys.GUN_RELOAD, true)
+                .step(1, reload)
+                .key(shell * 6 + 10, () -> com.senne.imttech.client.ImtKeys.GUN_RELOAD, false)
+                .step(shell + 6, reload)
+                .pause(pump + 20)
+                .step(0, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_UNLOAD.getKey()))
+                .pause(35)
+                .step(0, () -> hotbar(0))
+                .step(20, inspect)
+                .pause(70)
+                .camera(10, CameraType.THIRD_PERSON_FRONT)
+                .pause(60)
+                .camera(0, CameraType.FIRST_PERSON)
+                .onServer(0, player -> player.getInventory().clearContent()));
+
+        add("Attachments: sights, suppressors, grips", "Hoofdstuk 103. Attachments maak je en zet je erop op de Gunsmith "
+                + "Table. Het scherm van de tafel met een complete AK-47: boven, voor en onder het wapen staan gestippelde vakken "
+                + "(SIGHT, MUZZLE, UNDERBARREL), links je attachments (bij de tweepoot 'does not fit': die is voor de AWP). Een "
+                + "voor een klikken ze erop: de Red Dot Sight, de Rifle Suppressor, de Vertical Grip; rechts staat wat erop "
+                + "zit. Dan het tabblad Make parts onder Attachments (de Red Dot Sight: 2 staal, 1 glasplaat, 2 redstone). "
+                + "Daarna vijf wapens met alles erop: de Glock (demper, red dot: het stipje blijft in het midden), de MP5 "
+                + "(demper, rechte greep: je linkerhand houdt hem vast), de AK-47 (demper, schuine greep, red dot), de AWP "
+                + "(demper, tweepoot, kijker) en de Remington 870 (demper, verlengbuis: 8 patronen). Elk schot is een doffe "
+                + "plof zonder vlam. Tot slot de AK-47 in derde persoon.",
+                stand, 90, 3, s -> s
+                .onServer(0, ShowcaseScene::buildWeapons)
+                .onServer(0, player -> buildGunBenches(player, w.above()))
+                .onServer(0, ShowcaseFeatures::giveLooseAttachments)
+                .onServer(0, player -> VisualCheck.gunOnTable(player, w.above(), com.senne.imttech.guns.FirearmType.AK_47))
+                .stand(0, stand.x, stand.y, stand.z, 90, 3)
+                .lookAt(5, new Vec3(stand.x - 1.5, stand.y + 0.5, stand.z - 1.5))
+                .onServer(15, player -> openBench(player, w.above().offset(-2, 0, -2)))
+                .step(2, () -> gunsmithTab(false, com.senne.imttech.client.guns.GunsmithMakePanel.Group.GLOCK, stack -> false))
+                .pause(80)
+                .onServer(0, player -> VisualCheck.addOnsOnTable(player, w.above(), com.senne.imttech.guns.Attachment.RED_DOT))
+                .pause(45)
+                .onServer(0, player -> VisualCheck.addOnsOnTable(player, w.above(), com.senne.imttech.guns.Attachment.SUPPRESSOR_RIFLE))
+                .pause(45)
+                .onServer(0, player -> VisualCheck.addOnsOnTable(player, w.above(), com.senne.imttech.guns.Attachment.VERTICAL_GRIP))
+                .pause(80)
+                .step(0, () -> gunsmithTab(true, com.senne.imttech.client.guns.GunsmithMakePanel.Group.ATTACHMENTS,
+                        stack -> stack.is(ModItems.attachment(com.senne.imttech.guns.Attachment.RED_DOT))))
+                .pause(90)
+                .step(0, () -> gunsmithTab(false, com.senne.imttech.client.guns.GunsmithMakePanel.Group.GLOCK, stack -> false))
+                .close(0)
+                // Vijf wapens met alles erop: richten en een gedempt schot.
+                .onServer(0, VisualCheck::giveAddOns)
+                .stand(5, stand.x, stand.y, stand.z, 90, 3)
+                .step(0, () -> com.senne.imttech.client.guns.FirearmControl.setScopeZoom(4))
+                .step(0, () -> hotbar(0)).pause(45)
+                .key(0, use, true).pause(22)
+                .key(0, attack, true).key(2, attack, false).pause(18)
+                .key(0, use, false)
+                .step(10, () -> hotbar(1)).pause(45)
+                .key(0, use, true).pause(22)
+                .key(0, attack, true).key(2, attack, false).pause(18)
+                .key(0, use, false)
+                .step(10, () -> hotbar(2)).pause(45)
+                .key(0, use, true).pause(22)
+                .key(0, attack, true).key(2, attack, false).pause(18)
+                .key(0, use, false)
+                .step(10, () -> hotbar(3)).pause(45)
+                .key(0, use, true).pause(30)
+                .key(0, attack, true).key(2, attack, false).pause(18)
+                .key(0, use, false)
+                .step(10, () -> hotbar(4)).pause(45)
+                .key(0, use, true).pause(22)
+                .key(0, attack, true).key(2, attack, false).pause(18)
+                .key(0, use, false)
+                .step(10, () -> hotbar(2))
+                .camera(20, CameraType.THIRD_PERSON_FRONT)
+                .pause(70)
+                .camera(0, CameraType.FIRST_PERSON)
+                .onServer(0, player -> player.getInventory().clearContent()));
+
+        add("Attachments on laser guns", "Hoofdstuk 103. De Red Dot Sight, de Sniper Scope en de grips passen ook op de "
+                + "lasergeweren; je zet ze erop op de Laser Workbench. Eerst die tafel met een Laser Rifle: de plekken SIGHT en "
+                + "UNDERBARREL, en dan een red dot en een greep erop (het eigen gouden vizier van de rifle verdwijnt: de kijker "
+                + "komt in zijn plaats). Dan in je hand: het Laser Pistol met een red dot, de Laser Rifle met een red dot en een "
+                + "greep, en de Laser Sniper met de Sniper Scope: je kijkt door de ring en zoomt van 1x tot 10x, zoals bij de "
+                + "AWP (zonder kijker heeft hij nog zijn oude 4x met het zwarte beeld).",
+                stand, 90, 3, s -> s
+                .onServer(0, ShowcaseScene::buildWeapons)
+                .onServer(0, player -> buildLaserBench(player, w.above()))
+                .onServer(0, ShowcaseFeatures::giveLooseAttachments)
+                .onServer(0, player -> {
+                    if (player.serverLevel().getBlockEntity(w.above().offset(-2, 0, 0))
+                            instanceof com.senne.imttech.weapons.LaserWorkbenchBlockEntity bench) {
+                        bench.items().setItem(0, com.senne.imttech.weapons.LaserGunItem.loaded(com.senne.imttech.weapons.GunType.RIFLE));
+                    }
+                })
+                .stand(0, stand.x, stand.y, stand.z, 90, 3)
+                .lookAt(5, new Vec3(stand.x - 1.5, stand.y + 0.5, stand.z))
+                .onServer(15, player -> openBench(player, w.above().offset(-2, 0, 0)))
+                .pause(80)
+                .onServer(0, player -> VisualCheck.laserAddOns(player, w.above(), com.senne.imttech.guns.Attachment.RED_DOT))
+                .pause(45)
+                .onServer(0, player -> VisualCheck.laserAddOns(player, w.above(), com.senne.imttech.guns.Attachment.VERTICAL_GRIP))
+                .pause(80)
+                .close(0)
+                .onServer(0, VisualCheck::giveLaserAttachments)
+                .stand(5, stand.x, stand.y, stand.z, 90, 3)
+                .step(0, () -> com.senne.imttech.client.guns.FirearmControl.setScopeZoom(2))
+                .step(0, () -> hotbar(0)).pause(45)
+                .key(0, use, true).pause(22)
+                .key(0, attack, true).key(2, attack, false).pause(18)
+                .key(0, use, false)
+                .step(10, () -> hotbar(1)).pause(45)
+                .key(0, use, true).pause(22)
+                .key(0, attack, true).key(12, attack, false).pause(18)
+                .key(0, use, false)
+                .step(10, () -> hotbar(2)).pause(45)
+                .key(0, use, true).pause(30)
+                .step(0, () -> com.senne.imttech.client.guns.FirearmControl.setScopeZoom(5)).pause(20)
+                .step(0, () -> com.senne.imttech.client.guns.FirearmControl.setScopeZoom(10)).pause(30)
+                .key(0, attack, true).key(2, attack, false).pause(20)
+                .key(0, use, false)
+                .step(0, () -> com.senne.imttech.client.guns.FirearmControl.setScopeZoom(4))
+                .pause(20)
+                .onServer(0, player -> player.getInventory().clearContent()));
+
+        BlockPos yard = VisualCheck.RAVEN_YARD;
+        double yardX = yard.getX() + 0.5;
+        double yardY = yard.getY() + 1;
+        add("Raven soldiers with the new guns", "Hoofdstuk 103. Raven-soldaten dragen nu ook de nieuwe wapens. Vijf soldaten op "
+                + "een rij, van links naar rechts met een Glock 19 (met een demper), een MP5 (red dot), een AK-47 (greep), een "
+                + "AWP (de sluipschutter, altijd met zijn kijker) en een Remington 870. In rust dragen ze een lang wapen met twee "
+                + "handen schuin naar de grond; dan leggen ze aan. Daarna een echte soldaat met een MP5: hij lost salvo's van "
+                + "drie (je staat in creative, dus het doet je niets). Dan een sluipschutter op 30 blokken: hij legt een seconde "
+                + "aan, schiet, en je hoort hem doorladen. Dan een gevallen soldaat: in zijn lichaam zitten zijn AK-47 (met de "
+                + "greep er nog op) en zijn rugzak met munitie voor zijn wapen. Tot slot een kist van de bunker en de kluis van "
+                + "de toren: daar vind je af en toe een attachment.",
+                new Vec3(yardX, yardY, yard.getZ() - 1.5), 0, 0, s -> s
+                .view(0, yardX, yardY, yard.getZ() - 1.5, 0, 0)
+                .waitUntil(200, () -> VisualCheck.raidLeaveTicking(yard))
+                .onServer(5, VisualCheck::buildRavenYard)
+                .pause(80)
+                .onServer(0, player -> VisualCheck.ravenRowAims(player, true))
+                .pause(70)
+                .onServer(0, VisualCheck::clearRavenYard)
+                // Een echte soldaat met een MP5: salvo's van drie.
+                .view(0, yardX, yardY, yard.getZ() + 10.5, 0, 0)
+                .onServer(5, player -> VisualCheck.ravenLive(player, com.senne.imttech.guns.FirearmType.MP5, 9))
+                .pause(150)
+                .onServer(0, VisualCheck::clearRavenYard)
+                // Een sluipschutter op 30 blokken.
+                .view(0, yardX, yardY, yard.getZ() - 1.5, 0, 0)
+                .onServer(5, player -> VisualCheck.ravenLive(player, com.senne.imttech.guns.FirearmType.AWP, 30))
+                .pause(200)
+                .onServer(0, VisualCheck::clearRavenYard)
+                // Een gevallen soldaat en zijn buit.
+                .onServer(0, player -> VisualCheck.ravenFalls(player, new BlockPos(yard.getX(), yard.getY() + 1, yard.getZ() + 8)))
+                .view(10, yardX, yardY + 1.5, yard.getZ() + 5.5, 0, 38)
+                .pause(50)
+                .onServer(0, VisualCheck::searchNearestBody)
+                .pause(80)
+                .close(0)
+                // De kisten.
+                .view(0, yardX, yardY, yard.getZ() + 26.5, 0, 10)
+                .onServer(5, player -> VisualCheck.ravenChest(player, 0, "raven_barracks"))
+                .pause(70)
+                .close(0)
+                .onServer(5, player -> VisualCheck.ravenChest(player, 4, "biebia_vault"))
+                .pause(70)
+                .close(0)
+                .onServer(0, VisualCheck::clearRavenYard));
+    }
+
+    /**
+     * Hoofdstuk 103: een MP5 (vak 0) en een AK-47 (vak 1), het lange magazijn van de MP5 (vak 2: 40 patronen), een
+     * AK-47-magazijn, losse patronen van beide kalibers, en een AK-47 met een vol magazijn maar een lege kamer (vak 5).
+     */
+    static void giveAutomatics(ServerPlayer player) {
+        var inventory = player.getInventory();
+        inventory.clearContent();
+        com.senne.imttech.guns.FirearmType mp5 = com.senne.imttech.guns.FirearmType.MP5;
+        com.senne.imttech.guns.FirearmType ak = com.senne.imttech.guns.FirearmType.AK_47;
+        inventory.setItem(0, com.senne.imttech.guns.FirearmItem.loaded(mp5, com.senne.imttech.guns.GunMaterial.STEEL));
+        inventory.setItem(1, com.senne.imttech.guns.FirearmItem.loaded(ak, com.senne.imttech.guns.GunMaterial.STEEL));
+        inventory.setItem(2, com.senne.imttech.guns.MagazineItem.of(mp5, true, mp5.capacity(true)));
+        inventory.setItem(3, com.senne.imttech.guns.MagazineItem.of(ak, ak.capacity()));
+        inventory.setItem(4, new ItemStack(ModItems.ROUND_9MM.get(), 40));
+        ItemStack unchambered = com.senne.imttech.guns.FirearmItem.withParts(ak, com.senne.imttech.guns.GunParts.classic(ak));
+        com.senne.imttech.guns.FirearmItem.setMagazine(unchambered, com.senne.imttech.guns.MagazineItem.of(ak, ak.capacity()));
+        com.senne.imttech.guns.FirearmItem.setSling(unchambered, true);
+        inventory.setItem(5, unchambered);
+        inventory.setItem(6, new ItemStack(ModItems.ROUND_762.get(), 40));
+    }
+
+    /**
+     * Hoofdstuk 103: een AWP met de Sniper Scope en de Bipod (vak 0), een AWP zonder kijker (vak 1), een magazijn en
+     * losse patronen.
+     */
+    static void giveSniper(ServerPlayer player) {
+        var inventory = player.getInventory();
+        inventory.clearContent();
+        com.senne.imttech.guns.FirearmType awp = com.senne.imttech.guns.FirearmType.AWP;
+        ItemStack scoped = com.senne.imttech.guns.FirearmItem.loaded(awp, com.senne.imttech.guns.GunMaterial.STEEL);
+        com.senne.imttech.guns.FirearmItem.setAttachment(scoped, com.senne.imttech.guns.Attachment.SNIPER_SCOPE);
+        com.senne.imttech.guns.FirearmItem.setAttachment(scoped, com.senne.imttech.guns.Attachment.BIPOD);
+        inventory.setItem(0, scoped);
+        inventory.setItem(1, com.senne.imttech.guns.FirearmItem.loaded(awp, com.senne.imttech.guns.GunMaterial.STEEL));
+        inventory.setItem(2, com.senne.imttech.guns.MagazineItem.of(awp, awp.capacity()));
+        inventory.setItem(3, new ItemStack(ModItems.ROUND_338.get(), 12));
+    }
+
+    /**
+     * Hoofdstuk 103: losse attachments in je inventaris (voor de Gunsmith Table en de Laser Workbench): de twee kijkers,
+     * de Rifle Suppressor, de twee grips en de Bipod, en materiaal om een Red Dot Sight te maken.
+     */
+    static void giveLooseAttachments(ServerPlayer player) {
+        var inventory = player.getInventory();
+        inventory.clearContent();
+        com.senne.imttech.guns.Attachment[] loose = {com.senne.imttech.guns.Attachment.RED_DOT,
+                com.senne.imttech.guns.Attachment.SNIPER_SCOPE, com.senne.imttech.guns.Attachment.SUPPRESSOR_RIFLE,
+                com.senne.imttech.guns.Attachment.VERTICAL_GRIP, com.senne.imttech.guns.Attachment.ANGLED_GRIP,
+                com.senne.imttech.guns.Attachment.BIPOD};
+        for (int i = 0; i < loose.length; i++) {
+            inventory.setItem(9 + i, new ItemStack(ModItems.attachment(loose[i])));
+        }
+        inventory.setItem(18, new ItemStack(ModItems.STEEL_INGOT.get(), 6));
+        inventory.setItem(19, new ItemStack(net.minecraft.world.item.Items.GLASS_PANE, 2));
+        inventory.setItem(20, new ItemStack(net.minecraft.world.item.Items.REDSTONE, 4));
     }
 
     /** Hoofdstuk 72, stap 4: shift-klik op dit vakje van het open scherm (een lichaam doorzoeken), zoals met je muis. */

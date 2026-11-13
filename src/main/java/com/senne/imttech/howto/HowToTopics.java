@@ -6,6 +6,7 @@ import com.senne.imttech.howto.scenes.DatacenterScenes;
 import com.senne.imttech.howto.scenes.DefenceScenes;
 import com.senne.imttech.howto.scenes.EquipmentScenes;
 import com.senne.imttech.howto.scenes.GrenadeScenes;
+import com.senne.imttech.howto.scenes.GunScenes;
 import com.senne.imttech.howto.scenes.InteriorItemScenes;
 import com.senne.imttech.howto.scenes.InteriorScenes;
 import com.senne.imttech.howto.scenes.PowerScenes;
@@ -69,22 +70,26 @@ public final class HowToTopics {
             topic("grenade_throwback", "weapons", "Throwing grenades back", GrenadeScenes::throwback, ModItems.EMP_GRENADE,
                     ModItems.STICKY_EMP_GRENADE, ModItems.FRAG_GRENADE, ModItems.STICKY_FRAG_GRENADE, ModItems.SMOKE_GRENADE,
                     ModItems.FLASHBANG, ModItems.REMOTE_EMP, ModItems.REMOTE_FRAG),
-            // Hoofdstuk 103: de vuurwapens van de grote update werken zoals de Glock, dus ze horen (tot ze hun eigen uitleg
-            // hebben) bij dezelfde onderwerpen: het wapen en zijn magazijn bij de Glock, hun onderdelen bij de Gunsmith Table.
             topic("glock", "weapons", "Glock 19", WeaponScenes::glock, ModItems.GLOCK_19, ModItems.GLOCK_19_MAGAZINE, ModItems.ROUND_9MM,
-                    ModItems.MP5, ModItems.MP5_MAGAZINE, ModItems.AK_47, ModItems.AK_47_MAGAZINE, ModItems.ROUND_762,
-                    ModItems.AWP, ModItems.AWP_MAGAZINE, ModItems.ROUND_338, ModItems.REMINGTON_870, ModItems.ROUND_12G,
-                    // Stap 6b: de lange magazijnen (de extended mags).
-                    () -> ModItems.magazine(com.senne.imttech.guns.FirearmType.GLOCK_19, true),
+                    () -> ModItems.magazine(com.senne.imttech.guns.FirearmType.GLOCK_19, true)),
+            // Hoofdstuk 103, stap 9: de vuurwapens van de grote update hebben hun eigen uitleg (wat anders is dan bij de
+            // Glock), en de attachments ook. Een lang magazijn opent de uitleg van zijn wapen en die van de attachments.
+            topic("mp5_ak47", "weapons", "MP5 and AK-47", GunScenes::automatics, ModItems.MP5, ModItems.MP5_MAGAZINE, ModItems.AK_47,
+                    ModItems.AK_47_MAGAZINE, ModItems.ROUND_762,
                     () -> ModItems.magazine(com.senne.imttech.guns.FirearmType.MP5, true),
-                    () -> ModItems.magazine(com.senne.imttech.guns.FirearmType.AK_47, true),
+                    () -> ModItems.magazine(com.senne.imttech.guns.FirearmType.AK_47, true)),
+            topic("awp", "weapons", "AWP", GunScenes::awp, ModItems.AWP, ModItems.AWP_MAGAZINE, ModItems.ROUND_338,
                     () -> ModItems.magazine(com.senne.imttech.guns.FirearmType.AWP, true)),
+            topic("remington_870", "weapons", "Remington 870", GunScenes::remington, ModItems.REMINGTON_870, ModItems.ROUND_12G),
+            topicItems("attachments", "weapons", "Attachments", scenes(GunScenes::attachments, GunScenes::attachmentsMore),
+                    () -> concat(Arrays.stream(com.senne.imttech.guns.Attachment.values())
+                                    .map(attachment -> (Item) ModItems.attachment(attachment)).toList(),
+                            Arrays.stream(com.senne.imttech.guns.FirearmType.values()).filter(type -> !type.tube())
+                                    .map(type -> (Item) ModItems.magazine(type, true)).toList())),
             topicItems("gunsmith", "weapons", "Gunsmith Table", WeaponScenes::gunsmith,
                     () -> concat(Arrays.stream(com.senne.imttech.guns.FirearmType.values())
                                     .flatMap(type -> Arrays.stream(GunPart.values()).map(part -> (Item) ModItems.gunPart(type, part))).toList(),
-                            concat(List.<Item>of(ModItems.GUNSMITH_TABLE.get()),
-                                    Arrays.stream(com.senne.imttech.guns.Attachment.values())
-                                            .map(attachment -> (Item) ModItems.attachment(attachment)).toList()))),
+                            List.<Item>of(ModItems.GUNSMITH_TABLE.get()))),
             topic("reloading", "weapons", "Reloading Bench", WeaponScenes::reloading, ModItems.RELOADING_BENCH, ModItems.CASING_9MM,
                     ModItems.BULLET_9MM, ModItems.CRUSHED_GUNPOWDER, ModItems.ROUND_9MM, ModItems.CASING_762, ModItems.BULLET_762,
                     ModItems.CASING_338, ModItems.BULLET_338, ModItems.CASING_12G, ModItems.BULLET_12G),

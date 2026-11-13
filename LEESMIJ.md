@@ -2458,6 +2458,27 @@ nieuwe wapens" en "attachments in buit".
   verder `attachmentChance` (iets op zijn wapen) en `packAttachmentChance` (iets in zijn rugzak). De oude getallen
   `laserDamage`, `spread`, `fireInterval` en `attackRange` gelden nu alleen nog voor zijn lasergeweren.
 
+**How it works en de showcase** (versie 2.9). De nieuwe wapens en de attachments hebben hun eigen uitleg: houd **W**
+op het item in je inventaris (of klik op het **?** boven je craftraster, tabblad Weapons).
+- **MP5 and AK-47** (op de MP5, de AK-47, hun magazijnen en de 7.62-patroon): het wapen groot in beeld, een salvo, de
+  keuzeschakelaar met X (met een plaatje van je HUD) en de drie standen na elkaar, de spanhendel, de sling en de zes
+  onderdelen.
+- **AWP** (op de AWP, zijn magazijnen en de .338-patroon): één schot van ver, PRESS R en de grendel (met een plaatje van
+  je HUD), het beeld door de Sniper Scope, de tweepoot van opzij (sneaken en stilstaan) en de onderdelen.
+- **Remington 870** (op de 870 en de hagelpatroon): hagel die uitwaaiert, pompen na elk schot, de buis die je patroon
+  per patroon laadt, de verlengbuis en de onderdelen.
+- **Attachments** (op elk attachment en elk lang magazijn), twee animaties (blader met de pijltjes bovenaan): eerst
+  wat het zijn, erop en eraf op de Gunsmith Table (een plaatje van de tafel met een AWP) en de kijkers (het beeld door
+  de red dot en door de kijker); dan de dempers (een luid en een gedempt schot), de grips, de tweepoot en de
+  verlengbuis, de lange magazijnen, de lasergeweren, en waar je ze vindt.
+- De uitleg van de **Gunsmith Table**, de **Laser Workbench** en de **Glock 19** heeft nieuwe plaatjes: de tafel is
+  groter en maakt nu ook attachments, en de skilltree heeft twee rijen wapens.
+- **De showcase** (`python tools/showcase.py`) heeft zes nieuwe onderdelen, onder "De grote update": de MP5 en de
+  AK-47 (de schakelaar, het lange magazijn), de AWP (de grendel, de kijker, de tweepoot), de Remington 870 (de pomp en
+  de buis), de attachments (op de Gunsmith Table en op vijf wapens), de attachments op de lasergeweren, en de
+  Raven-soldaten met de nieuwe wapens.
+- Ook beter: op de Laser Workbench liep "Netherite" rechts een pixel onder het kruisje door; nu past het.
+
 **De getallen** staan in `config/imttech.toml` onder `[guns]`: elk rijtje heeft nu vijf getallen, in de volgorde Glock
 19, MP5, AK-47, AWP, Remington 870 (schade, tempo, bereik, kogelsnelheid, magazijn, het lange magazijn, spreiding,
 terugslag, korrels per schot, hoe lang doorladen duurt, hoe ver bewakers het horen). Had je al een configbestand, dan

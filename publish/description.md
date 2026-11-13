@@ -54,6 +54,20 @@ bunkers to raid.
 - Programmable security drones with their own dock, squads, and training sessions with lives
   instead of health.
 
+**Weapons and gear**
+- Real firearms you build from six parts that wear and jam: the Glock 19, the MP5, the AK-47, the AWP (bolt
+  action) and the Remington 870 (pump action). Real 3D models, magazines you fill round by round, casings that
+  fly out, a fire selector with a safety, and a Reloading Bench to press your own rounds.
+- Attachments you make and mount at the Gunsmith Table: a Red Dot Sight, a Sniper Scope that zooms from 1x to
+  10x, suppressors, grips, a bipod, a tube extension and extended magazines.
+- Four laser guns built from parts around a Nether Star, the Ion Blaster, EMP and frag grenades (sticky and
+  rolling), smoke grenades, flashbangs and remote charges.
+- A holster, pouches and gun slings with a quickdraw wheel, an armory pegboard, ammo boxes, military backpacks
+  with MOLLE pouches, and gun skills you level up.
+- Raven soldiers who guard the bunkers like in a stealth game: they patrol, hear you, call for backup, and
+  carry the same guns you do.
+- Hold **W** on any item of the mod for a short animation that shows how it works.
+
 **The tech suit**
 - Tech Chestplate, Leggings and Boots: flight, a laser cannon in your hand and mini rockets.
   Upgrade them on the suit workbench and land on a landing pad.
@@ -73,8 +87,8 @@ in there: ore scan, threat detection, night vision, marking targets, the drone s
 satellite strikes, navigation, comms and the rest. They have no key by default, so your keyboard
 stays free for other mods; bind the ones you use a lot in Options > Controls > I.M.T. Keys that
 are bound: **V** zoom (hold), **Z** push-to-talk (hold), **B** open your backpack, **Left Alt**
-quickdraw wheel (hold), **F6** gun skills, and **R** / **U** / **H** reload, unload and inspect
-while you hold a gun.
+quickdraw wheel (hold), **F6** gun skills, and **R** / **U** / **H** / **X** reload, unload, inspect
+and fire selector while you hold a gun.
 
 ## Requirements
 

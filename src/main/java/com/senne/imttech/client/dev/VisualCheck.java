@@ -5544,6 +5544,11 @@ public final class VisualCheck {
         if (ONLY.contains("howtopics")) {
             HowToTour.pictures(t);
         }
+        // Alleen de plaatjes van de wapens (hoofdstuk 103: de Gunsmith Table en de skilltree veranderden, en er kwamen
+        // plaatjes bij). Met "pic:<naam>" erbij alleen die plaatjes: -Ponly=howtopics:weapons,pic:gun_skills
+        if (ONLY.contains("howtopics:weapons")) {
+            HowToTour.weaponPicturesAlone(t, ONLY);
+        }
         if (want("howto")) {
             HowToTour.tour(t);
         }
@@ -6689,7 +6694,7 @@ public final class VisualCheck {
      * AK-47, de MP5 en de Glock met een Red Dot Sight, de AK-47 en de MP5 met de Sniper Scope, en de Remington 870 en de
      * AWP met een Red Dot Sight.
      */
-    private static void giveAttachments(ServerPlayer player) {
+    static void giveAttachments(ServerPlayer player) {
         var inventory = player.getInventory();
         inventory.clearContent();
         com.senne.imttech.guns.FirearmType[] types = {com.senne.imttech.guns.FirearmType.AWP, com.senne.imttech.guns.FirearmType.AK_47,
@@ -6711,7 +6716,7 @@ public final class VisualCheck {
      * (red dot en rechte greep), de sniper (Sniper Scope en schuine greep), de shotgun (red dot), en nog een sniper met
      * een red dot.
      */
-    private static void giveLaserAttachments(ServerPlayer player) {
+    static void giveLaserAttachments(ServerPlayer player) {
         var inventory = player.getInventory();
         inventory.clearContent();
         com.senne.imttech.weapons.GunType[] types = {com.senne.imttech.weapons.GunType.PISTOL, com.senne.imttech.weapons.GunType.RIFLE,
@@ -6738,7 +6743,7 @@ public final class VisualCheck {
     }
 
     /** Voor de rondleiding: deze attachments uit je inventaris op het geweer op de Laser Workbench. */
-    private static void laserAddOns(ServerPlayer player, BlockPos g, com.senne.imttech.guns.Attachment... attachments) {
+    static void laserAddOns(ServerPlayer player, BlockPos g, com.senne.imttech.guns.Attachment... attachments) {
         if (player.serverLevel().getBlockEntity(g.offset(-2, 0, 0)) instanceof com.senne.imttech.weapons.LaserWorkbenchBlockEntity bench) {
             for (com.senne.imttech.guns.Attachment attachment : attachments) {
                 int slot = player.getInventory().findSlotMatchingItem(new ItemStack(ModItems.attachment(attachment)));
@@ -6773,7 +6778,7 @@ public final class VisualCheck {
      * (demper, rechte greep), de AK-47 (demper, schuine greep, red dot), de AWP (demper, tweepoot, kijker) en de
      * Remington 870 (demper, verlengbuis: acht patronen in de buis).
      */
-    private static void giveAddOns(ServerPlayer player) {
+    static void giveAddOns(ServerPlayer player) {
         var inventory = player.getInventory();
         inventory.clearContent();
         com.senne.imttech.guns.FirearmType[] types = {com.senne.imttech.guns.FirearmType.GLOCK_19, com.senne.imttech.guns.FirearmType.MP5,
@@ -6800,14 +6805,14 @@ public final class VisualCheck {
     }
 
     /** Voor de rondleiding: het wapen van de Gunsmith Table weg, en een nieuw (geladen, van staal) erop. */
-    private static void gunOnTable(ServerPlayer player, BlockPos g, com.senne.imttech.guns.FirearmType type) {
+    static void gunOnTable(ServerPlayer player, BlockPos g, com.senne.imttech.guns.FirearmType type) {
         if (player.serverLevel().getBlockEntity(g.offset(-2, 0, -2)) instanceof com.senne.imttech.guns.GunsmithTableBlockEntity table) {
             table.items().setItem(0, com.senne.imttech.guns.FirearmItem.loaded(type, com.senne.imttech.guns.GunMaterial.STEEL));
         }
     }
 
     /** Voor de rondleiding: deze attachments uit je inventaris op het wapen op de Gunsmith Table. */
-    private static void addOnsOnTable(ServerPlayer player, BlockPos g, com.senne.imttech.guns.Attachment... attachments) {
+    static void addOnsOnTable(ServerPlayer player, BlockPos g, com.senne.imttech.guns.Attachment... attachments) {
         if (player.serverLevel().getBlockEntity(g.offset(-2, 0, -2)) instanceof com.senne.imttech.guns.GunsmithTableBlockEntity table) {
             for (com.senne.imttech.guns.Attachment attachment : attachments) {
                 int slot = player.getInventory().findSlotMatchingItem(new ItemStack(ModItems.attachment(attachment)));
@@ -6826,7 +6831,7 @@ public final class VisualCheck {
      * van zijn kaliber, een leeg magazijn, hetzelfde wapen zonder magazijn (voor sneak + R), en losse onderdelen en een
      * sling voor de Gunsmith Table.
      */
-    private static void giveLongGun(ServerPlayer player, com.senne.imttech.guns.FirearmType type) {
+    static void giveLongGun(ServerPlayer player, com.senne.imttech.guns.FirearmType type) {
         var inventory = player.getInventory();
         inventory.clearContent();
         inventory.setItem(0, com.senne.imttech.guns.FirearmItem.loaded(type, com.senne.imttech.guns.GunMaterial.STEEL));
@@ -7745,7 +7750,7 @@ public final class VisualCheck {
     // ================================================================ Raven-soldaten met de nieuwe wapens (hoofdstuk 103, stap 8)
 
     /** Het veldje van de Raven-soldaten met de nieuwe wapens: de vloer. */
-    private static final BlockPos RAVEN_YARD = new BlockPos(-460, -61, -200);
+    static final BlockPos RAVEN_YARD = new BlockPos(-460, -61, -200);
     /** De vijf soldaten op een rij, en de ene soldaat verderop die elk wapen apart laat zien. */
     private static final java.util.List<com.senne.imttech.raven.RavenSoldierEntity> RAVEN_ROW = new java.util.ArrayList<>();
     private static com.senne.imttech.raven.RavenSoldierEntity RAVEN_SOLO;
@@ -7787,7 +7792,7 @@ public final class VisualCheck {
     }
 
     /** Alles wat er van een vorige keer nog staat of ligt, gaat weg. */
-    private static void clearRavenYard(ServerPlayer player) {
+    static void clearRavenYard(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
         net.minecraft.world.phys.AABB area = net.minecraft.world.phys.AABB.encapsulatingFullBlocks(
                 RAVEN_YARD.offset(-14, 0, -10), RAVEN_YARD.offset(14, 8, 44));
@@ -7802,7 +7807,7 @@ public final class VisualCheck {
      * Een vloer van gladde steen met vijf stilstaande soldaten op een rij, elk met een ander vuurwapen (van links naar
      * rechts zoals jij ze ziet: Glock 19, MP5, AK-47, AWP, Remington 870), en veertien blokken verder één soldaat alleen.
      */
-    private static void buildRavenYard(ServerPlayer player) {
+    static void buildRavenYard(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
         BlockPos y = RAVEN_YARD;
         clearRavenYard(player);
@@ -7824,7 +7829,7 @@ public final class VisualCheck {
     }
 
     /** De vijf soldaten leggen aan op jou (of niet meer). */
-    private static void ravenRowAims(ServerPlayer player, boolean aiming) {
+    static void ravenRowAims(ServerPlayer player, boolean aiming) {
         for (com.senne.imttech.raven.RavenSoldierEntity soldier : RAVEN_ROW) {
             soldier.setTarget(aiming ? player : null);
         }
@@ -7842,7 +7847,7 @@ public final class VisualCheck {
     }
 
     /** De soldaat alleen (of de echte soldaat die er stond) gaat weg, met de kogels en de hulzen die er nog liggen. */
-    private static void ravenSoloAway(ServerPlayer player) {
+    static void ravenSoloAway(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
         net.minecraft.world.phys.AABB area = net.minecraft.world.phys.AABB.encapsulatingFullBlocks(
                 RAVEN_YARD.offset(-14, 0, 9), RAVEN_YARD.offset(14, 8, 44));
@@ -7853,7 +7858,7 @@ public final class VisualCheck {
     }
 
     /** Een echte soldaat (hij denkt zelf) met dit wapen, {@code blocks} blokken voor je, die jou als doelwit heeft. */
-    private static void ravenLive(ServerPlayer player, com.senne.imttech.guns.FirearmType type, int blocks) {
+    static void ravenLive(ServerPlayer player, com.senne.imttech.guns.FirearmType type, int blocks) {
         ServerLevel level = player.serverLevel();
         com.senne.imttech.raven.RavenSoldierEntity soldier = com.senne.imttech.registry.ModEntities.RAVEN_SOLDIER.get().create(level);
         if (soldier == null) {
@@ -7870,7 +7875,7 @@ public final class VisualCheck {
     }
 
     /** Een soldaat met een AK-47 (met een greep) en een rugzak valt hier: zijn lichaam blijft liggen, met zijn wapen erin. */
-    private static void ravenFalls(ServerPlayer player, BlockPos pos) {
+    static void ravenFalls(ServerPlayer player, BlockPos pos) {
         ServerLevel level = player.serverLevel();
         clearRavenYard(player);
         com.senne.imttech.raven.RavenSoldierEntity soldier = ravenStill(level, pos, ravenGun(com.senne.imttech.guns.FirearmType.AK_47));
@@ -7886,7 +7891,7 @@ public final class VisualCheck {
      * Een kist (voor de voorraad een ton) met deze loot table, en hij gaat voor je open. De rondleiding zoekt een worp
      * waar iets van hoofdstuk 103 in zit (een attachment, een lang magazijn of munitie), zodat je ziet hoe dat eruitziet.
      */
-    private static void ravenChest(ServerPlayer player, int index, String table) {
+    static void ravenChest(ServerPlayer player, int index, String table) {
         ServerLevel level = player.serverLevel();
         BlockPos pos = RAVEN_YARD.offset(4 - 2 * index, 1, 30);
         boolean barrel = table.equals("raven_supplies");
@@ -8003,7 +8008,7 @@ public final class VisualCheck {
     private static final List<UUID> RAID_LEAVERS = new java.util.ArrayList<>();
 
     /** Draait de wereld op deze plek al helemaal (wezens bewegen er)? Alleen voor de rondleiding: kijkt vanaf de client. */
-    private static boolean raidLeaveTicking(BlockPos pos) {
+    static boolean raidLeaveTicking(BlockPos pos) {
         net.minecraft.client.server.IntegratedServer server = Minecraft.getInstance().getSingleplayerServer();
         return server != null && server.overworld().isPositionEntityTicking(pos);
     }

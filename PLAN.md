@@ -7736,13 +7736,59 @@ standen), suppressors, extended mags en grips." Omdat jij het een grote update n
       salvo's; dat de sluipschutter eerst een seconde aanlegt en geen demper draagt; attachments op de wapens van
       soldaten; de houding in rust; munitie in de voorraadtonnen en lange magazijnen in de kluis (jij vroeg alleen
       attachments); de kansen per kist; versie 2.8.0.
-- [ ] **9. How it works, de showcase, LEESMIJ.md en de changelog van 2.0.0.**
+- [x] **9. How it works, de showcase, LEESMIJ.md en de changelog** (13 november, versie 2.9.0).
+      **How it works**: vier nieuwe onderwerpen op het tabblad Weapons, in een nieuw bestand `howto/scenes/GunScenes`:
+      *MP5 and AK-47* (`automatics`: het wapen groot in beeld, een salvo, de schakelaar met de HUD als plaatje en de
+      drie standen, de AK-47, de spanhendel, de sling, de onderdelen), *AWP* (`awp`: één schot, PRESS R met de HUD als
+      plaatje en de grendel, het beeld door de Sniper Scope, de tweepoot, de onderdelen), *Remington 870*
+      (`remington`: hagel, pompen, de buis, de verlengbuis, de onderdelen) en *Attachments*, in twee animaties omdat
+      één animatie hoogstens anderhalve minuut mag duren (`attachments`: wat het zijn, de Gunsmith Table als plaatje,
+      de kijkers met het beeld door de red dot en de kijker; `attachmentsMore`: de dempers, de grips, de tweepoot en de
+      verlengbuis, de lange magazijnen, de lasergeweren, waar je ze vindt). In `HowToTopics` openen
+      de nieuwe wapens, hun magazijnen en hun munitie nu hun eigen onderwerp (ze stonden zolang bij de Glock), en de
+      attachments en de lange magazijnen het onderwerp Attachments (een lang magazijn ook dat van zijn wapen).
+      **Wat ik op de foto's leerde** (`-Ponly=howtoall,howto:<onderwerp>`): wie schiet, zie je van achteren, dus het
+      wapen zelf zweeft eerst groot in beeld; de tweepoot en de demper zie je alleen van opzij (dan sta je dwars in
+      beeld en schiet je naar rechts); een lange tekst bovenaan hangt voor een rij voorwerpen, dus een rij staat links
+      met zijn tekst rechts ernaast (`GunScenes.rowWithText`); een speler die "tot het eind" blijft, krijg je niet meer
+      weg, dus wie maar een hoofdstukje meedoet, krijgt een vaste duur.
+      **De plaatjes** (`HowToTour.weaponPictures`): de Gunsmith Table, zijn tabblad Make parts en de Laser Workbench
+      opnieuw (de tafel is sinds stap 6 groter: 368 x 214, en de lijst heeft de nieuwe wapens en Attachments), de
+      skilltree opnieuw (twee rijen wapens), en vijf nieuwe: `gunsmith_attachments` (de tafel met een AWP en zijn
+      kijker), `mp5_hud` (de schakelaar op BURST), `awp_hud` (PRESS R), `scope_view` (door de Sniper Scope op 4x) en
+      `red_dot_view`. De pijltjes van de bestaande uitleg (Glock 19, Gunsmith Table, Laser guns from parts) zijn
+      verzet. Nieuw: `-Ponly=howtopics:weapons` maakt alleen de plaatjes van de wapens, en met `pic:<naam>` erbij
+      alleen die (de rest van de bestanden blijft dan zoals het is).
+      **De showcase** (`ShowcaseFeatures.addBigUpdate`, zes onderdelen): "MP5 and AK-47: the fire selector", "AWP: the
+      bolt, the Sniper Scope and the bipod", "Remington 870: the pump and the tube", "Attachments: sights,
+      suppressors, grips", "Attachments on laser guns" en "Raven soldiers with the new guns". De hulpjes van de
+      rondleiding die ze gebruiken (`giveLongGun`, `giveAddOns`, `addOnsOnTable`, `buildRavenYard`...) zijn daarvoor
+      niet meer `private`.
+      **Ook beter**: op de Laser Workbench liep "Netherite" rechts een pixel onder het kruisje door
+      (`PartsTableScreen.renderSide`: het materiaal wordt nu zo nodig een haar kleiner getekend).
+      **Publiceren** (`publish/`): `description.md` heeft een stuk "Weapons and gear" (dat ontbrak helemaal) en de
+      toets X bij de besturing; `changelog-2.9.md` is nieuw (wat de grote update brengt); in `changelog-2.0.0.md` (de
+      eerste versie) stond nog C4, dat is nu de Remote Frag; `HOE-PUBLICEREN.md` wijst naar de nieuwe changelog. Een
+      nieuwe jar in `release/` heb ik niet gebouwd: dat moet uit een schone versie, en in je werkmap ligt nog werk van
+      een andere sessie dat niet gecommit is.
+      **Tests**: geen nieuwe; `every_item_has_a_how_it_works` en `how_it_works_scenes_are_sound` dekken de nieuwe
+      onderwerpen (de tweede vond dat de labels SEMI en BURST korter dan anderhalve seconde in beeld stonden en dat
+      Attachments langer dan anderhalve minuut duurde: nu staan de labels langer en zijn het twee animaties); volledige ronde
+      566 tests, alle groen. **Gezien**: elk hoofdstukje van de vier nieuwe en de drie bijgewerkte onderwerpen
+      (`ha_...`), en de zes onderdelen van de showcase (`python tools/showcase.py --test`).
 
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **De grote update (hoofdstuk 103)**: alles gezien op screenshots en met tests gecontroleerd, maar niet met de muis
+      gespeeld en nooit met een vriend. Probeer: (1) luister naar de drie **gedempte schoten** (9mm, rifle en shotgun):
+      die heb ik gemeten (dof en kort) maar niet kunnen beluisteren; (2) schiet met elk nieuw wapen en zeg het als de
+      terugslag, de schade of het herladen niet goed voelt (de getallen staan onder `[guns]`); (3) ga een bunker in:
+      zijn de soldaten met een MP5, een AK-47, een AWP of een Remington 870 te sterk of te zwak (`[raven]`)? (4) op het
+      plaatje in je inventaris steekt een wapen met een lang magazijn, een kijker of een demper een pixel buiten zijn
+      vakje: stoort dat, dan maak ik het plaatje kleiner.
 - [ ] **De keycard aan je nek (hoofdstuk 100)**: gezien op screenshots (`-Ponly=neck`), niet met de muis gespeeld en nooit
       met Curios. Probeer: een kaart in je nekvakje (met Curios: het slot Necklace), dan met een zwaard in je hand het wiel
       en de keycard rechtsboven; houd hem tegen een lezer (komt je zwaard terug?), scroll naar een ander vakje, en laat
