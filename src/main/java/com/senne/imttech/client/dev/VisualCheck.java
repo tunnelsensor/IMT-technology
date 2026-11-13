@@ -1028,11 +1028,17 @@ public final class VisualCheck {
                     && Minecraft.getInstance().level.dimension() == net.minecraft.world.level.Level.NETHER);
             t.shot(40, "ul04_nether_arrived");
             t.pause(120); // de melding van Minecraft ("We Need to Go Deeper") hangt anders over de teller rechtsboven
+            // Hoofdstuk 107: een satellietaanval kan hier niet: de melding.
+            t.step(0, () -> com.senne.imttech.client.ImtClientEvents.sendAction(com.senne.imttech.imt.ImtAction.STRIKE_PRECISION));
+            t.shot(30, "ul04b_satellite_refused");
             t.open(10, ArsenalScreen::new);
             t.shot(20, "ul05_arsenal_out_of_reach");
             t.open(0, ImtMenuScreen::new);
             t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.DRONES);
             t.shot(10, "ul06_menu_no_drones_here");
+            // Hoofdstuk 107: de drie satellietaanvallen staan er als OUT OF REACH.
+            t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.SATELLITE);
+            t.shot(10, "ul06b_menu_satellite_out_of_reach");
             t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.COMBAT);
             t.close(0);
             // Twee drones daar lanceren: die wachten bij jou.

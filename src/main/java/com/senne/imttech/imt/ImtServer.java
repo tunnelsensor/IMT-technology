@@ -1,6 +1,7 @@
 package com.senne.imttech.imt;
 
 import com.senne.imttech.arsenal.ArsenalServer;
+import com.senne.imttech.arsenal.Orbit;
 import com.senne.imttech.config.Numbers;
 import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.drone.ImtDrones;
@@ -347,6 +348,16 @@ public final class ImtServer {
             player.displayClientMessage(Component.translatable("hud.imttech.emp_reboot",
                     net.minecraft.util.Mth.ceil(com.senne.imttech.weapons.Emp.ticksLeft(player) / 20f))
                     .withStyle(net.minecraft.ChatFormatting.AQUA), true);
+            return;
+        }
+
+        // Hoofdstuk 107 (jouw wens: "zorg dat de satelliet niet in nether en end werkt"): je satelliet hangt in dezelfde
+        // baan als je drones, om de gewone wereld. Boven de Nether en het End hangt niets (zie arsenal/Orbit), dus daar
+        // kan hij niet inslaan. Dat zeggen we meteen, nog voor het richten: geen energie weg, geen wachttijd, en een half
+        // gekozen laserlijn blijft staan. (Vroeger hield alleen "het doel moet open lucht zien" het tegen, omdat die
+        // werelden geen hemellicht hebben; nu is het een eigen regel met een eigen melding.)
+        if (action.isSatelliteStrike() && !Orbit.reachable(player.level())) {
+            send(player, Component.translatable("imt.imttech.msg.satellite_no_orbit"), ImtMessagePayload.Level.WARNING);
             return;
         }
 

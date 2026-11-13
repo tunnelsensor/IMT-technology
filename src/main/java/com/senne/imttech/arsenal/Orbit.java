@@ -19,7 +19,11 @@ import net.minecraft.world.level.Level;
  *       die bij je wacht, in plaats van een uit je baan;</li>
  *   <li>ga je terug naar de gewone wereld, dan gaan ze mee en hangen ze weer in hun baan.</li>
  * </ul>
- * Deze klasse werkt op de server en in je eigen spel (het arsenaalscherm), want ze kijkt alleen naar welke wereld het is.
+ * Hoofdstuk 107 (jouw wens: "zorg dat de satelliet niet in nether en end werkt"): je satelliet hangt in dezelfde baan.
+ * Een satellietaanval kan daar dus ook niet (ImtServer.handleAction), en upgraden ook niet (SatelliteWorkshop).
+ *
+ * Deze klasse werkt op de server en in je eigen spel (het arsenaalscherm, het G-menu), want ze kijkt alleen naar welke
+ * wereld het is.
  */
 public final class Orbit {
     private Orbit() {}

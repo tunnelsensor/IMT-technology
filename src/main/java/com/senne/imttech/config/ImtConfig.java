@@ -501,11 +501,13 @@ public final class ImtConfig {
         /**
          * Hoofdstuk 106 (jouw wens van 13 november: "drones kun je niet in nether of end gebruiken tenzij je met een
          * bepaalde drone, vb escort drones, naar daar gaat; dan blijft het aantal drones dat je meenam voor elke andere
-         * drone actie beschikbaar"): boven de Nether en het End hangt geen baan. Zie arsenal/Orbit.
+         * drone actie beschikbaar"): boven de Nether en het End hangt geen baan. Zie arsenal/Orbit. Hoofdstuk 107 ("zorg dat
+         * de satelliet niet in nether en end werkt"): dezelfde schakelaar geldt voor je satelliet, die in dezelfde baan hangt.
          */
         @Tunable("Is there no orbit above the Nether and the End? true = there you cannot call drones from orbit: you only "
                 + "have the drones that came through the portal with you (your escort and your swarm) or that you launched "
-                + "there from a Drone item. false = the old rule: your whole arsenal everywhere")
+                + "there from a Drone item, and your satellite cannot strike there. false = the old rule: your whole arsenal "
+                + "everywhere (a satellite strike still needs open sky above its target, which those worlds do not have)")
         public static boolean NO_ORBIT_IN_NETHER_AND_END = true;
         /** Een drone duikt in een boog: hij begint dit deel van de valhoogte opzij... */
         @Tunable(value = "A diving drone starts this share (0-1) of its fall height to the side, so it dives in an arc", max = 1)

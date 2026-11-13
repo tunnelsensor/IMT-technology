@@ -252,9 +252,13 @@ Nether en het End hangt niets, dus daar kun je geen drone oproepen. Wat wel kan:
 - Ga je **terug** naar de gewone wereld (door het portaal, of omdat je doodging), dan hangt alles weer in zijn baan.
 - In het G-menu staat onder een drone-actie **NO DRONES HERE** als er daar niets bij je wacht, en in het arsenaal
   staan je drones in hun baan er grijs bij: **Out of reach**. De satelliet upgraden kan daar ook niet (je drones
-  kunnen niet naar je satelliet). Een satellietaanval verandert niet: in de Nether kon die al niet (geen open lucht), in
-  het End nog wel.
-- Uitzetten: `drones.noOrbitInNetherAndEnd = false` (dan is het zoals vroeger).
+  kunnen niet naar je satelliet).
+- Ook je **satelliet** hangt in die baan: een satellietaanval kan in de Nether en het End niet. I.M.T zegt "No orbit
+  above this world: your satellite cannot strike here", het kost niets, en in het G-menu staat **OUT OF REACH** onder de
+  drie aanvallen. (Vroeger kon het daar ook al niet, maar dan met de melding dat het doel open lucht moest zien: die
+  werelden hebben geen hemellicht.)
+- Uitzetten: `drones.noOrbitInNetherAndEnd = false` (dan is het zoals vroeger; een satellietaanval heeft dan nog
+  altijd open lucht boven het doel nodig, en die is er daar niet).
 
 **3. De bril heeft je datacenter nodig.** Alles wat de bril **uitrekent** of **bewaart**, draait op je eigen
 datacenter: het sterkste dat draait, waar het ook staat (hetzelfde als waar het brein op draait).
@@ -391,6 +395,9 @@ nul staat (je hoort hem aankomen). Hij volgt bewegende doelwitten (lock-on), ric
 blokken, en je kunt ook op je waypoint of je laatste ping mikken. Bij de inslag komt er een
 schokgolf en schudt je beeld. Zet je het bombardement zelf op P (in gewoon Minecraft "sociale
 interacties"), dan is P met een werkende bril op van I.M.T
+
+De satelliet hangt in een baan om de gewone wereld. In de **Nether** en het **End** kan hij niet inslaan (sinds 13
+november een eigen regel: "No orbit above this world", en OUT OF REACH in het G-menu), en upgraden kan daar ook niet.
 
 **Upgraden** doe je in het satellietscherm (G > Satellite & Arsenal > Satellite). Zes onderdelen, elk tot
 niveau 10: de drie aanvallen (vrijspelen, dan sterker), opladen (kortere wachttijd), kracht (meer

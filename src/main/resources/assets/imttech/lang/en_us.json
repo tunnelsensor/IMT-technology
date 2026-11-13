@@ -932,6 +932,8 @@
   "screen.imttech.arsenal.summary_here": "%s of %s with you, %s out",
   "screen.imttech.no_drones_here": "NO DRONES HERE",
   "satellite.imttech.msg.no_orbit": "Your satellite cannot be reached from this world.",
+  "imt.imttech.msg.satellite_no_orbit": "No orbit above this world: your satellite cannot strike here.",
+  "screen.imttech.out_of_reach": "OUT OF REACH",
   "imt.imttech.msg.datacenter_none": "No datacenter. I.M.T needs your own datacenter for this: a security core with server racks (a CPU or GPU, RAM and an SSD).",
   "imt.imttech.msg.datacenter_offline": "Your datacenter is offline. I.M.T needs it for this.",
   "imt.imttech.msg.datacenter_weak": "Datacenter %s is too weak for this: it needs %s power and has %s. Add a CPU or a GPU (a GPU counts double).",

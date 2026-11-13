@@ -384,6 +384,11 @@ public class ImtMenuScreen extends Screen {
     private static Status statusOf(ImtAction action, ItemStack glasses) {
         // Hoofdstuk 106: wat op je datacenter rekent, kan niet zonder: dat staat er dan in het rood onder. En in de Nether
         // en het End (geen baan) kan een drone-actie alleen met een drone die met je meekwam.
+        // Hoofdstuk 107: je satelliet hangt in dezelfde baan als je drones. In de Nether en het End kan hij niet inslaan;
+        // dat gaat voor alles (ook voor "geen datacenter"), want daar helpt een datacenter ook niet.
+        if (action.isSatelliteStrike() && noOrbitHere()) {
+            return new Status(Component.translatable("screen.imttech.out_of_reach"), HudStyle.RED);
+        }
         if (!ImtClientState.datacenterWorks() && needsDatacenter(action, glasses)) {
             return new Status(Component.translatable(ImtClientState.datacenterLink == 3
                     ? "screen.imttech.datacenter_offline" : "screen.imttech.no_datacenter"), HudStyle.RED);
@@ -513,8 +518,14 @@ public class ImtMenuScreen extends Screen {
      */
     private static boolean noDroneHere() {
         Minecraft mc = Minecraft.getInstance();
-        return mc.player != null && mc.level != null && !com.senne.imttech.arsenal.Orbit.reachable(mc.level)
+        return mc.player != null && noOrbitHere()
                 && mc.player.getData(com.senne.imttech.registry.ModAttachments.ARSENAL).readyCount(false) == 0;
+    }
+
+    /** Ben je in een wereld zonder baan boven je (de Nether of het End, zie arsenal/Orbit)? */
+    private static boolean noOrbitHere() {
+        Minecraft mc = Minecraft.getInstance();
+        return mc.level != null && !com.senne.imttech.arsenal.Orbit.reachable(mc.level);
     }
 
     /** Kosten als de functie klaar is, anders de resterende wachttijd. */

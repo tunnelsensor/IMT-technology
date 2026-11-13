@@ -293,6 +293,21 @@ public final class ArsenalServer {
         return count;
     }
 
+    /**
+     * De drones van deze speler die nu ergens een opdracht doen, in welke wereld ook. Voor de automatische tests: zo
+     * vinden die een drone zonder in de wereld te zoeken (een drone in een stuk wereld dat nog niet actief is, bestaat al
+     * wel maar is daar nog niet terug te vinden).
+     */
+    public static List<DroneEntity> onAJob(ServerPlayer owner) {
+        List<DroneEntity> found = new ArrayList<>();
+        for (DroneEntity drone : IN_THE_WORLD.values()) {
+            if (!drone.isRemoved() && owner.getUUID().equals(drone.getOwnerId())) {
+                found.add(drone);
+            }
+        }
+        return found;
+    }
+
     /** Deze drone heeft zijn rit afgeboekt (of is een oude kopie): niet meer in de gaten houden. */
     public static void forget(DroneEntity drone) {
         if (drone.getArsenalId() != null) {

@@ -8108,7 +8108,59 @@ Drie dingen, elk met een schakelaar in `config/imttech.toml`.
   - Alleen **je eigen** datacenter telt, niet dat van een vriend die je vertrouwt (zoals bij het brein).
   - Een SSD die verbrandt, wist je waypoints **niet** (wel je diagrammen en keycards, zoals altijd).
   - De **satelliet** zelf heb ik niet aangeraakt: in de Nether kon hij al niet (geen open lucht), in het End wel.
+    (Dat laatste klopte niet, en jij wilde hem daar ook dicht: zie hoofdstuk 107.)
   - Versie **2.10**: het is een nieuw systeem.
+
+### 107. De satelliet werkt niet in de Nether en het End (13 november)
+
+Jouw antwoord op mijn open vraag bij hoofdstuk 106: "zorg dat de sateliet niet in nether en end werkt".
+
+Eerst een rechtzetting: bij hoofdstuk 106 schreef ik dat een satellietaanval in het End nog wel lukte. Dat had ik niet
+nagekeken, en het klopte niet. De mod vuurt alleen als het doel "open lucht" ziet (`canSeeSky`), en Minecraft heeft in de
+Nether én in het End geen hemellicht: daar is het antwoord altijd nee, ook midden in de leegte van het End of bovenop
+het dak van de Nether. Een aanval lukte daar dus al niet, maar je kreeg een misleidende melding ("No line of sight from
+orbit. The target needs open sky."), pas na het richten, en in het G-menu stonden gewoon de kosten.
+
+- [x] **Een eigen regel** (`ImtServer.handleAction`, `ImtAction.isSatelliteStrike`): je satelliet hangt in dezelfde baan
+      als je drones (`arsenal/Orbit`). In de Nether en het End zegt I.M.T meteen "No orbit above this world: your
+      satellite cannot strike here", voor alle drie de aanvallen (en voor "nuke it" met je stem). Er gebeurt niets: geen
+      energie weg, geen wachttijd, en een half gekozen laserlijn blijft staan. De regel hangt niet meer af van het
+      hemellicht (een andere mod die het End licht geeft, verandert er dus niets aan).
+- [x] **In het G-menu** staat daar **OUT OF REACH** in het rood onder Precision missile, Bombardment en Sweeping laser
+      (dat gaat voor NO DATACENTER: een datacenter helpt daar ook niet).
+- [x] **Dezelfde schakelaar** als de drones: `drones.noOrbitInNetherAndEnd`. Met `false` geldt de oude regel (en houdt de
+      open lucht een aanval daar nog altijd tegen). Upgraden kon daar sinds hoofdstuk 106 al niet.
+- [x] **Een aanval die al onderweg is** als je door een portaal gaat, slaat gewoon in waar je hem richtte (in de gewone
+      wereld). Afbreken met Stand down kan overal.
+- [x] **LEESMIJ**: bij "De bril draait op je datacenter, en is minder sterk" en bij "Satelliet"; de zin over het End is
+      verbeterd.
+- [x] **Test**: geen nieuwe test, maar een stuk erbij in `drones_in_the_nether_are_the_ones_you_brought`
+      (`satelliteStaysInOrbit`). In de gewone wereld vuurt de precisieraket op wat je aankijkt; in de Nether en in het End
+      doet geen van de drie aanvallen iets (geen aanval onderweg, geen energie weg, geen wachttijd); terug in de gewone
+      wereld vuurt hij weer. Het legt ook vast dat er in die werelden nergens open lucht is (waarom het vroeger ook al
+      niet kon), en dat de schakelaar in de config werkt.
+- [x] **Die test is nu snel en vast**: alles gebeurt in één tick, en er wordt in de Nether of het End geen stuk wereld
+      meer geladen of gemaakt. De testserver tikt zo snel als hij kan, maar wereld maken kost echte tijd: wachten tot een
+      stuk Nether "actief" was, lukte daardoor soms niet binnen de tijd, en een testspeler die echt in de Nether stond,
+      liet daar honderden stukken wereld maken. De drones in de Nether zoekt de test nu op in de lijst van het arsenaal
+      (`ArsenalServer.onAJob`, nieuw), en "klaar" speelt hij na door ze weg te halen (dat boekt hetzelfde als wegvliegen).
+- [x] **Gevonden: een test erbij kan andere tests laten omvallen.** Ik had de satelliet eerst een eigen test in een eigen
+      batch gegeven. Daarmee vielen drie tests twee rondes na elkaar om: `raid_drones_come_for_you` ("begon 102 blokken
+      hoog"), `biebia_tower_has_guard_robots` ("3 robots in plaats van 4") en mijn eigen Nether-test. De oorzaak: de
+      testserver zet de batches in de volgorde van een hashtabel op hun naam. Er waren precies 192 batches, en bij de
+      193e wordt die tabel groter en staat **elke** batch op een andere plek: alle tests krijgen dan andere buren in de
+      testwereld, en die twee tests kunnen daar niet tegen. Daarom staat de satelliet nu in een bestaande test (het
+      blijven 572 tests in 192 batches). **Let op bij elke volgende test**: zet hem in een bestaande batch, of maak die
+      twee tests ongevoelig voor hun buren. De andere twee sessies (hoofdstuk 108 en 109) weten het.
+- [x] **Getest in een losse kopie** met alleen dit werk (de andere sessies waren intussen in dezelfde map bezig): 572
+      tests in 192 batches, twee volledige rondes. De eerste: 571 groen en `raid_starts_outside_a_base` rood (een van de
+      bekende wisselvallige tests); de tweede: alle 572 groen.
+- [x] **Gezien** (`gradlew runVisualCheck -Ponly=uplink`, ul04b en ul06b): in de Nether de melding "No orbit above this
+      world: your satellite cannot strike here" (je energie blijft 100%), en in het G-menu OUT OF REACH in het rood onder
+      Precision missile, Bombardment en Sweeping laser.
+- **Mijn invullingen**: dezelfde schakelaar als de drones in plaats van een eigen getal; de melding en OUT OF REACH; en
+  dat een aanval die al onderweg is, doorgaat. De versie blijft 2.10 (een kleine aanpassing: het derde getal telt
+  vanzelf).
 
 ## Nog nooit in het spel bekeken
 
@@ -8440,9 +8492,9 @@ Opgevallen in de showcase (door mij, op screenshots; nog uitzoeken):
 - [ ] **Hoofdstuk 106, de bril op je datacenter: weigeren of trager?** Past een verzoek niet meer op je datacenter, dan
       wordt het nu geweigerd ("Datacenter busy"). Bij je diagrammen en het brein koos jij "trager". Wil je dat hier ook
       (elk verzoek lukt, maar wacht langer op een zwak of druk datacenter)?
-- [ ] **Hoofdstuk 106: moet de satelliet ook niet kunnen in het End?** Je drones uit je baan kunnen daar niet meer bij,
-      maar een satellietaanval lukt er nog wel (in de Nether niet: daar is geen open lucht). Ik heb alleen gedaan wat je
-      vroeg (de drones).
+- [x] **Hoofdstuk 106: moet de satelliet ook niet kunnen in het End?** Jouw antwoord (13 november): "zorg dat de sateliet
+      niet in nether en end werkt". Gebouwd als hoofdstuk 107. (Mijn vraag klopte niet helemaal: een aanval lukte in het
+      End ook al niet, alleen met een misleidende melding.)
 
 ---
 

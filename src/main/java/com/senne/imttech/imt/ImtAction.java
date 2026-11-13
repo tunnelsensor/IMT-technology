@@ -87,6 +87,14 @@ public enum ImtAction {
         this.toggles = toggles;
     }
 
+    /**
+     * Hoofdstuk 107: is dit een van de satellietaanvallen (de precisieraket, het bombardement of de schuivende laser)?
+     * In de Nether en het End kunnen die niet (zie arsenal/Orbit); de server en het G-menu vragen het allebei hier.
+     */
+    public boolean isSatelliteStrike() {
+        return this == SATELLITE_STRIKE || this == STRIKE_PRECISION || this == STRIKE_BOMBARDMENT || this == STRIKE_SWEEP;
+    }
+
     /** De functie die deze actie aan/uit zet, of null als het een eenmalige actie is. */
     public @Nullable ImtFeature toggles() {
         return toggles;

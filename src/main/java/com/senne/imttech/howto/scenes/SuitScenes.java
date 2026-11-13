@@ -326,11 +326,12 @@ public final class SuitScenes {
                 "Craft a *Drone* (a computer chip, 5 iron, 2 redstone and an amethyst) and use it: it shoots up into an orbit"
                         + " round the planet. There it waits until you need it, wherever you are.");
         s.idle(115);
-        // Hoofdstuk 106: boven de Nether en het End hangt geen baan.
-        s.text(120, you.add(0, 2.0, 0), Side.RIGHT,
+        // Hoofdstuk 106: boven de Nether en het End hangt geen baan. Hoofdstuk 107: dus ook geen satellietaanval daar.
+        s.text(130, you.add(0, 2.0, 0), Side.RIGHT,
                 "Not in the *Nether* or the *End*: there is no orbit above them. There you only have the drones that flew"
-                        + " through the portal *with you* (your escort, your swarm), or that you launch there.");
-        s.idle(125);
+                        + " through the portal *with you* (your escort, your swarm), or that you launch there. Your"
+                        + " satellite cannot strike there either.");
+        s.idle(135);
 
         s.chapter("Your arsenal");
         s.text(80, you.add(0, 2.0, 0), Side.RIGHT,

@@ -26,10 +26,8 @@ import com.senne.imttech.security.SecurityCoreBlockEntity;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
-import net.minecraft.core.SectionPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -42,7 +40,6 @@ import net.minecraft.world.entity.monster.Husk;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
@@ -106,32 +103,6 @@ public final class UplinkGameTests {
         return Math.abs(a - b) < 1.0e-4;
     }
 
-    /** Voert iets uit zodra alle posities in een actieve ("entity ticking") chunk liggen (de testwereld heeft even nodig). */
-    private static void whenEntityTicking(GameTestHelper helper, List<BlockPos> positions, Runnable action) {
-        if (positions.stream().allMatch(helper.getLevel()::isPositionEntityTicking)) {
-            action.run();
-        } else {
-            helper.runAfterDelay(5, () -> whenEntityTicking(helper, positions, action));
-        }
-    }
-
-    /** Hetzelfde, voor één plek in een andere wereld dan die van de test (de Nether). */
-    private static void whenTicking(GameTestHelper helper, ServerLevel level, BlockPos pos, Runnable action) {
-        if (level.isPositionEntityTicking(pos)) {
-            action.run();
-        } else {
-            helper.runAfterDelay(5, () -> whenTicking(helper, level, pos, action));
-        }
-    }
-
-    /** Houdt de chunk waar deze plek in ligt geladen en actief (aan) of laat hem weer los (uit). */
-    private static void forceChunk(ServerLevel level, BlockPos pos, boolean on) {
-        level.setChunkForced(SectionPos.blockToSectionCoord(pos.getX()), SectionPos.blockToSectionCoord(pos.getZ()), on);
-        if (on) {
-            level.getChunk(pos); // meteen inladen
-        }
-    }
-
     private static void waypoint(ServerPlayer player, WaypointActionPayload.Op op, int index, String name) {
         ImtNavigation.handleWaypointAction(player, new WaypointActionPayload(op, index, name, Waypoint.COLORS[0]));
     }
@@ -179,43 +150,66 @@ public final class UplinkGameTests {
     }
 
     /**
-     * Zet een testspeler in een andere wereld, zoals een portaal dat doet: weg uit de ene wereld, erbij in de andere.
-     * Niet met teleportTo: NeoForge stuurt een speler dan zijn gegevens opnieuw, en een testspeler (zonder echt spel
-     * erachter) kan die niet ontvangen ("Payload neoforge:sync_attachments may not be sent to the client").
+     * Doet alsof een testspeler in een andere wereld is, zoals na een portaal: voor de mod telt alleen in welke wereld hij
+     * zegt te zijn ({@code player.level()}) en waar hij staat.
+     *
+     * We melden hem daar NIET echt aan, om twee redenen:
+     * - met teleportTo stuurt NeoForge een speler zijn gegevens opnieuw, en een testspeler (zonder echt spel erachter)
+     *   kan die niet ontvangen ("Payload neoforge:sync_attachments may not be sent to the client");
+     * - een speler die echt in een wereld staat, laat Minecraft daar alles om hem heen maken, zo ver als de server laat
+     *   kijken (honderden stukken Nether of End). De testserver tikt zo snel als hij kan, maar wereld maken kost echte
+     *   tijd: dat werk op de achtergrond liet andere tests omvallen die op een geladen stuk wereld wachten (een raiddrone
+     *   "begon 102 blokken hoog", de toren miste een robot, en de Nether-test hieronder begon nooit).
+     * Het echte portaal (met een echte speler) is gezien in de rondleiding: gradlew runVisualCheck -Ponly=uplink.
+     *
+     * Gevolg voor een test: een drone in die wereld vindt de testspeler daar niet (hij staat niet in de lijst van die
+     * wereld) en vliegt bij zijn eerste tick terug. Boeken gaat wel goed: dat zoekt de speler op de hele server.
      */
     private static void toWorld(ServerPlayer player, ServerLevel level, Vec3 pos) {
-        player.serverLevel().removePlayerImmediately(player, net.minecraft.world.entity.Entity.RemovalReason.CHANGED_DIMENSION);
-        player.revive();
         player.setServerLevel(level);
         player.moveTo(pos.x, pos.y, pos.z, 0.0f, 0.0f);
-        level.addDuringTeleport(player);
-        check(player.level() == level && !player.isRemoved(), "De testspeler kwam niet in de andere wereld");
-    }
-
-    private static List<DroneEntity> dronesOf(ServerLevel level, ServerPlayer owner, BlockPos around, DroneEntity.Mode mode) {
-        return level.getEntitiesOfClass(DroneEntity.class, new AABB(around).inflate(24),
-                drone -> drone.isAlive() && drone.isOwnedBy(owner) && drone.getMode() == mode);
+        check(player.level() == level, "De testspeler kwam niet in de andere wereld");
     }
 
     /**
-     * Jouw wens: "drones kun je niet in nether of end gebruiken tenzij je met een bepaalde drone, vb escort drones, naar
-     * daar gaat; dan blijft het aantal drones dat je meenam voor elke andere drone actie beschikbaar".
+     * Laat in deze wereld elk stuk los dat een eerdere, mislukte ronde vastgehouden liet (de testwereld blijft tussen de
+     * rondes bestaan). In de Nether en het End van de testwereld houden alleen tests iets vast, en elke test in zijn
+     * eigen batch, dus dit raakt niemand anders.
+     */
+    private static void releaseLeftovers(ServerLevel level) {
+        for (long key : new java.util.ArrayList<>(level.getForcedChunks())) {
+            level.setChunkForced(net.minecraft.world.level.ChunkPos.getX(key), net.minecraft.world.level.ChunkPos.getZ(key), false);
+        }
+    }
+
+    /**
+     * Jouw wens (hoofdstuk 106): "drones kun je niet in nether of end gebruiken tenzij je met een bepaalde drone, vb escort
+     * drones, naar daar gaat; dan blijft het aantal drones dat je meenam voor elke andere drone actie beschikbaar". En
+     * hoofdstuk 107: "zorg dat de satelliet niet in nether en end werkt".
      *
      * Je staat in de gewone wereld met twee escortedrones om je heen en dertig drones in je baan, en gaat naar de Nether:
-     * de twee gaan mee en blijven je escorte; de dertig in je baan kunnen er niet bij (een verkenner vertrekt niet). Zet je
-     * de escorte uit, dan wachten de twee bij jou ("With you"), en daarmee kun je daar wel een verkenner sturen. Terug in
-     * de gewone wereld hangen ze alle tweeëndertig weer in hun baan.
+     * de twee gaan mee; de dertig in je baan kunnen er niet bij (een verkenner vertrekt niet, en Recall weigert). Zijn de
+     * twee daar klaar, dan wachten ze bij jou ("With you"), en daarmee kun je daar wel een verkenner sturen. Terug in de
+     * gewone wereld hangen ze alle tweeëndertig weer in hun baan. Daarna de satelliet (zie satelliteStaysInOrbit).
+     *
+     * Alles gebeurt in één tick, en zonder dat er in de Nether of het End een stuk wereld geladen wordt. De testserver
+     * tikt zo snel als hij kan, en wachten op wereld die nog gemaakt moet worden maakte deze test wisselvallig (en het
+     * maken zelf stoorde andere tests). De drones in de Nether vinden we daarom in de lijst van het arsenaal
+     * (ArsenalServer.onAJob), niet in de wereld, en "klaar" spelen we na door ze weg te halen: dat boekt hetzelfde als
+     * wegvliegen (ArsenalServer.returnHome). Het echte portaal is gezien in de rondleiding (-Ponly=uplink).
      */
-    @GameTest(template = ARENA, timeoutTicks = 600, batch = "nether_drones")
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "nether_drones")
     public static void drones_in_the_nether_are_the_ones_you_brought(GameTestHelper helper) {
         ServerLevel overworld = helper.getLevel();
         ServerLevel nether = overworld.getServer().getLevel(Level.NETHER);
-        check(nether != null, "Deze testserver heeft geen Nether");
+        ServerLevel end = overworld.getServer().getLevel(Level.END);
+        check(nether != null && end != null, "Deze testserver heeft geen Nether of geen End");
+        releaseLeftovers(nether);
         ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(1, 3, 1), "nether-owner");
         ItemStack glasses = ImtData.getWornGlasses(owner);
         Vec3 home = owner.position();
-        BlockPos spot = helper.absolutePos(new BlockPos(1, 0, 1)).atY(100);
-        forceChunk(nether, spot, true);
+        // "In de Nether" staat hij op dezelfde x en z, hoog boven de test (zie toWorld).
+        Vec3 away = Vec3.atBottomCenterOf(helper.absolutePos(new BlockPos(1, 0, 1)).atY(100));
 
         // De regels van het arsenaal zelf, zonder wereld: wat onderweg stond, wacht in een wereld zonder baan bij jou; in
         // een wereld met een baan hangt alles weer in zijn baan, ook wat bij je wachtte.
@@ -229,66 +223,134 @@ public final class UplinkGameTests {
                         && waiting.standbyToOrbit().availableCount() == 1,
                 "Een drone die bij je wacht is alleen klaar in een wereld zonder baan, en hangt daarna weer in zijn baan");
 
+        // Je escorte staat aan: twee drones om je heen.
         int all = ArsenalServer.get(owner).size();
-        AtomicInteger phase = new AtomicInteger();
-        // Pas beginnen als ook het stuk Nether actief is: een wezen in een stuk wereld dat nog niet actief is, bestaat wel
-        // maar is nog niet te vinden (en tikt nog niet). In het spel zelf maakt het portaal dat stuk al actief.
-        whenEntityTicking(helper, List.of(owner.blockPosition()), () -> whenTicking(helper, nether, spot, () -> {
-            if (phase.getAndSet(1) != 0) {
-                return;
-            }
-            // Je escorte staat aan: twee drones om je heen.
-            if (!ImtData.isEnabled(glasses, ImtFeature.GUARD_DRONES)) {
-                ImtData.toggle(glasses, ImtFeature.GUARD_DRONES);
-            }
-            DroneEntity first = launch(owner, overworld, DroneEntity.Mode.GUARD, 0, home.add(1.5, 2, 0));
-            DroneEntity second = launch(owner, overworld, DroneEntity.Mode.GUARD, 1, home.add(-1.5, 2, 0));
-            ArsenalServer.follow(owner); // hier sta je nu
-            check(ArsenalServer.readyCount(owner) == all - 2, "In de gewone wereld hangen er " + ArsenalServer.readyCount(owner)
-                    + " klaar in plaats van " + (all - 2));
-
-            // Door het portaal.
-            toWorld(owner, nether, Vec3.atBottomCenterOf(spot));
-            ArsenalServer.follow(owner);
-            check(first.isRemoved() && second.isRemoved(), "De escortedrones bleven in de gewone wereld");
-            List<DroneEntity> guards = dronesOf(nether, owner, spot, DroneEntity.Mode.GUARD);
-            check(guards.size() == 2, "In de Nether vliegen er " + guards.size() + " escortedrones in plaats van 2");
-            ImtArsenal there = ArsenalServer.get(owner);
-            check(there.deployedCount() == 2 && there.orbitCount() == all - 2,
-                    "Na het portaal: " + there.deployedCount() + " onderweg en " + there.orbitCount() + " in een baan");
-            // Wat in je baan hangt, kan hier niet bij: er vertrekt niets.
-            check(ArsenalServer.readyCount(owner) == 0, "Zonder baan zijn er toch " + ArsenalServer.readyCount(owner) + " klaar");
-            check(ImtDrones.launchScout(owner) == null, "Er vertrok een verkenner uit je baan, in de Nether");
-            check(!ArsenalServer.recall(owner, there.pickAvailable(1).getFirst().id()),
-                    "Een drone uit je baan landde in de Nether");
-            // Je zet de escorte uit: de twee vliegen weg, maar niet naar hun baan.
+        if (!ImtData.isEnabled(glasses, ImtFeature.GUARD_DRONES)) {
             ImtData.toggle(glasses, ImtFeature.GUARD_DRONES);
-        }));
-        helper.succeedWhen(() -> {
-            check(phase.get() >= 1, "De test is nog niet begonnen");
-            if (phase.get() == 1) {
-                ImtArsenal there = ArsenalServer.get(owner);
-                check(there.deployedCount() == 0 && there.readyCount(false) == 2,
-                        "De escorte is uit, maar er wachten " + there.readyCount(false) + " drones bij je ("
-                                + there.deployedCount() + " nog onderweg)");
-                check(there.orbitCount() == all - 2, "Er hangen ineens " + there.orbitCount() + " drones in je baan");
-                // Met wat je meenam kan elke andere drone-actie: hier een verkenner.
-                DroneEntity scout = ImtDrones.launchScout(owner);
-                check(scout != null, "Met twee drones bij je vertrok er geen verkenner");
-                check(ArsenalServer.readyCount(owner) == 1, "Na de verkenner wachten er " + ArsenalServer.readyCount(owner));
-                scout.discard(); // weggehaald: hij wacht weer bij je (niet in zijn baan)
-                check(ArsenalServer.readyCount(owner) == 2 && ArsenalServer.get(owner).orbitCount() == all - 2,
-                        "De verkenner ging naar zijn baan in plaats van bij je te wachten");
-                // Terug naar de gewone wereld: alles hangt weer in zijn baan.
-                toWorld(owner, overworld, home);
-                ArsenalServer.follow(owner);
-                phase.set(2);
+        }
+        DroneEntity first = launch(owner, overworld, DroneEntity.Mode.GUARD, 0, home.add(1.5, 2, 0));
+        DroneEntity second = launch(owner, overworld, DroneEntity.Mode.GUARD, 1, home.add(-1.5, 2, 0));
+        ArsenalServer.follow(owner); // hier sta je nu
+        check(ArsenalServer.readyCount(owner) == all - 2, "In de gewone wereld hangen er " + ArsenalServer.readyCount(owner)
+                + " klaar in plaats van " + (all - 2));
+
+        // Door het portaal.
+        toWorld(owner, nether, away);
+        ArsenalServer.follow(owner);
+        check(first.isRemoved() && second.isRemoved(), "De escortedrones bleven in de gewone wereld");
+        List<DroneEntity> guards = ArsenalServer.onAJob(owner).stream()
+                .filter(drone -> drone.level() == nether && drone.getMode() == DroneEntity.Mode.GUARD).toList();
+        check(guards.size() == 2 && ArsenalServer.flying(owner, DroneEntity.Mode.GUARD) == 2,
+                "In de Nether vliegen er " + guards.size() + " escortedrones in plaats van 2");
+        ImtArsenal arrived = ArsenalServer.get(owner);
+        check(arrived.deployedCount() == 2 && arrived.orbitCount() == all - 2,
+                "Na het portaal: " + arrived.deployedCount() + " onderweg en " + arrived.orbitCount() + " in een baan");
+        // Wat in je baan hangt, kan hier niet bij: er vertrekt niets.
+        check(ArsenalServer.readyCount(owner) == 0, "Zonder baan zijn er toch " + ArsenalServer.readyCount(owner) + " klaar");
+        check(ImtDrones.launchScout(owner) == null, "Er vertrok een verkenner uit je baan, in de Nether");
+        check(!ArsenalServer.recall(owner, arrived.pickAvailable(1).getFirst().id()), "Een drone uit je baan landde in de Nether");
+
+        // De escorte gaat uit en de twee zijn klaar: ze wachten bij jou, niet in hun baan.
+        ImtData.toggle(glasses, ImtFeature.GUARD_DRONES);
+        guards.forEach(DroneEntity::discard);
+        ImtArsenal standing = ArsenalServer.get(owner);
+        check(standing.deployedCount() == 0 && standing.readyCount(false) == 2 && standing.orbitCount() == all - 2,
+                "De escorte is klaar: er wachten " + standing.readyCount(false) + " drones bij je, " + standing.deployedCount()
+                        + " zijn nog onderweg en " + standing.orbitCount() + " hangen in je baan");
+        // Met wat je meenam kan elke andere drone-actie: hier een verkenner.
+        DroneEntity scout = ImtDrones.launchScout(owner);
+        check(scout != null && scout.level() == nether, "Met twee drones bij je vertrok er geen verkenner in de Nether");
+        check(ArsenalServer.readyCount(owner) == 1, "Na de verkenner wachten er " + ArsenalServer.readyCount(owner));
+        scout.discard(); // klaar: hij wacht weer bij je (niet in zijn baan)
+        check(ArsenalServer.readyCount(owner) == 2 && ArsenalServer.get(owner).orbitCount() == all - 2,
+                "De verkenner ging naar zijn baan in plaats van bij je te wachten");
+
+        // Terug naar de gewone wereld: alles hangt weer in zijn baan.
+        toWorld(owner, overworld, home);
+        ArsenalServer.follow(owner);
+        ImtArsenal back = ArsenalServer.get(owner);
+        check(back.availableCount() == all && back.readyCount(false) == 0,
+                "Terug in de gewone wereld hangen er " + back.availableCount() + " van de " + all + " in hun baan");
+
+        satelliteStaysInOrbit(helper, owner, nether, end, home, away);
+        helper.succeed();
+    }
+
+    // ================================================================ De satelliet in de Nether en het End
+
+    /**
+     * Hoofdstuk 107, jouw wens: "zorg dat de satelliet niet in nether en end werkt". Je satelliet hangt in dezelfde baan
+     * als je drones, om de gewone wereld: daar vuurt de precisieraket op wat je aankijkt; in de Nether en het End doet
+     * geen van de drie aanvallen iets (geen aanval onderweg, geen energie weg, geen wachttijd); en terug in de gewone
+     * wereld werkt hij weer.
+     *
+     * Ook zonder deze regel hield de mod een aanval daar tegen, maar om een andere reden ("het doel moet open lucht
+     * zien": die werelden hebben geen hemellicht). Dat leggen we hier ook vast, zodat we het merken als dat ooit
+     * verandert.
+     *
+     * Dit is een stuk van de test hierboven en geen eigen test: een test erbij (en zeker een batch erbij) zet de andere
+     * tests op een andere plek in de testwereld, en een paar bestaande tests kunnen daar niet tegen (zie PLAN, hoofdstuk
+     * 107).
+     */
+    private static void satelliteStaysInOrbit(GameTestHelper helper, ServerPlayer owner, ServerLevel nether, ServerLevel end,
+                                              Vec3 home, Vec3 away) {
+        ServerLevel overworld = helper.getLevel();
+        // De regel zelf, en zijn schakelaar in de config.
+        check(com.senne.imttech.arsenal.Orbit.reachable(overworld) && !com.senne.imttech.arsenal.Orbit.reachable(nether)
+                && !com.senne.imttech.arsenal.Orbit.reachable(end), "Er hoort alleen boven de gewone wereld een baan te hangen");
+        boolean rule = ImtConfig.Drones.NO_ORBIT_IN_NETHER_AND_END;
+        try {
+            ImtConfig.Drones.NO_ORBIT_IN_NETHER_AND_END = false;
+            check(com.senne.imttech.arsenal.Orbit.reachable(nether) && com.senne.imttech.arsenal.Orbit.reachable(end),
+                    "Met noOrbitInNetherAndEnd = false hoort de oude regel te gelden");
+        } finally {
+            ImtConfig.Drones.NO_ORBIT_IN_NETHER_AND_END = rule;
+        }
+
+        ItemStack glasses = ImtData.getWornGlasses(owner);
+        Husk target = helper.spawn(EntityType.HUSK, new BlockPos(12, 3, 12));
+        target.setNoAi(true);
+        target.setNoGravity(true);
+        com.senne.imttech.satellite.SatelliteWorkshop.install(owner, com.senne.imttech.satellite.SatelliteUpgrade.BOMBARDMENT, 1);
+        com.senne.imttech.satellite.SatelliteWorkshop.install(owner, com.senne.imttech.satellite.SatelliteUpgrade.SWEEP, 1);
+        UUID id = owner.getUUID();
+
+        // In de gewone wereld: de precisieraket vuurt op wat je aankijkt.
+        owner.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, target.position());
+        double full = ImtData.getExactEnergy(glasses);
+        ImtServer.handleAction(owner, ImtAction.STRIKE_PRECISION.ordinal());
+        check(com.senne.imttech.satellite.SatelliteStrikes.pendingFor(id) != null
+                        && same(full - ImtData.getExactEnergy(glasses), ImtConfig.Satellite.COST_PRECISION),
+                "In de gewone wereld vuurde de precisieraket niet");
+        com.senne.imttech.satellite.SatelliteStrikes.cancel(id);
+        ImtServer.resetForShowcase(owner); // de wachttijd weg, zodat hieronder alleen de wereld het verschil maakt
+
+        // In de Nether en het End: geen van de drie aanvallen doet iets.
+        double before = ImtData.getExactEnergy(glasses);
+        for (ServerLevel world : List.of(nether, end)) {
+            toWorld(owner, world, away); // geen stuk wereld laden of maken: de regel kijkt alleen in welke wereld je bent
+            for (ImtAction strike : List.of(ImtAction.STRIKE_PRECISION, ImtAction.SATELLITE_STRIKE,
+                    ImtAction.STRIKE_BOMBARDMENT, ImtAction.STRIKE_SWEEP)) {
+                check(strike.isSatelliteStrike(), strike + " hoort een satellietaanval te zijn");
+                ImtServer.handleAction(owner, strike.ordinal());
+                check(com.senne.imttech.satellite.SatelliteStrikes.pendingFor(id) == null,
+                        strike + " begon een aanval in " + world.dimension().location());
+                check(same(ImtData.getExactEnergy(glasses), before) && ImtServer.isReady(owner, ImtCooldown.SATELLITE),
+                        strike + " kostte energie of begon een wachttijd in " + world.dimension().location());
             }
-            ImtArsenal back = ArsenalServer.get(owner);
-            check(back.availableCount() == all && back.readyCount(false) == 0,
-                    "Terug in de gewone wereld hangen er " + back.availableCount() + " van de " + all + " in hun baan");
-            forceChunk(nether, spot, false);
-        });
+            // Waarom het vroeger ook al niet kon: geen hemellicht, dus nergens "open lucht", ook niet helemaal bovenaan.
+            check(!world.canSeeSky(BlockPos.containing(away).atY(world.getMaxBuildHeight() - 2)),
+                    "In " + world.dimension().location() + " is er wel open lucht: dan hield vroeger niets een aanval tegen");
+        }
+
+        // Terug in de gewone wereld werkt hij weer.
+        toWorld(owner, overworld, home);
+        ArsenalServer.follow(owner);
+        owner.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, target.position());
+        ImtServer.handleAction(owner, ImtAction.STRIKE_PRECISION.ordinal());
+        check(com.senne.imttech.satellite.SatelliteStrikes.pendingFor(id) != null,
+                "Terug in de gewone wereld vuurde de precisieraket niet meer");
+        com.senne.imttech.satellite.SatelliteStrikes.cancel(id);
     }
 
     // ================================================================ De bril zonder datacenter
