@@ -357,7 +357,7 @@ ID = "awp"
 SKINS = ("steel", "titanium")
 # Waar je rechterhand de greep vasthoudt (derde persoon), en hoe groot het wapen in je hand is.
 GRIP = (8, Y(322), Z(1505))
-HAND_SCALE = 0.3
+HAND_SCALE = lg.GUN_SCALE  # hoofdstuk 105: dezelfde maat voor elk vuurwapen (zie longgun.GUN_SCALE)
 MAG_FOOT = (8, Y(316), Z(1276))
 MAG_LONG_FOOT = (8, MAG_FOOT[1] - MAG_LONG_DROP, MAG_FOOT[2])
 

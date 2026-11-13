@@ -35,6 +35,15 @@ public enum FirearmType {
     REMINGTON_870("remington_870", Caliber.G12, Action.PUMP, true, 1.15f, FireMode.SAFE, FireMode.SEMI);
 
     /**
+     * Hoofdstuk 105: hoe groot elk vuurwapen getekend wordt (1 = 16 pixels van het model per blok), in je eigen beeld, in
+     * de hand van een ander, in de holster en aan de sling: voor alle wapens hetzelfde. Elk model is op ware grootte
+     * (12,8 mm per pixel), dus zo kloppen de verhoudingen (een Glock is een kwart van een AK). Het is ongeveer 1,7 keer de
+     * echte grootte, zoals TACZ. In je spel: client/guns/FirearmRig.SCALE; in de modellen: GUN_SCALE in tools/longgun.py
+     * (de test every_firearm_is_drawn_on_one_ruler kijkt of die twee gelijk zijn).
+     */
+    public static final float DRAWN_SCALE = 0.37f;
+
+    /**
      * Hoe een wapen de volgende patroon in de kamer krijgt (jouw keuze, hoofdstuk 103: "je moet na elk schot op R drukken
      * om terug een round in de chamber te doen bij wapens die niet semi-auto zijn en zelf herladen door de recoil").
      */

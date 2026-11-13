@@ -270,12 +270,14 @@ def display(gui_scale, gui_translation, hand_scale, ground_scale, gui_rotation=(
     }
 
 
-def gun_display(points, grip, gui_rotation=(4, -90, 0), ground_scale=0.6, hand=0.75, max_scale=1.2):
+def gun_display(points, grip, gui_rotation=(4, -90, 0), ground_scale=lg.GUN_SCALE * 0.8, hand=lg.GUN_SCALE,
+                max_scale=1.2):
     """
     De houdingen van het hele pistool. In je inventaris de rechterkant (de loop naar rechts, zoals op de foto), een
     tikje van boven; in je hand (derde persoon) met de greep in je hand, zoals de lasergeweren
-    (generate_weapon_models.gun_display). {hand}: hoe groot het in je hand is (de lange wapens van hoofdstuk 103 zijn
-    op de schaal van de Glock getekend en zouden anders drie blokken lang zijn).
+    (generate_weapon_models.gun_display). {hand}: hoe groot het in je hand is. Sinds hoofdstuk 105 is dat voor elk
+    vuurwapen hetzelfde getal (longgun.GUN_SCALE): elk model is op ware grootte, dus zo kloppen de verhoudingen (de
+    Glock was 0,75 en daarmee drie keer te groot). Op de grond ({ground_scale}) 0,8 keer zo groot als in je hand.
     """
     turn = -17
     a = math.radians(turn)
@@ -374,7 +376,7 @@ def glock_19():
     whole = [p for m in parts.values() for p in m.points()] + mags["magazine"].points()
     write("models/item/glock_19.json", obj_model(
         "whole", {"polymer": GLOCK_TEX + "polymer", "steel": GLOCK_TEX + "steel", "mag": GLOCK_TEX + "magazine"},
-        display=gun_display(whole, GLOCK_GRIP)))
+        display=gun_display(whole, GLOCK_GRIP, hand=lg.GUN_SCALE, ground_scale=lg.GUN_SCALE * 0.8)))
     mag_disp = magazine_display(mags["magazine"].points())
     write("models/item/glock_19_magazine_empty.json",
           obj_model("magazine_empty", {"mag": GLOCK_TEX + "magazine"}, display=mag_disp))

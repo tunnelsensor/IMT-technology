@@ -69,12 +69,15 @@ public final class GunRig {
                 optic == com.senne.imttech.guns.Attachment.SNIPER_SCOPE ? scopeScale : 1.0f);
     }
 
-    /** Zo ver voor je oog zit het richtpunt van deze kijker als je richt (blokken). */
+    /**
+     * Zo ver voor je oog zit het richtpunt van deze kijker als je richt (blokken). Het laserpistool (het enige met een kijker
+     * op de slede) staat sinds hoofdstuk 105 net als de Glock een tikje verder: 0,252 in plaats van 0,24.
+     */
     public float eyeDistance(com.senne.imttech.guns.Attachment optic) {
         if (optic == com.senne.imttech.guns.Attachment.SNIPER_SCOPE) {
             return 0.055f;
         }
-        return sightOnSlide ? 0.24f : 0.16f;
+        return sightOnSlide ? 0.252f : 0.16f;
     }
 
     private GunRig(float scale, Vector3f grip, Vector3f support, Vector3f sight, Vector3f muzzle, Vector3f cell,
@@ -98,11 +101,16 @@ public final class GunRig {
         this.kickUp = kickUp;
     }
 
-    private static final GunRig PISTOL = new GunRig(0.42f,
+    /**
+     * Hoofdstuk 105: het laserpistool krimpt in je beeld zoals de Glock 19 (die was te groot): 0,42 werd 0,353 (zoals de
+     * Glock van 0,44 naar 0,37), en het zit een twintigste verder van je oog. Zo is het, net als de Glock, een vijfde
+     * kleiner in beeld. De lange lasergeweren blijven zoals ze waren.
+     */
+    private static final GunRig PISTOL = new GunRig(0.353f,
             new Vector3f(8, 6.5f, 11.4f), new Vector3f(7.2f, 5.2f, 10.4f), new Vector3f(8, 13.55f, 12.0f),
             new Vector3f(8, 11, 0.9f), new Vector3f(8, 2.2f, 11.2f),
             new Vector3f(6.36f, 11.6f, 11.6f), 6.5f, true,
-            new Vector3f(0.20f, -0.20f, -0.42f), 0.5f, 2.4f, 3, 1.6f, 0.06f, 7)
+            new Vector3f(0.21f, -0.21f, -0.442f), 0.526f, 2.4f, 3, 1.6f, 0.06f, 7)
             .addOns(new Vector3f(8, 13.0f, 9.5f), true, 1.0f, null);
     private static final GunRig RIFLE = new GunRig(0.36f,
             new Vector3f(8, 7.2f, 11.3f), new Vector3f(8, 9.0f, -1.5f), new Vector3f(8, 14.65f, 6.8f),

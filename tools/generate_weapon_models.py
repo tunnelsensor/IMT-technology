@@ -247,13 +247,16 @@ def item_model(elements, display, overrides=None):
     return model
 
 
-def gun_display(gui_scale, gui_translation, ground_scale, grip):
+def gun_display(gui_scale, gui_translation, ground_scale, grip, hand=0.75):
     """
     De houdingen van een geweer. In derde persoon (met twee handen, zie WeaponModels.registerExtensions) ligt de loop
     zonder te draaien al langs je arm naar voren; we schuiven het model zo dat de greep ({grip}) in je hand zit. In je
     eigen beeld tekent de mod het geweer zelf (zie GunRenderer), dus "firstperson" doet er niet toe.
+    {hand}: hoe groot het in je hand is. Hoofdstuk 105: de drie lange lasergeweren blijven 0,75 (even lang als een MP5,
+    een AK-47 en iets korter dan de AWP; zo blijven hun pixels zo groot als die van Steve); het laserpistool is een
+    pistool en wordt 0,5, ongeveer zo lang als de Glock 19 (op 0,75 was het bijna twee keer zo lang). In de holster en
+    aan de sling even groot als in je hand (client/guns/GearLayer).
     """
-    hand = 0.75
     # De houding met twee handen draait je arm naar binnen: het geweer draait een stukje terug, zodat de loop
     # (ongeveer) recht vooruit wijst. De greep blijft in je hand (de verschuiving draait mee).
     import math
@@ -871,7 +874,7 @@ def laser_shotgun(grade):
 
 
 GUNS = {
-    "laser_pistol": (laser_pistol, gun_display(1.0, (0, 0, 0), 0.6, (8, 6.5, 11.4))),
+    "laser_pistol": (laser_pistol, gun_display(1.0, (0, 0, 0), 0.4, (8, 6.5, 11.4), hand=0.5)),
     "laser_rifle": (laser_rifle, gun_display(0.55, (0, 0, -1.5), 0.5, (8, 7.2, 11.3))),
     "laser_sniper": (laser_sniper, gun_display(0.42, (0, 0, -1), 0.45, (8, 8.2, 14.4))),
     "laser_shotgun": (laser_shotgun, gun_display(0.6, (0, 0, -1), 0.55, (8, 7.0, 11.3))),

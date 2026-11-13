@@ -55,8 +55,31 @@ public final class GearLayer extends RenderLayer<AbstractClientPlayer, PlayerMod
     private static final float GRENADE_SCALE = 0.44f;
     private static final float MAG_SCALE = 0.62f;
     private static final float CELL_SCALE = 0.5f;
-    /** Zo groot hangt een geweer op je rug of voor je borst (1 = 16 pixels van het model per blok). */
-    private static final float SLING_SCALE = 0.5f;
+    /**
+     * Zo groot hangt een lasergeweer op je rug of voor je borst (1 = 16 pixels van het model per blok). Hoofdstuk 105:
+     * even groot als in je hand (tools/generate_weapon_models.py: 0,75); het was 0,5, een derde kleiner dan in je hand.
+     */
+    private static final float SLING_SCALE = 0.75f;
+    /**
+     * Hoofdstuk 105: hoe groot een pistool in de holster is. Even groot als in je hand: de Glock op FirearmRig.SCALE, het
+     * laserpistool op 0,5 (tools/generate_weapon_models.py). De holster zelf groeit of krimpt mee met wat erin zit (in
+     * het echt heeft elk pistool zijn eigen holster), zodat het pistool er nog net zo in past; leeg heeft hij de maat
+     * van de Glock. Vroeger was de holster 0,9 en het pistool daarin 0,55 van de holster (0,495): de Glock was er een
+     * derde kleiner in dan in je hand.
+     */
+    private static final float LASER_PISTOL_SCALE = 0.5f;
+    /** Hoe groot een pistool in de holster getekend wordt, als deel van de holster (zo past het erin). */
+    private static final float GUN_IN_HOLSTER = 0.55f;
+    /**
+     * Hoofdstuk 105: zo ver zitten de onderkant en de achterkant van het holstermodel van zijn midden (blokken, bij maat 1:
+     * 5,6 en 2,7 pixels, zie holster() in tools/generate_gun_models.py). Een kleinere holster krimpt naar die hoek toe:
+     * zijn midden zit in je hangende arm, dus kromp hij naar zijn midden, dan verdween hij in je arm. Zo steekt hij net als
+     * vroeger onder je hand en achter je arm uit (zoals een echte holster op je heup, een tikje naar achteren).
+     */
+    private static final float HOLSTER_BOTTOM = 5.6f / 16f;
+    private static final float HOLSTER_BACK = 2.7f / 16f;
+    /** De maat van de holster vóór hoofdstuk 105: daar zaten zijn onderkant en achterkant goed. */
+    private static final float HOLSTER_SIZE_BEFORE = 0.9f;
 
     public GearLayer(RenderLayerParent<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> parent) {
         super(parent);
@@ -139,20 +162,24 @@ public final class GearLayer extends RenderLayer<AbstractClientPlayer, PlayerMod
 
     /** De holster op je rechterheup, met het pistool erin: de loop naar beneden, de greep boven de holster uit. */
     private static void renderHolster(PoseStack pose, MultiBufferSource buffers, int light, ItemStack holster) {
-        pose.pushPose();
-        // Rechterheup (in de ruimte van het model is rechts -x, en +y omlaag).
-        pose.translate(-0.34, 0.6, 0.0);
-        pose.mulPose(Axis.ZP.rotationDegrees(180));
-        pose.mulPose(Axis.YP.rotationDegrees(90));
-        pose.scale(0.9f, 0.9f, 0.9f);
         List<ItemStack> inside = GearItem.contents(holster);
         ItemStack gun = inside.isEmpty() ? ItemStack.EMPTY : inside.getFirst();
         FirearmType type = FirearmItem.typeOf(gun);
+        // Hoofdstuk 105: de holster op de maat van het pistool erin (zie LASER_PISTOL_SCALE).
+        float size = (LaserGunItem.typeOf(gun) != null ? LASER_PISTOL_SCALE : FirearmRig.SCALE) / GUN_IN_HOLSTER;
+        pose.pushPose();
+        // Rechterheup (in de ruimte van het model is rechts -x, en +y omlaag), met de onderkant en de achterkant van de
+        // holster waar ze bij de oude maat zaten (zie HOLSTER_BOTTOM).
+        pose.translate(-0.34, 0.6 + HOLSTER_BOTTOM * (HOLSTER_SIZE_BEFORE - size),
+                HOLSTER_BACK * (HOLSTER_SIZE_BEFORE - size));
+        pose.mulPose(Axis.ZP.rotationDegrees(180));
+        pose.mulPose(Axis.YP.rotationDegrees(90));
+        pose.scale(size, size, size);
         if (type != null) {
             pose.pushPose();
             pose.translate(0, 0.14, 0);
             pose.mulPose(Axis.XP.rotationDegrees(-90));
-            pose.scale(0.55f, 0.55f, 0.55f);
+            pose.scale(GUN_IN_HOLSTER, GUN_IN_HOLSTER, GUN_IN_HOLSTER);
             pose.translate(-0.5, -0.45, -0.47);
             GunParts parts = FirearmItem.parts(gun);
             for (GunPart part : new GunPart[]{GunPart.FRAME, GunPart.SLIDE, GunPart.TRIGGER}) {
@@ -170,7 +197,7 @@ public final class GearLayer extends RenderLayer<AbstractClientPlayer, PlayerMod
             pose.pushPose();
             pose.translate(0, 0.14, 0);
             pose.mulPose(Axis.XP.rotationDegrees(-90));
-            pose.scale(0.55f, 0.55f, 0.55f);
+            pose.scale(GUN_IN_HOLSTER, GUN_IN_HOLSTER, GUN_IN_HOLSTER);
             pose.translate(-0.5, -0.4, -0.45);
             LaserGunModels.render(pose, buffers, gun, light, false, null);
             pose.popPose();

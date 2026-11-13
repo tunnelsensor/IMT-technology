@@ -26,7 +26,18 @@ import org.joml.Vector3f;
  * vast, en je laadt het door met een hendel ({@link #handle}): de spanhendel, de grendel of de pomp.
  */
 public final class FirearmRig {
-    /** Hoe groot het wapen in beeld is (1 = 16 pixels van het model per blok). */
+    /**
+     * Hoofdstuk 105: hoe groot ELK vuurwapen getekend wordt (1 = 16 pixels van het model per blok): in je eigen beeld, in
+     * de hand van een ander of een soldaat, in de holster en aan de sling. Eén getal voor alle wapens: elk model is op
+     * ware grootte (12,8 mm per pixel, tools/longgun.py), dus zo is een Glock een kwart van een AK, zoals echt. Het is
+     * 1,7 tot 1,8 keer de echte grootte, net als TACZ (Steve's handen zijn twee tot drie keer te dik voor een Glock op
+     * ware grootte). Hetzelfde getal staat als GUN_SCALE in tools/longgun.py (de houding in derde persoon in de json).
+     * Vroeger had elk wapen zijn eigen maat (de Glock 0,44 in je beeld en 0,75 in je hand, de lange wapens 0,30 tot
+     * 0,36): de Glock was daardoor veel te groot, met een demper even lang als een MP5, en de lange wapens te klein.
+     */
+    public static final float SCALE = FirearmType.DRAWN_SCALE;
+
+    /** Hoe groot het wapen in je eigen beeld is (1 = 16 pixels van het model per blok): {@link #SCALE}. */
     public final float scale;
     public final Vector3f grip;
     public final Vector3f support;
@@ -37,7 +48,12 @@ public final class FirearmRig {
     public final Vector3f magazineAxis;
     /** Waar de uitwerpopening zit (daar steekt een klemzittende huls uit). */
     public final Vector3f port;
-    /** Waar de greep in je beeld zit als je vanuit de heup schiet (blokken: rechts, omhoog, naar achteren). */
+    /**
+     * Waar de greep in je beeld zit als je vanuit de heup schiet (blokken: rechts, omhoog, naar achteren). Hoofdstuk 105:
+     * hoe ver je oog van het wapen is, bepaalt hoe groot het in beeld is. Een lang wapen zit tegen je schouder: de loop op
+     * ongeveer 0,8 keer de lengte van het wapen voor je oog (zoals TACZ, nagemeten: 0,72 tot 0,84), de greep vlak voor en
+     * onder je oog. Een pistool houd je verder voor je uit (de loop op ruim twee keer zijn lengte).
+     */
     public final Vector3f hip;
     /** Zo ver voor je oog zit het vizier als je richt (blokken). */
     public final float sightDistance;
@@ -58,7 +74,10 @@ public final class FirearmRig {
     public final Vector3f magazineTop;
     /** Hoe schuin het magazijn in het wapen staat (radialen): zoveel draaien we terug om het rechtop te zetten. */
     public final float magazineAngle;
-    /** Zo groot hangt het wapen op je rug of voor je borst (aan zijn sling), en waar het dan om draait (het midden). */
+    /**
+     * Zo groot hangt het wapen op je rug of voor je borst (aan zijn sling): sinds hoofdstuk 105 even groot als in je hand
+     * ({@link #SCALE}). En waar het dan om draait (het midden).
+     */
     public final float slingScale;
     public final Vector3f slingPivot;
     /**
@@ -153,15 +172,15 @@ public final class FirearmRig {
      * je rechterhand op de greep, je linkerhand ertegen, de vizierlijn (de bodem van de witte U op de keep, het witte
      * stipje van de korrel zit daar net in), de loop, de onderkant van het magazijn, en de uitwerpopening.
      */
-    private static final FirearmRig GLOCK_19 = new FirearmRig(0.44f,
+    private static final FirearmRig GLOCK_19 = new FirearmRig(SCALE,
             new Vector3f(8, 7.6f, 11.6f), new Vector3f(7.0f, 6.4f, 10.8f), new Vector3f(8, 13.21f, 13.4f),
             new Vector3f(8, 12.14f, 0.49f), new Vector3f(8, 4.0f, 11.9f),
             new Vector3f(0, -(float) Math.cos(GRIP_ANGLE), (float) Math.sin(GRIP_ANGLE)),
             new Vector3f(9.2f, 12.6f, 7.4f),
-            new Vector3f(0.21f, -0.21f, -0.42f), 0.46f, 2.6f, 2, 0.055f, 6.5f,
+            new Vector3f(0.221f, -0.221f, -0.442f), 0.484f, 2.6f, 2, 0.055f, 6.5f,
             new Vector3f(8.2f, 13.6f, 12.4f), 2.6f,
             new Vector3f(8, 3.82f, 11.94f), new Vector3f(8.13f, 11.23f, 9.2f), GRIP_ANGLE,
-            0.5f, new Vector3f(8, 9, 8)).optic(13.33f, 10.5f, 0, true).addOns(0.2f, null, null)
+            SCALE, new Vector3f(8, 9, 8)).optic(13.33f, 10.5f, 0, true).addOns(0.2f, null, null)
             .longMag(new Vector3f(8, -3.66f, 15.04f), GRIP_ANGLE);
 
     /**
@@ -169,14 +188,14 @@ public final class FirearmRig {
      * venster van het achterste vizier voor je oog, de spanhendel links vooraan op de spanbuis, en het gebogen magazijn
      * dat recht naar beneden uit de schacht komt.
      */
-    private static final FirearmRig MP5 = new FirearmRig(0.34f,
+    private static final FirearmRig MP5 = new FirearmRig(SCALE,
             new Vector3f(8, 7.1f, 13.2f), new Vector3f(8, 13.0f, -8.2f), new Vector3f(8, 19.22f, 12.78f),
             new Vector3f(8, 15.11f, -18.84f), new Vector3f(8, 10.9f, 1.2f), new Vector3f(0, -1, 0),
             new Vector3f(9.5f, 16.8f, 3.3f),
-            new Vector3f(0.19f, -0.335f, -0.36f), 0.36f, 3.0f, 2, 0.03f, 2.6f,
+            new Vector3f(0.194f, -0.35f, -0.299f), 0.392f, 3.0f, 2, 0.03f, 2.6f,
             new Vector3f(6.2f, 17.7f, -11.4f), 4.6f,
             new Vector3f(8, -1.2f, -3.1f), new Vector3f(8, 13.36f, 1.4f), 0,
-            0.36f, new Vector3f(8, 12.5f, 8.5f)).optic(18.38f, 3.0f, 0.9f, false)
+            SCALE, new Vector3f(8, 12.5f, 8.5f)).optic(18.38f, 3.0f, 0.9f, false)
             .addOns(2.0f, new Vector3f(8, 13.9f, -9.0f), null).longMag(new Vector3f(8, -5.4f, -6.5f), 0);
 
     /**
@@ -185,14 +204,14 @@ public final class FirearmRig {
      * spanhendel <b>rechts</b> op de grendeldrager (hij beweegt bij elk schot mee, dus even ver als de grendel), en het
      * gebogen magazijn dat schuin naar voren uit de behuizing kantelt.
      */
-    private static final FirearmRig AK_47 = new FirearmRig(0.34f,
+    private static final FirearmRig AK_47 = new FirearmRig(SCALE,
             new Vector3f(8, 5.9f, 12.6f), new Vector3f(8, 8.9f, -11.6f), new Vector3f(8, 15.88f, -3.75f),
             new Vector3f(8, 11.88f, -34.06f), new Vector3f(8, 10.62f, 1.08f), new Vector3f(0, -0.94f, -0.34f),
             new Vector3f(9.28f, 13.79f, 0.96f),
-            new Vector3f(0.20f, -0.32f, -0.40f), 0.45f, 5.0f, 2, 0.05f, 4.5f,
+            new Vector3f(0.196f, -0.313f, -0.183f), 0.49f, 5.0f, 2, 0.05f, 4.5f,
             new Vector3f(10.3f, 13.5f, 1.1f), 5.0f,
             new Vector3f(8, -1.83f, -6.0f), new Vector3f(8, 10.98f, 1.04f), -0.515f,
-            0.36f, new Vector3f(8, 10.5f, 4.0f)).optic(15.34f, 4.5f, 0, false)
+            SCALE, new Vector3f(8, 10.5f, 4.0f)).optic(15.34f, 4.5f, 0, false)
             .addOns(1.8f, new Vector3f(8, 9.9f, -13.5f), null).longMag(new Vector3f(8, -4.19f, -11.48f), -0.69f);
 
     /**
@@ -201,14 +220,14 @@ public final class FirearmRig {
      * wangstuk, dus dicht bij het vizier), de grendelknop rechts (optillen, 7 pixels naar achteren, terug en omlaag), en
      * het rechte magazijn dat recht naar beneden uit de kolf komt.
      */
-    private static final FirearmRig AWP = new FirearmRig(0.34f,
+    private static final FirearmRig AWP = new FirearmRig(SCALE,
             new Vector3f(8, 5.9f, 14.0f), new Vector3f(8, 10.2f, -16.0f), new Vector3f(8, 16.58f, 7.7f),
             new Vector3f(8, 14.56f, -61.5f), new Vector3f(8, 13.03f, 0.2f), new Vector3f(0, -1, 0),
             new Vector3f(9.0f, 14.7f, 0.66f),
-            new Vector3f(0.20f, -0.34f, -0.42f), 0.215f, 7.0f, 2, 0.085f, 7.0f,
+            new Vector3f(0.207f, -0.347f, -0.161f), 0.234f, 7.0f, 2, 0.085f, 7.0f,
             new Vector3f(11.5f, 12.66f, 7.22f), 7.0f,
             new Vector3f(8, 6.23f, 0.24f), new Vector3f(8, 13.45f, 0.2f), 0,
-            0.34f, new Vector3f(8, 11.5f, -10.0f)).lift(58).optic(16.1f, -1.0f, 0, false)
+            SCALE, new Vector3f(8, 11.5f, -10.0f)).lift(58).optic(16.1f, -1.0f, 0, false)
             .addOns(4.1f, new Vector3f(8, 10.82f, -22.2f), null).longMag(new Vector3f(8, 0.37f, 0.24f), 0);
 
     private FirearmRig lift(float degrees) {
@@ -232,14 +251,14 @@ public final class FirearmRig {
      * halve beeld; de kraal staat zo net onder je richtpunt, zoals je over een hagelgeweer kijkt). "Het magazijn" is hier de laadopening onder de behuizing: daar
      * duw je de patronen een voor een de buis in.
      */
-    private static final FirearmRig REMINGTON_870 = new FirearmRig(0.34f,
+    private static final FirearmRig REMINGTON_870 = new FirearmRig(SCALE,
             new Vector3f(8, 7.95f, 12.5f), new Vector3f(8, 8.8f, -19.0f), new Vector3f(8, 15.2f, 6.8f),
             new Vector3f(8, 13.44f, -42.96f), new Vector3f(8, 9.9f, -0.5f), new Vector3f(0, -1, 0),
             new Vector3f(9.5f, 13.3f, -0.7f),
-            new Vector3f(0.20f, -0.31f, -0.40f), 0.13f, 7.0f, 2, 0.09f, 7.5f,
+            new Vector3f(0.199f, -0.303f, -0.156f), 0.141f, 7.0f, 2, 0.09f, 7.5f,
             new Vector3f(8, 8.8f, -19.0f), 7.0f,
             new Vector3f(8, 6.0f, -0.5f), new Vector3f(8, 9.9f, -0.5f), 0,
-            0.36f, new Vector3f(8, 10.5f, -3.0f)).optic(14.28f, 1.5f, 0, false)
+            SCALE, new Vector3f(8, 10.5f, -3.0f)).optic(14.28f, 1.5f, 0, false)
             .addOns(0.5f, null, new Vector3f(8, 11.011f, -27.87f));
 
     public static FirearmRig of(FirearmType type) {

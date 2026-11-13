@@ -22,6 +22,15 @@ from gunmesh import vec
 
 PX_MM = 12.8  # één pixel van het model = 12,8 mm van het echte wapen (de schaal van de Glock, hoofdstuk 74)
 
+# Hoofdstuk 105: hoe groot ELK vuurwapen getekend wordt, in de hand van een speler of soldaat (derde persoon), in de
+# holster en aan de sling (Java: FirearmRig.SCALE, die hetzelfde getal heeft). Eén getal voor alle wapens: omdat elk
+# model op ware grootte is (12,8 mm per pixel), kloppen zo de verhoudingen vanzelf. Een Glock is een kwart van een AK.
+# 0,37 is 1,7 keer de echte grootte naast de speler (die Minecraft op 0,9375 tekent): Steve's armen en handen zijn 2 tot
+# 2,6 keer te dik, en een Glock op ware grootte verdween in zijn vuist. TACZ tekent zijn wapens even groot (gemeten: 0,6
+# bij 21 mm per pixel, dus 0,37 bij onze 12,8 mm). Vroeger had elk wapen zijn eigen getal (de Glock 0,75: drie keer te
+# groot; met een demper even lang als een MP5).
+GUN_SCALE = 0.37
+
 
 # ---------------------------------------------------------------- Van de foto naar het model
 

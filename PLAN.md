@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 567 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 568 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -7809,6 +7809,86 @@ ook op een eigen tab 'Attachments'".
       onderdelen van de lasergeweren horen ook bij Gun Parts; de Gun Sling ook (hij gaat er op de tafel aan zoals een
       onderdeel); de twee nieuwe tabbladen staan direct achter Weapons; ze heten "I.M.T Gun Parts" en "I.M.T
       Attachments", zoals de andere; de versie blijft 2.9 (er komt niets nieuws bij, het staat alleen anders).
+
+### 105. Elk wapen op dezelfde maat: de Glock kleiner, de lange wapens groter (13 november)
+
+Jouw melding: "de verhouding van de guns is niet supper, de glock zeker met barrel is veel te groot, maak die kleiner, de
+ander guns zijn redelijk klein maak die groter, zoek online verhouding op om te kijken hoe groot elke gun in first person
+en third person moet zijn. Zorg dat die verhouding ook klopt als het geholstert is of met sling".
+
+Wat er mis was: elk wapen had zijn eigen vergroting. De modellen zelf zijn op ware grootte (1 pixel = 12,8 mm, een Glock
+186 mm, een AWP 1253 mm), maar in de hand van een ander stond de Glock op 0,75 (3,7 keer zijn echte grootte) en de lange
+wapens op 0,30 tot 0,36 (1,4 tot 1,8 keer). Met een demper was de Glock in je hand even lang als een MP5. In je eigen
+beeld stond de Glock op 0,44 en de lange wapens op 0,34, in de holster de Glock op 0,495 (een derde kleiner dan in je
+hand), en de lasergeweren hingen op je rug een derde kleiner dan in je hand.
+
+Opgezocht (online en nagemeten):
+- **De echte maten**: Glock 19 185 mm (glock.com), MP5A3 700 mm met uitgeschoven kolf (HK), AK-47 870 mm, AWM .338
+  1230 mm (de AWP van Counter-Strike), Remington 870 met een loop van 20 inch 1029 mm; een 9mm-demper 115 tot 175 mm.
+  Onze modellen kloppen daarmee (186, 700, 871, 1253 en 1018 mm).
+- **Steve**: 1,875 blokken hoog getekend, zijn armen zijn zo lang als die van een mens maar 2 tot 2,6 keer te dik (zijn
+  hand is 23 cm breed, een echte 9 cm). Een Glock op ware grootte verdwijnt in zijn vuist; daarom tekent elke Minecraft-
+  wapenmod groter.
+- **TACZ** (nagemeten in je instance Guns & Tanks, uit de modellen en de jar): alle wapens 1,7 tot 1,9 keer hun echte
+  grootte, in je hand, op de grond en op je lijf even groot. In eerste persoon geen eigen vergroting: een geweer zit tegen
+  je schouder (de loop op 0,72 tot 0,84 keer zijn lengte voor je oog), een pistool verder weg (de loop op 1,9 keer zijn
+  lengte). Je handen worden in Minecraft altijd met een kijkhoek van 70 graden getekend, ook met jouw FOV 110.
+- **Andere spellen**: CS2, Half-Life en Unreal tekenen je wapen apart met een vaste kijkhoek van 54 tot 70 graden; een
+  pistool is daar een klein ding in het midden, een geweer tegen je wang vult de onderkant van je beeld.
+
+- [x] **Eén maat voor elk vuurwapen** (`FirearmType.DRAWN_SCALE` = `FirearmRig.SCALE` = `GUN_SCALE` in `tools/longgun.py`,
+      0,37): in je eigen beeld, in de hand van een ander of een soldaat, in de holster en aan de sling. Dat is 1,7 keer de
+      echte grootte naast de speler, zoals TACZ. Omdat elk model op ware grootte is, kloppen zo de verhoudingen vanzelf:
+      een Glock is een kwart van een AK en een zevende van de AWP.
+      **In de hand van een ander** (derde persoon): de Glock van 0,65 naar 0,32 blokken lang (een zesde van de speler), met
+      een demper van 1,15 naar 0,57 blokken (de helft van een MP5); de MP5 1,19, de AK-47 1,48, de Remington 870 1,72 en
+      de AWP 2,12 blokken (iets langer dan de speler, zoals in TACZ). Op de grond 0,8 keer zo groot.
+      **In de holster** even groot als in je hand: de holster krimpt mee met de Glock (hij is gemaakt op de maat van wat
+      erin zit); met het laserpistool erin blijft hij zoals hij was. Een kleinere holster krimpt naar zijn onderkant en
+      zijn achterkant toe: zijn midden zit in je hangende arm, en zo steekt hij net als vroeger onder je hand en achter je
+      arm uit (`GearLayer.HOLSTER_BOTTOM`; zonder dat verdween hij bijna helemaal in je arm).
+      **Aan de sling** even groot als in je hand (de lange vuurwapens waren dat al bijna).
+- [x] **In je eigen beeld** (`FirearmRig`): de lange wapens zitten nu tegen je schouder, zoals in TACZ: de loop op 0,78
+      tot 0,84 keer de lengte van het wapen voor je oog (was 0,89 tot 0,97). Vanuit de heup zie je ze daardoor groter en
+      langer (op het scherm de MP5 12 in plaats van 10 procent, de AK-47 11 in plaats van 7, de AWP 8 in plaats van 7, de
+      870 6 in plaats van 3,5). De Glock staat iets verder van je oog en is een vijfde kleiner in beeld, vanuit de heup en
+      gericht. Gericht met een lang wapen, door de red dot en door de kijker blijft het beeld precies zoals het was (die
+      waren al zoals in TACZ; de afstanden groeiden mee met de maat).
+- [x] **Bekijken (H) en de buis van de 870 laden**: een lang wapen draaide daarbij om je greep, en die zit nu vlak voor je
+      oog; de kolf zwaaide groot door je beeld. Daarvoor hou je het wapen nu voor je uit, zoals vroeger
+      (`FirearmRenderer.WORK_Z`).
+- [x] **Terugslag vanuit de heup**: een lang wapen schoot bij elk schot even ver terug als vroeger, maar zit nu veel dichter
+      bij je oog: de AWP en de 870 sprongen bijna tegen je oog. Nu schiet het even ver terug in verhouding tot zijn
+      afstand (gericht en met de Glock zoals altijd).
+- [x] **Een Sniper Scope op de AK-47**: het oculair steekt ver achter de greep uit en kwam vanuit de heup achter je oog;
+      terwijl je aanlegde, knipte de rand van je beeld de kijker heel even open. Met die kijker houd je de AK-47 vanuit de
+      heup nu iets verder voor je uit, zodat het oculair nooit dichter bij je oog komt dan als je gericht bent.
+- [x] **Lasergeweren**: de drie lange blijven zoals ze waren (hun modellen zijn niet op ware grootte, en op 0,75 zijn ze in
+      je hand even lang als een MP5 of een AK-47 en iets korter dan de AWP); aan je sling zijn ze nu even groot als in je
+      hand (was 0,5, nu 0,75). Het **laserpistool** was in je hand bijna twee keer zo lang als de nieuwe Glock: nu 0,5
+      (ongeveer zo lang als de Glock), in de holster even groot, en in je eigen beeld een vijfde kleiner, zoals de Glock.
+- [x] **Raven-soldaten**: hun wapens zijn ook op de nieuwe maat; in rust houden ze een lang wapen zo laag dat de loop nooit
+      verder dan 0,76 blok onder hun hand komt (`RavenSoldierRenderer.lowReadyAngle`): de MP5 en de AK-47 zoals altijd, de
+      870 en de AWP wat vlakker (de AWP is een kwart langer geworden).
+- [x] **How it works**: de plaatjes glock_hud, mp5_hud, awp_hud en gear_inventory zijn opnieuw gemaakt (de wapens in je
+      beeld, de holster en de slings); scope_view en red_dot_view bleven gelijk.
+- [x] **Test** (één nieuw): `every_firearm_is_drawn_on_one_ruler` leest de modellen en kijkt of elk vuurwapen in je hand
+      op `FirearmType.DRAWN_SCALE` staat (en op de grond 0,8 keer zo groot), het laserpistool op 0,5 en de lange
+      lasergeweren op 0,75. Past later iemand één wapen aan, dan zie je het daar. Volledige ronde: 568 tests (met het
+      werk van de andere sessies), alle groen.
+- [x] **Gezien** met een nieuwe rondleiding, `gradlew runVisualCheck -Ponly=gunscale` (gs01 tot gs25): elk wapen in je
+      eigen beeld (vanuit de heup, gericht en bekeken), de Glock met een demper en een red dot, de AK-47 met een Sniper
+      Scope terwijl je aanlegt, elk wapen in de hand van Bram (een nep-speler) van opzij en van voren, de holster en de
+      slings van opzij, van achteren, van voren en de holster van dichtbij, en alle wapens op de grond. Ook
+      `-Ponly=mp5,ak47,awp,870,gear,sling,ravenguns,addons` (herladen, doorladen, de buis, schieten met attachments, de
+      soldaten) en de animaties van How it works (Glock 19, MP5 and AK-47, AWP, Remington 870, Attachments, Laser guns,
+      Holster, pouches and slings). Een review door drie lezers vond nog zeven dingen (de terugslag en de kijker
+      hierboven, twee commentaren, en dat de rondleiding Bram liet staan); alle zeven verwerkt.
+- **Mijn invullingen**: 0,37 als maat (TACZ is 0,36 tot 0,37 bij onze modellen; groter maakte de AWP veel langer dan
+  de speler); de lange wapens tegen je schouder zoals TACZ, met de loop op dezelfde plek op je scherm als vroeger; de Glock
+  een vijfde kleiner in je beeld (ook gericht); hoe je richt met een lang wapen niet veranderd; de lange lasergeweren in
+  je hand niet veranderd, het laserpistool wel; een holster op de maat van zijn pistool. De versie blijft 2.9 (er komt
+  niets nieuws bij, het staat alleen anders).
 
 ## Nog nooit in het spel bekeken
 

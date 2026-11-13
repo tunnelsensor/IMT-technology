@@ -51,6 +51,19 @@ public final class FirearmRenderer {
     private FirearmRenderer() {}
 
     private static final float ARM_SCALE = 0.78f;
+    /**
+     * De maat (zoals FirearmRig.scale) waarvoor de afstanden van je handen tot een losse magazijn in je hand gekozen zijn
+     * (hoofdstuk 74: de maat van de Glock toen). Sinds hoofdstuk 105 is de Glock kleiner; je handen blijven waar ze waren.
+     */
+    private static final float MAG_HAND_UNIT = 0.44f;
+    /**
+     * Hoofdstuk 105: zo ver voor je oog (blokken) houd je een lang wapen als je het bekijkt (H) of de buis van de 870
+     * laadt. Vanuit de heup zit het sindsdien tegen je schouder, met de greep vlak voor je oog (FirearmRig.hip); draaide
+     * het daar, dan zwaaide de kolf of de behuizing groot door je beeld. Vóór hoofdstuk 105 zat de greep van een lang
+     * wapen 0,36 (de MP5) tot 0,42 (de AWP) blok voor je oog; dit is de verste. Ook de terugslag vanuit de heup rekent
+     * ermee (hoe dichter het wapen zit, hoe minder ver het terugschiet).
+     */
+    private static final float WORK_Z = -0.42f;
     private static final float WRIST = 9.0f / 16f;
     private static final Vector3f RIGHT_SHOULDER = new Vector3f(0.6f, -0.85f, 0.35f);
     private static final Vector3f LEFT_SHOULDER = new Vector3f(-0.6f, -0.9f, 0.25f);
@@ -119,6 +132,13 @@ public final class FirearmRenderer {
         pose.pushPose();
         Vector3f pivot = lerp(rig.grip, sightPoint, aim);
         Vector3f place = lerp(rig.hip, new Vector3f(0, 0, -sightDistance), aim);
+        if (optic == com.senne.imttech.guns.Attachment.SNIPER_SCOPE) {
+            // Hoofdstuk 105: het oculair van de Sniper Scope steekt achter de greep uit (op de AK-47 8,2 pixels). Vanuit de
+            // heup, met de greep dicht bij je oog, zat het dan achter je oog, en terwijl je aanlegde knipte de rand van je
+            // beeld (0,05 blok) de kijker even open. Het oculair blijft nu minstens zo ver als wanneer je gericht bent.
+            float behind = (sightPoint.z - rig.grip.z) * rig.scale / 16f;
+            place.z += Math.min(0, -sightDistance - behind - rig.hip.z) * (1 - aim);
+        }
         float rotX = 0;
         float rotY = 5 * (1 - aim);
         float rotZ = -3 * (1 - aim);
@@ -144,7 +164,11 @@ public final class FirearmRenderer {
         rotY += 22 * sprint;
         rotZ += 10 * sprint;
         float kick = recoil(since);
-        place.z += rig.kickBack * kick * (1 - 0.4f * aim);
+        // Hoofdstuk 105: vanuit de heup zit een lang wapen nu veel dichter bij je oog (de AWP 0,16 blok in plaats van
+        // 0,42). Zo ver als vroeger terugschieten duwde het bijna tegen je oog; het schiet nu even ver terug in verhouding
+        // tot zijn afstand. Gericht (0,6) en de Glock (die verder weg zit) zoals altijd.
+        float hipKick = Math.min(1, rig.hip.z / WORK_Z);
+        place.z += rig.kickBack * kick * Mth.lerp(aim, hipKick, 0.6f);
         rotX += rig.kickUp * kick * (1 - 0.5f * aim);
 
         // De handelingen: het wapen kantelt zodat je ziet wat je doet (een lang wapen minder: je houdt het met twee handen).
@@ -176,6 +200,8 @@ public final class FirearmRenderer {
             rotX += 12 * tube;
             rotY += 8 * tube;
             place.add(-0.08f * tube, 0.11f * tube, 0.02f * tube);
+            // Hoofdstuk 105: op zijn kant voor je uit, zoals vroeger (zie WORK_Z), anders rolt de behuizing vlak voor je oog.
+            place.z += (WORK_Z - rig.hip.z) * tube;
         }
         // Hoofdstuk 103, stap 2: zit de hendel rechts (de AK-47), dan laadt je rechterhand door (zie rightHandRack). Het
         // wapen rolt daarbij wat naar links: zijn rechterkant komt naar boven, zodat je de spanhendel ziet bewegen.
@@ -197,6 +223,11 @@ public final class FirearmRenderer {
             rotZ -= 10 * side;
             rotX += 32 * top * turn;
             place.add(-(lng ? 0.24f : 0.15f) * side, 0.07f * side + 0.03f * top, 0.03f * side);
+            if (lng) {
+                // Hoofdstuk 105: een lang wapen zit tegen je schouder, met de greep vlak voor je oog. Draaide het daar, dan
+                // zwaaide de kolf groot door je beeld. Om het te bekijken hou je het voor je uit, zoals vroeger.
+                place.z += (WORK_Z - rig.hip.z) * Math.max(side, top);
+            }
             rotZ += 3 * Mth.sin(inspect * 14) * side * (1 - top);
         }
         float s = rig.scale / 16f;
@@ -756,10 +787,12 @@ public final class FirearmRenderer {
         float rotZ = 10;
         // Hoofdstuk 103: een lang magazijn (de MP5) wordt kleiner getekend, zodat het even groot in je hand ligt als dat van
         // de Glock; {@code k} is hoeveel groter een pixel van de Glock is: zo ver staan je handen en de patroon ervan af.
+        // Hoofdstuk 105: het magazijn is op dezelfde maat als zijn wapen (FirearmRig.SCALE); je handen staan nog even ver
+        // als vroeger (MAG_HAND_UNIT: de maat waarvoor die afstanden gekozen zijn).
         boolean extended = MagazineItem.extendedOf(stack);
         float fit = FirearmRig.magazineFit(type, extended);
         float s = rig.scale / 16f * fit;
-        float k = 0.44f / (rig.scale * fit);
+        float k = MAG_HAND_UNIT / (rig.scale * fit);
         float height = FirearmRig.magazineHeight(type, extended);
         // Het magazijn staat in het model zoals in het wapen (bij de Glock schuin): hier recht overeind
         // (FirearmRig.magazineUpright), met zijn midden op {@code place}.

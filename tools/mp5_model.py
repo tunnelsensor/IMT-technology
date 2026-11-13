@@ -391,7 +391,7 @@ ID = "mp5"
 SKINS = ("steel", "titanium")
 # Waar je rechterhand de greep vasthoudt (derde persoon), en hoe groot het wapen in je hand is.
 GRIP = (8, Y(330), Z(532))
-HAND_SCALE = 0.36
+HAND_SCALE = lg.GUN_SCALE  # hoofdstuk 105: dezelfde maat voor elk vuurwapen (zie longgun.GUN_SCALE)
 # Waar de voet van het magazijn zit (voor in je hand en in de pouch), en hoe schuin het staat.
 MAG_FOOT = (8, Y(496), Z(872))
 MAG_LONG_FOOT = (8, *reversed(MAG_LONG_TURN([(MAG_FOOT[2], MAG_FOOT[1])])[0]))

@@ -266,7 +266,7 @@ ID = "remington_870"
 SKINS = ("steel", "titanium")
 # Waar je rechterhand de greep vasthoudt (derde persoon), en hoe groot het wapen in je hand is.
 GRIP = (8, Y(170), Z(585))
-HAND_SCALE = 0.32
+HAND_SCALE = lg.GUN_SCALE  # hoofdstuk 105: dezelfde maat voor elk vuurwapen (zie longgun.GUN_SCALE)
 
 
 def build():

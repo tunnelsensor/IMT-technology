@@ -89,11 +89,15 @@ public class RavenSoldierRenderer extends HumanoidMobRenderer<RavenSoldierEntity
      */
     public static class Model extends HumanoidModel<RavenSoldierEntity> {
         /**
-         * Hoe ver zijn armen in rust lager hangen dan aangelegd, met een lang vuurwapen (radialen: ruim 40 graden). De AWP
-         * is zo lang dat zijn loop dan de grond raakt: die houdt hij vlakker (bijna 30 graden).
+         * Hoe ver zijn armen in rust lager hangen dan aangelegd, met een lang vuurwapen (radialen: ruim 40 graden). Een lang
+         * wapen houdt hij vlakker, zodat zijn loop de grond niet raakt (zie lowReadyAngle).
          */
         private static final float LOW_READY = 0.75f;
-        private static final float LOW_READY_LONG = 0.5f;
+        /**
+         * Hoe ver de loop in rust onder zijn hand mag zakken (blokken). Zo laag hield hij de Remington 870 vroeger, en dat
+         * ging net; de AWP (die vroeger op 0,5 radialen stond) kwam op 0,68.
+         */
+        private static final float MAX_MUZZLE_DROP = 0.76f;
         /** Draagt hij nu een lang vuurwapen in rust, en hoe laag? (per soldaat opnieuw bepaald in prepareMobModel) */
         private boolean lowReady;
         private float lowReadyAngle = LOW_READY;
@@ -130,8 +134,23 @@ public class RavenSoldierRenderer extends HumanoidMobRenderer<RavenSoldierEntity
             leftArmPose = ArmPose.EMPTY;
             com.senne.imttech.guns.FirearmType firearm = com.senne.imttech.guns.FirearmItem.typeOf(soldier.getMainHandItem());
             lowReady = !soldier.isAggressive() && firearm != null && firearm.longGun;
-            lowReadyAngle = firearm == com.senne.imttech.guns.FirearmType.AWP ? LOW_READY_LONG : LOW_READY;
+            lowReadyAngle = firearm == null ? LOW_READY : lowReadyAngle(firearm);
             super.prepareMobModel(soldier, limbSwing, limbSwingAmount, partialTick);
+        }
+
+        /**
+         * Hoofdstuk 105: hoe laag hij dit wapen in rust houdt. Sinds elk vuurwapen op dezelfde maat getekend wordt
+         * (FirearmRig.SCALE) is een lang wapen langer dan vroeger, de AWP een kwart. Zijn loop mag niet verder dan
+         * {@link #MAX_MUZZLE_DROP} onder zijn hand zakken: hoe langer de loop voor zijn hand, hoe vlakker hij het houdt (de
+         * MP5 en de AK-47 gewoon op 0,75, de 870 op ongeveer 0,64, de AWP op ongeveer 0,45).
+         */
+        static float lowReadyAngle(com.senne.imttech.guns.FirearmType type) {
+            com.senne.imttech.client.guns.FirearmRig rig = com.senne.imttech.client.guns.FirearmRig.of(type);
+            float reach = (rig.grip.z - rig.muzzle.z) / 16f * com.senne.imttech.client.guns.FirearmRig.SCALE;
+            if (reach <= MAX_MUZZLE_DROP) {
+                return LOW_READY;
+            }
+            return Math.min(LOW_READY, (float) Math.asin(MAX_MUZZLE_DROP / reach));
         }
 
         @Override

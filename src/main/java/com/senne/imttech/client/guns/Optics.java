@@ -78,12 +78,17 @@ public final class Optics {
         return eye(seat(rig), optic);
     }
 
-    /** Zo ver voor je oog zit dat punt als je richt (blokken). */
+    /**
+     * Zo ver voor je oog zit dat punt als je richt (blokken). Hoofdstuk 105: de lange wapens werden groter getekend (0,34
+     * werd {@link FirearmRig#SCALE}); deze afstanden groeiden even hard mee, zodat het beeld door de red dot en door de
+     * kijker precies blijft zoals het was. De Glock werd kleiner (0,44 werd 0,37) en staat een tikje verder van je oog,
+     * zoals zijn ijzeren vizier: hij is gericht een vijfde kleiner in beeld dan vroeger.
+     */
     public static float eyeDistance(FirearmType type, Attachment optic) {
         return switch (optic) {
-            case SNIPER_SCOPE -> 0.072f;
+            case SNIPER_SCOPE -> 0.0784f;
             // Een pistool houd je op armlengte; een lang wapen tegen je schouder.
-            default -> type.longGun ? 0.15f : 0.24f;
+            default -> type.longGun ? 0.163f : 0.252f;
         };
     }
 
