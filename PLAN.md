@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 551 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 554 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -7507,8 +7507,68 @@ standen), suppressors, extended mags en grips." Omdat jij het een grote update n
       **Mijn invullingen erbij**: een loop van 20 inch en hout (de foto die er was); stammen als kenmerk in de recepten;
       de hagel heet "12 Gauge Buckshot" en de lege huls "12 Gauge Hull"; twee kruit per patroon; R kiest zelf tussen
       pompen (als dat moet) en laden; versie 2.3.0 omdat het een nieuw wapen is.
-- [ ] **5. Attachments: het systeem, de Red Dot Sight en de Sniper Scope (1x tot 10x)** — maken op "Make parts", op het
-      wapen slepen, en het beeld door de kijker met het wapen nog in beeld.
+- [x] **5. Attachments: het systeem, de Red Dot Sight en de Sniper Scope (1x tot 10x)** (13 november, versie 2.4.0) —
+      maken op "Make parts", op het wapen slepen, en het beeld door de kijker met het wapen nog in beeld.
+      **Het systeem** (`guns/`): `AttachmentSlot` (de plekken op een wapen; nu alleen `SIGHT`, de rest komt in stap 6;
+      `carrier(type)` zegt op welk onderdeel de plek staat: de behuizing van een lang wapen, de slede van een pistool),
+      `Attachment` (`RED_DOT`, `SNIPER_SCOPE`: wat past waar, en wat het doet uit de config), `AttachmentItem` (stapelt
+      niet; de tooltip zegt waarop het past) en `GunAttachments` (het data component `gun_attachments`: een rijtje
+      namen, hoogstens één per plek; een naam die niet meer bestaat wordt overgeslagen). `FirearmItem.attachments`,
+      `attachment(stack, slot)`, `sight`, `setAttachment`, `removeAttachment`, en een regel in de tooltip ("Sight:
+      Sniper Scope"). De Gunsmith Table: `GunSlot.SIGHT` (een plek voor een attachment naast de zes onderdelen en de
+      sling), `install` (past het, is de plek vrij, zit het onderdeel waar het op staat in het wapen), `remove`
+      (`removeAttachment`; en een onderdeel waar een attachment op staat gaat er niet uit: `sittingOn`). Twee recepten
+      van het soort `imttech:gunsmithing` (Red Dot Sight: 2 staal, 1 glasplaat, 2 redstone; Sniper Scope: 4 staal, 2
+      amethist, 2 glasplaten), de groep **Attachments** op "Make parts" (`GunsmithMakePanel.Group.ATTACHMENTS`: een rij
+      per attachment), het tabblad Weapons. `Firearms`: de spreiding van een gericht schot maal `Attachment.aimSpread`.
+      Vijf nieuwe getallen onder `[guns]`: `redDotAimSpread` 0,7, `redDotAimSpeed` 1,4, `scopeMaxZoom` 10,
+      `scopeAimSpread` 0,5, `scopeAimSpeed` 0,7.
+      **In je spel** (`client/guns/`): `Optics` (waar een kijker staat, waar je oog komt, en hoe hij getekend wordt) en
+      per wapen een montage in `FirearmRig` (`optic(y, z, verhoging, opDeSlede)`: de MP5 een verhoging van 0,9 pixel om
+      over zijn eigen vizier te kijken; bij de Glock staat de red dot op de slede en schuift hij mee). `FirearmRenderer`:
+      met een kijker erop draait het wapen om het stipje of het oculair, komt dat punt voor je oog (de red dot op 0,15
+      blok bij een lang wapen en 0,24 bij een pistool; het oculair op 0,072), en schuift het wapen niet meer op en neer
+      als je gericht bent: het richtpunt staat stil in het midden van je beeld. **De Sniper Scope zonder zwart beeld**:
+      de hele wereld zoomt in (`FirearmControl.onComputeFov`, met de tangens: een echte 4x), en de kijker wordt gewoon
+      als model getekend. Omdat je anders dwars door het glas de rest van de kijker en de loop zou zien, tekent `Optics`
+      in de opening van het oculair eerst een onzichtbaar schijfje dat alleen de diepte invult
+      (`RenderType.waterMask`, zoals Minecraft het water uit een boot houdt): wat erachter ligt wordt niet meer
+      getekend, de wereld blijft staan. Het glas en het dradenkruis zijn losse modellen: het glas als je niet richt,
+      het dradenkruis als je richt (vanaf 0,7 van de weg). Scrollen terwijl je richt (`onMouseScroll`: maal 1,2 per
+      tikje, in plaats van een ander vakje kiezen), de stand rechtsonder (`FirearmHud`: "ZOOM 4.0x"), en de muis gaat
+      evenredig trager (`onPlayerTurn`: Minecraft rekent met (0,6 x gevoeligheid + 0,2) tot de derde macht, dus delen
+      we dat getal door de derdemachtswortel van de zoom; dat geldt nu ook voor het kleine beetje zoom van een ijzeren
+      vizier, eerst was dat een benadering). **Het wapen als item** (`FirearmItemRenderer`, nieuw): overal waar
+      Minecraft een vuurwapen als één model tekent (je inventaris en werkbalk, op de grond, in een item frame, in de
+      hand van een andere speler of straks van een soldaat) tekenen we dat model nu zelf, met erop wat erop zit.
+      `FirearmModels.wrapWhole` zegt Minecraft daarvoor dat het model "zelf getekend" wordt (en geeft na het plaatsen
+      zichzelf terug, niet het oorspronkelijke model: anders tekende Minecraft het toch weer zelf, zonder kijker). Op
+      je rug, op het Pegboard en op de Gunsmith Table kwam de kijker al mee via `FirearmModels.renderParts`.
+      `GunsmithScreen`: de plek "SIGHT" boven het wapen (er pas als het onderdeel eronder in het wapen zit), "Red Dot"
+      of "Scope 1-10x" in de lijst rechts (`installedText`), "does not fit" in de lijst links, en een onderdeel met een
+      kijker erop is grijs met de reden in de tooltip.
+      **De modellen** (`tools/attachment_models.py`, `generate_gun_models.py red_dot_sight sniper_scope`): op de schaal
+      van de wapens, elk rond zijn montage. De red dot: een voet, het kastje van het lampje, de beugel met het raampje,
+      en een stipje dat zelf licht geeft (284 vlakken). De Sniper Scope met de maten van de Schmidt & Bender op de foto
+      van de AWP (417 mm, een buis van 34 mm, een objectief van 62 mm): de klok, de buis met drie draaiknoppen, het
+      oculair met de zoomring, twee ringen op een voet (1.004 vlakken, 24 vlakjes rondom), en los het glas achteraan en
+      het dradenkruis. Donkergrijs, niet zwart: op de donkere tafel en als icoontje zag je ze anders niet.
+      **Tests** (drie nieuw in `AttachmentGameTests`, 554 in totaal): `sights_go_on_and_off_at_the_gunsmith_table` (wat
+      past waar, één kijker tegelijk, eraf geeft het item terug, de slede van de Glock gaat er niet af met de red dot
+      erop en zonder slede kan er geen kijker op, de AWP houdt zijn kijker als je hem meeneemt, de Receiver gaat er pas
+      uit als de kijker eraf is), `a_sight_tightens_an_aimed_shot_only` en `attachments_are_saved_by_name`;
+      `gunsmith_table_has_one_recipe_per_part` en `gun_parts_are_not_in_the_crafting_table` kennen de attachments.
+      **Gezien** (`gradlew runVisualCheck -Ponly=attach`: `at01` tot `at18`: de AWP met de Sniper Scope vanuit de heup,
+      gericht op 4x, 1x en 10x en bij een schot; de red dot op de AK-47, de MP5, de Glock (ook bij een schot: hij gaat
+      mee met de slede), de 870 en de AWP; de Sniper Scope op de AK-47 en de MP5; de Gunsmith Table met de plek "SIGHT",
+      een red dot en een kijker op de AK-47, en de Glock; "Make parts" onder Attachments; de tooltips; in derde persoon,
+      op je rug, en als item op de grond).
+      **Mijn invullingen erbij**: de recepten; de Sniper Scope past op de MP5, de AK-47 en de AWP (niet op een pistool
+      of een hagelgeweer); de red dot maakt je 1,4 keer sneller gericht en de spreiding 0,7 keer, de kijker 0,7 keer
+      trager gericht en de spreiding 0,5 keer; een nieuwe kijker staat op 4x en onthoudt zijn stand zolang het spel
+      open is; de muis gaat evenredig trager met de zoom; een kijker houdt het onderdeel vast waar hij op staat; bij de
+      AWP laat je de kijker los tijdens het doorladen (zoals elke handeling het richten onderbreekt); de kijker staat
+      ook op het plaatje van het wapen in je inventaris; versie 2.4.0 omdat het een nieuw systeem is.
 - [ ] **6. Suppressors, grips, de tweepoot, de extended mags en de verlengbuis.**
 - [ ] **7. Attachments op de lasergeweren** (red dot, sniperkijker, grips, op de Laser Workbench).
 - [ ] **8. Raven-soldaten met de nieuwe wapens, en attachments in buit.**

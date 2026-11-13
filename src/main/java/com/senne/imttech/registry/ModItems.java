@@ -526,6 +526,22 @@ public final class ModItems {
             properties -> new com.senne.imttech.guns.FirearmItem(properties, com.senne.imttech.guns.FirearmType.REMINGTON_870),
             new Item.Properties().rarity(Rarity.UNCOMMON));
 
+    /** Hoofdstuk 103, stap 5: de attachments (je maakt ze op de Gunsmith Table en zet ze daar op een wapen). */
+    public static final DeferredItem<com.senne.imttech.guns.AttachmentItem> RED_DOT_SIGHT = ITEMS.registerItem("red_dot_sight",
+            properties -> new com.senne.imttech.guns.AttachmentItem(properties, com.senne.imttech.guns.Attachment.RED_DOT),
+            new Item.Properties());
+    public static final DeferredItem<com.senne.imttech.guns.AttachmentItem> SNIPER_SCOPE = ITEMS.registerItem("sniper_scope",
+            properties -> new com.senne.imttech.guns.AttachmentItem(properties, com.senne.imttech.guns.Attachment.SNIPER_SCOPE),
+            new Item.Properties().rarity(Rarity.UNCOMMON));
+
+    /** Het item van dit attachment. */
+    public static com.senne.imttech.guns.AttachmentItem attachment(com.senne.imttech.guns.Attachment attachment) {
+        return switch (attachment) {
+            case RED_DOT -> RED_DOT_SIGHT.get();
+            case SNIPER_SCOPE -> SNIPER_SCOPE.get();
+        };
+    }
+
     /**
      * Hoofdstuk 52: de zes onderdelen (elk in zijn materialen, zie GunPartItem). Sinds hoofdstuk 103 per wapen: de Glock
      * houdt zijn oude namen ("gun_slide"), de andere wapens heten naar hun wapen ("mp5_slide").

@@ -103,6 +103,9 @@ public final class ModCreativeTabs {
                         }
                     }
                 }
+                for (com.senne.imttech.guns.Attachment attachment : com.senne.imttech.guns.Attachment.values()) {
+                    output.accept(ModItems.attachment(attachment));
+                }
                 for (com.senne.imttech.guns.Caliber caliber : com.senne.imttech.guns.Caliber.values()) {
                     output.accept(caliber.round());
                     output.accept(caliber.casing());

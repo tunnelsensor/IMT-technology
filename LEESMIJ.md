@@ -128,6 +128,7 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (445 automati
 | **F6** | De skilltree van je vuurwapens |
 | **R / U / H** (met een geweer of magazijn in je hand) | Herladen (de AWP en de 870: eerst doorladen, zie "De grote update 2.0") / unload / bekijken (zie "Vuurwapens") |
 | **X** (met een vuurwapen in je hand) | De keuzeschakelaar: safe, semi, 3 schoten (MP5), auto (zie "De grote update 2.0") |
+| **Scrollwiel** (terwijl je door een Sniper Scope richt) | In- en uitzoomen, van 1x tot 10x (zie "De grote update 2.0") |
 | **W** (vasthouden, in een scherm, met je muis op een item) | How it works: de animatie van dat item |
 
 **De snelacties van de bril hebben standaard geen toets** (sinds 2026-11-10, zo blijven er letters vrij
@@ -2183,7 +2184,8 @@ punten verdelen, zodat je kiest waar je goed in wordt. Wat je leert blijft na je
 ### De grote update 2.0: meer vuurwapens, te beginnen met de MP5
 Jouw wens (hoofdstuk 103, 12 november): "meer guns, deze werken net zoals de Glock, de models zijn ook zoals de Glock":
 de **MP5**, de **AK-47**, de **AWP** en de **Remington 870**, en attachments. Dit is de grote update, dus **versie 2.0**. De wapens
-zijn er nu alle vier (de MP5, de AK-47, de AWP en de Remington 870); de attachments komen nog. Alles wat bij "Vuurwapens: de Glock 19" staat (zes onderdelen die
+zijn er nu alle vier (de MP5, de AK-47, de AWP en de Remington 870), en de eerste attachments ook: de Red Dot Sight en
+de Sniper Scope (de suppressors, de grips, de tweepoot en de lange magazijnen komen nog). Alles wat bij "Vuurwapens: de Glock 19" staat (zes onderdelen die
 slijten, storingen en de tap-rack, een patroon in de kamer, een magazijn dat je kogel per kogel vult, hulzen die eruit
 springen, de magazijnpouch, de skills) geldt ook voor de nieuwe wapens. Dit is wat anders is.
 
@@ -2252,7 +2254,7 @@ blokken.
   uitwerpen of wisselen uit je magazijnpouch. Een nieuw magazijn met een lege kamer: nog eens R (de grendel schuift de
   eerste patroon erin; niets gaat vanzelf). Sneak + R steekt een patroon met de hand in de kamer, U haalt hem eruit.
 - **De schakelaar** (X) heeft twee standen: SEMI en SAFE.
-- **Richten**: zolang er geen kijker op zit (die komt met de attachments), kijk je over een ijzeren vizier: de keep
+- **Richten**: zolang er geen kijker op zit (zie "Attachments" hieronder), kijk je over een ijzeren vizier: de keep
   achteraan op de rail en de korrel vooraan op de loop, vlak achter de mondingsrem. Je kijkt daarbij over de kap van de
   grendel heen.
 - **Zijn zes onderdelen**: Receiver (de kolf met de stalen behuizing en de rail), **Bolt** (de grendel met zijn knop),
@@ -2308,6 +2310,42 @@ rounds in your inventory").
 - **De Ammo Box**: elk kaliber is zijn eigen soort (een doos 7.62 neemt geen 9mm). Houd je een magazijn tegen een doos,
   dan laadt het alleen als de patronen in de doos van zijn wapen zijn; anders zegt de doos wat erin zit.
 
+**Attachments: de Red Dot Sight en de Sniper Scope** (versie 2.4). Jouw wens: "een attachment systeem, de attachments
+maak je net zoals de gun parts in de Gunsmith Table". Een attachment is een item dat je op een vuurwapen zet; het slijt
+niet. De eerste plek op een wapen is de **kijker** ("Sight"): daar past er één.
+- **Maken**: op de Gunsmith Table, tabblad "Make parts", onderaan in de lijst links onder **Attachments**. De **Red Dot
+  Sight** kost 2 staal, 1 glasplaat (een glass pane, eender welke kleur) en 2 redstone; de **Sniper Scope** 4 staal, 2
+  amethistscherven en 2 glasplaten. In de crafting table kan het niet.
+- **Erop en eraf: alleen op de Gunsmith Table** (jouw keuze). Leg het wapen op de tafel: boven het wapen staat een
+  gestippeld vak "SIGHT". Sleep de kijker uit de lijst links op het wapen en hij klikt vast; in de lijst rechts staat
+  dan bij Sight wat erop zit ("Red Dot" of "Scope 1-10x"). Eraf: sleep hem van het wapen, of klik op het kruisje. Er
+  kan maar één kijker op: eerst de oude eraf. Je neemt het wapen mee met zijn kijker erop; in zijn tooltip staat dan
+  "Sight: Sniper Scope".
+- **Wat past waar**: de Red Dot Sight op elk vuurwapen (Glock 19, MP5, AK-47, AWP, Remington 870); de Sniper Scope op
+  de MP5, de AK-47 en de AWP (voor een pistool is hij te groot, en op een hagelgeweer heb je er niets aan). Past iets
+  niet op het wapen dat op de tafel ligt, dan staat er in de lijst links "does not fit". De tooltip van een attachment
+  zegt ook waarop het past.
+- **Een kijker staat op een onderdeel**: bij de lange wapens op de Receiver, bij de Glock op de **Slide** (hij schuift
+  bij elk schot mee naar achteren). Zolang de kijker erop staat, krijg je dat onderdeel niet uit het wapen ("Take the
+  Red Dot Sight off first"), en op een Glock zonder slede kan er geen kijker (de plek "SIGHT" is er dan niet).
+- **De Red Dot Sight**: een klein open kijkertje met een rood stipje dat zelf licht geeft. Richt je (rechtermuisknop),
+  dan komt het stipje in het midden van je beeld, in zijn raampje, en **je ziet je wapen gewoon nog** (jouw keuze:
+  "zoals TACZ"). Je bent **sneller gericht** (1,4 keer: `[guns] redDotAimSpeed`) en een gericht schot is **preciezer**
+  (de spreiding maal 0,7: `redDotAimSpread`). Vanuit de heup verandert er niets. Op de MP5 staat hij op een
+  verhoginkje, zodat je over het vizier van de MP5 heen kijkt.
+- **De Sniper Scope**: één kijker die van **1x tot 10x** gaat, en alles ertussenin (jouw keuze). Richt je, dan komt het
+  oculair voor je oog: je kijkt door de ring met het dradenkruis, het hele beeld zoomt in, en onder de ring zie je je
+  wapen nog (geen zwart beeld). **Scroll terwijl je richt** om in en uit te zoomen (elk tikje een vijfde verder of
+  terug); rechtsonder staat de stand ("ZOOM 4.0x"), en de kijker onthoudt hem zolang het spel open is. Hoe verder je
+  inzoomt, hoe trager je muis draait (10x ingezoomd = 10x trager), zodat je doel niet uit beeld schiet. Een gericht
+  schot is nog preciezer (de spreiding maal 0,5: `scopeAimSpread`), maar de kijker is zwaar: je bent **trager gericht**
+  (0,7 keer: `scopeAimSpeed`). Hoe ver hij hoogstens gaat: `scopeMaxZoom`. Bij de AWP laat je de kijker even los als je
+  met R doorlaadt.
+- **Het stipje en het dradenkruis staan precies in het midden van je beeld**, en blijven daar als je wapen een haar
+  beweegt: daar gaat de kogel heen.
+- **Je ziet de kijker overal**: op het wapen in je hand en in die van anderen, op je rug aan de sling, op het Pegboard,
+  als item op de grond, en op het plaatje in je inventaris (zo zie je in je werkbalk welke AK-47 de kijker heeft).
+
 **De getallen** staan in `config/imttech.toml` onder `[guns]`: elk rijtje heeft nu vijf getallen, in de volgorde Glock
 19, MP5, AK-47, AWP, Remington 870 (schade, tempo, bereik, kogelsnelheid, magazijn, het lange magazijn, spreiding,
 terugslag, korrels per schot, hoe lang doorladen duurt, hoe ver bewakers het horen). Had je al een configbestand, dan
@@ -2320,7 +2358,8 @@ wapen opnieuw, en met `--assets <map>`
 naar een proefmap die je met `tools/preview_obj.py --assets <map>` bekijkt. De omtrek van een foto halen doet
 `tools/trace_outline.py` (met `--colour r,g,b` alleen wat een bepaalde kleur heeft, zoals de kolf van de AWP naast zijn
 zwarte kijker). De patroon, de huls en de kogelpunt van een nieuw kaliber staan in `tools/ammo_models.py`
-(`python tools/generate_gun_models.py 762 338 12g`). De geluiden:
+(`python tools/generate_gun_models.py 762 338 12g`), de attachments in `tools/attachment_models.py`
+(`python tools/generate_gun_models.py red_dot_sight sniper_scope`). De geluiden:
 `py -3.12 tools/generate_sounds.py mp5_fire mp5_charge ak47_fire ak47_charge awp_fire awp_bolt shotgun_fire shotgun_pump ...`.
 
 ### Lasergeweren uit onderdelen: de Laser Workbench, de Nether Star, de slings

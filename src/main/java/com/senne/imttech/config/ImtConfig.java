@@ -2306,6 +2306,20 @@ public final class ImtConfig {
         @Tunable(value = "Shots per click in burst mode", min = 2, max = 10)
         public static float BURST_SHOTS = 3.0f;
 
+        // ------------------------------------------------------------------------- Attachments (hoofdstuk 103, stap 5)
+        /** De Red Dot Sight: je richt sneller en preciezer. */
+        @Tunable(value = "Red Dot Sight: the spread of an aimed shot times this (smaller = more precise)", max = 2)
+        public static float RED_DOT_AIM_SPREAD = 0.7f;
+        @Tunable(value = "Red Dot Sight: how fast you bring the gun up to aim, times this", min = 0.1, max = 5)
+        public static float RED_DOT_AIM_SPEED = 1.4f;
+        /** De Sniper Scope: van 1x tot zo ver (met het scrollwiel terwijl je richt), preciezer, maar trager richten. */
+        @Tunable(value = "Sniper Scope: how far it zooms in at most (scroll while aiming; 1 = no zoom)", min = 1, max = 20)
+        public static float SCOPE_MAX_ZOOM = 10.0f;
+        @Tunable(value = "Sniper Scope: the spread of an aimed shot times this (smaller = more precise)", max = 2)
+        public static float SCOPE_AIM_SPREAD = 0.5f;
+        @Tunable(value = "Sniper Scope: how fast you bring the gun up to aim, times this", min = 0.1, max = 5)
+        public static float SCOPE_AIM_SPEED = 0.7f;
+
         // ------------------------------------------------------------------------- Kogels en hulzen
         /** Hoeveel een kogel per tick zakt (blokken per tick per tick): een heel klein beetje. */
         @Tunable(value = "How much a bullet drops per tick (blocks per tick per tick)", max = 1)

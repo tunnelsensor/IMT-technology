@@ -66,6 +66,15 @@ public final class FirearmRig {
      * omlaag als hij voorin zit. 0 = geen grendel. De grendel draait om de as van de loop ({@link #muzzle}).
      */
     public float handleLift;
+    /**
+     * Hoofdstuk 103, stap 5: waar de voet van een kijker (de Red Dot Sight of de Sniper Scope) op dit wapen staat: het
+     * midden van de bovenkant van de behuizing (model-pixels). {@link #sightRiser}: een verhoging eronder (de MP5: zo
+     * kijk je over zijn eigen vizier heen). {@link #sightOnSlide}: de kijker staat op de slede en gaat bij elk schot mee
+     * naar achteren (de Glock).
+     */
+    public Vector3f sightMount = new Vector3f(8, 16, 0);
+    public float sightRiser;
+    public boolean sightOnSlide;
 
     private FirearmRig(float scale, Vector3f grip, Vector3f support, Vector3f sight, Vector3f muzzle, Vector3f magazine,
                        Vector3f magazineAxis, Vector3f port, Vector3f hip, float sightDistance, float cycle, float cycleTicks,
@@ -110,7 +119,7 @@ public final class FirearmRig {
             new Vector3f(0.21f, -0.21f, -0.42f), 0.46f, 2.6f, 2, 0.055f, 6.5f,
             new Vector3f(8.2f, 13.6f, 12.4f), 2.6f,
             new Vector3f(8, 3.82f, 11.94f), new Vector3f(8.13f, 11.23f, 9.2f), GRIP_ANGLE,
-            0.5f, new Vector3f(8, 9, 8));
+            0.5f, new Vector3f(8, 9, 8)).optic(13.33f, 10.5f, 0, true);
 
     /**
      * De MP5 (hoofdstuk 103, tools/mp5_model.py): je rechterhand op de greep, je linkerhand onder de handbeschermer, het
@@ -124,7 +133,7 @@ public final class FirearmRig {
             new Vector3f(0.19f, -0.335f, -0.36f), 0.36f, 3.0f, 2, 0.03f, 2.6f,
             new Vector3f(6.2f, 17.7f, -11.4f), 4.6f,
             new Vector3f(8, -1.2f, -3.1f), new Vector3f(8, 13.36f, 1.4f), 0,
-            0.36f, new Vector3f(8, 12.5f, 8.5f));
+            0.36f, new Vector3f(8, 12.5f, 8.5f)).optic(18.38f, 3.0f, 0.9f, false);
 
     /**
      * De AK-47 (hoofdstuk 103, stap 2, tools/ak47_model.py): je rechterhand op de houten greep, je linkerhand onder de
@@ -139,7 +148,7 @@ public final class FirearmRig {
             new Vector3f(0.20f, -0.32f, -0.40f), 0.45f, 5.0f, 2, 0.05f, 4.5f,
             new Vector3f(10.3f, 13.5f, 1.1f), 5.0f,
             new Vector3f(8, -1.83f, -6.0f), new Vector3f(8, 10.98f, 1.04f), -0.515f,
-            0.36f, new Vector3f(8, 10.5f, 4.0f));
+            0.36f, new Vector3f(8, 10.5f, 4.0f)).optic(15.34f, 4.5f, 0, false);
 
     /**
      * De AWP (hoofdstuk 103, stap 3, tools/awp_model.py): je rechterhand op de greep achter het duimgat, je linkerhand
@@ -154,10 +163,18 @@ public final class FirearmRig {
             new Vector3f(0.20f, -0.34f, -0.42f), 0.215f, 7.0f, 2, 0.085f, 7.0f,
             new Vector3f(11.5f, 12.66f, 7.22f), 7.0f,
             new Vector3f(8, 6.23f, 0.24f), new Vector3f(8, 13.45f, 0.2f), 0,
-            0.34f, new Vector3f(8, 11.5f, -10.0f)).lift(58);
+            0.34f, new Vector3f(8, 11.5f, -10.0f)).lift(58).optic(16.1f, -1.0f, 0, false);
 
     private FirearmRig lift(float degrees) {
         this.handleLift = degrees;
+        return this;
+    }
+
+    /** De montage van een kijker: de hoogte (de bovenkant van de behuizing) en waar langs het wapen, een verhoging, en of hij op de slede staat. */
+    private FirearmRig optic(float y, float z, float riser, boolean onSlide) {
+        this.sightMount = new Vector3f(8, y, z);
+        this.sightRiser = riser;
+        this.sightOnSlide = onSlide;
         return this;
     }
 
@@ -176,7 +193,7 @@ public final class FirearmRig {
             new Vector3f(0.20f, -0.31f, -0.40f), 0.13f, 7.0f, 2, 0.09f, 7.5f,
             new Vector3f(8, 8.8f, -19.0f), 7.0f,
             new Vector3f(8, 6.0f, -0.5f), new Vector3f(8, 9.9f, -0.5f), 0,
-            0.36f, new Vector3f(8, 10.5f, -3.0f));
+            0.36f, new Vector3f(8, 10.5f, -3.0f)).optic(14.28f, 1.5f, 0, false);
 
     public static FirearmRig of(FirearmType type) {
         return switch (type) {
@@ -382,6 +399,17 @@ public final class FirearmRig {
     /** Waar de sling ligt als hij er nog niet aan hangt: helemaal onder het wapen. */
     public static Vector3f slingExploded(FirearmType type) {
         return new Vector3f(0, -13.0f, 0).mul(explodedScale(type));
+    }
+
+    /**
+     * Waar de kijker ligt als hij er nog niet op zit (hoofdstuk 103, stap 5): boven het wapen, achter de slagpin (bij een
+     * lang wapen), of een eindje boven het midden van de slede (een pistool: de plek is er pas als de slede erop zit).
+     */
+    public static Vector3f sightExploded(FirearmType type) {
+        if (type == FirearmType.GLOCK_19) {
+            return new Vector3f(0, 2.6f, -3.0f);
+        }
+        return new Vector3f(0, 13.0f, 10.0f).mul(explodedScale(type));
     }
 
     /** Zo lang is de MP5 (pixels): daarvoor zijn de afstanden van {@link #LONG_EXPLODED} gekozen. */

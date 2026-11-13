@@ -233,7 +233,13 @@ public final class FirearmControl {
             inspectAt = -1;
         }
         wasAiming = wantAim;
-        aim = Mth.approach(aim, wantAim ? 1 : 0, AIM_SPEED);
+        // Hoofdstuk 103, stap 5: een red dot brengt je sneller op je doel, een zware kijker trager.
+        com.senne.imttech.guns.Attachment optic = type == null ? null : FirearmItem.sight(main);
+        aim = Mth.approach(aim, wantAim ? 1 : 0, AIM_SPEED * (optic == null ? 1 : optic.aimSpeed()));
+        scoped = optic != null && optic.zooms() ? optic : null;
+        if (scoped != null) {
+            scopeZoom = Mth.clamp(scopeZoom, 1, scoped.maxZoom());
+        }
         sprint = Mth.approach(sprint, player.isSprinting() && aim < 0.1f ? 1 : 0, 0.2f);
 
         while (ImtKeys.GUN_RELOAD.consumeClick()) {
@@ -515,14 +521,59 @@ public final class FirearmControl {
         event.getInput().leftImpulse *= slow;
     }
 
-    /** Richten: een beetje inzoomen. */
+    /**
+     * Hoofdstuk 103, stap 5: de Sniper Scope op het wapen in je hand (of null), en hoe ver hij nu staat. Eén kijker "van
+     * 1x tot 10x en alles ertussenin" (jouw keuze): je verstelt hem met het scrollwiel terwijl je richt. De stand blijft
+     * staan zolang het spel open is.
+     */
+    private static com.senne.imttech.guns.Attachment scoped;
+    private static float scopeZoom = 4.0f;
+
+    /** Staat er een kijker op je wapen waarmee je zoomt, en richt je (of ben je ermee bezig)? */
+    public static boolean scoping() {
+        return held != null && scoped != null && aim > 0.05f;
+    }
+
+    /** Zo ver staat de kijker nu (1 tot 10). */
+    public static float scopeZoom() {
+        return scopeZoom;
+    }
+
+    /** Voor de rondleiding: de kijker op deze stand zetten. */
+    public static void setScopeZoom(float zoom) {
+        scopeZoom = Math.max(1, zoom);
+    }
+
+    /** Zo ver zoom je nu in (1 = niet): het ijzeren vizier of de red dot een beetje, de Sniper Scope zo ver als hij staat. */
+    private static float zoom(float partialTick) {
+        if (held == null) {
+            return 1;
+        }
+        float a = aim(partialTick);
+        if (scoped != null) {
+            // Vloeiend van 1 naar de stand van de kijker: in gelijke verhoudingen, niet in gelijke stappen.
+            return (float) Math.pow(scopeZoom, a);
+        }
+        return 1 + (held.zoom() - 1) * a;
+    }
+
+    /**
+     * Richten: inzoomen. Over een ijzeren vizier of door een red dot een beetje, zoals altijd (de kijkhoek gedeeld door
+     * de zoom). Door de Sniper Scope een echte "4x": de tangens van de kijkhoek gedeeld door vier, niet de hoek zelf,
+     * zodat alles in het midden van je beeld precies vier keer zo groot is.
+     */
     public static void onComputeFov(ViewportEvent.ComputeFov event) {
         if (!event.usedConfiguredFov() || held == null) {
             return;
         }
-        float zoom = 1 + (held.zoom() - 1) * aim((float) event.getPartialTick());
+        float zoom = zoom((float) event.getPartialTick());
         if (zoom > 1.001f) {
-            event.setFOV(event.getFOV() / zoom);
+            if (scoped == null) {
+                event.setFOV(event.getFOV() / zoom);
+                return;
+            }
+            double half = Math.toRadians(event.getFOV() / 2);
+            event.setFOV(Math.toDegrees(2 * Math.atan(Math.tan(half) / zoom)));
         }
     }
 
@@ -530,10 +581,31 @@ public final class FirearmControl {
         if (held == null) {
             return;
         }
-        float zoom = 1 + (held.zoom() - 1) * aim(1);
+        float zoom = zoom(1);
         if (zoom > 1.001f) {
-            event.setMouseSensitivity(event.getMouseSensitivity() / Math.sqrt(zoom));
+            // Ingezoomd beweegt het beeld sneller: de muis gaat evenredig trager (10x ingezoomd = 10x trager), zodat
+            // een beweging van je hand op je scherm even ver gaat. Minecraft rekent met (0,6 x gevoeligheid + 0,2) tot
+            // de derde macht: daarom delen we dat getal door de derdemachtswortel van de zoom, en rekenen we terug.
+            double base = event.getMouseSensitivity() * 0.6 + 0.2;
+            event.setMouseSensitivity((base / Math.cbrt(zoom) - 0.2) / 0.6);
         }
+    }
+
+    /**
+     * Het scrollwiel terwijl je door de Sniper Scope richt: in- en uitzoomen, een vijfde per tikje (in plaats van een
+     * ander vakje van je werkbalk kiezen).
+     */
+    public static void onMouseScroll(net.neoforged.neoforge.client.event.InputEvent.MouseScrollingEvent event) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen != null || held == null || scoped == null || aim < 0.5f || event.getScrollDeltaY() == 0) {
+            return;
+        }
+        float before = scopeZoom;
+        scopeZoom = Mth.clamp((float) (scopeZoom * Math.pow(1.2, event.getScrollDeltaY())), 1, scoped.maxZoom());
+        if (scopeZoom != before && mc.player != null) {
+            play(mc.player, net.minecraft.sounds.SoundEvents.SPYGLASS_USE, 0.25f);
+        }
+        event.setCanceled(true);
     }
 
     // ================================================================ Hulpjes

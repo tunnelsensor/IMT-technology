@@ -194,6 +194,14 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
         return 28;
     }
 
+    /**
+     * Wat er in de lijst rechts staat bij een plek zonder materiaal waar iets op zit: "in" (de sling), of de naam van wat
+     * erop zit (hoofdstuk 103, stap 5: "Red Dot" bij de kijker).
+     */
+    protected String installedText(ItemStack gun, P part) {
+        return "in";
+    }
+
     /** Maakt deze tafel ook onderdelen (het tabblad "Make parts")? Alleen de Gunsmith Table (hoofdstuk 78, jouw keuze). */
     protected boolean makesParts() {
         return false;
@@ -628,7 +636,8 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
                     HudStyle.bar(g, x, rowY + 9, SIDE_W - 16, 3, state.condition() / (float) PartState.NEW, colour);
                 }
             } else {
-                small(g, "in", noteX, noteY, HudStyle.argb(255, HudStyle.GREEN));
+                smallFit(g, installedText(gun, part), noteX, noteY, HudStyle.argb(255, HudStyle.GREEN),
+                        wide ? SIDE_W - 16 : SIDE_W - 56);
             }
             rowY += step;
         }

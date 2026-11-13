@@ -1,0 +1,11 @@
+{
+ "loader": "neoforge:obj",
+ "model": "imttech:models/firearm/attachment/sight_riser.obj",
+ "automatic_culling": false,
+ "flip_v": false,
+ "emissive_ambient": true,
+ "textures": {
+  "gun": "imttech:item/attachment/red_dot_sight",
+  "particle": "imttech:item/attachment/red_dot_sight"
+ }
+}

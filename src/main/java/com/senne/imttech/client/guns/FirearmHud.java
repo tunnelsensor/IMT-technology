@@ -128,6 +128,12 @@ public final class FirearmHud implements LayeredDraw.Layer {
                 : Component.translatable("hud.imttech.firearm.carried", mags, loose);
         g.drawString(font, carried, right - font.width(carried), bottom - 6, argb(0.75f, mags == 0 && loose == 0 ? RED : WHITE), true);
 
+        // Hoofdstuk 103, stap 5: door de Sniper Scope: hoe ver hij staat (scrollen verstelt hem).
+        if (FirearmControl.scoping()) {
+            Component zoom = Component.translatable("hud.imttech.firearm.zoom", String.format(java.util.Locale.ROOT, "%.1f",
+                    FirearmControl.scopeZoom()));
+            g.drawString(font, zoom, right - font.width(zoom), bottom - 60, argb(0.9f * FirearmControl.aim(pt), CYAN), true);
+        }
         // Wat er aan de hand is, of het balkje van een handeling.
         Firearms.ActionKind action = FirearmControl.action();
         float progress = FirearmControl.action(pt);

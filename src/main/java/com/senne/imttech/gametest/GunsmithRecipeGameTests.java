@@ -62,11 +62,11 @@ public final class GunsmithRecipeGameTests {
         }
     }
 
-    /** Hoort dit alleen op de Gunsmith Table gemaakt te worden (een onderdeel, de sling, een magazijn)? */
+    /** Hoort dit alleen op de Gunsmith Table gemaakt te worden (een onderdeel, de sling, een magazijn, een attachment)? */
     private static boolean onlyAtTheTable(ItemStack stack) {
         Item item = stack.getItem();
         return item instanceof GunPartItem || item instanceof LaserPartItem || item instanceof GunSlingItem
-                || item instanceof MagazineItem;
+                || item instanceof MagazineItem || item instanceof com.senne.imttech.guns.AttachmentItem;
     }
 
     /** Geen enkel ander recept (de crafting table, een oven, de smithing table...) maakt een onderdeel, sling of magazijn. */
@@ -86,7 +86,8 @@ public final class GunsmithRecipeGameTests {
 
     /**
      * Op de tafel staat precies één recept voor elk onderdeel van de Glock (in elk materiaal waar het in bestaat), voor
-     * elk onderdeel van elk lasergeweer (titanium en netherite), voor de sling en voor het magazijn. Niet meer, niet minder.
+     * elk onderdeel van elk lasergeweer (titanium en netherite), voor de sling, voor het magazijn en (hoofdstuk 103,
+     * stap 5) voor elk attachment. Niet meer, niet minder.
      */
     @GameTest(template = ARENA, timeoutTicks = 20, batch = "gunsmithing")
     public static void gunsmith_table_has_one_recipe_per_part(GameTestHelper helper) {
@@ -110,6 +111,9 @@ public final class GunsmithRecipeGameTests {
             }
         }
         wanted.add(new ItemStack(ModItems.GUN_SLING.get()));
+        for (com.senne.imttech.guns.Attachment attachment : com.senne.imttech.guns.Attachment.values()) {
+            wanted.add(new ItemStack(ModItems.attachment(attachment)));
+        }
         var all = GunsmithRecipe.all(helper.getLevel().getRecipeManager());
         for (ItemStack want : wanted) {
             List<ResourceLocation> found = new ArrayList<>();

@@ -58,7 +58,7 @@ public final class GunsmithMakePanel {
      * Een wapen in de lijst links: de Glock, (hoofdstuk 103) de MP5, elk lasergeweer, en "Other" voor recepten die een
      * datapack toevoegt.
      */
-    public enum Group { GLOCK, MP5, AK47, AWP, R870, PISTOL, RIFLE, SNIPER, SHOTGUN, OTHER }
+    public enum Group { GLOCK, MP5, AK47, AWP, R870, PISTOL, RIFLE, SNIPER, SHOTGUN, ATTACHMENTS, OTHER }
 
     /** Het vuurwapen van deze groep, of null (een lasergeweer of "Other"). */
     private static @Nullable FirearmType firearm(Group group) {
@@ -168,6 +168,10 @@ public final class GunsmithMakePanel {
                     }
                 }
             }
+            if (!placed && result.getItem() instanceof com.senne.imttech.guns.AttachmentItem item) {
+                // Hoofdstuk 103, stap 5: de attachments in hun eigen groep, een rij per attachment met zijn naam ervoor.
+                placed = add(Group.ATTACHMENTS, index, recipe, result, item.attachment().ordinal(), 0);
+            }
             if (!placed) {
                 other.add(new Tile(index, recipe, result, other.size() / OTHER_COLUMNS, other.size() % OTHER_COLUMNS));
             }
@@ -178,6 +182,7 @@ public final class GunsmithMakePanel {
         for (GunType type : GunType.values()) {
             icons.put(group(type), LaserGunItem.complete(type, GunMaterial.TITANIUM));
         }
+        icons.put(Group.ATTACHMENTS, new ItemStack(com.senne.imttech.registry.ModItems.RED_DOT_SIGHT.get()));
         icons.put(Group.OTHER, other.isEmpty() ? ItemStack.EMPTY : other.getFirst().result());
         if (tiles.get(group).isEmpty()) {
             List<Group> shown = groups();
@@ -243,6 +248,7 @@ public final class GunsmithMakePanel {
             case RIFLE -> Component.translatable("item.imttech." + GunType.RIFLE.id);
             case SNIPER -> Component.translatable("item.imttech." + GunType.SNIPER.id);
             case SHOTGUN -> Component.translatable("item.imttech." + GunType.SHOTGUN.id);
+            case ATTACHMENTS -> Component.translatable("screen.imttech.gunsmith.make.attachments");
             case OTHER -> Component.translatable("screen.imttech.gunsmith.make.other");
         };
     }
@@ -252,13 +258,17 @@ public final class GunsmithMakePanel {
         return switch (group) {
             case GLOCK -> List.of(GunMaterial.POLYMER, GunMaterial.STEEL, GunMaterial.TITANIUM);
             case MP5, AK47, AWP, R870 -> List.of(GunMaterial.STEEL, GunMaterial.TITANIUM);
-            case OTHER -> List.of();
+            case OTHER, ATTACHMENTS -> List.of();
             default -> List.of(GunMaterial.TITANIUM, GunMaterial.NETHERITE);
         };
     }
 
     /** De naam van een rij: het onderdeel, of het magazijn (de Glock) en de sling (de lange lasergeweren). */
     private static Component rowName(Group group, int row) {
+        if (group == Group.ATTACHMENTS) {
+            com.senne.imttech.guns.Attachment[] all = com.senne.imttech.guns.Attachment.values();
+            return row >= 0 && row < all.length ? all[row].text() : Component.empty();
+        }
         FirearmType firearm = firearm(group);
         if (firearm != null) {
             int parts = GunPart.values().length;
@@ -419,7 +429,7 @@ public final class GunsmithMakePanel {
         }
         List<Tile> list = tiles.getOrDefault(group, List.of());
         // De namen van de rijen (alleen rijen waar een tegel ligt).
-        if (!columns.isEmpty()) {
+        if (!columns.isEmpty() || group == Group.ATTACHMENTS) {
             Set<Integer> rows = new HashSet<>();
             for (Tile tile : list) {
                 rows.add(tile.row);
@@ -473,7 +483,8 @@ public final class GunsmithMakePanel {
     /** Zo breed is een kolom met tegels. */
     private int columnWidth(Group group) {
         List<GunMaterial> columns = columns(group);
-        int count = columns.isEmpty() ? OTHER_COLUMNS : columns.size();
+        // De attachments hebben geen materialen: één kolom, met de naam ervoor. "Other" is een rooster zonder namen.
+        int count = group == Group.ATTACHMENTS ? 1 : columns.isEmpty() ? OTHER_COLUMNS : columns.size();
         return (GRID_W - namesWidth(group) - 4) / count;
     }
 

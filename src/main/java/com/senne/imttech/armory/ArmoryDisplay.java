@@ -145,7 +145,8 @@ public final class ArmoryDisplay {
      * Hoofdstuk 103: een kleine wand van 3 x 3 Pegboards (met hun voorkant naar het noorden; de muur erachter moet er al
      * staan) met de vuurwapens van de grote update, elk met zijn magazijnen ernaast: bovenaan de AWP (groen, en een
      * zandkleurige van titanium) en de Remington 870, dan de AK-47 en de Glock, en onderaan de MP5 en een AK-47 van
-     * titanium. Voor de rondleiding (-Ponly=ak47, awp of 870): zo zie je of ze goed hangen.
+     * titanium. Stap 5: de groene AWP draagt de Sniper Scope, de Glock en de AK-47 van titanium een Red Dot Sight. Voor
+     * de rondleiding (-Ponly=ak47, awp, 870 of attach): zo zie je of ze goed hangen.
      */
     public static void buildFirearmRack(ServerLevel level, BlockPos leftBottom) {
         for (int du = 0; du < 3; du++) {
@@ -155,7 +156,8 @@ public final class ArmoryDisplay {
             }
         }
         Pegboard.Turn left = Pegboard.Turn.LEFT;
-        hang(level, leftBottom, 1, 20, FirearmItem.loaded(FirearmType.AWP, GunMaterial.STEEL), left);
+        hang(level, leftBottom, 1, 20, sighted(FirearmItem.loaded(FirearmType.AWP, GunMaterial.STEEL),
+                com.senne.imttech.guns.Attachment.SNIPER_SCOPE), left);
         hang(level, leftBottom, 14, 21, MagazineItem.of(FirearmType.AWP, 5), left);
         hang(level, leftBottom, 17, 21, MagazineItem.of(FirearmType.AWP, 0), left);
         hang(level, leftBottom, 11, 16, FirearmItem.loaded(FirearmType.AWP, GunMaterial.TITANIUM), Pegboard.Turn.RIGHT);
@@ -163,12 +165,20 @@ public final class ArmoryDisplay {
         hang(level, leftBottom, 1, 10, FirearmItem.loaded(FirearmType.AK_47, GunMaterial.STEEL), left);
         hang(level, leftBottom, 12, 11, MagazineItem.of(FirearmType.AK_47, 30), left);
         hang(level, leftBottom, 13, 11, MagazineItem.of(FirearmType.AK_47, 0), left);
-        hang(level, leftBottom, 16, 11, FirearmItem.loaded(FirearmType.GLOCK_19, GunMaterial.STEEL), left);
+        hang(level, leftBottom, 16, 11, sighted(FirearmItem.loaded(FirearmType.GLOCK_19, GunMaterial.STEEL),
+                com.senne.imttech.guns.Attachment.RED_DOT), left);
         hang(level, leftBottom, 21, 11, MagazineItem.of(FirearmType.GLOCK_19, 15), left);
         hang(level, leftBottom, 1, 4, FirearmItem.loaded(FirearmType.MP5, GunMaterial.STEEL), left);
         hang(level, leftBottom, 10, 5, MagazineItem.of(FirearmType.MP5, 30), left);
         hang(level, leftBottom, 11, 5, MagazineItem.of(FirearmType.MP5, 0), left);
-        hang(level, leftBottom, 13, 4, FirearmItem.loaded(FirearmType.AK_47, GunMaterial.TITANIUM), Pegboard.Turn.RIGHT);
+        hang(level, leftBottom, 13, 4, sighted(FirearmItem.loaded(FirearmType.AK_47, GunMaterial.TITANIUM),
+                com.senne.imttech.guns.Attachment.RED_DOT), Pegboard.Turn.RIGHT);
+    }
+
+    /** Dit wapen met deze kijker erop (hoofdstuk 103, stap 5). */
+    private static ItemStack sighted(ItemStack gun, com.senne.imttech.guns.Attachment sight) {
+        FirearmItem.setAttachment(gun, sight);
+        return gun;
     }
 
     /** Hangt een item met zijn gaatje linksonder op ({@code u}, {@code v}) van de wand die bij {@code leftBottom} begint. */

@@ -191,8 +191,10 @@ public final class Firearms {
         if (Math.toDegrees(Math.acos(Mth.clamp(look.dot(server), -1, 1))) > MAX_AIM_DIFFERENCE) {
             look = server;
         }
+        // Hoofdstuk 103, stap 5: een kijker maakt een gericht schot preciezer (vanuit de heup helpt hij niet).
+        Attachment sight = FirearmItem.sight(gun);
         double spread = Math.toRadians(type.spread(aiming) * (1 + 0.5f * parts.wornFactor(GunPart.BARREL))
-                * GunSkillHooks.spreadFactor(player, type));
+                * GunSkillHooks.spreadFactor(player, type) * (aiming && sight != null ? sight.aimSpread() : 1));
         float damage = type.damage() * parts.materialOf(GunPart.BARREL).damageFactor();
         damage *= 1 - 0.2f * Math.min(1, parts.wornFactor(GunPart.BARREL) / Math.max(0.01f, ImtConfig.Guns.WORN_JAM_FACTOR));
         // Hoofdstuk 103: hagel is een bundel korrels: één richting voor het schot, en elke korrel waaiert er nog wat af.

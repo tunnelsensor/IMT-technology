@@ -1,0 +1,21 @@
+{
+  "type": "imttech:gunsmithing",
+  "ingredients": [
+    {
+      "item": "imttech:steel_ingot",
+      "count": 2
+    },
+    {
+      "tag": "c:glass_panes",
+      "count": 1
+    },
+    {
+      "tag": "c:dusts/redstone",
+      "count": 2
+    }
+  ],
+  "result": {
+    "id": "imttech:red_dot_sight",
+    "count": 1
+  }
+}

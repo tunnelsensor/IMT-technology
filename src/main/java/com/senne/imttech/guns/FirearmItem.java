@@ -251,6 +251,44 @@ public class FirearmItem extends Item {
         }
     }
 
+    // ================================================================ Attachments (hoofdstuk 103, stap 5)
+
+    /** Wat er op dit wapen zit (leeg als er niets op zit). */
+    public static GunAttachments attachments(ItemStack stack) {
+        return stack.getOrDefault(ModDataComponents.GUN_ATTACHMENTS.get(), GunAttachments.EMPTY);
+    }
+
+    /** Wat er op deze plek zit, of null. */
+    public static @Nullable Attachment attachment(ItemStack stack, AttachmentSlot slot) {
+        return attachments(stack).get(slot);
+    }
+
+    /** De kijker op dit wapen (de Red Dot Sight of de Sniper Scope), of null: dan richt je over het ijzeren vizier. */
+    public static @Nullable Attachment sight(ItemStack stack) {
+        return attachment(stack, AttachmentSlot.SIGHT);
+    }
+
+    /** Dit attachment erop (wat op zijn plek zat, verdwijnt: haal dat er eerst af als je het wil houden). */
+    public static void setAttachment(ItemStack stack, Attachment attachment) {
+        stack.set(ModDataComponents.GUN_ATTACHMENTS.get(), attachments(stack).with(attachment));
+    }
+
+    /** Wat op deze plek zat eraf; geeft terug wat het was, of null. */
+    public static @Nullable Attachment removeAttachment(ItemStack stack, AttachmentSlot slot) {
+        GunAttachments now = attachments(stack);
+        Attachment was = now.get(slot);
+        if (was == null) {
+            return null;
+        }
+        GunAttachments rest = now.without(slot);
+        if (rest.isEmpty()) {
+            stack.remove(ModDataComponents.GUN_ATTACHMENTS.get());
+        } else {
+            stack.set(ModDataComponents.GUN_ATTACHMENTS.get(), rest);
+        }
+        return was;
+    }
+
     // ================================================================ Een nieuw wapen
 
     /**
@@ -348,6 +386,10 @@ public class FirearmItem extends Item {
         if (type.selectable()) {
             tooltip.add(Component.translatable("tooltip.imttech.firearm.mode", fireMode(stack).text())
                     .withStyle(fireMode(stack) == FirearmType.FireMode.SAFE ? ChatFormatting.GREEN : ChatFormatting.GOLD));
+        }
+        for (Attachment attachment : attachments(stack).list()) {
+            tooltip.add(Component.translatable("tooltip.imttech.firearm.attachment", attachment.slot.text(), attachment.text())
+                    .withStyle(ChatFormatting.AQUA));
         }
         if (type.longGun) {
             tooltip.add(Component.translatable(hasSling(stack) ? "tooltip.imttech.firearm.sling" : "tooltip.imttech.firearm.no_sling")

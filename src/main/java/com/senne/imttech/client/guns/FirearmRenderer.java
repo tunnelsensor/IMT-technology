@@ -111,14 +111,20 @@ public final class FirearmRenderer {
         float progress = FirearmControl.action(pt);
         GunParts parts = FirearmItem.parts(stack);
 
+        // Hoofdstuk 103, stap 5: met een kijker erop richt je daardoor, niet over het ijzeren vizier.
+        com.senne.imttech.guns.Attachment optic = Optics.of(stack);
+        Vector3f sightPoint = optic == null ? rig.sight : Optics.eye(rig, optic);
+        float sightDistance = optic == null ? rig.sightDistance : Optics.eyeDistance(type, optic);
         pose.pushPose();
-        Vector3f pivot = lerp(rig.grip, rig.sight, aim);
-        Vector3f place = lerp(rig.hip, new Vector3f(0, 0, -rig.sightDistance), aim);
+        Vector3f pivot = lerp(rig.grip, sightPoint, aim);
+        Vector3f place = lerp(rig.hip, new Vector3f(0, 0, -sightDistance), aim);
         float rotX = 0;
         float rotY = 5 * (1 - aim);
         float rotZ = -3 * (1 - aim);
         float breathe = 1 - 0.7f * aim;
-        place.y += 0.004f * Mth.sin(time * 0.08f) * breathe;
+        // Met een kijker erop blijft het stipje of het dradenkruis precies in het midden van je beeld (daar gaat de kogel
+        // heen): het wapen schuift dan niet meer op en neer als je gericht bent. Het wiegt wel nog een haar om dat punt.
+        place.y += 0.004f * Mth.sin(time * 0.08f) * (optic == null ? breathe : 1 - aim);
         rotX += 0.4f * Mth.sin(time * 0.06f) * breathe;
         // Pakken: van onder je beeld omhoog (bij een magazijn erin: van rechtsonder, alsof je het wapen erbij pakt).
         float draw = ease(inserting ? Mth.clamp(progress * 3, 0, 1) : action == Firearms.ActionKind.DRAW ? 1 : FirearmControl.drawn(pt));
@@ -244,6 +250,10 @@ public final class FirearmRenderer {
             }
         }
         part(pose, buffers, type, parts, GunPart.BARREL, light);
+        // De kijker (hoofdstuk 103, stap 5). Bij de Sniper Scope maakt dit ook de opening van het oculair vrij als je richt.
+        if (optic != null && parts.get(GunPart.FRAME) != null) {
+            Optics.render(pose, buffers, rig, optic, light, lng ? 0 : slideBack, inserting ? 0 : aim);
+        }
         // Een huls die klem zit, in de uitwerpopening.
         int jam = FirearmItem.jam(stack);
         boolean casingStuck = jam == FirearmItem.JAM_STOVEPIPE && (action != Firearms.ActionKind.TAP_RACK || progress < 0.62f);

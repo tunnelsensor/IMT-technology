@@ -4290,6 +4290,171 @@ public final class VisualCheck {
             firearmRackShots(t, g, "rs");
         }
 
+        // --- De attachments (hoofdstuk 103, stap 5): elk wapen met een kijker vanuit de heup en gericht (de AWP met de
+        // Sniper Scope ook op 1x en 10x), de Gunsmith Table (de plek "Sight", een red dot erop, de kijker erop), het
+        // tabblad Make parts onder Attachments, en hoe anderen het zien: in je hand en op je rug.
+        if (want("attach")) {
+            BlockPos g = GUN_RANGE.above();
+            Vec3 stand = new Vec3(g.getX() + 0.5, g.getY(), g.getZ() + 0.5);
+            t.onServer(0, VisualCheck::buildGunRange);
+            t.onServer(0, player -> ShowcaseFeatures.buildGunBenches(player, g));
+            t.onServer(0, VisualCheck::giveAttachments);
+            t.stand(20, stand.x, stand.y, stand.z, 0, 2);
+            String[] names = {"awp_scope", "ak47_red_dot", "mp5_red_dot", "glock_red_dot", "ak47_scope", "mp5_scope", "870_red_dot",
+                    "awp_red_dot"};
+            for (int i = 0; i < names.length; i++) {
+                int slot = i;
+                String number = (i + 1 < 10 ? "0" : "") + (i + 1);
+                t.step(i == 0 ? 0 : 14, () -> selectSlot(slot));
+                t.step(0, () -> com.senne.imttech.client.guns.FirearmControl.setScopeZoom(4));
+                t.shot(22, "at" + number + "a_" + names[i] + "_hip");
+                t.key(0, () -> Minecraft.getInstance().options.keyUse, true);
+                t.shot(18, "at" + number + "b_" + names[i] + "_aim");
+                if (i == 0) {
+                    // De Sniper Scope op zijn uitersten: 1x (je ziet alles) en 10x.
+                    t.step(0, () -> com.senne.imttech.client.guns.FirearmControl.setScopeZoom(1));
+                    t.shot(8, "at01c_awp_scope_1x");
+                    t.step(0, () -> com.senne.imttech.client.guns.FirearmControl.setScopeZoom(10));
+                    t.shot(8, "at01d_awp_scope_10x");
+                    // Een schot door de kijker, en de grendel.
+                    t.key(2, () -> Minecraft.getInstance().options.keyAttack, true);
+                    t.key(1, () -> Minecraft.getInstance().options.keyAttack, false);
+                    t.shot(1, "at01e_awp_scope_fire");
+                }
+                if (i == 3) {
+                    // De red dot staat op de slede van de Glock: bij een schot gaat hij mee naar achteren.
+                    t.key(2, () -> Minecraft.getInstance().options.keyAttack, true);
+                    t.key(1, () -> Minecraft.getInstance().options.keyAttack, false);
+                    t.shot(0, "at04c_glock_red_dot_fire");
+                }
+                t.key(6, () -> Minecraft.getInstance().options.keyUse, false);
+            }
+            // De Gunsmith Table: een AK-47 zonder kijker, met een red dot en een Sniper Scope in je inventaris.
+            t.onServer(12, player -> {
+                var inventory = player.getInventory();
+                inventory.clearContent();
+                inventory.setItem(9, new ItemStack(ModItems.RED_DOT_SIGHT.get()));
+                inventory.setItem(10, new ItemStack(ModItems.SNIPER_SCOPE.get()));
+                inventory.setItem(11, com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.GLOCK_19,
+                        com.senne.imttech.guns.GunMaterial.STEEL));
+                if (player.serverLevel().getBlockEntity(g.offset(-2, 0, -2)) instanceof com.senne.imttech.guns.GunsmithTableBlockEntity table) {
+                    table.items().setItem(0, com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.AK_47,
+                            com.senne.imttech.guns.GunMaterial.STEEL));
+                }
+                ShowcaseFeatures.openBench(player, g.offset(-2, 0, -2));
+            });
+            t.step(2, () -> ShowcaseFeatures.gunsmithTab(false, com.senne.imttech.client.guns.GunsmithMakePanel.Group.AK47, stack -> false));
+            t.step(0, () -> HowToTour.mouseTo(1, 1));
+            t.step(15, () -> Minecraft.getInstance().getToasts().clear());
+            t.shot(8, "at10_table_sight_place");
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(g.offset(-2, 0, -2)) instanceof com.senne.imttech.guns.GunsmithTableBlockEntity table) {
+                    table.install(player, 9);
+                }
+            });
+            t.shot(10, "at11_table_red_dot_on");
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(g.offset(-2, 0, -2)) instanceof com.senne.imttech.guns.GunsmithTableBlockEntity table) {
+                    table.remove(player, com.senne.imttech.guns.GunSlot.SIGHT.ordinal());
+                    table.install(player, player.getInventory().findSlotMatchingItem(new ItemStack(ModItems.SNIPER_SCOPE.get())));
+                }
+            });
+            t.shot(10, "at12_table_scope_on");
+            // Een Glock: daar past alleen de red dot (de kijker staat in de lijst als "does not fit").
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(g.offset(-2, 0, -2)) instanceof com.senne.imttech.guns.GunsmithTableBlockEntity table) {
+                    table.remove(player, com.senne.imttech.guns.GunSlot.SIGHT.ordinal());
+                    table.takeGun(player);
+                    table.putGun(player, player.getInventory().findSlotMatchingItem(com.senne.imttech.guns.FirearmItem.loaded(
+                            com.senne.imttech.guns.FirearmType.GLOCK_19, com.senne.imttech.guns.GunMaterial.STEEL)));
+                }
+            });
+            t.shot(12, "at13a_table_glock_sight_place");
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(g.offset(-2, 0, -2)) instanceof com.senne.imttech.guns.GunsmithTableBlockEntity table) {
+                    table.install(player, player.getInventory().findSlotMatchingItem(new ItemStack(ModItems.RED_DOT_SIGHT.get())));
+                }
+            });
+            t.shot(10, "at13b_table_glock_red_dot");
+            t.onServer(0, ShowcaseFeatures::giveGunsmithMaterials);
+            t.onServer(0, player -> {
+                player.getInventory().setItem(19, new ItemStack(net.minecraft.world.level.block.Blocks.GLASS_PANE, 3));
+                player.getInventory().setItem(20, new ItemStack(net.minecraft.world.item.Items.REDSTONE, 4));
+                player.getInventory().setItem(21, new ItemStack(net.minecraft.world.item.Items.AMETHYST_SHARD, 1));
+            });
+            t.step(5, () -> ShowcaseFeatures.gunsmithTab(true, com.senne.imttech.client.guns.GunsmithMakePanel.Group.ATTACHMENTS,
+                    stack -> stack.is(ModItems.RED_DOT_SIGHT.get())));
+            t.step(0, () -> HowToTour.mouseTo(1, 1));
+            t.step(15, () -> Minecraft.getInstance().getToasts().clear());
+            t.shot(5, "at14_make_attachments");
+            t.step(0, () -> ShowcaseFeatures.gunsmithTab(false, com.senne.imttech.client.guns.GunsmithMakePanel.Group.GLOCK, stack -> false));
+            t.close(5);
+            // De tooltips in je inventaris: de twee attachments (wat ze doen, waarop ze passen, hoe je ze erop zet) en een
+            // wapen met een kijker erop. In creative opent Minecraft het creative-menu: dus even survival.
+            t.command(0, "gamemode survival @a");
+            t.onServer(0, VisualCheck::giveAttachments);
+            t.onServer(0, player -> {
+                player.getInventory().setItem(1, new ItemStack(ModItems.RED_DOT_SIGHT.get()));
+                player.getInventory().setItem(2, new ItemStack(ModItems.SNIPER_SCOPE.get()));
+                player.getInventory().selected = 8;
+            });
+            t.open(10, () -> new net.minecraft.client.gui.screens.inventory.InventoryScreen(Minecraft.getInstance().player));
+            String[] tips = {"gun_with_scope", "red_dot_sight", "sniper_scope"};
+            for (int i = 0; i < tips.length; i++) {
+                int slot = i;
+                t.step(5, () -> {
+                    if (Minecraft.getInstance().screen instanceof net.minecraft.client.gui.screens.inventory.InventoryScreen screen) {
+                        HowToTour.mouseTo(screen.getGuiLeft() + 16 + slot * 18, screen.getGuiTop() + 150);
+                    }
+                });
+                t.shot(6, "at14" + (char) ('b' + i) + "_tooltip_" + tips[i]);
+            }
+            t.step(0, () -> HowToTour.mouseTo(1, 1));
+            t.close(5);
+            t.command(0, "gamemode creative @a");
+            // Hoe anderen het zien: de AWP met zijn kijker in je hand, en op je rug.
+            t.onServer(0, VisualCheck::giveAttachments);
+            t.step(5, () -> selectSlot(0));
+            t.stand(5, stand.x, stand.y, stand.z, 0, 2);
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(30));
+            t.camera(5, CameraType.THIRD_PERSON_FRONT);
+            t.shot(20, "at15_third_person_awp_scope");
+            t.step(0, () -> selectSlot(1));
+            t.shot(15, "at16_third_person_ak_red_dot");
+            t.step(0, () -> selectSlot(0));
+            t.onServer(5, com.senne.imttech.guns.Gear::holsterHand);
+            t.stand(0, stand.x, stand.y, stand.z, 90, 0);
+            t.camera(0, CameraType.THIRD_PERSON_BACK);
+            t.shot(15, "at17_on_the_back_with_scope");
+            t.camera(0, CameraType.FIRST_PERSON);
+            t.onServer(0, player -> com.senne.imttech.guns.Gear.setSling(player, 0, net.minecraft.world.item.ItemStack.EMPTY));
+            t.onServer(0, player -> player.getInventory().clearContent());
+            // Op de grond: het wapen als item, met zijn kijker erop (de AWP met de Sniper Scope, de AK-47 met de red dot).
+            t.onServer(0, player -> {
+                com.senne.imttech.guns.FirearmType[] types = {com.senne.imttech.guns.FirearmType.AWP, com.senne.imttech.guns.FirearmType.AK_47};
+                com.senne.imttech.guns.Attachment[] sights = {com.senne.imttech.guns.Attachment.SNIPER_SCOPE,
+                        com.senne.imttech.guns.Attachment.RED_DOT};
+                for (int i = 0; i < types.length; i++) {
+                    ItemStack gun = com.senne.imttech.guns.FirearmItem.loaded(types[i], com.senne.imttech.guns.GunMaterial.STEEL);
+                    com.senne.imttech.guns.FirearmItem.setAttachment(gun, sights[i]);
+                    net.minecraft.world.entity.item.ItemEntity dropped = new net.minecraft.world.entity.item.ItemEntity(
+                            player.serverLevel(), stand.x - 0.6 + 1.2 * i, stand.y + 0.1, stand.z + 2.2, gun);
+                    dropped.setDeltaMovement(Vec3.ZERO);
+                    dropped.setNeverPickUp();
+                    player.serverLevel().addFreshEntity(dropped);
+                }
+            });
+            t.stand(0, stand.x, stand.y, stand.z, 0, 32);
+            t.shot(25, "at18_on_the_ground");
+            t.onServer(0, player -> player.serverLevel().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+                    player.getBoundingBox().inflate(6)).forEach(net.minecraft.world.entity.Entity::discard));
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(70));
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            // Het Pegboard: de AWP met zijn kijker, de Glock en de AK-47 van titanium met een red dot.
+            firearmRackShots(t, g, "at");
+        }
+
         // --- De skilltree (hoofdstuk 52, stap 3): leeg, en met een paar niveaus geleerd.
         if (want("skills")) {
             t.onServer(0, player -> player.setData(com.senne.imttech.registry.ModAttachments.GUN_SKILLS,
@@ -6055,6 +6220,28 @@ public final class VisualCheck {
         t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         t.camera(0, CameraType.FIRST_PERSON);
         t.onServer(0, player -> com.senne.imttech.guns.Gear.setSling(player, 0, net.minecraft.world.item.ItemStack.EMPTY));
+    }
+
+    /**
+     * Hoofdstuk 103, stap 5: acht geladen wapens met een kijker erop, in je werkbalk: de AWP met de Sniper Scope, de
+     * AK-47, de MP5 en de Glock met een Red Dot Sight, de AK-47 en de MP5 met de Sniper Scope, en de Remington 870 en de
+     * AWP met een Red Dot Sight.
+     */
+    private static void giveAttachments(ServerPlayer player) {
+        var inventory = player.getInventory();
+        inventory.clearContent();
+        com.senne.imttech.guns.FirearmType[] types = {com.senne.imttech.guns.FirearmType.AWP, com.senne.imttech.guns.FirearmType.AK_47,
+                com.senne.imttech.guns.FirearmType.MP5, com.senne.imttech.guns.FirearmType.GLOCK_19,
+                com.senne.imttech.guns.FirearmType.AK_47, com.senne.imttech.guns.FirearmType.MP5,
+                com.senne.imttech.guns.FirearmType.REMINGTON_870, com.senne.imttech.guns.FirearmType.AWP};
+        com.senne.imttech.guns.Attachment dot = com.senne.imttech.guns.Attachment.RED_DOT;
+        com.senne.imttech.guns.Attachment scope = com.senne.imttech.guns.Attachment.SNIPER_SCOPE;
+        com.senne.imttech.guns.Attachment[] sights = {scope, dot, dot, dot, scope, scope, dot, dot};
+        for (int i = 0; i < types.length; i++) {
+            ItemStack gun = com.senne.imttech.guns.FirearmItem.loaded(types[i], com.senne.imttech.guns.GunMaterial.STEEL);
+            com.senne.imttech.guns.FirearmItem.setAttachment(gun, sights[i]);
+            inventory.setItem(i, gun);
+        }
     }
 
     /**

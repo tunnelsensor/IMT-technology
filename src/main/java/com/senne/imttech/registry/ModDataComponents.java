@@ -282,6 +282,12 @@ public final class ModDataComponents {
                     .persistent(Codec.BOOL)
                     .networkSynchronized(ByteBufCodecs.BOOL));
 
+    /** Hoofdstuk 103, stap 5: de attachments op een vuurwapen (een kijker...), zie GunAttachments. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.imttech.guns.GunAttachments>> GUN_ATTACHMENTS =
+            COMPONENTS.registerComponentType("gun_attachments", builder -> builder
+                    .persistent(com.senne.imttech.guns.GunAttachments.CODEC)
+                    .networkSynchronized(com.senne.imttech.guns.GunAttachments.STREAM_CODEC));
+
     /** Zoveel patronen zitten er in een magazijn. */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> MAG_ROUNDS =
             COMPONENTS.registerComponentType("mag_rounds", builder -> builder

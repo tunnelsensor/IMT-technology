@@ -33,6 +33,7 @@ from PIL import Image, ImageDraw
 
 import ak47_model
 import ammo_models
+import attachment_models
 import awp_model
 import glock19_model as glock
 import gunmesh as gm
@@ -520,6 +521,39 @@ def ammo(caliber):
 AMMO = ("762", "338", "12g")
 
 
+def attachment(name):
+    """
+    Een attachment van hoofdstuk 103 (tools/attachment_models.py): zijn modellen als OBJ met één plaatje
+    (textures/item/attachment/<naam>.png). Elk model los (models/firearm/attachment/<model>.json: zo tekent de mod het op
+    een wapen, met het nulpunt van het model op de montage van dat wapen), en het attachment als item.
+    """
+    meshes = attachment_models.ATTACHMENTS[name]()
+    islands = [i for m in meshes.values() for i in m.islands]
+    size = lg.auto_pack(islands)
+    tex = ASSETS / "textures" / "item" / "attachment"
+    tex.mkdir(parents=True, exist_ok=True)
+    gm.paint(islands, *size, attachment_models.painter, "attachment").save(tex / f"{name}.png")
+    folder = ASSETS / "models" / "firearm" / "attachment"
+    folder.mkdir(parents=True, exist_ok=True)
+    mtl = ["# De attachments van hoofdstuk 103.", "newmtl gun", "map_Kd #gun", "newmtl glow", "map_Kd #gun", "Ka 1 1 1", ""]
+    (folder / "attachment.mtl").write_text(chr(10).join(mtl), encoding="utf-8", newline=chr(10))
+    note = "Gemaakt door tools/generate_gun_models.py (tools/attachment_models.py), hoofdstuk 103. Niet met de hand aanpassen."
+    texture = {"gun": f"imttech:item/attachment/{name}"}
+    plain = {"gun": "gun", "glow": "glow"}
+    counts = {}
+    for model, mesh in meshes.items():
+        counts[model] = gm.write_obj(folder / f"{model}.obj", [(model, mesh, plain)], "attachment.mtl", *size, note)
+        write(f"models/firearm/attachment/{model}.json", obj_model(model, texture, gui_light=None, folder="attachment"))
+    # Het item: wat je in je inventaris ziet, in één OBJ.
+    parts = attachment_models.ITEM_PARTS[name]
+    gm.write_obj(folder / f"item_{name}.obj", [(n, meshes[n], plain) for n in parts], "attachment.mtl", *size, note)
+    points = [pt for n in parts for pt in meshes[n].points()]
+    disp = centred_display(glock.points_as_elements(points), gui_rotation=(14, -58, 0), size=14.5, max_scale=4.2,
+                           hand_scale=0.5, ground_scale=0.45)
+    write(f"models/item/{name}.json", obj_model(f"item_{name}", texture, display=disp, folder="attachment"))
+    print(f"attachment {name}: vlakken per model: {counts} texture {size}")
+
+
 # ---------------------------------------------------------------- Holster en pouches (hoofdstuk 52, stap 2)
 
 def holster():
@@ -851,6 +885,8 @@ def main():
                 glock_19()
             elif name in AMMO:
                 ammo(name)
+            elif name in attachment_models.ATTACHMENTS:
+                attachment(name)
             else:
                 long_gun(LONG_GUNS[name])
         return
@@ -860,6 +896,8 @@ def main():
         long_gun(mod)
     for caliber in AMMO:
         ammo(caliber)
+    for name in attachment_models.ATTACHMENTS:
+        attachment(name)
     gear()
     resources()
     gunsmith_table()

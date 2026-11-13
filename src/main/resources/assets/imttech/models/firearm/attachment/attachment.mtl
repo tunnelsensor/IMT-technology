@@ -1,0 +1,6 @@
+# De attachments van hoofdstuk 103.
+newmtl gun
+map_Kd #gun
+newmtl glow
+map_Kd #gun
+Ka 1 1 1

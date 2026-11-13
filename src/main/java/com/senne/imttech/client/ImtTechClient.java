@@ -61,6 +61,7 @@ public class ImtTechClient {
         modEventBus.addListener(com.senne.imttech.client.weapons.WeaponModels::registerExtensions);
         // De vuurwapens (hoofdstuk 52): de losse onderdelen van de Glock 19, het plaatje per materiaal, twee handen.
         modEventBus.addListener(com.senne.imttech.client.guns.FirearmModels::register);
+        modEventBus.addListener(com.senne.imttech.client.guns.FirearmModels::wrapWhole);
         modEventBus.addListener(com.senne.imttech.client.armory.PegboardRenderer::register);
         modEventBus.addListener(com.senne.imttech.client.guns.FirearmModels::registerProperties);
         modEventBus.addListener(com.senne.imttech.client.weapons.WeaponModels::registerProperties);
@@ -166,6 +167,7 @@ public class ImtTechClient {
         NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST,
                 com.senne.imttech.client.guns.FirearmControl::onComputeFov);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.guns.FirearmControl::onPlayerTurn);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.guns.FirearmControl::onMouseScroll);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.guns.FirearmRenderer::onRenderHand);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.guns.FirearmHud::onRenderLayer);
         // Hoofdstuk 82: de effect-icoontjes van Minecraft schuiven onder je coördinaten rechtsboven. LOWEST: als laatste, zodat

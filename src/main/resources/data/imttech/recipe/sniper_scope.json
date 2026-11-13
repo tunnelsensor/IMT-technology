@@ -1,0 +1,21 @@
+{
+  "type": "imttech:gunsmithing",
+  "ingredients": [
+    {
+      "item": "imttech:steel_ingot",
+      "count": 4
+    },
+    {
+      "item": "minecraft:amethyst_shard",
+      "count": 2
+    },
+    {
+      "tag": "c:glass_panes",
+      "count": 2
+    }
+  ],
+  "result": {
+    "id": "imttech:sniper_scope",
+    "count": 1
+  }
+}

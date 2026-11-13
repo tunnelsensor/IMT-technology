@@ -113,8 +113,23 @@ public final class FirearmModels {
         return location(caliber == Caliber.MM9 ? "casing" : "casing_" + caliber.id);
     }
 
+    /** Het model van een attachment (hoofdstuk 103, stap 5), met zijn nulpunt op de montage van het wapen. */
+    public static ModelResourceLocation attachment(com.senne.imttech.guns.Attachment attachment) {
+        return location("attachment/" + attachment.id);
+    }
+
+    /** De losse stukjes die bij de attachments horen: de verhoging, het glas en het dradenkruis van de Sniper Scope. */
+    private static final String[] ATTACHMENT_EXTRAS = {"attachment/sight_riser", "attachment/sniper_scope_lens",
+            "attachment/sniper_scope_reticle"};
+
     /** Bij het opstarten: zeg Minecraft dat het deze modellen moet inladen. */
     public static void register(ModelEvent.RegisterAdditional event) {
+        for (com.senne.imttech.guns.Attachment attachment : com.senne.imttech.guns.Attachment.values()) {
+            event.register(attachment(attachment));
+        }
+        for (String extra : ATTACHMENT_EXTRAS) {
+            event.register(location(extra));
+        }
         for (FirearmType type : FirearmType.values()) {
             for (GunPart part : GunPart.values()) {
                 for (GunMaterial material : part.materials(type)) {
@@ -183,6 +198,23 @@ public final class FirearmModels {
         if (withSling && type.longGun && FirearmItem.hasSling(gun)) {
             render(pose, buffers, sling(type), light, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY);
         }
+        renderAttachments(pose, buffers, gun, light);
+    }
+
+    /**
+     * Hoofdstuk 103, stap 5: wat er op het wapen zit (de kijker), elk op zijn montage. Zoals renderParts: 1 blok = 16
+     * pixels van het model. Voor op je rug, op het Pegboard, op de Gunsmith Table en overal waar het wapen een item is.
+     */
+    public static void renderAttachments(PoseStack pose, MultiBufferSource buffers, ItemStack gun, int light) {
+        FirearmType type = FirearmItem.typeOf(gun);
+        com.senne.imttech.guns.Attachment optic = Optics.of(gun);
+        if (type == null || optic == null) {
+            return;
+        }
+        pose.pushPose();
+        pose.scale(1 / 16f, 1 / 16f, 1 / 16f);
+        Optics.render(pose, buffers, FirearmRig.of(type), optic, light, 0, -1);
+        pose.popPose();
     }
 
     /**
@@ -204,7 +236,10 @@ public final class FirearmModels {
         });
     }
 
-    /** Een vuurwapen houd je in derde persoon met twee handen vast, zoals de lasergeweren. */
+    /**
+     * Een vuurwapen houd je in derde persoon met twee handen vast, zoals de lasergeweren. En (hoofdstuk 103, stap 5) als
+     * item tekenen we het zelf, zodat je ziet wat erop zit: zie {@link FirearmItemRenderer}.
+     */
     public static void registerExtensions(net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent event) {
         for (FirearmType type : FirearmType.values()) {
             event.registerItem(new net.neoforged.neoforge.client.extensions.common.IClientItemExtensions() {
@@ -213,7 +248,45 @@ public final class FirearmModels {
                         net.minecraft.world.InteractionHand hand, ItemStack stack) {
                     return net.minecraft.client.model.HumanoidModel.ArmPose.CROSSBOW_HOLD;
                 }
+
+                @Override
+                public net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer getCustomRenderer() {
+                    if (itemRenderer == null) {
+                        itemRenderer = new FirearmItemRenderer();
+                    }
+                    return itemRenderer;
+                }
             }, ModItems.firearm(type));
+        }
+    }
+
+    /** Eén tekenaar voor alle vuurwapens; pas gemaakt als het spel zover is. */
+    private static @Nullable FirearmItemRenderer itemRenderer;
+
+    /**
+     * Zegt Minecraft dat het model van een heel vuurwapen "zelf getekend" wordt: dan roept het {@link FirearmItemRenderer}
+     * aan in plaats van het model zelf te tekenen. Het model blijft verder wat het was (zijn vorm, zijn houdingen).
+     */
+    public static void wrapWhole(ModelEvent.ModifyBakingResult event) {
+        for (FirearmType type : FirearmType.values()) {
+            event.getModels().computeIfPresent(whole(type), (location, model) ->
+                    new net.neoforged.neoforge.client.model.BakedModelWrapper<>(model) {
+                        @Override
+                        public boolean isCustomRenderer() {
+                            return true;
+                        }
+
+                        /**
+                         * Minecraft zet het wapen in zijn houding en gaat dan verder met het model dat het hier
+                         * terugkrijgt. Dat moet dit model blijven (niet het oorspronkelijke), anders tekent het het
+                         * wapen toch weer zelf.
+                         */
+                        @Override
+                        public BakedModel applyTransform(net.minecraft.world.item.ItemDisplayContext context, PoseStack pose, boolean leftHand) {
+                            super.applyTransform(context, pose, leftHand);
+                            return this;
+                        }
+                    });
         }
     }
 }
