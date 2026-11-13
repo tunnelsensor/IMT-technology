@@ -4603,6 +4603,156 @@ public final class VisualCheck {
             t.onServer(0, player -> player.getInventory().clearContent());
         }
 
+        // --- De lange magazijnen (hoofdstuk 103, stap 6b): elk wapen met zijn extended mag erin (vanuit de heup en van
+        // opzij), het magazijn eruit en erin, een lang magazijn in je hand, de Gunsmith Table en "Make parts", het
+        // Pegboard, en hoe anderen het zien.
+        if (want("longmags")) {
+            BlockPos g = GUN_RANGE.above();
+            Vec3 stand = new Vec3(g.getX() + 0.5, g.getY(), g.getZ() + 0.5);
+            t.onServer(0, VisualCheck::buildGunRange);
+            t.onServer(0, player -> ShowcaseFeatures.buildGunBenches(player, g));
+            t.onServer(0, VisualCheck::giveLongMags);
+            t.stand(20, stand.x, stand.y, stand.z, 0, 2);
+            String[] names = {"glock", "mp5", "ak47", "awp"};
+            for (int i = 0; i < names.length; i++) {
+                int slot = i;
+                String number = "0" + (i + 1);
+                t.step(i == 0 ? 0 : 14, () -> selectSlot(slot));
+                t.shot(22, "lm" + number + "a_" + names[i] + "_long_mag_hip");
+                t.step(4, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_INSPECT.getKey()));
+                t.shot(12, "lm" + number + "b_" + names[i] + "_long_mag_side");
+                t.step(34, () -> { });
+                // R: het lange magazijn eruit (het valt uit het wapen).
+                t.step(0, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
+                t.shot(7, "lm" + number + "c_" + names[i] + "_long_mag_out");
+                t.step(20, () -> { });
+            }
+            // Het lange magazijn van de MP5 in je hand, en erin (rechtsklik).
+            t.onServer(0, player -> {
+                var inventory = player.getInventory();
+                for (int i = 0; i < inventory.items.size(); i++) {
+                    if (com.senne.imttech.guns.MagazineItem.typeOf(inventory.getItem(i)) != null) {
+                        inventory.setItem(i, ItemStack.EMPTY);
+                    }
+                }
+                inventory.setItem(5, com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.MP5, true, 38));
+                inventory.setItem(6, com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.GLOCK_19, true, 33));
+                inventory.setItem(7, new ItemStack(ModItems.ROUND_9MM.get(), 16));
+            });
+            t.step(10, () -> selectSlot(5));
+            t.shot(20, "lm05_mp5_long_mag_in_hand");
+            t.step(0, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_RELOAD.getKey()));
+            t.shot(5, "lm06_mp5_long_mag_loading");
+            t.step(20, () -> selectSlot(6));
+            t.shot(20, "lm07_glock_long_mag_in_hand");
+            t.step(5, () -> selectSlot(5));
+            t.key(12, () -> Minecraft.getInstance().options.keyUse, true);
+            t.key(2, () -> Minecraft.getInstance().options.keyUse, false);
+            t.shot(8, "lm08_mp5_long_mag_going_in");
+            t.step(30, () -> selectSlot(1));
+            t.shot(20, "lm09_mp5_long_mag_back_in");
+            // De Gunsmith Table: de MP5 met zijn lange magazijn, en "Make parts": het magazijn en het lange ernaast.
+            t.onServer(12, player -> {
+                gunOnTable(player, g, com.senne.imttech.guns.FirearmType.AK_47);
+                if (player.serverLevel().getBlockEntity(g.offset(-2, 0, -2)) instanceof com.senne.imttech.guns.GunsmithTableBlockEntity table) {
+                    com.senne.imttech.guns.FirearmItem.setMagazine(table.gun(), com.senne.imttech.guns.MagazineItem.of(
+                            com.senne.imttech.guns.FirearmType.AK_47, true, 40));
+                }
+                ShowcaseFeatures.openBench(player, g.offset(-2, 0, -2));
+            });
+            t.step(2, () -> ShowcaseFeatures.gunsmithTab(false, com.senne.imttech.client.guns.GunsmithMakePanel.Group.AK47, stack -> false));
+            t.step(0, () -> HowToTour.mouseTo(1, 1));
+            t.step(15, () -> Minecraft.getInstance().getToasts().clear());
+            t.shot(8, "lm10_table_ak47_long_mag");
+            t.onServer(0, ShowcaseFeatures::giveGunsmithMaterials);
+            t.onServer(0, player -> player.getInventory().setItem(13, new ItemStack(ModItems.STEEL_INGOT.get(), 24)));
+            t.step(5, () -> ShowcaseFeatures.gunsmithTab(true, com.senne.imttech.client.guns.GunsmithMakePanel.Group.MP5,
+                    stack -> com.senne.imttech.guns.MagazineItem.extendedOf(stack)));
+            t.step(0, () -> HowToTour.mouseTo(1, 1));
+            t.step(15, () -> Minecraft.getInstance().getToasts().clear());
+            t.shot(5, "lm11_make_mp5_long_mag");
+            t.step(0, () -> ShowcaseFeatures.gunsmithTab(true, com.senne.imttech.client.guns.GunsmithMakePanel.Group.GLOCK,
+                    stack -> com.senne.imttech.guns.MagazineItem.extendedOf(stack)));
+            t.shot(8, "lm12_make_glock_long_mag");
+            t.step(0, () -> ShowcaseFeatures.gunsmithTab(false, com.senne.imttech.client.guns.GunsmithMakePanel.Group.GLOCK, stack -> false));
+            t.close(5);
+            // De tooltip van een lang magazijn. In creative opent Minecraft het creative-menu: dus even survival.
+            t.command(0, "gamemode survival @a");
+            t.onServer(0, player -> {
+                player.getInventory().clearContent();
+                player.getInventory().setItem(0, com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.AK_47, true, 40));
+                player.getInventory().setItem(1, com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.AWP, true, 0));
+                player.getInventory().selected = 8;
+            });
+            t.open(10, () -> new net.minecraft.client.gui.screens.inventory.InventoryScreen(Minecraft.getInstance().player));
+            t.step(5, () -> {
+                if (Minecraft.getInstance().screen instanceof net.minecraft.client.gui.screens.inventory.InventoryScreen screen) {
+                    HowToTour.mouseTo(screen.getGuiLeft() + 16, screen.getGuiTop() + 150);
+                }
+            });
+            t.shot(6, "lm13_tooltip_long_mag");
+            t.step(0, () -> HowToTour.mouseTo(1, 1));
+            t.close(5);
+            t.command(0, "gamemode creative @a");
+            // Hoe anderen het zien: de AK-47 en de Glock met hun lange magazijn in je hand, en op je rug.
+            t.onServer(0, VisualCheck::giveLongMags);
+            t.step(5, () -> selectSlot(2));
+            t.stand(5, stand.x, stand.y, stand.z, 0, 2);
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(30));
+            t.camera(5, CameraType.THIRD_PERSON_FRONT);
+            t.shot(20, "lm14_third_person_ak47");
+            t.step(0, () -> selectSlot(0));
+            t.shot(15, "lm15_third_person_glock");
+            t.step(0, () -> selectSlot(2));
+            t.onServer(5, com.senne.imttech.guns.Gear::holsterHand);
+            t.stand(0, stand.x, stand.y, stand.z, 90, 0);
+            t.camera(0, CameraType.THIRD_PERSON_BACK);
+            t.shot(15, "lm16_on_the_back");
+            t.camera(0, CameraType.FIRST_PERSON);
+            t.onServer(0, player -> com.senne.imttech.guns.Gear.setSling(player, 0, net.minecraft.world.item.ItemStack.EMPTY));
+            t.onServer(0, player -> player.getInventory().clearContent());
+            // Op de grond en op het Pegboard: de gewone en de lange magazijnen naast elkaar.
+            t.onServer(0, player -> {
+                ItemStack gun = com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.MP5,
+                        com.senne.imttech.guns.GunMaterial.STEEL);
+                com.senne.imttech.guns.FirearmItem.setMagazine(gun, com.senne.imttech.guns.MagazineItem.of(
+                        com.senne.imttech.guns.FirearmType.MP5, true, 40));
+                ItemStack[] dropped = {gun, com.senne.imttech.guns.MagazineItem.of(com.senne.imttech.guns.FirearmType.GLOCK_19, true, 33)};
+                for (int i = 0; i < dropped.length; i++) {
+                    net.minecraft.world.entity.item.ItemEntity item = new net.minecraft.world.entity.item.ItemEntity(
+                            player.serverLevel(), stand.x - 0.6 + 1.2 * i, stand.y + 0.1, stand.z + 2.2, dropped[i]);
+                    item.setDeltaMovement(Vec3.ZERO);
+                    item.setNeverPickUp();
+                    player.serverLevel().addFreshEntity(item);
+                }
+            });
+            t.stand(0, stand.x, stand.y, stand.z, 0, 32);
+            t.shot(25, "lm17_on_the_ground");
+            t.onServer(0, player -> player.serverLevel().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+                    player.getBoundingBox().inflate(6)).forEach(net.minecraft.world.entity.Entity::discard));
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(70));
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                BlockPos leftBottom = g.offset(5, 1, 3);
+                for (int dx = -1; dx <= 2; dx++) {
+                    for (int dy = -1; dy <= 2; dy++) {
+                        level.setBlockAndUpdate(leftBottom.offset(-dx, dy, 1), Blocks.STONE_BRICKS.defaultBlockState());
+                    }
+                }
+                com.senne.imttech.armory.ArmoryDisplay.buildMagazineRack(level, leftBottom);
+            });
+            t.stand(10, g.getX() + 5.0, g.getY() + 0.6, g.getZ() + 1.2, 0, -8);
+            t.shot(25, "lm18_pegboard_magazines");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                for (BlockPos pos : BlockPos.betweenClosed(g.offset(2, 0, 3), g.offset(8, 5, 4))) {
+                    level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+                }
+            });
+        }
+
         // --- De skilltree (hoofdstuk 52, stap 3): leeg, en met een paar niveaus geleerd.
         if (want("skills")) {
             t.onServer(0, player -> player.setData(com.senne.imttech.registry.ModAttachments.GUN_SKILLS,
@@ -6388,6 +6538,23 @@ public final class VisualCheck {
         for (int i = 0; i < types.length; i++) {
             ItemStack gun = com.senne.imttech.guns.FirearmItem.loaded(types[i], com.senne.imttech.guns.GunMaterial.STEEL);
             com.senne.imttech.guns.FirearmItem.setAttachment(gun, sights[i]);
+            inventory.setItem(i, gun);
+        }
+    }
+
+    /**
+     * Hoofdstuk 103, stap 6b: de Glock, de MP5, de AK-47 en de AWP in je werkbalk, elk geladen met zijn lange magazijn
+     * (de extended mag), en een gewoon magazijn van elk in je inventaris.
+     */
+    private static void giveLongMags(ServerPlayer player) {
+        var inventory = player.getInventory();
+        inventory.clearContent();
+        com.senne.imttech.guns.FirearmType[] types = {com.senne.imttech.guns.FirearmType.GLOCK_19, com.senne.imttech.guns.FirearmType.MP5,
+                com.senne.imttech.guns.FirearmType.AK_47, com.senne.imttech.guns.FirearmType.AWP};
+        for (int i = 0; i < types.length; i++) {
+            ItemStack gun = com.senne.imttech.guns.FirearmItem.loaded(types[i], com.senne.imttech.guns.GunMaterial.STEEL);
+            com.senne.imttech.guns.FirearmItem.setMagazine(gun, com.senne.imttech.guns.MagazineItem.of(types[i], true,
+                    types[i].capacity(true)));
             inventory.setItem(i, gun);
         }
     }

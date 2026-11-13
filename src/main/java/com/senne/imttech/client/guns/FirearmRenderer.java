@@ -110,6 +110,7 @@ public final class FirearmRenderer {
         Firearms.ActionKind action = FirearmControl.action();
         float progress = FirearmControl.action(pt);
         GunParts parts = FirearmItem.parts(stack);
+        longMagazineHeld = FirearmItem.extendedMagazine(stack);
 
         // Hoofdstuk 103, stap 5: met een kijker erop richt je daardoor, niet over het ijzeren vizier.
         com.senne.imttech.guns.Attachment optic = Optics.of(stack);
@@ -285,7 +286,8 @@ public final class FirearmRenderer {
             // magazijn dat erin gaat komt uit je hand of je pouch en is vol getekend.
             boolean empty = FirearmItem.hasMagazine(stack) && FirearmItem.roundsInMagazine(stack) == 0
                     && action != Firearms.ActionKind.INSERT_MAG && action != Firearms.ActionKind.RELOAD_POUCH;
-            FirearmModels.render(pose, buffers, FirearmModels.magazine(type, empty), light, OverlayTexture.NO_OVERLAY);
+            FirearmModels.render(pose, buffers, FirearmModels.magazine(type, longMagazine(player, stack, action, progress), empty),
+                    light, OverlayTexture.NO_OVERLAY);
             pose.popPose();
         }
         // Een patroon die met de hand in de kamer gaat: van rechtsonder naast het wapen door de uitwerpopening de kamer
@@ -348,6 +350,25 @@ public final class FirearmRenderer {
         arm(mc, player, main, suit, right, main == HumanoidArm.RIGHT ? RIGHT_SHOULDER : LEFT_SHOULDER, pose, buffers, light);
         HumanoidArm other = main.getOpposite();
         arm(mc, player, other, suit, left, other == HumanoidArm.RIGHT ? RIGHT_SHOULDER : LEFT_SHOULDER, pose, buffers, light);
+    }
+
+    /**
+     * Hoofdstuk 103, stap 6b: is het magazijn dat je nu in het wapen ziet het lange (de extended mag)? Meestal dat wat
+     * erin zit. Maar een magazijn dat erin gaat, zit er voor de server pas in als de handeling klaar is: dan kijken we
+     * naar het magazijn in je hand (rechtsklik met een magazijn), of naar het vakje van je pouch waar het uit komt.
+     */
+    private static boolean longMagazine(LocalPlayer player, ItemStack gun, @Nullable Firearms.ActionKind action, float progress) {
+        if (action == Firearms.ActionKind.INSERT_MAG && MagazineItem.typeOf(player.getMainHandItem()) != null) {
+            return MagazineItem.extendedOf(player.getMainHandItem());
+        }
+        if (action == Firearms.ActionKind.RELOAD_POUCH && progress > 0.45f) {
+            java.util.List<ItemStack> pouch = com.senne.imttech.backpack.Molle.magazines(player);
+            int index = FirearmControl.actionArg();
+            if (index >= 0 && index < pouch.size() && MagazineItem.typeOf(pouch.get(index)) == FirearmItem.typeOf(gun)) {
+                return MagazineItem.extendedOf(pouch.get(index));
+            }
+        }
+        return FirearmItem.extendedMagazine(gun);
     }
 
     /** Eén onderdeel tekenen, in zijn materiaal (als het erin zit). */
@@ -570,6 +591,9 @@ public final class FirearmRenderer {
      * Hoofdstuk 103: waar je linkerhand is bij een lang wapen (model-pixels): onder de handbeschermer, of bij het
      * magazijn, de hendel (die hij naar achteren trekt, zie rack) of boven de uitwerpopening.
      */
+    /** Zit het lange magazijn in het wapen dat je nu vasthoudt? (Voor waar je hand onder het magazijn slaat.) */
+    private static boolean longMagazineHeld;
+
     private static Vector3f leftHandLong(FirearmRig rig, Vector3f support, @Nullable Firearms.ActionKind action, float t,
                                          float handleBack, float magOut) {
         // Stap 6: met een greep onder de handbeschermer houdt je linkerhand die vast (AddOns.support).
@@ -618,7 +642,7 @@ public final class FirearmRenderer {
             }
             case TAP_RACK -> {
                 // Een klap onder tegen het magazijn, dan de hendel.
-                Vector3f base = new Vector3f(rig.magazineFoot).add(-0.6f, -1.2f, 0.4f);
+                Vector3f base = new Vector3f(rig.magazineFoot(longMagazineHeld)).add(-0.6f, -1.2f, 0.4f);
                 if (t < 0.15f) return lerp(rest, base, ease(t / 0.15f));
                 if (t < 0.35f) return base;
                 if (rightRack) return lerp(base, rest, ease(Mth.clamp((t - 0.35f) / 0.15f, 0, 1)));
@@ -732,10 +756,11 @@ public final class FirearmRenderer {
         float rotZ = 10;
         // Hoofdstuk 103: een lang magazijn (de MP5) wordt kleiner getekend, zodat het even groot in je hand ligt als dat van
         // de Glock; {@code k} is hoeveel groter een pixel van de Glock is: zo ver staan je handen en de patroon ervan af.
-        float fit = FirearmRig.magazineFit(type);
+        boolean extended = MagazineItem.extendedOf(stack);
+        float fit = FirearmRig.magazineFit(type, extended);
         float s = rig.scale / 16f * fit;
         float k = 0.44f / (rig.scale * fit);
-        float height = FirearmRig.magazineHeight(type);
+        float height = FirearmRig.magazineHeight(type, extended);
         // Het magazijn staat in het model zoals in het wapen (bij de Glock schuin): hier recht overeind
         // (FirearmRig.magazineUpright), met zijn midden op {@code place}.
         Matrix4f mag = new Matrix4f()
@@ -745,7 +770,7 @@ public final class FirearmRenderer {
                 .rotateZ((float) Math.toRadians(rotZ))
                 .scale(s)
                 .translate(0, -height / 2, 0)
-                .mul(FirearmRig.magazineUpright(type));
+                .mul(FirearmRig.magazineUpright(type, extended));
         pose.mulPose(mag);
         pose.pushPose();
         pose.scale(16, 16, 16);
@@ -753,7 +778,7 @@ public final class FirearmRenderer {
         pose.popPose();
         // De patroon die erin gaat: van rechtsboven naar de bovenkant van het magazijn.
         Vector3f top = new Vector3f(rig.magazineTop);
-        Vector3f foot = new Vector3f(rig.magazineFoot);
+        Vector3f foot = new Vector3f(rig.magazineFoot(extended));
         if (loading || unloading) {
             float q = ease(Mth.clamp(t / 0.75f, 0, 1));
             Vector3f from = new Vector3f(top).add(4.87f * k, 3.27f * k, -0.7f * k);

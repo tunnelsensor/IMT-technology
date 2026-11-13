@@ -69,6 +69,9 @@ MAG = [(809, 205), (810, 245), (813, 273), (823, 316), (834, 349), (848, 386), (
        (756, 264), (755, 205)]
 MAG_BASE = [(893, 473), (899, 481), (898, 487), (857, 513), (849, 511), (845, 500), (847, 493)]
 MAG_ZY = zy(MAG)
+# Het lange magazijn (de extended mag, hoofdstuk 103 stap 6b): 40 patronen, 5,3 pixels (68 mm) langer langs de bocht. De
+# voet (met de bodemplaat) draait om het middelpunt van de bocht; in de twee randen komt een stuk boog bij.
+MAG_LONG_ZY, MAG_LONG_TURN = lg.extend_curved(MAG_ZY, [3, 4, 5, 6, 7, 8], [14, 15, 16, 17], (6, 14), 5.3)
 
 # Halve breedtes (pixels van het model).
 REC_W = 1.5        # de behuizing is 38 mm breed
@@ -243,11 +246,14 @@ def sling():
 def magazine(loaded=True, extended=False):
     """
     Het gebogen magazijn van 30 patronen (staal): het lijf, de bodemplaat, de lipjes bovenaan, en bovenin een patroon
-    (of, leeg, de opvolger).
+    (of, leeg, de opvolger). {extended}: het lange magazijn van 40 patronen.
     """
     m = gm.Mesh()
-    gm.prism(m, MAG_ZY, "x", 8 - MAG_W, 8 + MAG_W, "mag_body", bevel=0.1, density=D, smooth=50, data={"loaded": loaded})
-    gm.prism(m, zy(MAG_BASE), "x", 8 - MAG_W - 0.07, 8 + MAG_W + 0.07, "mag_base", bevel=0.08, density=16, smooth=50)
+    outline = MAG_LONG_ZY if extended else MAG_ZY
+    base = MAG_LONG_TURN(zy(MAG_BASE)) if extended else zy(MAG_BASE)
+    gm.prism(m, outline, "x", 8 - MAG_W, 8 + MAG_W, "mag_body", bevel=0.1, density=D, smooth=50,
+             data={"loaded": loaded, "outline": outline})
+    gm.prism(m, base, "x", 8 - MAG_W - 0.07, 8 + MAG_W + 0.07, "mag_base", bevel=0.08, density=16, smooth=50)
     z0, z1 = Z(806), Z(760)
     for side in (-1, 1):
         lip = [(8 + side * 0.88, MAG_TOP - 0.1), (8 + side * 0.72, MAG_TOP - 0.1), (8 + side * 0.72, MAG_TOP + 0.08),
@@ -360,7 +366,7 @@ def mag_painter(skin, isl, p, n, tx, ty):
     if kind == "mag_body":
         col = lg.add((50, 52, 57), grain * 5 + 26 * lg.edge_amount(isl, n))
         if abs(nx) > 0.9:
-            d = gm.distance_to_outline((z, y), MAG_ZY)
+            d = gm.distance_to_outline((z, y), isl.data.get("outline", MAG_ZY))
             if 0.3 < d < 0.4:
                 col = lg.add(col, 16)                       # de geperste rib rondom
             elif 0.4 <= d < 0.46:
@@ -388,11 +394,13 @@ GRIP = (8, Y(330), Z(532))
 HAND_SCALE = 0.36
 # Waar de voet van het magazijn zit (voor in je hand en in de pouch), en hoe schuin het staat.
 MAG_FOOT = (8, Y(496), Z(872))
+MAG_LONG_FOOT = (8, *reversed(MAG_LONG_TURN([(MAG_FOOT[2], MAG_FOOT[1])])[0]))
 
 
 def build():
     parts = {"frame": frame(), "slide": slide(), "slide_handle": handle(), "barrel": barrel(), "springs": springs(),
              "striker": striker(), "trigger": trigger(), "sling": sling()}
-    mags = {"magazine": magazine(True), "magazine_empty": magazine(False)}
+    mags = {"magazine": magazine(True), "magazine_empty": magazine(False),
+            "magazine_extended": magazine(True, True), "magazine_extended_empty": magazine(False, True)}
     return lg.Gun(ID, parts, mags, SKINS, painter, mag_painter,
                   whole=("frame", "slide", "slide_handle", "barrel", "trigger"))

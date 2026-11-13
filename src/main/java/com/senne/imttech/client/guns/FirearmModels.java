@@ -91,13 +91,26 @@ public final class FirearmModels {
      * patronen in een magazijn laat zien.
      */
     public static ModelResourceLocation magazine(FirearmType type, boolean empty) {
-        return location(type.id + (empty ? "/magazine_empty" : "/magazine"));
+        return magazine(type, false, empty);
     }
 
-    /** Het model van dit magazijn (vol of leeg). */
+    /** Het gewone of (hoofdstuk 103, stap 6b) het lange magazijn van dit wapen, vol of leeg. */
+    public static ModelResourceLocation magazine(FirearmType type, boolean extended, boolean empty) {
+        return location(type.id + "/magazine" + (extended ? "_extended" : "") + (empty ? "_empty" : ""));
+    }
+
+    /** Het model van dit magazijn (gewoon of lang, vol of leeg). */
     public static ModelResourceLocation magazine(ItemStack magazine) {
         FirearmType type = MagazineItem.typeOf(magazine);
-        return magazine(type == null ? FirearmType.GLOCK_19 : type, MagazineItem.rounds(magazine) == 0);
+        return magazine(type == null ? FirearmType.GLOCK_19 : type, MagazineItem.extendedOf(magazine),
+                MagazineItem.rounds(magazine) == 0);
+    }
+
+    /** Het model van het magazijn dat in dit wapen zit (gewoon of lang, vol of leeg). */
+    public static ModelResourceLocation magazineIn(ItemStack gun) {
+        FirearmType type = FirearmItem.typeOf(gun);
+        return magazine(type == null ? FirearmType.GLOCK_19 : type, FirearmItem.extendedMagazine(gun),
+                FirearmItem.roundsInMagazine(gun) == 0);
     }
 
     /**
@@ -143,8 +156,10 @@ public final class FirearmModels {
                 event.register(sling(type));
             }
             if (!type.tube()) {
-                event.register(magazine(type, false));
-                event.register(magazine(type, true));
+                event.register(magazine(type, false, false));
+                event.register(magazine(type, false, true));
+                event.register(magazine(type, true, false));
+                event.register(magazine(type, true, true));
             }
         }
         for (Caliber caliber : Caliber.values()) {
@@ -175,6 +190,12 @@ public final class FirearmModels {
      */
     public static void renderParts(PoseStack pose, MultiBufferSource buffers, ItemStack gun, int light, boolean withSling,
                                    @Nullable GunPart skip) {
+        renderParts(pose, buffers, gun, light, withSling, skip, 0);
+    }
+
+    /** Hetzelfde, met de tweepoot zo ver uitgeklapt als {@code bipod} zegt (0 tot 1). */
+    public static void renderParts(PoseStack pose, MultiBufferSource buffers, ItemStack gun, int light, boolean withSling,
+                                   @Nullable GunPart skip, float bipod) {
         FirearmType type = FirearmItem.typeOf(gun);
         if (type == null) {
             return;
@@ -192,13 +213,12 @@ public final class FirearmModels {
             }
         }
         if (!type.tube() && FirearmItem.hasMagazine(gun)) {
-            render(pose, buffers, magazine(type, FirearmItem.roundsInMagazine(gun) == 0), light,
-                    net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY);
+            render(pose, buffers, magazineIn(gun), light, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY);
         }
         if (withSling && type.longGun && FirearmItem.hasSling(gun)) {
             render(pose, buffers, sling(type), light, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY);
         }
-        renderAttachments(pose, buffers, gun, light);
+        renderAttachments(pose, buffers, gun, light, null, bipod);
     }
 
     /**

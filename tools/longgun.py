@@ -340,6 +340,68 @@ def write_mixed(path, mtllib, groups, note):
     return total
 
 
+# ---------------------------------------------------------------- Een magazijn langer maken (de extended mags, stap 6)
+
+def fit_arc(front, rear):
+    """
+    Het middelpunt van de bocht van een gebogen magazijn: één middelpunt (z, y) voor twee bogen, de voorrand en de
+    achterrand ({front} en {rear}: punten (z, y) op elke rand), elk met zijn eigen straal. Kleinste kwadraten.
+    """
+    rows, rhs = [], []
+    for k, points in enumerate((front, rear)):
+        for z, y in points:
+            rows.append([2 * z, 2 * y, 1.0 if k == 0 else 0.0, 1.0 if k == 1 else 0.0])
+            rhs.append(z * z + y * y)
+    (cz, cy, c1, c2), *_ = np.linalg.lstsq(np.array(rows), np.array(rhs), rcond=None)
+    return float(cz), float(cy), math.sqrt(c1 + cz * cz + cy * cy), math.sqrt(c2 + cz * cz + cy * cy)
+
+
+def extend_curved(outline, front, rear, moving, extra, steps=6):
+    """
+    Maakt een gebogen magazijn {extra} pixels langer langs zijn bocht. {outline}: de omtrek (z, y); {front} en {rear}:
+    de nummers van de hoekpunten op de voorrand en de achterrand van het gebogen stuk (daar gaat de cirkel door);
+    {moving} = (eerste, laatste): de hoekpunten van de voet, die opschuiven. De voet draait om het middelpunt van de
+    bocht, en in de twee randen komt een stuk boog bij. Geeft (de nieuwe omtrek, een functie die andere punten van de
+    voet (de bodemplaat) even ver meedraait).
+    """
+    cz, cy, r1, r2 = fit_arc([outline[i] for i in front], [outline[i] for i in rear])
+    first, last = moving
+    n = len(outline)
+    foot = [outline[i] for i in range(first, last + 1)]
+    top = [outline[i] for i in range(n) if not first <= i <= last]
+
+    def angle(points):
+        return math.atan2(sum(y for _, y in points) / len(points) - cy, sum(z for z, _ in points) / len(points) - cz)
+    turn = angle(foot) - angle(top)
+    turn = (turn + math.pi) % (2 * math.pi) - math.pi
+    delta = math.copysign(extra / ((r1 + r2) / 2), turn)
+
+    def rotate(point, a):
+        z, y = point[0] - cz, point[1] - cy
+        return (cz + z * math.cos(a) - y * math.sin(a), cy + z * math.sin(a) + y * math.cos(a))
+    out = []
+    for i in range(n):
+        if first <= i <= last:
+            out.append(rotate(outline[i], delta))
+            continue
+        out.append(outline[i])
+        if (i + 1) % n == first:
+            # Van het laatste vaste punt naar de voet: een stuk boog erbij.
+            out += [rotate(outline[i], delta * k / steps) for k in range(1, steps + 1)]
+    # ...en aan de andere rand van de voet terug naar het eerste vaste punt.
+    after = (last + 1) % n
+    index = out.index(outline[after]) if outline[after] in out else None
+    back = [rotate(outline[after], delta * k / steps) for k in range(steps, 0, -1)]
+    if index is not None:
+        out[index:index] = back
+    return out, (lambda points: [rotate(q, delta) for q in points])
+
+
+def extend_straight(outline, moving, shift):
+    """Maakt een recht magazijn langer: de hoekpunten met de nummers in {moving} schuiven {shift} = (dz, dy) op."""
+    return [(z + shift[0], y + shift[1]) if i in moving else (z, y) for i, (z, y) in enumerate(outline)]
+
+
 class Gun:
     """
     Alles van één wapen bij elkaar, klaar om weg te schrijven. {parts}: de zes onderdelen en hun losse bewegende stukken

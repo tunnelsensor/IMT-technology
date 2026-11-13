@@ -525,7 +525,7 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
             // daardoor dubbel zo schuin (7,7 pixels breed), en zo klein als in zijn 1 x 3 gaatjes past werd het een
             // dwerg. Met +22,5 staat het rechtop (2,8 breed, 8,9 hoog) en hangt het even groot als een Energy Cell.
             // Hoofdstuk 103: elk magazijn zo ver als het in zijn eigen wapen schuin staat (dat van de MP5 staat al recht).
-            q.rotateX(com.senne.imttech.client.guns.FirearmRig.of(MagazineItem.typeOf(stack)).magazineAngle);
+            q.rotateX(com.senne.imttech.client.guns.FirearmRig.of(MagazineItem.typeOf(stack)).magazineAngle(MagazineItem.extendedOf(stack)));
         } else if (stack.getItem() instanceof GunSlingItem) {
             q.rotateZ((float) Math.toRadians(90));
         }
@@ -555,13 +555,17 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
         // een vol magazijn (de onderkant ligt in beide modellen even laag), zodat ze naast elkaar even groot hangen.
         FirearmType magazine = MagazineItem.typeOf(stack);
         if (magazine != null && MagazineItem.rounds(stack) == 0) {
-            return FULL_MAGAZINES.computeIfAbsent(magazine, type -> MagazineItem.of(type, type.capacity()));
+            // Hoofdstuk 103, stap 6b: een lang magazijn krijgt de grootte van een vol lang magazijn.
+            return MagazineItem.extendedOf(stack)
+                    ? FULL_LONG_MAGAZINES.computeIfAbsent(magazine, type -> MagazineItem.of(type, true, type.capacity(true)))
+                    : FULL_MAGAZINES.computeIfAbsent(magazine, type -> MagazineItem.of(type, type.capacity()));
         }
         return stack;
     }
 
     /** Een vol magazijn per pistool om de grootte van te meten (zie {@link #sizedLike}). */
     private static final Map<FirearmType, ItemStack> FULL_MAGAZINES = new java.util.EnumMap<>(FirearmType.class);
+    private static final Map<FirearmType, ItemStack> FULL_LONG_MAGAZINES = new java.util.EnumMap<>(FirearmType.class);
 
     /** Een Sticky EMP en een Sticky Frag om de grootte van te meten (één keer gemaakt, niet elk beeld een nieuwe). */
     private static final Supplier<ItemStack> STICKY_EMP = Suppliers.memoize(() -> new ItemStack(ModItems.STICKY_EMP_GRENADE.get()));

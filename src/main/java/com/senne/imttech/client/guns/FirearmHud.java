@@ -215,7 +215,15 @@ public final class FirearmHud implements LayeredDraw.Layer {
         g.drawString(font, big, 0, 0, argb(1, MagazineItem.rounds(magazine) == 0 ? RED : GOLD), true);
         g.pose().popPose();
         Component name = magazine.getHoverName();
-        g.drawString(font, name, right - font.width(name), bottom - 38, argb(0.9f, GOLD), true);
+        // Minecraft toont dezelfde naam even midden boven je werkbalk, op dezelfde hoogte. Een lange naam ("Glock 19
+        // Extended Magazine") zou daar tot in komen: dan krimpt hij hier tot hij ernaast past.
+        int room = right - (w / 2 + font.width(name) / 2 + 8);
+        float fit = Math.max(0.6f, Math.min(1.0f, room / (float) Math.max(1, font.width(name))));
+        g.pose().pushPose();
+        g.pose().translate(right - font.width(name) * fit, bottom - 38 + (1 - fit) * 8, 0);
+        g.pose().scale(fit, fit, 1);
+        g.drawString(font, name, 0, 0, argb(0.9f, GOLD), true);
+        g.pose().popPose();
         // Onderaan alleen nog iets als het nodig is (hoofdstuk 89: de grijze regel "R: load a round" en "Full" zijn weg).
         // Hoofdstuk 67: kijk je naar een Ammo Box met patronen, dan laad je daaruit (rechtsklik inhouden).
         int inBox = com.senne.imttech.client.armory.ArmoryClient.roundsInBox(type.caliber);

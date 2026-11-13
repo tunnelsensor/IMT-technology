@@ -102,6 +102,8 @@ public final class GunsmithRecipeGameTests {
             }
             if (!firearm.tube()) {
                 wanted.add(new ItemStack(ModItems.magazine(firearm)));
+                // Stap 6b: en zijn lange magazijn (de extended mag).
+                wanted.add(new ItemStack(ModItems.magazine(firearm, true)));
             }
         }
         for (GunType type : GunType.values()) {

@@ -17,7 +17,8 @@ import net.minecraft.world.item.ItemStack;
  * Tekent een vuurwapen overal waar Minecraft het als item tekent (hoofdstuk 103, stap 5): in je inventaris en je
  * werkbalk, op de grond, in een item frame, en in de hand van een andere speler of van een soldaat. Het wapen zelf is
  * één model (models/item/mp5.json), en daar zit zijn kijker niet in: die hangt van het wapen af dat je vasthoudt. Dus
- * tekenen we eerst dat model, precies zoals Minecraft het zelf zou doen, en dan wat erop zit, op zijn montage.
+ * tekenen we het wapen zelf: uit zijn losse onderdelen (stap 6b: zo zie je ook zijn materialen en welk magazijn erin
+ * zit), met erop wat erop zit, elk op zijn plek.
  *
  * Minecraft roept dit alleen aan voor een model dat zegt dat het "zelf getekend" wordt: dat regelt
  * {@link FirearmModels#wrapWhole}. In je eigen beeld (eerste persoon) tekent FirearmRenderer het wapen, uit zijn losse
@@ -43,6 +44,18 @@ public final class FirearmItemRenderer extends BlockEntityWithoutLevelRenderer {
         }
         // Minecraft heeft het wapen al op zijn plek gezet (de houding uit het model, en een half blok terug): hier staat
         // de hoek (0, 0, 0) van het model, met 1 blok = 16 pixels.
+        // Stap 6: in de hand van iemand die sneakt en stilstaat, staat de tweepoot op zijn pootjes.
+        net.minecraft.world.entity.LivingEntity held = holder;
+        holder = null;
+        boolean inHand = context == ItemDisplayContext.THIRD_PERSON_RIGHT_HAND || context == ItemDisplayContext.THIRD_PERSON_LEFT_HAND;
+        boolean braced = inHand && held != null && held.isCrouching() && held.walkAnimation.speed() < 0.05f;
+        if (!FirearmItem.parts(stack).parts().isEmpty()) {
+            // Stap 6b: uit zijn losse onderdelen, zoals op je rug en op het Pegboard. Zo zie je wat er echt in zit: elk
+            // onderdeel in zijn materiaal, het gewone of het lange magazijn (of geen), de sling, en wat erop zit.
+            FirearmModels.renderParts(pose, buffers, stack, light, true, null, braced ? 1 : 0);
+            return;
+        }
+        // Een wapen zonder onderdelen (uit een commando): het hele model, zoals Minecraft het zelf zou tekenen.
         ItemRenderer items = Minecraft.getInstance().getItemRenderer();
         BakedModel model = FirearmModels.get(FirearmModels.whole(type));
         for (BakedModel pass : model.getRenderPasses(stack, true)) {
@@ -51,11 +64,6 @@ public final class FirearmItemRenderer extends BlockEntityWithoutLevelRenderer {
                 items.renderModelLists(pass, stack, light, overlay, pose, out);
             }
         }
-        // Stap 6: in de hand van iemand die sneakt en stilstaat, staat de tweepoot op zijn pootjes.
-        net.minecraft.world.entity.LivingEntity held = holder;
-        holder = null;
-        boolean inHand = context == ItemDisplayContext.THIRD_PERSON_RIGHT_HAND || context == ItemDisplayContext.THIRD_PERSON_LEFT_HAND;
-        boolean braced = inHand && held != null && held.isCrouching() && held.walkAnimation.speed() < 0.05f;
         FirearmModels.renderAttachments(pose, buffers, stack, light, null, braced ? 1 : 0);
     }
 }

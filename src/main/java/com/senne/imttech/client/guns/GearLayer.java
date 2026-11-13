@@ -162,7 +162,7 @@ public final class GearLayer extends RenderLayer<AbstractClientPlayer, PlayerMod
                 }
             }
             if (FirearmItem.hasMagazine(gun)) {
-                FirearmModels.render(pose, buffers, FirearmModels.magazine(type), light, OverlayTexture.NO_OVERLAY);
+                FirearmModels.render(pose, buffers, FirearmModels.magazineIn(gun), light, OverlayTexture.NO_OVERLAY);
             }
             pose.popPose();
         } else if (LaserGunItem.typeOf(gun) != null) {
@@ -226,11 +226,12 @@ public final class GearLayer extends RenderLayer<AbstractClientPlayer, PlayerMod
                 pose.pushPose();
                 pose.translate(at[0] / 16f, at[1] / 16f, at[2] / 16f);
                 // Hoofdstuk 103: een lang magazijn (de MP5) iets kleiner, zodat het niet ver boven de pouch uitsteekt.
-                float magScale = MAG_SCALE * FirearmRig.magazineFit(type);
+                boolean extended = MagazineItem.extendedOf(stack);
+                float magScale = MAG_SCALE * FirearmRig.magazineFit(type, extended);
                 pose.scale(magScale / 16f, magScale / 16f, magScale / 16f);
                 // Het magazijn staat in zijn model zoals in het wapen (bij de Glock schuin); hier rechtop, met het midden van
                 // zijn bodemplaat op de voet van het vakje (FirearmRig.magazineUpright, hoofdstuk 74). Leeg = leeg getekend.
-                pose.mulPose(FirearmRig.magazineUpright(type));
+                pose.mulPose(FirearmRig.magazineUpright(type, extended));
                 pose.scale(16, 16, 16);
                 FirearmModels.render(pose, buffers, FirearmModels.magazine(stack), light, OverlayTexture.NO_OVERLAY);
                 pose.popPose();

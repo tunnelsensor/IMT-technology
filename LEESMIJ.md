@@ -2185,7 +2185,7 @@ punten verdelen, zodat je kiest waar je goed in wordt. Wat je leert blijft na je
 Jouw wens (hoofdstuk 103, 12 november): "meer guns, deze werken net zoals de Glock, de models zijn ook zoals de Glock":
 de **MP5**, de **AK-47**, de **AWP** en de **Remington 870**, en attachments. Dit is de grote update, dus **versie 2.0**. De wapens
 zijn er nu alle vier (de MP5, de AK-47, de AWP en de Remington 870), en de attachments ook: de Red Dot Sight, de
-Sniper Scope, drie suppressors, twee grips, de tweepoot en de verlengbuis (de lange magazijnen komen nog). Alles wat bij "Vuurwapens: de Glock 19" staat (zes onderdelen die
+Sniper Scope, drie suppressors, twee grips, de tweepoot, de verlengbuis en de lange magazijnen. Alles wat bij "Vuurwapens: de Glock 19" staat (zes onderdelen die
 slijten, storingen en de tap-rack, een patroon in de kamer, een magazijn dat je kogel per kogel vult, hulzen die eruit
 springen, de magazijnpouch, de skills) geldt ook voor de nieuwe wapens. Dit is wat anders is.
 
@@ -2378,6 +2378,24 @@ plekken op een wapen. Je maakt ze ook onder **Attachments** op "Make parts" en z
   demper voor welk kaliber hij is ("9mm, muzzle") en bij alles of het past.
 - **De tafel is groter** (de Gunsmith Table en de Laser Workbench): 40 pixels breder en 28 hoger, zodat een wapen met een
   demper erop in beeld past en alle regels rechts boven de knop.
+
+**De lange magazijnen (extended mags)** (versie 2.6). Jouw keuze: "een eigen groter magazijn". Elk wapen met een
+magazijn heeft er een tweede, langer magazijn bij, als eigen item: het **Glock 19 Extended Magazine** (33 patronen in
+plaats van 15), het **MP5 Extended Magazine** (40 in plaats van 30), het **AK-47 Extended Magazine** (40 in plaats van
+30) en het **AWP Extended Magazine** (10 in plaats van 5). De getallen staan in `[guns] extendedCapacity`.
+- **Maken**: op de Gunsmith Table, "Make parts", onder het wapen, op de rij **Extended Magazine** (onder "Magazine").
+  Het kost 4 staal meer dan het gewone magazijn en dezelfde veer: Glock 11 staal en Steel Springs, MP5 12 staal en een
+  MP5 Recoil Spring, AK-47 12 staal en een AK-47 Recoil Spring, AWP 9 staal en een AWP Mainspring.
+- **Het werkt zoals het gewone magazijn**: vullen met R (inhouden), rechtsklik om het in het wapen te steken, R op het
+  wapen om het uit te werpen of te wisselen uit je magazijnpouch. Het past alleen in zijn eigen wapen. In het wapen
+  staat rechtsonder dan bijvoorbeeld 40 + 1.
+- **Je ziet het**: het magazijn steekt verder onder het wapen uit (bij de Glock ver onder de greep), in je eigen beeld,
+  bij anderen, op je rug, op de Gunsmith Table, als item op de grond en op het plaatje in je inventaris. In je hand en
+  in de magazijnpouch is het een derde langer dan een gewoon magazijn; op het Pegboard neemt het 2 x 5 gaatjes in (dat
+  van de AWP 2 x 3).
+- **Het wapen als item** (in je inventaris, op de grond, in een item frame, in andermans hand) is nu getekend uit zijn
+  onderdelen, zoals op je rug en op het Pegboard: je ziet het materiaal van elk onderdeel, welk magazijn erin zit (of
+  dat er geen in zit), de sling en de attachments.
 
 **De getallen** staan in `config/imttech.toml` onder `[guns]`: elk rijtje heeft nu vijf getallen, in de volgorde Glock
 19, MP5, AK-47, AWP, Remington 870 (schade, tempo, bereik, kogelsnelheid, magazijn, het lange magazijn, spreiding,

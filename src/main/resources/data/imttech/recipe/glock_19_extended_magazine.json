@@ -1,0 +1,17 @@
+{
+  "type": "imttech:gunsmithing",
+  "ingredients": [
+    {
+      "item": "imttech:steel_ingot",
+      "count": 11
+    },
+    {
+      "item": "imttech:gun_springs",
+      "count": 1
+    }
+  ],
+  "result": {
+    "id": "imttech:glock_19_extended_magazine",
+    "count": 1
+  }
+}

@@ -597,8 +597,30 @@ public final class ModItems {
         return magazine(type, false);
     }
 
+    /**
+     * Hoofdstuk 103, stap 6b: het lange magazijn (de extended mag) van elk wapen met een magazijn. Jouw keuze: "een eigen
+     * groter magazijn": een eigen item ("mp5_extended_magazine"), dat je laadt en wisselt zoals het gewone.
+     */
+    private static final java.util.Map<com.senne.imttech.guns.FirearmType, DeferredItem<com.senne.imttech.guns.MagazineItem>>
+            EXTENDED_MAGAZINES = new java.util.EnumMap<>(com.senne.imttech.guns.FirearmType.class);
+
+    static {
+        for (com.senne.imttech.guns.FirearmType type : com.senne.imttech.guns.FirearmType.values()) {
+            if (!type.tube()) {
+                EXTENDED_MAGAZINES.put(type, ITEMS.registerItem(type.id + "_extended_magazine",
+                        properties -> new com.senne.imttech.guns.MagazineItem(properties, type, true), new Item.Properties()));
+            }
+        }
+    }
+
     /** Het magazijn van dit wapen: het gewone, of (hoofdstuk 103) het lange (de extended mag). */
     public static com.senne.imttech.guns.MagazineItem magazine(com.senne.imttech.guns.FirearmType type, boolean extended) {
+        if (type.tube()) {
+            throw new IllegalArgumentException("De Remington 870 heeft geen magazijn (hij heeft een buis)");
+        }
+        if (extended) {
+            return EXTENDED_MAGAZINES.get(type).get();
+        }
         return switch (type) {
             case GLOCK_19 -> GLOCK_19_MAGAZINE.get();
             case MP5 -> MP5_MAGAZINE.get();
@@ -608,9 +630,14 @@ public final class ModItems {
         };
     }
 
-    /** Alle magazijnen van alle vuurwapens (voor de modellen en het Pegboard). */
+    /** Alle magazijnen van alle vuurwapens, de gewone en de lange (voor de modellen en het Pegboard). */
     public static java.util.List<com.senne.imttech.guns.MagazineItem> magazines() {
-        return java.util.List.of(GLOCK_19_MAGAZINE.get(), MP5_MAGAZINE.get(), AK_47_MAGAZINE.get(), AWP_MAGAZINE.get());
+        java.util.List<com.senne.imttech.guns.MagazineItem> all = new java.util.ArrayList<>(java.util.List.of(
+                GLOCK_19_MAGAZINE.get(), MP5_MAGAZINE.get(), AK_47_MAGAZINE.get(), AWP_MAGAZINE.get()));
+        for (DeferredItem<com.senne.imttech.guns.MagazineItem> extended : EXTENDED_MAGAZINES.values()) {
+            all.add(extended.get());
+        }
+        return all;
     }
 
     /** Hoofdstuk 103: de patroon, de lege huls en de kogelpunt van dit kaliber. */

@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 557 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 558 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -7618,8 +7618,42 @@ standen), suppressors, extended mags en grips." Omdat jij het een grote update n
       de grips onder de MP5 en de AK-47, de tweepoot alleen onder de AWP; de tweepoot werkt als je sneakt, op de grond
       staat en stilstaat; attachments zet je op een compleet wapen; de grotere tafel.
       **Nog open**: in de Laser Workbench stak het vak "SLING" al een haar onder de tafel uit; dat neem ik mee in stap 7.
-- [ ] **6b. De extended mags**: een eigen, groter magazijn per wapen (Glock 33, MP5 40, AK-47 40, AWP 10), en het wapen
-      als item getekend uit zijn onderdelen (zodat je ziet welk magazijn erin zit).
+- [x] **6b. De extended mags** (13 november, versie 2.6.0) — een eigen, groter magazijn per wapen, en het wapen als
+      item getekend uit zijn onderdelen.
+      **De items**: `glock_19_extended_magazine` (33), `mp5_extended_magazine` (40), `ak_47_extended_magazine` (40) en
+      `awp_extended_magazine` (10): `MagazineItem(type, extended)`, `ModItems.magazine(type, true)`. Wat sinds stap 1
+      klaarstond deed de rest: `GunMagazine.extended` (het wapen onthoudt welk magazijn erin zit),
+      `FirearmType.capacity(extended)`, `FirearmItem.capacity`. Vier recepten (het gewone magazijn met 4 staal erbij), op
+      "Make parts" een eigen rij **Extended Magazine** onder "Magazine" (eerst stond het ernaast, onder "Titanium"; de
+      sling van een wapen zonder magazijn staat nu meteen onder de onderdelen: `GunsmithMakePanel.slingRow`), het
+      tabblad Weapons, het Pegboard (2 x 5 gaatjes, dat van de AWP 2 x 3), en ze horen bij het onderwerp "Glock 19" van
+      How it works. De magazijnpouch nam ze al aan.
+      **De modellen**: elk wapen heeft er `magazine_extended` en `magazine_extended_empty` bij. Twee hulpjes in
+      `tools/longgun.py`: `extend_curved` (een gebogen magazijn langer langs zijn bocht: één middelpunt voor de
+      voorrand en de achterrand met kleinste kwadraten, de voet draait eromheen en in de twee randen komt een stuk boog
+      bij; zo de MP5 68 mm en de AK-47 77 mm langer, zoals het magazijn van een RPK) en `extend_straight` (de AWP: het
+      doosje 75 mm dieper). De Glock: het lijf 104 mm langer langs zijn as, de bodemplaat schuift mee
+      (`glock19_model.mag_drop`). `generate_gun_models.py` schrijft ze mee (en print `MAG_LONG_FOOT` voor de rig).
+      **In je spel**: `FirearmModels.magazine(type, extended, empty)` en `magazineIn(gun)`; `FirearmRig` kent per wapen
+      de voet en de hoek van het lange magazijn (`longMag`, `magazineFoot(extended)`, `magazineUpright(type,
+      extended)`), en een lang magazijn mag in je hand en in de pouch een derde hoger zijn (`magazineFit`).
+      `FirearmRenderer.longMagazine`: welk magazijn je in het wapen ziet terwijl het erin gaat (voor de server zit het
+      er pas in als de handeling klaar is: dan het magazijn in je hand, of het vakje van je pouch). De naam van een
+      magazijn in de HUD krimpt als hij tot in de naam zou komen die Minecraft midden boven je werkbalk toont ("Glock 19
+      Extended Magazine").
+      **Het wapen als item** (`FirearmItemRenderer`): niet meer het ene model uit de json, maar uit zijn onderdelen
+      (`FirearmModels.renderParts`), zoals op je rug en op het Pegboard: elk onderdeel in zijn materiaal, het magazijn
+      dat erin zit (gewoon, lang of geen), de sling, de attachments. Een wapen zonder onderdelen (uit een commando) houdt
+      het model uit de json.
+      **Tests** (één nieuw, 558 in totaal): `an_extended_magazine_is_its_own_bigger_magazine` (33, 40, 40 en 10; het
+      lange magazijn van een AK-47 gaat niet in een MP5, dat van de MP5 wel en dan houdt het wapen 40; het komt er weer
+      uit met zijn patronen; patroon per patroon laden tot 40); `gunsmith_table_has_one_recipe_per_part` telt ze mee.
+      **Gezien** (`gradlew runVisualCheck -Ponly=longmags`: `lm01` tot `lm18`: elk wapen met zijn lange magazijn vanuit de
+      heup, van opzij en bij het uitwerpen, het lange magazijn van de MP5 en van de Glock in je hand, laden, erin
+      steken, de tafel, "Make parts", de tooltip, derde persoon, op je rug, op de grond en op het Pegboard).
+      **Mijn invullingen erbij**: de recepten (4 staal meer); 2 x 5 gaatjes op het Pegboard; het wapen als item uit zijn
+      onderdelen. **Nog open**: op het plaatje in je inventaris steekt het lange magazijn van de Glock (en een kijker of
+      een demper) een pixel buiten het vakje; kleiner tekenen zou het wapen zelf te klein maken.
 - [ ] **7. Attachments op de lasergeweren** (red dot, sniperkijker, grips, op de Laser Workbench).
 - [ ] **8. Raven-soldaten met de nieuwe wapens, en attachments in buit.**
 - [ ] **9. How it works, de showcase, LEESMIJ.md en de changelog van 2.0.0.**

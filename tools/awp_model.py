@@ -73,6 +73,10 @@ TRIGGER = [(1402, 252), (1409, 252), (1412, 262), (1411, 272), (1405, 282), (139
 # Op de foto is het 9 cm lang; een .338-patroon is 9,35 cm, dus hier is het vooraan een halve centimeter langer.
 MAG = [(1211, 203), (1338, 203), (1338, 320), (1213, 311)]
 MAG_ZY = zy(MAG)
+# Het lange magazijn (de extended mag, hoofdstuk 103 stap 6b): 10 patronen, vijf erbij onder elkaar: 5,9 pixels (75 mm)
+# dieper. De twee onderste hoekpunten zakken.
+MAG_LONG_DROP = 5.86
+MAG_LONG_ZY = lg.extend_straight(MAG_ZY, {2, 3}, (0.0, -MAG_LONG_DROP))
 # De schroeven in de kolf.
 SCREWS = [(911, 218), (1051, 219), (1196, 229), (1347, 228), (1480, 222), (1487, 332), (1635, 222), (1707, 222), (1660, 292),
           (1745, 292)]
@@ -212,13 +216,14 @@ def sling():
     return m
 
 
-def magazine(loaded=True):
+def magazine(loaded=True, extended=False):
     """
     Het stalen magazijn van vijf patronen: een recht doosje met twee ribben, de lipjes bovenaan, en bovenin een patroon
-    .338 Lapua Magnum (of, leeg, de opvolger).
+    .338 Lapua Magnum (of, leeg, de opvolger). {extended}: het lange magazijn van tien patronen.
     """
     m = gm.Mesh()
-    gm.prism(m, MAG_ZY, "x", 8 - 0.9, 8 + 0.9, "mag_body", bevel=0.1, density=D, smooth=50, data={"loaded": loaded})
+    outline = MAG_LONG_ZY if extended else MAG_ZY
+    gm.prism(m, outline, "x", 8 - 0.9, 8 + 0.9, "mag_body", bevel=0.1, density=D, smooth=50, data={"loaded": loaded})
     z0, z1 = Z(1216), Z(1334)
     for side in (-1, 1):
         lip = [(8 + side * 0.88, MAG_TOP - 0.1), (8 + side * 0.72, MAG_TOP - 0.1), (8 + side * 0.72, MAG_TOP + 0.12),
@@ -354,10 +359,12 @@ SKINS = ("steel", "titanium")
 GRIP = (8, Y(322), Z(1505))
 HAND_SCALE = 0.3
 MAG_FOOT = (8, Y(316), Z(1276))
+MAG_LONG_FOOT = (8, MAG_FOOT[1] - MAG_LONG_DROP, MAG_FOOT[2])
 
 
 def build():
     parts = {"frame": frame(), "slide": slide(), "barrel": barrel(), "springs": springs(), "striker": striker(),
              "trigger": trigger(), "sling": sling()}
-    mags = {"magazine": magazine(True), "magazine_empty": magazine(False)}
+    mags = {"magazine": magazine(True), "magazine_empty": magazine(False),
+            "magazine_extended": magazine(True, True), "magazine_extended_empty": magazine(False, True)}
     return lg.Gun(ID, parts, mags, SKINS, painter, mag_painter, whole=("frame", "slide", "barrel", "trigger"))

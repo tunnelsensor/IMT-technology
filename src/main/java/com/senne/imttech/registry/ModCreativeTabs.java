@@ -94,6 +94,7 @@ public final class ModCreativeTabs {
                     if (!type.tube()) {
                         output.accept(com.senne.imttech.guns.MagazineItem.of(type, 0));
                         output.accept(com.senne.imttech.guns.MagazineItem.of(type, type.capacity()));
+                        output.accept(com.senne.imttech.guns.MagazineItem.of(type, true, type.capacity(true)));
                     }
                     for (com.senne.imttech.guns.GunPart part : com.senne.imttech.guns.GunPart.values()) {
                         for (com.senne.imttech.guns.GunMaterial material : com.senne.imttech.guns.GunMaterial.values()) {

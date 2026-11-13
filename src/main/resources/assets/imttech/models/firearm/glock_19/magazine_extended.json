@@ -1,0 +1,11 @@
+{
+ "loader": "neoforge:obj",
+ "model": "imttech:models/firearm/glock_19/magazine_extended.obj",
+ "automatic_culling": false,
+ "flip_v": false,
+ "emissive_ambient": true,
+ "textures": {
+  "mag": "imttech:item/glock_19/magazine",
+  "particle": "imttech:item/glock_19/magazine"
+ }
+}

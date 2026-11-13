@@ -369,7 +369,7 @@ def glock_19():
         for material in materials_of:
             write(f"models/firearm/glock_19/{part}_{material}.json",
                   obj_model(part, {"gun": GLOCK_TEX + material}, gui_light=None))
-    for name in ("magazine", "magazine_empty"):
+    for name in mags:
         write(f"models/firearm/glock_19/{name}.json", obj_model(name, {"mag": GLOCK_TEX + "magazine"}, gui_light=None))
     whole = [p for m in parts.values() for p in m.points()] + mags["magazine"].points()
     write("models/item/glock_19.json", obj_model(
@@ -381,6 +381,13 @@ def glock_19():
     write("models/item/glock_19_magazine.json", obj_model(
         "magazine", {"mag": GLOCK_TEX + "magazine"}, display=mag_disp,
         overrides=[{"predicate": {"imttech:empty": 1}, "model": "imttech:item/glock_19_magazine_empty"}]))
+    # Het lange magazijn (hoofdstuk 103, stap 6b): zijn eigen item.
+    long_disp = magazine_display(mags["magazine_extended"].points())
+    write("models/item/glock_19_extended_magazine_empty.json",
+          obj_model("magazine_extended_empty", {"mag": GLOCK_TEX + "magazine"}, display=long_disp))
+    write("models/item/glock_19_extended_magazine.json", obj_model(
+        "magazine_extended", {"mag": GLOCK_TEX + "magazine"}, display=long_disp,
+        overrides=[{"predicate": {"imttech:empty": 1}, "model": "imttech:item/glock_19_extended_magazine_empty"}]))
     # De losse onderdelen als item, met een override per materiaal (0 = polymeer, 1 = staal, 2 = titanium): schuin
     # van rechtsboven (model_display.PART_VIEW) en zo groot als er in het vakje past (hoofdstuk 59).
     for part, materials_of in glock.PART_MATERIALS.items():
@@ -447,7 +454,8 @@ def long_gun(mod):
     for name in gun.mags:
         if name.endswith("_empty"):
             continue
-        item = f"{gun.id}_{name}"
+        # Het lange magazijn (hoofdstuk 103, stap 6b) heet als item "<wapen>_extended_magazine".
+        item = f"{gun.id}_extended_magazine" if name == "magazine_extended" else f"{gun.id}_{name}"
         disp = centred_display(glock.points_as_elements(gun.mags[name].points()), gui_rotation=(8, -68, 0), size=14.5,
                                max_scale=2.2, hand_scale=0.5, ground_scale=0.42)
         write(f"models/item/{item}_empty.json", obj_model(f"{name}_empty", {"mag": tex + "magazine"}, display=disp,
@@ -475,6 +483,9 @@ def long_gun(mod):
     # De maten voor FirearmRig (Java): de doos om elk onderdeel.
     for name, (lo, hi) in gun.bounds().items():
         print(f"  {name:16s} van {lo} tot {hi}")
+    for label in ("MAG_FOOT", "MAG_LONG_FOOT"):
+        if hasattr(mod, label):
+            print(f"  {label}: {[round(float(v), 2) for v in getattr(mod, label)]}")
     return gun
 
 

@@ -111,8 +111,12 @@ public final class Pegboard {
         }
         if (MagazineItem.typeOf(stack) == FirearmType.AWP) {
             // Hoofdstuk 103: het magazijn van de AWP is een kort, breed doosje (vijf lange patronen op een rij): in een
-            // smalle strook van 1 x 3 werd het een dwerg.
-            return new int[]{2, 2};
+            // smalle strook van 1 x 3 werd het een dwerg. Het lange (tien patronen) is een gaatje hoger.
+            return new int[]{2, MagazineItem.extendedOf(stack) ? 3 : 2};
+        }
+        if (MagazineItem.extendedOf(stack)) {
+            // Stap 6b: een lang magazijn (de extended mag): een gaatje breder (het is krommer) en twee hoger.
+            return new int[]{2, 5};
         }
         if (MagazineItem.typeOf(stack) != null || stack.is(ModItems.ENERGY_CELL.get())) {
             return new int[]{1, 3};

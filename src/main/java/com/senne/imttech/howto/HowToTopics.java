@@ -73,7 +73,12 @@ public final class HowToTopics {
             // hebben) bij dezelfde onderwerpen: het wapen en zijn magazijn bij de Glock, hun onderdelen bij de Gunsmith Table.
             topic("glock", "weapons", "Glock 19", WeaponScenes::glock, ModItems.GLOCK_19, ModItems.GLOCK_19_MAGAZINE, ModItems.ROUND_9MM,
                     ModItems.MP5, ModItems.MP5_MAGAZINE, ModItems.AK_47, ModItems.AK_47_MAGAZINE, ModItems.ROUND_762,
-                    ModItems.AWP, ModItems.AWP_MAGAZINE, ModItems.ROUND_338, ModItems.REMINGTON_870, ModItems.ROUND_12G),
+                    ModItems.AWP, ModItems.AWP_MAGAZINE, ModItems.ROUND_338, ModItems.REMINGTON_870, ModItems.ROUND_12G,
+                    // Stap 6b: de lange magazijnen (de extended mags).
+                    () -> ModItems.magazine(com.senne.imttech.guns.FirearmType.GLOCK_19, true),
+                    () -> ModItems.magazine(com.senne.imttech.guns.FirearmType.MP5, true),
+                    () -> ModItems.magazine(com.senne.imttech.guns.FirearmType.AK_47, true),
+                    () -> ModItems.magazine(com.senne.imttech.guns.FirearmType.AWP, true)),
             topicItems("gunsmith", "weapons", "Gunsmith Table", WeaponScenes::gunsmith,
                     () -> concat(Arrays.stream(com.senne.imttech.guns.FirearmType.values())
                                     .flatMap(type -> Arrays.stream(GunPart.values()).map(part -> (Item) ModItems.gunPart(type, part))).toList(),

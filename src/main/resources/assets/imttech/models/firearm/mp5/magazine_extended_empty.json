@@ -1,0 +1,11 @@
+{
+ "loader": "neoforge:obj",
+ "model": "imttech:models/firearm/mp5/magazine_extended_empty.obj",
+ "automatic_culling": false,
+ "flip_v": false,
+ "emissive_ambient": true,
+ "textures": {
+  "mag": "imttech:item/mp5/magazine",
+  "particle": "imttech:item/mp5/magazine"
+ }
+}

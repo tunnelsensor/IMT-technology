@@ -107,6 +107,9 @@ MAG = [(938, 326), (1064, 326), (1063, 351), (1061, 371), (1056, 376), (1045, 42
        (953, 604), (931, 629), (899, 660), (865, 686), (855, 696), (850, 697), (841, 689), (799, 631), (798, 623), (783, 600),
        (819, 573), (855, 537), (888, 492), (908, 457), (930, 400), (939, 356)]
 MAG_ZY = zy(MAG)
+# Het lange magazijn (de extended mag, hoofdstuk 103 stap 6b): 40 patronen, zoals dat van de RPK: 6 pixels (77 mm) langer
+# langs de bocht. De voet draait om het middelpunt van de bocht; in de twee randen komt een stuk boog bij.
+MAG_LONG_ZY, MAG_LONG_TURN = lg.extend_curved(MAG_ZY, [19, 20, 21, 22, 23], [4, 5, 6, 7, 8, 9, 10, 11, 12], (9, 20), 6.0)
 
 
 def cover_section():
@@ -244,13 +247,15 @@ def sling():
     return m
 
 
-def magazine(loaded=True):
+def magazine(loaded=True, extended=False):
     """
     Het gebogen stalen magazijn van 30 patronen ("de banaan"): het lijf met zijn ribben, de bodemplaat, de lipjes
-    bovenaan, en bovenin een patroon 7.62x39 (of, leeg, de opvolger).
+    bovenaan, en bovenin een patroon 7.62x39 (of, leeg, de opvolger). {extended}: het lange magazijn van 40 patronen.
     """
     m = gm.Mesh()
-    gm.prism(m, MAG_ZY, "x", 8 - 1.05, 8 + 1.05, "mag_body", bevel=0.12, density=D, smooth=50, data={"loaded": loaded})
+    outline = MAG_LONG_ZY if extended else MAG_ZY
+    gm.prism(m, outline, "x", 8 - 1.05, 8 + 1.05, "mag_body", bevel=0.12, density=D, smooth=50,
+             data={"loaded": loaded, "outline": outline})
     z0, z1 = Z(945), Z(1056)
     for side in (-1, 1):
         lip = [(8 + side * 1.02, MAG_TOP - 0.1), (8 + side * 0.84, MAG_TOP - 0.1), (8 + side * 0.84, MAG_TOP + 0.1),
@@ -350,7 +355,7 @@ def mag_painter(skin, isl, p, n, tx, ty):
         col = worn(lg.add((70, 66, 64), grain * 6 + 26 * lg.edge_amount(isl, n)), p, 16)
         if abs(nx) > 0.9:
             # Drie geperste ribben die de bocht van het magazijn volgen.
-            d = gm.distance_to_outline((z, y), MAG_ZY)
+            d = gm.distance_to_outline((z, y), isl.data.get("outline", MAG_ZY))
             for at in (0.42, 0.95, 1.5):
                 if abs(d - at) < 0.07:
                     col = lg.add(col, 20)
@@ -376,10 +381,12 @@ SKINS = ("steel", "titanium")
 GRIP = (8, Y(450), Z(1300))
 HAND_SCALE = 0.34
 MAG_FOOT = (8, Y(648), Z(818))
+MAG_LONG_FOOT = (8, *reversed(MAG_LONG_TURN([(MAG_FOOT[2], MAG_FOOT[1])])[0]))
 
 
 def build():
     parts = {"frame": frame(), "slide": slide(), "barrel": barrel(), "springs": springs(), "striker": striker(),
              "trigger": trigger(), "sling": sling()}
-    mags = {"magazine": magazine(True), "magazine_empty": magazine(False)}
+    mags = {"magazine": magazine(True), "magazine_empty": magazine(False),
+            "magazine_extended": magazine(True, True), "magazine_extended_empty": magazine(False, True)}
     return lg.Gun(ID, parts, mags, SKINS, painter, mag_painter, whole=("frame", "slide", "barrel", "trigger"))

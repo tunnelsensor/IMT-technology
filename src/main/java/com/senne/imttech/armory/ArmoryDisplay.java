@@ -175,6 +175,30 @@ public final class ArmoryDisplay {
                 com.senne.imttech.guns.Attachment.RED_DOT), Pegboard.Turn.RIGHT);
     }
 
+    /**
+     * Hoofdstuk 103, stap 6b: een wandje van 2 x 2 Pegboards (met hun voorkant naar het noorden; de muur erachter moet er
+     * al staan) met van elk wapen het gewone magazijn en het lange ernaast: boven de Glock en de MP5, onder de AK-47 en
+     * de AWP. Voor de rondleiding (-Ponly=longmags).
+     */
+    public static void buildMagazineRack(ServerLevel level, BlockPos leftBottom) {
+        for (int du = 0; du < 2; du++) {
+            for (int dv = 0; dv < 2; dv++) {
+                level.setBlockAndUpdate(Pegboard.offset(leftBottom, FACING, du, dv), ModBlocks.PEGBOARD.get().defaultBlockState()
+                        .setValue(PegboardBlock.FACING, FACING));
+            }
+        }
+        Pegboard.Turn left = Pegboard.Turn.LEFT;
+        hang(level, leftBottom, 1, 10, MagazineItem.of(FirearmType.GLOCK_19, 15), left);
+        hang(level, leftBottom, 3, 9, MagazineItem.of(FirearmType.GLOCK_19, true, 33), left);
+        hang(level, leftBottom, 7, 10, MagazineItem.of(FirearmType.MP5, 30), left);
+        hang(level, leftBottom, 9, 9, MagazineItem.of(FirearmType.MP5, true, 40), left);
+        hang(level, leftBottom, 12, 9, MagazineItem.of(FirearmType.MP5, true, 0), left);
+        hang(level, leftBottom, 1, 2, MagazineItem.of(FirearmType.AK_47, 30), left);
+        hang(level, leftBottom, 3, 1, MagazineItem.of(FirearmType.AK_47, true, 40), left);
+        hang(level, leftBottom, 7, 2, MagazineItem.of(FirearmType.AWP, 5), left);
+        hang(level, leftBottom, 10, 2, MagazineItem.of(FirearmType.AWP, true, 10), left);
+    }
+
     /** Dit wapen met deze kijker erop (hoofdstuk 103, stap 5). */
     private static ItemStack sighted(ItemStack gun, com.senne.imttech.guns.Attachment sight) {
         FirearmItem.setAttachment(gun, sight);

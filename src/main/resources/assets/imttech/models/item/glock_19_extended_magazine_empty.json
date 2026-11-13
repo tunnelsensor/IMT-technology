@@ -1,0 +1,150 @@
+{
+ "loader": "neoforge:obj",
+ "model": "imttech:models/firearm/glock_19/magazine_extended_empty.obj",
+ "automatic_culling": false,
+ "flip_v": false,
+ "emissive_ambient": true,
+ "textures": {
+  "mag": "imttech:item/glock_19/magazine",
+  "particle": "imttech:item/glock_19/magazine"
+ },
+ "gui_light": "front",
+ "display": {
+  "gui": {
+   "rotation": [
+    63.28,
+    -61.48,
+    49.67
+   ],
+   "translation": [
+    1.797,
+    4.726,
+    0.372
+   ],
+   "scale": [
+    0.856,
+    0.856,
+    0.856
+   ]
+  },
+  "ground": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    -0.0,
+    3.839,
+    -1.86
+   ],
+   "scale": [
+    0.45,
+    0.45,
+    0.45
+   ]
+  },
+  "fixed": {
+   "rotation": [
+    63.28,
+    -61.48,
+    49.67
+   ],
+   "translation": [
+    1.797,
+    4.726,
+    0.372
+   ],
+   "scale": [
+    0.856,
+    0.856,
+    0.856
+   ]
+  },
+  "head": {
+   "rotation": [
+    0,
+    180,
+    0
+   ],
+   "translation": [
+    0,
+    13,
+    7
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ]
+  },
+  "thirdperson_righthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    -0.0,
+    2.248,
+    -2.274
+   ],
+   "scale": [
+    0.55,
+    0.55,
+    0.55
+   ]
+  },
+  "thirdperson_lefthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    -0.0,
+    2.248,
+    -2.274
+   ],
+   "scale": [
+    0.55,
+    0.55,
+    0.55
+   ]
+  },
+  "firstperson_righthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    -0.0,
+    2.248,
+    -2.274
+   ],
+   "scale": [
+    0.55,
+    0.55,
+    0.55
+   ]
+  },
+  "firstperson_lefthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    -0.0,
+    2.248,
+    -2.274
+   ],
+   "scale": [
+    0.55,
+    0.55,
+    0.55
+   ]
+  }
+ }
+}

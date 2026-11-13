@@ -388,13 +388,26 @@ def frame():
     return m
 
 
-def magazine(loaded=True):
+# Het lange magazijn (de extended mag, hoofdstuk 103 stap 6b): 33 patronen, zoals de bekende lange Glock-magazijnen. Het
+# lijf is 8,1 pixels (104 mm) langer langs zijn as en steekt ver onder de greep uit; de bodemplaat schuift mee.
+MAG_EXTRA = 8.1
+
+
+def mag_drop(extended):
+    """Zo ver ligt de onderkant van het lange magazijn lager (y) en verder naar achteren (z) dan die van het gewone."""
+    drop = MAG_EXTRA * math.cos(math.radians(GRIP_ANGLE)) if extended else 0.0
+    return drop * TAN, drop
+
+
+def magazine(loaded=True, extended=False):
     """
     Het magazijn, schuin in de greep zoals in het pistool: een polymeer lijf dat bovenaan smaller wordt (twee rijen
     patronen worden er één), een stalen rand met de lipjes, de bodemplaat met een lip vooraan, gaatjes met getallen
     achterop, de inkeping voor de magazijnknop vooraan, en bovenin een patroon (of, leeg, de veer-opvolger).
+    {extended}: het lange magazijn van 33 patronen.
     """
     m = gm.Mesh()
+    back, drop = mag_drop(extended)
 
     def ring(y, hw):
         zf = mag_front_z(y)
@@ -402,10 +415,10 @@ def magazine(loaded=True):
                (hw, 0.45), (hw, MAG_DEPTH - 0.12), (hw - 0.12, MAG_DEPTH), (-hw + 0.12, MAG_DEPTH),
                (-hw, MAG_DEPTH - 0.12)]
         return [vec(8 + x, y, zf + z) for x, z in pts]
-    rings = [ring(4.42, 0.875), ring(8.6, 0.875), ring(10.2, 0.75), ring(MAG_TOP, 0.72)]
+    rings = [ring(4.42 - drop, 0.875), ring(8.6, 0.875), ring(10.2, 0.75), ring(MAG_TOP, 0.72)]
     centre = vec(8, 7.5, mag_front_z(7.5) + MAG_DEPTH / 2)
     gm.loft(m, rings, "mag_body", caps=(False, True), smooth=50, outward=centre, data={"loaded": loaded})
-    gm.prism(m, zy(BASE_PLATE), "x", 6.95, 9.05, "mag_base", bevel=0.1, smooth=45)
+    gm.prism(m, [(z + back, y - drop) for z, y in zy(BASE_PLATE)], "x", 6.95, 9.05, "mag_base", bevel=0.1, smooth=45)
     # De stalen lipjes bovenop, links en rechts, een beetje naar binnen gekruld.
     z0, z1 = mag_front_z(MAG_TOP) + 0.35, mag_front_z(MAG_TOP) + MAG_DEPTH - 0.1
     for side in (-1, 1):
@@ -726,7 +739,8 @@ def build():
     """Alle onderdelen als meshes, en de twee texture-indelingen."""
     parts = {"frame": frame(), "slide": slide(), "barrel": barrel(), "springs": springs(), "striker": striker(),
              "trigger": trigger()}
-    mags = {"magazine": magazine(True), "magazine_empty": magazine(False)}
+    mags = {"magazine": magazine(True), "magazine_empty": magazine(False),
+            "magazine_extended": magazine(True, True), "magazine_extended_empty": magazine(False, True)}
     ammo = {
         # De losse patroon/huls staan rechtop met hun midden op (8, 8,3, 8) en (8, 7,65, 8), zoals de oude modellen
         # (FirearmRenderer en CasingRenderer schuiven ze daarop).

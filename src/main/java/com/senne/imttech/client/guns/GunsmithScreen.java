@@ -233,7 +233,7 @@ public class GunsmithScreen extends PartsTableScreen<GunSlot> {
             }
         }
         if (!type.tube() && FirearmItem.hasMagazine(gun)) {
-            FirearmModels.render(pose, buffers, FirearmModels.magazine(type), LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
+            FirearmModels.render(pose, buffers, FirearmModels.magazineIn(gun), LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
         }
         if (type.longGun && FirearmItem.hasSling(gun) && skip != GunSlot.SLING) {
             FirearmModels.render(pose, buffers, FirearmModels.sling(type), LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);

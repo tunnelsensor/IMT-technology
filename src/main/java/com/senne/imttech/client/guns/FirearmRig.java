@@ -86,6 +86,30 @@ public final class FirearmRig {
     public @org.jetbrains.annotations.Nullable Vector3f underMount;
     public @org.jetbrains.annotations.Nullable Vector3f tubeMount;
 
+    /**
+     * Hoofdstuk 103, stap 6b: het midden van de onderkant van het lange magazijn (de extended mag) zoals het in het
+     * wapen zit, en hoe schuin het dan staat; null bij een wapen zonder magazijn (tools/generate_gun_models.py print
+     * MAG_LONG_FOOT).
+     */
+    public @org.jetbrains.annotations.Nullable Vector3f longMagazineFoot;
+    public float longMagazineAngle;
+
+    private FirearmRig longMag(Vector3f foot, float angle) {
+        this.longMagazineFoot = foot;
+        this.longMagazineAngle = angle;
+        return this;
+    }
+
+    /** De onderkant van het magazijn in het wapen: het gewone of het lange. */
+    public Vector3f magazineFoot(boolean extended) {
+        return extended && longMagazineFoot != null ? longMagazineFoot : magazineFoot;
+    }
+
+    /** Hoe schuin het magazijn in het wapen staat (radialen): het gewone of het lange. */
+    public float magazineAngle(boolean extended) {
+        return extended && longMagazineFoot != null ? longMagazineAngle : magazineAngle;
+    }
+
     private FirearmRig addOns(float muzzleSeat, @org.jetbrains.annotations.Nullable Vector3f underMount,
                               @org.jetbrains.annotations.Nullable Vector3f tubeMount) {
         this.muzzleSeat = muzzleSeat;
@@ -137,7 +161,8 @@ public final class FirearmRig {
             new Vector3f(0.21f, -0.21f, -0.42f), 0.46f, 2.6f, 2, 0.055f, 6.5f,
             new Vector3f(8.2f, 13.6f, 12.4f), 2.6f,
             new Vector3f(8, 3.82f, 11.94f), new Vector3f(8.13f, 11.23f, 9.2f), GRIP_ANGLE,
-            0.5f, new Vector3f(8, 9, 8)).optic(13.33f, 10.5f, 0, true).addOns(0.2f, null, null);
+            0.5f, new Vector3f(8, 9, 8)).optic(13.33f, 10.5f, 0, true).addOns(0.2f, null, null)
+            .longMag(new Vector3f(8, -3.66f, 15.04f), GRIP_ANGLE);
 
     /**
      * De MP5 (hoofdstuk 103, tools/mp5_model.py): je rechterhand op de greep, je linkerhand onder de handbeschermer, het
@@ -152,7 +177,7 @@ public final class FirearmRig {
             new Vector3f(6.2f, 17.7f, -11.4f), 4.6f,
             new Vector3f(8, -1.2f, -3.1f), new Vector3f(8, 13.36f, 1.4f), 0,
             0.36f, new Vector3f(8, 12.5f, 8.5f)).optic(18.38f, 3.0f, 0.9f, false)
-            .addOns(2.0f, new Vector3f(8, 13.9f, -9.0f), null);
+            .addOns(2.0f, new Vector3f(8, 13.9f, -9.0f), null).longMag(new Vector3f(8, -5.4f, -6.5f), 0);
 
     /**
      * De AK-47 (hoofdstuk 103, stap 2, tools/ak47_model.py): je rechterhand op de houten greep, je linkerhand onder de
@@ -168,7 +193,7 @@ public final class FirearmRig {
             new Vector3f(10.3f, 13.5f, 1.1f), 5.0f,
             new Vector3f(8, -1.83f, -6.0f), new Vector3f(8, 10.98f, 1.04f), -0.515f,
             0.36f, new Vector3f(8, 10.5f, 4.0f)).optic(15.34f, 4.5f, 0, false)
-            .addOns(1.8f, new Vector3f(8, 9.9f, -13.5f), null);
+            .addOns(1.8f, new Vector3f(8, 9.9f, -13.5f), null).longMag(new Vector3f(8, -4.19f, -11.48f), -0.69f);
 
     /**
      * De AWP (hoofdstuk 103, stap 3, tools/awp_model.py): je rechterhand op de greep achter het duimgat, je linkerhand
@@ -184,7 +209,7 @@ public final class FirearmRig {
             new Vector3f(11.5f, 12.66f, 7.22f), 7.0f,
             new Vector3f(8, 6.23f, 0.24f), new Vector3f(8, 13.45f, 0.2f), 0,
             0.34f, new Vector3f(8, 11.5f, -10.0f)).lift(58).optic(16.1f, -1.0f, 0, false)
-            .addOns(4.1f, new Vector3f(8, 10.82f, -22.2f), null);
+            .addOns(4.1f, new Vector3f(8, 10.82f, -22.2f), null).longMag(new Vector3f(8, 0.37f, 0.24f), 0);
 
     private FirearmRig lift(float degrees) {
         this.handleLift = degrees;
@@ -267,14 +292,24 @@ public final class FirearmRig {
 
     /** Hetzelfde voor het magazijn van dit wapen (hoofdstuk 103). */
     public static Matrix4f magazineUpright(FirearmType type) {
+        return magazineUpright(type, false);
+    }
+
+    /** Hetzelfde voor het gewone of het lange magazijn van dit wapen (stap 6b). */
+    public static Matrix4f magazineUpright(FirearmType type, boolean extended) {
         FirearmRig rig = of(type);
-        return new Matrix4f().rotateX(rig.magazineAngle).translate(-rig.magazineFoot.x, -rig.magazineFoot.y, -rig.magazineFoot.z);
+        Vector3f foot = rig.magazineFoot(extended);
+        return new Matrix4f().rotateX(rig.magazineAngle(extended)).translate(-foot.x, -foot.y, -foot.z);
     }
 
     /** Zo hoog is het magazijn van dit wapen ongeveer (pixels van het model), van zijn bodemplaat tot zijn bovenste patroon. */
     public static float magazineHeight(FirearmType type) {
+        return magazineHeight(type, false);
+    }
+
+    public static float magazineHeight(FirearmType type, boolean extended) {
         FirearmRig rig = of(type);
-        return rig.magazineTop.distance(rig.magazineFoot);
+        return rig.magazineTop.distance(rig.magazineFoot(extended));
     }
 
     /**
@@ -282,7 +317,12 @@ public final class FirearmRig {
      * magazijnpouch): het lange magazijn van een MP5 zou er anders ver bovenuit steken.
      */
     public static float magazineFit(FirearmType type) {
-        return Math.min(1.0f, 9.5f / Math.max(1.0f, magazineHeight(type)));
+        return magazineFit(type, false);
+    }
+
+    /** Een lang magazijn (de extended mag) mag een derde hoger zijn: je ziet dat het langer is, en het steekt boven de pouch uit. */
+    public static float magazineFit(FirearmType type, boolean extended) {
+        return Math.min(1.0f, (extended ? 12.6f : 9.5f) / Math.max(1.0f, magazineHeight(type, extended)));
     }
 
     /** Waar de bovenste patroon in het magazijn van de Glock ligt (model-pixels, zoals in de greep). */

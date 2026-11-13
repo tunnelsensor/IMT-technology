@@ -1,0 +1,17 @@
+{
+  "type": "imttech:gunsmithing",
+  "ingredients": [
+    {
+      "item": "imttech:steel_ingot",
+      "count": 9
+    },
+    {
+      "item": "imttech:awp_springs",
+      "count": 1
+    }
+  ],
+  "result": {
+    "id": "imttech:awp_extended_magazine",
+    "count": 1
+  }
+}

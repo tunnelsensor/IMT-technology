@@ -14,6 +14,7 @@ import com.senne.imttech.guns.GunMaterial;
 import com.senne.imttech.guns.GunPart;
 import com.senne.imttech.guns.GunSlot;
 import com.senne.imttech.guns.GunsmithTableBlockEntity;
+import com.senne.imttech.guns.MagazineItem;
 import com.senne.imttech.registry.ModBlocks;
 import com.senne.imttech.registry.ModItems;
 import java.util.List;
@@ -380,6 +381,77 @@ public final class AttachmentGameTests {
         check(player.getInventory().countItem(ModItems.attachment(Attachment.TUBE_EXTENSION)) == 1, "De verlengbuis kwam niet terug");
         // De demper eraf: nu kan de loop eruit.
         check(table.remove(player, GunSlot.MUZZLE.ordinal()) && table.remove(player, GunPart.BARREL), "De loop ging er niet uit zonder demper");
+        helper.succeed();
+    }
+
+    // ================================================================ Stap 6b: de lange magazijnen (extended mags)
+
+    /**
+     * Een extended mag is een eigen, groter magazijn (jouw keuze): 33 patronen voor de Glock, 40 voor de MP5 en de AK-47,
+     * 10 voor de AWP. Je laadt het patroon per patroon zoals het gewone, het past alleen in zijn eigen wapen, en het
+     * wapen weet dat het erin zit (zoveel patronen, en hetzelfde magazijn komt er weer uit).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "attachments")
+    public static void an_extended_magazine_is_its_own_bigger_magazine(GameTestHelper helper) {
+        int[] want = {33, 40, 40, 10};
+        FirearmType[] types = {FirearmType.GLOCK_19, FirearmType.MP5, FirearmType.AK_47, FirearmType.AWP};
+        for (int i = 0; i < types.length; i++) {
+            ItemStack longMag = MagazineItem.of(types[i], true, 999);
+            check(MagazineItem.extendedOf(longMag) && MagazineItem.typeOf(longMag) == types[i], "Het lange magazijn van de " + types[i].id + " klopt niet");
+            check(MagazineItem.capacityOf(longMag) == want[i] && MagazineItem.rounds(longMag) == want[i],
+                    "Het lange magazijn van de " + types[i].id + " hoort " + want[i] + " patronen te houden, niet " + MagazineItem.capacityOf(longMag));
+            check(longMag.getItem() != ModItems.magazine(types[i]) && MagazineItem.capacityOf(MagazineItem.of(types[i], 999)) == types[i].capacity(),
+                    "Het gewone magazijn van de " + types[i].id + " hoort te blijven wat het was");
+        }
+        // In het wapen: de MP5 met een lang magazijn houdt 40 + 1.
+        ItemStack gun = FirearmItem.loaded(FirearmType.MP5, GunMaterial.STEEL);
+        check(FirearmItem.capacity(gun) == 30 && !FirearmItem.extendedMagazine(gun), "Een nieuwe MP5 hoort zijn gewone magazijn te hebben");
+        ServerPlayer player = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(4, 2, 4), "long-mag");
+        player.getAbilities().instabuild = false;
+        player.getInventory().clearContent();
+        player.getInventory().selected = 0;
+        player.setItemInHand(InteractionHand.MAIN_HAND, gun);
+        gun = player.getMainHandItem();
+        // R: het gewone magazijn eruit.
+        check(Firearms.request(player, Firearms.ActionKind.EJECT_MAG, 0), "Het magazijn ging er niet uit");
+        Firearms.finishNow(player);
+        check(!FirearmItem.hasMagazine(gun), "Er zit nog een magazijn in de MP5");
+        // Het lange magazijn van een AK-47 past er niet in; dat van de MP5 wel.
+        player.getInventory().setItem(1, MagazineItem.of(FirearmType.AK_47, true, 40));
+        player.getInventory().selected = 1;
+        check(!Firearms.insertMagazine(player, InteractionHand.MAIN_HAND), "Het lange magazijn van een AK-47 ging in een MP5");
+        player.getInventory().setItem(1, MagazineItem.of(FirearmType.MP5, true, 40));
+        check(Firearms.insertMagazine(player, InteractionHand.MAIN_HAND), "Het lange magazijn ging niet in de MP5");
+        Firearms.finishNow(player);
+        ItemStack loaded = player.getInventory().getItem(0);
+        check(FirearmItem.extendedMagazine(loaded) && FirearmItem.capacity(loaded) == 40 && FirearmItem.roundsInMagazine(loaded) == 40,
+                "De MP5 hoort nu 40 patronen in zijn lange magazijn te hebben, niet " + FirearmItem.roundsInMagazine(loaded) + " van "
+                        + FirearmItem.capacity(loaded));
+        check(player.getInventory().getItem(1).isEmpty(), "Het lange magazijn bleef in je hand");
+        // Eruit: hetzelfde lange magazijn komt terug, met zijn patronen.
+        player.getInventory().selected = 0;
+        check(Firearms.request(player, Firearms.ActionKind.EJECT_MAG, 0), "Het lange magazijn ging er niet uit");
+        Firearms.finishNow(player);
+        ItemStack back = ItemStack.EMPTY;
+        for (ItemStack stack : player.getInventory().items) {
+            if (MagazineItem.extendedOf(stack)) {
+                back = stack;
+            }
+        }
+        check(MagazineItem.typeOf(back) == FirearmType.MP5 && MagazineItem.rounds(back) == 40,
+                "Het lange magazijn kwam niet terug met zijn 40 patronen");
+        // Patroon per patroon laden: een leeg lang magazijn neemt er meer dan dertig.
+        player.getInventory().clearContent();
+        player.getInventory().setItem(0, MagazineItem.of(FirearmType.MP5, true, 30));
+        player.getInventory().setItem(1, new ItemStack(ModItems.ROUND_9MM.get(), 20));
+        player.getInventory().selected = 0;
+        for (int i = 0; i < 10; i++) {
+            check(Firearms.request(player, Firearms.ActionKind.LOAD_ROUND, 0), "Patroon " + (31 + i) + " ging het lange magazijn niet in");
+            Firearms.finishNow(player);
+        }
+        check(MagazineItem.rounds(player.getInventory().getItem(0)) == 40, "Het lange magazijn hoort nu vol te zijn (40)");
+        check(!Firearms.request(player, Firearms.ActionKind.LOAD_ROUND, 0), "Een 41e patroon ging in het lange magazijn");
+        check(player.getInventory().countItem(ModItems.ROUND_9MM.get()) == 10, "Er horen 10 patronen over te zijn");
         helper.succeed();
     }
 }

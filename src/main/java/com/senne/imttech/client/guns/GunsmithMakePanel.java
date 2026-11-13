@@ -149,10 +149,11 @@ public final class GunsmithMakePanel {
                 int column = columns(group(item.type())).indexOf(GunPartItem.materialOf(result));
                 placed = column >= 0 && add(group(item.type()), index, recipe, result, item.part().ordinal(), column);
             } else if (result.getItem() instanceof com.senne.imttech.guns.MagazineItem magazine) {
-                // Het magazijn onder de onderdelen, in de kolom van staal (het lange magazijn ernaast).
+                // Het magazijn onder de onderdelen, in de kolom van staal; het lange magazijn (stap 6b) op de rij eronder
+                // (naast het gewone stond het onder "Titanium", en het is van staal).
                 int steel = columns(group(magazine.type())).indexOf(GunMaterial.STEEL);
-                placed = add(group(magazine.type()), index, recipe, result, GunPart.values().length,
-                        steel + (magazine.extended() ? 1 : 0));
+                placed = add(group(magazine.type()), index, recipe, result, GunPart.values().length + (magazine.extended() ? 1 : 0),
+                        steel);
             } else if (result.getItem() instanceof LaserPartItem item) {
                 int column = LaserPartItem.materialOf(result) == GunMaterial.NETHERITE ? 1 : 0;
                 placed = add(group(item.gun()), index, recipe, result, LaserPart.wearing().indexOf(item.part()), column);
@@ -161,10 +162,10 @@ public final class GunsmithMakePanel {
                 int row = LaserPart.wearing().size();
                 placed = add(Group.RIFLE, index, recipe, result, row, 0) | add(Group.SNIPER, index, recipe, result, row, 0)
                         | add(Group.SHOTGUN, index, recipe, result, row, 0);
-                // Hoofdstuk 103: en bij elk lang vuurwapen (onder zijn magazijn).
+                // Hoofdstuk 103: en bij elk lang vuurwapen (onder zijn magazijnen).
                 for (FirearmType type : FirearmType.values()) {
                     if (type.longGun) {
-                        placed |= add(group(type), index, recipe, result, GunPart.values().length + 1, 0);
+                        placed |= add(group(type), index, recipe, result, slingRow(type), 0);
                     }
                 }
             }
@@ -263,6 +264,14 @@ public final class GunsmithMakePanel {
         };
     }
 
+    /**
+     * Op welke rij de sling van een lang vuurwapen staat: onder het magazijn en het lange magazijn; bij een wapen zonder
+     * magazijn (de Remington 870) meteen onder de onderdelen.
+     */
+    private static int slingRow(FirearmType type) {
+        return GunPart.values().length + (type.tube() ? 0 : 2);
+    }
+
     /** De naam van een rij: het onderdeel, of het magazijn (de Glock) en de sling (de lange lasergeweren). */
     private static Component rowName(Group group, int row) {
         if (group == Group.ATTACHMENTS) {
@@ -272,8 +281,14 @@ public final class GunsmithMakePanel {
         FirearmType firearm = firearm(group);
         if (firearm != null) {
             int parts = GunPart.values().length;
-            return row < parts ? GunPart.values()[row].text(firearm)
-                    : row == parts ? Component.translatable("screen.imttech.gunsmith.make.magazine") : LaserPart.SLING.text();
+            if (row < parts) {
+                return GunPart.values()[row].text(firearm);
+            }
+            if (row >= slingRow(firearm)) {
+                return LaserPart.SLING.text();
+            }
+            return Component.translatable(row == parts ? "screen.imttech.gunsmith.make.magazine"
+                    : "screen.imttech.gunsmith.make.extended_magazine");
         }
         List<LaserPart> parts = LaserPart.wearing();
         return row < parts.size() ? parts.get(row).text() : LaserPart.SLING.text();
