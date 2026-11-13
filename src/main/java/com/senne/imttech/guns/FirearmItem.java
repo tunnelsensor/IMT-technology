@@ -110,10 +110,16 @@ public class FirearmItem extends Item {
         return magazine != null && magazine.extended();
     }
 
-    /** Zoveel patronen gaan er in het magazijn dat erin zit (of in de buis); zonder magazijn: in een gewoon magazijn. */
+    /**
+     * Zoveel patronen gaan er in het magazijn dat erin zit (zonder magazijn: in een gewoon magazijn), of in de buis: die
+     * van de Remington 870 is langer met een Tube Extension erop (hoofdstuk 103, stap 6).
+     */
     public static int capacity(ItemStack stack) {
         FirearmType type = typeOf(stack);
-        return type == null ? 0 : type.capacity(extendedMagazine(stack));
+        if (type == null) {
+            return 0;
+        }
+        return type.capacity(type.tube() ? attachment(stack, AttachmentSlot.TUBE) != null : extendedMagazine(stack));
     }
 
     /** Zoveel patronen zitten er in het magazijn in het wapen (of in de buis). */
@@ -287,6 +293,51 @@ public class FirearmItem extends Item {
             stack.set(ModDataComponents.GUN_ATTACHMENTS.get(), rest);
         }
         return was;
+    }
+
+    /** Alle attachments samen: het product van wat elk doet (1 = niets). */
+    private static float product(ItemStack stack, java.util.function.ToDoubleFunction<Attachment> each) {
+        double all = 1;
+        for (Attachment attachment : attachments(stack).list()) {
+            all *= each.applyAsDouble(attachment);
+        }
+        return (float) all;
+    }
+
+    /** Zit er een demper op? Dan klinkt het schot anders en komt er geen vlam uit de loop. */
+    public static boolean suppressed(ItemStack stack) {
+        Attachment muzzle = attachment(stack, AttachmentSlot.MUZZLE);
+        return muzzle != null && muzzle.suppresses();
+    }
+
+    /** Maal dit is de spreiding van een gericht schot (een kijker). */
+    public static float aimSpreadFactor(ItemStack stack) {
+        return product(stack, Attachment::aimSpread);
+    }
+
+    /** Maal dit gaat het richten (een red dot en een schuine greep sneller, een zware kijker trager). */
+    public static float aimSpeedFactor(ItemStack stack) {
+        return product(stack, Attachment::aimSpeed);
+    }
+
+    /** Maal dit gaat het trekken van het wapen (een schuine greep). */
+    public static float drawSpeedFactor(ItemStack stack) {
+        return product(stack, Attachment::drawSpeed);
+    }
+
+    /** Maal dit is de schade van een kogel (een demper). */
+    public static float damageFactor(ItemStack stack) {
+        return product(stack, Attachment::damage);
+    }
+
+    /** Maal dit is hoe ver bewakers het schot horen (een demper). */
+    public static float noiseFactor(ItemStack stack) {
+        return product(stack, Attachment::noise);
+    }
+
+    /** Maal dit is de terugslag (een rechte greep; een tweepoot als je sneakt en stilstaat: {@code braced}). */
+    public static float recoilFactor(ItemStack stack, boolean braced) {
+        return product(stack, attachment -> attachment.recoil(braced));
     }
 
     // ================================================================ Een nieuw wapen

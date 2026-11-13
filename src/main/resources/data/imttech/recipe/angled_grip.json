@@ -1,0 +1,17 @@
+{
+  "type": "imttech:gunsmithing",
+  "ingredients": [
+    {
+      "item": "imttech:steel_ingot",
+      "count": 1
+    },
+    {
+      "item": "imttech:polymer",
+      "count": 3
+    }
+  ],
+  "result": {
+    "id": "imttech:angled_grip",
+    "count": 1
+  }
+}

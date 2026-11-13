@@ -59,17 +59,17 @@ public final class Optics {
     public static Vector3f eye(FirearmRig rig, Attachment optic) {
         Vector3f mount = mount(rig);
         return switch (optic) {
-            case RED_DOT -> mount.add(RED_DOT_EYE);
             case SNIPER_SCOPE -> mount.add(0, SCOPE_AXIS, SCOPE_REAR);
+            default -> mount.add(RED_DOT_EYE);
         };
     }
 
     /** Zo ver voor je oog zit dat punt als je richt (blokken). */
     public static float eyeDistance(FirearmType type, Attachment optic) {
         return switch (optic) {
-            // Een pistool houd je op armlengte; een lang wapen tegen je schouder.
-            case RED_DOT -> type.longGun ? 0.15f : 0.24f;
             case SNIPER_SCOPE -> 0.072f;
+            // Een pistool houd je op armlengte; een lang wapen tegen je schouder.
+            default -> type.longGun ? 0.15f : 0.24f;
         };
     }
 

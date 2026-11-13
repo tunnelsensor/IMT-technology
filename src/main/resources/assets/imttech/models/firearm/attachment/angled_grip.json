@@ -1,0 +1,11 @@
+{
+ "loader": "neoforge:obj",
+ "model": "imttech:models/firearm/attachment/angled_grip.obj",
+ "automatic_culling": false,
+ "flip_v": false,
+ "emissive_ambient": true,
+ "textures": {
+  "gun": "imttech:item/attachment/angled_grip",
+  "particle": "imttech:item/attachment/angled_grip"
+ }
+}

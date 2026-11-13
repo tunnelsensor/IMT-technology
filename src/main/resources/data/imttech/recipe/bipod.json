@@ -1,0 +1,17 @@
+{
+  "type": "imttech:gunsmithing",
+  "ingredients": [
+    {
+      "item": "imttech:steel_ingot",
+      "count": 4
+    },
+    {
+      "tag": "c:nuggets/iron",
+      "count": 4
+    }
+  ],
+  "result": {
+    "id": "imttech:bipod",
+    "count": 1
+  }
+}

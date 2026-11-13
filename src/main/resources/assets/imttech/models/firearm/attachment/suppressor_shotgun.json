@@ -1,0 +1,11 @@
+{
+ "loader": "neoforge:obj",
+ "model": "imttech:models/firearm/attachment/suppressor_shotgun.obj",
+ "automatic_culling": false,
+ "flip_v": false,
+ "emissive_ambient": true,
+ "textures": {
+  "gun": "imttech:item/attachment/suppressor_shotgun",
+  "particle": "imttech:item/attachment/suppressor_shotgun"
+ }
+}

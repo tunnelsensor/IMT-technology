@@ -77,7 +77,9 @@ public final class HowToTopics {
             topicItems("gunsmith", "weapons", "Gunsmith Table", WeaponScenes::gunsmith,
                     () -> concat(Arrays.stream(com.senne.imttech.guns.FirearmType.values())
                                     .flatMap(type -> Arrays.stream(GunPart.values()).map(part -> (Item) ModItems.gunPart(type, part))).toList(),
-                            List.of(ModItems.GUNSMITH_TABLE.get(), ModItems.RED_DOT_SIGHT.get(), ModItems.SNIPER_SCOPE.get()))),
+                            concat(List.<Item>of(ModItems.GUNSMITH_TABLE.get()),
+                                    Arrays.stream(com.senne.imttech.guns.Attachment.values())
+                                            .map(attachment -> (Item) ModItems.attachment(attachment)).toList()))),
             topic("reloading", "weapons", "Reloading Bench", WeaponScenes::reloading, ModItems.RELOADING_BENCH, ModItems.CASING_9MM,
                     ModItems.BULLET_9MM, ModItems.CRUSHED_GUNPOWDER, ModItems.ROUND_9MM, ModItems.CASING_762, ModItems.BULLET_762,
                     ModItems.CASING_338, ModItems.BULLET_338, ModItems.CASING_12G, ModItems.BULLET_12G),

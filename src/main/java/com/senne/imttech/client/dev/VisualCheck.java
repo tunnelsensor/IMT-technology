@@ -4455,6 +4455,154 @@ public final class VisualCheck {
             firearmRackShots(t, g, "at");
         }
 
+        // --- Dempers, grips, de tweepoot en de verlengbuis (hoofdstuk 103, stap 6): elk wapen met wat erop past vanuit
+        // de heup, gericht en van opzij; een gedempt schot (geen vlam); de tweepoot die uitklapt als je sneakt; de
+        // Gunsmith Table met de vier plekken, leeg en vol; "Make parts" onder Attachments; en hoe anderen het zien.
+        if (want("addons")) {
+            BlockPos g = GUN_RANGE.above();
+            Vec3 stand = new Vec3(g.getX() + 0.5, g.getY(), g.getZ() + 0.5);
+            t.onServer(0, VisualCheck::buildGunRange);
+            t.onServer(0, player -> ShowcaseFeatures.buildGunBenches(player, g));
+            t.onServer(0, VisualCheck::giveAddOns);
+            t.stand(20, stand.x, stand.y, stand.z, 0, 2);
+            String[] names = {"glock_suppressor", "mp5_suppressor_vertical_grip", "ak47_suppressor_angled_grip", "awp_suppressor_bipod",
+                    "870_suppressor_tube"};
+            for (int i = 0; i < names.length; i++) {
+                int slot = i;
+                String number = "0" + (i + 1);
+                t.step(i == 0 ? 0 : 14, () -> selectSlot(slot));
+                t.shot(22, "ao" + number + "a_" + names[i] + "_hip");
+                t.step(4, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_INSPECT.getKey()));
+                t.shot(12, "ao" + number + "b_" + names[i] + "_side");
+                t.step(34, () -> { });
+                t.key(0, () -> Minecraft.getInstance().options.keyUse, true);
+                t.shot(18, "ao" + number + "c_" + names[i] + "_aim");
+                // Een gedempt schot: geen vlam uit de loop.
+                t.key(2, () -> Minecraft.getInstance().options.keyAttack, true);
+                t.key(1, () -> Minecraft.getInstance().options.keyAttack, false);
+                t.shot(0, "ao" + number + "d_" + names[i] + "_fire");
+                t.key(6, () -> Minecraft.getInstance().options.keyUse, false);
+                if (i == 3) {
+                    // De tweepoot: sneak en sta stil, dan klapt hij uit.
+                    t.key(10, () -> Minecraft.getInstance().options.keyShift, true);
+                    t.shot(14, "ao04e_awp_bipod_down_hip");
+                    t.key(0, () -> Minecraft.getInstance().options.keyUse, true);
+                    t.shot(18, "ao04f_awp_bipod_down_aim");
+                    t.key(4, () -> Minecraft.getInstance().options.keyUse, false);
+                    t.key(4, () -> Minecraft.getInstance().options.keyShift, false);
+                }
+            }
+            // De Gunsmith Table: een AK-47 zonder attachments (de drie plekken), en dan met alles erop.
+            t.onServer(12, player -> {
+                var inventory = player.getInventory();
+                inventory.clearContent();
+                com.senne.imttech.guns.Attachment[] all = {com.senne.imttech.guns.Attachment.RED_DOT,
+                        com.senne.imttech.guns.Attachment.SUPPRESSOR_RIFLE, com.senne.imttech.guns.Attachment.VERTICAL_GRIP,
+                        com.senne.imttech.guns.Attachment.ANGLED_GRIP, com.senne.imttech.guns.Attachment.BIPOD,
+                        com.senne.imttech.guns.Attachment.SUPPRESSOR_9MM, com.senne.imttech.guns.Attachment.SUPPRESSOR_SHOTGUN,
+                        com.senne.imttech.guns.Attachment.TUBE_EXTENSION, com.senne.imttech.guns.Attachment.SNIPER_SCOPE};
+                for (int i = 0; i < all.length; i++) {
+                    inventory.setItem(9 + i, new ItemStack(ModItems.attachment(all[i])));
+                }
+                if (player.serverLevel().getBlockEntity(g.offset(-2, 0, -2)) instanceof com.senne.imttech.guns.GunsmithTableBlockEntity table) {
+                    table.items().setItem(0, com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.AK_47,
+                            com.senne.imttech.guns.GunMaterial.STEEL));
+                }
+                ShowcaseFeatures.openBench(player, g.offset(-2, 0, -2));
+            });
+            t.step(2, () -> ShowcaseFeatures.gunsmithTab(false, com.senne.imttech.client.guns.GunsmithMakePanel.Group.AK47, stack -> false));
+            t.step(0, () -> HowToTour.mouseTo(1, 1));
+            t.step(15, () -> Minecraft.getInstance().getToasts().clear());
+            t.shot(8, "ao10_table_ak47_places");
+            t.onServer(0, player -> addOnsOnTable(player, g, com.senne.imttech.guns.Attachment.RED_DOT,
+                    com.senne.imttech.guns.Attachment.SUPPRESSOR_RIFLE, com.senne.imttech.guns.Attachment.VERTICAL_GRIP));
+            t.shot(10, "ao11_table_ak47_full");
+            // De andere wapens, elk met wat erop past: de AWP (kijker, demper, tweepoot), de 870 (demper, verlengbuis),
+            // de MP5 (schuine greep) en de Glock (demper).
+            t.onServer(0, player -> gunOnTable(player, g, com.senne.imttech.guns.FirearmType.AWP));
+            t.shot(12, "ao12_table_awp_places");
+            t.onServer(0, player -> addOnsOnTable(player, g, com.senne.imttech.guns.Attachment.SNIPER_SCOPE,
+                    com.senne.imttech.guns.Attachment.SUPPRESSOR_RIFLE, com.senne.imttech.guns.Attachment.BIPOD));
+            t.shot(10, "ao13_table_awp_full");
+            t.onServer(0, player -> gunOnTable(player, g, com.senne.imttech.guns.FirearmType.REMINGTON_870));
+            t.shot(12, "ao14_table_870_places");
+            t.onServer(0, player -> addOnsOnTable(player, g, com.senne.imttech.guns.Attachment.SUPPRESSOR_SHOTGUN,
+                    com.senne.imttech.guns.Attachment.TUBE_EXTENSION));
+            t.shot(10, "ao15_table_870_full");
+            t.onServer(0, player -> gunOnTable(player, g, com.senne.imttech.guns.FirearmType.MP5));
+            t.onServer(2, player -> addOnsOnTable(player, g, com.senne.imttech.guns.Attachment.SUPPRESSOR_9MM,
+                    com.senne.imttech.guns.Attachment.ANGLED_GRIP));
+            t.shot(10, "ao16_table_mp5_full");
+            t.onServer(0, player -> gunOnTable(player, g, com.senne.imttech.guns.FirearmType.GLOCK_19));
+            t.shot(12, "ao17_table_glock_places");
+            t.onServer(0, player -> addOnsOnTable(player, g, com.senne.imttech.guns.Attachment.SUPPRESSOR_9MM,
+                    com.senne.imttech.guns.Attachment.RED_DOT));
+            t.shot(10, "ao18_table_glock_full");
+            // Make parts, onder Attachments: negen attachments.
+            t.onServer(0, ShowcaseFeatures::giveGunsmithMaterials);
+            t.onServer(0, player -> {
+                player.getInventory().setItem(19, new ItemStack(net.minecraft.world.level.block.Blocks.WHITE_WOOL, 3));
+                player.getInventory().setItem(20, new ItemStack(net.minecraft.world.item.Items.IRON_NUGGET, 4));
+            });
+            t.step(5, () -> ShowcaseFeatures.gunsmithTab(true, com.senne.imttech.client.guns.GunsmithMakePanel.Group.ATTACHMENTS,
+                    stack -> stack.is(ModItems.attachment(com.senne.imttech.guns.Attachment.SUPPRESSOR_9MM))));
+            t.step(0, () -> HowToTour.mouseTo(1, 1));
+            t.step(15, () -> Minecraft.getInstance().getToasts().clear());
+            t.shot(5, "ao19_make_attachments");
+            t.step(0, () -> ShowcaseFeatures.gunsmithTab(false, com.senne.imttech.client.guns.GunsmithMakePanel.Group.GLOCK, stack -> false));
+            t.close(5);
+            // De tooltips in je inventaris. In creative opent Minecraft het creative-menu: dus even survival.
+            t.command(0, "gamemode survival @a");
+            t.onServer(0, player -> {
+                player.getInventory().clearContent();
+                com.senne.imttech.guns.Attachment[] tips = {com.senne.imttech.guns.Attachment.SUPPRESSOR_9MM,
+                        com.senne.imttech.guns.Attachment.VERTICAL_GRIP, com.senne.imttech.guns.Attachment.ANGLED_GRIP,
+                        com.senne.imttech.guns.Attachment.BIPOD, com.senne.imttech.guns.Attachment.TUBE_EXTENSION};
+                for (int i = 0; i < tips.length; i++) {
+                    player.getInventory().setItem(i, new ItemStack(ModItems.attachment(tips[i])));
+                }
+                player.getInventory().selected = 8;
+            });
+            t.open(10, () -> new net.minecraft.client.gui.screens.inventory.InventoryScreen(Minecraft.getInstance().player));
+            String[] tipNames = {"suppressor", "vertical_grip", "angled_grip", "bipod", "tube_extension"};
+            for (int i = 0; i < tipNames.length; i++) {
+                int slot = i;
+                t.step(5, () -> {
+                    if (Minecraft.getInstance().screen instanceof net.minecraft.client.gui.screens.inventory.InventoryScreen screen) {
+                        HowToTour.mouseTo(screen.getGuiLeft() + 16 + slot * 18, screen.getGuiTop() + 150);
+                    }
+                });
+                t.shot(6, "ao20" + (char) ('a' + i) + "_tooltip_" + tipNames[i]);
+            }
+            t.step(0, () -> HowToTour.mouseTo(1, 1));
+            t.close(5);
+            t.command(0, "gamemode creative @a");
+            // Hoe anderen het zien: de AWP met demper en tweepoot in je hand, en op je rug.
+            t.onServer(0, VisualCheck::giveAddOns);
+            t.step(5, () -> selectSlot(3));
+            t.stand(5, stand.x, stand.y, stand.z, 0, 2);
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(30));
+            t.camera(5, CameraType.THIRD_PERSON_FRONT);
+            t.shot(20, "ao21_third_person_awp");
+            // Sneaken en stilstaan: bij anderen zie je de tweepoot dan uitgeklapt.
+            t.key(0, () -> Minecraft.getInstance().options.keyShift, true);
+            t.shot(14, "ao21b_third_person_awp_bipod_down");
+            t.key(0, () -> Minecraft.getInstance().options.keyShift, false);
+            t.step(0, () -> selectSlot(1));
+            t.shot(15, "ao22_third_person_mp5");
+            t.step(0, () -> selectSlot(3));
+            t.onServer(5, com.senne.imttech.guns.Gear::holsterHand);
+            t.stand(0, stand.x, stand.y, stand.z, 90, 0);
+            t.camera(0, CameraType.THIRD_PERSON_BACK);
+            t.shot(15, "ao23_on_the_back");
+            t.camera(0, CameraType.FIRST_PERSON);
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(70));
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.onServer(0, player -> com.senne.imttech.guns.Gear.setSling(player, 0, net.minecraft.world.item.ItemStack.EMPTY));
+            t.onServer(0, player -> player.getInventory().clearContent());
+        }
+
         // --- De skilltree (hoofdstuk 52, stap 3): leeg, en met een paar niveaus geleerd.
         if (want("skills")) {
             t.onServer(0, player -> player.setData(com.senne.imttech.registry.ModAttachments.GUN_SKILLS,
@@ -6241,6 +6389,59 @@ public final class VisualCheck {
             ItemStack gun = com.senne.imttech.guns.FirearmItem.loaded(types[i], com.senne.imttech.guns.GunMaterial.STEEL);
             com.senne.imttech.guns.FirearmItem.setAttachment(gun, sights[i]);
             inventory.setItem(i, gun);
+        }
+    }
+
+    /**
+     * Hoofdstuk 103, stap 6: vijf geladen wapens in je werkbalk met wat erop past: de Glock (demper, red dot), de MP5
+     * (demper, rechte greep), de AK-47 (demper, schuine greep, red dot), de AWP (demper, tweepoot, kijker) en de
+     * Remington 870 (demper, verlengbuis: acht patronen in de buis).
+     */
+    private static void giveAddOns(ServerPlayer player) {
+        var inventory = player.getInventory();
+        inventory.clearContent();
+        com.senne.imttech.guns.FirearmType[] types = {com.senne.imttech.guns.FirearmType.GLOCK_19, com.senne.imttech.guns.FirearmType.MP5,
+                com.senne.imttech.guns.FirearmType.AK_47, com.senne.imttech.guns.FirearmType.AWP,
+                com.senne.imttech.guns.FirearmType.REMINGTON_870};
+        com.senne.imttech.guns.Attachment[][] on = {
+                {com.senne.imttech.guns.Attachment.SUPPRESSOR_9MM, com.senne.imttech.guns.Attachment.RED_DOT},
+                {com.senne.imttech.guns.Attachment.SUPPRESSOR_9MM, com.senne.imttech.guns.Attachment.VERTICAL_GRIP},
+                {com.senne.imttech.guns.Attachment.SUPPRESSOR_RIFLE, com.senne.imttech.guns.Attachment.ANGLED_GRIP,
+                        com.senne.imttech.guns.Attachment.RED_DOT},
+                {com.senne.imttech.guns.Attachment.SUPPRESSOR_RIFLE, com.senne.imttech.guns.Attachment.BIPOD,
+                        com.senne.imttech.guns.Attachment.SNIPER_SCOPE},
+                {com.senne.imttech.guns.Attachment.SUPPRESSOR_SHOTGUN, com.senne.imttech.guns.Attachment.TUBE_EXTENSION}};
+        for (int i = 0; i < types.length; i++) {
+            ItemStack gun = com.senne.imttech.guns.FirearmItem.loaded(types[i], com.senne.imttech.guns.GunMaterial.STEEL);
+            for (com.senne.imttech.guns.Attachment attachment : on[i]) {
+                com.senne.imttech.guns.FirearmItem.setAttachment(gun, attachment);
+            }
+            if (types[i].tube()) {
+                com.senne.imttech.guns.FirearmItem.setRoundsInMagazine(gun, com.senne.imttech.guns.FirearmItem.capacity(gun));
+            }
+            inventory.setItem(i, gun);
+        }
+    }
+
+    /** Voor de rondleiding: het wapen van de Gunsmith Table weg, en een nieuw (geladen, van staal) erop. */
+    private static void gunOnTable(ServerPlayer player, BlockPos g, com.senne.imttech.guns.FirearmType type) {
+        if (player.serverLevel().getBlockEntity(g.offset(-2, 0, -2)) instanceof com.senne.imttech.guns.GunsmithTableBlockEntity table) {
+            table.items().setItem(0, com.senne.imttech.guns.FirearmItem.loaded(type, com.senne.imttech.guns.GunMaterial.STEEL));
+        }
+    }
+
+    /** Voor de rondleiding: deze attachments uit je inventaris op het wapen op de Gunsmith Table. */
+    private static void addOnsOnTable(ServerPlayer player, BlockPos g, com.senne.imttech.guns.Attachment... attachments) {
+        if (player.serverLevel().getBlockEntity(g.offset(-2, 0, -2)) instanceof com.senne.imttech.guns.GunsmithTableBlockEntity table) {
+            for (com.senne.imttech.guns.Attachment attachment : attachments) {
+                int slot = player.getInventory().findSlotMatchingItem(new ItemStack(ModItems.attachment(attachment)));
+                if (slot < 0) {
+                    // Al op een vorig wapen gezet: een nieuw exemplaar.
+                    slot = player.getInventory().getFreeSlot();
+                    player.getInventory().setItem(slot, new ItemStack(ModItems.attachment(attachment)));
+                }
+                table.install(player, slot);
+            }
         }
     }
 

@@ -1,0 +1,17 @@
+{
+  "type": "imttech:gunsmithing",
+  "ingredients": [
+    {
+      "item": "imttech:steel_ingot",
+      "count": 4
+    },
+    {
+      "tag": "c:nuggets/iron",
+      "count": 2
+    }
+  ],
+  "result": {
+    "id": "imttech:tube_extension",
+    "count": 1
+  }
+}

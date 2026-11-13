@@ -1,0 +1,150 @@
+{
+ "loader": "neoforge:obj",
+ "model": "imttech:models/firearm/attachment/item_tube_extension.obj",
+ "automatic_culling": false,
+ "flip_v": false,
+ "emissive_ambient": true,
+ "textures": {
+  "gun": "imttech:item/attachment/tube_extension",
+  "particle": "imttech:item/attachment/tube_extension"
+ },
+ "gui_light": "front",
+ "display": {
+  "gui": {
+   "rotation": [
+    14,
+    -58,
+    0
+   ],
+   "translation": [
+    -8.834,
+    4.491,
+    19.8
+   ],
+   "scale": [
+    1.305,
+    1.305,
+    1.305
+   ]
+  },
+  "ground": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    3.6,
+    5.087,
+    5.873
+   ],
+   "scale": [
+    0.45,
+    0.45,
+    0.45
+   ]
+  },
+  "fixed": {
+   "rotation": [
+    14,
+    -58,
+    0
+   ],
+   "translation": [
+    -8.834,
+    4.491,
+    19.8
+   ],
+   "scale": [
+    1.305,
+    1.305,
+    1.305
+   ]
+  },
+  "head": {
+   "rotation": [
+    0,
+    180,
+    0
+   ],
+   "translation": [
+    0,
+    13,
+    7
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ]
+  },
+  "thirdperson_righthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    4.0,
+    3.43,
+    6.525
+   ],
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "thirdperson_lefthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    4.0,
+    3.43,
+    6.525
+   ],
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "firstperson_righthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    4.0,
+    3.43,
+    6.525
+   ],
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "firstperson_lefthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    4.0,
+    3.43,
+    6.525
+   ],
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  }
+ }
+}

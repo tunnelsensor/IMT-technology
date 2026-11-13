@@ -1,0 +1,11 @@
+{
+ "loader": "neoforge:obj",
+ "model": "imttech:models/firearm/attachment/bipod.obj",
+ "automatic_culling": false,
+ "flip_v": false,
+ "emissive_ambient": true,
+ "textures": {
+  "gun": "imttech:item/attachment/bipod",
+  "particle": "imttech:item/attachment/bipod"
+ }
+}

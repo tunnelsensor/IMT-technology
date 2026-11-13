@@ -545,7 +545,7 @@ def attachment(name):
         counts[model] = gm.write_obj(folder / f"{model}.obj", [(model, mesh, plain)], "attachment.mtl", *size, note)
         write(f"models/firearm/attachment/{model}.json", obj_model(model, texture, gui_light=None, folder="attachment"))
     # Het item: wat je in je inventaris ziet, in één OBJ.
-    parts = attachment_models.ITEM_PARTS[name]
+    parts = attachment_models.ITEM_PARTS.get(name, (name,))
     gm.write_obj(folder / f"item_{name}.obj", [(n, meshes[n], plain) for n in parts], "attachment.mtl", *size, note)
     points = [pt for n in parts for pt in meshes[n].points()]
     disp = centred_display(glock.points_as_elements(points), gui_rotation=(14, -58, 0), size=14.5, max_scale=4.2,

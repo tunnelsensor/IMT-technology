@@ -109,7 +109,10 @@ public class GunsmithScreen extends PartsTableScreen<GunSlot> {
         if (!slot.fitsOn(type)) {
             return false;
         }
-        return slot.attachment == null || FirearmItem.typeOf(gun) == null || FirearmItem.parts(gun).has(slot.attachment.carrier(type));
+        // Stap 6: de plekken van de attachments staan er pas als het wapen compleet is. Zo liggen ze nooit door de
+        // gestippelde vakken van ontbrekende onderdelen heen (er zijn nu vier plekken), en het onderdeel waar een
+        // attachment op staat zit er dan zeker in.
+        return slot.attachment == null || FirearmItem.typeOf(gun) == null || FirearmItem.parts(gun).complete();
     }
 
     /** In de lijst rechts staan alleen de plekken van dit wapen: bij een pistool (of een lege tafel) geen sling. */
@@ -169,9 +172,8 @@ public class GunsmithScreen extends PartsTableScreen<GunSlot> {
     protected AABB bounds(ItemStack gun, GunSlot slot) {
         FirearmType type = typeOf(gun);
         if (slot.attachment != null) {
-            // De plek van de kijker: een vak van de grootte van een red dot, op zijn montage.
-            Vector3f mount = Optics.mount(FirearmRig.of(type));
-            return new AABB(mount.x - 1.2, mount.y, mount.z - 1.9, mount.x + 1.2, mount.y + 2.5, mount.z + 1.9);
+            // De plek van een attachment: om wat erop zit, of (leeg) om wat er meestal op komt.
+            return AddOns.bounds(type, slot.attachment, FirearmItem.attachment(gun, slot.attachment));
         }
         if (slot.part == null) {
             return type.longGun ? FirearmRig.slingBounds(type) : new AABB(7, 7, 7, 9, 9, 9);
@@ -182,7 +184,7 @@ public class GunsmithScreen extends PartsTableScreen<GunSlot> {
     @Override
     protected Vector3f exploded(ItemStack gun, GunSlot slot) {
         if (slot.attachment != null) {
-            return FirearmRig.sightExploded(typeOf(gun));
+            return FirearmRig.attachmentExploded(typeOf(gun), slot.attachment);
         }
         return slot.part == null ? FirearmRig.slingExploded(typeOf(gun)) : FirearmRig.exploded(typeOf(gun), slot.part);
     }
@@ -193,8 +195,9 @@ public class GunsmithScreen extends PartsTableScreen<GunSlot> {
         if (type == null || type == FirearmType.GLOCK_19) {
             return new Vector3f(8, 8, 7.6f);
         }
-        AABB box = FirearmRig.whole(type);
-        return new Vector3f((float) box.getCenter().x, (float) box.getCenter().y, (float) box.getCenter().z);
+        // Stap 6: met de plaats voor een demper erbij (zie FirearmRig.wholeWithMuzzle).
+        AABB box = FirearmRig.wholeWithMuzzle(type);
+        return new Vector3f((float) box.getCenter().x, (float) FirearmRig.whole(type).getCenter().y, (float) box.getCenter().z);
     }
 
     /** De Glock zoals altijd; een lang wapen zo ver uitgezoomd dat het met zijn losse onderdelen op de tafel past. */
@@ -204,7 +207,7 @@ public class GunsmithScreen extends PartsTableScreen<GunSlot> {
         if (type == null || type == FirearmType.GLOCK_19) {
             return ZOOM;
         }
-        AABB box = FirearmRig.whole(type);
+        AABB box = FirearmRig.wholeWithMuzzle(type);
         // 27: zo ver steken de losse onderdelen boven en onder het wapen uit (bij een langer wapen iets meer).
         return (float) Math.min(ZOOM, Math.min((VIEW_W - 16) / box.getZsize(),
                 (VIEW_H - 44) / (box.getYsize() + 27 * FirearmRig.explodedScale(type))));
@@ -235,9 +238,7 @@ public class GunsmithScreen extends PartsTableScreen<GunSlot> {
         if (type.longGun && FirearmItem.hasSling(gun) && skip != GunSlot.SLING) {
             FirearmModels.render(pose, buffers, FirearmModels.sling(type), LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
         }
-        if (skip == null || skip.attachment == null) {
-            FirearmModels.renderAttachments(pose, buffers, gun, LightTexture.FULL_BRIGHT);
-        }
+        FirearmModels.renderAttachments(pose, buffers, gun, LightTexture.FULL_BRIGHT, skip == null ? null : skip.attachment, 0);
     }
 
     @Override
@@ -267,6 +268,11 @@ public class GunsmithScreen extends PartsTableScreen<GunSlot> {
     protected String rowName(Row row) {
         GunPart part = GunPartItem.partOf(row.stack());
         FirearmType type = GunPartItem.typeOf(row.stack());
+        com.senne.imttech.guns.Attachment can = com.senne.imttech.guns.AttachmentItem.of(row.stack());
+        if (can != null && can.suppresses()) {
+            // "Shotgun Suppressor" past niet op een regel van de lijst: de soort staat eronder (zie rowSub).
+            return "Suppressor";
+        }
         if (row.gun() || part == null || type == null) {
             return row.stack().getHoverName().getString();
         }
@@ -284,7 +290,16 @@ public class GunsmithScreen extends PartsTableScreen<GunSlot> {
         if (attachment != null) {
             // Een attachment: op welke plek het komt, of dat het niet op het wapen op de tafel past.
             FirearmType on = FirearmItem.typeOf(menu.gun());
-            return on != null && !attachment.fits(on) ? "does not fit" : attachment.slot.text().getString().toLowerCase(java.util.Locale.ROOT);
+            String where = on != null && !attachment.fits(on) ? "does not fit"
+                    : attachment.slot.text().getString().toLowerCase(java.util.Locale.ROOT);
+            // Een demper: voor welk kaliber hij is.
+            String kind = switch (attachment) {
+                case SUPPRESSOR_9MM -> "9mm, ";
+                case SUPPRESSOR_RIFLE -> "rifle, ";
+                case SUPPRESSOR_SHOTGUN -> "shotgun, ";
+                default -> "";
+            };
+            return kind + where;
         }
         if (part == null || type == null) {
             return "for a long gun"; // de Gun Sling

@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 554 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 557 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -7569,7 +7569,57 @@ standen), suppressors, extended mags en grips." Omdat jij het een grote update n
       open is; de muis gaat evenredig trager met de zoom; een kijker houdt het onderdeel vast waar hij op staat; bij de
       AWP laat je de kijker los tijdens het doorladen (zoals elke handeling het richten onderbreekt); de kijker staat
       ook op het plaatje van het wapen in je inventaris; versie 2.4.0 omdat het een nieuw systeem is.
-- [ ] **6. Suppressors, grips, de tweepoot, de extended mags en de verlengbuis.**
+- [x] **6a. Suppressors, grips, de tweepoot en de verlengbuis** (13 november, versie 2.5.0) — stap 6 in twee stukken:
+      eerst de zeven attachments voor de drie andere plekken op een wapen, daarna (6b) de lange magazijnen.
+      **Het systeem groeit** (`guns/`): `AttachmentSlot` heeft nu vier plekken (`SIGHT`, `MUZZLE`, `UNDERBARREL`, `TUBE`;
+      de demper staat op de loop, een greep, de tweepoot en de verlengbuis op de behuizing), `Attachment` zeven nieuwe
+      (`SUPPRESSOR_9MM`, `SUPPRESSOR_RIFLE`, `SUPPRESSOR_SHOTGUN`, `VERTICAL_GRIP`, `ANGLED_GRIP`, `BIPOD`,
+      `TUBE_EXTENSION`) en zegt per attachment wat het doet (`damage`, `noise`, `recoil(braced)`, `aimSpeed`,
+      `drawSpeed`, `aimSpread`, `suppresses`); een wapen vermenigvuldigt wat al zijn attachments doen
+      (`FirearmItem.damageFactor`, `noiseFactor`, `recoilFactor`, `aimSpeedFactor`, `drawSpeedFactor`,
+      `aimSpreadFactor`, `suppressed`). `FirearmItem.capacity`: de buis van de 870 houdt met de verlengbuis
+      `extendedCapacity` (8). `Firearms`: de schade en hoe ver bewakers het horen maal die getallen, trekken met een
+      schuine greep sneller (`ticksFor`), en `shotSound(..., suppressed, ...)`: een gedempt schot is één doffe plof tot
+      `suppressorHearing` blokken, zonder het schot van ver. De items staan nu in een lijst (`ModItems.attachment`),
+      `GunSlot` heeft `MUZZLE`, `UNDERBARREL` en `TUBE`, en de verlengbuis eraf geeft de patronen terug die niet meer
+      passen. Zeven recepten (wol voor de dempers, polymeer voor de grips, ijzerklompjes voor de tweepoot en de
+      verlengbuis). Zeven nieuwe getallen onder `[guns]`: `suppressorNoise` 0,25, `suppressorDamage` 0,9,
+      `suppressorHearing` 16, `verticalGripRecoil` 0,7, `angledGripAimSpeed` 1,3, `angledGripDrawSpeed` 1,3,
+      `bipodRecoil` 0,15.
+      **In je spel** (`client/guns/`): `AddOns` (nieuw: tekent de demper, de greep of de tweepoot en de verlengbuis, zegt
+      waar je linkerhand een greep vasthoudt, en geeft de vakken voor de tafel), met in `FirearmRig` per wapen
+      `muzzleSeat` (hoe ver een demper over de monding schuift: de drie nokken van de MP5, de moer van de AK-47, de
+      mondingsrem van de AWP), `underMount` en `tubeMount`. `FirearmRenderer`: geen vlam met een demper, je linkerhand
+      om de greep. `FirearmControl`: de plof in plaats van de knal, de terugslag maal `recoilFactor`, sneller richten,
+      en de tweepoot: `braced` (sneaken, op de grond, stilstaan) klapt hem vloeiend uit (`bipod`). De poten zijn een los
+      model (`bipod_leg`) dat de mod zelf draait: naar voren langs de loop of 18 graden opzij omlaag. In je eigen beeld
+      zie je ze niet (achter het wapen en je arm), dus zegt `FirearmHud` "BIPOD DOWN". Bij anderen staat hij uitgeklapt
+      als ze sneaken en stilstaan: het model onthoudt wie het wapen vasthoudt (`FirearmModels.wrapWhole`: zijn
+      `ItemOverrides` krijgen dat van Minecraft te horen) en `FirearmItemRenderer` kijkt daarnaar.
+      **De Gunsmith Table**: de plekken van attachments staan er pas als het wapen compleet is (zo liggen ze nooit door
+      de gestippelde vakken van ontbrekende onderdelen), "MUZZLE" in het verlengde van de loop. De tafel is 40 pixels
+      breder en 28 hoger (ook de Laser Workbench: `PartsTableScreen` 368 x 214): een wapen met een demper past in beeld
+      (`FirearmRig.wholeWithMuzzle`: de tafel houdt daar altijd plaats voor, zodat het wapen niet verspringt), en tien
+      regels passen rechts boven de knop. Wat op een plek zit staat een regel lager als het niet naast de naam past; in
+      de lijst links heet elke demper "Suppressor" met eronder zijn kaliber. "Make parts": negen attachments onder
+      elkaar, de namen passen in het bredere vak.
+      **De modellen** (`tools/attachment_models.py`): de twee ronde dempers (147 en 198 mm, met kartels en groeven), de
+      platte demper van het hagelgeweer (de boring bovenin), de rechte greep, de wig, de voet en de poot van de tweepoot,
+      en de verlengbuis met haar klem. **De geluiden** (`generate_sounds.py`: `suppressed_shot`): `suppressed_9mm`,
+      `suppressed_rifle`, `suppressed_shotgun`, elk twee varianten; gemeten: bijna niets boven 4 kHz, 0,06 tot 0,10 s
+      lang (een gewoon schot 0,2 tot 0,4 s). Ik kan ze niet beluisteren: luister zelf of ze goed klinken.
+      **Tests** (drie nieuw in `AttachmentGameTests`, 557 in totaal): `a_suppressor_quiets_the_shot_and_softens_the_bullet`,
+      `grips_and_the_bipod_change_how_a_gun_handles` en `a_tube_extension_holds_two_more_shells` (met de demper die de
+      loop vasthoudt). **Gezien** (`gradlew runVisualCheck -Ponly=addons`: `ao01` tot `ao23`: elk wapen met wat erop
+      past vanuit de heup, van opzij en gericht, een gedempt schot zonder vlam, "BIPOD DOWN", de tafel van elk wapen leeg
+      en vol, "Make parts", de tooltips, derde persoon met de tweepoot in en uit, en op je rug), en `-Ponly=laserparts`
+      (de Laser Workbench in zijn nieuwe maat).
+      **Mijn invullingen erbij**: de recepten en de zeven getallen; de dempers per soort kaliber (9mm, geweer, hagel);
+      de grips onder de MP5 en de AK-47, de tweepoot alleen onder de AWP; de tweepoot werkt als je sneakt, op de grond
+      staat en stilstaat; attachments zet je op een compleet wapen; de grotere tafel.
+      **Nog open**: in de Laser Workbench stak het vak "SLING" al een haar onder de tafel uit; dat neem ik mee in stap 7.
+- [ ] **6b. De extended mags**: een eigen, groter magazijn per wapen (Glock 33, MP5 40, AK-47 40, AWP 10), en het wapen
+      als item getekend uit zijn onderdelen (zodat je ziet welk magazijn erin zit).
 - [ ] **7. Attachments op de lasergeweren** (red dot, sniperkijker, grips, op de Laser Workbench).
 - [ ] **8. Raven-soldaten met de nieuwe wapens, en attachments in buit.**
 - [ ] **9. How it works, de showcase, LEESMIJ.md en de changelog van 2.0.0.**

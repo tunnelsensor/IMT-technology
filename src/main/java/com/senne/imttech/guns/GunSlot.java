@@ -19,7 +19,11 @@ public enum GunSlot {
     /** De Gun Sling: geen onderdeel dat slijt, het hangt eraan of niet. */
     SLING((GunPart) null),
     /** De kijker (hoofdstuk 103, stap 5): een Red Dot Sight of een Sniper Scope. */
-    SIGHT(AttachmentSlot.SIGHT);
+    SIGHT(AttachmentSlot.SIGHT),
+    /** Stap 6: op de loop (een suppressor), onder de handbeschermer (een grip of de tweepoot), en de buis van de 870. */
+    MUZZLE(AttachmentSlot.MUZZLE),
+    UNDERBARREL(AttachmentSlot.UNDERBARREL),
+    TUBE(AttachmentSlot.TUBE);
 
     /** Het onderdeel dat op deze plek zit, of null (de sling of een attachment). */
     public final @Nullable GunPart part;

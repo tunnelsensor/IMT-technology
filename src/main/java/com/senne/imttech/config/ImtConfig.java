@@ -2319,6 +2319,23 @@ public final class ImtConfig {
         public static float SCOPE_AIM_SPREAD = 0.5f;
         @Tunable(value = "Sniper Scope: how fast you bring the gun up to aim, times this", min = 0.1, max = 5)
         public static float SCOPE_AIM_SPEED = 0.7f;
+        /** Een suppressor (stap 6): veel stiller, een tikje minder schade. */
+        @Tunable(value = "Suppressor: guards hear the shot from this fraction of the normal distance", max = 1)
+        public static float SUPPRESSOR_NOISE = 0.25f;
+        @Tunable(value = "Suppressor: the damage of a bullet times this", max = 2)
+        public static float SUPPRESSOR_DAMAGE = 0.9f;
+        @Tunable(value = "Suppressor: other players hear the shot up to this many blocks away", min = 1, max = 128)
+        public static float SUPPRESSOR_HEARING = 16.0f;
+        /** De grips: de rechte dempt de terugslag, de schuine maakt je sneller. */
+        @Tunable(value = "Vertical Grip: the recoil times this (smaller = less recoil)", max = 2)
+        public static float VERTICAL_GRIP_RECOIL = 0.7f;
+        @Tunable(value = "Angled Grip: how fast you bring the gun up to aim, times this", min = 0.1, max = 5)
+        public static float ANGLED_GRIP_AIM_SPEED = 1.3f;
+        @Tunable(value = "Angled Grip: how fast you draw the gun, times this", min = 0.1, max = 5)
+        public static float ANGLED_GRIP_DRAW_SPEED = 1.3f;
+        /** De tweepoot: alleen als je sneakt en stilstaat. */
+        @Tunable(value = "Bipod: the recoil times this while you sneak and stand still (smaller = less recoil)", max = 2)
+        public static float BIPOD_RECOIL = 0.15f;
 
         // ------------------------------------------------------------------------- Kogels en hulzen
         /** Hoeveel een kogel per tick zakt (blokken per tick per tick): een heel klein beetje. */

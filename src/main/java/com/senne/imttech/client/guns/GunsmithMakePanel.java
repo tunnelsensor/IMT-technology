@@ -91,8 +91,8 @@ public final class GunsmithMakePanel {
      * De indeling van dit tabblad, iets anders dan bij Build: de lijst met wapens links is breder (zodat "Laser Shotgun"
      * past), het vak met de tegels iets smaller. De kosten rechts staan op dezelfde plek als de lijst bij Build.
      */
-    public static final int LIST_X = 6, LIST_Y = 26, LIST_W = 84, LIST_H = 152;
-    public static final int GRID_X = 94, GRID_Y = 18, GRID_W = 140, GRID_H = 160;
+    public static final int LIST_X = 6, LIST_Y = 26, LIST_W = 84, LIST_H = 180;
+    public static final int GRID_X = 94, GRID_Y = 18, GRID_W = 180, GRID_H = 188;
     /** Zoveel tegels naast elkaar bij "Other" (daar zijn geen rijen per onderdeel). */
     private static final int OTHER_COLUMNS = 6;
     /** Rechts: waar het eerste ingrediënt staat, hoeveel plaats ze samen hebben, en de regel "You can make" eronder. */

@@ -192,10 +192,10 @@ public final class Firearms {
             look = server;
         }
         // Hoofdstuk 103, stap 5: een kijker maakt een gericht schot preciezer (vanuit de heup helpt hij niet).
-        Attachment sight = FirearmItem.sight(gun);
         double spread = Math.toRadians(type.spread(aiming) * (1 + 0.5f * parts.wornFactor(GunPart.BARREL))
-                * GunSkillHooks.spreadFactor(player, type) * (aiming && sight != null ? sight.aimSpread() : 1));
-        float damage = type.damage() * parts.materialOf(GunPart.BARREL).damageFactor();
+                * GunSkillHooks.spreadFactor(player, type) * (aiming ? FirearmItem.aimSpreadFactor(gun) : 1));
+        // Stap 6: een demper remt de kogel een tikje af.
+        float damage = type.damage() * parts.materialOf(GunPart.BARREL).damageFactor() * FirearmItem.damageFactor(gun);
         damage *= 1 - 0.2f * Math.min(1, parts.wornFactor(GunPart.BARREL) / Math.max(0.01f, ImtConfig.Guns.WORN_JAM_FACTOR));
         // Hoofdstuk 103: hagel is een bundel korrels: één richting voor het schot, en elke korrel waaiert er nog wat af.
         Vec3 aim = scatter(look, spread, random);
@@ -204,10 +204,10 @@ public final class Firearms {
         for (int i = 0; i < pellets; i++) {
             BulletEntity.shoot(level, player, type, damage, pellets == 1 ? aim : scatter(aim, fan, random));
         }
-        shotSound(level, player, type, player.getX(), player.getEyeY(), player.getZ(), SoundSource.PLAYERS,
-                0.95f + random.nextFloat() * 0.1f);
-        // Hoofdstuk 60: de bewakers horen het (door de hele bunker).
-        com.senne.imttech.raven.Noises.make(level, player.position(), type.noise(),
+        shotSound(level, player, type, FirearmItem.suppressed(gun), player.getX(), player.getEyeY(), player.getZ(),
+                SoundSource.PLAYERS, 0.95f + random.nextFloat() * 0.1f);
+        // Hoofdstuk 60: de bewakers horen het (door de hele bunker); met een demper veel minder ver (stap 6).
+        com.senne.imttech.raven.Noises.make(level, player.position(), type.noise() * FirearmItem.noiseFactor(gun),
                 com.senne.imttech.raven.Noises.Kind.SHOT, player);
         if (player.isSprinting()) {
             player.setSprinting(false);
@@ -324,6 +324,10 @@ public final class Firearms {
         float factor = 1;
         if (type != null && kind != ActionKind.LOAD_ROUND && kind != ActionKind.UNLOAD_ROUND) {
             factor *= FirearmItem.parts(gun).materialOf(GunPart.FRAME).handlingFactor();
+        }
+        if (type != null && kind == ActionKind.DRAW) {
+            // Hoofdstuk 103, stap 6: met een schuine greep trek je het wapen sneller.
+            factor /= Math.max(0.1f, FirearmItem.drawSpeedFactor(gun));
         }
         if (gun != null && com.senne.imttech.weapons.LaserGunItem.typeOf(gun) != null) {
             factor *= com.senne.imttech.weapons.LaserGuns.handlingFactor(gun);
@@ -855,10 +859,31 @@ public final class Firearms {
      */
     public static void shotSound(net.minecraft.world.level.Level level, @Nullable Entity shooter, FirearmType type, double x,
                                  double y, double z, SoundSource source, float pitch) {
+        shotSound(level, shooter, type, false, x, y, z, source, pitch);
+    }
+
+    /**
+     * Hetzelfde, met of zonder demper (hoofdstuk 103, stap 6). Een gedempt schot is een doffe plof die je maar tot een
+     * paar blokken ver hoort ({@code [guns] suppressorHearing}), zonder het schot van ver weg.
+     */
+    public static void shotSound(net.minecraft.world.level.Level level, @Nullable Entity shooter, FirearmType type,
+                                 boolean suppressed, double x, double y, double z, SoundSource source, float pitch) {
         if (!(level instanceof ServerLevel server)) {
             return;
         }
         long seed = server.getRandom().nextLong();
+        if (suppressed) {
+            // Minecraft laat een geluid uitsterven over 16 blokken maal zijn volume: zo hoor je het precies zo ver.
+            float hearing = Math.max(1, ImtConfig.Guns.SUPPRESSOR_HEARING);
+            var plop = net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT.wrapAsHolder(type.suppressedSound());
+            for (ServerPlayer listener : server.players()) {
+                if (listener != shooter && listener.distanceToSqr(x, y, z) < hearing * hearing) {
+                    listener.connection.send(new net.minecraft.network.protocol.game.ClientboundSoundPacket(plop,
+                            source, x, y, z, Math.max(1.0f, hearing / 16.0f), pitch, seed));
+                }
+            }
+            return;
+        }
         var near = net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT.wrapAsHolder(type.fireSound());
         var far = net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT.wrapAsHolder(type.fireFarSound());
         for (ServerPlayer listener : server.players()) {

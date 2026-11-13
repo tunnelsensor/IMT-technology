@@ -1,6 +1,7 @@
 """
-De attachments van de grote update (hoofdstuk 103, stap 5) als 3D-model, op dezelfde schaal als de wapens (1 pixel van het
-model = 12,8 mm): de Red Dot Sight en de Sniper Scope.
+De attachments van de grote update (hoofdstuk 103, stap 5 en 6) als 3D-model, op dezelfde schaal als de wapens (1 pixel
+van het model = 12,8 mm): de Red Dot Sight en de Sniper Scope, en (stap 6) de drie dempers, de twee grips, de tweepoot
+en de verlengbuis van de Remington 870.
 
 Elk attachment is getekend rond zijn eigen nulpunt: het midden van de onderkant van zijn voet, daar waar hij op het wapen
 staat ("de montage"). Het wapen zegt waar dat punt op hem ligt (client/guns/FirearmRig: sightMount), en de mod schuift
@@ -148,6 +149,137 @@ def scope_reticle():
     return m
 
 
+# ---------------------------------------------------------------- De dempers (stap 6)
+
+# De ronde dempers: lengte, straal en boring (pixels). Het nulpunt is het midden van het achterste vlak, op de as van de
+# loop; de demper wijst naar -z. Het wapen zegt hoe ver hij over de monding schuift (client/guns/FirearmRig: muzzleSeat):
+# de demper van een geweer is breed genoeg om over de mondingsrem van de AWP te passen.
+CANS = {
+    "suppressor_9mm": dict(length=11.5, radius=1.2, bore=0.42),      # 147 mm lang, 31 mm dik
+    "suppressor_rifle": dict(length=15.5, radius=1.5, bore=0.42),    # 198 mm lang, 38 mm dik
+}
+# De demper van een hagelgeweer is een platte doos (zoals de SilencerCo Salvo): de boring zit bovenin, zodat de doos onder
+# de vizierlijn blijft en je de kraal nog ziet.
+BOX_CAN = dict(length=14.0, half_width=1.45, top=1.0, bottom=-2.7, bore=0.78)
+
+
+def suppressor(name):
+    """Een ronde demper: de kraag met kartels achteraan, de buis met haar groeven, en de kap met de boring vooraan."""
+    c = CANS[name]
+    length, radius, bore = c["length"], c["radius"], c["bore"]
+    m = gm.Mesh()
+    base, axis = (0.0, 0.0, 0.0), (0, 0, -1)
+    profile = [(0.0, 0.0), (0.0, radius - 0.15), (0.15, radius), (1.8, radius), (1.9, radius - 0.1),
+               (length - 0.5, radius - 0.1), (length - 0.25, radius - 0.18), (length, radius - 0.42), (length, bore),
+               (length - 0.7, bore), (length - 0.7, 0.0)]
+    gm.lathe(m, base, axis, profile, ROUND, "can", density=D, data={"base": base, "axis": axis, **c})
+    return m
+
+
+def shotgun_suppressor():
+    """De demper van een hagelgeweer: een platte doos met afgeronde hoeken, de boring bovenin (geschilderd)."""
+    c = BOX_CAN
+    m = gm.Mesh()
+    section = lg.rounded_rect(-c["half_width"], c["bottom"], c["half_width"], c["top"], 0.55, steps=3)
+    gm.prism(m, section, "z", -c["length"], 0.0, "can_box", bevel=0.22, density=D, smooth=50, data=dict(c))
+    # De klem om de monding, achteraan.
+    lg.ring(m, (0.0, 0.0, 0.25), (0, 0, -1), 0.9, 1.08, 0.8, "can_clamp", segments=ROUND, density=D)
+    return m
+
+
+# ---------------------------------------------------------------- De grips (stap 6)
+
+# Het nulpunt van een grip is het midden van de bovenkant van zijn klem: daar raakt hij de onderkant van de
+# handbeschermer (FirearmRig: underMount). Waar je linkerhand hem vasthoudt: zie client/guns/AddOns.
+GRIP_LENGTH = 6.1
+
+
+def vertical_grip():
+    """De Vertical Grip: een klem met een rechte greep eronder (78 mm), iets dikker onderaan, met een dop."""
+    m = gm.Mesh()
+    gm.box(m, (-0.8, -0.6, -1.35), (0.8, 0.0, 1.35), "grip_clamp", bevel=0.1, density=D)
+    for z in (-0.9, 0.9):
+        gm.cylinder(m, (-0.86, -0.3, z), (0.86, -0.3, z), 0.16, 8, "grip_screw", density=D)
+    base, axis = (0.0, -0.5, 0.0), (0, -1, 0)
+    profile = [(0.0, 0.0), (0.0, 0.78), (0.35, 0.92), (4.6, 0.8), (5.0, 0.98), (5.45, 0.98), (5.6, 0.82), (5.6, 0.0)]
+    gm.lathe(m, base, axis, profile, 14, "grip", density=D, data={"base": base, "axis": axis})
+    return m
+
+
+def angled_grip():
+    """De Angled Grip: een wig onder de handbeschermer; je hand ligt tegen het lange schuine vlak achteraan."""
+    m = gm.Mesh()
+    outline = [(-3.5, 0.0), (3.1, 0.0), (3.1, -0.55), (2.6, -0.8), (-0.3, -2.85), (-0.95, -3.05), (-1.6, -2.8),
+               (-2.3, -1.55), (-3.5, -0.6)]
+    gm.prism(m, outline, "x", -0.8, 0.8, "grip_wedge", bevel=0.16, density=D, smooth=50, data={"outline": outline},
+             max_strip=12.0)
+    return m
+
+
+# ---------------------------------------------------------------- De tweepoot (stap 6)
+
+# De voet klemt om de voorkant van de handbeschermer (het nulpunt: het midden van zijn bovenkant). De twee poten
+# scharnieren aan het juk eronder; de mod tekent ze zelf, naar voren geklapt of schuin omlaag (client/guns/AddOns).
+BIPOD_HINGE = (0.95, -0.75)      # x (links en rechts) en y van de scharnieren
+BIPOD_LEG = 15.0                 # 19 cm
+
+
+def bipod():
+    """De voet van de tweepoot: de klem, het juk en de twee scharnierpennen."""
+    m = gm.Mesh()
+    gm.box(m, (-1.15, -0.5, -1.4), (1.15, 0.25, 1.4), "bipod", bevel=0.1, density=D)
+    gm.box(m, (-1.3, -1.1, -0.5), (1.3, -0.4, 0.5), "bipod", bevel=0.08, density=D)
+    for side in (-1, 1):
+        gm.cylinder(m, (side * BIPOD_HINGE[0], BIPOD_HINGE[1], -0.62), (side * BIPOD_HINGE[0], BIPOD_HINGE[1], 0.62), 0.3,
+                    8, "bipod_pin", density=D)
+    return m
+
+
+def bipod_leg():
+    """Eén poot, recht omlaag vanaf zijn scharnier (het nulpunt): de buis, de uitschuifbare binnenpoot en het voetje."""
+    m = gm.Mesh()
+    gm.cylinder(m, (0, 0.2, 0), (0, -9.2, 0), 0.27, 8, "bipod_leg", density=D)
+    gm.cylinder(m, (0, -8.6, 0), (0, -(BIPOD_LEG - 0.5), 0), 0.19, 8, "bipod_inner", density=D)
+    gm.box(m, (-0.42, -BIPOD_LEG, -0.6), (0.42, -(BIPOD_LEG - 0.55), 0.6), "bipod_foot", bevel=0.14, density=D)
+    return m
+
+
+def bipod_item(leg):
+    """De tweepoot zoals je hem als item ziet: de voet met de twee poten uitgeklapt (18 graden opzij)."""
+    m = bipod()
+    for side in (-1, 1):
+        m.add(leg.moved(rot=gm.rot_z(side * 18), move=(side * BIPOD_HINGE[0], BIPOD_HINGE[1], 0.0)))
+    return m
+
+
+# ---------------------------------------------------------------- De verlengbuis (stap 6)
+
+# Voor de Remington 870: het nulpunt is het midden van de voorkant van zijn buis (FirearmRig: tubeMount). De maten van
+# de buis en de loop komen uit tools/r870_model.py.
+TUBE_R = 0.9218585
+TUBE_EXTRA = 11.0                # twee patronen van 70 mm
+BARREL_UP = 2.4304               # zo ver ligt de as van de loop boven die van de buis
+BARREL_R = 0.82
+
+
+def tube_extension():
+    """De Tube Extension: een buis die over de dop van de oude buis schuift, een dop vooraan, en een klem aan de loop."""
+    m = gm.Mesh()
+    base, axis = (0.0, 0.0, 0.0), (0, 0, -1)
+    r = TUBE_R + 0.05
+    length = TUBE_EXTRA
+    # Achteraan een open kom (daar schuift de oude buis in): de bodem, de binnenwand, en dan de rand en de buitenkant.
+    profile = [(2.0, 0.0), (2.0, TUBE_R - 0.02), (-0.9, TUBE_R - 0.02), (-0.9, r + 0.1), (0.5, r + 0.1), (0.6, r),
+               (length - 1.0, r), (length - 1.0, r + 0.09), (length - 0.2, r + 0.09), (length, r - 0.12), (length, 0.0)]
+    gm.lathe(m, base, axis, profile, 16, "tube", density=D, data={"base": base, "axis": axis, "length": length, "radius": r})
+    # De klem: een ring om de buis, een ring om de loop, en het brugje ertussen.
+    z = -(length - 3.2)
+    lg.ring(m, (0.0, 0.0, z + 0.45), axis, 0.9, r + 0.26, r - 0.02, "tube_clamp", density=D)
+    lg.ring(m, (0.0, BARREL_UP, z + 0.45), axis, 0.9, BARREL_R + 0.26, BARREL_R - 0.02, "tube_clamp", density=D)
+    gm.box(m, (-0.32, r + 0.1, z - 0.4), (0.32, BARREL_UP - BARREL_R - 0.1, z + 0.4), "tube_clamp", bevel=0.05, density=D)
+    return m
+
+
 # ---------------------------------------------------------------- Schilderen
 
 # Zwart geanodiseerd aluminium. Niet te donker: op de donkere Gunsmith Table en als icoontje moet je het nog zien.
@@ -185,6 +317,57 @@ def painter(skin, isl, p, n, tx, ty):
             if nz < -0.5 and r < BELL - 0.2:
                 col = (12, 12, 14)
         return (*col, 255)
+    if kind in ("can", "can_box", "can_clamp"):
+        # Een demper: dof zwart, met ondiepe groeven rondom en een donkere boring vooraan.
+        col = lg.add(lg.add(BLACK, -4), grain + 28 * lg.edge_amount(isl, n))
+        if kind == "can":
+            h, r = -z, math.hypot(x, y)
+            length, radius, bore = isl.data["length"], isl.data["radius"], isl.data["bore"]
+            if nz < -0.5 and r < bore + 0.03 or (nz > 0.5 and h > 1.0):
+                return (12, 12, 14, 255)                       # de boring
+            if h < 1.8 and abs(nz) < 0.5 and int(math.atan2(y, x) * 18 / math.pi) % 2 == 0:
+                col = lg.add(col, -12)                         # de kartels van de kraag
+            elif 2.6 < h < length - 1.2 and abs(nz) < 0.5 and (h - 2.6) % 2.2 < 0.16:
+                col = lg.add(col, -14)                         # de groeven
+        elif kind == "can_box":
+            if nz < -0.5 and math.hypot(x, y) < isl.data["bore"]:
+                return (12, 12, 14, 255)                       # de boring, bovenin
+            if abs(nz) < 0.5 and (-z - 1.2) % 2.6 < 0.18 and 1.0 < -z < isl.data["length"] - 0.8:
+                col = lg.add(col, -14)                         # de naden tussen de modules
+        else:
+            col = lg.add(col, 10)
+        return (*col, 255)
+    if kind in ("grip", "grip_clamp", "grip_screw", "grip_wedge"):
+        # Polymeer met een korreltje; de greep heeft ribbels rondom, de wig groeven dwars op het schuine vlak.
+        col = lg.add(lg.add(BLACK, -6), grain + 26 * lg.edge_amount(isl, n))
+        if kind == "grip":
+            h = -0.5 - y
+            if 0.6 < h < 4.5 and abs(ny) < 0.5 and (h * 1.7) % 1.0 < 0.3:
+                col = lg.add(col, -11)
+        elif kind == "grip_wedge" and abs(nx) < 0.5 and ny < -0.2 and nz > 0.2 and (z * 2.2) % 1.0 < 0.3:
+            col = lg.add(col, -11)
+        elif kind == "grip_screw":
+            col = lg.add(col, 30)
+        return (*col, 255)
+    if kind in ("bipod", "bipod_pin", "bipod_leg", "bipod_inner", "bipod_foot"):
+        col = lg.add(BLACK, grain + 28 * lg.edge_amount(isl, n))
+        if kind == "bipod_inner":
+            col = lg.add((120, 124, 132), grain)               # de blanke binnenpoot
+        elif kind == "bipod_foot":
+            col = lg.add((30, 30, 32), grain * 0.6)            # rubber
+        elif kind == "bipod_pin":
+            col = lg.add(col, 26)
+        return (*col, 255)
+    if kind in ("tube", "tube_clamp"):
+        # Geblauwd staal, zoals de buis van de 870 zelf.
+        col = lg.lit(lg.GUN_METAL["steel"], isl, p, n, grain=5, edge=28)
+        if kind == "tube":
+            h = -z
+            if math.hypot(x, y) < TUBE_R and h < 2.05 and (nz > 0.5 or nx * x + ny * y < 0):
+                return (14, 14, 16, 255)                       # binnenin de open kom achteraan
+            if h > isl.data["length"] - 1.0 and abs(nz) < 0.5 and int(math.atan2(y, x) * 16 / math.pi) % 2 == 0:
+                col = lg.add(col, -14)                         # de kartels van de dop
+        return (*col, 255)
     if kind in ("dot_knob", "scope_knob"):
         col = lg.add(BLACK, 12 + grain + 30 * lg.edge_amount(isl, n))
         if kind == "scope_knob":
@@ -206,10 +389,23 @@ def painter(skin, isl, p, n, tx, ty):
 # ---------------------------------------------------------------- Alles bij elkaar
 
 # naam van het attachment -> zijn modellen: {naam van het model: mesh}. Het eerste is het attachment zelf.
+def _bipod():
+    leg = bipod_leg()
+    return {"bipod": bipod(), "bipod_leg": leg, "bipod_item": bipod_item(leg)}
+
+
 ATTACHMENTS = {
     "red_dot_sight": lambda: {"red_dot_sight": red_dot(), "sight_riser": riser()},
     "sniper_scope": lambda: {"sniper_scope": sniper_scope(), "sniper_scope_lens": scope_lens(),
                              "sniper_scope_reticle": scope_reticle()},
+    "suppressor_9mm": lambda: {"suppressor_9mm": suppressor("suppressor_9mm")},
+    "suppressor_rifle": lambda: {"suppressor_rifle": suppressor("suppressor_rifle")},
+    "suppressor_shotgun": lambda: {"suppressor_shotgun": shotgun_suppressor()},
+    "vertical_grip": lambda: {"vertical_grip": vertical_grip()},
+    "angled_grip": lambda: {"angled_grip": angled_grip()},
+    "bipod": _bipod,
+    "tube_extension": lambda: {"tube_extension": tube_extension()},
 }
 # Het model van het item in je inventaris: het attachment met alles erop en eraan wat je dan ziet.
-ITEM_PARTS = {"red_dot_sight": ("red_dot_sight",), "sniper_scope": ("sniper_scope", "sniper_scope_lens")}
+ITEM_PARTS = {"red_dot_sight": ("red_dot_sight",), "sniper_scope": ("sniper_scope", "sniper_scope_lens"),
+              "bipod": ("bipod_item",)}

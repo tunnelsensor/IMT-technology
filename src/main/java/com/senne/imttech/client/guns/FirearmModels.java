@@ -120,7 +120,7 @@ public final class FirearmModels {
 
     /** De losse stukjes die bij de attachments horen: de verhoging, het glas en het dradenkruis van de Sniper Scope. */
     private static final String[] ATTACHMENT_EXTRAS = {"attachment/sight_riser", "attachment/sniper_scope_lens",
-            "attachment/sniper_scope_reticle"};
+            "attachment/sniper_scope_reticle", "attachment/bipod_leg"};
 
     /** Bij het opstarten: zeg Minecraft dat het deze modellen moet inladen. */
     public static void register(ModelEvent.RegisterAdditional event) {
@@ -202,18 +202,32 @@ public final class FirearmModels {
     }
 
     /**
-     * Hoofdstuk 103, stap 5: wat er op het wapen zit (de kijker), elk op zijn montage. Zoals renderParts: 1 blok = 16
-     * pixels van het model. Voor op je rug, op het Pegboard, op de Gunsmith Table en overal waar het wapen een item is.
+     * Hoofdstuk 103, stap 5 en 6: wat er op het wapen zit (de kijker, de demper, de greep...), elk op zijn plek. Zoals
+     * renderParts: 1 blok = 16 pixels van het model. Voor op je rug, op het Pegboard, op de Gunsmith Table en overal
+     * waar het wapen een item is. De tweepoot is hier ingeklapt.
      */
     public static void renderAttachments(PoseStack pose, MultiBufferSource buffers, ItemStack gun, int light) {
+        renderAttachments(pose, buffers, gun, light, null, 0);
+    }
+
+    /**
+     * Hetzelfde, zonder de plek {@code skip} (die sleep je net weg op de Gunsmith Table), en met de tweepoot zo ver
+     * uitgeklapt als {@code bipod} zegt (0 tot 1).
+     */
+    public static void renderAttachments(PoseStack pose, MultiBufferSource buffers, ItemStack gun, int light,
+                                         @Nullable com.senne.imttech.guns.AttachmentSlot skip, float bipod) {
         FirearmType type = FirearmItem.typeOf(gun);
-        com.senne.imttech.guns.Attachment optic = Optics.of(gun);
-        if (type == null || optic == null) {
+        if (type == null || FirearmItem.attachments(gun).isEmpty()) {
             return;
         }
+        FirearmRig rig = FirearmRig.of(type);
         pose.pushPose();
         pose.scale(1 / 16f, 1 / 16f, 1 / 16f);
-        Optics.render(pose, buffers, FirearmRig.of(type), optic, light, 0, -1);
+        com.senne.imttech.guns.Attachment optic = Optics.of(gun);
+        if (optic != null && skip != com.senne.imttech.guns.AttachmentSlot.SIGHT) {
+            Optics.render(pose, buffers, rig, optic, light, 0, -1);
+        }
+        AddOns.render(pose, buffers, rig, gun, light, bipod, skip);
         pose.popPose();
     }
 
@@ -274,6 +288,26 @@ public final class FirearmModels {
                         @Override
                         public boolean isCustomRenderer() {
                             return true;
+                        }
+
+                        /**
+                         * Minecraft vraagt hier welk model bij dit item hoort, en zegt erbij wie het vasthoudt. Dat
+                         * onthouden we even voor {@link FirearmItemRenderer} (stap 6: de tweepoot van iemand die sneakt).
+                         */
+                        private final net.minecraft.client.renderer.block.model.ItemOverrides whoHolds =
+                                new net.minecraft.client.renderer.block.model.ItemOverrides() {
+                                    @Override
+                                    public BakedModel resolve(BakedModel model, ItemStack stack,
+                                            @Nullable net.minecraft.client.multiplayer.ClientLevel level,
+                                            @Nullable net.minecraft.world.entity.LivingEntity entity, int seed) {
+                                        FirearmItemRenderer.holder = entity;
+                                        return model;
+                                    }
+                                };
+
+                        @Override
+                        public net.minecraft.client.renderer.block.model.ItemOverrides getOverrides() {
+                            return whoHolds;
                         }
 
                         /**

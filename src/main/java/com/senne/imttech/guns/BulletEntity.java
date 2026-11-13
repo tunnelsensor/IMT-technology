@@ -48,6 +48,11 @@ public class BulletEntity extends Projectile {
     }
 
     /** Een kogel uit dit pistool, vanaf de ogen van de schutter. */
+    /** Zoveel schade doet deze kogel van dichtbij (voor de tests: een demper remt hem een tikje af). */
+    public float damage() {
+        return damage;
+    }
+
     public static BulletEntity shoot(ServerLevel level, LivingEntity shooter, FirearmType type, float damage, Vec3 direction) {
         BulletEntity bullet = new BulletEntity(ModEntities.BULLET.get(), level);
         bullet.setOwner(shooter);

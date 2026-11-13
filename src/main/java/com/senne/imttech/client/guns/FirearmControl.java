@@ -168,6 +168,7 @@ public final class FirearmControl {
             drawnAt = now;
             inspectAt = -1;
             aim = aimO = 0;
+            bipod = bipodO = 0;
             burstLeft = 0;
             tubeLoading = false;
             // Een handeling met het vorige item is voorbij (behalve een magazijn erin: dan pak je het pistool erna).
@@ -235,7 +236,12 @@ public final class FirearmControl {
         wasAiming = wantAim;
         // Hoofdstuk 103, stap 5: een red dot brengt je sneller op je doel, een zware kijker trager.
         com.senne.imttech.guns.Attachment optic = type == null ? null : FirearmItem.sight(main);
-        aim = Mth.approach(aim, wantAim ? 1 : 0, AIM_SPEED * (optic == null ? 1 : optic.aimSpeed()));
+        aim = Mth.approach(aim, wantAim ? 1 : 0, AIM_SPEED * (type == null ? 1 : FirearmItem.aimSpeedFactor(main)));
+        // Stap 6: de tweepoot klapt uit als je sneakt en stilstaat, en weer in als je beweegt of opstaat.
+        bipodO = bipod;
+        boolean legsDown = type != null && FirearmItem.attachment(main, com.senne.imttech.guns.AttachmentSlot.UNDERBARREL)
+                == com.senne.imttech.guns.Attachment.BIPOD && braced(player);
+        bipod = Mth.approach(bipod, legsDown ? 1 : 0, 0.14f);
         scoped = optic != null && optic.zooms() ? optic : null;
         if (scoped != null) {
             scopeZoom = Mth.clamp(scopeZoom, 1, scoped.maxZoom());
@@ -478,7 +484,9 @@ public final class FirearmControl {
         }
         shotAt = now;
         PacketDistributor.sendToServer(new FirearmFirePayload(player.getYRot(), player.getXRot(), aiming));
-        play(player, type.fireSound(), 1.0f);
+        // Stap 6: met een demper een doffe plof in plaats van de knal.
+        boolean quiet = FirearmItem.suppressed(gun);
+        play(player, quiet ? type.suppressedSound() : type.fireSound(), 1.0f);
         // Hoofdstuk 103: je spel doet alvast wat de server ook doet (de kamer leeg, de volgende patroon erin), zodat
         // automatisch vuur niet hoeft te wachten tot de server het wapen terugstuurt. De server stuurt daarna het echte
         // wapen, ook als het anders liep (een storing).
@@ -489,8 +497,9 @@ public final class FirearmControl {
             FirearmItem.setChambered(gun, true);
         }
         // De terugslag: omhoog (minder als je richt, en naar het materiaal van de slede), en een beetje opzij.
+        // Stap 6: een rechte greep dempt hem, en de tweepoot bijna helemaal als je sneakt en stilstaat.
         float kick = type.recoil(aiming) * FirearmItem.parts(gun).materialOf(GunPart.SLIDE).recoilFactor()
-                * GunSkillsClient.recoilFactor(type);
+                * GunSkillsClient.recoilFactor(type) * FirearmItem.recoilFactor(gun, braced(player));
         player.setXRot(Mth.clamp(player.getXRot() - kick, -90, 90));
         player.setYRot(player.getYRot() + (player.getRandom().nextFloat() - 0.5f) * kick * 0.5f);
         return true;
@@ -519,6 +528,24 @@ public final class FirearmControl {
         float slow = 1 - 0.35f * aim;
         event.getInput().forwardImpulse *= slow;
         event.getInput().leftImpulse *= slow;
+    }
+
+    /** Hoofdstuk 103, stap 6: hoe ver de tweepoot van het wapen in je hand uitgeklapt is (0 tot 1). */
+    private static float bipod;
+    private static float bipodO;
+
+    public static float bipod(float partialTick) {
+        float t = Mth.lerp(partialTick, bipodO, bipod);
+        return t * t * (3 - 2 * t);
+    }
+
+    /**
+     * Steun je het wapen: sneak je, sta je op de grond en sta je (bijna) stil? Dan staat een tweepoot op zijn pootjes
+     * (jouw keuze: "een tweepoot voor de AWP: sneak je, dan staat hij op zijn pootjes").
+     */
+    public static boolean braced(net.minecraft.world.entity.player.Player player) {
+        net.minecraft.world.phys.Vec3 move = player.getDeltaMovement();
+        return player.isCrouching() && player.onGround() && move.x * move.x + move.z * move.z < 0.0009;
     }
 
     /**

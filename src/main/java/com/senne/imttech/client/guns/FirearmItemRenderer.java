@@ -24,6 +24,12 @@ import net.minecraft.world.item.ItemStack;
  * onderdelen.
  */
 public final class FirearmItemRenderer extends BlockEntityWithoutLevelRenderer {
+    /**
+     * Wie het wapen vasthoudt dat we zo meteen tekenen, of null (een item op de grond, in je inventaris...). Minecraft
+     * zegt dat niet tegen ons, maar wel tegen het model, vlak ervoor (zie FirearmModels.wrapWhole).
+     */
+    static @org.jetbrains.annotations.Nullable net.minecraft.world.entity.LivingEntity holder;
+
     public FirearmItemRenderer() {
         super(Minecraft.getInstance().getBlockEntityRenderDispatcher(), Minecraft.getInstance().getEntityModels());
     }
@@ -45,6 +51,11 @@ public final class FirearmItemRenderer extends BlockEntityWithoutLevelRenderer {
                 items.renderModelLists(pass, stack, light, overlay, pose, out);
             }
         }
-        FirearmModels.renderAttachments(pose, buffers, stack, light);
+        // Stap 6: in de hand van iemand die sneakt en stilstaat, staat de tweepoot op zijn pootjes.
+        net.minecraft.world.entity.LivingEntity held = holder;
+        holder = null;
+        boolean inHand = context == ItemDisplayContext.THIRD_PERSON_RIGHT_HAND || context == ItemDisplayContext.THIRD_PERSON_LEFT_HAND;
+        boolean braced = inHand && held != null && held.isCrouching() && held.walkAnimation.speed() < 0.05f;
+        FirearmModels.renderAttachments(pose, buffers, stack, light, null, braced ? 1 : 0);
     }
 }

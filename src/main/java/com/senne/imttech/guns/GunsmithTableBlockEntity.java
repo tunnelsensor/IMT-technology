@@ -222,6 +222,13 @@ public class GunsmithTableBlockEntity extends BlockEntity implements MenuProvide
         if (was == null) {
             return false;
         }
+        // Stap 6: zonder zijn verlengbuis passen er minder patronen in de buis: wat te veel is, krijg je terug.
+        FirearmType type = FirearmItem.typeOf(gun);
+        int over = FirearmItem.roundsInMagazine(gun) - FirearmItem.capacity(gun);
+        if (type != null && type.tube() && over > 0) {
+            FirearmItem.setRoundsInMagazine(gun, FirearmItem.capacity(gun));
+            Firearms.give(player, new ItemStack(type.caliber.round(), over));
+        }
         items.setChanged();
         Firearms.give(player, new ItemStack(com.senne.imttech.registry.ModItems.attachment(was)));
         click(player);

@@ -1,0 +1,150 @@
+{
+ "loader": "neoforge:obj",
+ "model": "imttech:models/firearm/attachment/item_suppressor_shotgun.obj",
+ "automatic_culling": false,
+ "flip_v": false,
+ "emissive_ambient": true,
+ "textures": {
+  "gun": "imttech:item/attachment/suppressor_shotgun",
+  "particle": "imttech:item/attachment/suppressor_shotgun"
+ },
+ "gui_light": "front",
+ "display": {
+  "gui": {
+   "rotation": [
+    14,
+    -58,
+    0
+   ],
+   "translation": [
+    -9.164,
+    5.461,
+    17.87
+   ],
+   "scale": [
+    1.087,
+    1.087,
+    1.087
+   ]
+  },
+  "ground": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    3.6,
+    5.964,
+    6.694
+   ],
+   "scale": [
+    0.45,
+    0.45,
+    0.45
+   ]
+  },
+  "fixed": {
+   "rotation": [
+    14,
+    -58,
+    0
+   ],
+   "translation": [
+    -9.164,
+    5.461,
+    17.87
+   ],
+   "scale": [
+    1.087,
+    1.087,
+    1.087
+   ]
+  },
+  "head": {
+   "rotation": [
+    0,
+    180,
+    0
+   ],
+   "translation": [
+    0,
+    13,
+    7
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ]
+  },
+  "thirdperson_righthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    4.0,
+    4.405,
+    7.438
+   ],
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "thirdperson_lefthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    4.0,
+    4.405,
+    7.438
+   ],
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "firstperson_righthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    4.0,
+    4.405,
+    7.438
+   ],
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "firstperson_lefthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    4.0,
+    4.405,
+    7.438
+   ],
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  }
+ }
+}

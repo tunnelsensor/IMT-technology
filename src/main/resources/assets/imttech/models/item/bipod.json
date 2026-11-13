@@ -1,0 +1,150 @@
+{
+ "loader": "neoforge:obj",
+ "model": "imttech:models/firearm/attachment/item_bipod.obj",
+ "automatic_culling": false,
+ "flip_v": false,
+ "emissive_ambient": true,
+ "textures": {
+  "gun": "imttech:item/attachment/bipod",
+  "particle": "imttech:item/attachment/bipod"
+ },
+ "gui_light": "front",
+ "display": {
+  "gui": {
+   "rotation": [
+    14,
+    -58,
+    0
+   ],
+   "translation": [
+    -2.246,
+    11.196,
+    14.257
+   ],
+   "scale": [
+    0.883,
+    0.883,
+    0.883
+   ]
+  },
+  "ground": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    3.6,
+    8.942,
+    3.6
+   ],
+   "scale": [
+    0.45,
+    0.45,
+    0.45
+   ]
+  },
+  "fixed": {
+   "rotation": [
+    14,
+    -58,
+    0
+   ],
+   "translation": [
+    -2.246,
+    11.196,
+    14.257
+   ],
+   "scale": [
+    0.883,
+    0.883,
+    0.883
+   ]
+  },
+  "head": {
+   "rotation": [
+    0,
+    180,
+    0
+   ],
+   "translation": [
+    0,
+    13,
+    7
+   ],
+   "scale": [
+    1,
+    1,
+    1
+   ]
+  },
+  "thirdperson_righthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    4.0,
+    7.713,
+    4.0
+   ],
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "thirdperson_lefthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    4.0,
+    7.713,
+    4.0
+   ],
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "firstperson_righthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    4.0,
+    7.713,
+    4.0
+   ],
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "firstperson_lefthand": {
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "translation": [
+    4.0,
+    7.713,
+    4.0
+   ],
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  }
+ }
+}

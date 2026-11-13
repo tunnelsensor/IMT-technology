@@ -727,6 +727,39 @@
       }
     ]
   },
+  "suppressed.9mm": {
+    "subtitle": "subtitles.imttech.suppressed.9mm",
+    "sounds": [
+      {
+        "name": "imttech:suppressed_9mm"
+      },
+      {
+        "name": "imttech:suppressed_9mm_2"
+      }
+    ]
+  },
+  "suppressed.rifle": {
+    "subtitle": "subtitles.imttech.suppressed.rifle",
+    "sounds": [
+      {
+        "name": "imttech:suppressed_rifle"
+      },
+      {
+        "name": "imttech:suppressed_rifle_2"
+      }
+    ]
+  },
+  "suppressed.shotgun": {
+    "subtitle": "subtitles.imttech.suppressed.shotgun",
+    "sounds": [
+      {
+        "name": "imttech:suppressed_shotgun"
+      },
+      {
+        "name": "imttech:suppressed_shotgun_2"
+      }
+    ]
+  },
   "rifle.mag_out": {
     "subtitle": "subtitles.imttech.rifle.mag_out",
     "sounds": [

@@ -1472,6 +1472,64 @@ def shotgun_fire_far():
     return firearm_shot(7804, far=True, **SHOTGUN_SHOT)
 
 
+def suppressed_shot(seed, body_hz=420.0, weight=1.0, thump=(140, 70), hiss=1.0, mech=((0.004, 0.5), (0.05, 0.6))):
+    """
+    Een schot met een demper erop (hoofdstuk 103, stap 6): geen knal en geen krak, maar een korte doffe plof (het gas dat
+    in de demper uitzet), een zacht gesis, en het mechaniek, dat je nu juist goed hoort. {body_hz}: de toon van de plof
+    (lager = een groter kaliber), {weight}: hoe lang en zwaar hij is (1 = een 9mm), {thump}: van waar naar waar de dreun
+    zakt, {mech}: wanneer het mechaniek klapt en hoe hard (leeg voor een grendel of een pomp).
+    """
+    r = np.random.default_rng(seed)
+    total = np.zeros(int(RATE * 0.55))
+    n = int(RATE * 0.25)
+    t = np.arange(n) / RATE
+    wide = r.uniform(-1, 1, n)
+    puff = (bandpass(wide, 250, 1400) * 3.2 + bandpass(wide, 1400, 3600) * 0.9) * np.exp(-t * 60 / weight) \
+        * (1 - np.exp(-t * 2500))
+    gas = bandpass(r.uniform(-1, 1, n), 3000, 7000) * np.exp(-t * 45) * 0.3 * hiss
+    b, a = signal.iirpeak(body_hz + r.uniform(-20, 20), 2.5, fs=RATE)
+    body = signal.lfilter(b, a, r.uniform(-1, 1, n) * np.exp(-t * 90 / weight))
+    low = np.sin(sweep(thump[0], thump[1], 0.12 * weight)) * np.exp(-seconds(0.12 * weight) * 55 / weight)
+    place(total, puff, 0.0005)
+    place(total, gas, 0.001)
+    place(total, body * 2.6, 0.0008)
+    place(total, low * 0.7 * weight, 0.0005)
+    for at, gain in mech:
+        # Het mechaniek: een doffere tik dan bij een gewoon schot (daar overstemt de knal hem).
+        place(total, impact(r, 0.09, [(1900, 90, 0.7), (3200, 120, 0.4), (5200, 170, 0.15)], snap=0.35, thud=0.45)
+              * gain * 0.6, at + r.uniform(-0.003, 0.003))
+    out = room(total, r, length=0.35, mix=0.08, bright=3000, low=1200, early=((0.006, 0.4), (0.014, 0.3), (0.026, 0.2)))
+    out = highpass(lowpass(out, 6500), 60)
+    return finish_hard(out / np.max(np.abs(out)), peak=0.7, fade_out=0.12)
+
+
+def suppressed_9mm():
+    """Een gedempt 9mm-schot (de Glock, de MP5): een droge plof en de slede of de grendel. Twee varianten."""
+    return suppressed_shot(7901, body_hz=430.0, weight=0.85)
+
+
+def suppressed_9mm_2():
+    return suppressed_shot(7902, body_hz=430.0, weight=0.85)
+
+
+def suppressed_rifle():
+    """Een gedempt geweerschot (de AK-47, de AWP): zwaarder en lager, met meer gas. Twee varianten."""
+    return suppressed_shot(7911, body_hz=300.0, weight=1.35, thump=(120, 55), hiss=1.4, mech=((0.006, 0.35),))
+
+
+def suppressed_rifle_2():
+    return suppressed_shot(7912, body_hz=300.0, weight=1.35, thump=(120, 55), hiss=1.4, mech=((0.006, 0.35),))
+
+
+def suppressed_shotgun():
+    """Een gedempt hagelschot (de Remington 870): een diepe, brede plof; het mechaniek zwijgt (je pompt zelf)."""
+    return suppressed_shot(7921, body_hz=215.0, weight=1.7, thump=(100, 45), hiss=1.2, mech=())
+
+
+def suppressed_shotgun_2():
+    return suppressed_shot(7922, body_hz=215.0, weight=1.7, thump=(100, 45), hiss=1.2, mech=())
+
+
 def shotgun_pump():
     """
     De pomp van de Remington 870: het voorhout naar achteren (de stangen glijden, de grendel klapt open) en meteen weer
@@ -1677,6 +1735,12 @@ SOUNDS = {
     "shotgun_fire_2": shotgun_fire_2,
     "shotgun_fire_far": shotgun_fire_far,
     "shotgun_pump": shotgun_pump,
+    "suppressed_9mm": suppressed_9mm,
+    "suppressed_9mm_2": suppressed_9mm_2,
+    "suppressed_rifle": suppressed_rifle,
+    "suppressed_rifle_2": suppressed_rifle_2,
+    "suppressed_shotgun": suppressed_shotgun,
+    "suppressed_shotgun_2": suppressed_shotgun_2,
     "shotgun_shell": shotgun_shell,
     "rifle_mag_out": rifle_mag_out,
     "rifle_mag_in": rifle_mag_in,
@@ -1708,7 +1772,8 @@ def main():
         path = OUT / f"{name}.ogg"
         # Hoofdstuk 74: de vuurwapens met een hogere kwaliteit (compression_level 0,15 = Vorbis-kwaliteit 0,85), anders
         # vervaagt de scherpe aanzet van een schot of een klik; de rest zoals altijd (dezelfde bestanden als vroeger).
-        hifi = name.startswith(("glock_", "casing_", "holster_", "mp5_", "rifle_", "gun_", "ak47_", "awp_", "shotgun_"))
+        hifi = name.startswith(("glock_", "casing_", "holster_", "mp5_", "rifle_", "gun_", "ak47_", "awp_", "shotgun_",
+                                "suppressed_"))
         sf.write(path, make(), RATE, format="OGG", subtype="VORBIS", compression_level=0.15 if hifi else None)
         print(f"{path.relative_to(OUT.parent.parent.parent.parent.parent.parent)}  ({path.stat().st_size // 1024} KB)")
 

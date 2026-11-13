@@ -254,6 +254,8 @@ public final class FirearmRenderer {
         if (optic != null && parts.get(GunPart.FRAME) != null) {
             Optics.render(pose, buffers, rig, optic, light, lng ? 0 : slideBack, inserting ? 0 : aim);
         }
+        // Stap 6: de demper, de greep of de tweepoot, en de verlengbuis.
+        AddOns.render(pose, buffers, rig, stack, light, FirearmControl.bipod(pt), null);
         // Een huls die klem zit, in de uitwerpopening.
         int jam = FirearmItem.jam(stack);
         boolean casingStuck = jam == FirearmItem.JAM_STOVEPIPE && (action != Firearms.ActionKind.TAP_RACK || progress < 0.62f);
@@ -330,7 +332,8 @@ public final class FirearmRenderer {
                 pose.popPose();
             }
         }
-        if (since < 1.8f && since >= 0) {
+        // De vlam uit de loop; met een demper erop is er geen (stap 6).
+        if (since < 1.8f && since >= 0 && !FirearmItem.suppressed(stack)) {
             flash(pose, buffers.getBuffer(SuitEffects.GLOW), rig.muzzle, 1 - since / 1.8f);
         }
         pose.popPose();
@@ -339,7 +342,7 @@ public final class FirearmRenderer {
         boolean suit = player.getItemBySlot(EquipmentSlot.CHEST).getItem() instanceof TechSuitItem;
         Vector3f right = gun.transformPosition(rightRack ? rightHandRack(rig, action, progress, boltLift, handleBack)
                 : new Vector3f(rig.grip));
-        Vector3f left = gun.transformPosition(lng ? leftHandLong(rig, action, progress, handleBack, magOut)
+        Vector3f left = gun.transformPosition(lng ? leftHandLong(rig, AddOns.support(rig, stack), action, progress, handleBack, magOut)
                 : leftHand(rig, action, progress, slideBack, magOut, hasMag));
         HumanoidArm main = player.getMainArm();
         arm(mc, player, main, suit, right, main == HumanoidArm.RIGHT ? RIGHT_SHOULDER : LEFT_SHOULDER, pose, buffers, light);
@@ -567,8 +570,10 @@ public final class FirearmRenderer {
      * Hoofdstuk 103: waar je linkerhand is bij een lang wapen (model-pixels): onder de handbeschermer, of bij het
      * magazijn, de hendel (die hij naar achteren trekt, zie rack) of boven de uitwerpopening.
      */
-    private static Vector3f leftHandLong(FirearmRig rig, @Nullable Firearms.ActionKind action, float t, float handleBack, float magOut) {
-        Vector3f rest = new Vector3f(rig.support);
+    private static Vector3f leftHandLong(FirearmRig rig, Vector3f support, @Nullable Firearms.ActionKind action, float t,
+                                         float handleBack, float magOut) {
+        // Stap 6: met een greep onder de handbeschermer houdt je linkerhand die vast (AddOns.support).
+        Vector3f rest = new Vector3f(support);
         if (action == null) {
             return rest;
         }

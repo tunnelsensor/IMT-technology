@@ -2184,8 +2184,8 @@ punten verdelen, zodat je kiest waar je goed in wordt. Wat je leert blijft na je
 ### De grote update 2.0: meer vuurwapens, te beginnen met de MP5
 Jouw wens (hoofdstuk 103, 12 november): "meer guns, deze werken net zoals de Glock, de models zijn ook zoals de Glock":
 de **MP5**, de **AK-47**, de **AWP** en de **Remington 870**, en attachments. Dit is de grote update, dus **versie 2.0**. De wapens
-zijn er nu alle vier (de MP5, de AK-47, de AWP en de Remington 870), en de eerste attachments ook: de Red Dot Sight en
-de Sniper Scope (de suppressors, de grips, de tweepoot en de lange magazijnen komen nog). Alles wat bij "Vuurwapens: de Glock 19" staat (zes onderdelen die
+zijn er nu alle vier (de MP5, de AK-47, de AWP en de Remington 870), en de attachments ook: de Red Dot Sight, de
+Sniper Scope, drie suppressors, twee grips, de tweepoot en de verlengbuis (de lange magazijnen komen nog). Alles wat bij "Vuurwapens: de Glock 19" staat (zes onderdelen die
 slijten, storingen en de tap-rack, een patroon in de kamer, een magazijn dat je kogel per kogel vult, hulzen die eruit
 springen, de magazijnpouch, de skills) geldt ook voor de nieuwe wapens. Dit is wat anders is.
 
@@ -2312,7 +2312,9 @@ rounds in your inventory").
 
 **Attachments: de Red Dot Sight en de Sniper Scope** (versie 2.4). Jouw wens: "een attachment systeem, de attachments
 maak je net zoals de gun parts in de Gunsmith Table". Een attachment is een item dat je op een vuurwapen zet; het slijt
-niet. De eerste plek op een wapen is de **kijker** ("Sight"): daar past er één.
+niet. Een wapen heeft tot vier plekken, en op elke plek past er één: de **kijker** ("Sight"), de **loop** ("Muzzle": een
+suppressor), **onder de loop** ("Underbarrel": een greep of de tweepoot) en bij de Remington 870 de **buis** ("Tube": de
+verlengbuis). Eerst de kijkers; de rest staat eronder bij "Suppressors, grips, de tweepoot en de verlengbuis".
 - **Maken**: op de Gunsmith Table, tabblad "Make parts", onderaan in de lijst links onder **Attachments**. De **Red Dot
   Sight** kost 2 staal, 1 glasplaat (een glass pane, eender welke kleur) en 2 redstone; de **Sniper Scope** 4 staal, 2
   amethistscherven en 2 glasplaten. In de crafting table kan het niet.
@@ -2346,6 +2348,37 @@ niet. De eerste plek op een wapen is de **kijker** ("Sight"): daar past er één
 - **Je ziet de kijker overal**: op het wapen in je hand en in die van anderen, op je rug aan de sling, op het Pegboard,
   als item op de grond, en op het plaatje in je inventaris (zo zie je in je werkbalk welke AK-47 de kijker heeft).
 
+**Suppressors, grips, de tweepoot en de verlengbuis** (versie 2.5). Zeven attachments erbij, voor de drie andere
+plekken op een wapen. Je maakt ze ook onder **Attachments** op "Make parts" en zet ze er op de Gunsmith Table op en af.
+- **Wat past waar.** De Glock: red dot en 9mm Suppressor. De MP5: alles voor 9mm (beide kijkers, de 9mm Suppressor, een
+  van de twee grips). De AK-47: beide kijkers, de Rifle Suppressor, een van de twee grips. De AWP: beide kijkers, de
+  Rifle Suppressor en de Bipod. De Remington 870: de red dot, de Shotgun Suppressor en de Tube Extension.
+- **De suppressors** (dempers), één per soort kaliber: de **9mm Suppressor** (3 staal en 2 wol), de **Rifle Suppressor**
+  (5 staal en 3 wol) en de **Shotgun Suppressor** (6 staal en 4 wol; een platte doos onder de vizierlijn, zodat je de
+  kraal nog ziet). Met een demper is het schot een doffe plof: bewakers horen het nog maar van een kwart van de afstand
+  (`[guns] suppressorNoise`), andere spelers tot 16 blokken (`suppressorHearing`) in plaats van 128, en er komt geen
+  vlam uit de loop. De kogel doet een tikje minder schade (maal 0,9: `suppressorDamage`).
+- **De Vertical Grip** (1 staal en 2 polymeer): een rechte greep onder de handbeschermer; je linkerhand houdt hem vast.
+  **Minder terugslag** (maal 0,7: `verticalGripRecoil`).
+- **De Angled Grip** (1 staal en 3 polymeer): een schuine greep. Je bent **sneller gericht** (1,3 keer:
+  `angledGripAimSpeed`, bovenop een red dot) en je **trekt het wapen sneller** van je sling (1,3 keer:
+  `angledGripDrawSpeed`). Onder een wapen zit de rechte greep of de schuine, niet allebei.
+- **De Bipod** (4 staal en 4 ijzerklompjes), de tweepoot van de AWP (jouw keuze: "sneak je, dan staat hij op zijn
+  pootjes"). De poten liggen naar voren onder de loop. **Sneak en sta stil** op de grond: ze klappen uit, rechtsonder
+  staat **BIPOD DOWN**, en het wapen schopt bijna niet meer (de terugslag maal 0,15: `bipodRecoil`). Beweeg je of sta je
+  op, dan klappen ze weer in. In je eigen beeld zie je de poten niet (ze zitten achter je wapen en je arm), daarom zegt
+  de HUD het; anderen zien ze wel.
+- **De Tube Extension** (4 staal en 2 ijzerklompjes), een verlengstuk op de buis van de Remington 870, met een klem aan
+  de loop: **8 patronen** in de buis in plaats van 6 (`extendedCapacity`, het laatste getal). Haal je hem er op de
+  tafel af terwijl er meer dan 6 in zitten, dan krijg je de patronen die niet meer passen terug.
+- **Op de Gunsmith Table.** De plekken voor attachments staan er zodra het wapen compleet is: "SIGHT" boven het wapen,
+  "MUZZLE" voor de loop, "UNDERBARREL" onder de handbeschermer, "TUBE" onder de loop van de 870. Rechts staat bij elke
+  plek wat erop zit. Een attachment houdt het onderdeel vast waar het op staat: de demper de Barrel, een greep, de
+  tweepoot en de verlengbuis de Receiver, de kijker de Receiver (bij de Glock de Slide). In de lijst links staat bij een
+  demper voor welk kaliber hij is ("9mm, muzzle") en bij alles of het past.
+- **De tafel is groter** (de Gunsmith Table en de Laser Workbench): 40 pixels breder en 28 hoger, zodat een wapen met een
+  demper erop in beeld past en alle regels rechts boven de knop.
+
 **De getallen** staan in `config/imttech.toml` onder `[guns]`: elk rijtje heeft nu vijf getallen, in de volgorde Glock
 19, MP5, AK-47, AWP, Remington 870 (schade, tempo, bereik, kogelsnelheid, magazijn, het lange magazijn, spreiding,
 terugslag, korrels per schot, hoe lang doorladen duurt, hoe ver bewakers het horen). Had je al een configbestand, dan
@@ -2359,7 +2392,7 @@ naar een proefmap die je met `tools/preview_obj.py --assets <map>` bekijkt. De o
 `tools/trace_outline.py` (met `--colour r,g,b` alleen wat een bepaalde kleur heeft, zoals de kolf van de AWP naast zijn
 zwarte kijker). De patroon, de huls en de kogelpunt van een nieuw kaliber staan in `tools/ammo_models.py`
 (`python tools/generate_gun_models.py 762 338 12g`), de attachments in `tools/attachment_models.py`
-(`python tools/generate_gun_models.py red_dot_sight sniper_scope`). De geluiden:
+(`python tools/generate_gun_models.py red_dot_sight sniper_scope suppressor_9mm vertical_grip bipod ...`). De geluiden:
 `py -3.12 tools/generate_sounds.py mp5_fire mp5_charge ak47_fire ak47_charge awp_fire awp_bolt shotgun_fire shotgun_pump ...`.
 
 ### Lasergeweren uit onderdelen: de Laser Workbench, de Nether Star, de slings

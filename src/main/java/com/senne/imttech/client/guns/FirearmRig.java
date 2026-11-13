@@ -76,6 +76,24 @@ public final class FirearmRig {
     public float sightRiser;
     public boolean sightOnSlide;
 
+    /**
+     * Hoofdstuk 103, stap 6: zo ver schuift een demper over de monding (pixels: over de drie nokken van de MP5, de moer
+     * van de AK-47, de mondingsrem van de AWP). {@link #underMount}: waar een greep of de tweepoot onder de
+     * handbeschermer hangt (het midden van de bovenkant van zijn klem), of null als daar niets kan. {@link #tubeMount}:
+     * het midden van de voorkant van de buis onder de loop (de Remington 870), of null.
+     */
+    public float muzzleSeat;
+    public @org.jetbrains.annotations.Nullable Vector3f underMount;
+    public @org.jetbrains.annotations.Nullable Vector3f tubeMount;
+
+    private FirearmRig addOns(float muzzleSeat, @org.jetbrains.annotations.Nullable Vector3f underMount,
+                              @org.jetbrains.annotations.Nullable Vector3f tubeMount) {
+        this.muzzleSeat = muzzleSeat;
+        this.underMount = underMount;
+        this.tubeMount = tubeMount;
+        return this;
+    }
+
     private FirearmRig(float scale, Vector3f grip, Vector3f support, Vector3f sight, Vector3f muzzle, Vector3f magazine,
                        Vector3f magazineAxis, Vector3f port, Vector3f hip, float sightDistance, float cycle, float cycleTicks,
                        float kickBack, float kickUp, Vector3f handle, float handleTravel, Vector3f magazineFoot,
@@ -119,7 +137,7 @@ public final class FirearmRig {
             new Vector3f(0.21f, -0.21f, -0.42f), 0.46f, 2.6f, 2, 0.055f, 6.5f,
             new Vector3f(8.2f, 13.6f, 12.4f), 2.6f,
             new Vector3f(8, 3.82f, 11.94f), new Vector3f(8.13f, 11.23f, 9.2f), GRIP_ANGLE,
-            0.5f, new Vector3f(8, 9, 8)).optic(13.33f, 10.5f, 0, true);
+            0.5f, new Vector3f(8, 9, 8)).optic(13.33f, 10.5f, 0, true).addOns(0.2f, null, null);
 
     /**
      * De MP5 (hoofdstuk 103, tools/mp5_model.py): je rechterhand op de greep, je linkerhand onder de handbeschermer, het
@@ -133,7 +151,8 @@ public final class FirearmRig {
             new Vector3f(0.19f, -0.335f, -0.36f), 0.36f, 3.0f, 2, 0.03f, 2.6f,
             new Vector3f(6.2f, 17.7f, -11.4f), 4.6f,
             new Vector3f(8, -1.2f, -3.1f), new Vector3f(8, 13.36f, 1.4f), 0,
-            0.36f, new Vector3f(8, 12.5f, 8.5f)).optic(18.38f, 3.0f, 0.9f, false);
+            0.36f, new Vector3f(8, 12.5f, 8.5f)).optic(18.38f, 3.0f, 0.9f, false)
+            .addOns(2.0f, new Vector3f(8, 13.9f, -9.0f), null);
 
     /**
      * De AK-47 (hoofdstuk 103, stap 2, tools/ak47_model.py): je rechterhand op de houten greep, je linkerhand onder de
@@ -148,7 +167,8 @@ public final class FirearmRig {
             new Vector3f(0.20f, -0.32f, -0.40f), 0.45f, 5.0f, 2, 0.05f, 4.5f,
             new Vector3f(10.3f, 13.5f, 1.1f), 5.0f,
             new Vector3f(8, -1.83f, -6.0f), new Vector3f(8, 10.98f, 1.04f), -0.515f,
-            0.36f, new Vector3f(8, 10.5f, 4.0f)).optic(15.34f, 4.5f, 0, false);
+            0.36f, new Vector3f(8, 10.5f, 4.0f)).optic(15.34f, 4.5f, 0, false)
+            .addOns(1.8f, new Vector3f(8, 9.9f, -13.5f), null);
 
     /**
      * De AWP (hoofdstuk 103, stap 3, tools/awp_model.py): je rechterhand op de greep achter het duimgat, je linkerhand
@@ -163,7 +183,8 @@ public final class FirearmRig {
             new Vector3f(0.20f, -0.34f, -0.42f), 0.215f, 7.0f, 2, 0.085f, 7.0f,
             new Vector3f(11.5f, 12.66f, 7.22f), 7.0f,
             new Vector3f(8, 6.23f, 0.24f), new Vector3f(8, 13.45f, 0.2f), 0,
-            0.34f, new Vector3f(8, 11.5f, -10.0f)).lift(58).optic(16.1f, -1.0f, 0, false);
+            0.34f, new Vector3f(8, 11.5f, -10.0f)).lift(58).optic(16.1f, -1.0f, 0, false)
+            .addOns(4.1f, new Vector3f(8, 10.82f, -22.2f), null);
 
     private FirearmRig lift(float degrees) {
         this.handleLift = degrees;
@@ -193,7 +214,8 @@ public final class FirearmRig {
             new Vector3f(0.20f, -0.31f, -0.40f), 0.13f, 7.0f, 2, 0.09f, 7.5f,
             new Vector3f(8, 8.8f, -19.0f), 7.0f,
             new Vector3f(8, 6.0f, -0.5f), new Vector3f(8, 9.9f, -0.5f), 0,
-            0.36f, new Vector3f(8, 10.5f, -3.0f)).optic(14.28f, 1.5f, 0, false);
+            0.36f, new Vector3f(8, 10.5f, -3.0f)).optic(14.28f, 1.5f, 0, false)
+            .addOns(0.5f, null, new Vector3f(8, 11.011f, -27.87f));
 
     public static FirearmRig of(FirearmType type) {
         return switch (type) {
@@ -315,6 +337,15 @@ public final class FirearmRig {
         return box == null ? new AABB(0, 0, 0, 16, 16, 16) : box;
     }
 
+    /**
+     * De doos om het hele wapen met een demper op zijn loop (hoofdstuk 103, stap 6): zo ver zoomt de Gunsmith Table uit,
+     * ook als er nog geen demper op zit. Dan verspringt het wapen niet als je er een op zet, en ligt de plek "MUZZLE"
+     * gewoon in het verlengde van de loop.
+     */
+    public static AABB wholeWithMuzzle(FirearmType type) {
+        return whole(type).minmax(AddOns.bounds(type, com.senne.imttech.guns.AttachmentSlot.MUZZLE, null));
+    }
+
     /** De kleinste doos om alle vlakjes van een model (model-pixels). */
     static AABB measure(ModelResourceLocation location) {
         BakedModel model = Minecraft.getInstance().getModelManager().getModel(location);
@@ -410,6 +441,20 @@ public final class FirearmRig {
             return new Vector3f(0, 2.6f, -3.0f);
         }
         return new Vector3f(0, 13.0f, 10.0f).mul(explodedScale(type));
+    }
+
+    /**
+     * Waar een attachment ligt als het er nog niet op zit (hoofdstuk 103, stap 6). De kijker: zie {@link #sightExploded}.
+     * De demper: een eindje voor de monding. Een greep, de tweepoot en de verlengbuis: een eindje onder hun plek.
+     */
+    public static Vector3f attachmentExploded(FirearmType type, com.senne.imttech.guns.AttachmentSlot slot) {
+        return switch (slot) {
+            case SIGHT -> sightExploded(type);
+            // De demper: een eindje voor de monding, in het verlengde van de loop.
+            case MUZZLE -> type == FirearmType.GLOCK_19 ? new Vector3f(0, -0.4f, -3.2f) : new Vector3f(0, 0, -1.5f);
+            case UNDERBARREL -> new Vector3f(0, -3.2f, 0).mul(explodedScale(type));
+            case TUBE -> new Vector3f(0, -4.0f, 0).mul(explodedScale(type));
+        };
     }
 
     /** Zo lang is de MP5 (pixels): daarvoor zijn de afstanden van {@link #LONG_EXPLODED} gekozen. */

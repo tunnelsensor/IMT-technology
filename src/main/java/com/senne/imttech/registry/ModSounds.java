@@ -160,6 +160,10 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> SHOTGUN_FIRE_FAR = register("shotgun.fire_far");
     public static final DeferredHolder<SoundEvent, SoundEvent> SHOTGUN_PUMP = register("shotgun.pump");
     public static final DeferredHolder<SoundEvent, SoundEvent> SHOTGUN_SHELL = register("shotgun.shell");
+    /** Hoofdstuk 103, stap 6: een schot met een demper, per soort kaliber. */
+    public static final DeferredHolder<SoundEvent, SoundEvent> SUPPRESSED_9MM = register("suppressed.9mm");
+    public static final DeferredHolder<SoundEvent, SoundEvent> SUPPRESSED_RIFLE = register("suppressed.rifle");
+    public static final DeferredHolder<SoundEvent, SoundEvent> SUPPRESSED_SHOTGUN = register("suppressed.shotgun");
     /** Hoofdstuk 103: het magazijn van een lang wapen dat eruit komt en erin klikt (zwaarder dan dat van een pistool). */
     public static final DeferredHolder<SoundEvent, SoundEvent> RIFLE_MAG_OUT = register("rifle.mag_out");
     public static final DeferredHolder<SoundEvent, SoundEvent> RIFLE_MAG_IN = register("rifle.mag_in");

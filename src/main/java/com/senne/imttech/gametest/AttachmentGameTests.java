@@ -213,4 +213,173 @@ public final class AttachmentGameTests {
         check(AttachmentItem.of(new ItemStack(ModItems.SNIPER_SCOPE.get())) == Attachment.SNIPER_SCOPE, "Het item kent zijn attachment niet");
         helper.succeed();
     }
+
+    // ================================================================ Stap 6: dempers, grips, de tweepoot, de verlengbuis
+
+    /**
+     * Een demper past op één soort kaliber (9mm, geweer of hagel). Met een demper horen bewakers het schot van veel
+     * minder ver, doet de kogel een tikje minder schade, en klinkt het schot anders.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "attachments")
+    public static void a_suppressor_quiets_the_shot_and_softens_the_bullet(GameTestHelper helper) {
+        Attachment[] cans = {Attachment.SUPPRESSOR_9MM, Attachment.SUPPRESSOR_RIFLE, Attachment.SUPPRESSOR_SHOTGUN};
+        for (FirearmType type : FirearmType.values()) {
+            int fitting = 0;
+            for (Attachment can : cans) {
+                fitting += can.fits(type) ? 1 : 0;
+            }
+            check(fitting == 1, "Op de " + type.id + " hoort precies één demper te passen, niet " + fitting);
+            check(GunSlot.MUZZLE.fitsOn(type), "De " + type.id + " hoort een plek voor een demper te hebben");
+            check(type.suppressedSound() != type.fireSound(), "Een gedempt schot hoort anders te klinken (" + type.id + ")");
+        }
+        check(Attachment.SUPPRESSOR_9MM.fits(FirearmType.GLOCK_19) && Attachment.SUPPRESSOR_9MM.fits(FirearmType.MP5)
+                && Attachment.SUPPRESSOR_RIFLE.fits(FirearmType.AK_47) && Attachment.SUPPRESSOR_RIFLE.fits(FirearmType.AWP)
+                && Attachment.SUPPRESSOR_SHOTGUN.fits(FirearmType.REMINGTON_870), "Een demper past niet op zijn eigen kaliber");
+        check(AttachmentSlot.MUZZLE.carrier(FirearmType.GLOCK_19) == GunPart.BARREL, "Een demper hoort op de loop te zitten");
+        float jam = ImtConfig.Guns.JAM_CHANCE;
+        float misfire = ImtConfig.Guns.MISFIRE_CHANCE;
+        ImtConfig.Guns.JAM_CHANCE = 0;
+        ImtConfig.Guns.MISFIRE_CHANCE = 0;
+        try {
+            ItemStack plain = FirearmItem.loaded(FirearmType.MP5, GunMaterial.STEEL);
+            ItemStack quiet = FirearmItem.loaded(FirearmType.MP5, GunMaterial.STEEL);
+            FirearmItem.setAttachment(quiet, Attachment.SUPPRESSOR_9MM);
+            check(!FirearmItem.suppressed(plain) && FirearmItem.suppressed(quiet), "De MP5 weet niet dat er een demper op zit");
+            check(FirearmItem.noiseFactor(plain) == 1 && Math.abs(FirearmItem.noiseFactor(quiet) - ImtConfig.Guns.SUPPRESSOR_NOISE) < 1e-4,
+                    "Met een demper horen bewakers het schot van " + ImtConfig.Guns.SUPPRESSOR_NOISE + " keer zo ver te horen");
+            check(FirearmType.MP5.noise() * FirearmItem.noiseFactor(quiet) < FirearmType.MP5.noise() * 0.5f,
+                    "Een gedempt schot hoort veel minder ver te dragen");
+            ServerPlayer player = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(4, 2, 4), "quiet-shooter");
+            player.getAbilities().instabuild = false;
+            player.getInventory().clearContent();
+            player.getInventory().selected = 0;
+            player.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, helper.absoluteVec(new Vec3(4.5, 3.6, 12.5)));
+            float[] damage = new float[2];
+            ItemStack[] guns = {plain, quiet};
+            for (int i = 0; i < 2; i++) {
+                player.setItemInHand(InteractionHand.MAIN_HAND, guns[i]);
+                Firearms.forgetCooldown(player);
+                check(Firearms.fire(player, player.getYRot(), player.getXRot(), true) == Firearms.Result.FIRED, "Schot " + (i + 1) + " ging niet af");
+                List<BulletEntity> bullets = helper.getLevel().getEntitiesOfClass(BulletEntity.class, helper.getBounds().inflate(4));
+                check(bullets.size() == 1, "Er hoort precies één kogel te zijn, niet " + bullets.size());
+                damage[i] = bullets.getFirst().damage();
+                bullets.getFirst().discard();
+            }
+            check(Math.abs(damage[1] - damage[0] * ImtConfig.Guns.SUPPRESSOR_DAMAGE) < 0.001f,
+                    "Een gedempte kogel hoort " + ImtConfig.Guns.SUPPRESSOR_DAMAGE + " keer de schade te doen: " + damage[0] + " werd " + damage[1]);
+        } finally {
+            ImtConfig.Guns.JAM_CHANCE = jam;
+            ImtConfig.Guns.MISFIRE_CHANCE = misfire;
+        }
+        helper.succeed();
+    }
+
+    /**
+     * De Vertical Grip dempt de terugslag, de Angled Grip maakt je sneller (richten en trekken), en de Bipod doet alleen
+     * iets als je het wapen steunt (sneaken en stilstaan). Er zit hoogstens één van de drie onder een wapen; de grips
+     * passen onder de MP5 en de AK-47, de tweepoot onder de AWP.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "attachments")
+    public static void grips_and_the_bipod_change_how_a_gun_handles(GameTestHelper helper) {
+        for (FirearmType type : FirearmType.values()) {
+            boolean grips = type == FirearmType.MP5 || type == FirearmType.AK_47;
+            check(Attachment.VERTICAL_GRIP.fits(type) == grips && Attachment.ANGLED_GRIP.fits(type) == grips,
+                    "De grips horen alleen onder de MP5 en de AK-47 te passen (" + type.id + ")");
+            check(Attachment.BIPOD.fits(type) == (type == FirearmType.AWP), "De tweepoot hoort alleen onder de AWP te passen (" + type.id + ")");
+            check(GunSlot.UNDERBARREL.fitsOn(type) == (grips || type == FirearmType.AWP),
+                    "De plek onder de loop klopt niet bij de " + type.id);
+        }
+        ItemStack ak = FirearmItem.loaded(FirearmType.AK_47, GunMaterial.STEEL);
+        check(FirearmItem.recoilFactor(ak, false) == 1 && FirearmItem.aimSpeedFactor(ak) == 1 && FirearmItem.drawSpeedFactor(ak) == 1,
+                "Een wapen zonder attachments hoort gewoon te doen");
+        FirearmItem.setAttachment(ak, Attachment.VERTICAL_GRIP);
+        check(Math.abs(FirearmItem.recoilFactor(ak, false) - ImtConfig.Guns.VERTICAL_GRIP_RECOIL) < 1e-4
+                        && Math.abs(FirearmItem.recoilFactor(ak, true) - ImtConfig.Guns.VERTICAL_GRIP_RECOIL) < 1e-4,
+                "De Vertical Grip hoort de terugslag te dempen, of je steunt of niet");
+        check(FirearmItem.aimSpeedFactor(ak) == 1, "De Vertical Grip hoort je niet sneller te maken");
+        // De schuine greep komt op dezelfde plek: de rechte is dan weg.
+        FirearmItem.setAttachment(ak, Attachment.ANGLED_GRIP);
+        check(FirearmItem.attachments(ak).list().size() == 1 && FirearmItem.attachment(ak, AttachmentSlot.UNDERBARREL) == Attachment.ANGLED_GRIP,
+                "Onder een wapen hoort maar één ding te zitten");
+        check(FirearmItem.recoilFactor(ak, false) == 1, "De Angled Grip hoort de terugslag niet te dempen");
+        check(Math.abs(FirearmItem.aimSpeedFactor(ak) - ImtConfig.Guns.ANGLED_GRIP_AIM_SPEED) < 1e-4, "De Angled Grip hoort je sneller te laten richten");
+        // Met een red dot erbij: samen nog sneller.
+        FirearmItem.setAttachment(ak, Attachment.RED_DOT);
+        check(Math.abs(FirearmItem.aimSpeedFactor(ak) - ImtConfig.Guns.ANGLED_GRIP_AIM_SPEED * ImtConfig.Guns.RED_DOT_AIM_SPEED) < 1e-4,
+                "Een red dot en een Angled Grip horen samen te tellen");
+        ServerPlayer player = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(4, 2, 4), "grip-holder");
+        ItemStack plain = FirearmItem.loaded(FirearmType.AK_47, GunMaterial.STEEL);
+        int slow = Firearms.ticksFor(player, Firearms.ActionKind.DRAW, Firearms.DRAW_FROM_SLING, plain);
+        int fast = Firearms.ticksFor(player, Firearms.ActionKind.DRAW, Firearms.DRAW_FROM_SLING, ak);
+        check(fast < slow, "Met een Angled Grip hoor je het wapen sneller te trekken: " + slow + " werd " + fast + " ticks");
+        // De tweepoot: alleen als je steunt.
+        ItemStack awp = FirearmItem.loaded(FirearmType.AWP, GunMaterial.STEEL);
+        FirearmItem.setAttachment(awp, Attachment.BIPOD);
+        check(FirearmItem.recoilFactor(awp, false) == 1, "Een tweepoot hoort niets te doen als je rechtop staat of loopt");
+        check(Math.abs(FirearmItem.recoilFactor(awp, true) - ImtConfig.Guns.BIPOD_RECOIL) < 1e-4,
+                "Een tweepoot hoort de terugslag bijna weg te nemen als je sneakt en stilstaat");
+        check(AttachmentSlot.UNDERBARREL.carrier(FirearmType.AWP) == GunPart.FRAME, "Een greep of tweepoot hoort aan de behuizing te zitten");
+        helper.succeed();
+    }
+
+    /**
+     * De Tube Extension: twee patronen meer in de buis van de Remington 870. Haal je hem er op de Gunsmith Table af, dan
+     * krijg je de patronen die er niet meer in passen terug. En een demper houdt de loop vast, zoals een kijker de slede.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "attachments")
+    public static void a_tube_extension_holds_two_more_shells(GameTestHelper helper) {
+        FirearmType type = FirearmType.REMINGTON_870;
+        for (FirearmType each : FirearmType.values()) {
+            check(Attachment.TUBE_EXTENSION.fits(each) == each.tube() && GunSlot.TUBE.fitsOn(each) == each.tube(),
+                    "De verlengbuis hoort alleen op een wapen met een buis te passen (" + each.id + ")");
+        }
+        BlockPos at = new BlockPos(4, 2, 4);
+        helper.setBlock(at, ModBlocks.GUNSMITH_TABLE.get());
+        GunsmithTableBlockEntity table = (GunsmithTableBlockEntity) helper.getBlockEntity(at);
+        ServerPlayer player = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(4, 2, 6), "tube-smith");
+        player.getAbilities().instabuild = false;
+        player.getInventory().clearContent();
+        player.getInventory().setItem(0, FirearmItem.withParts(type, com.senne.imttech.guns.GunParts.classic(type)));
+        player.getInventory().setItem(1, new ItemStack(ModItems.attachment(Attachment.TUBE_EXTENSION)));
+        player.getInventory().setItem(2, new ItemStack(ModItems.attachment(Attachment.SUPPRESSOR_SHOTGUN)));
+        player.getInventory().setItem(3, new ItemStack(ModItems.ROUND_12G.get(), 10));
+        check(FirearmItem.capacity(player.getInventory().getItem(0)) == 6, "De buis van een gewone 870 hoort 6 patronen te houden");
+        check(table.putGun(player, 0) && table.install(player, 1) && table.install(player, 2), "De verlengbuis of de demper ging niet op de 870");
+        check(FirearmItem.capacity(table.gun()) == type.capacity(true) && type.capacity(true) == 8,
+                "Met de verlengbuis horen er 8 patronen in de buis te passen, niet " + FirearmItem.capacity(table.gun()));
+        // De demper zit op de loop: die krijg je er dan niet uit.
+        check(GunsmithTableBlockEntity.sittingOn(table.gun(), GunPart.BARREL) == Attachment.SUPPRESSOR_SHOTGUN, "De demper hoort op de loop te zitten");
+        check(!table.remove(player, GunPart.BARREL), "De loop ging eruit met de demper er nog op");
+        check(table.takeGun(player), "De 870 kon niet mee");
+        int slot = -1;
+        for (int i = 0; i < player.getInventory().items.size(); i++) {
+            if (FirearmItem.typeOf(player.getInventory().getItem(i)) == type) {
+                slot = i;
+            }
+        }
+        check(slot >= 0, "De 870 zit niet in je inventaris");
+        // In je hand: acht patronen erin, de negende niet.
+        ItemStack gun = player.getInventory().getItem(slot);
+        player.getInventory().setItem(slot, ItemStack.EMPTY);
+        player.getInventory().selected = 0;
+        player.setItemInHand(InteractionHand.MAIN_HAND, gun);
+        gun = player.getMainHandItem();
+        for (int i = 0; i < 8; i++) {
+            check(Firearms.request(player, Firearms.ActionKind.LOAD_TUBE, 0), "Patroon " + (i + 1) + " ging de buis niet in");
+            Firearms.finishNow(player);
+        }
+        check(FirearmItem.roundsInMagazine(gun) == 8, "Er horen 8 patronen in de buis te zitten, niet " + FirearmItem.roundsInMagazine(gun));
+        check(!Firearms.request(player, Firearms.ActionKind.LOAD_TUBE, 0), "Een negende patroon ging in de buis");
+        check(player.getInventory().countItem(ModItems.ROUND_12G.get()) == 2, "Er horen 2 patronen over te zijn");
+        // Terug op de tafel, de verlengbuis eraf: twee patronen komen terug.
+        check(table.putGun(player, 0), "De 870 ging niet terug op de tafel");
+        check(table.remove(player, GunSlot.TUBE.ordinal()), "De verlengbuis ging er niet af");
+        check(FirearmItem.roundsInMagazine(table.gun()) == 6 && FirearmItem.capacity(table.gun()) == 6,
+                "Zonder verlengbuis horen er nog 6 patronen in de buis te zitten, niet " + FirearmItem.roundsInMagazine(table.gun()));
+        check(player.getInventory().countItem(ModItems.ROUND_12G.get()) == 4, "De twee patronen die niet meer pasten kwamen niet terug");
+        check(player.getInventory().countItem(ModItems.attachment(Attachment.TUBE_EXTENSION)) == 1, "De verlengbuis kwam niet terug");
+        // De demper eraf: nu kan de loop eruit.
+        check(table.remove(player, GunSlot.MUZZLE.ordinal()) && table.remove(player, GunPart.BARREL), "De loop ging er niet uit zonder demper");
+        helper.succeed();
+    }
 }

@@ -236,6 +236,15 @@ public enum FirearmType {
         };
     }
 
+    /** Het schot met een demper erop (hoofdstuk 103, stap 6): een doffe plof, per soort kaliber. */
+    public SoundEvent suppressedSound() {
+        return switch (caliber) {
+            case MM9 -> ModSounds.SUPPRESSED_9MM.get();
+            case R762, L338 -> ModSounds.SUPPRESSED_RIFLE.get();
+            case G12 -> ModSounds.SUPPRESSED_SHOTGUN.get();
+        };
+    }
+
     /** Doorladen: de slede (een pistool), de spanhendel, de grendel of de pomp. */
     public SoundEvent rackSound() {
         return switch (this) {

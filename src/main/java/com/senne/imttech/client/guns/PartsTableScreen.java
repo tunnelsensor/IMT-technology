@@ -57,9 +57,15 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
     private static final int PANEL = HudStyle.argb(245, 0x0E1116);
     private static final int TRAY_BG = HudStyle.argb(255, 0x161A20);
     private static final int ROW_H = 20;
-    protected static final int TRAY_X = 6, TRAY_Y = 26, TRAY_W = 74, TRAY_H = 152;
-    protected static final int VIEW_X = 84, VIEW_Y = 18, VIEW_W = 150, VIEW_H = 160;
-    protected static final int SIDE_X = 238, SIDE_W = 84;
+    /**
+     * Hoofdstuk 103, stap 6: de tafel is 28 pixels hoger dan vroeger (214 in plaats van 186) en 40 breder (368 in plaats
+     * van 328). Hoger: een lang wapen heeft nu tot tien regels rechts (zes onderdelen, de sling en drie plekken voor
+     * attachments), en die pasten niet meer boven de knop. Breder: met een demper op de loop is een wapen een stuk langer,
+     * en zo blijft het even groot in beeld.
+     */
+    protected static final int TRAY_X = 6, TRAY_Y = 26, TRAY_W = 74, TRAY_H = 180;
+    protected static final int VIEW_X = 84, VIEW_Y = 18, VIEW_W = 190, VIEW_H = 188;
+    protected static final int SIDE_X = 278, SIDE_W = 84;
     /** Hoofdstuk 78: de tabbladen "Build" en "Make parts" in de titelbalk. */
     private static final int TAB_Y = 3, TAB_H = 13;
     /** Tot zo ver (pixels) van zijn plek klikt een onderdeel vast. */
@@ -94,8 +100,8 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
     protected PartsTableScreen(GunsmithMenu menu, Inventory inventory, Component title, P[] all) {
         super(menu, inventory, title);
         this.all = all;
-        imageWidth = 328;
-        imageHeight = 186;
+        imageWidth = 368;
+        imageHeight = 214;
     }
 
     // ================================================================ Wat elke tafel zelf weet
@@ -636,8 +642,12 @@ public abstract class PartsTableScreen<P extends Enum<P>> extends AbstractContai
                     HudStyle.bar(g, x, rowY + 9, SIDE_W - 16, 3, state.condition() / (float) PartState.NEW, colour);
                 }
             } else {
-                smallFit(g, installedText(gun, part), noteX, noteY, HudStyle.argb(255, HudStyle.GREEN),
-                        wide ? SIDE_W - 16 : SIDE_W - 56);
+                // Wat erop zit ("in", "Red Dot", "9mm Suppressor"). Past het niet naast de naam, dan een regel lager
+                // (een attachment heeft geen balkje onder zijn naam, dus daar is plaats).
+                String text = installedText(gun, part);
+                boolean below = wide || font.width(text) * 0.75f > SIDE_W - 56;
+                smallFit(g, text, below ? x : noteX, below ? rowY + 7 : noteY, HudStyle.argb(255, HudStyle.GREEN),
+                        below ? SIDE_W - 16 : SIDE_W - 56);
             }
             rowY += step;
         }

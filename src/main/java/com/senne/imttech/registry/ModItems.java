@@ -526,20 +526,30 @@ public final class ModItems {
             properties -> new com.senne.imttech.guns.FirearmItem(properties, com.senne.imttech.guns.FirearmType.REMINGTON_870),
             new Item.Properties().rarity(Rarity.UNCOMMON));
 
-    /** Hoofdstuk 103, stap 5: de attachments (je maakt ze op de Gunsmith Table en zet ze daar op een wapen). */
-    public static final DeferredItem<com.senne.imttech.guns.AttachmentItem> RED_DOT_SIGHT = ITEMS.registerItem("red_dot_sight",
-            properties -> new com.senne.imttech.guns.AttachmentItem(properties, com.senne.imttech.guns.Attachment.RED_DOT),
-            new Item.Properties());
-    public static final DeferredItem<com.senne.imttech.guns.AttachmentItem> SNIPER_SCOPE = ITEMS.registerItem("sniper_scope",
-            properties -> new com.senne.imttech.guns.AttachmentItem(properties, com.senne.imttech.guns.Attachment.SNIPER_SCOPE),
-            new Item.Properties().rarity(Rarity.UNCOMMON));
+    /**
+     * Hoofdstuk 103, stap 5 en 6: de attachments (je maakt ze op de Gunsmith Table en zet ze daar op een wapen). Eén item
+     * per attachment, met de naam uit {@link com.senne.imttech.guns.Attachment#id}.
+     */
+    private static final java.util.Map<com.senne.imttech.guns.Attachment, DeferredItem<com.senne.imttech.guns.AttachmentItem>>
+            ATTACHMENTS = new java.util.EnumMap<>(com.senne.imttech.guns.Attachment.class);
+
+    static {
+        for (com.senne.imttech.guns.Attachment attachment : com.senne.imttech.guns.Attachment.values()) {
+            boolean special = attachment == com.senne.imttech.guns.Attachment.SNIPER_SCOPE;
+            ATTACHMENTS.put(attachment, ITEMS.registerItem(attachment.id,
+                    properties -> new com.senne.imttech.guns.AttachmentItem(properties, attachment),
+                    special ? new Item.Properties().rarity(Rarity.UNCOMMON) : new Item.Properties()));
+        }
+    }
+
+    public static final DeferredItem<com.senne.imttech.guns.AttachmentItem> RED_DOT_SIGHT =
+            ATTACHMENTS.get(com.senne.imttech.guns.Attachment.RED_DOT);
+    public static final DeferredItem<com.senne.imttech.guns.AttachmentItem> SNIPER_SCOPE =
+            ATTACHMENTS.get(com.senne.imttech.guns.Attachment.SNIPER_SCOPE);
 
     /** Het item van dit attachment. */
     public static com.senne.imttech.guns.AttachmentItem attachment(com.senne.imttech.guns.Attachment attachment) {
-        return switch (attachment) {
-            case RED_DOT -> RED_DOT_SIGHT.get();
-            case SNIPER_SCOPE -> SNIPER_SCOPE.get();
-        };
+        return ATTACHMENTS.get(attachment).get();
     }
 
     /**

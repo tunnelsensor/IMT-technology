@@ -1,0 +1,17 @@
+{
+  "type": "imttech:gunsmithing",
+  "ingredients": [
+    {
+      "item": "imttech:steel_ingot",
+      "count": 3
+    },
+    {
+      "tag": "minecraft:wool",
+      "count": 2
+    }
+  ],
+  "result": {
+    "id": "imttech:suppressor_9mm",
+    "count": 1
+  }
+}

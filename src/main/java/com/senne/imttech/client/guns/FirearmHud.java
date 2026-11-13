@@ -134,6 +134,13 @@ public final class FirearmHud implements LayeredDraw.Layer {
                     FirearmControl.scopeZoom()));
             g.drawString(font, zoom, right - font.width(zoom), bottom - 60, argb(0.9f * FirearmControl.aim(pt), CYAN), true);
         }
+        // Stap 6: de tweepoot staat op zijn pootjes. In je eigen beeld zie je de poten niet (ze zitten achter je wapen en
+        // je arm), dus zegt de HUD het.
+        float legs = FirearmControl.bipod(pt);
+        if (legs > 0.05f) {
+            Component text = Component.translatable("hud.imttech.firearm.bipod");
+            g.drawString(font, text, right - font.width(text), bottom - (FirearmControl.scoping() ? 70 : 60), argb(0.9f * legs, CYAN), true);
+        }
         // Wat er aan de hand is, of het balkje van een handeling.
         Firearms.ActionKind action = FirearmControl.action();
         float progress = FirearmControl.action(pt);
