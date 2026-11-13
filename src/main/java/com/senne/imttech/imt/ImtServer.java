@@ -117,7 +117,6 @@ public final class ImtServer {
         STATES.remove(event.getEntity().getUUID());
         if (event.getEntity() instanceof ServerPlayer player) {
             ImtThreats.forget(player);
-            ImtTransport.forgetSoftLandings();
         }
     }
 
@@ -125,7 +124,6 @@ public final class ImtServer {
     public static void onServerStopped(ServerStoppedEvent event) {
         STATES.clear();
         ImtThreats.clear();
-        ImtTransport.forgetSoftLandings();
     }
 
     // ---------------------------------------------------------------- Elke tick
@@ -178,8 +176,6 @@ public final class ImtServer {
         if (player.tickCount % 20 == 0) {
             secondTick(player, glasses, state);
         }
-        // Zakken naar de grond nadat een drone je heeft losgelaten.
-        ImtTransport.tickSoftLanding(player);
         // Af en toe: relais die er niet meer staan uit je redstone-lijst gooien.
         if (player.tickCount % 100 == 0) {
             ImtRedstone.pruneGhosts(player);

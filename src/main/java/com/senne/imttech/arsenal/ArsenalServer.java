@@ -9,7 +9,9 @@ import com.senne.imttech.network.ImtMessagePayload;
 import com.senne.imttech.registry.ModAttachments;
 import com.senne.imttech.registry.ModSounds;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
@@ -20,6 +22,8 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -188,12 +192,72 @@ public final class ArsenalServer {
         }
     }
 
+    // ---------------------------------------------------------------- Wie is er echt nog onderweg?
+
+    /**
+     * De drones die nu in de wereld een opdracht doen, per drone uit een arsenaal. Een drone meldt zich hier elke tick
+     * (DroneEntity.tick) zolang hij in je arsenaal op "On a job" staat. Zo zien we een drone die stilvalt of verdwijnt
+     * zonder zich terug te melden.
+     */
+    private static final Map<UUID, DroneEntity> IN_THE_WORLD = new HashMap<>();
+
+    /** Zo lang (in ticks) mag een drone op een opdracht niets doen voor we zeggen dat hij stilstaat: 2 seconden. */
+    private static final int STANDING_STILL_TICKS = 40;
+
+    /** Deze drone is bezig met een opdracht (zie DroneEntity.tick). */
+    public static void seen(DroneEntity drone) {
+        if (drone.getArsenalId() != null) {
+            IN_THE_WORLD.put(drone.getArsenalId(), drone);
+        }
+    }
+
+    /** Deze drone heeft zijn rit afgeboekt (of is een oude kopie): niet meer in de gaten houden. */
+    public static void forget(DroneEntity drone) {
+        if (drone.getArsenalId() != null) {
+            IN_THE_WORLD.remove(drone.getArsenalId(), drone);
+        }
+    }
+
+    /**
+     * Elke seconde: klopt "On a job" nog met wat de drones echt doen?
+     *
+     * Normaal meldt elke drone zich zelf terug als hij klaar is. Dit is het vangnet voor wat daar tussendoor glipt:
+     * een drone die al 2 seconden niets meer doet, staat stil in een stuk wereld waar Minecraft niets laat bewegen (of
+     * kwam nooit echt in de wereld). Die maakt zijn rit af en gaat terug in zijn baan (DroneEntity.abandon). En een
+     * drone die al uit de wereld is zonder zich terug te melden, wordt alsnog teruggeboekt.
+     *
+     * Vroeger bleven zulke drones in je arsenaal op "On a job" staan, ook als ze allang niets meer deden.
+     */
+    public static void onServerTick(ServerTickEvent.Post event) {
+        if (IN_THE_WORLD.isEmpty() || event.getServer().getTickCount() % 20 != 0) {
+            return;
+        }
+        for (DroneEntity drone : List.copyOf(IN_THE_WORLD.values())) {
+            if (!(drone.level() instanceof ServerLevel level) || !drone.isOnAJob()) {
+                forget(drone);
+            } else if (drone.isRemoved()) {
+                drone.handBack(level);
+                forget(drone);
+            } else if (level.getGameTime() - drone.lastActiveTick() > STANDING_STILL_TICKS) {
+                drone.abandon(level);
+                forget(drone);
+            }
+        }
+    }
+
+    public static void onServerStopped(ServerStoppedEvent event) {
+        IN_THE_WORLD.clear();
+    }
+
     // ---------------------------------------------------------------- Bij het inloggen
 
     /**
      * Je drones verdwijnen uit de wereld zodra jij weg bent. Wat nog als "bezig" geboekt
      * stond, hangt dus gewoon weer in een baan. (En een oude "in de hangar"-vlag gaat weg: drones
      * staan sinds hoofdstuk 25 niet meer op een dock.)
+     *
+     * Hing er toch nog een drone van jou ergens in de wereld (hij viel stil terwijl je weg was), dan is die vanaf nu een
+     * oude kopie: komt hij weer in beweging, dan vliegt hij weg zonder iets te boeken (zie DroneEntity.stale).
      */
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) {
@@ -203,6 +267,11 @@ public final class ArsenalServer {
         ImtArsenal cleaned = arsenal.groundDeployed().undocked();
         if (cleaned != arsenal) {
             set(player, cleaned);
+        }
+        for (DroneEntity drone : List.copyOf(IN_THE_WORLD.values())) {
+            if (player.getUUID().equals(drone.getOwnerId())) {
+                drone.markStale();
+            }
         }
     }
 

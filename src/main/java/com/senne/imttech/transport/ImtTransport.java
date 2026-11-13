@@ -13,30 +13,26 @@ import com.senne.imttech.registry.ModAttachments;
 import com.senne.imttech.registry.ModSounds;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
-import java.util.Map;
-import java.util.HashMap;
 import java.util.Optional;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.neoforged.neoforge.event.entity.EntityMountEvent;
-import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import org.jetbrains.annotations.Nullable;
 
@@ -55,16 +51,19 @@ import org.jetbrains.annotations.Nullable;
  *
  * Alles wat "onthouden" moet worden zit in de drone zelf (bestemming, vracht, wie hij
  * vasthoudt). Deze klasse start en stopt de ritten en levert af.
+ *
+ * LANDEN gaat altijd op dezelfde manier, hoe de rit ook eindigt (sluipen, "Land", lege batterij,
+ * bril af, tijd om, EMP, aangekomen): de drone zakt met je mee en laat je pas los als je voeten
+ * vlak boven de grond zijn (DroneEntity.descend, dan setDown hieronder). Er is geen zweefval
+ * meer: een server zag dat langzame zakken als vliegen en gooide je eraf.
  */
 public final class ImtTransport {
     private ImtTransport() {}
 
     /** Zo ver kijken we naar beneden naar vaste grond; daarboven is het "geen grond". */
     public static final int NO_GROUND = 64;
-    /** Hoe snel je zakt als de drone je neerzet (blokken per tick). */
-    private static final double SOFT_LANDING_SPEED = 0.35;
-    /** Na zo lang stoppen we met zacht landen, ook als je nog niet staat (vangnet). */
-    private static final int SOFT_LANDING_MAX_TICKS = 300;
+    /** Zo hoog hangen je voeten boven de grond als de drone je loslaat (blokken). */
+    public static final double RELEASE_HEIGHT = 0.3;
 
     // ================================================================ Starten
 
@@ -74,14 +73,15 @@ public final class ImtTransport {
     }
 
     /**
-     * Zelf vliegen: een drone pakt je op. Hangt er al een aan je, dan stopt de rit.
+     * Zelf vliegen: een drone pakt je op. Hangt er al een aan je, dan is dit "Land": de drone
+     * zakt met je mee en zet je neer.
      *
      * @param autopilot true = de drone brengt je zelf naar je bestemming uit de navigatie
      */
     public static void startRide(ServerPlayer owner, ItemStack glasses, boolean autopilot) {
         DroneEntity current = carrierOf(owner);
         if (current != null) {
-            land(owner, current, true);
+            current.landPassenger("imt.imttech.msg.transport_landing", ImtMessagePayload.Level.INFO);
             return;
         }
         BlockPos destination = null;
@@ -186,179 +186,109 @@ public final class ImtTransport {
     // ================================================================ Landen en afleveren
 
     /**
-     * Zet de speler neer en stuurt de drones weg.
+     * De drone hangt met zijn passagier vlak boven de grond (zie DroneEntity.descend): nu pas
+     * loslaten. Je komt te staan waar je hing (DroneEntity.getDismountLocationForPassenger), dus
+     * je valt hooguit een paar centimeter. Daarna vertrekt de drone, en je escortedrones zien
+     * zelf dat je niet meer vliegt en gaan mee.
      *
-     * @param gentle true = met zweefval als je hoog hangt (zodat je je niet te grazen valt)
+     * (Vroeger riep dit alle transportdrones van de eigenaar terug, ook een vrachtdrone die nog
+     * onderweg was: die liet zijn spullen dan uit de lucht vallen.)
+     *
+     * @param arrived true = aangekomen bij de bestemming (autopiloot, of iemand afgeleverd)
      */
-    public static void land(ServerPlayer owner, DroneEntity carrier, boolean gentle) {
-        owner.stopRiding();
-        if (gentle) {
-            setDown(owner);
+    public static void setDown(ServerLevel level, DroneEntity drone, Entity passenger, boolean arrived) {
+        Vec3 hanging = passenger.position();
+        passenger.stopRiding();
+        if (passenger instanceof ServerPlayer player && player.position().distanceToSqr(hanging) > 1.0E-4) {
+            // Moest je een stukje hoger neergezet worden (je hing half in een blok)? Dan ook je
+            // eigen spel bijwerken: dat weet alleen waar je hing.
+            player.connection.teleport(player.getX(), player.getY(), player.getZ(), player.getYRot(), player.getXRot());
         }
-        carrier.recall(owner.serverLevel());
-        ImtDrones.recallAll(owner, DroneEntity.Mode.TRANSPORT);
-        ImtServer.send(owner, Component.translatable("imt.imttech.msg.transport_landed"), ImtMessagePayload.Level.INFO);
+        switch (drone.transportRole()) {
+            case CARRIER -> {
+                if (passenger instanceof ServerPlayer rider) {
+                    if (arrived) {
+                        level.playSound(null, rider.getX(), rider.getY(), rider.getZ(), ModSounds.DRONE_RECALL.get(),
+                                SoundSource.PLAYERS, 0.7f, 1.0f);
+                    }
+                    ImtServer.send(rider, Component.translatable("imt.imttech.msg.transport_landed"),
+                            ImtMessagePayload.Level.INFO);
+                }
+            }
+            case GRABBER -> {
+                if (arrived && drone.getOwnerId() != null
+                        && level.getPlayerByUUID(drone.getOwnerId()) instanceof ServerPlayer owner) {
+                    ImtServer.send(owner, Component.translatable("imt.imttech.msg.carry_done"),
+                            ImtMessagePayload.Level.INFO);
+                }
+            }
+            default -> { }
+        }
+        drone.recall(level);
     }
 
     /**
-     * Sluipen terwijl je onder een drone hangt betekent: landen.
+     * Hoe ver het van je voeten naar beneden is tot iets om op te staan (de bovenkant van een
+     * blok, of het water), of NO_GROUND als dat verder is dan NO_GROUND blokken.
      *
-     * Minecraft laat je dan los, en daar valt niet tegenin te gaan: jouw eigen spel stapt ook
-     * af, dus je begint sowieso te vallen. In plaats van dat tegen te houden vangen we het op:
-     * vanaf dat moment zák je (rustig en zonder schade) in plaats van te vallen, en de drone
-     * zakt met je mee tot je staat. Zie tickSoftLanding.
+     * Het blok waar je voeten in staan telt mee: een plaat of een trap is lager dan een kubus.
+     * Sta (of hang) je ín iets, dan is het 0: je bent er al.
      */
-    public static void onDismount(EntityMountEvent event) {
-        if (!event.isDismounting() || event.getLevel().isClientSide()) {
-            return;
-        }
-        if (!(event.getEntityBeingMounted() instanceof DroneEntity drone)
-                || !(event.getEntityMounting() instanceof ServerPlayer player)
-                || !drone.isTransport()
-                || drone.isLanding()) {
-            return; // de drone zet je zelf af: dat mag natuurlijk wel
-        }
-        double drop = distanceToGround(player);
-        if (drop <= 1.0 || drop >= NO_GROUND) {
-            return; // je staat al zo goed als op de grond (of er is geen grond)
-        }
-        beginSoftLanding(player);
-        drone.beginLanding();
-        ImtServer.send(player, Component.translatable("imt.imttech.msg.transport_landing"),
-                ImtMessagePayload.Level.INFO);
-    }
-
-    /** Spelers die op dit moment zacht aan het landen zijn, met wanneer dat begon. */
-    private static final Map<UUID, Long> SOFT_LANDING = new HashMap<>();
-
-    /** Vanaf nu zak je rustig naar beneden in plaats van te vallen. */
-    public static void beginSoftLanding(ServerPlayer player) {
-        SOFT_LANDING.put(player.getUUID(), player.level().getGameTime());
-    }
-
-    /** Ben je nu aan het zakken? (Dan telt vallen niet als schade.) */
-    public static boolean isSoftLanding(Player player) {
-        return SOFT_LANDING.containsKey(player.getUUID());
-    }
-
-    /**
-     * Elke tick zolang je zakt: we houden je snelheid laag en je valafstand op nul.
-     *
-     * Dat laatste is belangrijk - anders krijg je bij het neerkomen alsnog de klap te
-     * verwerken van de hele hoogte waar de drone je losliet.
-     */
-    public static void tickSoftLanding(ServerPlayer player) {
-        Long since = SOFT_LANDING.get(player.getUUID());
-        if (since == null) {
-            return;
-        }
-        boolean done = player.onGround()
-                || carrierOf(player) != null
-                || player.isSpectator()
-                || player.level().getGameTime() - since > SOFT_LANDING_MAX_TICKS;
-        if (done) {
-            SOFT_LANDING.remove(player.getUUID());
-            player.resetFallDistance();
-            return;
-        }
-        Vec3 motion = player.getDeltaMovement();
-        if (motion.y < -SOFT_LANDING_SPEED) {
-            // Afremmen tot daalsnelheid, en zijwaarts ook rustig aan.
-            player.setDeltaMovement(motion.x * 0.7, -SOFT_LANDING_SPEED, motion.z * 0.7);
-            player.connection.send(new ClientboundSetEntityMotionPacket(player));
-        }
-        player.resetFallDistance();
-    }
-
-    /** Wie zacht landt, komt zonder kleerscheuren neer. */
-    public static void onFallDamage(LivingIncomingDamageEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player
-                && event.getSource().is(DamageTypeTags.IS_FALL)
-                && isSoftLanding(player)) {
-            event.setCanceled(true);
-        }
-    }
-
-    public static void forgetSoftLandings() {
-        SOFT_LANDING.clear();
-    }
-
-    /**
-     * De drone zet je neer: hangt er nog lucht onder je, dan zakt hij je rustig op de grond.
-     * Geen zweefval meer - je staat gewoon, en je houdt geen effect over aan de rit.
-     *
-     * Normaal is dit maar een klein stukje, want de drone daalt al met je mee (zie
-     * DroneEntity.descend). Dit is het laatste zetje, en het vangnet voor als de rit
-     * halverwege stopt (batterij leeg, of je zet hem uit terwijl je hoog hangt).
-     */
-    private static void setDown(ServerPlayer player) {
-        double drop = distanceToGround(player);
-        if (drop <= 0.2 || drop >= NO_GROUND) {
-            return; // je staat al (of er is geen grond onder je)
-        }
-        // Zakken in plaats van vallen: rustig omlaag, en geen klap bij het neerkomen.
-        beginSoftLanding(player);
-        Vec3 motion = player.getDeltaMovement();
-        player.setDeltaMovement(motion.x * 0.5, -SOFT_LANDING_SPEED, motion.z * 0.5);
-        player.resetFallDistance();
-        player.connection.send(new ClientboundSetEntityMotionPacket(player));
-    }
-
-    /** Hoe ver het van hier naar beneden is tot vaste grond, of NO_GROUND als daar niets is. */
     public static double distanceToGround(Entity entity) {
-        ServerLevel level = (ServerLevel) entity.level();
+        Level level = entity.level();
         BlockPos.MutableBlockPos pos = entity.blockPosition().mutable();
-        for (int i = 1; i <= NO_GROUND; i++) {
-            pos.setY(entity.blockPosition().getY() - i);
-            if (pos.getY() <= level.getMinBuildHeight()) {
+        int feetY = pos.getY();
+        for (int i = 0; i <= NO_GROUND; i++) {
+            pos.setY(feetY - i);
+            if (pos.getY() < level.getMinBuildHeight()) {
                 return NO_GROUND;
             }
-            VoxelShape shape = level.getBlockState(pos).getCollisionShape(level, pos);
-            if (!shape.isEmpty()) {
-                // Je komt op de bovenkant van dat blok te staan (een trap is lager dan een kubus).
-                return entity.getY() - (pos.getY() + shape.max(Direction.Axis.Y));
+            double top = surfaceTop(level, pos);
+            if (!Double.isNaN(top)) {
+                return Math.max(0.0, entity.getY() - top);
             }
         }
         return NO_GROUND;
     }
 
     /**
-     * De drone is bij zijn bestemming: afleveren.
-     * Wordt door de drone zelf aangeroepen (zie DroneEntity).
+     * Is er onder je iets veiligs om op te landen? Niet boven de leegte (het End) en niet boven
+     * lava: daar begint de drone bij sluipen niet aan het landen.
+     */
+    public static boolean hasSafeGroundBelow(Entity entity) {
+        Level level = entity.level();
+        BlockPos.MutableBlockPos pos = entity.blockPosition().mutable();
+        for (int y = pos.getY(); y >= level.getMinBuildHeight(); y--) {
+            pos.setY(y);
+            if (!Double.isNaN(surfaceTop(level, pos))) {
+                return !level.getFluidState(pos).is(FluidTags.LAVA);
+            }
+        }
+        return false;
+    }
+
+    /** De bovenkant van wat je op deze plek tegenhoudt (een blok of water), of NaN als hier niets is. */
+    private static double surfaceTop(Level level, BlockPos pos) {
+        VoxelShape shape = level.getBlockState(pos).getCollisionShape(level, pos);
+        double top = shape.isEmpty() ? Double.NaN : pos.getY() + shape.max(Direction.Axis.Y);
+        FluidState fluid = level.getFluidState(pos);
+        if (!fluid.isEmpty()) {
+            // In het water laat hij je los aan de oppervlakte: zwemmen kan je zelf.
+            double surface = pos.getY() + fluid.getHeight(level, pos);
+            top = Double.isNaN(top) ? surface : Math.max(top, surface);
+        }
+        return top;
+    }
+
+    /**
+     * Een vrachtdrone is bij zijn bestemming: afleveren, en weer weg.
+     * (Een drone die iemand draagt, landt daar gewoon; zie DroneEntity.flyToDestination.)
      */
     public static void arrive(ServerLevel level, DroneEntity drone, @Nullable ServerPlayer owner) {
-        switch (drone.transportRole()) {
-            case CARRIER -> {
-                if (owner != null && drone.getFirstPassenger() == owner) {
-                    land(owner, drone, true);
-                    if (owner.level() == level) {
-                        level.playSound(null, owner.getX(), owner.getY(), owner.getZ(), ModSounds.DRONE_RECALL.get(),
-                                SoundSource.PLAYERS, 0.7f, 1.0f);
-                    }
-                } else {
-                    drone.recall(level);
-                }
-            }
-            case CARGO -> {
-                deliverCargo(level, drone, owner);
-                drone.recall(level);
-            }
-            case GRABBER -> {
-                Entity carried = drone.getFirstPassenger();
-                if (carried != null) {
-                    carried.stopRiding();
-                    if (carried instanceof ServerPlayer player) {
-                        setDown(player);
-                    }
-                }
-                if (owner != null) {
-                    ImtServer.send(owner, Component.translatable("imt.imttech.msg.carry_done"),
-                            ImtMessagePayload.Level.INFO);
-                }
-                drone.recall(level);
-            }
-            case FOLLOWER -> drone.recall(level);
+        if (drone.transportRole() == DroneEntity.TransportRole.CARGO) {
+            deliverCargo(level, drone, owner);
         }
+        drone.recall(level);
     }
 
     /** Legt de vracht in de kist bij de bestemming, of op de grond als die vol/weg is. */
@@ -462,16 +392,17 @@ public final class ImtTransport {
         }
     }
 
-    /** Energie: zolang je vliegt kost het per seconde. Is de bril leeg, dan land je. */
+    /**
+     * Energie: zolang je vliegt kost het per seconde. Is de bril leeg, dan land je; dat laatste
+     * stuk (de drone zakt met je mee) is gratis.
+     */
     public static void tickRider(ServerPlayer owner, ItemStack glasses) {
         DroneEntity carrier = carrierOf(owner);
-        if (carrier == null) {
+        if (carrier == null || carrier.isLanding()) {
             return;
         }
-        if (!ImtData.tryUseEnergy(glasses, ImtConfig.Transport.DRAIN)) {
-            ImtServer.send(owner, Component.translatable("imt.imttech.msg.transport_no_energy"),
-                    ImtMessagePayload.Level.ALERT);
-            land(owner, carrier, true);
+        if (!ImtData.tryUseEnergy(glasses, ImtConfig.Transport.DRAIN) || ImtData.getEnergy(glasses) <= 0) {
+            carrier.landPassenger("imt.imttech.msg.transport_no_energy", ImtMessagePayload.Level.ALERT);
         }
     }
 }

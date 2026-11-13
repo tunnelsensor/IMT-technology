@@ -33,6 +33,7 @@ import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.TicketType;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
@@ -49,6 +50,7 @@ import net.minecraft.world.entity.ai.control.MoveControl;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
@@ -86,6 +88,14 @@ public class DroneEntity extends PathfinderMob implements com.senne.imttech.weap
     /** Wordt naar de client gestuurd, zodat die de juiste kleur lichtjes kan tekenen. */
     private static final EntityDataAccessor<Byte> DATA_MODE = SynchedEntityData.defineId(DroneEntity.class, EntityDataSerializers.BYTE);
 
+    /**
+     * Het soort "wakker blijven"-kaartje dat een drone aan Minecraft geeft (zie keepWorldAwake). Het verloopt vanzelf
+     * 100 ticks (5 seconden) nadat de drone het voor het laatst vernieuwde: is de drone weg, dan gaat dat stuk wereld
+     * weer slapen.
+     */
+    private static final TicketType<ChunkPos> AWAKE = TicketType.create("imttech_drone",
+            Comparator.comparingLong(ChunkPos::toLong), 100);
+
     private @Nullable UUID ownerId;
     /**
      * Als dit gevuld is, jaagt de drone op dit ene wezen en niets anders (de "1 drone op 1
@@ -104,6 +114,22 @@ public class DroneEntity extends PathfinderMob implements com.senne.imttech.weap
     private int lifeTicks = -1;
     private int fireCooldown;
     private @Nullable LivingEntity currentTarget;
+    /**
+     * Is de rit van deze drone al afgeboekt in het arsenaal (hij hangt weer in zijn baan, of hij is neergehaald)?
+     * Dan boekt hij niets meer, wat er daarna ook met hem gebeurt.
+     */
+    private boolean settled;
+    /**
+     * Een oude kopie van een drone waarvan de rit al afgeboekt is. Bijvoorbeeld een drone die in een stuk wereld
+     * achterbleef dat opgeslagen werd, en die terugkomt als je daar weer komt: in je arsenaal hangt hij al lang weer in
+     * zijn baan (zie handBack), of hij is intussen met iets anders bezig. Zo'n kopie vliegt meteen weg, zonder iets te
+     * boeken.
+     */
+    private boolean stale;
+    /** Wanneer (speltijd) deze drone voor het laatst iets deed; zo ziet ArsenalServer een drone die stilstaat. */
+    private long lastActiveTick;
+    /** In welk stuk wereld (chunk) hij zijn laatste "wakker blijven"-kaartje gaf (zie keepWorldAwake). */
+    private @Nullable ChunkPos awakeAt;
 
     public DroneEntity(EntityType<? extends DroneEntity> type, Level level) {
         super(type, level);
@@ -152,10 +178,39 @@ public class DroneEntity extends PathfinderMob implements com.senne.imttech.weap
     /** Koppelt deze drone aan een drone uit het arsenaal van zijn eigenaar. */
     public void setArsenalId(@Nullable UUID id) {
         this.arsenalId = id;
+        if (!level().isClientSide && isOnAJob()) {
+            // Vanaf nu is hij "onderweg"; ArsenalServer houdt in de gaten of hij dat echt blijft (zie onServerTick).
+            this.lastActiveTick = level().getGameTime();
+            ArsenalServer.seen(this);
+        }
     }
 
     public @Nullable UUID getArsenalId() {
         return arsenalId;
+    }
+
+    /**
+     * Staat deze drone in het arsenaal als "On a job", en moet hij zich dus nog terugmelden? Niet als hij dat al deed
+     * (of neergehaald is), niet als hij een oude kopie is (zie stale), en niet als hij aan de grond op je wacht
+     * (GROUNDED: dan staat hij in je arsenaal als "Grounded").
+     */
+    public boolean isOnAJob() {
+        return arsenalId != null && !settled && !stale && getMode() != Mode.GROUNDED;
+    }
+
+    /** Wanneer (speltijd) hij voor het laatst iets deed (zie ArsenalServer.onServerTick). */
+    public long lastActiveTick() {
+        return lastActiveTick;
+    }
+
+    /**
+     * Deze drone is een oude kopie geworden (zie stale): hij boekt niets meer en vliegt bij zijn volgende tick weg.
+     * Dat gebeurt als zijn eigenaar inlogt (ArsenalServer.onLogin): wat er nog als "On a job" stond, hangt dan
+     * al weer in zijn baan.
+     */
+    public void markStale() {
+        stale = true;
+        ArsenalServer.forget(this);
     }
 
     /** Deze drone jaagt alleen nog op dit wezen. */
@@ -196,10 +251,18 @@ public class DroneEntity extends PathfinderMob implements com.senne.imttech.weap
         if (getMode() == Mode.LAUNCH) {
             return; // al onderweg naar boven
         }
+        if (isTransport() && isVehicle()) {
+            // Hangt er nog iemand onder? Dan eerst netjes neerzetten, en pas daarna vertrekken
+            // (descend roept ons opnieuw aan zodra hij leeg is). Vroeger steeg hij gewoon op,
+            // met jou eronder, en liet hij je pas hoog in de lucht los.
+            beginLanding();
+            return;
+        }
         dropCargo(level);
-        // Zolang hij stijgt, staat hij als "onderweg" geboekt: je kunt hem nog niet opnieuw sturen.
-        ServerPlayer owner = getOwner(level);
-        if (arsenalId != null && owner != null) {
+        // Zolang hij stijgt, staat hij als "onderweg" geboekt: je kunt hem nog niet opnieuw sturen. (Een oude kopie,
+        // zie stale, boekt niets: die drone hangt in je arsenaal al weer in zijn baan.)
+        ServerPlayer owner = ownerAnywhere(level);
+        if (arsenalId != null && !settled && !stale && owner != null) {
             ArsenalServer.markDeployed(owner, arsenalId);
         }
         entityData.set(DATA_MODE, (byte) Mode.LAUNCH.ordinal());
@@ -261,21 +324,51 @@ public class DroneEntity extends PathfinderMob implements com.senne.imttech.weap
     private final List<ItemStack> cargo = new ArrayList<>();
     /** Bezig met landen: de drone zakt met zijn passagier naar de grond. */
     private boolean landing;
-    /** Hoe hoog je hing bij de vorige landingstick, om te zien of het zakken nog opschiet. */
-    private double lastDrop = -1;
-    /** Hoeveel ticks het zakken al stilstaat (dan laten we je los; zie descend). */
+    /** Landt hij omdat hij bij zijn bestemming is (dan meldt hij "afgeleverd")? */
+    private boolean arrived;
+    /** Waar de drone hing bij de vorige landingstick, om te zien of het zakken nog opschiet. */
+    private double lastLandingY = Double.NaN;
+    /** Hoeveel ticks het zakken al stilstaat (een vangnet; zie descend). */
     private int stuckTicks;
+    /** Vanaf wanneer hij weer mag zeggen dat er geen grond onder je is (niet elke tick). */
+    private long noGroundWarnAgainAt;
 
     /** Is hij al aan het zakken om je af te zetten? */
     public boolean isLanding() {
         return landing;
     }
 
-    /** Begin te landen: zakken tot bij de grond en de passagier daar loslaten. */
+    /**
+     * Begin te landen: met de passagier eronder recht naar beneden zakken, en hem pas loslaten
+     * als zijn voeten vlak boven de grond zijn (zie descend). Zo landt ELKE rit, hoe die ook
+     * eindigt: sluipen, "Land" in het menu, een lege batterij, je bril af, de tijd om, een EMP,
+     * of aangekomen bij je bestemming.
+     */
     public void beginLanding() {
+        if (landing) {
+            return; // al aan het landen: niet opnieuw beginnen
+        }
         landing = true;
-        lastDrop = -1;
+        lastLandingY = Double.NaN;
         stuckTicks = 0;
+        holdStill();
+    }
+
+    /** Begin te landen en zeg de speler die eronder hangt waarom (alleen de eerste keer). */
+    public void landPassenger(String messageKey, ImtMessagePayload.Level level) {
+        if (landing || !isVehicle()) {
+            return;
+        }
+        beginLanding();
+        if (getFirstPassenger() instanceof ServerPlayer rider) {
+            ImtServer.send(rider, Component.translatable(messageKey), level);
+        }
+    }
+
+    /** Geen oude vliegopdracht meer laten doorduwen: vanaf nu stuurt alleen het landen. */
+    private void holdStill() {
+        getNavigation().stop();
+        ((DroneMoveControl) moveControl).hold();
     }
 
     public TransportRole transportRole() {
@@ -289,6 +382,7 @@ public class DroneEntity extends PathfinderMob implements com.senne.imttech.weap
     /** Stelt een transportdrone in: welke rol, waar naartoe en met welke vracht. */
     public void setupTransport(TransportRole role, @Nullable BlockPos destination, List<ItemStack> cargo) {
         this.landing = false;
+        this.arrived = false;
         this.transportRole = role;
         this.destination = destination;
         this.cargo.clear();
@@ -331,14 +425,64 @@ public class DroneEntity extends PathfinderMob implements com.senne.imttech.weap
         return level.getPlayerByUUID(ownerId) instanceof ServerPlayer player ? player : null;
     }
 
+    /**
+     * De eigenaar waar hij ook is, ook in een andere wereld. Alleen voor het arsenaal (terugmelden, neergehaald):
+     * om bij je te blijven moet hij in jouw wereld zijn (zie getOwner).
+     *
+     * Vroeger zocht een drone die zich terugmeldde je alleen in zijn eigen wereld. Was je intussen door een portaal
+     * gegaan, dan vond hij je niet, en bleef hij in je arsenaal op "On a job" staan.
+     */
+    private @Nullable ServerPlayer ownerAnywhere(ServerLevel level) {
+        return ownerId == null ? null : level.getServer().getPlayerList().getPlayer(ownerId);
+    }
+
     // ================================================================ Denken (elke tick, alleen op de server)
 
     @Override
     public void tick() {
+        if (!level().isClientSide && isTransport()) {
+            catchSneakingPassenger();
+        }
+        // Landen met iemand eronder: recht naar beneden, ook als zijn rand langs een richel of
+        // door een bladerdak schuurt. Wie eronder hangt, komt zo altijd tot vlak boven de grond.
+        // (Zoals de Vex van Minecraft: alleen tijdens deze tick door blokken heen.)
+        noPhysics = !level().isClientSide && isTransport() && landing && isVehicle();
         super.tick();
+        noPhysics = false;
         setNoGravity(true);
+        if (level() instanceof ServerLevel level && !isRemoved()) {
+            keepWorldAwake(level);
+            if (isOnAJob()) {
+                // Hij is nog echt bezig: dat ziet ArsenalServer (zie onServerTick).
+                lastActiveTick = level.getGameTime();
+                ArsenalServer.seen(this);
+            }
+        }
         // Beschadigd? Dan rookt en vonkt hij (alleen te zien in je eigen spel).
         DroneDamage.particles(this);
+    }
+
+    /**
+     * Een "wakker blijven"-kaartje voor Minecraft, zoals een speler er ook een heeft: het stukje wereld rond deze
+     * drone (3 bij 3 chunks) blijft doorlopen, ook als hij ver van elke speler weg is. Zo vliegt een vrachtdrone gewoon
+     * door naar een verre kist, en volgt een spionagedrone zijn doelwit tot ver weg.
+     *
+     * Vroeger viel een drone die verder van je weg vloog dan je "simulation distance" stil in de lucht (daar laat
+     * Minecraft niets bewegen). Hij kon zich dan nooit meer terugmelden, en stond in je arsenaal voor altijd op
+     * "On a job". Een drone die aan de grond op je wacht (GROUNDED) vraagt geen kaartje: die mag gerust stilstaan.
+     */
+    private void keepWorldAwake(ServerLevel level) {
+        if (getMode() == Mode.GROUNDED) {
+            return;
+        }
+        ChunkPos here = chunkPosition();
+        // Opnieuw zodra hij in een andere chunk komt, en anders elke seconde (het kaartje geldt 5 seconden).
+        // Afstand 3: zijn eigen chunk en de 8 eromheen blijven helemaal doorlopen, dus ook als hij de grens over
+        // vliegt, loopt de wereld daar al.
+        if (tickCount % 20 == 0 || !here.equals(awakeAt)) {
+            level.getChunkSource().addRegionTicket(AWAKE, here, 3, here);
+            awakeAt = here;
+        }
     }
 
     @Override
@@ -351,8 +495,13 @@ public class DroneEntity extends PathfinderMob implements com.senne.imttech.weap
             fireCooldown--;
         }
         // Uitgeschakeld door een EMP-granaat (hoofdstuk 35): motor uit, naar de grond zakken en daar blijven liggen.
+        // Hangt er nog iemand onder, dan zet hij die eerst neer (een noodlanding, zie onEmp).
         if (com.senne.imttech.weapons.Emp.isJammed(this)) {
-            fallDead();
+            if (isTransport() && landing && isVehicle()) {
+                descend(level);
+            } else {
+                fallDead();
+            }
             return;
         }
         if (getMode() == Mode.LAUNCH) {
@@ -364,10 +513,29 @@ public class DroneEntity extends PathfinderMob implements com.senne.imttech.weap
             dive(level);
             return;
         }
+        // Iemand aan het neerzetten? Dat maakt een transportdrone altijd af, wat er ook gebeurt
+        // (bril af of leeg, eigenaar weg, tijd om): pas vlak boven de grond laat hij los.
+        if (isTransport() && landing) {
+            descend(level);
+            return;
+        }
+        // Een oude kopie (zie stale): niets meer doen, gewoon terug naar boven. Hangt er iemand onder, dan zet hij die
+        // eerst neer (dat doet departToOrbit).
+        if (stale) {
+            recall(level);
+            return;
+        }
 
         ServerPlayer owner = getOwner(level);
         if (owner == null || !owner.isAlive() || owner.isSpectator() || !stillLinked(owner)) {
-            recall(level);
+            if (owner != null && isTransport() && getFirstPassenger() == owner) {
+                // Je hangt er zelf onder en je bril is leeg (of af): eerst landen, dan pas weg.
+                ItemStack glasses = ImtData.getWornGlasses(owner);
+                boolean empty = !glasses.isEmpty() && ImtData.getEnergy(glasses) <= 0;
+                landPassenger(empty ? "imt.imttech.msg.transport_no_energy" : "imt.imttech.msg.transport_landing",
+                        empty ? ImtMessagePayload.Level.ALERT : ImtMessagePayload.Level.INFO);
+            }
+            recall(level); // met iemand eronder: eerst landen (zie departToOrbit)
             return;
         }
         if (getMode() == Mode.GROUNDED) {
@@ -375,6 +543,10 @@ public class DroneEntity extends PathfinderMob implements com.senne.imttech.weap
             return;
         }
         if (lifeTicks > 0 && --lifeTicks == 0) {
+            if (isTransport()) {
+                // Een rit duurt hooguit Transport.MAX_TICKS (5 minuten): dan land je.
+                landPassenger("imt.imttech.msg.transport_time_up", ImtMessagePayload.Level.WARNING);
+            }
             recall(level);
             return;
         }
@@ -437,12 +609,23 @@ public class DroneEntity extends PathfinderMob implements com.senne.imttech.weap
                 && !com.senne.imttech.weapons.Smoke.blocks(level(), getEyePosition(), entity.getEyePosition());
     }
 
-    /** Geraakt door een EMP-granaat: wie eraan hangt (vervoer) laat hij los, en hij vergeet zijn doelwit. */
+    /**
+     * Geraakt door een EMP-granaat: hij vergeet zijn doelwit en valt stil.
+     *
+     * Hangt er iemand onder (vervoer), dan laat hij die niet zomaar vallen: met zijn laatste
+     * stroom zakt hij mee tot vlak boven de grond (een noodlanding), en pas daarna ligt hij stil.
+     * Vroeger liet hij je hoog in de lucht los.
+     */
     @Override
     public void onEmp(ServerLevel level, int ticks) {
-        ejectPassengers();
         currentTarget = null;
         getNavigation().stop();
+        if (isTransport() && isVehicle()) {
+            // (Ook een opgepakt dier of monster zet hij zo neer; alleen een speler krijgt het bericht.)
+            landPassenger("imt.imttech.msg.transport_emp", ImtMessagePayload.Level.ALERT);
+            return;
+        }
+        ejectPassengers();
     }
 
     /** Uit door een EMP: geen motor, dus vallen (iets afgeremd door de lucht) tot op de grond. */
@@ -545,22 +728,20 @@ public class DroneEntity extends PathfinderMob implements com.senne.imttech.weap
         switch (transportRole) {
             case CARRIER -> {
                 if (!(getFirstPassenger() instanceof ServerPlayer rider)) {
-                    // De speler is afgestapt (shift): dan is de rit voorbij.
+                    // Je hangt er niet meer onder (gestorven, weggeteleporteerd): de rit is voorbij.
                     recall(level);
                     return;
                 }
-                if (landing) {
-                    descend(rider);
-                } else if (destination != null) {
+                if (destination != null) {
                     flyToDestination(level, owner);
                 } else {
-                    flyByRider(rider, level, owner);
+                    flyByRider(rider);
                 }
             }
             case CARGO -> flyToDestination(level, owner);
             case GRABBER -> {
                 if (getFirstPassenger() == null) {
-                    recall(level); // wie we vasthielden is weg (afgestapt of dood)
+                    recall(level); // wie we vasthielden is weg (gestorven of weggeteleporteerd)
                     return;
                 }
                 flyToDestination(level, owner);
@@ -571,6 +752,14 @@ public class DroneEntity extends PathfinderMob implements com.senne.imttech.weap
                     recall(level);
                     return;
                 }
+                // Toch ver achtergeraakt (je teleporteerde, of ging nog sneller)? Dan springt hij bij, net als de
+                // andere drones (zie customServerAiStep). Vroeger bleef hij achter: met de autopiloot of al sprintend
+                // vlieg je sneller dan hij vloog. Ver weg viel hij stil, en na de rit stond hij nog op "On a job".
+                if (distanceToSqr(owner) > 48 * 48) {
+                    Vec3 spot = circleSpot(owner);
+                    moveTo(spot.x, spot.y, spot.z);
+                    setDeltaMovement(Vec3.ZERO);
+                }
                 followOwner(owner);
             }
         }
@@ -578,16 +767,13 @@ public class DroneEntity extends PathfinderMob implements com.senne.imttech.weap
 
     /**
      * Jij stuurt: je vliegt de kant op waar je KIJKT (W/S) en zijwaarts met A/D. Spatie geeft
-     * extra lift, sprinten is sneller, en met shift stop je (de drone zet je neer).
+     * extra lift, sprinten is sneller, en met shift stop je (de drone zet je neer; dat
+     * vangt catchSneakingPassenger op, nog voor deze methode).
      */
-    private void flyByRider(ServerPlayer rider, ServerLevel level, ServerPlayer owner) {
+    private void flyByRider(ServerPlayer rider) {
         // Wat de speler indrukt, stuurt zijn eigen spel elke tick naar de server
         // (zie DroneCamera/ImtClientEvents en ImtServer.handleDroneControl).
         DroneControlPayload input = ImtServer.getTransportControl(rider);
-        if (rider.isShiftKeyDown()) {
-            beginLanding(); // hij zakt nu met je mee; zie descend()
-            return;
-        }
         Vec3 look = rider.getLookAngle();
         double yawRad = rider.getYRot() * Mth.DEG_TO_RAD;
         Vec3 left = new Vec3(Math.cos(yawRad), 0, Math.sin(yawRad));
@@ -607,33 +793,91 @@ public class DroneEntity extends PathfinderMob implements com.senne.imttech.weap
     }
 
     /**
-     * Landen: de drone zakt recht naar beneden tot je voeten bij de grond zijn, en laat je
-     * daar los. Je houdt er niets aan over - geen zweefval, geen val: je staat gewoon.
+     * Sluipen terwijl je onder een transportdrone hangt = "zet me neer".
+     *
+     * Minecraft zelf laat je bij sluipen meteen los, hoe hoog je ook hangt (in Player.rideTick,
+     * vlak NA de tick van de drone). Daarom vangt de drone het sluipen eerst op: hij zet de
+     * sluiptoets terug op "los" voordat Minecraft hem ziet, en begint zelf te landen. Zo blijf
+     * je eronder hangen tot je vlak boven de grond bent. Je eigen spel stuurt de toets elke
+     * tick opnieuw zolang je hem vasthoudt, dus dit gebeurt dan ook elke tick.
+     *
+     * Dit geldt ook voor een speler die door iemands drone is opgepakt: sluipen zet hem neer
+     * waar hij is (zoals vroeger kon hij zich zo losmaken, maar nu zonder te vallen).
      */
-    private void descend(ServerPlayer rider) {
-        double drop = ImtTransport.distanceToGround(rider);
-        // Schiet het zakken nog op? Een drone met iemand eronder kan niet eindeloos laag
-        // komen; zodra hij stil blijft hangen laten we los en zak jij het laatste stukje
-        // zelf (rustig, zie ImtTransport.tickSoftLanding).
-        if (lastDrop >= 0 && lastDrop - drop < 0.05) {
+    private void catchSneakingPassenger() {
+        if (!(getFirstPassenger() instanceof ServerPlayer passenger) || !passenger.isShiftKeyDown()) {
+            return;
+        }
+        passenger.setShiftKeyDown(false);
+        if (landing) {
+            return; // hij is al aan het landen
+        }
+        if (!ImtTransport.hasSafeGroundBelow(passenger)) {
+            // Boven de leegte (het End) of boven lava zet hij je niet neer: vlieg eerst ergens anders heen.
+            long now = level().getGameTime();
+            if (now >= noGroundWarnAgainAt) {
+                noGroundWarnAgainAt = now + 40;
+                ImtServer.send(passenger, Component.translatable("imt.imttech.msg.transport_no_ground"),
+                        ImtMessagePayload.Level.WARNING);
+            }
+            return;
+        }
+        landPassenger("imt.imttech.msg.transport_landing", ImtMessagePayload.Level.INFO);
+    }
+
+    /**
+     * Landen: de drone zakt recht naar beneden met zijn passagier eronder, en laat hem pas los
+     * als zijn voeten vlak boven de grond (of het water) zijn. Je valt dus hooguit een paar
+     * centimeter: geen zweefval, geen val, je staat gewoon (zie ImtTransport.setDown).
+     *
+     * Zo landt elke rit, hoe hij ook eindigt (zie beginLanding). Vroeger liet de drone je soms
+     * hoog in de lucht los en zakte je daarna langzaam. Een server ziet dat als vliegen, en
+     * gooit je na 4 seconden in de lucht van de server ("Flying is not enabled on this server").
+     */
+    private void descend(ServerLevel level) {
+        Entity passenger = getFirstPassenger();
+        if (passenger == null) {
+            // Niemand meer om neer te zetten (gestorven, weggeteleporteerd): dan vertrekt hij.
+            landing = false;
+            recall(level);
+            return;
+        }
+        holdStill();
+        double drop = ImtTransport.distanceToGround(passenger);
+        // Vangnet: zakt hij een hele seconde niet meer, dan laat hij toch los. Dat hoort niet
+        // te gebeuren, want tijdens het landen gaat hij overal doorheen (zie tick).
+        if (!Double.isNaN(lastLandingY) && lastLandingY - getY() < 0.01) {
             stuckTicks++;
         } else {
             stuckTicks = 0;
         }
-        lastDrop = drop;
+        lastLandingY = getY();
+        boolean belowWorld = passenger.getY() < level.getMinBuildHeight();
 
-        if (drop > 0.5 && drop < ImtTransport.NO_GROUND && stuckTicks < 10) {
+        if (drop > ImtTransport.RELEASE_HEIGHT && stuckTicks < 20 && !belowWorld) {
+            // Hoog boven de grond op volle snelheid, vlak erboven rustig afremmen.
             double speed = Math.min(ImtConfig.Transport.LAND_SPEED, 0.1 + drop * 0.2);
-            setDeltaMovement(0, -speed, 0);
+            Vec3 sideways = Vec3.ZERO;
+            if (arrived && destination != null) {
+                // Bij je bestemming: onderweg naar beneden nog netjes boven de plek gaan hangen.
+                sideways = new Vec3(destination.getX() + 0.5 - getX(), 0, destination.getZ() + 0.5 - getZ()).scale(0.2);
+                if (sideways.length() > 0.3) {
+                    sideways = sideways.normalize().scale(0.3);
+                }
+            }
+            setDeltaMovement(sideways.x, -speed, sideways.z);
             return;
         }
         setDeltaMovement(Vec3.ZERO);
-        ImtTransport.land(rider, this, true);
+        landing = false;
+        ImtTransport.setDown(level, this, passenger, arrived);
     }
 
     /**
      * Vliegt naar zijn bestemming: eerst hoog genoeg klimmen (over de bomen en heuvels),
-     * dan er naartoe, en boven de plek rustig dalen. Is hij er: afleveren.
+     * dan er naartoe, en boven de plek dalen. Draagt hij iemand (jij met de autopiloot, of wie
+     * hij opgepakt heeft), dan landt hij daar zoals elke rit landt (zie descend). Een
+     * vrachtdrone daalt tot bij de kist en levert af.
      */
     private void flyToDestination(ServerLevel level, ServerPlayer owner) {
         BlockPos target = destination;
@@ -657,7 +901,15 @@ public class DroneEntity extends PathfinderMob implements com.senne.imttech.weap
             }
             return;
         }
-        // Boven de bestemming: dalen.
+        if (transportRole != TransportRole.CARGO) {
+            // Boven de bestemming, met iemand eronder: recht naar beneden en loslaten vlak boven
+            // de grond. Ligt de plek onder een dak, dan zet hij je op het dak (vroeger bleef hij
+            // dan eeuwig boven het dak hangen, tot de tijd om was).
+            arrived = true;
+            beginLanding();
+            return;
+        }
+        // Een vrachtdrone: boven de plek dalen en afleveren.
         double landY = target.getY() + 1.4;
         moveControl.setWantedPosition(target.getX() + 0.5, landY, target.getZ() + 0.5, 0.7);
         if (Math.abs(getY() - landY) < 1.6) {
@@ -669,6 +921,24 @@ public class DroneEntity extends PathfinderMob implements com.senne.imttech.weap
     @Override
     protected Vec3 getPassengerAttachmentPoint(Entity passenger, EntityDimensions dimensions, float scale) {
         return new Vec3(0.0, -passenger.getBbHeight() - 0.3, 0.0);
+    }
+
+    /**
+     * Waar je terechtkomt als de drone je loslaat: precies waar je hing, onder de drone.
+     *
+     * Minecraft zet een passagier standaard BOVENOP zijn voertuig. Bij een drone waar je onder
+     * hangt, was dat bijna drie blokken hoger dan je hing, en die viel je daarna weer naar
+     * beneden. Hang je half in een blok (een bladerdak), dan zoeken we een stukje hoger een
+     * plek waar je wel past.
+     */
+    @Override
+    public Vec3 getDismountLocationForPassenger(LivingEntity passenger) {
+        for (double up = 0; up <= 3.0; up += 0.5) {
+            if (level().noCollision(passenger, passenger.getBoundingBox().move(0, up, 0))) {
+                return passenger.position().add(0, up, 0);
+            }
+        }
+        return super.getDismountLocationForPassenger(passenger);
     }
 
     /** Vracht mag nooit verdwijnen: als de drone weggaat, valt de vracht op de grond. */
@@ -759,14 +1029,23 @@ public class DroneEntity extends PathfinderMob implements com.senne.imttech.weap
             moveControl.setWantedPosition(spot.x, spot.y, spot.z, formation.speed());
             return;
         }
+        Vec3 spot = circleSpot(owner);
+        double speed = 0.8;
+        if (isTransport()) {
+            // Een escortedrone bij een rit: raakt hij achterop (met zijn gewone snelheid haalt hij de autopiloot en
+            // sprinten niet), dan geeft hij gas, hoe verder hoe meer. Zo blijft hij bij je in plaats van achter te blijven.
+            speed = Math.min(3.0, 0.8 + Math.max(0.0, position().distanceTo(spot) - 3.0) * 0.25);
+        }
+        moveControl.setWantedPosition(spot.x, spot.y, spot.z, speed);
+    }
+
+    /** Waar een drone die met je meevliegt (zonder escorteformatie) nu hoort te hangen: in een kringetje om je heen. */
+    private Vec3 circleSpot(ServerPlayer owner) {
         double angle = tickCount * 0.05 + slot * (Math.PI * 2 / 5);
-        double radius = isGuard() ? 1.8 : 2.8;
-        double height = owner.getBbHeight() + (isGuard() ? 0.5 : 1.4);
-        moveControl.setWantedPosition(
-                owner.getX() + Math.cos(angle) * radius,
-                owner.getY() + height,
-                owner.getZ() + Math.sin(angle) * radius,
-                0.8);
+        double radius = 2.8;
+        double height = owner.getBbHeight() + 1.4;
+        return new Vec3(owner.getX() + Math.cos(angle) * radius, owner.getY() + height,
+                owner.getZ() + Math.sin(angle) * radius);
     }
 
     private void fireLaser(ServerLevel level, ServerPlayer owner, LivingEntity target) {
@@ -900,12 +1179,105 @@ public class DroneEntity extends PathfinderMob implements com.senne.imttech.weap
         return InteractionResult.SUCCESS;
     }
 
-    /** Meldt deze drone terug in het arsenaal van zijn eigenaar, met de schade die hij opliep. */
+    /**
+     * Meldt deze drone terug in het arsenaal van zijn eigenaar, met de schade die hij opliep. Dat gebeurt één keer per
+     * rit; daarna is hij afgeboekt (settled). Is de eigenaar niet online, dan zet zijn arsenaal hem zelf terug in zijn
+     * baan als hij weer inlogt (ArsenalServer.onLogin).
+     */
     private void returnToArsenal(ServerLevel level) {
-        ServerPlayer owner = getOwner(level);
-        if (arsenalId != null && owner != null) {
+        if (arsenalId == null || settled || stale) {
+            return; // al afgeboekt, of een oude kopie (zie stale)
+        }
+        ServerPlayer owner = ownerAnywhere(level);
+        if (owner != null) {
             ArsenalServer.returnToOrbit(owner, arsenalId, getHealth());
         }
+        settle();
+    }
+
+    /** Deze rit is afgeboekt: hij boekt niets meer, en ArsenalServer hoeft hem niet meer in de gaten te houden. */
+    private void settle() {
+        settled = true;
+        ArsenalServer.forget(this);
+    }
+
+    /**
+     * Deze drone verdwijnt uit de wereld zonder dat hij zich terugmeldde: iets haalde hem weg (zoals de spionagedrone
+     * die zijn doelwit door een portaal volgt), of hij bleef achter in een stuk wereld dat niet meer bijgehouden wordt.
+     * Dan zet zijn arsenaal hem meteen terug in zijn baan, met de schade die hij had.
+     *
+     * Vroeger gebeurde er dan niets, en bleef hij in je arsenaal op "On a job" staan tot je opnieuw inlogde.
+     *
+     * Hier wordt alleen geboekt. Minecraft roept dit soms aan terwijl het een stuk wereld opruimt, en dan mag er in de
+     * wereld niets bijkomen of verdwijnen (dus geen vracht laten vallen). Komt de drone toch nog terug (je komt weer in
+     * de buurt), dan is hij een oude kopie (stale) en vliegt hij weg zonder iets te boeken.
+     *
+     * Een teruggeroepen drone die aan de grond op je wacht (GROUNDED) blijft in je arsenaal "Grounded": hij staat er
+     * nog als je terugkomt.
+     */
+    public void handBack(ServerLevel level) {
+        if (!isOnAJob()) {
+            return;
+        }
+        ServerPlayer owner = ownerAnywhere(level);
+        if (owner != null) {
+            ArsenalServer.returnToOrbit(owner, arsenalId, getHealth());
+        }
+        settle();
+        stale = true;
+    }
+
+    /**
+     * Wat ArsenalServer doet met een drone die al even niets meer doet (hij staat stil in een stuk wereld waar Minecraft
+     * niets laat bewegen, of hij kwam nooit echt in de wereld): zijn rit afmaken en terug in zijn baan. Vracht gaat
+     * alsnog naar de kist bij de bestemming, en wie hij vasthield laat hij los. Dit is een vangnet: met
+     * keepWorldAwake hoort een drone niet stil te vallen.
+     */
+    public void abandon(ServerLevel level) {
+        ejectPassengers();
+        if (hasCargo()) {
+            ImtTransport.deliverCargo(level, this, ownerAnywhere(level));
+        }
+        handBack(level);
+        discard();
+    }
+
+    /**
+     * Weggehaald door iets anders dan zijn eigen vertrek (een commando, de spionagedrone die door een portaal volgt...):
+     * zijn vracht valt op de grond, en hij gaat terug in zijn baan (zie handBack).
+     */
+    @Override
+    public void remove(RemovalReason reason) {
+        if (level() instanceof ServerLevel level && reason == RemovalReason.DISCARDED && isOnAJob()) {
+            dropCargo(level);
+        }
+        super.remove(reason);
+        // Meestal deed onRemovedFromLevel dit net al. Maar was hij nog niet echt in de wereld opgenomen (dan roept
+        // Minecraft dat niet aan), dan gebeurt het hier.
+        if (level() instanceof ServerLevel level) {
+            handBack(level);
+        }
+    }
+
+    /**
+     * Minecraft haalt deze drone uit de wereld: weggehaald, of zijn stuk wereld wordt niet meer bijgehouden (niemand in
+     * de buurt). Heeft hij zich nog niet teruggemeld, dan gaat hij nu terug in zijn baan (zie handBack).
+     */
+    @Override
+    public void onRemovedFromLevel() {
+        super.onRemovedFromLevel();
+        if (level() instanceof ServerLevel level) {
+            handBack(level);
+        }
+    }
+
+    /**
+     * Een drone gaat nooit door een portaal: hij hoort bij jou, in jouw wereld. Ga jij door een portaal, dan vliegen je
+     * drones terug naar hun baan (zie customServerAiStep: hij vindt je niet meer).
+     */
+    @Override
+    public boolean canChangeDimensions(Level from, Level to) {
+        return false;
     }
 
     // ================================================================ Gedrag als wezen
@@ -927,14 +1299,21 @@ public class DroneEntity extends PathfinderMob implements com.senne.imttech.weap
 
     @Override
     public void die(DamageSource source) {
+        if (!level().isClientSide) {
+            // Neergehaald met iemand eronder: die valt meteen, vanaf waar hij hing (zie
+            // getDismountLocationForPassenger). Een kapotte drone kan niemand meer neerzetten.
+            ejectPassengers();
+        }
         super.die(source);
         if (level() instanceof ServerLevel level) {
             dropCargo(level);
-            // Neergehaald: uit het arsenaal, en een beetje schroot valt op de grond.
-            ServerPlayer owner = getOwner(level);
-            if (arsenalId != null && owner != null) {
+            // Neergehaald: uit het arsenaal, en een beetje schroot valt op de grond. (Ook als je in een andere wereld
+            // bent. Een oude kopie, zie stale, kost je niets: die drone hangt in je arsenaal al weer in zijn baan.)
+            ServerPlayer owner = ownerAnywhere(level);
+            if (arsenalId != null && !settled && !stale && owner != null) {
                 ArsenalServer.destroyed(owner, arsenalId, level, position());
             }
+            settle();
             level.sendParticles(ParticleTypes.LARGE_SMOKE, getX(), getY() + 0.2, getZ(), 8, 0.2, 0.2, 0.2, 0.02);
             level.sendParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY() + 0.2, getZ(), 12, 0.3, 0.3, 0.3, 0.2);
         }
@@ -983,6 +1362,11 @@ public class DroneEntity extends PathfinderMob implements com.senne.imttech.weap
         }
         slot = tag.getInt("DroneSlot");
         lifeTicks = tag.contains("DroneLife") ? tag.getInt("DroneLife") : -1;
+        // Een drone die zo terugkomt (zijn stuk wereld wordt weer geladen, of hij droeg je toen je uitlogde), was bezig
+        // met een rit die al afgeboekt is: toen hij uit de wereld ging, zette zijn arsenaal hem terug in zijn baan (zie
+        // handBack, en ArsenalServer.onLogin). Dus is hij een oude kopie en vliegt hij weg, zonder iets te boeken.
+        // Alleen een drone die aan de grond op je wacht (GROUNDED), blijft gewoon staan.
+        stale = getMode() != Mode.GROUNDED;
     }
 
     @Override
@@ -1026,6 +1410,11 @@ public class DroneEntity extends PathfinderMob implements com.senne.imttech.weap
         DroneMoveControl(DroneEntity drone) {
             super(drone);
             this.drone = drone;
+        }
+
+        /** Stoppen met ergens naartoe vliegen: een oude bestemming duwt dan niet meer mee. */
+        void hold() {
+            operation = Operation.WAIT;
         }
 
         @Override

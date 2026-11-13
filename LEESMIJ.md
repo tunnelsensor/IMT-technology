@@ -249,7 +249,8 @@ hij uithangt:
 - **In orbit** — klaar voor gebruik. Met **Recall** komt hij in een boog uit de lucht en landt
   hij voor je. Roep je er meer terug, dan landen ze naast elkaar.
 - **On a job** — nu ergens bezig. Daar valt niets aan te doen tot hij terug is (of gebruik
-  "stand down").
+  "stand down"). Is hij klaar, of raakt hij zijn opdracht kwijt (iets haalt hem weg, jij gaat door een portaal, hij
+  staat 2 seconden stil), dan hangt hij vanzelf weer **In orbit**.
 - **Grounded** — hij staat naast je te wachten. **Rechtsklik** erop om hem te repareren met
   ijzer uit je rugzak (één staaf is 3 levenspunten). Is hij weer heel, dan stijgt hij bij de
   volgende klik op. **Shift + rechtsklik** stuurt hem meteen omhoog, ook als hij nog stuk is
@@ -268,6 +269,12 @@ af en remmen rustig af bij hun doel (een zwerm waaiert zo van alle kanten binnen
 plafond boven je (een grot, een kelder), dan komen ze zo hoog als er ruimte is. Klaar met hun werk? Dan stijgen ze net zo hoog weer op en verdwijnen
 in de lucht — ze lossen niet ter plekke op. Pas als ze boven zijn, staan ze weer klaar in je
 arsenaal.
+
+Een drone die bezig is, houdt het stukje wereld rond zich wakker, zoals een speler: zo vliegt een **vrachtdrone** ook
+naar een kist die ver weg staat gewoon door (vroeger viel hij stil zodra hij te ver van je weg was). De twee drones die
+met je **meevliegen** als drones je dragen, houden je bij: raken ze achterop (de autopiloot en sprinten zijn snel), dan
+geven ze gas, en zijn ze te ver weg, dan springen ze bij. Ga je door een **portaal**, dan vliegen je drones terug naar
+hun baan.
 
 Hoe hoog precies staat in `config/imttech.toml` (`drones.orbitHeight`). Hoeveel drones er maximaal in een
 zwerm passen staat daar ook (standaard zwerm 16 en escorte 8) — maar je arsenaal bepaalt
@@ -301,6 +308,10 @@ naar jouw spel).
 - **Zelf vliegen**: drones tillen je op. Je vliegt de kant op waar je **kijkt**, spatie geeft
   extra lift, sprinten is sneller, **sluipen (shift) = landen**.
 - **Autopiloot**: naar je huidige waypoint.
+- **Landen** gaat altijd hetzelfde, hoe de rit ook stopt (sluipen, "Land" in het G-menu, een lege batterij, je bril
+  af, na 5 minuten, een EMP, of aangekomen): de drone zakt met je mee en laat je pas los als je voeten vlak boven de
+  grond zijn. Geen zweefval, dus ook op een server geen "Flying is not enabled". Boven de leegte (het End) of boven
+  lava begint hij er niet aan; vlieg dan eerst ergens anders heen. Wordt je drone kapotgeschoten, dan val je wel.
 - **Vrachtdrone**: leegt de kist waar je naar kijkt en brengt alles naar je waypoint.
 - **Iemand vervoeren**: pakt een speler (alleen met PvP aan), dier of monster op.
 
@@ -1973,7 +1984,8 @@ op een wezen gaat hij mee) en gaat 2 seconden later af. Ze piepen steeds sneller
 **geen schade aan de map**: alles wat elektrisch is binnen 5 blokken valt 20 seconden uit en gaat daarna vanzelf weer
 aan:
 - guard robots en security drones vallen neer (zoals met de Ion Blaster); je eigen drones, raiddrones en de drones van
-  de toren zakken naar de grond met hun lampjes uit (een vervoerdrone laat los);
+  de toren zakken naar de grond met hun lampjes uit (een vervoerdrone zet wie eronder hangt eerst neer, met een
+  noodlanding);
 - turrets laten hun loop hangen, camera's geven geen beeld, keycardlezers en codepanelen doen niets;
 - een kabel die **open** ligt geeft even geen stroom door, dus alles erachter heeft geen stroom. Een kabel **in een
   muur** is beschermd;

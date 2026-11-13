@@ -157,6 +157,7 @@ public class ImtTech {
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.GuardGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.HowToGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.BackpackGameTests.class));
+        modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.ArsenalGameTests.class));
         // Controle van de wereldgeneratie (alleen met "gradlew runStructureCheck").
         com.senne.imttech.gametest.StructureCheck.registerIfEnabled();
 
@@ -164,6 +165,9 @@ public class ImtTech {
         NeoForge.EVENT_BUS.addListener(ImtServer::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(ImtServer::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(ArsenalServer::onLogin);
+        // Klopt "On a job" in je arsenaal nog met wat je drones echt doen? (elke seconde een controle)
+        NeoForge.EVENT_BUS.addListener(ArsenalServer::onServerTick);
+        NeoForge.EVENT_BUS.addListener(ArsenalServer::onServerStopped);
         // Hoofdstuk 26: trainingen (aftellen, de tijd, en of de trainee er nog is).
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.training.Training::onServerTick);
         // Robots en drones die er niet meer zijn, gaan vanzelf uit je lijst (18 oktober).
@@ -193,10 +197,7 @@ public class ImtTech {
         NeoForge.EVENT_BUS.addListener(ImtSpy::onChangedDimension);
         // Fase 7: vrachtdrones laten hun spullen vallen als de server uitgaat
         NeoForge.EVENT_BUS.addListener(ImtTransport::onServerStopping);
-        // Sluipen onder een drone = landen (in plaats van meteen losgelaten worden)
-        NeoForge.EVENT_BUS.addListener(ImtTransport::onDismount);
-        // Wie door een drone wordt neergezet, valt niet: hij zakt (en houdt er niets aan over)
-        NeoForge.EVENT_BUS.addListener(ImtTransport::onFallDamage);
+        // (Sluipen onder een drone = landen: dat vangt de drone zelf op, zie DroneEntity.catchSneakingPassenger.)
         // Fase 9: redstone-relais (pulsen aftellen)
         NeoForge.EVENT_BUS.addListener(ImtRedstone::onServerTick);
         // Getekende kabels: oude kabelblokken omzetten, en knippen met een schaar.

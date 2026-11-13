@@ -2525,6 +2525,26 @@ public final class ImtTechGameTests {
         transportLanding(helper);
     }
 
+    @GameTest(template = ARENA, timeoutTicks = 2400, batch = "transport")
+    public static void transport_battery_empty_lands_first(GameTestHelper helper) {
+        transportBatteryEmptyLandsFirst(helper);
+    }
+
+    @GameTest(template = ARENA, timeoutTicks = 2400, batch = "transport")
+    public static void transport_time_up_lands_first(GameTestHelper helper) {
+        transportTimeUpLandsFirst(helper);
+    }
+
+    @GameTest(template = ARENA, timeoutTicks = 2400, batch = "transport")
+    public static void transport_emp_lands_first(GameTestHelper helper) {
+        transportEmpLandsFirst(helper);
+    }
+
+    @GameTest(template = ARENA, timeoutTicks = 2400, batch = "transport")
+    public static void transport_autopilot_lands(GameTestHelper helper) {
+        transportAutopilotLands(helper);
+    }
+
     /**
      * De schuivende laser trekt van het beginpunt naar het eindpunt dat je koos: een vijand die
      * aan het eind staat (en niet aan het begin) wordt geraakt, en een vijand ver achter het
@@ -5414,13 +5434,76 @@ public final class ImtTechGameTests {
     }
 
     /**
-     * Landen: de drone zakt met je mee en zet je op de grond. Vroeger liet hij je vallen
-     * met zweefval; daar sta je dan seconden later pas mee beneden.
+     * Landen door te sluipen (hoofdstuk 80): de drone vangt het sluipen op (Minecraft zelf zou
+     * je meteen loslaten, hoe hoog je ook hangt), zakt met je mee en laat je pas los als je
+     * voeten vlak boven de grond zijn. Vroeger liet hij je hoog los en zakte je langzaam; een
+     * server ziet dat als vliegen en gooit je er na 4 seconden af.
      */
     private static void transportLanding(GameTestHelper helper) {
+        // Sluipen zoals je eigen spel dat elke tick doorgeeft zolang je shift vasthoudt
+        // (ServerboundPlayerInputPacket). Minecraft laat je dan los in Player.rideTick, tenzij
+        // de drone het sluipen eerst opvangt.
+        landingTest(helper, (owner, carrier) -> owner.setShiftKeyDown(true),
+                (owner, carrier) -> owner.setShiftKeyDown(true));
+    }
+
+    /**
+     * Batterij leeg tijdens het vliegen: de drone zet je eerst neer en vertrekt pas daarna.
+     * Vroeger riep hij zichzelf terug, steeg op met jou eronder, en liet je hoog in de lucht los.
+     */
+    private static void transportBatteryEmptyLandsFirst(GameTestHelper helper) {
+        java.util.function.BiConsumer<ServerPlayer, DroneEntity> empty =
+                (owner, carrier) -> ImtData.setEnergy(ImtData.getWornGlasses(owner), 0);
+        landingTest(helper, empty, empty);
+    }
+
+    /** De rit duurt te lang (Transport.MAX_TICKS): ook dan eerst landen, niet met jou de lucht in. */
+    private static void transportTimeUpLandsFirst(GameTestHelper helper) {
+        landingTest(helper, (owner, carrier) -> carrier.setLifeTicks(1), (owner, carrier) -> { });
+    }
+
+    /**
+     * Een EMP raakt je drone: hij laat je niet hoog vallen, maar zet je met een noodlanding neer
+     * en ligt pas daarna stil.
+     */
+    private static void transportEmpLandsFirst(GameTestHelper helper) {
+        // Een kleine puls (1 blok) op de drone zelf: die raakt de drone, niet jou (je hangt eronder).
+        landingTest(helper, (owner, carrier) -> com.senne.imttech.weapons.Emp.blast(helper.getLevel(),
+                        carrier.getBoundingBox().getCenter(), 1.0, 600, null),
+                (owner, carrier) -> {
+                    if (!com.senne.imttech.weapons.Emp.isJammed(carrier)) {
+                        throw new GameTestAssertException("De drone werd niet geraakt door de EMP");
+                    }
+                });
+    }
+
+    /**
+     * Gemeenschappelijk stuk van de landingstests: een rit beginnen en opstijgen tot je 8
+     * blokken boven de grond hangt, dan {@code trigger} (wat de rit laat eindigen), en kijken
+     * hoe je neerkomt: pas los vlak boven de grond, nooit eerst nog de lucht in, geen zweefval.
+     *
+     * Een nep-speler heeft geen eigen spel dat hem laat vallen: waar de drone hem loslaat,
+     * blijft hij staan. Daarom zie je hier precies hoe hoog je losgelaten werd.
+     *
+     * @param trigger     wat de rit laat eindigen (één keer, op 8 blokken hoogte)
+     * @param whileHeld   wat er elke tick gebeurt zolang de drone je nog draagt
+     */
+    private static void landingTest(GameTestHelper helper,
+                                    java.util.function.BiConsumer<ServerPlayer, DroneEntity> trigger,
+                                    java.util.function.BiConsumer<ServerPlayer, DroneEntity> whileHeld) {
+        landingTest(helper, trigger, whileHeld, owner -> { });
+    }
+
+    /** Hetzelfde, met nog een eigen controle als je neergezet bent ({@code afterRelease}). */
+    private static void landingTest(GameTestHelper helper,
+                                    java.util.function.BiConsumer<ServerPlayer, DroneEntity> trigger,
+                                    java.util.function.BiConsumer<ServerPlayer, DroneEntity> whileHeld,
+                                    java.util.function.Consumer<ServerPlayer> afterRelease) {
         ServerPlayer owner = makeImtOwner(helper, new BlockPos(1, 3, 1));
         AtomicBoolean started = new AtomicBoolean();
-        AtomicBoolean landing = new AtomicBoolean();
+        AtomicBoolean triggered = new AtomicBoolean();
+        double[] triggerY = {0};
+        double[] highest = {Double.NEGATIVE_INFINITY};
         whenEntityTicking(helper, List.of(owner.blockPosition()), () -> {
             if (started.getAndSet(true)) {
                 return;
@@ -5430,12 +5513,11 @@ public final class ImtTechGameTests {
                 throw new GameTestAssertException("Er kwam geen transportdrone onder je hangen");
             }
             helper.succeedWhen(() -> {
-                // De batterij vol houden: anders laat de drone je halverwege los omdat de
-                // energie op is, en dan meten we het landen niet meer.
-                ItemStack worn = ImtData.getWornGlasses(owner);
-                ImtData.setEnergy(worn, ImtData.getMaxEnergy(worn));
                 DroneEntity carrier = ImtTransport.carrierOf(owner);
-                if (!landing.get()) {
+                if (!triggered.get()) {
+                    // De batterij vol houden tot het moment van de test.
+                    ItemStack worn = ImtData.getWornGlasses(owner);
+                    ImtData.setEnergy(worn, ImtData.getMaxEnergy(worn));
                     if (carrier == null) {
                         throw new GameTestAssertException("De rit stopte uit zichzelf");
                     }
@@ -5444,31 +5526,52 @@ public final class ImtTechGameTests {
                         ImtServer.handleDroneControl(owner, new DroneControlPayload(0, 0, 1, false, 0, 0));
                         throw new GameTestAssertException("Nog aan het stijgen");
                     }
-                    landing.set(true);
-                    owner.setNoGravity(false); // vanaf nu telt de zwaartekracht mee
-                    carrier.beginLanding(); // wat sluipen doet (zie ImtTransport.onDismount)
-                    throw new GameTestAssertException("Landen net begonnen");
+                    triggered.set(true);
+                    triggerY[0] = owner.getY();
+                    trigger.accept(owner, carrier);
+                    throw new GameTestAssertException("Net begonnen met landen");
+                }
+                highest[0] = Math.max(highest[0], owner.getY());
+                if (highest[0] > triggerY[0] + 1.0) {
+                    throw new GameTestAssertException("De drone nam je eerst mee omhoog: van " + triggerY[0]
+                            + " naar " + highest[0]);
                 }
                 if (carrier != null) {
-                    throw new GameTestAssertException("Hangt nog steeds onder de drone");
+                    whileHeld.accept(owner, carrier);
+                    throw new GameTestAssertException("Hangt nog onder de drone (aan het landen)");
+                }
+                double drop = ImtTransport.distanceToGround(owner);
+                if (drop > ImtTransport.RELEASE_HEIGHT + 0.01) {
+                    throw new GameTestAssertException("Losgelaten op " + drop + " blokken boven de grond");
                 }
                 if (owner.hasEffect(MobEffects.SLOW_FALLING)) {
                     throw new GameTestAssertException("Je kreeg zweefval in plaats van neergezet te worden");
                 }
-                // De drone heeft je losgelaten. Dan moet je zakken, niet vallen: de mod zet
-                // je in de zachte landing en houdt je valafstand op nul.
-                //
-                // Dat je daarna ook echt rustig naar beneden komt, kan deze test niet zien:
-                // een nep-speler heeft geen spel dat hem laat vallen. Dat merk je alleen in
-                // het echte spel.
-                if (!ImtTransport.isSoftLanding(owner) && ImtTransport.distanceToGround(owner) > 1.0) {
-                    throw new GameTestAssertException("Je werd losgelaten zonder zachte landing");
-                }
-                if (owner.fallDistance > 1.0f) {
-                    throw new GameTestAssertException("Valafstand loopt op: " + owner.fallDistance);
-                }
+                afterRelease.accept(owner);
             });
         });
+    }
+
+    /**
+     * De autopiloot (hoofdstuk 80): boven je bestemming aangekomen, landt hij zoals elke rit,
+     * recht naar beneden tot je voeten vlak boven de grond zijn, en precies boven de plek.
+     *
+     * Het hele stuk vliegen kan hier niet: de autopiloot klimt eerst tot 14 blokken boven het
+     * hoogste blok, en de testarena heeft een plafond (16 blokken). Daarom begint de test waar
+     * de autopiloot is als hij aankomt: hoog in de lucht, met de bestemming net naast je.
+     */
+    private static void transportAutopilotLands(GameTestHelper helper) {
+        BlockPos[] there = new BlockPos[1];
+        landingTest(helper, (owner, carrier) -> {
+                    there[0] = owner.blockPosition().east(2);
+                    carrier.setupTransport(DroneEntity.TransportRole.CARRIER, there[0], List.of());
+                }, (owner, carrier) -> { },
+                owner -> {
+                    double away = Math.hypot(owner.getX() - (there[0].getX() + 0.5), owner.getZ() - (there[0].getZ() + 0.5));
+                    if (away > 0.6) {
+                        throw new GameTestAssertException("Neergezet op " + away + " blokken van de bestemming");
+                    }
+                });
     }
 
     /** Een zwerm aanvalsdrones schakelt een vijand in de buurt uit. */

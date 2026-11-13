@@ -6609,6 +6609,51 @@ zag het daarom niet.
       502 tests, twee rondes: de eerste 501 groen en de bekende wisselvallige `guard_searches_where_he_lost_you` rood, de
       tweede alle 502 groen.
 
+### 80. Elke drone zet je neer zoals de autopiloot, zonder zweefval (11 november)
+
+Jouw melding: "de drones zetten je niet allemaal goed neer, het slowfall effect maakt dat je word gekickt, kun je al het
+landen maken net zoals de autopilot landing dat die jou laag naar de grond brengt en dan lost".
+
+Wat er mis was: alleen de autopiloot bracht je echt tot bij de grond. Bij de andere manieren om te stoppen liet de drone
+je los waar je hing, en dan zakte je langzaam (0,35 blok per tick, de "zachte landing"). Een server (niet je eigen wereld:
+daar mag vliegen altijd) gooit iedereen eraf die langer dan 4 seconden in de lucht hangt zonder blok in de buurt
+("Flying is not enabled on this server"). Door een fout in Minecraft telt daar ook gewoon vallen mee. Langzaam zakken
+van meer dan ongeveer 28 blokken hoog duurt langer dan 4 seconden, dus: eraf. Waar je hoog losgelaten werd:
+- **Sluipen**: Minecraft zelf laat je los zodra je sluipt (`Player.rideTick`, vlak na de tick van de drone). De drone zag
+  het sluipen wel, maar te laat: je viel, en omdat hij al "aan het landen" was, zelfs zonder zachte landing.
+- **"Land" in het G-menu**, en een **lege batterij**: meteen los, waar je ook hing.
+- **Je bril af**, een **lege batterij** op het verkeerde moment, of de **5 minuten** van een rit om: de drone riep zichzelf
+  terug, steeg op met jou eronder, en liet je pas hoog in de lucht los.
+- **Meer dan 64 blokken boven de grond**: de landing gaf het meteen op en liet je los.
+- **Een EMP**: los, hoe hoog je ook hing.
+- En bij elk loslaten zette Minecraft je **bovenop** de drone, bijna drie blokken hoger dan je hing.
+
+- [x] **Eén manier van landen** (`DroneEntity.beginLanding` en `descend`): de drone zakt recht naar beneden met jou eronder
+      (op volle snelheid, `landSpeed`, en vlak boven de grond rustig afremmend) en laat je pas los als je voeten
+      0,3 blok boven de grond zijn (`ImtTransport.RELEASE_HEIGHT`). Je komt te staan waar je hing
+      (`getDismountLocationForPassenger`), niet bovenop de drone. Tijdens het landen gaat hij door blokken heen, zodat hij
+      niet aan een richel of een bladerdak blijft hangen met jou hoog in de lucht. Boven water laat hij je los aan de
+      oppervlakte.
+- [x] **Sluipen** (`catchSneakingPassenger`): de drone zet je sluiptoets terug op "los" voordat Minecraft hem ziet, en begint
+      zelf te landen. Boven de leegte (het End) of boven lava begint hij er niet aan: "No safe ground below you".
+- [x] **Wat de rit ook laat stoppen** landt zo: "Land" in het G-menu, een lege batterij ("Battery empty: landing now."),
+      je bril af, de 5 minuten om ("Flight time is up: landing now."), een EMP ("EMP hit your drone: emergency landing.";
+      daarna ligt hij stil), en aangekomen met de autopiloot of met iemand die je liet ophalen. Een drone die iemand draagt,
+      vertrekt nooit meer naar zijn baan voor die op de grond staat (`departToOrbit`).
+- [x] **De autopiloot** landt nu ook zo, recht boven je waypoint. Ligt dat onder een dak, dan zet hij je op het dak; vroeger
+      bleef hij dan boven het dak hangen tot de 5 minuten om waren.
+- [x] **Weg**: de zachte landing (`tickSoftLanding`, `onDismount`, `onFallDamage`). Wordt je drone kapotgeschoten, dan val je
+      gewoon vanaf waar je hing (met valschade): een kapotte drone kan niemand neerzetten. (Mijn keuze.)
+- [x] **Ook opgelost**: landen riep al je transportdrones terug, ook een vrachtdrone die nog onderweg was (die liet zijn
+      spullen dan uit de lucht vallen). Nu gaan alleen de twee drones die met je meevlogen mee weg.
+- [x] **Tests** — `transport_landing` sluipt nu echt (zoals je spel dat elke tick doorgeeft), en nieuw zijn
+      `transport_battery_empty_lands_first`, `transport_time_up_lands_first`, `transport_emp_lands_first` en
+      `transport_autopilot_lands`. Ze stijgen tot 8 blokken, laten de rit stoppen en kijken of je pas 0,3 blok boven de
+      grond losgelaten werd, en nooit eerst nog omhoog ging. De autopiloottest begint boven de bestemming (de testarena
+      heeft een plafond op 16 blokken, en de autopiloot klimt eerst tot 14 blokken boven het hoogste blok) en kijkt ook
+      of je recht boven de plek staat. 506 tests, twee rondes: de eerste alleen de bekende wisselvallige
+      `raven_soldier_shoots` rood, de tweede alle 506 groen.
+
 ### 81. De blokken van de Power Battery vallen terug en breken vlot met een pickaxe (11 november)
 
 Jouw melding: "Als je iets van de battery breekt zoals een casing, glass, cel... dan krijg je dat niet terug, ook duurt
@@ -6872,6 +6917,66 @@ Jouw wens: "Voeg een electrische furnace toe zodat je net zoals een crusher enzo
       een vol vakje "Output full", een trechter van boven en opzij doet ruw ijzer erin maar geen aarde, van onder haalt
       hij de ijzerstaven eruit en van boven niets, en afbreken laat het ruwe koper vallen met 3 ervaring). Volledige ronde:
       516 tests (met het werk van de andere sessies), alle groen.
+
+### 88. "On a job" klopt weer: een drone die klaar is, hangt weer in zijn baan (12 november)
+
+Jouw melding: "Er is een fout met drones in orbit/on a job, wanneer elke drone in orbit moet zijn staat er toch on a
+job. Kun je eens kijken hoe dat komt en het oplossen".
+
+Hoe het komt: een drone staat in je arsenaal op "On a job" vanaf het moment dat hij vertrekt, en pas weer op "In orbit"
+als hij zich zelf terugmeldt, boven in de lucht. Op een paar manieren gebeurde dat nooit, en dan bleef hij op "On a job"
+staan tot je de wereld opnieuw opende:
+- **De twee escortedrones van een rit bleven achter** (waarschijnlijk wat jij zag). Ze vlogen hooguit 0,5 blok per tick;
+  de autopiloot vliegt 0,9 en sprinten 0,85. Na 20 tot 30 seconden vliegen waren ze verder van je weg dan je
+  "simulation distance", en daar laat Minecraft niets bewegen: ze bleven stil in de lucht hangen, en na de landing
+  konden ze zich niet meer terugmelden. Elke lange rit kostte zo twee drones.
+- **Een vrachtdrone naar een kist ver weg** viel op dezelfde manier halverwege stil. De vracht kwam nooit aan.
+- **Door een portaal**: een drone die zich terugmeldde, zocht je alleen in zijn eigen wereld. Ging je naar de Nether
+  terwijl je escorte aan stond, dan vonden de oude drones je niet meer, en vertrokken er in de Nether nieuwe.
+- **De spionagedrone die zijn doelwit door een portaal volgt**: de oude drone werd weggehaald zonder zich terug te
+  melden, en de nieuwe, in de andere wereld, vond je op het eind ook niet.
+- **Een drone die uit de wereld verdween** zonder zich terug te melden: weggehaald, of achtergebleven in een stuk wereld
+  dat niet meer geladen werd.
+- En andersom: kwam zo'n achtergebleven drone later terug (je kwam weer in de buurt), dan meldde hij zijn oude rit nog
+  eens terug, ook als dezelfde drone intussen weer op pad was.
+
+- [x] **De escortedrones houden je bij** (`DroneEntity.followOwner`, `flyAsTransport`): raken ze achterop, dan geven ze
+      gas, hoe verder hoe meer (tot ruim 1,5 blok per tick). Zijn ze toch meer dan 48 blokken van je weg (je
+      teleporteerde), dan springen ze bij, zoals de zwerm en de escorte dat al deden.
+- [x] **Een drone die bezig is, houdt de wereld rond zich wakker** (`keepWorldAwake`): hij geeft Minecraft een kaartje
+      voor zijn eigen chunk en de 8 eromheen, zoals een speler (of een enderparel). Het kaartje verloopt 5 seconden nadat
+      de drone weg is. Zo vliegt een vrachtdrone gewoon door naar een kist ver weg, en volgt een spionagedrone zijn
+      doelwit ook buiten jouw stuk wereld. Een drone die aan de grond op je wacht (Grounded) vraagt er geen.
+- [x] **Terugmelden vindt je overal** (`ownerAnywhere`), ook in een andere wereld. Wordt een drone neergehaald terwijl jij
+      in een andere wereld bent, dan gaat hij nu ook echt uit je arsenaal (vroeger kwam hij bij het inloggen terug).
+- [x] **Verdwijnt een drone zonder zich terug te melden, dan hangt hij meteen weer in zijn baan** (`handBack`, als
+      Minecraft hem uit de wereld haalt), met de schade die hij had. Was hij weggehaald, dan valt zijn vracht op de grond.
+      Een teruggeroepen drone die aan de grond op je wacht, blijft "Grounded": die staat er nog als je terugkomt.
+- [x] **Een oude kopie boekt niets** (`stale`): een drone die terugkomt uit een opgeslagen stuk wereld, vliegt meteen
+      terug naar boven zonder iets aan je arsenaal te veranderen. Droeg hij jou (je logde uit tijdens een rit), dan zet
+      hij je eerst netjes neer. Bij het inloggen worden drones van jou die nog ergens stilstonden ook zo'n oude kopie.
+- [x] **Drones gaan niet meer door een portaal** (`canChangeDimensions`): ze horen bij jou, in jouw wereld.
+- [x] **Een vangnet** (`ArsenalServer.onServerTick`, elke seconde): een drone op "On a job" die al 2 seconden niets meer
+      doet (hij staat stil in een stuk wereld waar niets beweegt, bijvoorbeeld een wereld zonder spelers, of hij kwam
+      nooit echt in de wereld), maakt zijn rit af en hangt weer in zijn baan. Een vracht gaat dan alsnog naar de kist bij
+      de bestemming, en wie hij vasthield laat hij los.
+- [x] **Drones die nu al vastzitten** op "On a job" in jouw wereld: die hangen weer in hun baan zodra je de wereld opnieuw
+      opent (dat deed het inloggen al).
+- [x] **Mijn invullingen** (zeg het als je het anders wilt): 48 blokken voor het bijspringen (zoals de andere drones), 2
+      seconden voor het vangnet, 3 bij 3 chunks wakker rond een drone, en dat een drone die ergens stilvalt zijn rit
+      afmaakt in plaats van te wachten tot je terugkomt.
+- [x] **Tests** (nieuw: `ArsenalGameTests`): `a_drone_taken_away_goes_back_to_orbit` (weggehaald: meteen weer
+      "In orbit"), `a_drone_in_another_world_still_reports_back` (een drone in de Nether terwijl jij in de gewone wereld
+      bent: hij vliegt terug en hangt weer in je arsenaal), `a_drone_that_does_nothing_goes_back_to_orbit` (na een halve
+      seconde nog "On a job", na ongeveer 2 seconden weer "In orbit"), `an_old_copy_of_a_drone_does_not_touch_your_arsenal`
+      (een opgeslagen kopie komt terug terwijl dezelfde drone op een nieuwe opdracht is: de kopie vliegt weg, en de drone
+      blijft "On a job"), `a_ride_ends_with_every_drone_back_in_orbit` (een escortedrone die 64 blokken achter staat, is
+      binnen 10 ticks weer bij je; na de landing staan er 0 drones op "On a job") en
+      `a_cargo_drone_flies_on_where_nobody_is` (een vrachtdrone vliegt 160 blokken ver, buiten het stuk wereld rond de
+      test, legt 3 diamanten in de kist en hangt daarna weer in zijn baan). Volledige ronde: 522 tests, alle groen. In de
+      twee rondes daarvoor faalde alleen de nieuwe vrachttest, door een fout in de test zelf: hij zette de kist in een stuk
+      wereld dat nog niet geladen was, en daar zegt Minecraft dat de grond op de bodem van de wereld ligt. De kist kwam zo
+      onder de aarde; de drone hing er netjes recht boven.
 
 ### 89. Met een magazijn in je hand: geen grijze regel meer rechtsonder (12 november)
 
@@ -7927,6 +8032,11 @@ eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er
       `imttech-client.toml`)?
 - [ ] **Een camera hernoemen met sneak + rechtsklik (hoofdstuk 93)**: gezien op screenshots (`c06b` tot `c06d`), niet met
       de muis gespeeld.
+- [ ] **"On a job" in je arsenaal (hoofdstuk 88)**: alleen met tests gecontroleerd. Probeer: een lange rit met de
+      autopiloot of al sprintend (blijven de twee drones bij je?), daarna het arsenaal (G > Satellite & Arsenal > Arsenal):
+      staat alles weer op "In orbit"? Ook: een vrachtdrone naar een kist ver weg, met de escorte aan door een portaal, en
+      een spionagedrone op iemand die door een portaal gaat.
+
 - [ ] **De Electric Furnace (hoofdstuk 87)**: niet met de muis gespeeld. Probeer: iets smelten tegen een generator en met
       een stroomkabel, shift-klik op het resultaat (krijg je de ervaring?), trechters erboven, opzij en eronder, en kijk of
       hij gloeit en licht geeft terwijl hij werkt en weer uitgaat als hij klaar is. Is twee keer zo snel als een oven
@@ -7942,6 +8052,11 @@ eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er
       screenshot, maar niet gespeeld. Probeer een basis met 1 CPU: tot 10 apparaten in je diagrammen gaat alles meteen;
       zet er 15 in (de app Monitor zegt "15 / 10 devices, 50% slower") en voel hoe lang een lezer dan op zijn groene lampje
       wacht (3 s). Voelt 10% per apparaat goed, of moet het anders (`logicSlowerPerDevice`, `logicDevicesPerCpu`)?
+
+- [ ] **Landen met de drones (hoofdstuk 80)**: alleen met tests op de server gecontroleerd. Probeer op een server: hoog
+      vliegen en sluipen (blijf je hangen tot vlak boven de grond, en sta je dan meteen?), "Land" in het G-menu, je bril
+      afzetten tijdens het vliegen, en een EMP-granaat op je eigen drone. Voelt de daalsnelheid goed (`landSpeed` in
+      de config, nu 0,35 blok per tick)?
 
 - [ ] **Het tabblad "Make parts" van de Gunsmith Table (hoofdstuk 78)**: gezien op screenshots (`-Ponly=glock`: `gl18` tot
       `gl18e`), niet met de muis gespeeld. Probeer: de tabbladen bovenaan, een wapen links kiezen (ook scrollen op die
