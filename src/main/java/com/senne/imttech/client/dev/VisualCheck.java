@@ -2593,9 +2593,9 @@ public final class VisualCheck {
             t.camera(0, CameraType.FIRST_PERSON);
         }
 
-        // --- De acht creative-tabbladen van I.M.T (26 oktober), elk een plaatje; de muis in de hoek, anders ligt er
-        // een tooltip over het midden. Het wapentabblad is langer dan het scherm (hoofdstuk 59): twee keer drie rijen
-        // verder gescrold, zodat ook de onderdelen van de Glock en de lasergeweren op een plaatje staan.
+        // --- De tien creative-tabbladen van I.M.T (26 oktober, sinds hoofdstuk 104 tien), elk een plaatje; de muis in de
+        // hoek, anders ligt er een tooltip over het midden. Wat langer is dan het scherm, ook gescrold: Weapons een rij
+        // verder (de banken), Gun Parts twee keer vier rijen (de lange wapens, dan de lasergeweren).
         if (want("creative")) {
             t.command(0, "gamemode creative @a");
             int number = 1;
@@ -2608,8 +2608,12 @@ public final class VisualCheck {
                 // dan "unbound value" geven).
                 if (tab.getId().equals(com.senne.imttech.registry.ModCreativeTabs.WEAPONS.getId())) {
                     t.step(0, () -> scrollScreen(-3));
-                    t.shot(10, name + "_b_glock_parts");
-                    t.step(0, () -> scrollScreen(-3));
+                    t.shot(10, name + "_b_benches");
+                }
+                if (tab.getId().equals(com.senne.imttech.registry.ModCreativeTabs.GUN_PARTS.getId())) {
+                    t.step(0, () -> scrollScreen(-4));
+                    t.shot(10, name + "_b_long_guns");
+                    t.step(0, () -> scrollScreen(-4));
                     t.shot(10, name + "_c_laser_parts");
                 }
             }

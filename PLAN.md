@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 566 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 567 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -7776,6 +7776,39 @@ standen), suppressors, extended mags en grips." Omdat jij het een grote update n
       Attachments langer dan anderhalve minuut duurde: nu staan de labels langer en zijn het twee animaties); volledige ronde
       566 tests, alle groen. **Gezien**: elk hoofdstukje van de vier nieuwe en de drie bijgewerkte onderwerpen
       (`ha_...`), en de zes onderdelen van de showcase (`python tools/showcase.py --test`).
+
+### 104. De tabbladen opnieuw verdeeld: Gun Parts en Attachments erbij (13 november)
+
+Jouw wens: "Kun je zorgen dat er een betere opdeling van de tabs is: holster tot en met untility pouch moet verhuizen
+naar equipment, al de gun onderdelen (niet mags bullets) moeten op hun eigen tab 'Gun parts' al de attachments moeten
+ook op een eigen tab 'Attachments'".
+
+- [x] **Tien tabbladen in plaats van acht** (`registry/ModCreativeTabs`), in deze volgorde: I.M.T Resources, Equipment,
+      Weapons, **Gun Parts**, **Attachments**, Power, Interior, Security, Robots en Datacenter.
+      **Equipment** kreeg uit Weapons de Holster, de Grenade Pouch, de Magazine Pouch, de drie rugzakken (olijfgroen en
+      in camo) en de vijf MOLLE-pouches, tot en met de Utility Pouch.
+      **Gun Parts** (nieuw; het icoon is een stalen slede van de Glock): elk onderdeel van elk vuurwapen in elk materiaal
+      waarin het bestaat (62), elk onderdeel van elk lasergeweer in titanium en netherite (48), en de Gun Sling.
+      **Attachments** (nieuw; het icoon is de Red Dot Sight): de negen attachments.
+      **Weapons** houdt de geweren, hun magazijnen (ook de lange), de munitie (patronen, hulzen, kogelpunten en het
+      buskruit), de granaten en de ladingen, en de banken: de Gunsmith Table en de Laser Workbench nu naast elkaar,
+      dan de Reloading Bench, het Pegboard en de Ammo Box.
+      **How it works**: in het overzicht (het **?** in je inventaris) staan de onderwerpen bij hun nieuwe tabblad
+      (`HowToTopics`): Holster, pouches and slings, Military backpacks en MOLLE pouches bij Equipment; Gunsmith Table
+      en Laser guns from parts bij Gun Parts; Attachments bij Attachments. LEESMIJ heeft de lijst van alle onderwerpen
+      bijgewerkt (61 van de 61; de vier van hoofdstuk 103 en de rugzakken ontbraken er nog in) en een regel over de tien
+      tabbladen in "Beginnen in het spel".
+      **Tests** (één nieuw, 567 in totaal): `gear_gun_parts_and_attachments_have_their_own_tabs` (de holster
+      tot en met de Utility Pouch bij Equipment en niet meer bij Weapons; Gun Parts precies alle onderdelen en de sling;
+      Attachments precies de attachments; de geweren, hun magazijnen en hun munitie bij Weapons), en
+      `every_item_is_in_one_creative_tab` kent de tien tabbladen.
+      **Gezien** (`gradlew runVisualCheck -Ponly=creative,howto`: `ct01` tot `ct10`, Weapons ook een rij verder en Gun
+      Parts ook bij de lange wapens en bij de lasergeweren; en het overzicht van How it works). De rondleiding van de
+      rugzakken (`pk05_creative_tab`) opent nu Equipment, en de showcase "I.M.T Technology items" noemt de tien.
+      **Mijn invullingen**: de lange magazijnen blijven bij hun gewone magazijnen in Weapons (jij zei "niet mags"); de
+      onderdelen van de lasergeweren horen ook bij Gun Parts; de Gun Sling ook (hij gaat er op de tafel aan zoals een
+      onderdeel); de twee nieuwe tabbladen staan direct achter Weapons; ze heten "I.M.T Gun Parts" en "I.M.T
+      Attachments", zoals de andere; de versie blijft 2.9 (er komt niets nieuws bij, het staat alleen anders).
 
 ## Nog nooit in het spel bekeken
 

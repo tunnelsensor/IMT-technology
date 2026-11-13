@@ -199,7 +199,8 @@ final class BackpackTour {
         t.shot(20, "pk04_back_slot_in_inventory");
         t.close(0);
         t.command(0, "gamemode creative @a");
-        t.step(5, () -> ShowcaseFeatures.openModTab(com.senne.imttech.registry.ModCreativeTabs.WEAPONS.get()));
+        // Sinds hoofdstuk 104 staan de rugzakken bij Equipment.
+        t.step(5, () -> ShowcaseFeatures.openModTab(com.senne.imttech.registry.ModCreativeTabs.EQUIPMENT.get()));
         t.step(5, () -> HowToTour.mouseTo(2, 2));
         t.shot(15, "pk05_creative_tab");
         t.close(0);

@@ -32,6 +32,11 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (445 automati
 - **Hoe werkt een item?** Houd in je inventaris (of een kist, het creative-menu, JEI) je muis op een item
   en houd **W** ingedrukt: dan gaat **How it works** open, een animatie zoals Ponder van Create (zie "How
   it works" in hoofdstuk 5). Het knopje **?** rechtsboven in je inventaris toont alle onderwerpen.
+- **In het creative-menu** staat alles van I.M.T op tien tabbladen, achter Combat: **Resources** (chips, upgrades,
+  materialen), **Equipment** (de bril, het harnas, het raketpakket, de drone, de Illusion Jammer, en de holster, de
+  pouches, de rugzakken en de MOLLE-pouches), **Weapons** (de geweren met hun magazijnen en munitie, de granaten, de
+  ladingen en de banken), **Gun Parts** (de onderdelen van alle geweren en de Gun Sling), **Attachments**, **Power**,
+  **Interior**, **Security**, **Robots** en **Datacenter**.
 - **De bril kun je niet maken.** Er bestaat geen recept voor: de enige I.M.T-bril in je
   wereld ligt in de kluis van een Biebia's Industries Tower. Zoek er dus eerst een (zie hieronder).
 - Craft een **computerchip** (koper, goud, redstone, diamant) — die heb je nodig voor bijna al het
@@ -199,12 +204,16 @@ Elk item dat meer doet dan in een recept gaan, krijgt een animatie die laat zien
   **wijs je een blok aan**, dan zie je hoe het heet. Heeft een item meer animaties, dan blader je met de
   pijltjes bovenaan. **Esc** brengt je terug naar je inventaris, met alles nog zoals het was. In je eigen
   wereld staat het spel stil terwijl je kijkt.
-- **Alles is er** (57 van de 57), per tabblad:
+- **Alles is er** (61 van de 61), per tabblad:
   - *Equipment*: de bril, het harnas (minder schade, vliegen, landen, de laser cannon), de mini-raketten, de
-    drones van je arsenaal en de Illusion Jammer.
-  - *Weapons*: de lasergeweren, lasergeweren uit onderdelen, de Ion Blaster, EMP-granaten, fraggranaten, rook en
-    de flashbang, de Remote EMP en Remote Frag, granaten terugwerpen (en ladingen verplaatsen), de Glock 19, de
-    Gunsmith Table, de Reloading Bench, de holster, de pouches en de slings, en de armory (het Pegboard en de Ammo Box).
+    drones van je arsenaal, de Illusion Jammer, de holster, de pouches en de slings, de militaire rugzakken en de
+    MOLLE-pouches.
+  - *Weapons*: de lasergeweren, de Ion Blaster, EMP-granaten, fraggranaten, rook en de flashbang, de Remote EMP en
+    Remote Frag, granaten terugwerpen (en ladingen verplaatsen), de Glock 19, de MP5 en de AK-47, de AWP, de
+    Remington 870, de Reloading Bench, en de armory (het Pegboard en de Ammo Box).
+  - *Gun Parts*: de Gunsmith Table (een wapen uit zijn onderdelen bouwen, en onderdelen maken) en lasergeweren uit
+    onderdelen.
+  - *Attachments*: de attachments (twee animaties).
   - *Power*: de Power Battery, stroom maken (zonnepaneel en warmtegenerator), kabels maken (koperdraad, de
     Polymerizer en plastic), de Electric Furnace, stroomkabels, netwerkkabels met PoE en de switch, en de stroomkast.
   - *Interior*: de holotafel, de harnas-werkbank met zijn upgrades, barsten herstellen (Repair Paste, de Crusher en
@@ -2459,7 +2468,8 @@ nieuwe wapens" en "attachments in buit".
   `laserDamage`, `spread`, `fireInterval` en `attackRange` gelden nu alleen nog voor zijn lasergeweren.
 
 **How it works en de showcase** (versie 2.9). De nieuwe wapens en de attachments hebben hun eigen uitleg: houd **W**
-op het item in je inventaris (of klik op het **?** boven je craftraster, tabblad Weapons).
+op het item in je inventaris (of klik op het **?** boven je craftraster: de wapens staan bij Weapons, de attachments
+bij Attachments).
 - **MP5 and AK-47** (op de MP5, de AK-47, hun magazijnen en de 7.62-patroon): het wapen groot in beeld, een salvo, de
   keuzeschakelaar met X (met een plaatje van je HUD) en de drie standen na elkaar, de spanhendel, de sling en de zes
   onderdelen.

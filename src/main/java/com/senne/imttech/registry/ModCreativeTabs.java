@@ -13,10 +13,15 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
- * De acht I.M.T-tabbladen in het creative-menu (26 oktober), in deze volgorde: Resources, Equipment,
- * Weapons, Power, Interior, Security, Robots en Datacenter. Elk tabblad komt achter het vorige, het
- * eerste achter het vanilla-tabblad Combat. Een nieuw item moet in precies één tabblad (dat
- * controleert de test {@code every_item_is_in_one_creative_tab}).
+ * De tien I.M.T-tabbladen in het creative-menu, in deze volgorde: Resources, Equipment, Weapons, Gun Parts, Attachments,
+ * Power, Interior, Security, Robots en Datacenter. Elk tabblad komt achter het vorige, het eerste achter het
+ * vanilla-tabblad Combat. Een nieuw item moet in precies één tabblad (dat controleert de test
+ * {@code every_item_is_in_one_creative_tab}).
+ *
+ * Eerst waren het er acht (26 oktober). Sinds 13 november (hoofdstuk 104, jouw wens: "holster tot en met utility pouch
+ * moet verhuizen naar equipment, al de gun onderdelen (niet mags, bullets) moeten op hun eigen tab 'Gun parts', al de
+ * attachments moeten ook op een eigen tab 'Attachments'") staan de holster, de pouches en de rugzakken bij Equipment, en
+ * hebben de onderdelen van alle geweren en de attachments elk hun eigen tabblad.
  */
 public final class ModCreativeTabs {
     private ModCreativeTabs() {}
@@ -50,7 +55,10 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.PLASTIC.get());
             });
 
-    /** Wat je draagt of bij je hebt: de bril, het harnas, het raketpakket en de drone. */
+    /**
+     * Wat je draagt of bij je hebt: de bril, het harnas, het raketpakket, de drone en de Illusion Jammer, en sinds
+     * hoofdstuk 104 ook de holster, de pouches, de rugzakken en de MOLLE-pouches (die stonden bij Weapons).
+     */
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> EQUIPMENT = tab("equipment", RESOURCES.getKey(),
             () -> new ItemStack(ModItems.IMT_GLASSES.get()), (parameters, output) -> {
                 // Een lege bril (zoals je hem in survival krijgt)...
@@ -65,9 +73,28 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.ROCKET_PACK.get());
                 output.accept(ModItems.DRONE.get());
                 output.accept(ModItems.EMP.get());
+                // De holster en de pouches (hoofdstuk 52, stap 2).
+                output.accept(ModItems.HOLSTER.get());
+                output.accept(ModItems.GRENADE_POUCH.get());
+                output.accept(ModItems.MAG_POUCH.get());
+                // De rugzakken (hoofdstuk 72): olijfgroen, en elk ook in camo; dan de MOLLE-pouches, tot de Utility Pouch.
+                for (com.senne.imttech.backpack.BackpackItem.Size size : com.senne.imttech.backpack.BackpackItem.Size.values()) {
+                    output.accept(com.senne.imttech.backpack.BackpackRegistry.item(size));
+                }
+                for (com.senne.imttech.backpack.BackpackItem.Size size : com.senne.imttech.backpack.BackpackItem.Size.values()) {
+                    ItemStack camo = new ItemStack(com.senne.imttech.backpack.BackpackRegistry.item(size));
+                    camo.set(com.senne.imttech.backpack.BackpackRegistry.CAMO.get(), true);
+                    output.accept(camo);
+                }
+                for (com.senne.imttech.backpack.MolleItem.Kind kind : com.senne.imttech.backpack.MolleItem.Kind.values()) {
+                    output.accept(com.senne.imttech.backpack.BackpackRegistry.molle(kind));
+                }
             });
 
-    /** Alle geweren, dan de granaten en de ladingen die je op afstand laat afgaan. */
+    /**
+     * De geweren zelf, met hun magazijnen en munitie, de granaten en de ladingen die je op afstand laat afgaan, en de
+     * banken. Hun onderdelen staan sinds hoofdstuk 104 bij Gun Parts, hun attachments bij Attachments.
+     */
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> WEAPONS = tab("weapons", EQUIPMENT.getKey(),
             () -> new ItemStack(ModItems.LASER_RIFLE.get()), (parameters, output) -> {
                 // De lasergeweren (hoofdstuk 55: compleet, titanium, met een kern en een volle cel).
@@ -87,8 +114,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.EMP_TRIGGER.get());
                 output.accept(ModItems.REMOTE_FRAG.get());
                 output.accept(ModItems.FRAG_TRIGGER.get());
-                // De vuurwapens (hoofdstuk 52 en 103): elk wapen geladen, zijn magazijn (leeg en vol), en zijn onderdelen
-                // per materiaal; daarna de munitie en de banken.
+                // De vuurwapens (hoofdstuk 52 en 103): elk wapen geladen, met zijn magazijnen (leeg, vol en het lange).
                 for (com.senne.imttech.guns.FirearmType type : com.senne.imttech.guns.FirearmType.values()) {
                     output.accept(com.senne.imttech.guns.FirearmItem.loaded(type, com.senne.imttech.guns.GunMaterial.STEEL));
                     if (!type.tube()) {
@@ -96,6 +122,31 @@ public final class ModCreativeTabs {
                         output.accept(com.senne.imttech.guns.MagazineItem.of(type, type.capacity()));
                         output.accept(com.senne.imttech.guns.MagazineItem.of(type, true, type.capacity(true)));
                     }
+                }
+                // De munitie: per kaliber de patroon, de huls en de kogelpunt, en het buskruit.
+                for (com.senne.imttech.guns.Caliber caliber : com.senne.imttech.guns.Caliber.values()) {
+                    output.accept(caliber.round());
+                    output.accept(caliber.casing());
+                    output.accept(caliber.bullet());
+                }
+                output.accept(ModItems.CRUSHED_GUNPOWDER.get());
+                // De banken, en de armory (hoofdstuk 67): het Pegboard en de Ammo Box.
+                output.accept(ModItems.GUNSMITH_TABLE.get());
+                output.accept(ModItems.LASER_WORKBENCH.get());
+                output.accept(ModItems.RELOADING_BENCH.get());
+                output.accept(ModItems.PEGBOARD.get());
+                output.accept(ModItems.AMMO_BOX.get());
+            });
+
+    /**
+     * Hoofdstuk 104: de onderdelen van alle geweren. Eerst de vuurwapens (per wapen elk onderdeel in elk materiaal waarin
+     * het bestaat), dan de lasergeweren (per geweer in titanium en netherite), en de Gun Sling (die gaat er op de
+     * Gunsmith Table of de Laser Workbench aan zoals een onderdeel). Magazijnen en munitie staan bij Weapons.
+     */
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> GUN_PARTS = tab("gun_parts", WEAPONS.getKey(),
+            () -> com.senne.imttech.guns.GunPartItem.of(com.senne.imttech.guns.FirearmType.GLOCK_19,
+                    com.senne.imttech.guns.GunPart.SLIDE, com.senne.imttech.guns.GunMaterial.STEEL), (parameters, output) -> {
+                for (com.senne.imttech.guns.FirearmType type : com.senne.imttech.guns.FirearmType.values()) {
                     for (com.senne.imttech.guns.GunPart part : com.senne.imttech.guns.GunPart.values()) {
                         for (com.senne.imttech.guns.GunMaterial material : com.senne.imttech.guns.GunMaterial.values()) {
                             if (part.accepts(type, material)) {
@@ -104,36 +155,6 @@ public final class ModCreativeTabs {
                         }
                     }
                 }
-                for (com.senne.imttech.guns.Attachment attachment : com.senne.imttech.guns.Attachment.values()) {
-                    output.accept(ModItems.attachment(attachment));
-                }
-                for (com.senne.imttech.guns.Caliber caliber : com.senne.imttech.guns.Caliber.values()) {
-                    output.accept(caliber.round());
-                    output.accept(caliber.casing());
-                    output.accept(caliber.bullet());
-                }
-                output.accept(ModItems.CRUSHED_GUNPOWDER.get());
-                output.accept(ModItems.HOLSTER.get());
-                output.accept(ModItems.GRENADE_POUCH.get());
-                output.accept(ModItems.MAG_POUCH.get());
-                // De rugzakken (hoofdstuk 72): olijfgroen, en elk ook in camo.
-                for (com.senne.imttech.backpack.BackpackItem.Size size : com.senne.imttech.backpack.BackpackItem.Size.values()) {
-                    output.accept(com.senne.imttech.backpack.BackpackRegistry.item(size));
-                }
-                for (com.senne.imttech.backpack.BackpackItem.Size size : com.senne.imttech.backpack.BackpackItem.Size.values()) {
-                    net.minecraft.world.item.ItemStack camo = new net.minecraft.world.item.ItemStack(com.senne.imttech.backpack.BackpackRegistry.item(size));
-                    camo.set(com.senne.imttech.backpack.BackpackRegistry.CAMO.get(), true);
-                    output.accept(camo);
-                }
-                for (com.senne.imttech.backpack.MolleItem.Kind kind : com.senne.imttech.backpack.MolleItem.Kind.values()) {
-                    output.accept(com.senne.imttech.backpack.BackpackRegistry.molle(kind));
-                }
-                output.accept(ModItems.GUNSMITH_TABLE.get());
-                output.accept(ModItems.RELOADING_BENCH.get());
-                // De armory (hoofdstuk 67): het Pegboard en de Ammo Box.
-                output.accept(ModItems.PEGBOARD.get());
-                output.accept(ModItems.AMMO_BOX.get());
-                // De onderdelen van de lasergeweren (hoofdstuk 55), per geweer in titanium en netherite, de sling en de werkbank.
                 for (com.senne.imttech.weapons.GunType type : com.senne.imttech.weapons.GunType.values()) {
                     for (com.senne.imttech.weapons.LaserPart part : com.senne.imttech.weapons.LaserPart.wearing()) {
                         for (com.senne.imttech.guns.GunMaterial material : com.senne.imttech.weapons.LaserPart.MATERIALS) {
@@ -142,11 +163,18 @@ public final class ModCreativeTabs {
                     }
                 }
                 output.accept(ModItems.GUN_SLING.get());
-                output.accept(ModItems.LASER_WORKBENCH.get());
+            });
+
+    /** Hoofdstuk 104: de attachments van hoofdstuk 103 (kijkers, dempers, grips, de tweepoot en de verlengbuis). */
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> ATTACHMENTS = tab("attachments", GUN_PARTS.getKey(),
+            () -> new ItemStack(ModItems.attachment(com.senne.imttech.guns.Attachment.RED_DOT)), (parameters, output) -> {
+                for (com.senne.imttech.guns.Attachment attachment : com.senne.imttech.guns.Attachment.values()) {
+                    output.accept(ModItems.attachment(attachment));
+                }
             });
 
     /** De kabels (stroom, netwerk, PoE) en wat stroom maakt of opslaat. */
-    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> POWER = tab("power", WEAPONS.getKey(),
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> POWER = tab("power", ATTACHMENTS.getKey(),
             () -> new ItemStack(ModItems.SOLAR_PANEL.get()), (parameters, output) -> {
                 output.accept(ModItems.CABLE.get());
                 output.accept(ModItems.NETWORK_CABLE.get());

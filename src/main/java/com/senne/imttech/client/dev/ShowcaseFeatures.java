@@ -2446,11 +2446,12 @@ final class ShowcaseFeatures {
                 .pause(140)
                 .close(0));
 
-        add("I.M.T Technology items", "Alles wat de mod toevoegt, in de acht creative-tabbladen van I.M.T, elk twee "
-                + "seconden: Resources (chips en upgrades), Equipment (de bril en het harnas), Weapons (alle geweren en "
-                + "granaten), Power (de kabel en de generatoren), Interior (holotafel, werkbank, crusher, compactor), "
-                + "Security (lezers, codepanelen, laserwand en -brug), Robots (onderdelen, chips, training) en "
-                + "Datacenter.", start, 180, 0, s -> {
+        add("I.M.T Technology items", "Alles wat de mod toevoegt, in de tien creative-tabbladen van I.M.T, elk twee "
+                + "seconden: Resources (chips en upgrades), Equipment (de bril, het harnas, de holster, de pouches en de "
+                + "rugzakken), Weapons (alle geweren met hun magazijnen en munitie, de granaten en de banken), Gun Parts (de "
+                + "onderdelen van alle geweren, sinds hoofdstuk 104), Attachments (sinds hoofdstuk 104), Power (de kabels en "
+                + "de generatoren), Interior (holotafel, werkbank, crusher, compactor), Security (lezers, codepanelen, "
+                + "laserwand en -brug), Robots (onderdelen, chips, training) en Datacenter.", start, 180, 0, s -> {
                     int wait = 10;
                     for (DeferredHolder<CreativeModeTab, ? extends CreativeModeTab> tab : ModCreativeTabs.TABS.getEntries()) {
                         s.step(wait, () -> openModTab(tab.get()));

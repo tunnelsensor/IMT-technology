@@ -54,11 +54,20 @@ public final class HowToTopics {
             topic("drones", "equipment", "Drones", SuitScenes::drones, ModItems.DRONE),
             // Het item heette vroeger E.M.P.-zender; in het spel heet het nu Illusion Jammer.
             topic("illusion_jammer", "equipment", "Illusion Jammer", SuitScenes::illusionJammer, ModItems.EMP),
+            // Hoofdstuk 104: de holster, de pouches en de rugzakken staan sinds 13 november bij Equipment (eerst Weapons).
+            topic("gear", "equipment", "Holster, pouches and slings", WeaponScenes::gear, ModItems.HOLSTER, ModItems.GRENADE_POUCH,
+                    ModItems.MAG_POUCH, ModItems.GUN_SLING),
+            // Hoofdstuk 72: de militaire rugzakken (en van achteren openen, en het lichaam van een speler), en de MOLLE-pouches.
+            topic("backpacks", "equipment", "Military backpacks", com.senne.imttech.howto.scenes.BackpackScenes::backpacks,
+                    com.senne.imttech.backpack.BackpackRegistry.ASSAULT_PACK, com.senne.imttech.backpack.BackpackRegistry.PATROL_PACK,
+                    com.senne.imttech.backpack.BackpackRegistry.RUCKSACK),
+            topic("molle_pouches", "equipment", "MOLLE pouches", com.senne.imttech.howto.scenes.BackpackScenes::molle,
+                    com.senne.imttech.backpack.BackpackRegistry.MOLLE_MAG_POUCH, com.senne.imttech.backpack.BackpackRegistry.MOLLE_GRENADE_POUCH,
+                    com.senne.imttech.backpack.BackpackRegistry.DUMP_POUCH, com.senne.imttech.backpack.BackpackRegistry.IFAK,
+                    com.senne.imttech.backpack.BackpackRegistry.UTILITY_POUCH),
             // ------------------------------------------------------------ Weapons
             topic("laser_guns", "weapons", "Laser guns", WeaponScenes::laserGuns, ModItems.LASER_PISTOL, ModItems.LASER_RIFLE,
                     ModItems.LASER_SNIPER, ModItems.LASER_SHOTGUN, ModItems.ENERGY_CELL),
-            topicItems("laser_workbench", "weapons", "Laser guns from parts", WeaponScenes::laserWorkbench,
-                    () -> concat(laserParts(), List.of(ModItems.LASER_WORKBENCH.get(), ModItems.GUN_SLING.get()))),
             topic("ion_blaster", "weapons", "Ion Blaster", WeaponScenes::ionBlaster, ModItems.ION_BLASTER),
             topic("emp_grenades", "weapons", "EMP grenades", GrenadeScenes::emp, ModItems.EMP_GRENADE, ModItems.STICKY_EMP_GRENADE),
             topic("frag_grenades", "weapons", "Frag grenades", GrenadeScenes::frag, ModItems.FRAG_GRENADE, ModItems.STICKY_FRAG_GRENADE),
@@ -81,30 +90,26 @@ public final class HowToTopics {
             topic("awp", "weapons", "AWP", GunScenes::awp, ModItems.AWP, ModItems.AWP_MAGAZINE, ModItems.ROUND_338,
                     () -> ModItems.magazine(com.senne.imttech.guns.FirearmType.AWP, true)),
             topic("remington_870", "weapons", "Remington 870", GunScenes::remington, ModItems.REMINGTON_870, ModItems.ROUND_12G),
-            topicItems("attachments", "weapons", "Attachments", scenes(GunScenes::attachments, GunScenes::attachmentsMore),
+            topic("reloading", "weapons", "Reloading Bench", WeaponScenes::reloading, ModItems.RELOADING_BENCH, ModItems.CASING_9MM,
+                    ModItems.BULLET_9MM, ModItems.CRUSHED_GUNPOWDER, ModItems.ROUND_9MM, ModItems.CASING_762, ModItems.BULLET_762,
+                    ModItems.CASING_338, ModItems.BULLET_338, ModItems.CASING_12G, ModItems.BULLET_12G),
+            topic("armory", "weapons", "Armory: pegboard and ammo box", com.senne.imttech.howto.scenes.ArmoryScenes::armory,
+                    ModItems.PEGBOARD, ModItems.AMMO_BOX),
+            // ------------------------------------------------------------ Gun Parts (hoofdstuk 104)
+            // Een wapen bouwen uit zijn onderdelen: de vuurwapens op de Gunsmith Table, de lasergeweren op de Laser Workbench.
+            topicItems("gunsmith", "gun_parts", "Gunsmith Table", WeaponScenes::gunsmith,
+                    () -> concat(Arrays.stream(com.senne.imttech.guns.FirearmType.values())
+                                    .flatMap(type -> Arrays.stream(GunPart.values()).map(part -> (Item) ModItems.gunPart(type, part))).toList(),
+                            List.<Item>of(ModItems.GUNSMITH_TABLE.get()))),
+            topicItems("laser_workbench", "gun_parts", "Laser guns from parts", WeaponScenes::laserWorkbench,
+                    () -> concat(laserParts(), List.of(ModItems.LASER_WORKBENCH.get(), ModItems.GUN_SLING.get()))),
+            // ------------------------------------------------------------ Attachments (hoofdstuk 104)
+            // Een lang magazijn (een eigen item, bij Weapons) opent ook deze uitleg: hij vertelt erover.
+            topicItems("attachments", "attachments", "Attachments", scenes(GunScenes::attachments, GunScenes::attachmentsMore),
                     () -> concat(Arrays.stream(com.senne.imttech.guns.Attachment.values())
                                     .map(attachment -> (Item) ModItems.attachment(attachment)).toList(),
                             Arrays.stream(com.senne.imttech.guns.FirearmType.values()).filter(type -> !type.tube())
                                     .map(type -> (Item) ModItems.magazine(type, true)).toList())),
-            topicItems("gunsmith", "weapons", "Gunsmith Table", WeaponScenes::gunsmith,
-                    () -> concat(Arrays.stream(com.senne.imttech.guns.FirearmType.values())
-                                    .flatMap(type -> Arrays.stream(GunPart.values()).map(part -> (Item) ModItems.gunPart(type, part))).toList(),
-                            List.<Item>of(ModItems.GUNSMITH_TABLE.get()))),
-            topic("reloading", "weapons", "Reloading Bench", WeaponScenes::reloading, ModItems.RELOADING_BENCH, ModItems.CASING_9MM,
-                    ModItems.BULLET_9MM, ModItems.CRUSHED_GUNPOWDER, ModItems.ROUND_9MM, ModItems.CASING_762, ModItems.BULLET_762,
-                    ModItems.CASING_338, ModItems.BULLET_338, ModItems.CASING_12G, ModItems.BULLET_12G),
-            topic("gear", "weapons", "Holster, pouches and slings", WeaponScenes::gear, ModItems.HOLSTER, ModItems.GRENADE_POUCH,
-                    ModItems.MAG_POUCH, ModItems.GUN_SLING),
-            topic("armory", "weapons", "Armory: pegboard and ammo box", com.senne.imttech.howto.scenes.ArmoryScenes::armory,
-                    ModItems.PEGBOARD, ModItems.AMMO_BOX),
-            // Hoofdstuk 72: de militaire rugzakken (en van achteren openen, en het lichaam van een speler), en de MOLLE-pouches.
-            topic("backpacks", "weapons", "Military backpacks", com.senne.imttech.howto.scenes.BackpackScenes::backpacks,
-                    com.senne.imttech.backpack.BackpackRegistry.ASSAULT_PACK, com.senne.imttech.backpack.BackpackRegistry.PATROL_PACK,
-                    com.senne.imttech.backpack.BackpackRegistry.RUCKSACK),
-            topic("molle_pouches", "weapons", "MOLLE pouches", com.senne.imttech.howto.scenes.BackpackScenes::molle,
-                    com.senne.imttech.backpack.BackpackRegistry.MOLLE_MAG_POUCH, com.senne.imttech.backpack.BackpackRegistry.MOLLE_GRENADE_POUCH,
-                    com.senne.imttech.backpack.BackpackRegistry.DUMP_POUCH, com.senne.imttech.backpack.BackpackRegistry.IFAK,
-                    com.senne.imttech.backpack.BackpackRegistry.UTILITY_POUCH),
             // ------------------------------------------------------------ Power
             topic("power_battery", "power", "Power Battery", PowerScenes::battery, ModItems.BATTERY_CASING, ModItems.BATTERY_GLASS,
                     ModItems.BATTERY_CELL, ModItems.BATTERY_PORT),
