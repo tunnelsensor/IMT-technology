@@ -1890,24 +1890,54 @@ public final class ImtConfig {
     public static final class Raven {
         private Raven() {}
 
-        /** Schade van één laserschot (4 = 2 hartjes). */
-        @Tunable("Damage of one Raven soldier shot (a bullet from his Glock 19, or a laser)")
+        /** Schade van één laserschot (4 = 2 hartjes). Zijn vuurwapens staan in gunDamage (hoofdstuk 103). */
+        @Tunable("Damage of one shot from a Raven soldier's laser gun (his firearms use gunDamage)")
         public static float LASER_DAMAGE = 4.0f;
         /** Hoofdstuk 54: hoe ver een soldaat ernaast schiet (graden), welke kans op granaten, en of zijn wapen valt. */
-        @Tunable(value = "Extra spread of a Raven soldier's shots (degrees)", max = 45)
+        @Tunable(value = "Extra spread of a Raven soldier's laser shots (degrees; his firearms use gunSpread)", max = 45)
         public static float SPREAD = 4.0f;
         @Tunable(value = "Chance that a Raven soldier carries grenades (frag or EMP)", max = 1)
         public static float GRENADE_CHANCE = 0.35f;
         @Tunable(value = "Ticks between two grenades of one soldier", min = 20)
         public static float GRENADE_INTERVAL = 200.0f;
-        @Tunable(value = "Chance that a dead Raven soldier drops his weapon (Glock 19 or laser gun)", max = 1)
+        @Tunable(value = "Chance that a dead Raven soldier drops his weapon (with whatever is mounted on it)", max = 1)
         public static float WEAPON_DROP_CHANCE = 0.08f;
         /** Ticks tussen twee schoten (35 = bijna 2 seconden). */
-        @Tunable("Ticks between two Raven soldier shots")
+        @Tunable("Ticks between two shots of a Raven soldier's laser gun (his firearms use gunInterval)")
         public static float FIRE_INTERVAL = 35.0f;
         /** Tot hoe ver hij schiet. */
-        @Tunable("How far a Raven soldier shoots (blocks)")
+        @Tunable("How far a Raven soldier shoots with a laser gun (blocks; his firearms use gunRange)")
         public static float ATTACK_RANGE = 18.0f;
+
+        // Hoofdstuk 103, stap 8 (jouw keuze: "Raven-soldaten met de nieuwe wapens"): elke soldaat draagt een eigen wapen.
+        // De rijtjes per vuurwapen staan in de volgorde van [guns]: Glock 19, MP5, AK-47, AWP, Remington 870.
+        /** Hoe vaak hij welk wapen draagt (gewichten, samen hoeven ze geen 100 te zijn; 0 = nooit). */
+        @Tunable(value = "How often a Raven soldier carries each weapon (weights; 0 = never): Glock 19, MP5, AK-47, AWP, "
+                + "Remington 870, Laser Rifle, Laser Pistol", max = 1_000)
+        public static float[] WEAPON_WEIGHTS = {20.0f, 16.0f, 16.0f, 6.0f, 7.0f, 22.0f, 13.0f};
+        /** Schade van één kogel (4 = 2 hartjes); bij de Remington 870 van één korrel hagel (er zijn er acht). */
+        @Tunable(value = "Damage of one bullet from a Raven soldier's firearm (one pellet for the Remington 870), per firearm: "
+                + "Glock 19, MP5, AK-47, AWP, Remington 870", max = 1_000)
+        public static float[] GUN_DAMAGE = {4.0f, 2.0f, 3.5f, 9.0f, 1.2f};
+        /** Hoeveel schoten hij vlak na elkaar lost (een salvo). */
+        @Tunable(value = "Shots in one burst of a Raven soldier, per firearm", min = 1, max = 10)
+        public static float[] GUN_BURST = {1.0f, 3.0f, 2.0f, 1.0f, 1.0f};
+        /** Ticks tussen twee schoten, of tussen twee salvo's (er komt altijd een halve seconde toeval bij). */
+        @Tunable(value = "Ticks between two shots (or two bursts) of a Raven soldier, per firearm", min = 1)
+        public static float[] GUN_INTERVAL = {35.0f, 40.0f, 40.0f, 80.0f, 50.0f};
+        /** Tot hoe ver hij ermee schiet: een sluipschutter met een AWP veel verder, een Remington 870 alleen dichtbij. */
+        @Tunable(value = "How far a Raven soldier shoots with each firearm (blocks)", min = 1, max = 128)
+        public static float[] GUN_RANGE = {18.0f, 18.0f, 22.0f, 40.0f, 12.0f};
+        /** Hoe ver hij ernaast kan schieten (graden); een kijker op zijn wapen maakt dat kleiner, zoals bij jou. */
+        @Tunable(value = "Extra spread of a Raven soldier's bullets (degrees; a sight on his gun narrows it), per firearm", max = 45)
+        public static float[] GUN_SPREAD = {4.0f, 4.5f, 4.0f, 2.0f, 3.0f};
+        /** Kans dat er iets op zijn vuurwapen zit (de AWP heeft altijd zijn kijker). */
+        @Tunable(value = "Chance that a Raven soldier's firearm carries an attachment (a red dot, a grip or a suppressor; "
+                + "his AWP always has its Sniper Scope)", max = 1)
+        public static float ATTACHMENT_CHANCE = 0.3f;
+        /** Kans op een los attachment in de rugzak van een gevallen soldaat. */
+        @Tunable(value = "Chance of a loose attachment in a fallen Raven soldier's backpack", max = 1)
+        public static float PACK_ATTACHMENT_CHANCE = 0.15f;
         /** Hoeveel ervaring hij laat vallen. */
         @Tunable("Experience a Raven soldier drops")
         public static float XP_REWARD = 10.0f;

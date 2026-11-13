@@ -1,6 +1,5 @@
 package com.senne.imttech.raven;
 
-import com.senne.imttech.config.ImtConfig;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -37,10 +36,13 @@ import org.jetbrains.annotations.Nullable;
  * </ul>
  */
 public class RavenCombatGoal extends Goal {
-    /** Dichterbij dan dit komt hij niet vrijwillig (blokken). */
-    private static final double MIN_RANGE = 6.0;
-    /** Zo ver weg zoekt hij een schietplek (van het doelwit af). */
-    private static final double[] POST_DISTANCES = {9.0, 13.0, 16.0};
+    /**
+     * Dichterbij dan dit deel van zijn bereik komt hij niet vrijwillig: 6 blokken met een Glock (bereik 18), 13 met de AWP,
+     * 4 met de Remington 870 (hoofdstuk 103: elk wapen heeft zijn eigen bereik, zie RavenArms).
+     */
+    private static final double MIN_RANGE_PART = 1.0 / 3.0;
+    /** Zo ver weg zoekt hij een schietplek (van het doelwit af), als deel van zijn bereik: 9, 13 en 16 blokken met een Glock. */
+    private static final double[] POST_PARTS = {0.5, 0.72, 0.89};
     /** Zo vaak (ticks) kijkt hij opnieuw waar hij heen moet als hij je niet ziet. */
     private static final int REPLAN_TICKS = 25;
     /** Hoe ver de ploeg reikt: soldaten die zo dichtbij zijn en hetzelfde doelwit hebben. */
@@ -56,6 +58,9 @@ public class RavenCombatGoal extends Goal {
     private final RavenSoldierEntity soldier;
     private int seeTime;
     private int attackCooldown;
+    /** Hoofdstuk 103: hoeveel schoten van zijn salvo (MP5, AK-47) nog komen, en over hoeveel ticks het volgende. */
+    private int burstLeft;
+    private int burstCooldown;
     private int replanCooldown;
     private int strafeTicks;
     private boolean strafeLeft;
@@ -85,7 +90,8 @@ public class RavenCombatGoal extends Goal {
 
     @Override
     public void start() {
-        attackCooldown = Math.round(ImtConfig.Raven.FIRE_INTERVAL) / 2 + soldier.getRandom().nextInt(10);
+        attackCooldown = RavenArms.interval(soldier.getMainHandItem()) / 2 + soldier.getRandom().nextInt(10);
+        burstLeft = 0;
         replanCooldown = 0;
         alertSquad();
     }
@@ -95,6 +101,7 @@ public class RavenCombatGoal extends Goal {
         post = null;
         POSTS.remove(soldier);
         seeTime = 0;
+        burstLeft = 0;
         soldier.getNavigation().stop();
     }
 
@@ -112,7 +119,7 @@ public class RavenCombatGoal extends Goal {
             seeTime = 0;
         }
         double distance = soldier.distanceTo(target);
-        boolean inRange = distance <= ImtConfig.Raven.ATTACK_RANGE;
+        boolean inRange = distance <= soldier.attackRange();
 
         if (sees && inRange) {
             // Een drone in de lucht: liever een EMP (hoofdstuk 54), dan valt hij uit de lucht.
@@ -122,6 +129,7 @@ public class RavenCombatGoal extends Goal {
             }
             holdAndShoot(target, distance);
         } else {
+            burstLeft = 0; // hij ziet je niet meer: de rest van zijn salvo vervalt
             if (lastSeen != null) {
                 soldier.getLookControl().setLookAt(lastSeen.x, lastSeen.y + 1.4, lastSeen.z);
                 // Verstopt achter een muur, vlakbij: een granaat eroverheen (hoofdstuk 54).
@@ -147,7 +155,7 @@ public class RavenCombatGoal extends Goal {
             post = null;
             POSTS.remove(soldier);
         }
-        if (distance < MIN_RANGE) {
+        if (distance < soldier.attackRange() * MIN_RANGE_PART) {
             // Te dichtbij: een stap achteruit, weg van het doelwit.
             soldier.getMoveControl().strafe(-0.6f, 0.0f);
         } else if (soldier.getNavigation().isDone()) {
@@ -158,10 +166,20 @@ public class RavenCombatGoal extends Goal {
             }
             soldier.getMoveControl().strafe(0.0f, strafeTicks > 12 ? (strafeLeft ? 0.35f : -0.35f) : 0.0f);
         }
-        if (--attackCooldown <= 0 && seeTime >= 5) {
+        net.minecraft.world.item.ItemStack weapon = soldier.getMainHandItem();
+        if (burstLeft > 0) {
+            // Midden in een salvo (MP5, AK-47): de volgende kogel komt vanzelf, zonder opnieuw aan te leggen.
+            if (--burstCooldown <= 0) {
+                soldier.performRangedAttack(target, 1.0f);
+                burstLeft--;
+                burstCooldown = RavenArms.burstGap(weapon);
+            }
+        } else if (--attackCooldown <= 0 && seeTime >= RavenArms.aimTicks(weapon)) {
             soldier.performRangedAttack(target, 1.0f);
+            burstLeft = RavenArms.burst(weapon) - 1;
+            burstCooldown = RavenArms.burstGap(weapon);
             // Niet allemaal tegelijk: elke soldaat een beetje anders.
-            attackCooldown = Math.round(ImtConfig.Raven.FIRE_INTERVAL) + soldier.getRandom().nextInt(12);
+            attackCooldown = RavenArms.interval(weapon) + soldier.getRandom().nextInt(12);
         }
     }
 
@@ -199,7 +217,9 @@ public class RavenCombatGoal extends Goal {
         Vec3 eye = target.getEyePosition();
         double side = sideAngle(target);
         List<Vec3> candidates = new ArrayList<>();
-        for (double distance : POST_DISTANCES) {
+        double range = soldier.attackRange();
+        for (double part : POST_PARTS) {
+            double distance = range * part;
             for (int step : new int[] {0, 1, -1, 2, -2, 3, -3}) {
                 double angle = side + step * Math.toRadians(30);
                 double x = target.getX() + Math.cos(angle) * distance;

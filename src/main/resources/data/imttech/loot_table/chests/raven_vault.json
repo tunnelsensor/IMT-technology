@@ -144,6 +144,60 @@
           "weight": 7
         }
       ]
+    },
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "imttech:sniper_scope",
+          "weight": 3
+        },
+        {
+          "type": "minecraft:item",
+          "name": "imttech:suppressor_rifle",
+          "weight": 3
+        },
+        {
+          "type": "minecraft:item",
+          "name": "imttech:suppressor_shotgun",
+          "weight": 2
+        },
+        {
+          "type": "minecraft:item",
+          "name": "imttech:bipod",
+          "weight": 2
+        },
+        {
+          "type": "minecraft:item",
+          "name": "imttech:tube_extension",
+          "weight": 2
+        },
+        {
+          "type": "minecraft:item",
+          "name": "imttech:glock_19_extended_magazine",
+          "weight": 1
+        },
+        {
+          "type": "minecraft:item",
+          "name": "imttech:mp5_extended_magazine",
+          "weight": 1
+        },
+        {
+          "type": "minecraft:item",
+          "name": "imttech:ak_47_extended_magazine",
+          "weight": 1
+        },
+        {
+          "type": "minecraft:item",
+          "name": "imttech:awp_extended_magazine",
+          "weight": 1
+        },
+        {
+          "type": "minecraft:empty",
+          "weight": 8
+        }
+      ]
     }
   ],
   "random_sequence": "imttech:chests/raven_vault"

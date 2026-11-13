@@ -38,15 +38,17 @@ import org.jetbrains.annotations.Nullable;
  *
  * Hij loopt rond tot hij iemand ziet. Sinds hoofdstuk 54 (jouw notitie: "zorg dat ze de wapens die er nu aan de game
  * zijn toegevoegd kunnen gebruiken, en het gun dat ze nu hebben moet volledig weg") draagt hij een wapen van de mod:
- * de helft een <b>Glock 19</b> (echte kogels, met een vliegtijd), de rest een <b>laser rifle</b> of <b>laser pistol</b>
- * (dezelfde stralen als die van jou). Een deel heeft ook <b>granaten</b> bij zich (frag of EMP): verstop je je achter een
+ * een <b>Glock 19</b> (echte kogels, met een vliegtijd), een <b>laser rifle</b> of <b>laser pistol</b> (dezelfde stralen
+ * als die van jou), en sinds hoofdstuk 103 (stap 8, jouw keuze: "Raven-soldaten met de nieuwe wapens") ook een
+ * <b>MP5</b>, een <b>AK-47</b>, soms een <b>AWP</b> (een sluipschutter) of een <b>Remington 870</b>. Wat hij draagt en
+ * wat het kan, staat in {@link RavenArms}. Een deel heeft ook <b>granaten</b> bij zich (frag of EMP): verstop je je achter een
  * muur, dan gooit hij er een; op een drone gooit hij een EMP. Hij schiet op spelers en op drones (jouw escorte krijgt
  * het dus ook te verduren). Hoe hij vecht staat in RavenCombatGoal: als ploeg, ze omsingelen je, zoeken een plek van
  * waaruit ze je zien als je je verstopt, en doen deuren open om bij je te komen.
  *
  * Staat zijn doelwit onder een schildkoepel, dan stuit het schot op de koepel, net als bij de
- * raiddrones. Soms laat hij een Raven-onderdeel vallen (zie de loot table
- * entities/raven_soldier), en soms (8%) zijn wapen.
+ * raiddrones. Soms laat hij een Raven-onderdeel of een attachment vallen (zie de loot table
+ * entities/raven_soldier), en soms (8%) zijn wapen, met wat erop zit.
  *
  * Sinds hoofdstuk 60 is hij een bewaker zoals in Hitman: hij kijkt in een kegel en het duurt even voor hij je heeft
  * (RavenSenses: een meter die volloopt), hij komt kijken als hij iets ziet of hoort en zoekt waar hij je kwijtraakte
@@ -80,6 +82,13 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
     private int grenades;
     private boolean empGrenades;
     private int grenadeCooldown;
+    /**
+     * Hoofdstuk 103, stap 8: een grendel (AWP) of een pomp (Remington 870) laadt hij na elk schot zelf door. Zoveel ticks
+     * nog tot hij dat doet (je hoort het, en dan pas springt de lege huls eruit); 0 = er valt niets door te laden.
+     */
+    private int cycleIn;
+    /** Zo lang na het schot laadt hij door (ticks): een halve seconde, zoals jij dat doet. */
+    private static final int CYCLE_DELAY = 10;
     /**
      * 8 november: een soldaat van een versterkingsteam (RavenSites). Na "stand down" loopt hij terug naar de ingang en is
      * hij weg ({@code leaving}), zodat een bunker na een alarm niet voorgoed voller wordt.
@@ -327,26 +336,27 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
         return entityData.get(SUSPECT);
     }
 
-    /** Zijn wapen (hoofdstuk 54): de helft een Glock 19, verder een laser rifle of laser pistol; soms granaten erbij. */
+    /**
+     * Zijn wapen (hoofdstuk 54, en sinds hoofdstuk 103 ook de nieuwe wapens): een Glock 19, een MP5, een AK-47, een AWP,
+     * een Remington 870, een laser rifle of een laser pistol (zie RavenArms); soms granaten erbij.
+     */
     @Override
     protected void populateDefaultEquipmentSlots(net.minecraft.util.RandomSource random, DifficultyInstance difficulty) {
-        float roll = random.nextFloat();
-        ItemStack weapon;
-        if (roll < 0.5f) {
-            weapon = com.senne.imttech.guns.FirearmItem.loaded(com.senne.imttech.guns.FirearmType.GLOCK_19,
-                    com.senne.imttech.guns.GunMaterial.STEEL);
-        } else {
-            // Hoofdstuk 55: een compleet titanium geweer, maar zonder Nether Star (die haal je niet bij een soldaat): wie het
-            // opraapt moet er zelf een insteken op de Laser Workbench. De soldaat zelf schiet ook zonder (fireFrom).
-            com.senne.imttech.weapons.GunType kind = roll < 0.8f ? com.senne.imttech.weapons.GunType.RIFLE : com.senne.imttech.weapons.GunType.PISTOL;
-            weapon = com.senne.imttech.weapons.LaserGunItem.withParts(kind, com.senne.imttech.weapons.LaserParts
-                    .complete(com.senne.imttech.guns.GunMaterial.TITANIUM).without(com.senne.imttech.weapons.LaserPart.CORE));
-            com.senne.imttech.weapons.LaserGunItem.setCell(weapon, com.senne.imttech.weapons.EnergyCellItem.FULL);
-        }
-        setItemSlot(EquipmentSlot.MAINHAND, weapon);
-        setDropChance(EquipmentSlot.MAINHAND, ImtConfig.Raven.WEAPON_DROP_CHANCE);
+        arm(RavenArms.random(random));
         grenades = random.nextFloat() < ImtConfig.Raven.GRENADE_CHANCE ? 1 + random.nextInt(2) : 0;
         empGrenades = random.nextFloat() < 0.4f;
+    }
+
+    /** Geeft hem dit wapen in zijn hand (ook voor de tests en de rondleiding: een soldaat met een wapen naar keuze). */
+    public void arm(ItemStack weapon) {
+        setItemSlot(EquipmentSlot.MAINHAND, weapon);
+        setDropChance(EquipmentSlot.MAINHAND, ImtConfig.Raven.WEAPON_DROP_CHANCE);
+        cycleIn = 0;
+    }
+
+    /** Tot hoe ver hij schiet met wat hij in zijn hand heeft (blokken): een sluipschutter veel verder dan de rest. */
+    public double attackRange() {
+        return RavenArms.range(getMainHandItem());
     }
 
     public boolean hasGrenades() {
@@ -364,11 +374,13 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
     /** Een bewaker laat zijn keycard vallen (geschreven op de kern van de toren, groep "staff"). */
     @Override
     protected void dropCustomDeathLoot(ServerLevel level, net.minecraft.world.damagesource.DamageSource source, boolean recentlyHit) {
+        // Eerst onthouden wat hij droeg: laat hij zijn wapen vallen (super), dan is zijn hand daarna leeg.
+        ItemStack weapon = getMainHandItem().copy();
         super.dropCustomDeathLoot(level, source, recentlyHit);
-        // Hoofdstuk 72, stap 5: zijn rugzak, vol buit (die komt met de rest in zijn lichaam, zie Bodies).
+        // Hoofdstuk 72, stap 5: zijn rugzak, vol buit (die komt met de rest in zijn lichaam, zie Bodies). Sinds hoofdstuk
+        // 103 met munitie voor het wapen dat hij droeg.
         if (!pack().isEmpty()) {
-            boolean laser = com.senne.imttech.weapons.LaserGunItem.typeOf(getMainHandItem()) != null;
-            spawnAtLocation(com.senne.imttech.backpack.RavenPacks.filled(pack(), getRandom(), laser));
+            spawnAtLocation(com.senne.imttech.backpack.RavenPacks.filled(pack(), getRandom(), weapon));
             setPack(ItemStack.EMPTY);
         }
         if (keycardGuard) {
@@ -408,6 +420,9 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
             grenadeCooldown--;
         }
         if (level() instanceof ServerLevel level) {
+            if (cycleIn > 0 && --cycleIn == 0) {
+                cycle(level);
+            }
             if (isBeingTakenDown()) {
                 // 8 november: iemand heeft hem vast voor een sluipaanval. Hij ziet en hoort niets meer, en roept niet: hij worstelt.
                 setAggressive(false);
@@ -490,7 +505,11 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
                 && !com.senne.imttech.weapons.Smoke.blocks(level(), getEyePosition(), entity.getEyePosition());
     }
 
-    /** Eén schot met wat hij in zijn hand heeft: een kogel uit de Glock, of een straal uit zijn lasergeweer. */
+    /**
+     * Eén schot met wat hij in zijn hand heeft: een kogel uit zijn vuurwapen (bij de Remington 870 acht korrels hagel),
+     * of een straal uit zijn lasergeweer. Een salvo (MP5, AK-47) is een paar van deze schoten vlak na elkaar: dat regelt
+     * RavenCombatGoal.
+     */
     @Override
     public void performRangedAttack(LivingEntity target, float power) {
         if (!(level() instanceof ServerLevel level)) {
@@ -500,20 +519,44 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
         Vec3 to = target.getBoundingBox().getCenter();
         Vec3 look = to.subtract(from).normalize();
         ItemStack weapon = getMainHandItem();
-        if (com.senne.imttech.guns.FirearmItem.typeOf(weapon) != null) {
-            // Een echte kogel (hoofdstuk 52): die vliegt, zakt, en stuit op een koepel (zie BulletEntity).
-            Vec3 direction = com.senne.imttech.weapons.LaserGuns.scatter(look, Math.toRadians(ImtConfig.Raven.SPREAD), random);
-            com.senne.imttech.guns.BulletEntity.shoot(level, this, com.senne.imttech.guns.FirearmType.GLOCK_19,
-                    ImtConfig.Raven.LASER_DAMAGE, direction);
-            // Hoofdstuk 74: dichtbij het schot, verder weg het doffe schot van ver (zie Firearms.shotSound).
-            com.senne.imttech.guns.Firearms.shotSound(level, this, getX(), getEyeY(), getZ(), SoundSource.HOSTILE,
-                    0.9f + random.nextFloat() * 0.1f);
-            com.senne.imttech.guns.CasingEntity.eject(level, this);
+        com.senne.imttech.guns.FirearmType firearm = com.senne.imttech.guns.FirearmItem.typeOf(weapon);
+        if (firearm != null) {
+            // Een echte kogel (hoofdstuk 52): die vliegt, zakt, en stuit op een koepel (zie BulletEntity). Sinds hoofdstuk
+            // 103 de kogel van zijn eigen wapen (zo ver, zo snel), met de schade en de spreiding uit [raven] (RavenArms).
+            Vec3 aim = com.senne.imttech.weapons.LaserGuns.scatter(look, Math.toRadians(RavenArms.spread(weapon)), random);
+            float damage = RavenArms.damage(weapon);
+            // Hagel is een bundel korrels: één richting voor het schot, en elke korrel waaiert er nog wat af (zoals bij jou).
+            int pellets = firearm.pellets();
+            double fan = Math.toRadians(Math.max(0, ImtConfig.Guns.PELLET_SPREAD));
+            for (int i = 0; i < pellets; i++) {
+                com.senne.imttech.guns.BulletEntity.shoot(level, this, firearm, damage,
+                        pellets == 1 ? aim : com.senne.imttech.weapons.LaserGuns.scatter(aim, fan, random));
+            }
+            // Hoofdstuk 74: dichtbij het schot, verder weg het doffe schot van ver; met een demper erop een doffe plof
+            // (zie Firearms.shotSound).
+            com.senne.imttech.guns.Firearms.shotSound(level, this, firearm, com.senne.imttech.guns.FirearmItem.suppressed(weapon),
+                    getX(), getEyeY(), getZ(), SoundSource.HOSTILE, 0.9f + random.nextFloat() * 0.1f);
+            if (firearm.manual()) {
+                // Een grendel of een pomp: de lege huls blijft in de kamer tot hij doorlaadt, een halve seconde later.
+                cycleIn = CYCLE_DELAY;
+            } else {
+                com.senne.imttech.guns.CasingEntity.eject(level, this, firearm.caliber);
+            }
             return;
         }
         com.senne.imttech.weapons.GunType type = com.senne.imttech.weapons.LaserGunItem.typeOf(weapon);
         com.senne.imttech.weapons.LaserGuns.fireFrom(level, this, type == null ? com.senne.imttech.weapons.GunType.RIFLE : type,
-                from, look, ImtConfig.Raven.LASER_DAMAGE, Math.toRadians(ImtConfig.Raven.SPREAD));
+                from, look, RavenArms.damage(weapon), Math.toRadians(RavenArms.spread(weapon)));
+    }
+
+    /** Doorladen na een schot met een grendel of een pomp: je hoort het, en de lege huls springt eruit. */
+    private void cycle(ServerLevel level) {
+        com.senne.imttech.guns.FirearmType firearm = com.senne.imttech.guns.FirearmItem.typeOf(getMainHandItem());
+        if (firearm == null || !firearm.manual() || !isAlive()) {
+            return;
+        }
+        level.playSound(null, getX(), getEyeY(), getZ(), firearm.rackSound(), SoundSource.HOSTILE, 0.8f, 0.95f + random.nextFloat() * 0.1f);
+        com.senne.imttech.guns.CasingEntity.eject(level, this, firearm.caliber);
     }
 
     @Override

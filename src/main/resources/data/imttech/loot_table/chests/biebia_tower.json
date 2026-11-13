@@ -167,6 +167,40 @@
           "weight": 10
         }
       ]
+    },
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "imttech:red_dot_sight",
+          "weight": 3
+        },
+        {
+          "type": "minecraft:item",
+          "name": "imttech:vertical_grip",
+          "weight": 2
+        },
+        {
+          "type": "minecraft:item",
+          "name": "imttech:angled_grip",
+          "weight": 2
+        },
+        {
+          "type": "minecraft:item",
+          "name": "imttech:suppressor_9mm",
+          "weight": 1
+        },
+        {
+          "type": "minecraft:item",
+          "name": "imttech:suppressor_rifle",
+          "weight": 1
+        },
+        {
+          "type": "minecraft:empty",
+          "weight": 21
+        }
+      ]
     }
   ],
   "random_sequence": "imttech:chests/biebia_tower"

@@ -83,15 +83,28 @@ public class RavenSoldierRenderer extends HumanoidMobRenderer<RavenSoldierEntity
 
     /**
      * Het model: in de aanval legt hij zijn geweer aan met twee handen (de houding van een
-     * kruisboogschutter), anders houdt hij het gewoon vast.
+     * kruisboogschutter), anders houdt hij het gewoon vast. Een lang vuurwapen (hoofdstuk 103, stap 8: de MP5, de AK-47,
+     * de AWP en de Remington 870) draagt hij in rust met twee handen voor zijn lijf, de loop schuin naar de grond: aan
+     * één hangende arm stak de loop van de AWP in de vloer.
      */
     public static class Model extends HumanoidModel<RavenSoldierEntity> {
+        /**
+         * Hoe ver zijn armen in rust lager hangen dan aangelegd, met een lang vuurwapen (radialen: ruim 40 graden). De AWP
+         * is zo lang dat zijn loop dan de grond raakt: die houdt hij vlakker (bijna 30 graden).
+         */
+        private static final float LOW_READY = 0.75f;
+        private static final float LOW_READY_LONG = 0.5f;
+        /** Draagt hij nu een lang vuurwapen in rust, en hoe laag? (per soldaat opnieuw bepaald in prepareMobModel) */
+        private boolean lowReady;
+        private float lowReadyAngle = LOW_READY;
+
         public Model(ModelPart root) {
             super(root);
         }
 
         @Override
         public void prepareMobModel(RavenSoldierEntity soldier, float limbSwing, float limbSwingAmount, float partialTick) {
+            lowReady = false;
             if (soldier.isBeingTakenDown()) {
                 // 8 november: iemand heeft hem vast; de houding komt uit TakedownPose (zie setupAnim).
                 rightArmPose = ArmPose.EMPTY;
@@ -115,6 +128,9 @@ public class RavenSoldierRenderer extends HumanoidMobRenderer<RavenSoldierEntity
             }
             rightArmPose = soldier.isAggressive() ? ArmPose.CROSSBOW_HOLD : ArmPose.ITEM;
             leftArmPose = ArmPose.EMPTY;
+            com.senne.imttech.guns.FirearmType firearm = com.senne.imttech.guns.FirearmItem.typeOf(soldier.getMainHandItem());
+            lowReady = !soldier.isAggressive() && firearm != null && firearm.longGun;
+            lowReadyAngle = firearm == com.senne.imttech.guns.FirearmType.AWP ? LOW_READY_LONG : LOW_READY;
             super.prepareMobModel(soldier, limbSwing, limbSwingAmount, partialTick);
         }
 
@@ -123,6 +139,15 @@ public class RavenSoldierRenderer extends HumanoidMobRenderer<RavenSoldierEntity
             super.setupAnim(soldier, limbSwing, limbSwingAmount, age, netHeadYaw, headPitch);
             if (soldier.isBeingTakenDown()) {
                 TakedownPose.apply(this, soldier.takedownProgress(age), age);
+            } else if (lowReady) {
+                // Dezelfde greep als aangelegd (de kruisbooghouding), maar lager, en los van waar hij kijkt: kijkt een
+                // bewaker op zijn route om zich heen, dan zwaait zijn geweer niet mee.
+                rightArm.yRot = -0.3f;
+                leftArm.yRot = 0.6f;
+                rightArm.xRot = -Mth.HALF_PI + 0.1f + lowReadyAngle;
+                leftArm.xRot = -1.5f + lowReadyAngle;
+                rightArm.zRot = 0.0f;
+                leftArm.zRot = 0.0f;
             }
         }
     }

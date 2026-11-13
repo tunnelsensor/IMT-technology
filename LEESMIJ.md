@@ -621,8 +621,10 @@ een drone). In de kratten eromheen liggen brokstukken. Maar het wrak wordt bewaa
 ### Raven-soldaten
 Raven wil I.M.T-tech. Hun soldaten dragen een zwart tactisch pak met een vest vol magazijntasjes, een radio
 op de rug, een rode bril met vizier en het rode embleem op borst en helm. Sinds 6 november dragen ze de wapens
-van de mod: de helft een **Glock 19** (echte kogels, met een vliegtijd en hulzen), de rest een **laser
-rifle** of **laser pistol** (dezelfde stralen als die van jou; een rayshield houdt ze tegen). Een deel heeft
+van de mod: een **Glock 19** (echte kogels, met een vliegtijd en hulzen), een **laser rifle** of een **laser
+pistol** (dezelfde stralen als die van jou; een rayshield houdt ze tegen), en sinds versie 2.8 ook een **MP5**, een
+**AK-47**, soms een **AWP** (een sluipschutter) of een **Remington 870** (zie "Raven-soldaten met de nieuwe
+wapens" bij de vuurwapens). Een deel heeft
 ook **granaten** bij zich: verstop je je vlakbij achter een muur, dan gooit hij er een frag of een EMP
 overheen; op een drone gooit hij een EMP. Ze schieten ook op je drones. Ze bewaken de Biebia's
 Industries-bunker (zie hieronder) en sinds 6 november ook de Biebia's Industries Tower uit kamers.
@@ -2418,6 +2420,43 @@ de Gunsmith Table (maken doe je ze op de Gunsmith Table).
   compleet is; rechts staat wat erop zit. Je ziet de kijker en de greep ook op het geweer in je hand, bij anderen, op je
   rug, op het Pegboard en op het plaatje in je inventaris (ook een lasergeweer is als item nu getekend uit zijn
   onderdelen).
+
+**Raven-soldaten met de nieuwe wapens, en attachments in buit** (versie 2.8). Jouw keuzes: "Raven-soldaten met de
+nieuwe wapens" en "attachments in buit".
+- **Wat een soldaat draagt**: niet meer alleen een Glock 19 of een lasergeweer. Van elke honderd soldaten dragen er
+  ongeveer 20 een **Glock 19**, 16 een **MP5**, 16 een **AK-47**, 6 een **AWP**, 7 een **Remington 870**, 22 een
+  Laser Rifle en 13 een Laser Pistol. Dat geldt overal waar soldaten staan: de bunker, het versterkingsteam bij een
+  alarm en de toren.
+- **Elk wapen vecht anders**:
+  - de **Glock 19**: losse schoten, zoals altijd (4 schade, dat is 2 hartjes);
+  - de **MP5**: een **salvo van drie** kleine kogels (elk 2 schade);
+  - de **AK-47**: een **salvo van twee** zwaardere kogels (elk 3,5), van iets verder (22 blokken in plaats van 18);
+  - de **AWP**: een **sluipschutter**. Hij schiet tot **40 blokken** ver en veel preciezer (er zit altijd een Sniper
+    Scope op), en een treffer doet 9 schade. Daar staat tegenover: hij moet je eerst **een seconde zien** voor hij
+    schiet (duik weg en hij begint opnieuw), hij laadt na elk schot door (je hoort de grendel) en er zitten vier
+    seconden tussen twee schoten. Kom je dichtbij, dan loopt hij achteruit;
+  - de **Remington 870**: **acht korrels hagel** per schot (elk 1,2 schade): van dichtbij gevaarlijk, van ver bijna
+    niets. Hij schiet pas vanaf 12 blokken, dus hij komt naar je toe, en na elk schot hoor je hem pompen.
+- **Wat erop zit**: bij ongeveer drie op de tien vuurwapens zit er een attachment op: meestal een Red Dot Sight,
+  soms een greep (MP5, AK-47), de tweepoot (AWP), de verlengbuis (870) of een demper (nooit op de AWP: een schot van
+  40 blokken ver dat je niet hoort, is niet eerlijk). Het werkt ook voor hem: met een kijker schiet hij preciezer,
+  met een demper is zijn schot een doffe plof en doet zijn kogel een tikje minder schade.
+- **In rust** draagt een soldaat een lang wapen met twee handen voor zijn lijf, de loop schuin naar de grond; ziet
+  hij je, dan gaat het wapen omhoog. Een Glock hangt gewoon in zijn hand.
+- **Buit**:
+  - laat hij zijn wapen vallen (8 op de 100), dan zit alles wat erop zat er nog op, en het is geladen;
+  - in zijn **rugzak** (als hij er een droeg) zit munitie voor **zijn** wapen (9mm, 7.62, .338 of hagelpatronen), soms
+    een magazijn of een onderdeel van zijn wapen, en bij ongeveer een op de zeven een los attachment;
+  - een soldaat die door een speler valt, laat 5 op de 100 keer een los attachment vallen;
+  - in de **kisten**: de slaapzaal van de bunker (3 op de 10 kisten: een Red Dot Sight, een greep of een 9mm
+    Suppressor), de voorraadtonnen van de bunker (2 op de 3: munitie voor de vier kalibers), de kluis van de bunker (2
+    op de 3: de Sniper Scope, de Rifle of Shotgun Suppressor, de Bipod, de Tube Extension of een leeg Extended
+    Magazine), de kisten van de toren (3 op de 10) en de kluis van de toren (2 op de 3: de Sniper Scope, een Red Dot
+    Sight, een demper of de Bipod).
+- **De getallen** staan onder `[raven]`: `weaponWeights` (hoe vaak hij welk wapen draagt: zet een getal op 0 en dat
+  wapen komt niet meer voor), en per vuurwapen `gunDamage`, `gunBurst`, `gunInterval`, `gunRange` en `gunSpread`;
+  verder `attachmentChance` (iets op zijn wapen) en `packAttachmentChance` (iets in zijn rugzak). De oude getallen
+  `laserDamage`, `spread`, `fireInterval` en `attackRange` gelden nu alleen nog voor zijn lasergeweren.
 
 **De getallen** staan in `config/imttech.toml` onder `[guns]`: elk rijtje heeft nu vijf getallen, in de volgorde Glock
 19, MP5, AK-47, AWP, Remington 870 (schade, tempo, bereik, kogelsnelheid, magazijn, het lange magazijn, spreiding,

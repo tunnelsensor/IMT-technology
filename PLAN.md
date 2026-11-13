@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 559 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 566 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -7688,7 +7688,54 @@ standen), suppressors, extended mags en grips." Omdat jij het een grote update n
       **Mijn invullingen erbij**: de Sniper Scope alleen op de Laser Sniper; de grips niet onder de shotgun (daar zit
       zijn pomp) en niet onder het pistool; de kijker in de plaats van het eigen vizier; de Laser Sniper houdt zonder
       attachment zijn oude kijker van 4x met het zwarte beeld; attachments op een compleet geweer; versie 2.7.0.
-- [ ] **8. Raven-soldaten met de nieuwe wapens, en attachments in buit.**
+- [x] **8. Raven-soldaten met de nieuwe wapens, en attachments in buit** (13 november, versie 2.8.0).
+      **Wat een soldaat draagt** (`raven/RavenArms`, nieuw): `Kind` (Glock 19, MP5, AK-47, AWP, Remington 870, Laser
+      Rifle, Laser Pistol), gekozen met de gewichten uit `[raven] weaponWeights` (20, 16, 16, 6, 7, 22, 13; alles op 0
+      geeft toch een Glock). `weapon(kind, random)`: een vuurwapen compleet van staal en geladen
+      (`FirearmItem.loaded`), de AWP altijd met de Sniper Scope, en met kans `attachmentChance` (0,3) één attachment dat
+      past (een red dot het vaakst, dan een greep, de tweepoot of de verlengbuis, een demper het minst; geen demper op
+      de AWP). Een lasergeweer is zoals het was (titanium, zonder Nether Star, een volle cel).
+      **Wat het kan** (ook `RavenArms`; de getallen per vuurwapen staan in `[raven]`, in de volgorde van `[guns]`):
+      `gunDamage` (4, 2, 3,5, 9 en 1,2 per korrel), `gunBurst` (1, 3, 2, 1, 1), `gunInterval` (35, 40, 40, 80 en 50
+      ticks), `gunRange` (18, 18, 22, 40 en 12 blokken) en `gunSpread` (4, 4,5, 4, 2 en 3 graden). Wat op het wapen
+      zit, telt mee zoals bij een speler: `FirearmItem.damageFactor` (een demper) en `aimSpreadFactor` (een kijker: de
+      AWP met zijn kijker komt op 1 graad). De oude getallen `laserDamage`, `spread`, `fireInterval` en `attackRange`
+      gelden nu alleen voor de lasergeweren.
+      **Het schot** (`RavenSoldierEntity.performRangedAttack`): de kogel van zijn eigen wapen (`BulletEntity.shoot` met
+      zijn `FirearmType`: zo ver en zo snel als dat wapen), bij de 870 acht korrels die uitwaaieren (`[guns]
+      pelletSpread`), het geluid van zijn wapen (met een demper de doffe plof, `Firearms.shotSound`) en de huls van zijn
+      kaliber. Een grendel of een pomp laadt hij een halve seconde later door (`cycleIn` en `cycle`: je hoort het, en
+      dan pas valt de huls). `arm(weapon)` geeft een soldaat een wapen naar keuze (tests en de rondleiding).
+      **Het vechten** (`RavenCombatGoal`): het bereik komt van zijn wapen (`soldier.attackRange()`), en hoe dicht hij
+      komt (een derde van zijn bereik) en waar hij een schietplek zoekt (de helft tot 0,89 van zijn bereik) schalen
+      mee: een sluipschutter blijft op afstand, een soldaat met een 870 komt naar je toe. Een salvo: `burstLeft` en
+      `burstCooldown` (om de `RavenArms.burstGap` ticks de volgende kogel; ziet hij je niet meer, dan vervalt de rest).
+      Een sluipschutter moet je een seconde zien voor hij schiet (`aimTicks` 20 in plaats van 5).
+      **In rust** (`RavenSoldierRenderer.Model`): een lang vuurwapen draagt hij met twee handen voor zijn lijf, de loop
+      schuin naar de grond (`lowReady`: de greep van de kruisbooghouding, 0,75 radialen lager en los van waar hij
+      kijkt). Aan één hangende arm stak de loop van de AWP in de vloer.
+      **Buit**: `RavenPacks.filled(pack, random, weapon)`: munitie van zijn kaliber, soms een magazijn of een onderdeel
+      van zijn wapen, en met kans `packAttachmentChance` (0,15) een los attachment (`RavenArms.lootAttachment`).
+      `dropCustomDeathLoot` onthoudt nu eerst wat hij droeg: viel zijn wapen, dan was zijn hand leeg en kreeg een
+      lasersoldaat 9mm in zijn rugzak. De loot tables: `entities/raven_soldier` (door een speler gedood: 5% een
+      attachment), `chests/raven_barracks` (30%: een red dot, een greep of een 9mm-demper), `chests/raven_supplies`
+      (twee op de drie: munitie van de vier kalibers), `chests/raven_vault` (twee op de drie: Sniper Scope, Rifle of
+      Shotgun Suppressor, Bipod, Tube Extension of een leeg Extended Magazine), `chests/biebia_tower` (30%) en
+      `chests/biebia_vault` (twee op de drie).
+      **Tests** (zeven nieuw in `RavenArmsGameTests`, 566 in totaal): `raven_soldiers_carry_the_new_guns` (de gewichten, een
+      soort op 0, het wapen compleet en geladen, de AWP met zijn kijker en zonder demper),
+      `a_raven_soldier_fires_the_gun_he_carries` (per wapen het aantal kogels, de schade, de huls, en de getallen uit
+      `[raven]`; de pomp een halve seconde later), `an_mp5_soldier_fires_bursts_of_three`,
+      `a_sniper_works_the_bolt_after_every_shot`, `a_raven_pack_holds_ammo_for_the_gun_he_carried`,
+      `a_fallen_soldier_leaves_his_gun_with_what_was_on_it` en `attachments_turn_up_in_bunker_and_tower_loot` (hoe vaak
+      elke kist iets geeft, en de soldaat alleen als een speler hem doodde).
+      **Gezien** (`gradlew runVisualCheck -Ponly=ravenguns`: `rg01` tot `rg18`: vijf soldaten naast elkaar in rust en
+      aangelegd, elk wapen apart schuin van voren en van opzij, een soldaat met een MP5 die op je schiet, een
+      sluipschutter op 30 blokken, een gevallen soldaat met zijn AK-47 en zijn rugzak, en de vijf kisten open).
+      **Mijn invullingen** (jij koos alleen de twee zinnen): de verdeling van de wapens en alle getallen per wapen; de
+      salvo's; dat de sluipschutter eerst een seconde aanlegt en geen demper draagt; attachments op de wapens van
+      soldaten; de houding in rust; munitie in de voorraadtonnen en lange magazijnen in de kluis (jij vroeg alleen
+      attachments); de kansen per kist; versie 2.8.0.
 - [ ] **9. How it works, de showcase, LEESMIJ.md en de changelog van 2.0.0.**
 
 ## Nog nooit in het spel bekeken

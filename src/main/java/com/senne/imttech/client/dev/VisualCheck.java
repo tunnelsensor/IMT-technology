@@ -4844,6 +4844,79 @@ public final class VisualCheck {
             t.onServer(0, player -> player.getInventory().clearContent());
         }
 
+        // --- Hoofdstuk 103, stap 8: de Raven-soldaten met de nieuwe wapens. Vijf soldaten naast elkaar (Glock 19, MP5,
+        // AK-47, AWP, Remington 870), in rust en met het wapen aangelegd. Dan elk wapen apart bij één soldaat: aangelegd
+        // schuin van voren en van opzij, en in rust van opzij. Een soldaat met een MP5 die echt op je schiet, het lichaam
+        // van een gevallen soldaat met zijn buit, en de kisten van de bunker en de toren met wat erin kan zitten.
+        if (want("ravenguns")) {
+            BlockPos y = RAVEN_YARD;
+            double cx = y.getX() + 0.5;
+            double floor = y.getY() + 1;
+            t.view(0, cx, floor, y.getZ() - 1.5, 0, 0);
+            t.waitUntil(200, () -> raidLeaveTicking(RAVEN_YARD));
+            t.onServer(5, VisualCheck::buildRavenYard);
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(50));
+            t.shot(25, "rg01_soldiers_calm");
+            t.onServer(0, player -> ravenRowAims(player, true));
+            t.shot(15, "rg02_soldiers_aiming");
+            t.onServer(0, player -> ravenRowAims(player, false));
+            // Elk wapen apart, bij de soldaat verderop.
+            Vec3 solo = new Vec3(cx, floor, y.getZ() + 20.5);
+            com.senne.imttech.guns.FirearmType[] types = com.senne.imttech.guns.FirearmType.values();
+            for (int i = 0; i < types.length; i++) {
+                com.senne.imttech.guns.FirearmType type = types[i];
+                String number = "0" + (i + 3);
+                t.onServer(0, player -> ravenSolo(player, type, true));
+                viewAt(t, 0, solo.add(1.7, 1.45, -2.7), solo.add(0, 1.2, 0));
+                t.shot(12, "rg" + number + "a_" + type.id + "_aiming");
+                viewAt(t, 0, solo.add(3.0, 1.35, -0.4), solo.add(0, 1.15, -0.4));
+                t.shot(8, "rg" + number + "b_" + type.id + "_aiming_side");
+                t.onServer(0, player -> ravenSolo(player, type, false));
+                t.shot(12, "rg" + number + "c_" + type.id + "_calm_side");
+                viewAt(t, 0, solo.add(1.7, 1.45, -2.7), solo.add(0, 1.2, 0));
+                t.shot(8, "rg" + number + "d_" + type.id + "_calm");
+            }
+            // Een echte soldaat (hij denkt zelf) met een MP5: hij legt aan en lost salvo's van drie. De rij gaat eerst weg:
+            // een echte soldaat waarschuwt zijn maten, en dan leggen die ook aan.
+            t.onServer(0, VisualCheck::clearRavenYard);
+            t.view(0, cx, floor, y.getZ() + 10.5, 0, 0);
+            t.onServer(5, player -> ravenLive(player, com.senne.imttech.guns.FirearmType.MP5, 9));
+            t.shot(24, "rg10_mp5_soldier_fires_a");
+            t.shot(3, "rg10_mp5_soldier_fires_b");
+            t.shot(3, "rg10_mp5_soldier_fires_c");
+            t.shot(30, "rg10_mp5_soldier_fires_d");
+            // Een sluipschutter met een AWP, 30 blokken verder: hij legt een seconde aan en schiet.
+            t.onServer(0, VisualCheck::ravenSoloAway);
+            t.view(0, cx, floor, y.getZ() - 1.5, 0, 0);
+            t.onServer(5, player -> ravenLive(player, com.senne.imttech.guns.FirearmType.AWP, 30));
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(30));
+            t.shot(30, "rg11_sniper_far_a");
+            t.shot(40, "rg11_sniper_far_b");
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(50));
+            t.onServer(0, VisualCheck::ravenSoloAway);
+            // Een gevallen soldaat (een AK-47 met een greep, en een rugzak): zijn lichaam en wat erin zit.
+            t.onServer(0, player -> ravenFalls(player, new BlockPos(y.getX(), y.getY() + 1, y.getZ() + 8)));
+            t.view(10, cx, floor + 1.5, y.getZ() + 5.5, 0, 38);
+            t.shot(20, "rg12_fallen_soldier");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.onServer(0, VisualCheck::searchNearestBody);
+            t.shot(15, "rg13_fallen_soldier_loot");
+            t.close(0);
+            // De kisten: de slaapzaal, een voorraadton en de kluis van de bunker, een kist en de kluis van de toren.
+            t.view(0, cx, floor, y.getZ() + 26.5, 0, 10);
+            String[] chests = {"raven_barracks", "raven_supplies", "raven_vault", "biebia_tower", "biebia_vault"};
+            for (int i = 0; i < chests.length; i++) {
+                int index = i;
+                t.onServer(5, player -> ravenChest(player, index, chests[index]));
+                t.step(0, () -> HowToTour.mouseTo(1, 1));
+                t.shot(12, "rg1" + (4 + i) + "_loot_" + chests[i]);
+                t.close(0);
+            }
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(70));
+            t.onServer(0, VisualCheck::clearRavenYard);
+        }
+
         // --- De skilltree (hoofdstuk 52, stap 3): leeg, en met een paar niveaus geleerd.
         if (want("skills")) {
             t.onServer(0, player -> player.setData(com.senne.imttech.registry.ModAttachments.GUN_SKILLS,
@@ -7667,6 +7740,181 @@ public final class VisualCheck {
             }
         }
         return nearest == null ? com.senne.imttech.raven.RavenAlert.CALM : nearest.alertState();
+    }
+
+    // ================================================================ Raven-soldaten met de nieuwe wapens (hoofdstuk 103, stap 8)
+
+    /** Het veldje van de Raven-soldaten met de nieuwe wapens: de vloer. */
+    private static final BlockPos RAVEN_YARD = new BlockPos(-460, -61, -200);
+    /** De vijf soldaten op een rij, en de ene soldaat verderop die elk wapen apart laat zien. */
+    private static final java.util.List<com.senne.imttech.raven.RavenSoldierEntity> RAVEN_ROW = new java.util.ArrayList<>();
+    private static com.senne.imttech.raven.RavenSoldierEntity RAVEN_SOLO;
+
+    /** De camera (jij, zwevend) met je ogen op {@code eye}, kijkend naar {@code to}. */
+    private static void viewAt(DevScript t, int wait, Vec3 eye, Vec3 to) {
+        Vec3 d = to.subtract(eye);
+        float yaw = (float) Math.toDegrees(Math.atan2(-d.x, d.z));
+        float pitch = (float) -Math.toDegrees(Math.atan2(d.y, Math.sqrt(d.x * d.x + d.z * d.z)));
+        t.view(wait, eye.x, eye.y - 1.62, eye.z, yaw, pitch);
+    }
+
+    /** Het wapen van een soldaat voor de rondleiding: elk vuurwapen met iets erop, zodat je dat ook bij hem ziet. */
+    private static ItemStack ravenGun(com.senne.imttech.guns.FirearmType type) {
+        ItemStack gun = com.senne.imttech.guns.FirearmItem.loaded(type, com.senne.imttech.guns.GunMaterial.STEEL);
+        switch (type) {
+            case GLOCK_19 -> com.senne.imttech.guns.FirearmItem.setAttachment(gun, com.senne.imttech.guns.Attachment.SUPPRESSOR_9MM);
+            case MP5 -> com.senne.imttech.guns.FirearmItem.setAttachment(gun, com.senne.imttech.guns.Attachment.RED_DOT);
+            case AK_47 -> com.senne.imttech.guns.FirearmItem.setAttachment(gun, com.senne.imttech.guns.Attachment.VERTICAL_GRIP);
+            case AWP -> {
+                com.senne.imttech.guns.FirearmItem.setAttachment(gun, com.senne.imttech.guns.Attachment.SNIPER_SCOPE);
+                com.senne.imttech.guns.FirearmItem.setAttachment(gun, com.senne.imttech.guns.Attachment.BIPOD);
+            }
+            case REMINGTON_870 -> com.senne.imttech.guns.FirearmItem.setAttachment(gun, com.senne.imttech.guns.Attachment.TUBE_EXTENSION);
+        }
+        return gun;
+    }
+
+    /** Een stilstaande soldaat (hij denkt niet) met dit wapen, zonder rugzak, kijkend naar het noorden (naar de camera). */
+    private static com.senne.imttech.raven.RavenSoldierEntity ravenStill(ServerLevel level, BlockPos pos, ItemStack weapon) {
+        if (!(DevWorld.spawnStill(level, com.senne.imttech.registry.ModEntities.RAVEN_SOLDIER.get(), pos, 180)
+                instanceof com.senne.imttech.raven.RavenSoldierEntity soldier)) {
+            return null;
+        }
+        soldier.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), net.minecraft.world.entity.MobSpawnType.SPAWN_EGG, null);
+        soldier.arm(weapon);
+        soldier.setPack(ItemStack.EMPTY);
+        return soldier;
+    }
+
+    /** Alles wat er van een vorige keer nog staat of ligt, gaat weg. */
+    private static void clearRavenYard(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        net.minecraft.world.phys.AABB area = net.minecraft.world.phys.AABB.encapsulatingFullBlocks(
+                RAVEN_YARD.offset(-14, 0, -10), RAVEN_YARD.offset(14, 8, 44));
+        for (Entity old : level.getEntities((Entity) null, area, e -> !(e instanceof net.minecraft.world.entity.player.Player))) {
+            old.discard();
+        }
+        RAVEN_ROW.clear();
+        RAVEN_SOLO = null;
+    }
+
+    /**
+     * Een vloer van gladde steen met vijf stilstaande soldaten op een rij, elk met een ander vuurwapen (van links naar
+     * rechts zoals jij ze ziet: Glock 19, MP5, AK-47, AWP, Remington 870), en veertien blokken verder één soldaat alleen.
+     */
+    private static void buildRavenYard(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        BlockPos y = RAVEN_YARD;
+        clearRavenYard(player);
+        for (BlockPos pos : BlockPos.betweenClosed(y.offset(-10, 1, -6), y.offset(10, 6, 40))) {
+            level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+        }
+        for (BlockPos pos : BlockPos.betweenClosed(y.offset(-10, 0, -6), y.offset(10, 0, 40))) {
+            level.setBlockAndUpdate(pos, Blocks.SMOOTH_STONE.defaultBlockState());
+        }
+        // Je kijkt naar het zuiden: links op je scherm is het oosten (+x).
+        com.senne.imttech.guns.FirearmType[] types = com.senne.imttech.guns.FirearmType.values();
+        for (int i = 0; i < types.length; i++) {
+            com.senne.imttech.raven.RavenSoldierEntity soldier = ravenStill(level, y.offset(4 - 2 * i, 1, 6), ravenGun(types[i]));
+            if (soldier != null) {
+                RAVEN_ROW.add(soldier);
+            }
+        }
+        RAVEN_SOLO = ravenStill(level, y.offset(0, 1, 20), ravenGun(com.senne.imttech.guns.FirearmType.GLOCK_19));
+    }
+
+    /** De vijf soldaten leggen aan op jou (of niet meer). */
+    private static void ravenRowAims(ServerPlayer player, boolean aiming) {
+        for (com.senne.imttech.raven.RavenSoldierEntity soldier : RAVEN_ROW) {
+            soldier.setTarget(aiming ? player : null);
+        }
+    }
+
+    /** De soldaat alleen krijgt dit wapen, en legt aan op jou (of niet). */
+    private static void ravenSolo(ServerPlayer player, com.senne.imttech.guns.FirearmType type, boolean aiming) {
+        if (RAVEN_SOLO == null || !RAVEN_SOLO.isAlive()) {
+            RAVEN_SOLO = ravenStill(player.serverLevel(), RAVEN_YARD.offset(0, 1, 20), ravenGun(type));
+        }
+        if (RAVEN_SOLO != null) {
+            RAVEN_SOLO.arm(ravenGun(type));
+            RAVEN_SOLO.setTarget(aiming ? player : null);
+        }
+    }
+
+    /** De soldaat alleen (of de echte soldaat die er stond) gaat weg, met de kogels en de hulzen die er nog liggen. */
+    private static void ravenSoloAway(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        net.minecraft.world.phys.AABB area = net.minecraft.world.phys.AABB.encapsulatingFullBlocks(
+                RAVEN_YARD.offset(-14, 0, 9), RAVEN_YARD.offset(14, 8, 44));
+        for (Entity old : level.getEntities((Entity) null, area, e -> !(e instanceof net.minecraft.world.entity.player.Player))) {
+            old.discard();
+        }
+        RAVEN_SOLO = null;
+    }
+
+    /** Een echte soldaat (hij denkt zelf) met dit wapen, {@code blocks} blokken voor je, die jou als doelwit heeft. */
+    private static void ravenLive(ServerPlayer player, com.senne.imttech.guns.FirearmType type, int blocks) {
+        ServerLevel level = player.serverLevel();
+        com.senne.imttech.raven.RavenSoldierEntity soldier = com.senne.imttech.registry.ModEntities.RAVEN_SOLDIER.get().create(level);
+        if (soldier == null) {
+            return;
+        }
+        BlockPos pos = BlockPos.containing(player.getX(), player.getY(), player.getZ() + blocks);
+        soldier.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 180, 0);
+        soldier.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), net.minecraft.world.entity.MobSpawnType.SPAWN_EGG, null);
+        soldier.arm(ravenGun(type));
+        soldier.setPack(ItemStack.EMPTY);
+        soldier.setPersistenceRequired();
+        level.addFreshEntity(soldier);
+        soldier.setTarget(player);
+    }
+
+    /** Een soldaat met een AK-47 (met een greep) en een rugzak valt hier: zijn lichaam blijft liggen, met zijn wapen erin. */
+    private static void ravenFalls(ServerPlayer player, BlockPos pos) {
+        ServerLevel level = player.serverLevel();
+        clearRavenYard(player);
+        com.senne.imttech.raven.RavenSoldierEntity soldier = ravenStill(level, pos, ravenGun(com.senne.imttech.guns.FirearmType.AK_47));
+        if (soldier == null) {
+            return;
+        }
+        soldier.setPack(com.senne.imttech.backpack.RavenPacks.pack());
+        soldier.setDropChance(net.minecraft.world.entity.EquipmentSlot.MAINHAND, 2.0f); // zijn wapen zit dan zeker in het lichaam
+        soldier.kill();
+    }
+
+    /**
+     * Een kist (voor de voorraad een ton) met deze loot table, en hij gaat voor je open. De rondleiding zoekt een worp
+     * waar iets van hoofdstuk 103 in zit (een attachment, een lang magazijn of munitie), zodat je ziet hoe dat eruitziet.
+     */
+    private static void ravenChest(ServerPlayer player, int index, String table) {
+        ServerLevel level = player.serverLevel();
+        BlockPos pos = RAVEN_YARD.offset(4 - 2 * index, 1, 30);
+        boolean barrel = table.equals("raven_supplies");
+        level.setBlockAndUpdate(pos, (barrel ? Blocks.BARREL : Blocks.CHEST).defaultBlockState());
+        net.minecraft.resources.ResourceKey<net.minecraft.world.level.storage.loot.LootTable> key = net.minecraft.resources.ResourceKey.create(
+                net.minecraft.core.registries.Registries.LOOT_TABLE,
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(com.senne.imttech.ImtTech.MODID, "chests/" + table));
+        net.minecraft.world.level.storage.loot.LootTable loot = level.getServer().reloadableRegistries().getLootTable(key);
+        net.minecraft.world.level.storage.loot.LootParams params = new net.minecraft.world.level.storage.loot.LootParams.Builder(level)
+                .withParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.ORIGIN, Vec3.atCenterOf(pos))
+                .create(net.minecraft.world.level.storage.loot.parameters.LootContextParamSets.CHEST);
+        long seed = 1;
+        for (long tried = 1; tried <= 400; tried++) {
+            boolean found = false;
+            for (ItemStack stack : loot.getRandomItems(params, tried)) {
+                found |= stack.getItem() instanceof com.senne.imttech.guns.AttachmentItem
+                        || stack.getItem() instanceof com.senne.imttech.guns.MagazineItem
+                        || com.senne.imttech.guns.Caliber.ofRound(stack) != null;
+            }
+            if (found) {
+                seed = tried;
+                break;
+            }
+        }
+        if (level.getBlockEntity(pos) instanceof net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity chest) {
+            chest.setLootTable(key, seed);
+            player.openMenu(chest);
+        }
     }
 
     /** De dichtstbijzijnde bewaker valt: zijn lichaam blijft liggen (hoofdstuk 60, stap 5). */

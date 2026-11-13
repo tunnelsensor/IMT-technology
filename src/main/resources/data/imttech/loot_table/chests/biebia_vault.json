@@ -106,6 +106,40 @@
           ]
         }
       ]
+    },
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "imttech:sniper_scope",
+          "weight": 3
+        },
+        {
+          "type": "minecraft:item",
+          "name": "imttech:red_dot_sight",
+          "weight": 2
+        },
+        {
+          "type": "minecraft:item",
+          "name": "imttech:suppressor_rifle",
+          "weight": 2
+        },
+        {
+          "type": "minecraft:item",
+          "name": "imttech:suppressor_9mm",
+          "weight": 2
+        },
+        {
+          "type": "minecraft:item",
+          "name": "imttech:bipod",
+          "weight": 1
+        },
+        {
+          "type": "minecraft:empty",
+          "weight": 5
+        }
+      ]
     }
   ]
 }
