@@ -454,4 +454,85 @@ public final class AttachmentGameTests {
         check(player.getInventory().countItem(ModItems.ROUND_9MM.get()) == 10, "Er horen 10 patronen over te zijn");
         helper.succeed();
     }
+
+    // ================================================================ Stap 7: attachments op de lasergeweren
+
+    /**
+     * Jouw keuze: attachments ook op de lasergeweren ("red dot, sniperkijker en grips; geen suppressor of extended mag").
+     * De Red Dot Sight past op alle vier, de Sniper Scope op de Laser Sniper, de grips onder de Laser Rifle en de Laser
+     * Sniper. Je zet ze er op de Laser Workbench op en af; het geweer moet compleet zijn, en op een plek zit er één.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "attachments")
+    public static void laser_guns_take_sights_and_grips_at_the_laser_workbench(GameTestHelper helper) {
+        for (com.senne.imttech.weapons.GunType laser : com.senne.imttech.weapons.GunType.values()) {
+            boolean longGun = laser == com.senne.imttech.weapons.GunType.RIFLE || laser == com.senne.imttech.weapons.GunType.SNIPER;
+            check(Attachment.RED_DOT.fits(laser), "De Red Dot Sight hoort op de " + laser.id + " te passen");
+            check(Attachment.SNIPER_SCOPE.fits(laser) == (laser == com.senne.imttech.weapons.GunType.SNIPER),
+                    "De Sniper Scope hoort alleen op de Laser Sniper te passen (" + laser.id + ")");
+            check(Attachment.VERTICAL_GRIP.fits(laser) == longGun && Attachment.ANGLED_GRIP.fits(laser) == longGun,
+                    "De grips horen alleen onder de Laser Rifle en de Laser Sniper te passen (" + laser.id + ")");
+            check(!Attachment.SUPPRESSOR_9MM.fits(laser) && !Attachment.SUPPRESSOR_RIFLE.fits(laser) && !Attachment.BIPOD.fits(laser)
+                    && !Attachment.TUBE_EXTENSION.fits(laser), "Op een lasergeweer hoort geen demper, tweepoot of verlengbuis te passen");
+            check(com.senne.imttech.weapons.LaserSlot.SIGHT.fitsOn(laser) && com.senne.imttech.weapons.LaserSlot.UNDERBARREL.fitsOn(laser) == longGun,
+                    "De plekken op de Laser Workbench kloppen niet bij de " + laser.id);
+        }
+        // De acht oude plekken houden hun nummer (dat sturen de knoppen van de tafel naar de server).
+        for (com.senne.imttech.weapons.LaserPart part : com.senne.imttech.weapons.LaserPart.values()) {
+            check(com.senne.imttech.weapons.LaserSlot.of(part).ordinal() == part.ordinal() && com.senne.imttech.weapons.LaserSlot.of(part).part == part,
+                    "De plek van " + part.id + " heeft een ander nummer gekregen");
+        }
+        BlockPos at = new BlockPos(4, 2, 4);
+        helper.setBlock(at, ModBlocks.LASER_WORKBENCH.get());
+        com.senne.imttech.weapons.LaserWorkbenchBlockEntity bench = (com.senne.imttech.weapons.LaserWorkbenchBlockEntity) helper.getBlockEntity(at);
+        ServerPlayer player = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(4, 2, 6), "laser-smith");
+        player.getAbilities().instabuild = false;
+        player.getInventory().clearContent();
+        player.getInventory().setItem(0, com.senne.imttech.weapons.LaserGunItem.complete(com.senne.imttech.weapons.GunType.RIFLE, GunMaterial.TITANIUM));
+        player.getInventory().setItem(1, new ItemStack(ModItems.SNIPER_SCOPE.get()));
+        player.getInventory().setItem(2, new ItemStack(ModItems.RED_DOT_SIGHT.get()));
+        player.getInventory().setItem(3, new ItemStack(ModItems.RED_DOT_SIGHT.get()));
+        player.getInventory().setItem(4, new ItemStack(ModItems.attachment(Attachment.VERTICAL_GRIP)));
+        player.getInventory().setItem(5, new ItemStack(ModItems.attachment(Attachment.ANGLED_GRIP)));
+        player.getInventory().setItem(6, new ItemStack(ModItems.attachment(Attachment.SUPPRESSOR_RIFLE)));
+        check(!bench.install(player, 2), "Een kijker ging op een lege tafel");
+        check(bench.putGun(player, 0), "De Laser Rifle ging niet op de tafel");
+        check(!bench.install(player, 1), "De Sniper Scope ging op een Laser Rifle");
+        check(!bench.install(player, 6), "Een demper ging op een lasergeweer");
+        check(bench.install(player, 2), "De Red Dot Sight ging niet op de Laser Rifle");
+        check(!bench.install(player, 3), "Er ging een tweede kijker op");
+        check(bench.install(player, 4), "De Vertical Grip ging niet onder de Laser Rifle");
+        check(!bench.install(player, 5), "Er ging een tweede greep onder");
+        ItemStack rifle = bench.gun();
+        check(FirearmItem.sight(rifle) == Attachment.RED_DOT && FirearmItem.attachment(rifle, AttachmentSlot.UNDERBARREL) == Attachment.VERTICAL_GRIP,
+                "De red dot en de greep zitten niet op de Laser Rifle");
+        check(Math.abs(FirearmItem.aimSpeedFactor(rifle) - ImtConfig.Guns.RED_DOT_AIM_SPEED) < 1e-4
+                        && Math.abs(FirearmItem.recoilFactor(rifle, false) - ImtConfig.Guns.VERTICAL_GRIP_RECOIL) < 1e-4
+                        && Math.abs(FirearmItem.aimSpreadFactor(rifle) - ImtConfig.Guns.RED_DOT_AIM_SPREAD) < 1e-4,
+                "De red dot en de greep horen op een lasergeweer hetzelfde te doen als op een vuurwapen");
+        // Eraf: de items komen terug; en dan past de schuine greep.
+        check(bench.remove(player, com.senne.imttech.weapons.LaserSlot.UNDERBARREL.ordinal()), "De greep ging er niet af");
+        check(player.getInventory().countItem(ModItems.attachment(Attachment.VERTICAL_GRIP)) == 1, "De Vertical Grip kwam niet terug");
+        check(bench.install(player, 5), "De Angled Grip ging er niet onder nadat de andere eraf was");
+        check(bench.remove(player, com.senne.imttech.weapons.LaserSlot.SIGHT.ordinal()), "De red dot ging er niet af");
+        check(player.getInventory().countItem(ModItems.RED_DOT_SIGHT.get()) == 2 && FirearmItem.sight(bench.gun()) == null, "De red dot kwam niet terug");
+        // Een geweer dat niet compleet is, neemt geen attachment.
+        check(bench.remove(player, com.senne.imttech.weapons.LaserPart.TRIGGER), "De trekker ging er niet uit");
+        check(!bench.install(player, player.getInventory().findSlotMatchingItem(new ItemStack(ModItems.RED_DOT_SIGHT.get()))),
+                "Een kijker ging op een geweer dat niet compleet is");
+        check(bench.takeGun(player), "De Laser Rifle kon niet mee");
+        // De Laser Sniper: de Sniper Scope past, en hij blijft erop als je het geweer meeneemt.
+        player.getInventory().clearContent();
+        player.getInventory().setItem(0, com.senne.imttech.weapons.LaserGunItem.complete(com.senne.imttech.weapons.GunType.SNIPER, GunMaterial.TITANIUM));
+        player.getInventory().setItem(1, new ItemStack(ModItems.SNIPER_SCOPE.get()));
+        check(bench.putGun(player, 0) && bench.install(player, 1), "De Sniper Scope ging niet op de Laser Sniper");
+        check(bench.takeGun(player), "De Laser Sniper kon niet mee");
+        ItemStack sniper = ItemStack.EMPTY;
+        for (ItemStack stack : player.getInventory().items) {
+            if (com.senne.imttech.weapons.LaserGunItem.typeOf(stack) == com.senne.imttech.weapons.GunType.SNIPER) {
+                sniper = stack;
+            }
+        }
+        check(FirearmItem.sight(sniper) == Attachment.SNIPER_SCOPE, "De Laser Sniper verloor zijn kijker toen je hem van de tafel nam");
+        helper.succeed();
+    }
 }

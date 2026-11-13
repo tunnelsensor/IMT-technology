@@ -46,6 +46,12 @@ public final class GunHud implements LayeredDraw.Layer {
         if (GunControl.scoped(pt)) {
             scope(g, w, h);
         }
+        // Hoofdstuk 103, stap 7: door de Sniper Scope: hoe ver hij staat (scrollen verstelt hem).
+        if (GunControl.zooming()) {
+            Component zoom = Component.translatable("hud.imttech.firearm.zoom", String.format(java.util.Locale.ROOT, "%.1f",
+                    com.senne.imttech.client.guns.FirearmControl.scopeZoom()));
+            g.drawString(mc.font, zoom, w - 10 - mc.font.width(zoom), h - 12 - 60, argb(0.9f * aim, 0x4FD8FF), true);
+        }
         if (mc.options.getCameraType().isFirstPerson() && mc.screen == null && aim < 0.5f) {
             crosshair(g, w, h, type, pt, 1 - aim * 2);
         }

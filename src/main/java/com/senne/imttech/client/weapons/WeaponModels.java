@@ -134,6 +134,12 @@ public final class WeaponModels {
                     net.minecraft.world.InteractionHand hand, ItemStack stack) {
                 return net.minecraft.client.model.HumanoidModel.ArmPose.CROSSBOW_HOLD;
             }
+
+            /** Hoofdstuk 103, stap 7: als item tekenen we het geweer zelf, zodat je ziet wat erop zit (FirearmItemRenderer). */
+            @Override
+            public net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer getCustomRenderer() {
+                return com.senne.imttech.client.guns.FirearmModels.itemRenderer();
+            }
         }, ModItems.LASER_PISTOL.get(), ModItems.LASER_RIFLE.get(), ModItems.LASER_SNIPER.get(), ModItems.LASER_SHOTGUN.get());
     }
 

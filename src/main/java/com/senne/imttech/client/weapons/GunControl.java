@@ -97,7 +97,19 @@ public final class GunControl {
      * door je eigen ogen, ook in derde persoon (ScopeView).
      */
     public static boolean scoped(float partialTick) {
-        return held == GunType.SNIPER && aim(partialTick) > SCOPE_AT;
+        // Hoofdstuk 103, stap 7: met een kijker erop (in de plaats van zijn eigen kijker) zie je het geweer gewoon nog.
+        return held == GunType.SNIPER && sight == null && aim(partialTick) > SCOPE_AT;
+    }
+
+    /**
+     * Hoofdstuk 103, stap 7: de kijker op het lasergeweer in je hand (een Red Dot Sight of de Sniper Scope), of null: dan
+     * richt je over zijn eigen vizier.
+     */
+    private static @Nullable com.senne.imttech.guns.Attachment sight;
+
+    /** Kijk je door een Sniper Scope op je lasergeweer (dan zoom je met het scrollwiel)? */
+    public static boolean zooming() {
+        return held != null && sight != null && sight.zooms() && aim > 0.05f;
     }
 
     /** Hoe ver het geweer gezakt is omdat je sprint (0 tot 1). */
@@ -168,6 +180,7 @@ public final class GunControl {
         if (type == null) {
             aim = 0;
             sprint = 0;
+            sight = null;
             // R en H vergeten, behalve als ze van een pistool of magazijn zijn (hoofdstuk 52: FirearmControl).
             if (com.senne.imttech.client.guns.FirearmControl.held() == null
                     && !com.senne.imttech.client.guns.FirearmControl.heldMagazine()) {
@@ -187,7 +200,9 @@ public final class GunControl {
             inspectAt = -1;
         }
         wasAiming = wantAim;
-        aim = Mth.approach(aim, wantAim ? 1 : 0, AIM_SPEED);
+        // Hoofdstuk 103, stap 7: een red dot of een schuine greep brengt je sneller op je doel, een zware kijker trager.
+        sight = com.senne.imttech.guns.FirearmItem.sight(main);
+        aim = Mth.approach(aim, wantAim ? 1 : 0, AIM_SPEED * com.senne.imttech.guns.FirearmItem.aimSpeedFactor(main));
         sprint = Mth.approach(sprint, player.isSprinting() && aim < 0.1f ? 1 : 0, 0.2f);
 
         while (ImtKeys.GUN_RELOAD.consumeClick()) {
@@ -263,6 +278,7 @@ public final class GunControl {
         play(player, type.fireSound(), 1.0f);
         // De terugslag: je kijkt een stukje omhoog (minder als je richt), en een heel klein beetje opzij.
         float kick = GunRig.of(type).cameraKick * (aim > 0.5f ? 0.6f : 1.0f)
+                * com.senne.imttech.guns.FirearmItem.recoilFactor(gun, false) // stap 7: een rechte greep dempt de terugslag
                 * com.senne.imttech.weapons.LaserGuns.recoilFactor(gun)
                 * com.senne.imttech.client.guns.GunSkillsClient.recoilFactor(type.id);
         player.setXRot(Mth.clamp(player.getXRot() - kick, -90, 90));
@@ -390,7 +406,13 @@ public final class GunControl {
         }
         float zoom = zoom((float) event.getPartialTick());
         if (zoom > 1.001f) {
-            event.setFOV(event.getFOV() / zoom);
+            if (sight != null && sight.zooms()) {
+                // Door de Sniper Scope een echte "4x": de tangens van de kijkhoek gedeeld door vier (zoals FirearmControl).
+                double half = Math.toRadians(event.getFOV() / 2);
+                event.setFOV(Math.toDegrees(2 * Math.atan(Math.tan(half) / zoom)));
+            } else {
+                event.setFOV(event.getFOV() / zoom);
+            }
         }
         worldFov = event.getFOV();
     }
@@ -399,8 +421,32 @@ public final class GunControl {
     public static void onPlayerTurn(CalculatePlayerTurnEvent event) {
         float zoom = zoom(1);
         if (zoom > 1.001f) {
-            event.setMouseSensitivity(event.getMouseSensitivity() / Math.sqrt(zoom));
+            if (sight != null && sight.zooms()) {
+                // Door de Sniper Scope evenredig trager (10x ingezoomd = 10x trager), zoals bij de vuurwapens.
+                double base = event.getMouseSensitivity() * 0.6 + 0.2;
+                event.setMouseSensitivity((base / Math.cbrt(zoom) - 0.2) / 0.6);
+            } else {
+                event.setMouseSensitivity(event.getMouseSensitivity() / Math.sqrt(zoom));
+            }
         }
+    }
+
+    /**
+     * Het scrollwiel terwijl je door de Sniper Scope op je lasergeweer richt: in- en uitzoomen (dezelfde stand als de
+     * kijker op een vuurwapen: FirearmControl.scopeZoom), in plaats van een ander vakje van je werkbalk kiezen.
+     */
+    public static void onMouseScroll(net.neoforged.neoforge.client.event.InputEvent.MouseScrollingEvent event) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen != null || held == null || sight == null || !sight.zooms() || aim < 0.5f || event.getScrollDeltaY() == 0) {
+            return;
+        }
+        float before = com.senne.imttech.client.guns.FirearmControl.scopeZoom();
+        float now = Mth.clamp((float) (before * Math.pow(1.2, event.getScrollDeltaY())), 1, sight.maxZoom());
+        com.senne.imttech.client.guns.FirearmControl.setScopeZoom(now);
+        if (now != before && mc.player != null) {
+            play(mc.player, net.minecraft.sounds.SoundEvents.SPYGLASS_USE, 0.25f);
+        }
+        event.setCanceled(true);
     }
 
     /**
@@ -408,7 +454,17 @@ public final class GunControl {
      * je 4 keer inzoomen op je eigen rug. Zodra de kijker er is, kijk je door je eigen ogen (ScopeView) en zoom je wel in.
      */
     private static float zoom(float partialTick) {
-        if (held == null || held == GunType.SNIPER && !Minecraft.getInstance().options.getCameraType().isFirstPerson()) {
+        if (held == null) {
+            return 1;
+        }
+        if (sight != null) {
+            // Stap 7: de Sniper Scope zoomt zo ver als hij staat (in gelijke verhoudingen); een red dot een beetje, ook
+            // op de sniper (zijn eigen kijker van 4x zit er dan niet meer op).
+            float a = aim(partialTick);
+            return sight.zooms() ? (float) Math.pow(Mth.clamp(com.senne.imttech.client.guns.FirearmControl.scopeZoom(), 1, sight.maxZoom()), a)
+                    : 1 + (Math.min(held.zoom, 1.4f) - 1) * a;
+        }
+        if (held == GunType.SNIPER && !Minecraft.getInstance().options.getCameraType().isFirstPerson()) {
             return 1;
         }
         return 1 + (held.zoom - 1) * aim(partialTick);

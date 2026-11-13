@@ -24,14 +24,40 @@ public final class LaserGunModels {
     /** Alle onderdelen van dit geweer op hun plek, behalve {@code skip} (het onderdeel dat je net van de tafel sleept). */
     public static void render(PoseStack pose, MultiBufferSource buffers, ItemStack gun, int light, boolean withSling,
                               @Nullable LaserPart skip) {
+        render(pose, buffers, gun, light, withSling, skip, null);
+    }
+
+    /**
+     * Hetzelfde, zonder het attachment op de plek {@code skipSlot} (dat sleep je net weg op de Laser Workbench).
+     * Hoofdstuk 103, stap 7: zit er een kijker op, dan tekenen we het eigen vizier van het geweer (het onderdeel Optics)
+     * niet: de kijker staat op zijn plek.
+     */
+    public static void render(PoseStack pose, MultiBufferSource buffers, ItemStack gun, int light, boolean withSling,
+                              @Nullable LaserPart skip, @Nullable com.senne.imttech.guns.AttachmentSlot skipSlot) {
         GunType type = LaserGunItem.typeOf(gun);
         if (type == null) {
             return;
         }
+        com.senne.imttech.guns.Attachment optic = com.senne.imttech.guns.FirearmItem.sight(gun);
+        com.senne.imttech.guns.Attachment under = com.senne.imttech.guns.FirearmItem.attachment(gun,
+                com.senne.imttech.guns.AttachmentSlot.UNDERBARREL);
+        GunRig rig = GunRig.of(type);
+        if (optic != null && skipSlot != com.senne.imttech.guns.AttachmentSlot.SIGHT) {
+            pose.pushPose();
+            pose.scale(1 / 16f, 1 / 16f, 1 / 16f);
+            com.senne.imttech.client.guns.Optics.render(pose, buffers, rig.seat(optic), optic, light, 0, -1);
+            pose.popPose();
+        }
+        if (under != null && rig.underMount != null && skipSlot != com.senne.imttech.guns.AttachmentSlot.UNDERBARREL) {
+            pose.pushPose();
+            pose.scale(1 / 16f, 1 / 16f, 1 / 16f);
+            com.senne.imttech.client.guns.AddOns.renderUnder(pose, buffers, rig.underMount, under, light);
+            pose.popPose();
+        }
         LaserParts parts = LaserGunItem.parts(gun);
         for (LaserPart part : LaserPart.wearing()) {
             PartState state = parts.get(part);
-            if (state == null || part == skip) {
+            if (state == null || part == skip || (part == LaserPart.OPTICS && optic != null)) {
                 continue;
             }
             WeaponModels.render(pose, buffers, WeaponModels.part(type, part, state.material()), light, OverlayTexture.NO_OVERLAY);

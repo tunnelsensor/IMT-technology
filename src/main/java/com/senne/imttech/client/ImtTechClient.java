@@ -155,6 +155,7 @@ public class ImtTechClient {
         NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST,
                 com.senne.imttech.client.weapons.GunControl::onComputeFov);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.weapons.GunControl::onPlayerTurn);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.weapons.GunControl::onMouseScroll);
         // De kijker van de sniper in F5: zolang hij op je scherm staat, kijk je door je eigen ogen.
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.weapons.ScopeView::onRenderFrame);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.weapons.GunRenderer::onRenderHand);

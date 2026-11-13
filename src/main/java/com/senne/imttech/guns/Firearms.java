@@ -325,8 +325,8 @@ public final class Firearms {
         if (type != null && kind != ActionKind.LOAD_ROUND && kind != ActionKind.UNLOAD_ROUND) {
             factor *= FirearmItem.parts(gun).materialOf(GunPart.FRAME).handlingFactor();
         }
-        if (type != null && kind == ActionKind.DRAW) {
-            // Hoofdstuk 103, stap 6: met een schuine greep trek je het wapen sneller.
+        if (gun != null && kind == ActionKind.DRAW) {
+            // Hoofdstuk 103, stap 6: met een schuine greep trek je het wapen sneller (stap 7: ook een lasergeweer).
             factor /= Math.max(0.1f, FirearmItem.drawSpeedFactor(gun));
         }
         if (gun != null && com.senne.imttech.weapons.LaserGunItem.typeOf(gun) != null) {

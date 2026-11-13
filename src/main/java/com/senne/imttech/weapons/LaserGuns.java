@@ -209,7 +209,8 @@ public final class LaserGuns {
         }
         RandomSource random = player.getRandom();
         // De optics: versleten strooit meer; de skill Steady aim (globaal en van dit geweer) strooit minder.
-        double spread = Math.toRadians(type.spread(aiming) * (1 + parts.penalty(LaserPart.OPTICS))
+        double spread = Math.toRadians(type.spread(aiming) * (aiming ? com.senne.imttech.guns.FirearmItem.aimSpreadFactor(gun) : 1)
+                * (1 + parts.penalty(LaserPart.OPTICS))
                 * GunSkillsServer.of(player).factor(GunSkill.AIM, type.id));
         // De emitter: netherite doet iets meer, versleten minder (en reikt minder ver).
         float shotDamage = type.damage() * relative(parts.materialOf(LaserPart.EMITTER).damageFactor(), GunMaterial.TITANIUM.damageFactor())

@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 558 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 559 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -7654,7 +7654,40 @@ standen), suppressors, extended mags en grips." Omdat jij het een grote update n
       **Mijn invullingen erbij**: de recepten (4 staal meer); 2 x 5 gaatjes op het Pegboard; het wapen als item uit zijn
       onderdelen. **Nog open**: op het plaatje in je inventaris steekt het lange magazijn van de Glock (en een kijker of
       een demper) een pixel buiten het vakje; kleiner tekenen zou het wapen zelf te klein maken.
-- [ ] **7. Attachments op de lasergeweren** (red dot, sniperkijker, grips, op de Laser Workbench).
+- [x] **7. Attachments op de lasergeweren** (13 november, versie 2.7.0) — red dot, sniperkijker en grips, op de Laser
+      Workbench.
+      **Wat past waar** (`Attachment.fits(GunType)`): de Red Dot Sight op alle vier, de Sniper Scope op de Laser Sniper,
+      de twee grips onder de Laser Rifle en de Laser Sniper. Dezelfde items en hetzelfde data component
+      (`gun_attachments`) als bij de vuurwapens, dus ook dezelfde getallen (`FirearmItem.aimSpeedFactor`,
+      `recoilFactor`, `aimSpreadFactor`, `drawSpeedFactor` werken op elk wapen): `LaserGuns` strooit een gericht schot
+      minder met een kijker, en `Firearms.ticksFor` trekt ook een lasergeweer sneller met een schuine greep.
+      **De Laser Workbench**: `LaserSlot` (nieuw: de acht plekken die er waren, met hetzelfde nummer, en `SIGHT` en
+      `UNDERBARREL`; zoals `GunSlot` bij de Gunsmith Table). `LaserWorkbenchBlockEntity`: een attachment erop (het moet
+      passen, het geweer moet compleet zijn, de plek vrij), eraf (`removeAttachment`), en terug als je het geweer uit
+      elkaar haalt. `LaserWorkbenchScreen` werkt nu met `LaserSlot`: de twee plekken staan er zodra het geweer compleet
+      is, rechts staat wat erop zit. Het vak "SLING" past nu binnen de tafel (4 pixels meer plaats onder het geweer).
+      **Een kijker komt in de plaats van het eigen vizier**: het onderdeel Optics blijft erin, maar wordt niet getekend
+      zolang er een kijker op zit (`LaserGunModels.render`, `GunRenderer`). De kijker staat waar het vizier stond
+      (`GunRig.sightMount`, bij het pistool op de slede: `sightOnSlide`); de Sniper Scope is op de kleinere Laser Sniper
+      driekwart zo groot (`scopeScale`); een greep hangt onder de loop (`underMount`) en je linkerhand houdt hem vast.
+      `Optics` kent nu een plek los van het soort wapen (`Optics.Seat`: het punt, de verhoging, op de slede of niet, de
+      grootte), `AddOns.renderUnder` en `gripHand` doen de greep.
+      **In je spel** (`client/weapons/`): `GunRenderer` richt door de kijker (hetzelfde masker in het oculair, het
+      richtpunt stil in het midden), `GunControl`: sneller of trager richten, de terugslag maal de greep, en de Laser
+      Sniper met de Sniper Scope zoomt van 1x tot 10x met het scrollwiel (`onMouseScroll`, dezelfde stand als bij de
+      AWP: `FirearmControl.scopeZoom`), met de echte zoom (tangens) en de muis evenredig trager; het zwarte beeld
+      (`scoped`) komt alleen nog zonder kijker-attachment. `GunHud`: "ZOOM 4.0x". **Het lasergeweer als item**: ook een
+      lasergeweer wordt nu getekend uit zijn onderdelen (`FirearmItemRenderer`, `FirearmModels.wrapWhole` neemt de vier
+      lasergeweren mee), met zijn kijker en zijn greep.
+      **Tests** (één nieuw, 559 in totaal): `laser_guns_take_sights_and_grips_at_the_laser_workbench` (wat past waar,
+      de nummers van de oude plekken, erop en eraf, één per plek, niet op een geweer dat niet compleet is, de Laser
+      Sniper houdt zijn kijker). **Gezien** (`gradlew runVisualCheck -Ponly=laseratt`: `la01` tot `la18`: elk lasergeweer
+      met een kijker vanuit de heup, van opzij, gericht en bij een schot, de Laser Sniper door de Sniper Scope op 4x en
+      10x en met een red dot, de Laser Workbench van de rifle, de sniper en het pistool leeg en vol, derde persoon en op
+      je rug).
+      **Mijn invullingen erbij**: de Sniper Scope alleen op de Laser Sniper; de grips niet onder de shotgun (daar zit
+      zijn pomp) en niet onder het pistool; de kijker in de plaats van het eigen vizier; de Laser Sniper houdt zonder
+      attachment zijn oude kijker van 4x met het zwarte beeld; attachments op een compleet geweer; versie 2.7.0.
 - [ ] **8. Raven-soldaten met de nieuwe wapens, en attachments in buit.**
 - [ ] **9. How it works, de showcase, LEESMIJ.md en de changelog van 2.0.0.**
 

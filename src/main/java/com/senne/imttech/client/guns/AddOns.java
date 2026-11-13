@@ -67,6 +67,20 @@ public final class AddOns {
         }
     }
 
+    /** Een greep (of iets anders dat onder de loop hangt) met zijn klem op dit punt: ook voor een lasergeweer (stap 7). */
+    public static void renderUnder(PoseStack pose, MultiBufferSource buffers, Vector3f mount, Attachment under, int light) {
+        at(pose, buffers, mount, under.id, light);
+    }
+
+    /** Waar je linkerhand deze greep vasthoudt, als zijn klem op dit punt zit; null als het geen greep is. */
+    public static @Nullable Vector3f gripHand(Vector3f mount, Attachment under) {
+        return switch (under) {
+            case VERTICAL_GRIP -> new Vector3f(mount).add(0, -3.2f, 0.2f);
+            case ANGLED_GRIP -> new Vector3f(mount).add(0, -1.9f, 1.0f);
+            default -> null;
+        };
+    }
+
     /** Eén model met zijn nulpunt op dit punt van het wapen. */
     private static void at(PoseStack pose, MultiBufferSource buffers, Vector3f mount, String model, int light) {
         pose.pushPose();

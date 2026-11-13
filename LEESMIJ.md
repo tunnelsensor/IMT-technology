@@ -2397,6 +2397,28 @@ plaats van 15), het **MP5 Extended Magazine** (40 in plaats van 30), het **AK-47
   onderdelen, zoals op je rug en op het Pegboard: je ziet het materiaal van elk onderdeel, welk magazijn erin zit (of
   dat er geen in zit), de sling en de attachments.
 
+**Attachments op de lasergeweren** (versie 2.7). Jouw keuze: "red dot, sniperkijker en grips" ook op de lasergeweren
+(geen demper en geen lang magazijn). Het zijn dezelfde items; je zet ze er op de **Laser Workbench** op en af, zoals op
+de Gunsmith Table (maken doe je ze op de Gunsmith Table).
+- **Wat past waar**: de **Red Dot Sight** op alle vier (Laser Pistol, Rifle, Sniper en Shotgun); de **Sniper Scope**
+  alleen op de **Laser Sniper** (voor de andere is hij langer dan het geweer); de **Vertical Grip** en de **Angled
+  Grip** onder de **Laser Rifle** en de **Laser Sniper** (het pistool heeft geen handbeschermer, en onder de loop van
+  de shotgun zit zijn pomp).
+- **Een kijker komt in de plaats van het eigen vizier** van het geweer: het gouden raampje van de rifle, de vizierrail
+  van de shotgun, de kijker van de sniper. Het onderdeel Optics blijft in het geweer zitten en telt gewoon mee; je ziet
+  alleen zijn behuizing niet meer. Haal je de kijker eraf, dan staat het eigen vizier er weer.
+- **De Laser Sniper met de Sniper Scope**: je kijkt nu door de kijker zoals bij de AWP: de ring met het dradenkruis, het
+  hele beeld zoomt in van **1x tot 10x** (scrollen terwijl je richt; rechtsonder "ZOOM 4.0x"), en je ziet je geweer nog
+  (jouw keuze: "geen zwart beeld"). Zonder Sniper Scope heeft de Laser Sniper nog zijn oude kijker van 4x met het zwarte
+  beeld. Met een Red Dot Sight erop zoomt hij maar een beetje (zijn eigen kijker zit er dan niet op).
+- **Wat ze doen** is hetzelfde als op een vuurwapen: de red dot sneller en preciezer richten, de kijker preciezer maar
+  trager, de rechte greep minder terugslag, de schuine greep sneller richten en trekken (dezelfde getallen onder
+  `[guns]`).
+- **Op de Laser Workbench** staan de plekken "SIGHT" (boven het geweer) en "UNDERBARREL" (onder de loop) zodra het geweer
+  compleet is; rechts staat wat erop zit. Je ziet de kijker en de greep ook op het geweer in je hand, bij anderen, op je
+  rug, op het Pegboard en op het plaatje in je inventaris (ook een lasergeweer is als item nu getekend uit zijn
+  onderdelen).
+
 **De getallen** staan in `config/imttech.toml` onder `[guns]`: elk rijtje heeft nu vijf getallen, in de volgorde Glock
 19, MP5, AK-47, AWP, Remington 870 (schade, tempo, bereik, kogelsnelheid, magazijn, het lange magazijn, spreiding,
 terugslag, korrels per schot, hoe lang doorladen duurt, hoe ver bewakers het horen). Had je al een configbestand, dan

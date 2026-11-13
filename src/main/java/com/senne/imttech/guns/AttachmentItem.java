@@ -41,6 +41,12 @@ public class AttachmentItem extends Item {
                 guns.add(type.text().getString());
             }
         }
+        // Hoofdstuk 103, stap 7: en op welke lasergeweren (op de Laser Workbench).
+        for (com.senne.imttech.weapons.GunType laser : com.senne.imttech.weapons.GunType.values()) {
+            if (attachment.fits(laser)) {
+                guns.add(Component.translatable("item.imttech." + laser.id).getString());
+            }
+        }
         tooltip.add(Component.translatable("tooltip.imttech.attachment.fits", String.join(", ", guns))
                 .withStyle(ChatFormatting.DARK_AQUA));
         tooltip.add(Component.translatable("tooltip.imttech.attachment.how").withStyle(ChatFormatting.DARK_GRAY));

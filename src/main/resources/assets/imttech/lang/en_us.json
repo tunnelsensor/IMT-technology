@@ -2146,6 +2146,7 @@
   "weapon.imttech.gun.broken": "The %s is broken: replace it on a Laser Workbench",
   "weapon.imttech.gun.just_broke": "The %s just broke",
   "laserbench.imttech.frame_first": "Start with a frame (it decides which gun it becomes)",
+  "laserbench.imttech.finish_first": "Finish the gun first: attachments go on a complete gun",
   "laserbench.imttech.other_gun": "That part is for a %s",
   "laserbench.imttech.no_sling_on_pistol": "A pistol takes no sling",
   "laserbench.imttech.occupied": "There is already a %s in the gun",

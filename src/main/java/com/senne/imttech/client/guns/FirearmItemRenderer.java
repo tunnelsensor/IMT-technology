@@ -38,6 +38,24 @@ public final class FirearmItemRenderer extends BlockEntityWithoutLevelRenderer {
     @Override
     public void renderByItem(ItemStack stack, ItemDisplayContext context, PoseStack pose, MultiBufferSource buffers, int light,
                              int overlay) {
+        // Hoofdstuk 103, stap 7: ook een lasergeweer: uit zijn onderdelen, met zijn kijker in de plaats van zijn eigen
+        // vizier en zijn greep eronder (zoals op je rug en op het Pegboard).
+        if (com.senne.imttech.weapons.LaserGunItem.typeOf(stack) != null) {
+            holder = null;
+            if (!com.senne.imttech.weapons.LaserGunItem.parts(stack).parts().isEmpty()) {
+                com.senne.imttech.client.weapons.LaserGunModels.render(pose, buffers, stack, light, true, null);
+                return;
+            }
+            // Een geweer zonder onderdelen (uit een commando): het model uit de json.
+            ItemRenderer vanilla = Minecraft.getInstance().getItemRenderer();
+            BakedModel whole = vanilla.getItemModelShaper().getItemModel(stack);
+            for (BakedModel pass : whole.getRenderPasses(stack, true)) {
+                for (RenderType renderType : pass.getRenderTypes(stack, true)) {
+                    vanilla.renderModelLists(pass, stack, light, overlay, pose, ItemRenderer.getFoilBufferDirect(buffers, renderType, true, stack.hasFoil()));
+                }
+            }
+            return;
+        }
         FirearmType type = FirearmItem.typeOf(stack);
         if (type == null) {
             return;

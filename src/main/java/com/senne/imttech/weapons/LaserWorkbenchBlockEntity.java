@@ -95,6 +95,11 @@ public class LaserWorkbenchBlockEntity extends BlockEntity implements MenuProvid
             return false;
         }
         ItemStack stack = inventory.getItem(inventorySlot);
+        // Hoofdstuk 103, stap 7: een attachment (een kijker of een greep) gaat hier op een lasergeweer.
+        com.senne.imttech.guns.Attachment attachment = com.senne.imttech.guns.AttachmentItem.of(stack);
+        if (attachment != null) {
+            return installAttachment(player, stack, attachment);
+        }
         LaserPart part = partOf(stack);
         if (part == null) {
             return false;
@@ -135,9 +140,60 @@ public class LaserWorkbenchBlockEntity extends BlockEntity implements MenuProvid
         return true;
     }
 
+    /**
+     * Een attachment op het geweer op de tafel (hoofdstuk 103, stap 7): het moet op dit geweer passen, het geweer moet
+     * compleet zijn, en de plek moet vrij zijn.
+     */
+    private boolean installAttachment(ServerPlayer player, ItemStack stack, com.senne.imttech.guns.Attachment attachment) {
+        ItemStack gun = gun();
+        GunType type = LaserGunItem.typeOf(gun);
+        if (type == null) {
+            tell(player, Component.translatable("laserbench.imttech.frame_first"));
+            return false;
+        }
+        if (!attachment.fits(type)) {
+            tell(player, Component.translatable("gunsmith.imttech.no_fit", stack.getHoverName(), Component.translatable("item.imttech." + type.id)));
+            return false;
+        }
+        if (!LaserGunItem.parts(gun).complete()) {
+            tell(player, Component.translatable("laserbench.imttech.finish_first"));
+            return false;
+        }
+        if (com.senne.imttech.guns.FirearmItem.attachment(gun, attachment.slot) != null) {
+            tell(player, Component.translatable("laserbench.imttech.occupied", attachment.slot.text()));
+            return false;
+        }
+        com.senne.imttech.guns.FirearmItem.setAttachment(gun, attachment);
+        items.setChanged();
+        stack.shrink(1);
+        click(player);
+        return true;
+    }
+
+    /** Het menu zegt een nummer: de plek in de volgorde van {@link LaserSlot} (de onderdelen, dan de attachments). */
     @Override
     public boolean remove(ServerPlayer player, int partIndex) {
-        return partIndex >= 0 && partIndex < LaserPart.values().length && remove(player, LaserPart.values()[partIndex]);
+        LaserSlot slot = LaserSlot.byId(partIndex);
+        if (slot == null) {
+            return false;
+        }
+        return slot.attachment != null ? removeAttachment(player, slot.attachment) : remove(player, slot.part);
+    }
+
+    /** Het attachment op deze plek van het geweer af, terug in je inventaris. */
+    public boolean removeAttachment(ServerPlayer player, com.senne.imttech.guns.AttachmentSlot slot) {
+        ItemStack gun = gun();
+        if (gun.isEmpty()) {
+            return false;
+        }
+        com.senne.imttech.guns.Attachment was = com.senne.imttech.guns.FirearmItem.removeAttachment(gun, slot);
+        if (was == null) {
+            return false;
+        }
+        items.setChanged();
+        Firearms.give(player, new ItemStack(ModItems.attachment(was)));
+        click(player);
+        return true;
     }
 
     /** Dit onderdeel uit het geweer, terug in je inventaris. */
@@ -167,6 +223,9 @@ public class LaserWorkbenchBlockEntity extends BlockEntity implements MenuProvid
             float cell = LaserGunItem.cell(gun);
             if (cell >= 0) {
                 Firearms.give(player, EnergyCellItem.withCharge(cell));
+            }
+            for (com.senne.imttech.guns.Attachment attachment : com.senne.imttech.guns.FirearmItem.attachments(gun).list()) {
+                Firearms.give(player, new ItemStack(ModItems.attachment(attachment)));
             }
             items.setItem(0, ItemStack.EMPTY);
         } else {

@@ -70,6 +70,32 @@ public enum Attachment {
         };
     }
 
+    /**
+     * Past dit op dit lasergeweer (hoofdstuk 103, stap 7; jouw keuze: "red dot, sniperkijker en grips; geen suppressor of
+     * extended mag")? De Red Dot Sight op alle vier; de Sniper Scope alleen op de Laser Sniper (voor de andere is hij
+     * langer dan het geweer); de grips onder de Laser Rifle en de Laser Sniper (het pistool heeft geen handbeschermer, en
+     * onder de loop van de shotgun zit zijn pomp).
+     */
+    public boolean fits(com.senne.imttech.weapons.GunType laser) {
+        return switch (this) {
+            case RED_DOT -> true;
+            case SNIPER_SCOPE -> laser == com.senne.imttech.weapons.GunType.SNIPER;
+            case VERTICAL_GRIP, ANGLED_GRIP -> laser == com.senne.imttech.weapons.GunType.RIFLE
+                    || laser == com.senne.imttech.weapons.GunType.SNIPER;
+            default -> false;
+        };
+    }
+
+    /** Past er op deze plek van dit lasergeweer iets? (Dan staat de plek op de Laser Workbench.) */
+    public static boolean anyFits(AttachmentSlot slot, com.senne.imttech.weapons.GunType laser) {
+        for (Attachment attachment : values()) {
+            if (attachment.slot == slot && attachment.fits(laser)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Past er op deze plek van dit wapen iets? (Dan staat de plek op de Gunsmith Table.) */
     public static boolean anyFits(AttachmentSlot slot, FirearmType type) {
         for (Attachment attachment : values()) {

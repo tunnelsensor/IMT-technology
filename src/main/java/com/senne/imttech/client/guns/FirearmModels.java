@@ -297,13 +297,29 @@ public final class FirearmModels {
     /** Eén tekenaar voor alle vuurwapens; pas gemaakt als het spel zover is. */
     private static @Nullable FirearmItemRenderer itemRenderer;
 
+    /** Die tekenaar, ook voor de lasergeweren (WeaponModels). */
+    public static FirearmItemRenderer itemRenderer() {
+        if (itemRenderer == null) {
+            itemRenderer = new FirearmItemRenderer();
+        }
+        return itemRenderer;
+    }
+
     /**
      * Zegt Minecraft dat het model van een heel vuurwapen "zelf getekend" wordt: dan roept het {@link FirearmItemRenderer}
      * aan in plaats van het model zelf te tekenen. Het model blijft verder wat het was (zijn vorm, zijn houdingen).
      */
     public static void wrapWhole(ModelEvent.ModifyBakingResult event) {
+        java.util.List<ModelResourceLocation> guns = new java.util.ArrayList<>();
         for (FirearmType type : FirearmType.values()) {
-            event.getModels().computeIfPresent(whole(type), (location, model) ->
+            guns.add(whole(type));
+        }
+        // Hoofdstuk 103, stap 7: ook de lasergeweren (hun kijker en hun greep).
+        for (com.senne.imttech.weapons.GunType laser : com.senne.imttech.weapons.GunType.values()) {
+            guns.add(ModelResourceLocation.inventory(ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, laser.id)));
+        }
+        for (ModelResourceLocation gun : guns) {
+            event.getModels().computeIfPresent(gun, (location, model) ->
                     new net.neoforged.neoforge.client.model.BakedModelWrapper<>(model) {
                         @Override
                         public boolean isCustomRenderer() {

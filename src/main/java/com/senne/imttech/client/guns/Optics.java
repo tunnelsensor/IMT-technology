@@ -45,6 +45,24 @@ public final class Optics {
     /** Vanaf hier (0 = heup, 1 = helemaal gericht) kijk je door de kijker: het glas wordt doorzichtig, het dradenkruis komt. */
     public static final float THROUGH = 0.7f;
 
+    /**
+     * Waar een kijker op een wapen staat (hoofdstuk 103, stap 7: ook op een lasergeweer): het punt waar zijn voet staat
+     * (met een verhoging erbij), hoe hoog die verhoging is, of hij op het bewegende deel staat (de slede van een
+     * pistool), en hoe groot hij getekend wordt (de Sniper Scope op de kleinere Laser Sniper: driekwart).
+     */
+    public record Seat(Vector3f mount, float riser, boolean onSlide, float scale) {}
+
+    /** De plek van een kijker op dit vuurwapen. */
+    public static Seat seat(FirearmRig rig) {
+        return new Seat(mount(rig), rig.sightRiser, rig.sightOnSlide, 1.0f);
+    }
+
+    /** Het punt dat voor je oog komt als je door deze kijker richt, voor een kijker op deze plek. */
+    public static Vector3f eye(Seat seat, Attachment optic) {
+        Vector3f offset = optic == Attachment.SNIPER_SCOPE ? new Vector3f(0, SCOPE_AXIS, SCOPE_REAR) : new Vector3f(RED_DOT_EYE);
+        return new Vector3f(seat.mount()).add(offset.mul(seat.scale()));
+    }
+
     /** De kijker op dit wapen, of null. */
     public static @Nullable Attachment of(ItemStack gun) {
         return FirearmItem.attachment(gun, AttachmentSlot.SIGHT);
@@ -57,11 +75,7 @@ public final class Optics {
 
     /** Het punt op het wapen dat voor je oog komt als je door deze kijker richt (model-pixels). */
     public static Vector3f eye(FirearmRig rig, Attachment optic) {
-        Vector3f mount = mount(rig);
-        return switch (optic) {
-            case SNIPER_SCOPE -> mount.add(0, SCOPE_AXIS, SCOPE_REAR);
-            default -> mount.add(RED_DOT_EYE);
-        };
+        return eye(seat(rig), optic);
     }
 
     /** Zo ver voor je oog zit dat punt als je richt (blokken). */
@@ -80,17 +94,24 @@ public final class Optics {
      */
     public static void render(PoseStack pose, MultiBufferSource buffers, FirearmRig rig, Attachment optic, int light, float back,
                               float aim) {
-        Vector3f mount = mount(rig);
+        render(pose, buffers, seat(rig), optic, light, back, aim);
+    }
+
+    /** Hetzelfde voor een kijker op deze plek (een vuurwapen of een lasergeweer). */
+    public static void render(PoseStack pose, MultiBufferSource buffers, Seat seat, Attachment optic, int light, float back,
+                              float aim) {
+        Vector3f mount = seat.mount();
         pose.pushPose();
-        pose.translate(mount.x, mount.y, mount.z + (rig.sightOnSlide ? back : 0));
-        if (rig.sightRiser > 0) {
+        pose.translate(mount.x, mount.y, mount.z + (seat.onSlide() ? back : 0));
+        if (seat.riser() > 0) {
             // De verhoging: een blokje van 1 pixel hoog, uitgerekt tot onder de voet.
             pose.pushPose();
-            pose.translate(0, -rig.sightRiser, 0);
-            pose.scale(16, 16 * rig.sightRiser, 16);
+            pose.translate(0, -seat.riser(), 0);
+            pose.scale(16, 16 * seat.riser(), 16);
             FirearmModels.render(pose, buffers, FirearmModels.location("attachment/sight_riser"), light, OverlayTexture.NO_OVERLAY);
             pose.popPose();
         }
+        pose.scale(seat.scale(), seat.scale(), seat.scale());
         if (optic == Attachment.SNIPER_SCOPE && aim >= THROUGH) {
             mask(pose, buffers);
         }

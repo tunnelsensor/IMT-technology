@@ -192,6 +192,11 @@ public class LaserGunItem extends Item {
         if (parts.hasSling()) {
             tooltip.add(Component.literal("  ").append(Component.translatable("tooltip.imttech.laser_gun.sling")).withStyle(ChatFormatting.GOLD));
         }
+        // Hoofdstuk 103, stap 7: wat erop zit (een kijker, een greep).
+        for (com.senne.imttech.guns.Attachment attachment : com.senne.imttech.guns.FirearmItem.attachments(stack).list()) {
+            tooltip.add(Component.literal("  ").append(Component.translatable("tooltip.imttech.firearm.attachment",
+                    attachment.slot.text(), attachment.text())).withStyle(ChatFormatting.AQUA));
+        }
         String damage = type.rays() > 1 ? type.rays() + " x " + fmt(type.damage()) : fmt(type.damage());
         tooltip.add(Component.translatable("tooltip.imttech.laser_gun.stats", damage,
                 fmt(20f / type.interval()), type.shotsPerCell()).withStyle(ChatFormatting.DARK_AQUA));

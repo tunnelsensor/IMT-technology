@@ -4753,6 +4753,97 @@ public final class VisualCheck {
             });
         }
 
+        // --- Attachments op de lasergeweren (hoofdstuk 103, stap 7): elk lasergeweer met een kijker (en een greep) vanuit
+        // de heup, van opzij en gericht; de Laser Sniper met de Sniper Scope op 4x en 10x; de Laser Workbench met de twee
+        // plekken, leeg en vol; en hoe anderen het zien.
+        if (want("laseratt")) {
+            BlockPos g = GUN_RANGE.above();
+            Vec3 stand = new Vec3(g.getX() + 0.5, g.getY(), g.getZ() + 0.5);
+            t.onServer(0, VisualCheck::buildGunRange);
+            t.onServer(0, player -> ShowcaseFeatures.buildLaserBench(player, g));
+            t.onServer(0, VisualCheck::giveLaserAttachments);
+            t.stand(20, stand.x, stand.y, stand.z, 0, 2);
+            String[] names = {"pistol_red_dot", "rifle_red_dot_vertical_grip", "sniper_scope_angled_grip", "shotgun_red_dot", "sniper_red_dot"};
+            for (int i = 0; i < names.length; i++) {
+                int slot = i;
+                String number = "0" + (i + 1);
+                t.step(i == 0 ? 0 : 14, () -> selectSlot(slot));
+                t.step(0, () -> com.senne.imttech.client.guns.FirearmControl.setScopeZoom(4));
+                t.shot(22, "la" + number + "a_" + names[i] + "_hip");
+                t.step(4, () -> KeyMapping.click(com.senne.imttech.client.ImtKeys.GUN_INSPECT.getKey()));
+                t.shot(12, "la" + number + "b_" + names[i] + "_side");
+                t.step(44, () -> { });
+                t.key(0, () -> Minecraft.getInstance().options.keyUse, true);
+                t.shot(18, "la" + number + "c_" + names[i] + "_aim");
+                if (i == 2) {
+                    t.step(0, () -> com.senne.imttech.client.guns.FirearmControl.setScopeZoom(10));
+                    t.shot(8, "la03d_sniper_scope_10x");
+                }
+                t.key(2, () -> Minecraft.getInstance().options.keyAttack, true);
+                t.key(1, () -> Minecraft.getInstance().options.keyAttack, false);
+                t.shot(1, "la" + number + "e_" + names[i] + "_fire");
+                t.key(6, () -> Minecraft.getInstance().options.keyUse, false);
+            }
+            // De Laser Workbench: een Laser Rifle zonder attachments (de twee plekken), en met een red dot en een greep.
+            t.onServer(12, player -> {
+                var inventory = player.getInventory();
+                inventory.clearContent();
+                com.senne.imttech.guns.Attachment[] all = {com.senne.imttech.guns.Attachment.RED_DOT,
+                        com.senne.imttech.guns.Attachment.SNIPER_SCOPE, com.senne.imttech.guns.Attachment.VERTICAL_GRIP,
+                        com.senne.imttech.guns.Attachment.ANGLED_GRIP, com.senne.imttech.guns.Attachment.SUPPRESSOR_9MM};
+                for (int i = 0; i < all.length; i++) {
+                    inventory.setItem(9 + i, new ItemStack(ModItems.attachment(all[i])));
+                }
+                if (player.serverLevel().getBlockEntity(g.offset(-2, 0, 0)) instanceof com.senne.imttech.weapons.LaserWorkbenchBlockEntity bench) {
+                    bench.items().setItem(0, com.senne.imttech.weapons.LaserGunItem.loaded(com.senne.imttech.weapons.GunType.RIFLE));
+                }
+                ShowcaseFeatures.openBench(player, g.offset(-2, 0, 0));
+            });
+            t.step(0, () -> HowToTour.mouseTo(1, 1));
+            t.step(15, () -> Minecraft.getInstance().getToasts().clear());
+            t.shot(8, "la10_bench_rifle_places");
+            t.onServer(0, player -> laserAddOns(player, g, com.senne.imttech.guns.Attachment.RED_DOT,
+                    com.senne.imttech.guns.Attachment.VERTICAL_GRIP));
+            t.shot(10, "la11_bench_rifle_full");
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(g.offset(-2, 0, 0)) instanceof com.senne.imttech.weapons.LaserWorkbenchBlockEntity bench) {
+                    bench.items().setItem(0, com.senne.imttech.weapons.LaserGunItem.loaded(com.senne.imttech.weapons.GunType.SNIPER));
+                }
+            });
+            t.shot(12, "la12_bench_sniper_places");
+            t.onServer(0, player -> laserAddOns(player, g, com.senne.imttech.guns.Attachment.SNIPER_SCOPE,
+                    com.senne.imttech.guns.Attachment.ANGLED_GRIP));
+            t.shot(10, "la13_bench_sniper_full");
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(g.offset(-2, 0, 0)) instanceof com.senne.imttech.weapons.LaserWorkbenchBlockEntity bench) {
+                    bench.items().setItem(0, com.senne.imttech.weapons.LaserGunItem.loaded(com.senne.imttech.weapons.GunType.PISTOL));
+                }
+            });
+            t.shot(12, "la14_bench_pistol_places");
+            t.onServer(0, player -> laserAddOns(player, g, com.senne.imttech.guns.Attachment.RED_DOT));
+            t.shot(10, "la15_bench_pistol_full");
+            t.close(5);
+            // Hoe anderen het zien: de Laser Sniper met zijn kijker in je hand, en op je rug.
+            t.onServer(0, VisualCheck::giveLaserAttachments);
+            t.step(5, () -> selectSlot(2));
+            t.stand(5, stand.x, stand.y, stand.z, 0, 2);
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(30));
+            t.camera(5, CameraType.THIRD_PERSON_FRONT);
+            t.shot(20, "la16_third_person_sniper");
+            t.step(0, () -> selectSlot(1));
+            t.shot(15, "la17_third_person_rifle");
+            t.onServer(5, com.senne.imttech.guns.Gear::holsterHand);
+            t.stand(0, stand.x, stand.y, stand.z, 90, 0);
+            t.camera(0, CameraType.THIRD_PERSON_BACK);
+            t.shot(15, "la18_on_the_back");
+            t.camera(0, CameraType.FIRST_PERSON);
+            t.step(0, () -> Minecraft.getInstance().options.fov().set(70));
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.onServer(0, player -> com.senne.imttech.guns.Gear.setSling(player, 0, net.minecraft.world.item.ItemStack.EMPTY));
+            t.onServer(0, player -> player.getInventory().clearContent());
+        }
+
         // --- De skilltree (hoofdstuk 52, stap 3): leeg, en met een paar niveaus geleerd.
         if (want("skills")) {
             t.onServer(0, player -> player.setData(com.senne.imttech.registry.ModAttachments.GUN_SKILLS,
@@ -6539,6 +6630,51 @@ public final class VisualCheck {
             ItemStack gun = com.senne.imttech.guns.FirearmItem.loaded(types[i], com.senne.imttech.guns.GunMaterial.STEEL);
             com.senne.imttech.guns.FirearmItem.setAttachment(gun, sights[i]);
             inventory.setItem(i, gun);
+        }
+    }
+
+    /**
+     * Hoofdstuk 103, stap 7: vijf geladen lasergeweren in je werkbalk met een kijker erop: het pistool (red dot), de rifle
+     * (red dot en rechte greep), de sniper (Sniper Scope en schuine greep), de shotgun (red dot), en nog een sniper met
+     * een red dot.
+     */
+    private static void giveLaserAttachments(ServerPlayer player) {
+        var inventory = player.getInventory();
+        inventory.clearContent();
+        com.senne.imttech.weapons.GunType[] types = {com.senne.imttech.weapons.GunType.PISTOL, com.senne.imttech.weapons.GunType.RIFLE,
+                com.senne.imttech.weapons.GunType.SNIPER, com.senne.imttech.weapons.GunType.SHOTGUN,
+                com.senne.imttech.weapons.GunType.SNIPER};
+        com.senne.imttech.guns.Attachment[][] on = {
+                {com.senne.imttech.guns.Attachment.RED_DOT},
+                {com.senne.imttech.guns.Attachment.RED_DOT, com.senne.imttech.guns.Attachment.VERTICAL_GRIP},
+                {com.senne.imttech.guns.Attachment.SNIPER_SCOPE, com.senne.imttech.guns.Attachment.ANGLED_GRIP},
+                {com.senne.imttech.guns.Attachment.RED_DOT},
+                {com.senne.imttech.guns.Attachment.RED_DOT}};
+        for (int i = 0; i < types.length; i++) {
+            ItemStack gun = com.senne.imttech.weapons.LaserGunItem.loaded(types[i]);
+            for (com.senne.imttech.guns.Attachment attachment : on[i]) {
+                com.senne.imttech.guns.FirearmItem.setAttachment(gun, attachment);
+            }
+            if (com.senne.imttech.weapons.LaserPart.SLING.fitsOn(types[i])) {
+                // Met een sling eraan: zo hangt het geweer straks op je rug.
+                com.senne.imttech.weapons.LaserGunItem.setParts(gun, com.senne.imttech.weapons.LaserGunItem.parts(gun)
+                        .with(com.senne.imttech.weapons.LaserPart.SLING, com.senne.imttech.weapons.LaserParts.extra()));
+            }
+            inventory.setItem(i, gun);
+        }
+    }
+
+    /** Voor de rondleiding: deze attachments uit je inventaris op het geweer op de Laser Workbench. */
+    private static void laserAddOns(ServerPlayer player, BlockPos g, com.senne.imttech.guns.Attachment... attachments) {
+        if (player.serverLevel().getBlockEntity(g.offset(-2, 0, 0)) instanceof com.senne.imttech.weapons.LaserWorkbenchBlockEntity bench) {
+            for (com.senne.imttech.guns.Attachment attachment : attachments) {
+                int slot = player.getInventory().findSlotMatchingItem(new ItemStack(ModItems.attachment(attachment)));
+                if (slot < 0) {
+                    slot = player.getInventory().getFreeSlot();
+                    player.getInventory().setItem(slot, new ItemStack(ModItems.attachment(attachment)));
+                }
+                bench.install(player, slot);
+            }
         }
     }
 

@@ -102,14 +102,18 @@ public final class GunRenderer {
 
         pose.pushPose();
         // ---- Waar het geweer hangt: vanuit de heup (de greep rechtsonder) of gericht (het vizier recht voor je oog).
-        Vector3f pivot = lerp(rig.grip, rig.sight, aim);
-        Vector3f place = lerp(rig.hip, new Vector3f(0, 0, -rig.sightDistance), aim);
+        // Hoofdstuk 103, stap 7: met een kijker erop (een Red Dot Sight of de Sniper Scope) richt je daardoor.
+        com.senne.imttech.guns.Attachment optic = com.senne.imttech.guns.FirearmItem.sight(stack);
+        com.senne.imttech.guns.Attachment under = com.senne.imttech.guns.FirearmItem.attachment(stack,
+                com.senne.imttech.guns.AttachmentSlot.UNDERBARREL);
+        Vector3f pivot = lerp(rig.grip, optic == null ? rig.sight : com.senne.imttech.client.guns.Optics.eye(rig.seat(optic), optic), aim);
+        Vector3f place = lerp(rig.hip, new Vector3f(0, 0, -(optic == null ? rig.sightDistance : rig.eyeDistance(optic))), aim);
         float rotX = 0;
         float rotY = 4 * (1 - aim);
         float rotZ = -2 * (1 - aim);
-        // Ademen (heel zacht, minder als je richt).
+        // Ademen (heel zacht, minder als je richt). Met een kijker blijft het richtpunt stil in het midden van je beeld.
         float breathe = 1 - 0.7f * aim;
-        place.y += 0.004f * Mth.sin(time * 0.08f) * breathe;
+        place.y += 0.004f * Mth.sin(time * 0.08f) * (optic == null ? breathe : 1 - aim);
         rotX += 0.4f * Mth.sin(time * 0.06f) * breathe;
         // Pakken: van onder je beeld omhoog.
         float draw = ease(GunControl.draw(pt));
@@ -165,7 +169,8 @@ public final class GunRenderer {
         LaserParts parts = LaserGunItem.parts(stack);
         for (LaserPart p : LaserPart.wearing()) {
             PartState state = parts.get(p);
-            if (state != null && p != LaserPart.TRIGGER) {
+            // Met een kijker erop tekenen we het eigen vizier (het onderdeel Optics) niet: de kijker staat op zijn plek.
+            if (state != null && p != LaserPart.TRIGGER && !(p == LaserPart.OPTICS && optic != null)) {
                 model(pose, buffers, WeaponModels.part(type, p, state.material()), light);
             }
         }
@@ -192,7 +197,7 @@ public final class GunRenderer {
         }
         for (LaserPart p : LaserPart.wearing()) {
             PartState state = parts.get(p);
-            if (state != null && LaserRig.moves(type, p)) {
+            if (state != null && LaserRig.moves(type, p) && !(p == LaserPart.OPTICS && optic != null)) {
                 model(pose, buffers, WeaponModels.moving(type, p, state.material()), light);
             }
         }
@@ -200,6 +205,13 @@ public final class GunRenderer {
             display(pose, buffers, rig, stack, swap);
         }
         pose.popPose();
+        // De kijker en de greep (stap 7). Een kijker op de slede van het pistool gaat mee naar achteren.
+        if (optic != null) {
+            com.senne.imttech.client.guns.Optics.render(pose, buffers, rig.seat(optic), optic, light, moving * rig.cycle, aim);
+        }
+        if (under != null && rig.underMount != null) {
+            com.senne.imttech.client.guns.AddOns.renderUnder(pose, buffers, rig.underMount, under, light);
+        }
         if (!rig.displayMoves) {
             display(pose, buffers, rig, stack, swap);
         }
@@ -232,6 +244,8 @@ public final class GunRenderer {
         // ---- Je armen.
         boolean suit = player.getItemBySlot(EquipmentSlot.CHEST).getItem() instanceof TechSuitItem;
         Vector3f right = gun.transformPosition(new Vector3f(rig.grip));
+        // Met een greep onder de loop houdt je linkerhand die vast.
+        gripHand = under == null || rig.underMount == null ? null : com.senne.imttech.client.guns.AddOns.gripHand(rig.underMount, under);
         Vector3f left = gun.transformPosition(eject ? ejectHand(type, rig, reload, moving, cellOut)
                 : leftHand(type, rig, swap, moving, cellOut));
         HumanoidArm main = player.getMainArm();
@@ -351,8 +365,11 @@ public final class GunRenderer {
     }
 
     /** Je linkerhand bij alleen de cel eruit: naar de cel, hem eruit trekken en laten vallen, en terug. */
+    /** Waar je linkerhand de greep onder de loop vasthoudt (hoofdstuk 103, stap 7), of null zonder greep. */
+    private static @org.jetbrains.annotations.Nullable Vector3f gripHand;
+
     private static Vector3f ejectHand(GunType type, GunRig rig, float eject, float moving, float cellOut) {
-        Vector3f rest = new Vector3f(rig.support);
+        Vector3f rest = new Vector3f(gripHand == null ? rig.support : gripHand);
         if (type == GunType.SHOTGUN) {
             rest.z += moving * rig.cycle;
         }
@@ -392,7 +409,7 @@ public final class GunRenderer {
      * rechterhand vast.
      */
     private static Vector3f leftHand(GunType type, GunRig rig, float reload, float moving, float cellOut) {
-        Vector3f rest = new Vector3f(rig.support);
+        Vector3f rest = new Vector3f(gripHand == null ? rig.support : gripHand);
         if (type == GunType.SHOTGUN) {
             rest.z += moving * rig.cycle;
         }
