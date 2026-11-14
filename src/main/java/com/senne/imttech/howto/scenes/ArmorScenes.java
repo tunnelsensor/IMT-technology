@@ -1,6 +1,7 @@
 package com.senne.imttech.howto.scenes;
 
 import com.senne.imttech.armor.ArmorRegistry;
+import com.senne.imttech.armor.ArmorWorkbenchBlock;
 import com.senne.imttech.armor.PlateTier;
 import com.senne.imttech.armor.VestData;
 import com.senne.imttech.armor.VestItem;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
@@ -26,12 +28,17 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.DyedItemColor;
-import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * How it works voor de body armor (hoofdstuk 109): het vest en zijn plates, voor en achter (een headshot gaat erlangs),
- * slijten en herstellen, de drie magazijnen, je eigen tekst op je rug, kleuren, en de Raven-soldaten met een vest.
+ * How it works voor de body armor (hoofdstuk 109 en 111), in twee animaties (blader met de pijltjes bovenaan):
+ * <ul>
+ *   <li><b>Body armor</b>: het vest en zijn plates, voor en achter (een headshot gaat erlangs), slijten, de magazijnen en de
+ *       Raven-soldaten met een vest;</li>
+ *   <li><b>Armor Workbench</b>: maken op de tabbladen Vests en Plates (een plaatje van het echte scherm), herstellen, de tekst op
+ *       je rug op het tabblad Customize (ook een plaatje), en verven.</li>
+ * </ul>
  */
 public final class ArmorScenes {
     private ArmorScenes() {}
@@ -72,12 +79,16 @@ public final class ArmorScenes {
         return HowToSceneBuilder.number(Math.round(tier.reduction() * 100));
     }
 
+    /** De Armor Workbench, met zijn voorkant naar de camera (zuid). */
+    private static BlockState benchBlock() {
+        return ArmorRegistry.ARMOR_WORKBENCH.get().defaultBlockState().setValue(ArmorWorkbenchBlock.FACING, Direction.SOUTH);
+    }
+
     // ================================================================ Body armor
 
     /**
      * Het vest groot in beeld, de vier plates, iemand met een vest die van voren en van achteren beschoten wordt (en een
-     * headshot), een gebarsten plate en een aambeeld, de magazijnen, de tekst op zijn rug (hij draait zich om), drie kleuren,
-     * en een Raven-soldaat met RAVEN op zijn rug.
+     * headshot), een gebarsten plate, de magazijnen, en een Raven-soldaat met RAVEN op zijn rug.
      */
     public static List<HowToScene> bodyArmor() {
         HowToSceneBuilder s = new HowToSceneBuilder("body_armor", "Body armor").plate(7, 6).height(3);
@@ -141,46 +152,23 @@ public final class ArmorScenes {
         s.sound(SoundEvents.PLAYER_HURT, 0.5f, 1.0f);
         s.idle(80);
 
-        s.chapter("Wear and repair");
+        s.chapter("Wear");
         ItemStack fresh = new ItemStack(ArmorRegistry.plate(PlateTier.STEEL));
         ItemStack cracked = fresh.copy();
         cracked.setDamageValue(cracked.getMaxDamage());
-        BlockPos anvil = new BlockPos(4, 1, 2);
-        s.change(anvil, Blocks.ANVIL.defaultBlockState());
-        s.sound(SoundEvents.ANVIL_PLACE, 0.3f, 1.0f);
-        GunScenes.rowWithText(s, 150, centre.add(0, 1.3, 0), 1.0f, 1.3f, List.of(fresh, cracked),
-                "Every hit wears the plate out. A *cracked* plate stops nothing until you repair it on an *anvil* with its own"
-                        + " material (a Steel Plate with steel ingots), or swap it. Next to your hearts you see both plates.");
-        s.idle(150);
-        s.remove(anvil);
+        GunScenes.rowWithText(s, 140, centre.add(0, 1.3, 0), 1.0f, 1.3f, List.of(fresh, cracked),
+                "Every hit wears the plate out: you see it on the bar of the plate. A *cracked* plate stops nothing until you"
+                        + " repair it at the *Armor Workbench*. Next to your hearts you see both plates.");
+        s.idle(140);
 
         s.chapter("Magazines");
         ItemStack pouch = new ItemStack(ModItems.MAG_POUCH.get());
-        GunScenes.rowWithText(s, 140, centre.add(0, 1.3, 0), 1.6f, 2.2f, List.of(pouch, dyed(vest(PlateTier.STEEL, 3, "SWAT", DyeColor.WHITE), 0x5E6B3A)),
-                "The vest holds *%s magazines* (or energy cells). *[R]* shows them after the ones in your *Magazine Pouch*,"
-                        + " before the MOLLE pouches on your backpack, and stowing fills them in that order.",
+        GunScenes.rowWithText(s, 140, centre.add(0, 1.3, 0), 1.6f, 2.2f,
+                List.of(pouch, dyed(vest(PlateTier.STEEL, 3, "SWAT", DyeColor.WHITE), 0x5E6B3A)),
+                "Right-click the vest (worn: the *Alt wheel*) for its plates and *%s magazines*. *[R]* shows them after the ones"
+                        + " in your *Magazine Pouch*, before the MOLLE pouches on your backpack.",
                 HowToSceneBuilder.number(VestData.MAGS));
         s.idle(140);
-
-        s.chapter("Your text");
-        Vec3 turned = new Vec3(3.6, 1.0, 3.2);
-        s.player("you2", 160, 0, 225.0f, Map.of(), wearing(swat), turned);
-        s.idle(10);
-        s.text(140, turned.add(0, 2.2, 0), Side.RIGHT,
-                "Right-click the vest (worn: from the *Alt wheel*) to put in plates and magazines, and to type *your own text*"
-                        + " for the back (up to %s letters) in one of 16 colours.", HowToSceneBuilder.number(VestData.MAX_TEXT));
-        s.idle(150);
-        s.player("you3", 90, 0, 225.0f, Map.of(), wearing(vest(PlateTier.TITANIUM, 1, "POLICE", DyeColor.YELLOW)), turned);
-        s.idle(90);
-
-        s.chapter("Colours");
-        ItemStack tan = dyed(vest(PlateTier.STEEL, 0, "", DyeColor.WHITE), 0xA08560);
-        ItemStack olive = dyed(vest(PlateTier.STEEL, 0, "", DyeColor.WHITE), 0x5E6B3A);
-        ItemStack camo = vest(PlateTier.STEEL, 0, "", DyeColor.WHITE);
-        camo.set(BackpackRegistry.CAMO.get(), true);
-        GunScenes.rowWithText(s, 130, centre.add(0, 1.3, 0), 1.2f, 2.0f, List.of(tan, olive, camo),
-                "Dye it like a backpack: the 16 dyes (mixed like leather armour), or *brown + lime + green* for *camo*.");
-        s.idle(130);
 
         s.chapter("Raven soldiers");
         Vec3 soldier = new Vec3(3.6, 1.0, 3.0);
@@ -193,6 +181,69 @@ public final class ArmorScenes {
                 "Some *Raven soldiers* wear a vest too (%s %% of them), with plates: aim for the head. After the fight, their vest"
                         + " lies in their body.", HowToSceneBuilder.number(Math.round(ImtConfig.Armor.RAVEN_VEST_CHANCE * 100)));
         s.idle(145);
+        return List.of(s.build());
+    }
+
+    // ================================================================ Armor Workbench
+
+    /**
+     * De Armor Workbench (hoofdstuk 111): de werkbank, het plaatje van het tabblad Plates (tegels, kosten, Make, herstellen),
+     * het plaatje van Customize (de tekst, zijn kleur, verven), iemand die zich omdraait met SWAT en daarna POLICE op zijn rug,
+     * en drie geverfde vesten.
+     */
+    public static List<HowToScene> workbench() {
+        HowToSceneBuilder s = new HowToSceneBuilder("body_armor_workbench", "Armor Workbench").plate(7, 6).height(3);
+        Vec3 centre = new Vec3(3.5, 1.0, 3.0);
+        BlockPos bench = new BlockPos(3, 1, 2);
+        s.idle(6);
+
+        s.chapter("Making armor");
+        s.change(bench, benchBlock());
+        s.sound(SoundEvents.METAL_PLACE, 0.5f, 1.0f);
+        s.idle(10);
+        s.text(90, HowToSceneBuilder.top(bench), Side.RIGHT,
+                "Everything for body armor is made at the *Armor Workbench*, not in a crafting table.");
+        s.idle(95);
+        s.rightClick(HowToSceneBuilder.face(bench, Direction.SOUTH), ItemStack.EMPTY);
+        s.idle(14);
+        s.picture(170, "armor_workbench", 230, 222,
+                s.arrow(0.24f, 0.04f, "Three tabs: *Vests*, *Plates* and *Customize*"),
+                s.arrow(0.09f, 0.16f, "Pick what to make: a green edge means you have everything"),
+                s.arrow(0.76f, 0.3f, "What it costs, taken from your inventory"),
+                s.arrow(0.76f, 0.52f, "*Make*"),
+                s.arrow(0.1f, 0.45f, "Repair a plate: its own material, a quarter each"));
+        s.idle(175);
+
+        s.chapter("Your text");
+        s.text(100, HowToSceneBuilder.top(bench), Side.RIGHT,
+                "The text on your back (up to %s letters) and its colour you change only here, on the tab *Customize*.",
+                HowToSceneBuilder.number(VestData.MAX_TEXT));
+        s.idle(105);
+        s.picture(160, "armor_customize", 230, 222,
+                s.arrow(0.07f, 0.16f, "Your vest"),
+                s.arrow(0.7f, 0.14f, "The text on your back"),
+                s.arrow(0.62f, 0.27f, "Its colour (free)"),
+                s.arrow(0.62f, 0.41f, "The vest's colour: one dye from your inventory each"),
+                s.arrow(0.86f, 0.4f, "*Camo*: brown, lime and green dye"));
+        s.idle(165);
+        s.remove(bench);
+        Vec3 turned = new Vec3(3.6, 1.0, 3.2);
+        s.player("you", 110, 0, 225.0f, Map.of(), wearing(vest(PlateTier.STEEL, 2, "SWAT", DyeColor.WHITE)), turned);
+        s.idle(10);
+        s.text(90, turned.add(0, 2.2, 0), Side.RIGHT, "Everyone behind you can read it.");
+        s.idle(100);
+        s.player("you2", 80, 0, 225.0f, Map.of(), wearing(vest(PlateTier.TITANIUM, 1, "POLICE", DyeColor.YELLOW)), turned);
+        s.idle(80);
+
+        s.chapter("Colours");
+        ItemStack tan = dyed(vest(PlateTier.STEEL, 0, "", DyeColor.WHITE), 0xA08560);
+        ItemStack olive = dyed(vest(PlateTier.STEEL, 0, "", DyeColor.WHITE), 0x5E6B3A);
+        ItemStack camo = vest(PlateTier.STEEL, 0, "", DyeColor.WHITE);
+        camo.set(BackpackRegistry.CAMO.get(), true);
+        GunScenes.rowWithText(s, 130, centre.add(0, 1.3, 0), 1.2f, 2.0f, List.of(tan, olive, camo),
+                "Each colour you click uses one dye and mixes like leather armour; on a new vest it becomes that colour. *Brown +"
+                        + " lime + green* dye makes *camo*.");
+        s.idle(130);
         return List.of(s.build());
     }
 }

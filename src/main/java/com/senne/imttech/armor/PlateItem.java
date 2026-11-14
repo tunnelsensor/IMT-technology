@@ -17,8 +17,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Een plate voor in de Plate Carrier (hoofdstuk 109): polymeer, staal, titanium of netherite (zie PlateTier). Jouw keuze:
  * hij <b>slijt per treffer</b>. Elke treffer die hij tegenhoudt kost hem wat, meer bij meer schade; is hij op, dan is hij
- * <b>gebarsten</b> en houdt hij niets meer tegen, tot je hem op een aambeeld herstelt met zijn eigen materiaal (een
- * staaf herstelt een kwart, zoals bij gereedschap) of een andere insteekt.
+ * <b>gebarsten</b> en houdt hij niets meer tegen, tot je hem herstelt met zijn eigen materiaal (sinds hoofdstuk 111 op de
+ * Armor Workbench, tabblad Plates: een stuk herstelt een kwart) of een andere insteekt.
  *
  * Hoe het slijten werkt: elke plate heeft dezelfde balk van {@link #UNITS} stapjes (het gewone duurzaamheidsbalkje onder het
  * item), en hoeveel schade die balk waard is, staat per soort in de config ({@code plateDurability}): een titanium plate houdt
@@ -90,10 +90,18 @@ public class PlateItem extends Item {
         return out;
     }
 
-    /** Herstellen op een aambeeld: met het eigen materiaal (polymeer, een staal-, titanium- of netheritestaaf). */
+    /**
+     * Hoofdstuk 111 (jouw keuze): herstellen doe je op de Armor Workbench (tabblad Plates), niet op een aambeeld. Daarom
+     * kent het aambeeld geen materiaal voor een plate, en kun je er ook geen twee plates samenvoegen.
+     */
     @Override
     public boolean isValidRepairItem(ItemStack plate, ItemStack material) {
-        return material.is(tier.repairItem());
+        return false;
+    }
+
+    @Override
+    public boolean isRepairable(ItemStack stack) {
+        return false;
     }
 
     /** Rechtsklik terwijl je een vest draagt: de plate erin (zie Vests.insertPlate). */
@@ -126,7 +134,7 @@ public class PlateItem extends Item {
             tooltip.add(Component.translatable("tooltip.imttech.plate.left", Math.round(left(stack)), Math.round(tier.durability()))
                     .withStyle(health(stack) < 0.25f ? ChatFormatting.GOLD : ChatFormatting.DARK_GREEN));
         }
-        tooltip.add(Component.translatable("tooltip.imttech.plate.repair", tier.repairItem().getDescription())
+        tooltip.add(Component.translatable("tooltip.imttech.plate.repair_at", tier.repairItem().getDescription())
                 .withStyle(ChatFormatting.DARK_GRAY));
         tooltip.add(Component.translatable("tooltip.imttech.plate.insert").withStyle(ChatFormatting.DARK_GRAY));
     }

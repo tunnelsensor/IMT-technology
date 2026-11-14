@@ -41,9 +41,8 @@ public class BackpackDyeRecipe extends CustomRecipe {
             if (stack.isEmpty()) {
                 continue;
             }
-            // Hoofdstuk 109 (jouw keuze: kleuren + camo zoals de rugzakken): ook het vest, de Plate Carrier.
-            if (BackpackItem.isBackpack(stack) || stack.getItem() instanceof MolleItem
-                    || com.senne.imttech.armor.VestItem.isVest(stack)) {
+            // (Het vest verf je sinds hoofdstuk 111 op de Armor Workbench, niet hier; het mengen hieronder gebruikt het wel.)
+            if (BackpackItem.isBackpack(stack) || stack.getItem() instanceof MolleItem) {
                 if (!pack.isEmpty()) {
                     return null;
                 }
@@ -96,9 +95,7 @@ public class BackpackDyeRecipe extends CustomRecipe {
             result.remove(DataComponents.DYED_COLOR);
         } else if (!result.has(DataComponents.DYED_COLOR)) {
             // Een nieuwe rugzak is olijfgroen; mengen begint daarmee, zoals bij leer met zijn bruin.
-            // (Hoofdstuk 109: een nieuw vest is antracietgrijs, dus daar begint het mengen mee.)
-            result.set(DataComponents.DYED_COLOR, new DyedItemColor(
-                    com.senne.imttech.armor.VestItem.isVest(result) ? com.senne.imttech.armor.VestItem.CHARCOAL : BackpackItem.OLIVE, true));
+            result.set(DataComponents.DYED_COLOR, new DyedItemColor(BackpackItem.OLIVE, true));
         }
         result.set(DataComponents.DYED_COLOR, new DyedItemColor(mix(result.get(DataComponents.DYED_COLOR), parts.dyes()), true));
         return result;
@@ -109,7 +106,7 @@ public class BackpackDyeRecipe extends CustomRecipe {
      * "dyeable", en dan zou ook het verfrecept van leer op de rugzak werken en met camo botsen). Het gemiddelde van alle
      * kleuren, en dan zo licht als de lichtste kleuren gemiddeld waren.
      */
-    static int mix(DyedItemColor current, List<DyeItem> dyes) {
+    public static int mix(DyedItemColor current, List<DyeItem> dyes) {
         int red = 0;
         int green = 0;
         int blue = 0;

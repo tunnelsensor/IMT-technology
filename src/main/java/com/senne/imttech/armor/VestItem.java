@@ -117,6 +117,7 @@ public class VestItem extends Item {
         }
         tooltip.add(Component.translatable("tooltip.imttech.vest.wear").withStyle(ChatFormatting.DARK_GRAY));
         tooltip.add(Component.translatable("tooltip.imttech.vest.open").withStyle(ChatFormatting.DARK_GRAY));
+        tooltip.add(Component.translatable("tooltip.imttech.vest.workbench").withStyle(ChatFormatting.DARK_GRAY));
     }
 
     /** "Front: Titanium Plate (90/120)", "Back: none" of "Back: Steel Plate (cracked)". */

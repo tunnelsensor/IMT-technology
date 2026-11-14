@@ -49,7 +49,7 @@ public final class VestRenderer {
     private static final float TEXT_HEIGHT = 1.9f;
     private static final float TEXT_STRETCH = 1.45f;
     /** Over een borstplaat: zoveel breder en dieper, en zoveel pixels hoger (de borstplaat is een pixel dikker dan je lijf). */
-    private static final float OVER_ARMOUR_SCALE = 1.15f;
+    private static final float OVER_ARMOUR_SCALE = 1.18f;
     private static final float OVER_ARMOUR_RAISE = 0.8f;
 
     /** Bij het opstarten: zeg Minecraft dat het het losse magazijnmodel moet inladen. */
@@ -127,6 +127,8 @@ public final class VestRenderer {
         }
         float sx = TEXT_WIDTH / width;
         float sy = Math.min(sx * TEXT_STRETCH, TEXT_HEIGHT / 7.0f);
+        // Een korte tekst (K9, X) wordt niet breder dan hoog: dan smaller, in het midden.
+        sx = Math.min(sx, sy / TEXT_STRETCH);
         pose.pushPose();
         pose.translate(TEXT_X / 16f, TEXT_Y / 16f, (TEXT_Z - 0.04f) / 16f);
         pose.scale(-sx / 16f, -sy / 16f, -sx / 16f);

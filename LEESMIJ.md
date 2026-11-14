@@ -2965,11 +2965,27 @@ neerzetten, kleuren, van achteren openen en het lichaam) en "MOLLE pouches" (elk
 ### Body armor: het vest met plates
 Jouw wens (hoofdstuk 109): "body armor waar je plates in kunt steken, hoe sterker de plate hoe minder damage je neemt, de
 bodyarmor kan ook mags hebben (3) deze komen bij de ander 6 mags van een magpouch, je kunt op de achterkant van je vest zelf
-een tekst zetten zoals 'SWAT'". De getallen staan onder `[armor]`.
+een tekst zetten zoals 'SWAT'". En (hoofdstuk 111): "maak voor de bodyarmor een eigen workbench, hier maak je alles voor de
+armor, de vesten en op een ander tab de plates. Zorg dat je de tekst enkel in de workbench kunt bewerken." De getallen staan
+onder `[armor]`.
+
+**De Armor Workbench** maak je in de crafting table: bovenaan polymeer, leer, polymeer; in het midden ijzer, een crafting
+table, ijzer; onderaan twee keer ijzer. Rechtsklik opent hem, met drie tabbladen bovenaan:
+- **Vests** en **Plates**: een tegel per ding dat je kunt maken (een groene rand: je hebt alles bij je). Klik een tegel en
+  rechts zie je wat hij kost (wat je hebt / wat nodig is, groen of rood) en hoe vaak je hem kunt maken; **Make** haalt het
+  materiaal uit je inventaris (ook je tweede hand) en geeft je het vest of de plate. Vesten en plates maak je **alleen hier**,
+  niet meer in de crafting table.
+- Op **Plates** ook **een plate herstellen** (in plaats van het aambeeld): leg hem in het vakje, je ziet welk materiaal en
+  hoeveel; **Repair** neemt zoveel als nodig (en als je hebt), elk stuk een kwart. Ook een gebarsten plate wordt zo weer heel.
+- **Customize**: leg je vest in het vakje. Je ziet het vest van achteren met je tekst. Rechts **de tekst op je rug** en zijn
+  kleur (gratis), en **de kleur van het vest**: elke kleur die je klikt kost een kleurstof van die kleur (een kleur die je
+  niet bij je hebt is donker), **Camo** kost een bruine, een lichtgroene en een groene. De plates, de magazijnen en de tekst
+  blijven zitten.
+De werkbank bewaart zelf niets: wat je in een vakje laat liggen, krijg je terug als je het scherm sluit.
 
 **De Plate Carrier** is een tactisch vest: een plate-tas voor en achter, schouderbanden, een cummerbund om je middel, drie
 magazijnvakjes op je buik en op je rug een zwart klittenbandvlak voor je eigen tekst. Nieuw is hij antracietgrijs.
-Recept: 5 leer, een touw en 3 polymeer.
+Op de werkbank: 5 leer, een touw en 3 polymeer.
 - **Dragen** (jouw keuze): in een **eigen vest-vakje**, over je borstplaat of de Tech Suit. Het vakje staat links naast het
   vakje van je borstplaat, net buiten het inventarisscherm (de rij onder het craftraster is vol); met Curios is het het slot
   "body". **Sneak + rechtsklik** met een vest in je hand trekt het meteen aan (een vest dat je al droeg komt in je hand).
@@ -2980,7 +2996,7 @@ Recept: 5 leer, een touw en 3 polymeer.
 **De plates** (jouw keuze: een voor en een achter). Vier soorten, van zwak naar sterk; hoe sterker, hoe meer van een treffer
 hij tegenhoudt (`plateReduction`) en hoe langer hij meegaat (`plateDurability`: hoeveel schade hij in totaal tegenhoudt):
 
-| Plate | Niveau | Houdt tegen | Gaat mee (schade) | Recept |
+| Plate | Niveau | Houdt tegen | Gaat mee (schade) | Op de werkbank |
 |---|---|---|---|---|
 | Polymer Plate | IIIA | 25 % | 50 | 6 polymeer |
 | Steel Plate | III | 40 % | 80 | 5 stalen staven en 1 polymeer |
@@ -2995,26 +3011,27 @@ hij tegenhoudt (`plateReduction`) en hoe langer hij meegaat (`plateDurability`: 
 - **Slijten** (jouw keuze): wat een plate tegenhoudt, kost hem duurzaamheid (het balkje onder het item). Is hij op, dan is hij
   **gebarsten** (het plaatje toont de barsten) en houdt hij niets meer tegen. Je hoort een doffe tik als een plate een treffer
   opvangt (de schutter ook) en een krak als hij barst, met een regel boven je werkbalk.
-- **Herstellen**: op een **aambeeld** met zijn eigen materiaal (polymeer, staal, titanium of netherite); elke staaf herstelt
-  een kwart. Of steek een andere in.
+- **Herstellen**: op de **Armor Workbench** (tabblad Plates) met zijn eigen materiaal (polymeer, staal, titanium of
+  netherite); elk stuk herstelt een kwart. Een aambeeld (alleen een naam geven kan daar) of twee plates in de crafting
+  table doen het niet. Of steek een andere in.
 - **In beeld**: draag je een vest, dan staan links naast je hartjes twee kleine plates (voor en achter) in de kleur van hun
   materiaal, met eronder hoe heel ze zijn (groen, oranje, rood); een gebarsten plate heeft een rood kruis.
 
 **Het scherm van het vest**: rechtsklik met het vest in je hand, of (gedragen) de knop **Vest** in het wiel (linker Alt).
-Links de plate voor en achter (met hoeveel ze nog tegenhouden), in het midden het vest van achteren met je tekst, rechts de
-drie magazijnen, de tekst en zijn kleur. **Rechtsklik met een plate in je hand** terwijl je een vest draagt, steekt hem er
+Op één rij de plate voor, de plate achter en daarnaast de drie magazijnen; eronder je inventaris. Hoe versleten een plate is,
+zie je aan het balkje op de plate zelf. **Rechtsklik met een plate in je hand** terwijl je een vest draagt, steekt hem er
 meteen in: voorop als daar niets (of een gebarsten plate) zit, anders achterop.
 
 **Drie magazijnen** (of energiecellen). Jouw wens: "deze komen bij de ander 6 mags van een magpouch". **R** toont ze na de
 magazijnen in je Magazine Pouch en voor die in de MOLLE-pouches op je rugzak; een leeg magazijn na het herladen en
 wegsteken (onderaan in het wiel) vullen ook in die volgorde: eerst je pouch, dan je vest, dan de MOLLE-pouches.
 
-**De tekst op je rug** (SWAT, POLICE, SECURITY...): hooguit 12 tekens, in een van de 16 kleuren van Minecraft. Je typt hem in
-het scherm van het vest en ziet hem meteen op het vest in het midden. Een korte tekst staat groot op het klittenbandvlak,
-een lange kleiner.
+**De tekst op je rug** (SWAT, POLICE, SECURITY...): hooguit 12 tekens, in een van de 16 kleuren van Minecraft. Je typt hem
+**alleen op de Armor Workbench** (tabblad Customize, jouw wens) en ziet hem meteen op het vest ernaast. Een korte tekst staat
+groot op het klittenbandvlak, een lange kleiner.
 
-**Kleuren** (jouw keuze: zoals de rugzakken): verven in de crafting table met een of meer kleurstoffen (gemengd zoals leer),
-of **bruin + lichtgroen + groen** voor **camo**. De plates, de magazijnen en de tekst blijven.
+**Kleuren** (jouw keuze, op de werkbank): de eerste kleur op een nieuw vest (of op camo) is precies die kleur; elke volgende
+kleurstof mengt erbij zoals bij leer. **Bruin + lichtgroen + groen** is **camo**. De crafting table verft het vest niet meer.
 
 **Op het Pegboard**: het vest hangt met zijn rug (en je tekst) naar je toe, 5 x 6 gaatjes; een losse plate 3 x 4.
 
@@ -3028,7 +3045,8 @@ soms een vest), de toren van Biebia (staal en titanium) en zijn kluis (titanium,
 **Het lichaam van een speler** heeft een vakje voor je vest (naast je keycard), en je ziet het vest op het lichaam liggen,
 met de tekst naar boven. **Everything back** trekt het je weer aan.
 
-**How it works**: houd W op het vest of een plate: "Body armor".
+**How it works**: houd W op het vest, een plate of de werkbank: "Body armor" (twee animaties: het vest en de plates, en de
+Armor Workbench).
 
 ### Prestaties (advancements)
 De mod heeft een eigen prestatieboom die je door het spel leidt, van je eerste computerchip tot

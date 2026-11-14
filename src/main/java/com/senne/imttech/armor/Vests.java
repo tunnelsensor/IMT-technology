@@ -32,7 +32,8 @@ import net.neoforged.neoforge.network.payload.AdvancedOpenScreenPayload;
  *       backpack/Molle.magazines); wegsteken en een leeg magazijn na het herladen gaan in dezelfde volgorde.</li>
  *   <li><b>De plates</b>: wat ze tegenhouden staat in PlateArmor; erin steken doe je in het scherm van het vest, of met een
  *       rechtsklik met de plate in je hand ({@link #insertPlate}).</li>
- *   <li><b>Het scherm</b> ({@link #openHeld}, {@link #openWorn}): de plates, de magazijnen en de tekst op je rug (VestMenu).</li>
+ *   <li><b>Het scherm</b> ({@link #openHeld}, {@link #openWorn}): de twee plates en de drie magazijnen (VestMenu). De tekst op
+ *       je rug, verven en plates herstellen doe je sinds hoofdstuk 111 op de Armor Workbench (ArmorWorkbenchMenu).</li>
  * </ul>
  */
 public final class Vests {
@@ -43,13 +44,23 @@ public final class Vests {
         ArmorRegistry.register(modEventBus);
         modEventBus.addListener(Vests::registerPayloads);
         NeoForge.EVENT_BUS.addListener(PlateArmor::onDamage);
+        NeoForge.EVENT_BUS.addListener(PlateArmor::onDetonate);
+        // Hoofdstuk 111 (jouw keuze): plates herstel je op de Armor Workbench. Een aambeeld zou er anders twee samenvoegen (of
+        // er een boek op zetten); alleen een naam geven, met niets in het rechtervakje, mag nog.
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.AnvilUpdateEvent event) -> {
+            if (PlateItem.tierOf(event.getLeft()) != null && !event.getRight().isEmpty()) {
+                event.setCanceled(true);
+            }
+        });
     }
 
     /** Eigen berichten (net als de rugzakken een eigen lijst, los van network/ModNetwork). */
     private static void registerPayloads(RegisterPayloadHandlersEvent event) {
         var registrar = event.registrar("1");
+        // Hoofdstuk 111 (jouw wens): de tekst op je rug pas je alleen op de Armor Workbench aan (tabblad Customize).
         registrar.playToServer(VestTextPayload.TYPE, VestTextPayload.STREAM_CODEC, (payload, context) -> {
-            if (context.player() instanceof ServerPlayer player && player.containerMenu instanceof VestMenu menu && menu.stillValid(player)) {
+            if (context.player() instanceof ServerPlayer player && player.containerMenu instanceof ArmorWorkbenchMenu menu
+                    && menu.stillValid(player)) {
                 menu.setText(payload.text(), payload.colour());
             }
         });
@@ -162,14 +173,11 @@ public final class Vests {
             return false;
         }
         VestData data = VestItem.data(vest);
+        // Voorop als daar niets of een gebarsten plate zit (van voren word je het vaakst geraakt), anders achterop.
         Boolean front = null;
         for (boolean side : new boolean[] {true, false}) {
-            if (front == null && data.plate(side).isEmpty()) {
-                front = side;
-            }
-        }
-        for (boolean side : new boolean[] {true, false}) {
-            if (front == null && PlateItem.broken(data.plate(side))) {
+            ItemStack there = data.plate(side);
+            if (front == null && (there.isEmpty() || PlateItem.broken(there))) {
                 front = side;
             }
         }

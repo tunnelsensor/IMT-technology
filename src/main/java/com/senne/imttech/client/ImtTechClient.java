@@ -182,6 +182,7 @@ public class ImtTechClient {
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.guns.GearControl::onClientTick);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.guns.GearSlotsOverlay::onRender);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.guns.GearSlotsOverlay::onClick);
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.guns.GearSlotsOverlay::onRelease);
         // Hoofdstuk 63, How it works: W vasthouden op een item (met de regel in de tooltip), en het knopje in je inventaris.
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.howto.HowToHover::onTooltip);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.howto.HowToHover::onRenderTooltip);

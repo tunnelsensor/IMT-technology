@@ -17,7 +17,7 @@ import net.minecraft.world.item.Items;
  *   <li><b>Netherite</b>: Level IV, het beste wat er is.</li>
  * </ul>
  * Hoeveel elke soort tegenhoudt en hoe lang hij meegaat, staat in de config ([armor]); een gebarsten plate herstel je op
- * een aambeeld met zijn eigen materiaal (zie PlateItem).
+ * de Armor Workbench met zijn eigen materiaal (hoofdstuk 111, zie ArmorWorkbenchMenu).
  */
 public enum PlateTier {
     POLYMER("polymer", "IIIA", 0xDAD6C7),
@@ -54,7 +54,7 @@ public enum PlateTier {
         return Math.max(1, ordinal() < values.length ? values[ordinal()] : 1);
     }
 
-    /** Waarmee je hem op een aambeeld herstelt: zijn eigen materiaal. */
+    /** Waarmee je hem op de Armor Workbench herstelt: zijn eigen materiaal. */
     public Item repairItem() {
         return switch (this) {
             case POLYMER -> ModItems.POLYMER.get();

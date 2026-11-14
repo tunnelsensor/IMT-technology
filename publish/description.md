@@ -68,7 +68,8 @@ bunkers to raid.
 - A holster, pouches and gun slings with a quickdraw wheel, an armory pegboard, ammo boxes, military backpacks
   with MOLLE pouches, and gun skills you level up.
 - Body armor: a Plate Carrier with a front and a back plate (polymer, steel, titanium or netherite) that wear out
-  as they stop hits, three magazine pouches, and your own text on the back, like SWAT.
+  as they stop hits, three magazine pouches, and your own text on the back, like SWAT. Vests and plates are made,
+  repaired, dyed and lettered at their own Armor Workbench.
 - Raven soldiers who guard the bunkers like in a stealth game: they patrol, hear you, call for backup, and
   carry the same guns you do.
 - Hold **W** on any item of the mod for a short animation that shows how it works.

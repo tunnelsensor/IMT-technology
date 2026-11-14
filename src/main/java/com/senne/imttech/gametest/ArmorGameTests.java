@@ -9,6 +9,9 @@ import com.senne.imttech.armor.VestData;
 import com.senne.imttech.armor.VestItem;
 import com.senne.imttech.armor.VestMenu;
 import com.senne.imttech.armor.Vests;
+import com.senne.imttech.armor.ArmorRecipe;
+import com.senne.imttech.armor.ArmorWorkbenchBlock;
+import com.senne.imttech.armor.ArmorWorkbenchMenu;
 import com.senne.imttech.backpack.BackpackDyeRecipe;
 import com.senne.imttech.backpack.BackpackRegistry;
 import com.senne.imttech.backpack.Molle;
@@ -38,6 +41,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.inventory.AnvilMenu;
+import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
@@ -118,6 +123,17 @@ public final class ArmorGameTests {
         return player.getMaxHealth() - player.getHealth();
     }
 
+    /** Een lijstje spullen als "wat je bij je hebt" voor een recept van de werkbank. */
+    private record GunsmithRecipeCarried(List<ItemStack> stacks) {
+        com.senne.imttech.guns.GunsmithRecipe.Carried carried() {
+            List<ItemStack> copies = new ArrayList<>();
+            for (ItemStack stack : stacks) {
+                copies.add(stack.copy());
+            }
+            return new com.senne.imttech.guns.GunsmithRecipe.Carried(copies);
+        }
+    }
+
     private static boolean near(float a, float b) {
         return Math.abs(a - b) < 0.02f;
     }
@@ -170,7 +186,7 @@ public final class ArmorGameTests {
 
     /**
      * Een bijna versleten titanium plate barst bij de volgende treffer (die hij nog half opvangt); daarna houdt hij niets meer
-     * tegen. Op een aambeeld herstel je hem met titanium, niet met staal.
+     * tegen. Een aambeeld herstelt hem niet (hoofdstuk 111: dat doe je op de Armor Workbench).
      */
     @GameTest(template = ARENA, timeoutTicks = 120, batch = "backpacks")
     public static void a_worn_plate_cracks_and_stops_nothing(GameTestHelper helper) {
@@ -186,8 +202,9 @@ public final class ArmorGameTests {
             ItemStack cracked = VestItem.data(Gear.vest(player)).front();
             check(PlateItem.broken(cracked) && PlateItem.tierOf(cracked) == PlateTier.TITANIUM, "De plate barstte niet (of verdween)");
             check(near(hit(player, shot(level, front, false), 10), 10), "Een gebarsten plate hield nog iets tegen");
-            check(cracked.getItem().isValidRepairItem(cracked, new ItemStack(ModItems.TITANIUM_INGOT.get())), "Titanium herstelt een titanium plate niet");
-            check(!cracked.getItem().isValidRepairItem(cracked, new ItemStack(ModItems.STEEL_INGOT.get())), "Staal herstelt een titanium plate");
+            // Hoofdstuk 111 (jouw keuze): herstellen op de Armor Workbench, niet op een aambeeld of in de crafting table.
+            check(!cracked.getItem().isValidRepairItem(cracked, new ItemStack(ModItems.TITANIUM_INGOT.get())), "Een aambeeld herstelt een plate");
+            check(!cracked.getItem().isRepairable(cracked), "Twee plates in de crafting table worden samen een betere");
             check(PlateItem.left(plate(PlateTier.STEEL)) == PlateTier.STEEL.durability(), "Een nieuwe plate kan niet zijn hele duurzaamheid tegenhouden");
             helper.succeed();
         });
@@ -263,7 +280,7 @@ public final class ArmorGameTests {
 
     /**
      * Het scherm leest het vest zelf: een plate die slijt terwijl het open staat, zie je meteen. Een plate past niet in een
-     * magazijnvakje. De tekst wordt op maat geknipt (12 tekens, geen kleurcodes).
+     * magazijnvakje. (De tekst pas je sinds hoofdstuk 111 aan op de Armor Workbench, zie de test daarvan.)
      */
     @GameTest(template = ARENA, timeoutTicks = 120, batch = "backpacks")
     public static void vest_screen_shows_the_live_vest(GameTestHelper helper) {
@@ -281,10 +298,6 @@ public final class ArmorGameTests {
             check(menu.getSlot(VestMenu.MAGS).mayPlace(MagazineItem.of(FirearmType.GLOCK_19, 5)), "Een magazijn paste niet in een magazijnvakje");
             menu.getSlot(VestMenu.BACK).set(plate(PlateTier.TITANIUM));
             check(PlateItem.tierOf(VestItem.data(Gear.vest(player)).back()) == PlateTier.TITANIUM, "De plate uit het scherm zit niet in het vest");
-            menu.setText("§cSWAT TEAM ALPHA", DyeColor.YELLOW.getId());
-            VestData data = VestItem.data(Gear.vest(player));
-            check(data.text().equals("cSWAT TEAM A") && data.dye() == DyeColor.YELLOW,
-                    "De tekst werd \"" + data.text() + "\" in " + data.dye() + " (hoort cSWAT TEAM A in geel)");
             player.closeContainer();
             helper.succeed();
         });
@@ -352,28 +365,135 @@ public final class ArmorGameTests {
     }
 
     /**
-     * Jouw keuze (zoals de rugzakken): een vest verf je met kleurstoffen (een nieuw vest is antracietgrijs, dus de rode verf
-     * mengt daarmee), en bruin + lichtgroen + groen is camo. De plates en de tekst blijven.
+     * Een speler met een Armor Workbench voor zich en zijn scherm open (player.containerMenu), met deze spullen in zijn
+     * inventaris.
      */
-    @GameTest(template = ARENA, timeoutTicks = 20, batch = "backpacks")
-    public static void vest_dyes_like_a_backpack(GameTestHelper helper) {
-        BackpackDyeRecipe recipe = new BackpackDyeRecipe(CraftingBookCategory.MISC);
-        ItemStack vest = VestItem.withText(vest(plate(PlateTier.STEEL), ItemStack.EMPTY), "SWAT", DyeColor.WHITE);
-        ItemStack red = recipe.assemble(CraftingInput.of(2, 1, List.of(vest, new ItemStack(Items.RED_DYE))), helper.getLevel().registryAccess());
-        check(VestItem.isVest(red) && red.has(DataComponents.DYED_COLOR), "Het vest werd niet geverfd");
-        check(VestItem.colour(red) != VestItem.CHARCOAL && VestItem.colour(red) != DyeColor.RED.getTextureDiffuseColor(),
-                "De rode verf mengde niet met het antracietgrijs van een nieuw vest");
-        check(VestItem.data(red).text().equals("SWAT") && PlateItem.tierOf(VestItem.data(red).front()) == PlateTier.STEEL,
-                "Verven nam de tekst of de plate weg");
-        ItemStack camo = recipe.assemble(CraftingInput.of(2, 2, List.of(vest, new ItemStack(Items.BROWN_DYE), new ItemStack(Items.LIME_DYE),
-                new ItemStack(Items.GREEN_DYE))), helper.getLevel().registryAccess());
-        check(VestItem.camo(camo), "Bruin + lichtgroen + groen maakte geen camo-vest");
+    private static ServerPlayer bench(GameTestHelper helper, String name, ItemStack... items) {
+        BlockPos bench = new BlockPos(3, 2, 5);
+        helper.setBlock(bench.below(), Blocks.STONE);
+        helper.setBlock(bench, ArmorRegistry.ARMOR_WORKBENCH.get().defaultBlockState());
+        ServerPlayer player = player(helper, name, new BlockPos(3, 2, 3));
+        for (ItemStack item : items) {
+            player.getInventory().add(item);
+        }
+        ArmorWorkbenchBlock.open(player, helper.absolutePos(bench));
+        check(player.containerMenu instanceof ArmorWorkbenchMenu, "De werkbank ging niet open");
+        return player;
+    }
+
+    /** Het nummer van het recept van de werkbank dat dit maakt (zoals het scherm het stuurt), of -1. */
+    private static int recipeFor(ServerLevel level, Item result) {
+        var all = ArmorRecipe.allArmor(level.getRecipeManager());
+        for (int i = 0; i < all.size(); i++) {
+            if (all.get(i).value().result().is(result)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Hoofdstuk 111 (jouw wens): alles voor de armor maak je op de Armor Workbench, niet meer in de crafting table. Make haalt
+     * het materiaal uit je inventaris (een stalen plate: 5 staal en 1 polymeer); zonder genoeg gebeurt er niets. Herstellen
+     * (jouw keuze, in plaats van het aambeeld): elk stuk eigen materiaal herstelt een kwart, zoveel als je hebt.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "backpacks")
+    public static void armor_workbench_makes_and_repairs(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer player = bench(helper, "bench-maker", new ItemStack(ModItems.STEEL_INGOT.get(), 7),
+                new ItemStack(ModItems.POLYMER.get(), 1));
+        ArmorWorkbenchMenu menu = (ArmorWorkbenchMenu) player.containerMenu;
+        int steel = recipeFor(level, ArmorRegistry.plate(PlateTier.STEEL));
+        check(steel >= 0, "De werkbank kent geen recept voor een stalen plate");
+        check(menu.clickMenuButton(player, ArmorWorkbenchMenu.MAKE + steel), "Make maakte geen stalen plate");
+        check(player.getInventory().countItem(ArmorRegistry.plate(PlateTier.STEEL)) == 1, "De stalen plate zit niet in je inventaris");
+        check(player.getInventory().countItem(ModItems.STEEL_INGOT.get()) == 2 && player.getInventory().countItem(ModItems.POLYMER.get()) == 0,
+                "Het materiaal ging er niet uit (5 staal en 1 polymeer)");
+        check(!menu.clickMenuButton(player, ArmorWorkbenchMenu.MAKE + steel), "Zonder genoeg materiaal maakte hij toch een plate");
+        // De crafting table kent de plates en het vest niet meer.
+        CraftingInput old = CraftingInput.of(3, 2, List.of(new ItemStack(ModItems.STEEL_INGOT.get()), new ItemStack(ModItems.STEEL_INGOT.get()),
+                new ItemStack(ModItems.STEEL_INGOT.get()), new ItemStack(ModItems.STEEL_INGOT.get()), new ItemStack(ModItems.POLYMER.get()),
+                new ItemStack(ModItems.STEEL_INGOT.get())));
+        check(level.getRecipeManager().getRecipeFor(RecipeType.CRAFTING, old, level).isEmpty(), "De crafting table maakt nog plates");
+        // Herstellen: 600 van de 1000 stapjes versleten = 3 staven nodig; met 2 staven wordt hij voor 2 kwarten heel.
+        ItemStack worn = plate(PlateTier.STEEL);
+        worn.setDamageValue(600);
+        menu.setTab(ArmorWorkbenchMenu.TAB_PLATES);
+        menu.getSlot(ArmorWorkbenchMenu.PLATE_SLOT).set(worn);
+        check(ArmorWorkbenchMenu.repairCost(worn) == 3, "Een plate op 40 % heeft geen 3 staven nodig");
+        check(menu.clickMenuButton(player, ArmorWorkbenchMenu.REPAIR), "Repair deed niets");
+        check(menu.plate().getDamageValue() == 600 - 2 * ArmorWorkbenchMenu.REPAIR_PER_MATERIAL,
+                "Twee staven herstelden niet twee kwart: nog " + menu.plate().getDamageValue() + " versleten");
+        check(player.getInventory().countItem(ModItems.STEEL_INGOT.get()) == 0, "Herstellen nam de staven niet");
+        // Sluit je het scherm, dan krijg je de plate uit het vakje terug.
+        player.closeContainer();
+        check(player.getInventory().countItem(ArmorRegistry.plate(PlateTier.STEEL)) == 2, "De plate uit het vakje kwam niet terug");
+        helper.succeed();
+    }
+
+    /**
+     * Hoofdstuk 111 (jouw wensen): de tekst op je rug pas je alleen op de werkbank aan (tabblad Customize), op maat geknipt (12
+     * tekens, geen kleurcodes). Verven kan daar ook (niet meer in de crafting table): de eerste kleur op een nieuw vest is
+     * precies die kleur en kost een kleurstof; een kleur die je niet hebt kan niet; bruin + lichtgroen + groen is camo. De
+     * plates blijven.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "backpacks")
+    public static void armor_workbench_letters_and_dyes(GameTestHelper helper) {
+        ServerPlayer player = bench(helper, "bench-painter", new ItemStack(Items.RED_DYE, 2), new ItemStack(Items.BROWN_DYE),
+                new ItemStack(Items.LIME_DYE), new ItemStack(Items.GREEN_DYE));
+        ArmorWorkbenchMenu menu = (ArmorWorkbenchMenu) player.containerMenu;
+        menu.setTab(ArmorWorkbenchMenu.TAB_CUSTOMIZE);
+        menu.getSlot(ArmorWorkbenchMenu.VEST_SLOT).set(vest(plate(PlateTier.STEEL), ItemStack.EMPTY));
+        menu.setText("\u00a7cSWAT TEAM ALPHA", DyeColor.YELLOW.getId());
+        VestData data = VestItem.data(menu.vest());
+        check(data.text().equals("cSWAT TEAM A") && data.dye() == DyeColor.YELLOW,
+                "De tekst werd \"" + data.text() + "\" in " + data.dye() + " (hoort cSWAT TEAM A in geel)");
+        check(menu.clickMenuButton(player, ArmorWorkbenchMenu.DYE + DyeColor.RED.getId()), "Verven met rood lukte niet");
+        check(VestItem.colour(menu.vest()) == (DyeColor.RED.getTextureDiffuseColor() & 0xFFFFFF), "Een nieuw vest werd niet precies rood");
+        check(player.getInventory().countItem(Items.RED_DYE) == 1, "Verven nam geen kleurstof");
+        check(!menu.clickMenuButton(player, ArmorWorkbenchMenu.DYE + DyeColor.BLUE.getId()), "Verven met blauw lukte zonder blauwe kleurstof");
+        check(menu.clickMenuButton(player, ArmorWorkbenchMenu.CAMO), "Camo lukte niet");
+        check(VestItem.camo(menu.vest()) && player.getInventory().countItem(Items.GREEN_DYE) == 0, "Het vest werd geen camo (of nam niets)");
+        check(PlateItem.tierOf(VestItem.data(menu.vest()).front()) == PlateTier.STEEL && VestItem.data(menu.vest()).text().equals("cSWAT TEAM A"),
+                "Verven nam de plate of de tekst weg");
+        // De crafting table verft het vest niet meer.
+        check(!new BackpackDyeRecipe(CraftingBookCategory.MISC).matches(CraftingInput.of(2, 1,
+                List.of(new ItemStack(ArmorRegistry.PLATE_CARRIER.get()), new ItemStack(Items.RED_DYE))), helper.getLevel()),
+                "De crafting table verft nog een vest");
+        player.closeContainer();
+        helper.succeed();
+    }
+
+    /**
+     * Hoofdstuk 111 (gevonden bij de nalezing): op een aambeeld voeg je geen twee plates samen en herstel je er geen met
+     * materiaal (dat doe je op de Armor Workbench), maar een naam geven kan nog, zoals elk ander item.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "backpacks")
+    public static void plates_get_a_name_but_no_repair_on_an_anvil(GameTestHelper helper) {
+        ServerPlayer player = player(helper, "anvil-smith", new BlockPos(3, 2, 3));
+        AnvilMenu anvil = new AnvilMenu(1, player.getInventory(),
+                ContainerLevelAccess.create(helper.getLevel(), helper.absolutePos(new BlockPos(3, 2, 5))));
+        ItemStack worn = plate(PlateTier.STEEL);
+        worn.setDamageValue(600);
+        ItemStack other = plate(PlateTier.STEEL);
+        other.setDamageValue(300);
+        anvil.getSlot(0).set(worn.copy());
+        anvil.getSlot(1).set(other);
+        check(anvil.getSlot(2).getItem().isEmpty(), "Twee plates op een aambeeld werden samen een betere");
+        anvil.getSlot(1).set(new ItemStack(ModItems.STEEL_INGOT.get(), 4));
+        check(anvil.getSlot(2).getItem().isEmpty(), "Een aambeeld herstelt een plate met staal");
+        anvil.getSlot(1).set(ItemStack.EMPTY);
+        anvil.setItemName("Lucky");
+        ItemStack named = anvil.getSlot(2).getItem();
+        check(named.is(ArmorRegistry.plate(PlateTier.STEEL)) && named.getHoverName().getString().equals("Lucky"),
+                "Een plate krijgt op een aambeeld geen naam meer");
+        check(named.getDamageValue() == 600, "Een naam geven herstelde de plate ook");
         helper.succeed();
     }
 
     /**
      * Jouw keuze: plates in de buit. De kluis van de bunker geeft in 60 kisten minstens een plate of vest; het recept van de
-     * netherite plate wil een hele titanium plate (een versleten zou je zo gratis herstellen).
+     * netherite plate (op de Armor Workbench) wil een hele titanium plate (een versleten zou je zo gratis herstellen).
      */
     @GameTest(template = ARENA, timeoutTicks = 40, batch = "backpacks")
     public static void plates_in_loot_and_recipes(GameTestHelper helper) {
@@ -392,18 +512,18 @@ public final class ArmorGameTests {
             }
         }
         check(found > 0, "In 60 kisten van de kluis zat geen plate en geen vest");
+        // De netherite plate (op de werkbank): een hele titanium plate en 2 netherite; een versleten plate telt niet.
+        int netherite = recipeFor(level, ArmorRegistry.plate(PlateTier.NETHERITE));
+        check(netherite >= 0, "De werkbank kent geen recept voor een netherite plate");
+        ArmorRecipe recipe = ArmorRecipe.allArmor(level.getRecipeManager()).get(netherite).value();
         ItemStack titanium = plate(PlateTier.TITANIUM);
         ItemStack damaged = titanium.copy();
         damaged.setDamageValue(300);
-        CraftingInput good = CraftingInput.of(3, 1, List.of(titanium, new ItemStack(Items.NETHERITE_INGOT), new ItemStack(Items.NETHERITE_INGOT)));
-        CraftingInput bad = CraftingInput.of(3, 1, List.of(damaged, new ItemStack(Items.NETHERITE_INGOT), new ItemStack(Items.NETHERITE_INGOT)));
-        var match = level.getRecipeManager().getRecipeFor(RecipeType.CRAFTING, good, level);
-        check(match.isPresent() && match.get().value().getResultItem(level.registryAccess()).is(ArmorRegistry.plate(PlateTier.NETHERITE)),
-                "Titanium plate + 2 netherite maakt geen netherite plate");
-        check(level.getRecipeManager().getRecipeFor(RecipeType.CRAFTING, bad, level).isEmpty(),
-                "Een versleten titanium plate werd een nieuwe netherite plate");
-        check(level.getRecipeManager().byKey(ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "plate_carrier")).isPresent(),
-                "Het vest heeft geen recept");
+        GunsmithRecipeCarried good = new GunsmithRecipeCarried(List.of(titanium, new ItemStack(Items.NETHERITE_INGOT, 2)));
+        GunsmithRecipeCarried bad = new GunsmithRecipeCarried(List.of(damaged, new ItemStack(Items.NETHERITE_INGOT, 2)));
+        check(recipe.affordable(good.carried()), "Een hele titanium plate en 2 netherite maken geen netherite plate");
+        check(!recipe.affordable(bad.carried()), "Een versleten titanium plate werd een nieuwe netherite plate");
+        check(recipeFor(level, ArmorRegistry.PLATE_CARRIER.get()) >= 0, "Het vest heeft geen recept op de werkbank");
         helper.succeed();
     }
 }

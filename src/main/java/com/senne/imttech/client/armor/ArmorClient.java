@@ -28,7 +28,11 @@ public final class ArmorClient {
 
     /** Bij het opstarten (ImtTechClient). */
     public static void register(IEventBus modEventBus) {
-        modEventBus.addListener((RegisterMenuScreensEvent event) -> event.register(ArmorRegistry.VEST_MENU.get(), VestScreen::new));
+        modEventBus.addListener((RegisterMenuScreensEvent event) -> {
+            event.register(ArmorRegistry.VEST_MENU.get(), VestScreen::new);
+            // Hoofdstuk 111: de Armor Workbench.
+            event.register(ArmorRegistry.ARMOR_WORKBENCH_MENU.get(), ArmorWorkbenchScreen::new);
+        });
         modEventBus.addListener(ArmorClient::addLayers);
         modEventBus.addListener(VestRenderer::registerModels);
         modEventBus.addListener(ArmorClient::registerColours);

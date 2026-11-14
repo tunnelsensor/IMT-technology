@@ -244,7 +244,11 @@ public class TurretBlockEntity extends BlockEntity {
         }
         ServerPlayer owner = ownerId == null ? null : level.getServer().getPlayerList().getPlayer(ownerId);
         // Via Shots (hoofdstuk 26): de trainee van een training krijgt misschien geen schade, maar het telt wel.
-        com.senne.imttech.training.Shots.hit(level, target, ModDamageTypes.turretLaser(level, owner), kind.laserDamage(),
+        // Hoofdstuk 109: de schade komt van het torentje zelf (niet van waar de eigenaar staat): zo weet een plate de kant.
+        net.minecraft.world.damagesource.DamageSource laser = ModDamageTypes.turretLaser(level, owner);
+        laser = new net.minecraft.world.damagesource.DamageSource(laser.typeHolder(), laser.getDirectEntity(), laser.getEntity(),
+                net.minecraft.world.phys.Vec3.atCenterOf(worldPosition));
+        com.senne.imttech.training.Shots.hit(level, target, laser, kind.laserDamage(),
                 kind == TurretKind.SECURITY ? "Security turret" : "rocket turret");
         ModNetwork.sendNear(level, muzzle, 64, new BeamEffectPayload(from, to, beam));
     }

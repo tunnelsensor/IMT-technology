@@ -1,14 +1,10 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "category": "equipment",
-  "key": {
-    "P": {
-      "item": "imttech:polymer"
+  "type": "imttech:armoring",
+  "ingredients": [
+    {
+      "item": "imttech:polymer",
+      "count": 6
     }
-  },
-  "pattern": [
-    "PPP",
-    "PPP"
   ],
   "result": {
     "id": "imttech:polymer_plate",

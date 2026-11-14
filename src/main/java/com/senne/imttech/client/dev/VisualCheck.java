@@ -5201,6 +5201,10 @@ public final class VisualCheck {
         if (want("vest")) {
             VestTour.tour(t);
         }
+        // Hoofdstuk 111: de twee plaatjes van de Armor Workbench voor How it works (dat verandert bestanden van de mod).
+        if (ONLY.contains("howtopics:armor")) {
+            VestTour.pictures(t);
+        }
         // --- Elk wapen op zijn maat (hoofdstuk 105): in je eigen beeld, in de hand van Bram, in de holster en aan de
         // sling, en op de grond (GunScaleTour).
         if (want("gunscale")) {

@@ -231,9 +231,97 @@ def models():
             "overrides": [{"predicate": {"imttech:cracked": 1}, "model": f"imttech:item/vest/{name}_plate_cracked"}]})
 
 
+# ---------------------------------------------------------------- De Armor Workbench (hoofdstuk 111)
+
+def save_block(im, name):
+    path = ASSETS / "textures" / "block" / f"{name}.png"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    im.save(path)
+    print("geschreven:", path.relative_to(ROOT))
+
+
+def armor_workbench():
+    """
+    De Armor Workbench: een stalen werkbank (zoals de Gunsmith Table) met een olijfgroen werkblad. Bovenop een plate carrier
+    met zijn drie magazijnvakjes, een plate met een shooter's cut en een schaar; voorop een kastje met de omtrek van een vest
+    en een geel-zwart randje; opzij stalen panelen met band erop.
+    """
+    steel = (70, 76, 84, 255)
+    steel_dark = (40, 44, 50, 255)
+    steel_light = (106, 114, 124, 255)
+    olive = (74, 82, 52, 255)
+    olive_dark = (52, 58, 36, 255)
+    charcoal = (52, 55, 60, 255)
+    side = Image.new("RGBA", (16, 16), steel)
+    d = ImageDraw.Draw(side)
+    d.rectangle([0, 0, 15, 15], outline=steel_dark)
+    d.line([1, 1, 14, 1], fill=steel_light)
+    d.rectangle([2, 4, 13, 12], fill=olive, outline=steel_dark)
+    for y in (6, 9):
+        d.line([3, y, 12, y], fill=olive_dark)
+    for x, y in ((2, 2), (13, 2), (2, 13), (13, 13)):
+        side.putpixel((x, y), (150, 160, 172, 255))
+    save_block(side, "armor_workbench_side")
+    front = side.copy()
+    d = ImageDraw.Draw(front)
+    d.rectangle([2, 4, 13, 12], fill=(28, 32, 36, 255), outline=steel_dark)
+    # De omtrek van een vest: schouderbanden, het lijf en drie vakjes.
+    vest = [(5, 5), (6, 5), (9, 5), (10, 5)] + [(x, y) for x in range(5, 11) for y in range(6, 11)]
+    for x, y in vest:
+        front.putpixel((x, y), (92, 97, 106, 255))
+    for x in (5, 7, 9):
+        front.putpixel((x, 9), (58, 62, 68, 255))
+        front.putpixel((x + 1, 9), (58, 62, 68, 255))
+    for x in range(3, 13):
+        front.putpixel((x, 12), (230, 190, 40, 255) if x % 2 == 0 else (30, 30, 34, 255))
+    save_block(front, "armor_workbench_front")
+    top = Image.new("RGBA", (16, 16), olive)
+    d = ImageDraw.Draw(top)
+    d.rectangle([0, 0, 15, 15], outline=steel_dark)
+    for i in range(2, 15, 3):
+        d.line([i, 1, i, 14], fill=olive_dark)
+    # Een plate carrier (links) met drie vakjes, een plate met shooter's cut (rechts) en een schaar (onder).
+    for x in range(2, 8):
+        for y in range(2, 9):
+            top.putpixel((x, y), charcoal)
+    for x in (2, 4, 6):
+        top.putpixel((x, 7), (96, 102, 110, 255))
+    for x, y in plate_shape_small():
+        top.putpixel((x, y), (164, 188, 210, 255))
+    d.line([3, 12, 7, 13], fill=(200, 204, 210, 255))
+    d.line([3, 13, 7, 12], fill=(200, 204, 210, 255))
+    top.putpixel((2, 12), (190, 60, 50, 255))
+    top.putpixel((2, 13), (190, 60, 50, 255))
+    save_block(top, "armor_workbench_top")
+    blockstate = {"variants": {}}
+    for facing, y in (("north", 0), ("east", 90), ("south", 180), ("west", 270)):
+        variant = {"model": "imttech:block/armor_workbench"}
+        if y:
+            variant["y"] = y
+        blockstate["variants"][f"facing={facing}"] = variant
+    write("blockstates/armor_workbench.json", blockstate)
+    write("models/block/armor_workbench.json", {"parent": "minecraft:block/orientable", "textures": {
+        "front": "imttech:block/armor_workbench_front", "side": "imttech:block/armor_workbench_side",
+        "top": "imttech:block/armor_workbench_top"}})
+    write("models/item/armor_workbench.json", {"parent": "imttech:block/armor_workbench"})
+
+
+def plate_shape_small():
+    """Een kleine plate (5 breed, 7 hoog) met een shooter's cut, rechts op het werkblad."""
+    pixels = []
+    for y in range(2, 9):
+        for x in range(9, 14):
+            cut = max(0, 3 - (y - 2)) if y < 4 else 0
+            if y == 2 and (x == 9 or x == 13):
+                continue
+            pixels.append((x, y))
+    return pixels
+
+
 def main():
     textures()
     models()
+    armor_workbench()
 
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ import com.senne.imttech.armor.PlateTier;
 import com.senne.imttech.armor.VestData;
 import com.senne.imttech.armor.VestItem;
 import com.senne.imttech.armor.Vests;
+import com.senne.imttech.client.armor.ArmorWorkbenchScreen;
 import com.senne.imttech.client.armor.VestScreen;
 import com.senne.imttech.guns.FirearmType;
 import com.senne.imttech.guns.Gear;
@@ -165,18 +166,17 @@ final class VestTour {
         });
         t.shot(10, "vs13_plates_hud_cracked");
 
-        // Het scherm van het vest (met de tekst die je typt), en het vest-vakje in je inventaris.
+        // Het scherm van het vest (hoofdstuk 111: de plates en de magazijnen op een rij, zonder tekst), en het vest-vakje in je
+        // inventaris.
         t.onServer(0, player -> wear(player, vest(PlateTier.STEEL, PlateTier.POLYMER, 2, "SWAT", DyeColor.WHITE, -1), ItemStack.EMPTY));
         t.onServer(5, Vests::openWorn);
         t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof VestScreen);
+        t.step(0, () -> HowToTour.mouseTo(1, 1));
+        t.step(0, () -> Minecraft.getInstance().getToasts().clear());
         t.shot(15, "vs14_vest_screen");
-        t.step(0, () -> {
-            if (Minecraft.getInstance().screen instanceof VestScreen screen) {
-                screen.type("K9 UNIT", DyeColor.ORANGE);
-            }
-        });
-        t.shot(15, "vs15_vest_screen_typed");
         t.close(0);
+        // De Armor Workbench: de drie tabbladen, en op Customize de tekst die je typt.
+        workbenchShots(t, o);
         t.open(10, () -> new net.minecraft.client.gui.screens.inventory.InventoryScreen(Minecraft.getInstance().player));
         t.step(3, () -> HowToTour.mouseTo(2, 2));
         t.shot(15, "vs16_vest_slot_in_inventory");
@@ -212,6 +212,114 @@ final class VestTour {
         t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         t.command(0, "gamemode creative @a");
         t.pause(20);
+    }
+
+    // ================================================================ De Armor Workbench (hoofdstuk 111)
+
+    /** Waar de werkbank staat op het veldje (links voor de muur). */
+    static BlockPos benchPos(BlockPos o) {
+        return o.offset(-3, 1, 2);
+    }
+
+    /**
+     * Alles wat je nodig hebt om de werkbank te tonen: de werkbank zelf, materiaal voor vesten en plates en kleurstoffen. Je
+     * inventaris wordt eerst leeggemaakt.
+     */
+    static void benchKit(ServerPlayer player, BlockPos o) {
+        ServerLevel level = player.serverLevel();
+        level.setBlockAndUpdate(benchPos(o), ArmorRegistry.ARMOR_WORKBENCH.get().defaultBlockState()
+                .setValue(com.senne.imttech.armor.ArmorWorkbenchBlock.FACING, Direction.NORTH));
+        var inventory = player.getInventory();
+        inventory.clearContent();
+        inventory.add(new ItemStack(ModItems.POLYMER.get(), 12));
+        inventory.add(new ItemStack(ModItems.STEEL_INGOT.get(), 12));
+        inventory.add(new ItemStack(ModItems.TITANIUM_INGOT.get(), 3));
+        inventory.add(new ItemStack(Items.LEATHER, 7));
+        inventory.add(new ItemStack(Items.STRING, 2));
+        for (net.minecraft.world.item.Item dye : List.of(Items.RED_DYE, Items.BLUE_DYE, Items.WHITE_DYE, Items.BROWN_DYE,
+                Items.LIME_DYE, Items.GREEN_DYE, Items.BLACK_DYE)) {
+            inventory.add(new ItemStack(dye, 4));
+        }
+    }
+
+    /** Het scherm van de werkbank openen op dit tabblad, met een versleten plate en een vest met SWAT in de vakjes. */
+    static void openBench(ServerPlayer player, BlockPos o, int tab) {
+        com.senne.imttech.armor.ArmorWorkbenchBlock.open(player, benchPos(o));
+        if (player.containerMenu instanceof com.senne.imttech.armor.ArmorWorkbenchMenu menu) {
+            menu.setTab(tab);
+            ItemStack worn = new ItemStack(ArmorRegistry.plate(PlateTier.STEEL));
+            worn.setDamageValue(worn.getMaxDamage() * 3 / 5);
+            menu.getSlot(com.senne.imttech.armor.ArmorWorkbenchMenu.PLATE_SLOT).set(worn);
+            menu.getSlot(com.senne.imttech.armor.ArmorWorkbenchMenu.VEST_SLOT).set(vest(PlateTier.STEEL, PlateTier.STEEL, 2, "SWAT",
+                    DyeColor.WHITE, -1));
+            menu.broadcastChanges();
+        }
+    }
+
+    /** In het open scherm van de werkbank: dit tabblad, en (op Vests en Plates) dit ding gekozen. */
+    static void benchTab(int tab, net.minecraft.world.item.Item select) {
+        if (Minecraft.getInstance().screen instanceof ArmorWorkbenchScreen screen) {
+            screen.switchTo(tab);
+            if (select != null) {
+                screen.select(select);
+            }
+        }
+    }
+
+    private static void workbenchShots(DevScript t, BlockPos o) {
+        t.onServer(0, player -> benchKit(player, o));
+        t.onServer(5, player -> openBench(player, o, com.senne.imttech.armor.ArmorWorkbenchMenu.TAB_VESTS));
+        t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof ArmorWorkbenchScreen);
+        t.step(0, () -> benchTab(com.senne.imttech.armor.ArmorWorkbenchMenu.TAB_VESTS, ArmorRegistry.PLATE_CARRIER.get()));
+        t.step(0, () -> HowToTour.mouseTo(1, 1));
+        t.step(0, () -> Minecraft.getInstance().getToasts().clear());
+        t.shot(15, "vs21_workbench_vests");
+        t.step(0, () -> benchTab(com.senne.imttech.armor.ArmorWorkbenchMenu.TAB_PLATES, ArmorRegistry.plate(PlateTier.STEEL)));
+        t.shot(15, "vs22_workbench_plates");
+        t.step(0, () -> benchTab(com.senne.imttech.armor.ArmorWorkbenchMenu.TAB_CUSTOMIZE, null));
+        t.shot(15, "vs23_workbench_customize");
+        t.step(0, () -> {
+            if (Minecraft.getInstance().screen instanceof ArmorWorkbenchScreen screen) {
+                screen.type("K9 UNIT", DyeColor.ORANGE);
+            }
+        });
+        t.shot(15, "vs24_workbench_typed");
+        t.close(0);
+    }
+
+    /**
+     * De twee plaatjes voor How it works ({@code -Ponly=howtopics:armor}; dat verandert bestanden van de mod): het tabblad
+     * Plates (armor_workbench) en het tabblad Customize (armor_customize), elk 230 x 222.
+     */
+    static void pictures(DevScript t) {
+        BlockPos o = YARD;
+        t.stand(0, o.getX() + 0.5, o.getY() + 1, o.getZ() + 0.5, 0, 10);
+        t.waitUntil(600, () -> {
+            var server = Minecraft.getInstance().getSingleplayerServer();
+            return server != null && server.overworld().isPositionEntityTicking(o);
+        });
+        t.onServer(5, player -> buildYard(player.serverLevel(), o));
+        t.command(0, "gamemode survival @a");
+        t.onServer(5, player -> benchKit(player, o));
+        t.onServer(5, player -> openBench(player, o, com.senne.imttech.armor.ArmorWorkbenchMenu.TAB_PLATES));
+        t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof ArmorWorkbenchScreen);
+        t.step(0, () -> benchTab(com.senne.imttech.armor.ArmorWorkbenchMenu.TAB_PLATES, ArmorRegistry.plate(PlateTier.STEEL)));
+        t.step(0, () -> HowToTour.mouseTo(1, 1));
+        t.step(20, () -> Minecraft.getInstance().getToasts().clear());
+        t.step(5, () -> captureBench("armor_workbench"));
+        t.step(0, () -> benchTab(com.senne.imttech.armor.ArmorWorkbenchMenu.TAB_CUSTOMIZE, null));
+        t.step(10, () -> captureBench("armor_customize"));
+        t.close(5);
+        t.command(0, "gamemode creative @a");
+    }
+
+    private static void captureBench(String name) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen instanceof ArmorWorkbenchScreen screen) {
+            int w = com.senne.imttech.armor.ArmorWorkbenchMenu.WIDTH;
+            int h = com.senne.imttech.armor.ArmorWorkbenchMenu.HEIGHT;
+            HowToTour.capture(name, (screen.width - w) / 2, (screen.height - h) / 2, w, h);
+        }
     }
 
     /** Een Raven-soldaat met een vest, zonder AI, met zijn rug naar het noorden (waar de camera staat): dan zie je RAVEN. */

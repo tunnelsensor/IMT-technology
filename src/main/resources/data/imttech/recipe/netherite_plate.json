@@ -1,6 +1,5 @@
 {
-  "type": "minecraft:crafting_shapeless",
-  "category": "equipment",
+  "type": "imttech:armoring",
   "ingredients": [
     {
       "type": "neoforge:components",
@@ -8,13 +7,12 @@
       "components": {
         "minecraft:damage": 0
       },
-      "strict": false
+      "strict": false,
+      "count": 1
     },
     {
-      "tag": "c:ingots/netherite"
-    },
-    {
-      "tag": "c:ingots/netherite"
+      "tag": "c:ingots/netherite",
+      "count": 2
     }
   ],
   "result": {

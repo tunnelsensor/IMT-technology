@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 600 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 602 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -8473,6 +8473,106 @@ Nog na te kijken door jou: kon de dief echt bouwen omdat hij in een team zat? An
 geen stroom (een EMP op open kabels knipt de stroom even, zie hoofdstuk 35; ook 's nachts zonnepanelen zonder batterij),
 of iemand die je kern hackte. In de app **Logs** van je kern staat dan "Zone offline: not enough power"; als daar niets
 staat en je kern nog van jou is, was het het team.
+
+### 111. De Armor Workbench: vesten en plates maken, herstellen, verven en je tekst (14 november)
+
+Jouw wens: "Maak voor de bodyarmor een eigen workbench, hier maak je alles voor de armor, de vesten en op een ander tab de
+plates. Zorg dat je de tekst enkel in de workbench kunt bewerken. De GUI als je de armor aanhebt moet geen 3d beeld van de
+armor, de plates vakjes naast elkaar en de mags daarnaast, de groene tekst weg, je ziet de damage enkel op het item zelf."
+
+Jouw antwoorden (een vragenronde):
+- **Maken**: tegels met de kosten en een knop **Make**, zoals Make parts van de Gunsmith Table. Vest en plates staan niet
+  meer in de crafting table.
+- **De tekst** en zijn kleur: op een **eigen derde tabblad** (Customize).
+- **Ook naar de werkbank**: het vest **verven en camo** (niet meer in de crafting table) en **plates herstellen** (niet meer
+  op het aambeeld).
+- **De plates naast je hartjes** blijven.
+
+- [x] **Het blok** (`ArmorWorkbenchBlock`, `ArmorRegistry.ARMOR_WORKBENCH`): een metalen werkbank met een vest en een plate
+      op het blad, draait naar je toe als je hem zet, breekt met een pickaxe. Recept (crafting table): polymeer, leer,
+      polymeer / ijzer, crafting table, ijzer / ijzer, niets, ijzer. Op het tabblad Equipment voor het vest.
+- [x] **Het scherm** (`ArmorWorkbenchMenu`, `client/armor/ArmorWorkbenchScreen`), drie tabbladen bovenaan:
+      **Vests** en **Plates**: links een tegel per recept (groene rand = je hebt alles), rechts wat het gekozen recept kost
+      (heb / nodig, groen of rood), hoeveel keer je het kunt maken, en **Make**: haalt het materiaal uit je inventaris en
+      je tweede hand en legt het vest of de plate in je inventaris. **Customize**: een vakje voor je vest, het vest van
+      achteren (draait zachtjes heen en weer, met je tekst), het tekstvak (12 tekens), 16 kleuren voor de tekst, 16 voor
+      de stof en **Camo**. De werkbank onthoudt welk tabblad en welke tegel je het laatst koos; wat in een vakje ligt, krijg
+      je terug als je het scherm sluit (zoals een crafting table).
+- [x] **De recepten** (`ArmorRecipe`, recepttype `imttech:armoring`, dezelfde opbouw als `GunsmithRecipe`: materiaal met
+      aantallen): `plate_carrier` (5 leer, 1 touw, 3 polymeer), `polymer_plate` (6 polymeer), `steel_plate` (5 staal, 1
+      polymeer), `titanium_plate` (5 titanium, 1 polymeer), `netherite_plate` (een **hele** titanium plate en 2 netherite).
+      De crafting table kent ze niet meer.
+- [x] **Herstellen** (tabblad Plates): leg een plate in het vakje; je ziet welk materiaal en hoeveel (`repairCost`), **Repair**
+      neemt zoveel als nodig is en je hebt, elk stuk een kwart (250 van de 1000 stapjes). Een aambeeld en twee plates in de
+      crafting table herstellen niet meer (`PlateItem.isValidRepairItem` en `isRepairable` geven nee, en
+      `AnvilUpdateEvent` laat een plate niet toe). De tooltip zegt waar het wel kan.
+- [x] **De tekst alleen op de werkbank** (jouw wens): `VestTextPayload` gaat naar het vest in het vakje van de werkbank, niet
+      meer naar het scherm van het vest.
+- [x] **Verven op de werkbank**: klik een kleur, er gaat één kleurstof van die kleur uit je inventaris. Op een nieuw vest (of
+      camo) wordt het precies die kleur, daarna mengt het zoals leer (`BackpackDyeRecipe.mix`). Camo kost bruin,
+      lichtgroen en groen. Het verfrecept van de crafting table kent het vest niet meer (de rugzakken wel).
+- [x] **Het scherm van het vest eenvoudiger** (`VestScreen`, `VestMenu`): geen 3D-vest, geen tekst, geen groene regels
+      meer. Op één rij de plate voor en achter (met "Front" en "Back" eronder) en daarnaast de drie magazijnen, met een
+      vaag voorbeeld in een leeg vakje; eronder je inventaris. Hoe versleten een plate is, zie je aan het balkje op het
+      item zelf.
+- [x] **How it works**: het onderwerp "Body armor" heeft nu twee animaties (`ArmorScenes.bodyArmor` en `.workbench`): het
+      vest en de plates (herstellen nu op de werkbank), en de Armor Workbench (maken, herstellen, je tekst, kleuren), met
+      twee foto's van het echte scherm (`armor_workbench`, `armor_customize`).
+- [x] **Tests**: `vest_dyes_like_a_backpack` is weg (de crafting table verft het vest niet meer); nieuw
+      `armor_workbench_makes_and_repairs` (Make met genoeg en te weinig materiaal, de crafting table maakt geen plate
+      meer, herstellen voor twee kwarten, de plate komt terug als je sluit) en `armor_workbench_letters_and_dyes` (de tekst
+      op maat geknipt, de eerste kleur precies, geen kleur zonder kleurstof, camo, de plate en de tekst blijven, de
+      crafting table verft niet), en na de nalezing hieronder `plates_get_a_name_but_no_repair_on_an_anvil` (op een
+      aambeeld: twee plates samen of staal erbij geeft niets, een naam geven wel, zonder te herstellen). Aangepast:
+      herstellen kan niet op een aambeeld, het scherm van het vest zet geen tekst, de netherite plate wil op de werkbank
+      een hele titanium plate. Alle drie de nieuwe tests in de bestaande batch "backpacks".
+- [x] **Volledige ronde** 602 tests, op hoofdstuk 108 (852bdcd) met dit werk erbij, alle groen. Daarvoor viel in twee
+      van de vier rondes `raid_starts_outside_a_base` om (een raiddrone die binnen 400 tikken geen doelwit kiest); die
+      test wisselt vaker, viel vandaag ook bij de andere sessie in een map zonder dit werk, en raakt niets van armor.
+- [x] De werkbank valt als item als je hem hakt (loot table) en hoort bij de pickaxe, zoals de Gunsmith Table.
+- [x] **Gezien** (`gradlew runVisualCheck -Ponly=vest,howtopics:armor`, daarna `-Ponly=howtoall,howto:body_armor`): het
+      scherm van het vest (vs14), de werkbank op Vests, Plates en Customize en met K9 UNIT getypt (vs21 tot vs24), de twee
+      foto's voor How it works en elk hoofdstukje van beide animaties. Wat ik daarbij verbeterde: "Front" en "Back" liepen
+      onder de plates in elkaar (nu een smalle ruimte tussen de vakjes, elk woord in het midden), "each +25%" bij herstellen
+      liep in "You can make" (nu rechts naast "Repair a plate"), en de netherite plate stond als eerste tegel (de plates
+      staan nu van zwak naar sterk).
+
+Ook gevonden en verbeterd bij een nalezing van hoofdstuk 109 (alles nog niet in het spel gemeld, maar wel fout):
+- [x] Een **pijl** gaf geen headshot meer als hij hoog raakte (de plaats van de pijl na de klap telde, niet waar hij je
+      raakte); nu telt waar zijn baan je lijf kruist.
+- [x] Een **ontploffing** zonder plek (TNT, creeper) koos altijd de voorste plate; nu telt waar hij ontplofte.
+- [x] Een **lasergeweer** met een headshot én lijftreffers in één schot liet de plate alles opvangen; nu alleen het deel
+      dat op je lijf kwam. Een **torentje** met een laser gaf geen richting mee (de plate aan de verkeerde kant).
+- [x] Een plate insteken met rechtsklik koos voor als daar een **gebarsten** plate zat, ook als achter leeg was; nu voor
+      alleen als die leeg of gebarsten is, anders achter (zoals beschreven).
+- [x] Het **vest-vakje** in je inventaris: met de rechtermuisknop (of middelste) klikken deed ook nog een gewone klik op wat
+      eronder lag, en loslaten liet soms een item vallen; nu vangt het vakje elke knop en het loslaten op. Met het
+      receptenboek open schoof het vakje niet mee; nu wel.
+- [x] In het scherm van het vest kon je met **F** of een cijfertoets het vest dat je vasthield wegwisselen terwijl het open
+      stond (en zo verdubbelen); dat kan niet meer.
+- [x] Een lange tekst op je rug liep over de rand van het klittenbandvlak; nu nooit breder dan het vlak.
+- [x] Over een borstplaat stak het vest door de rand van de borstplaat; een tikje groter (1,18 keer).
+
+Gevonden bij een nalezing van dit hoofdstuk (drie lezers met elk een eigen invalshoek; elke vondst daarna door een
+scepticus nagekeken; alle zeven bevestigd, samen drie fouten):
+- [x] Een plate kon op een **aambeeld** geen **naam** meer krijgen: de werkbank-regel blokkeerde alles op het aambeeld.
+      Nu alleen als er iets in het rechtervakje ligt (een tweede plate, materiaal of een boek).
+- [x] Het **tekstvak** kon een oude tekst op je vest schrijven: na het groter of kleiner maken van het venster (F11) was
+      het leeg en wiste de volgende kleurklik je tekst, en legde je een ander vest in het vakje terwijl je in het tekstvak
+      stond, dan bleef de tekst van het vorige staan (en de volgende letter of kleur zette die op het nieuwe vest). Nu
+      leest het tekstvak het vest opnieuw na elke verandering die niet je eigen typen is, ook de kleur alleen.
+- [x] Wat Make, Repair, een kleur of Camo uit je **tweede hand** haalde, zag je scherm pas na sluiten (de knop bleef
+      actief en de kosten groen). Nu stuurt de werkbank je tweede hand meteen mee. (De Gunsmith Table heeft hetzelfde bij
+      Make parts; dat is hier niet veranderd.)
+
+Mijn invulling (verander ik op jouw woord):
+- De werkbank zelf: polymeer, leer, ijzer en een crafting table (net zo duur als de andere werkbanken van de mod).
+- Herstellen: een kwart per stuk materiaal (zoals het aambeeld was), zonder XP te kosten.
+- Verven: één kleurstof per klik; de tekst en zijn kleur gratis.
+- De werkbank onthoudt je laatste tabblad en tegel tot je het spel sluit.
+- Een plate insteken met rechtsklik (zonder het scherm) blijft kunnen, ook het scherm van het vest blijft (de plates en
+  magazijnen wisselen gaat dus ook zonder werkbank).
+- Versie 2.13 (iets nieuws: een blok).
 
 ## Nog nooit in het spel bekeken
 

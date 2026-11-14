@@ -142,7 +142,8 @@ public class BulletEntity extends Projectile {
             // Meteen: geen "even onkwetsbaar", anders doet een snel tweede schot niets.
             target.invulnerableTime = 0;
             // Hoofdstuk 109: de schade weet of hij in het hoofd zat, want een headshot gaat langs de plates van een vest.
-            target.hurt(com.senne.imttech.armor.HitSource.of(ModDamageTypes.bullet(level, getOwner()), head), amount);
+            target.hurt(com.senne.imttech.armor.HitSource.of(ModDamageTypes.bullet(level, getOwner()), head,
+                    position().subtract(getDeltaMovement())), amount);
             GunSkillsServer.hit(getOwner());
             level.sendParticles(ParticleTypes.CRIT, at.x, at.y, at.z, 6, 0.1, 0.1, 0.1, 0.1);
         } else {

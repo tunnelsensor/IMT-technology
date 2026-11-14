@@ -44,6 +44,29 @@ public final class PlateArmor {
         }
     }
 
+    /**
+     * Waar de ontploffing van deze tick zat, per wezen dat ze raakte (ExplosionEvent.Detonate komt vlak voor de schade). Een
+     * ontploffing zonder iemand erachter (een Remote Frag, TNT) geeft Minecraft geen plek mee in de schade; zo weten we toch
+     * van welke kant ze kwam.
+     */
+    private static final java.util.Map<java.util.UUID, Vec3> BLASTS = new java.util.HashMap<>();
+    private static long blastTick = -1;
+
+    /** ExplosionEvent.Detonate: de plek van de ontploffing onthouden voor de wezens die ze raakt (alleen deze tick). */
+    public static void onDetonate(net.neoforged.neoforge.event.level.ExplosionEvent.Detonate event) {
+        if (!(event.getLevel() instanceof ServerLevel level)) {
+            return;
+        }
+        if (level.getGameTime() != blastTick) {
+            BLASTS.clear();
+            blastTick = level.getGameTime();
+        }
+        Vec3 centre = event.getExplosion().center();
+        for (net.minecraft.world.entity.Entity entity : event.getAffectedEntities()) {
+            BLASTS.put(entity.getUUID(), centre);
+        }
+    }
+
     /** LivingDamageEvent.Pre: na het gewone harnas, vlak voor je hartjes eraf gaan. */
     public static void onDamage(LivingDamageEvent.Pre event) {
         LivingEntity victim = event.getEntity();
@@ -68,7 +91,9 @@ public final class PlateArmor {
         if (tier == null || PlateItem.broken(plate)) {
             return;
         }
-        float absorbed = amount * tier.reduction();
+        // Alleen het deel op het lijf (bij een laser shotgun die ook het hoofd raakte, niet de stralen in het hoofd).
+        float share = event.getSource() instanceof HitSource hit ? hit.bodyShare() : 1.0f;
+        float absorbed = amount * share * tier.reduction();
         event.setNewDamage(amount - absorbed);
         ItemStack worn = PlateItem.wear(plate, absorbed);
         boolean cracked = PlateItem.broken(worn);
@@ -100,22 +125,39 @@ public final class PlateArmor {
         if (source.is(DamageTypeTags.BYPASSES_ARMOR) || source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
             return null;
         }
+        // Een straal van de satelliet komt van recht boven: daar zit geen plate.
+        if (source.is(com.senne.imttech.registry.ModDamageTypes.ORBITAL_LASER)) {
+            return null;
+        }
         if (head(victim, source)) {
             return null;
         }
         Vec3 from = source.getSourcePosition();
+        if (from == null && source.is(DamageTypeTags.IS_EXPLOSION) && victim.level().getGameTime() == blastTick) {
+            from = BLASTS.get(victim.getUUID());
+        }
         if (from == null) {
             return null;
         }
         return inFront(victim, from) ? Side.FRONT : Side.BACK;
     }
 
-    /** Zat de treffer in het hoofd? Een kogel of laser weet het zelf; een pijl die boven je ogen min een stukje zit ook. */
+    /**
+     * Zat de treffer in het hoofd? Een kogel of laser weet het zelf. Bij een pijl of drietand rekenen we uit waar zijn baan je
+     * klikdoos raakt (als de schade komt, staat hij nog waar hij de tick ervoor was, soms ruim boven je hoofd). Een
+     * ontploffing is nooit een headshot, ook niet als de granaat hoger lag.
+     */
     static boolean head(LivingEntity victim, DamageSource source) {
         if (source instanceof HitSource hit) {
             return hit.head();
         }
-        return source.getDirectEntity() instanceof Projectile projectile && projectile.getY() >= victim.getEyeY() - 0.25;
+        if (source.is(DamageTypeTags.IS_EXPLOSION) || !(source.getDirectEntity() instanceof Projectile projectile)) {
+            return false;
+        }
+        Vec3 from = projectile.position();
+        Vec3 to = from.add(projectile.getDeltaMovement());
+        Vec3 at = victim.getBoundingBox().inflate(0.1).clip(from, to).orElse(from);
+        return at.y >= victim.getEyeY() - 0.25;
     }
 
     /**

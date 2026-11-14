@@ -3920,9 +3920,10 @@ final class ShowcaseFeatures {
         add("Body armor: the Plate Carrier", "Hoofdstuk 109. Je draagt een antracietgrijs vest met SWAT op je rug: eerst van "
                 + "achteren in derde persoon (de tekst op het zwarte klittenbandvlak), dan van voren (drie magazijnvakjes op je "
                 + "buik, twee met een magazijn erin). Links naast je hartjes staan je twee plates, voor en achter. Dan het scherm "
-                + "van het vest: links de stalen plate voor en de polymeren achter (hoeveel ze nog tegenhouden en welk deel van "
-                + "een treffer), in het midden het vest van achteren, rechts de magazijnen, de tekst en de 16 kleuren; je typt "
-                + "K9 UNIT in het oranje en ziet het meteen op het vest. Daarna een Raven-soldaat met een vest (RAVEN in het rood "
+                + "van het vest: de stalen plate voor, de polymeren achter en de drie magazijnen op een rij. Dan de Armor "
+                + "Workbench (hoofdstuk 111): het tabblad Vests, het tabblad Plates (de stalen plate gekozen, met wat hij kost, "
+                + "en een versleten plate in het vakje om te herstellen) en Customize, waar je K9 UNIT in het oranje typt en het "
+                + "meteen op het vest ziet. Daarna een Raven-soldaat met een vest (RAVEN in het rood "
                 + "op zijn rug), en tot slot de wand met drie vesten (SWAT, ARMY in camo en POLICE in het blauw) en de vier "
                 + "plates, van polymeer tot netherite.",
                 GameType.SURVIVAL, new Vec3(vx, vy, vz), 0, 10, s -> s
@@ -3940,8 +3941,19 @@ final class ShowcaseFeatures {
                 .onServer(0, com.senne.imttech.armor.Vests::openWorn)
                 .waitUntil(60, () -> Minecraft.getInstance().screen instanceof com.senne.imttech.client.armor.VestScreen)
                 .pause(50)
+                .close(10)
+                // Hoofdstuk 111: de Armor Workbench, met zijn drie tabbladen; op Customize typ je de tekst.
+                .onServer(0, player -> VestTour.benchKit(player, vests))
+                .onServer(5, player -> VestTour.openBench(player, vests, com.senne.imttech.armor.ArmorWorkbenchMenu.TAB_VESTS))
+                .waitUntil(60, () -> Minecraft.getInstance().screen instanceof com.senne.imttech.client.armor.ArmorWorkbenchScreen)
+                .pause(50)
+                .step(0, () -> VestTour.benchTab(com.senne.imttech.armor.ArmorWorkbenchMenu.TAB_PLATES,
+                        com.senne.imttech.armor.ArmorRegistry.plate(com.senne.imttech.armor.PlateTier.STEEL)))
+                .pause(60)
+                .step(0, () -> VestTour.benchTab(com.senne.imttech.armor.ArmorWorkbenchMenu.TAB_CUSTOMIZE, null))
+                .pause(30)
                 .step(0, () -> {
-                    if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.armor.VestScreen screen) {
+                    if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.armor.ArmorWorkbenchScreen screen) {
                         screen.type("K9 UNIT", net.minecraft.world.item.DyeColor.ORANGE);
                     }
                 })

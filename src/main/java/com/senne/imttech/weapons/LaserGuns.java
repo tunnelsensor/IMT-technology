@@ -219,8 +219,8 @@ public final class LaserGuns {
         List<Vec3> ends = new ArrayList<>();
         int hits = 0;
         Map<LivingEntity, Float> damage = new LinkedHashMap<>();
-        // Hoofdstuk 109: wie een straal onder zijn hoofd kreeg (dan vangt de plate van zijn vest die op; alleen headshots niet).
-        java.util.Set<LivingEntity> bodyHit = new java.util.HashSet<>();
+        // Hoofdstuk 109: hoeveel schade elk doelwit in zijn hoofd kreeg (de plate van zijn vest vangt alleen de rest op).
+        Map<LivingEntity, Float> headDamage = new java.util.HashMap<>();
         for (int ray = 0; ray < type.rays(); ray++) {
             Vec3 dir = scatter(look, spread, random);
             Vec3 end = eye.add(dir.scale(range));
@@ -250,8 +250,7 @@ public final class LaserGuns {
                 // In het hoofd: alles boven de ogen min een klein stukje.
                 if (end.y >= target.getEyeY() - 0.25) {
                     amount *= ImtConfig.Weapons.HEADSHOT;
-                } else {
-                    bodyHit.add(target);
+                    headDamage.merge(target, amount, Float::sum);
                 }
                 damage.merge(target, amount, Float::sum);
                 hits |= 1 << ray;
@@ -263,8 +262,9 @@ public final class LaserGuns {
         for (Map.Entry<LivingEntity, Float> entry : damage.entrySet()) {
             LivingEntity target = entry.getKey();
             target.invulnerableTime = 0;
-            target.hurt(com.senne.imttech.armor.HitSource.of(ModDamageTypes.laserGun(level, player), !bodyHit.contains(target)),
-                    entry.getValue());
+            float total = entry.getValue();
+            float body = total <= 0 ? 0 : 1.0f - headDamage.getOrDefault(target, 0.0f) / total;
+            target.hurt(com.senne.imttech.armor.HitSource.withBodyShare(ModDamageTypes.laserGun(level, player), body), total);
             GunSkillsServer.hit(player);
         }
         GunSkillHooks.fired(player);

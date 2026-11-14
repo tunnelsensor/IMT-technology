@@ -46,7 +46,11 @@ public final class GearSlotsOverlay {
     /** De linkerbovenhoek van vakje {@code index} (0-2 naast je harnas, 3-4 de slings, 5 je rugzak, 6 je nek), op het scherm. */
     private static int[] at(InventoryScreen screen, int index) {
         if (index == Gear.VEST) {
-            // Hoofdstuk 109: je vest, links naast je borstplaat (net buiten het scherm: de rij onder het craftraster is vol).
+            // Hoofdstuk 109: je vest, links naast je borstplaat (net buiten het scherm: de rij onder het craftraster is vol). Staat
+            // het receptenboek open (dat ligt links), dan rechts naast het scherm.
+            if (screen.getRecipeBookComponent().isVisible()) {
+                return new int[]{screen.getGuiLeft() + 176 + 4, screen.getGuiTop() + VEST_Y};
+            }
             return new int[]{screen.getGuiLeft() + VEST_X, screen.getGuiTop() + VEST_Y};
         }
         if (index == Gear.NECK) {
@@ -183,12 +187,30 @@ public final class GearSlotsOverlay {
     }
 
     public static void onClick(ScreenEvent.MouseButtonPressed.Pre event) {
-        if (!(event.getScreen() instanceof InventoryScreen screen) || !shown(screen) || event.getButton() != 0) {
+        if (!(event.getScreen() instanceof InventoryScreen screen) || !shown(screen)) {
             return;
         }
         for (int index = 0; index < Gear.SLOTS; index++) {
             if (over(at(screen, index), event.getMouseX(), event.getMouseY())) {
-                PacketDistributor.sendToServer(new GearClickPayload(index));
+                if (event.getButton() == 0) {
+                    PacketDistributor.sendToServer(new GearClickPayload(index));
+                }
+                event.setCanceled(true);
+                return;
+            }
+        }
+    }
+
+    /**
+     * Hoofdstuk 109: ook het loslaten van de muis boven een eigen vakje houden we tegen. Het vest-vakje ligt buiten het venster
+     * van je inventaris, en Minecraft gooit bij loslaten "buiten het venster" weg wat je aan je muis hebt.
+     */
+    public static void onRelease(ScreenEvent.MouseButtonReleased.Pre event) {
+        if (!(event.getScreen() instanceof InventoryScreen screen) || !shown(screen)) {
+            return;
+        }
+        for (int index = 0; index < Gear.SLOTS; index++) {
+            if (over(at(screen, index), event.getMouseX(), event.getMouseY())) {
                 event.setCanceled(true);
                 return;
             }

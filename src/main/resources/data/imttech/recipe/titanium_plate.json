@@ -1,17 +1,13 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "category": "equipment",
-  "key": {
-    "T": {
-      "item": "imttech:titanium_ingot"
+  "type": "imttech:armoring",
+  "ingredients": [
+    {
+      "item": "imttech:titanium_ingot",
+      "count": 5
     },
-    "P": {
+    {
       "item": "imttech:polymer"
     }
-  },
-  "pattern": [
-    "TTT",
-    "TPT"
   ],
   "result": {
     "id": "imttech:titanium_plate",

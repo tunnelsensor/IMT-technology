@@ -13,9 +13,11 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Het scherm van een Plate Carrier (hoofdstuk 109): links de plate voor en de plate achter, rechts de drie magazijnvakjes en
- * de tekst op je rug met zijn kleur, in het midden het vest zelf (van achteren, met je tekst), eronder je inventaris. Je
- * opent het met een rechtsklik op het vest in je hand, of gedragen uit het wiel (linker Alt).
+ * Het scherm van een Plate Carrier (hoofdstuk 109; sinds hoofdstuk 111 zonder het vest in beeld en zonder tekst, jouw wens:
+ * "de plates vakjes naast elkaar en de mags daarnaast, de groene tekst weg, je ziet de damage enkel op het item zelf"):
+ * op één rij de plate voor en de plate achter, en daarnaast de drie magazijnen; eronder je inventaris. Hoe versleten een plate
+ * is, zie je aan het balkje op de plate zelf. De tekst op je rug pas je aan op de Armor Workbench. Je opent dit scherm met een
+ * rechtsklik op het vest in je hand, of gedragen uit het wiel (linker Alt).
  *
  * De vakjes lezen en schrijven <b>altijd het vest zelf</b> (gedragen via Gear, in je hand via het item), niet een kopie van
  * toen het scherm openging: word je beschoten terwijl het open staat, dan zie je je plate slijten en zet een klik hem niet
@@ -33,14 +35,16 @@ public class VestMenu extends AbstractContainerMenu {
     public static final int MAGS = 2;
     public static final int SIZE = MAGS + VestData.MAGS;
 
-    /** Waar alles staat (pixels in het scherm, de linkerbovenhoek van het item in een vakje). */
-    public static final int PLATE_X = 12;
-    public static final int FRONT_Y = 29;
-    public static final int BACK_Y = 72;
-    public static final int MAGS_X = 106;
-    public static final int MAGS_Y = 29;
-    /** De inventaris: lager dan bij een pouch, zodat de namen, de tekst en de kleuren erboven niet over elkaar lopen. */
-    public static final int INVENTORY_Y = 116;
+    /**
+     * Waar alles staat (pixels in het scherm, de linkerbovenhoek van het item in een vakje): de twee plates naast elkaar (met
+     * een smalle ruimte, zodat "Front" en "Back" eronder niet in elkaar lopen), en na een tussenruimte de drie magazijnen,
+     * allemaal op één rij.
+     */
+    public static final int ROW_Y = 36;
+    public static final int FRONT_X = 26;
+    public static final int BACK_X = FRONT_X + 24;
+    public static final int MAGS_X = 98;
+    public static final int INVENTORY_Y = 84;
     public static final int HEIGHT = INVENTORY_Y + 82;
 
     private final int where;
@@ -57,10 +61,10 @@ public class VestMenu extends AbstractContainerMenu {
         this.player = inventory.player;
         // Op de client vult de server de vakjes (een gewone doos); op de server lezen en schrijven ze het vest zelf.
         Container vest = player.level().isClientSide ? new SimpleContainer(SIZE) : new LiveVest();
-        addSlot(new PlateSlot(vest, FRONT, PLATE_X, FRONT_Y));
-        addSlot(new PlateSlot(vest, BACK, PLATE_X, BACK_Y));
+        addSlot(new PlateSlot(vest, FRONT, FRONT_X, ROW_Y));
+        addSlot(new PlateSlot(vest, BACK, BACK_X, ROW_Y));
         for (int i = 0; i < VestData.MAGS; i++) {
-            addSlot(new MagSlot(vest, MAGS + i, MAGS_X + i * 18, MAGS_Y));
+            addSlot(new MagSlot(vest, MAGS + i, MAGS_X + i * 18, ROW_Y));
         }
         for (int row = 0; row < 3; row++) {
             for (int column = 0; column < 9; column++) {
@@ -100,13 +104,6 @@ public class VestMenu extends AbstractContainerMenu {
             Gear.setVest(player, VestItem.with(vest, data));
         } else {
             VestItem.setData(vest, data);
-        }
-    }
-
-    /** Van de server, uit VestTextPayload: de tekst op je rug en zijn kleur. */
-    public void setText(String text, int colour) {
-        if (!player.level().isClientSide) {
-            write(data().withText(text, colour));
         }
     }
 
@@ -240,6 +237,19 @@ public class VestMenu extends AbstractContainerMenu {
         public boolean mayPlace(ItemStack stack) {
             return !locked();
         }
+    }
+
+    /**
+     * Het vakje met het open vest zit op slot, ook voor een cijfertoets (of F voor je andere hand): die wisselt anders
+     * rechtstreeks met je werkbalk, buiten de vakjes om (Minecraft kijkt dan alleen naar het vakje waar je muis op staat).
+     */
+    @Override
+    public void clicked(int slotId, int button, net.minecraft.world.inventory.ClickType clickType, Player player) {
+        if (clickType == net.minecraft.world.inventory.ClickType.SWAP
+                && ((where == MAIN_HAND && button == player.getInventory().selected) || (where == OFF_HAND && button == 40))) {
+            return;
+        }
+        super.clicked(slotId, button, clickType, player);
     }
 
     @Override

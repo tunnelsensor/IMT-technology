@@ -1,21 +1,17 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "category": "equipment",
-  "key": {
-    "L": {
-      "item": "minecraft:leather"
+  "type": "imttech:armoring",
+  "ingredients": [
+    {
+      "item": "minecraft:leather",
+      "count": 5
     },
-    "S": {
+    {
       "item": "minecraft:string"
     },
-    "P": {
-      "item": "imttech:polymer"
+    {
+      "item": "imttech:polymer",
+      "count": 3
     }
-  },
-  "pattern": [
-    "LSL",
-    "PLP",
-    "LPL"
   ],
   "result": {
     "id": "imttech:plate_carrier",

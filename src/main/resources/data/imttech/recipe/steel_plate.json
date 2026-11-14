@@ -1,17 +1,13 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "category": "equipment",
-  "key": {
-    "S": {
-      "item": "imttech:steel_ingot"
+  "type": "imttech:armoring",
+  "ingredients": [
+    {
+      "item": "imttech:steel_ingot",
+      "count": 5
     },
-    "P": {
+    {
       "item": "imttech:polymer"
     }
-  },
-  "pattern": [
-    "SSS",
-    "SPS"
   ],
   "result": {
     "id": "imttech:steel_plate",
