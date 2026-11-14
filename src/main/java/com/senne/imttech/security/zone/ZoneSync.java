@@ -18,8 +18,10 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
  * Stuurt elke speler de zones die hij mag zien, zodat zijn spel de rand kan tekenen (zie
  * client/zone/ZoneBorderRenderer).
  *
- * Jouw keuze (8 oktober): de rand zien alleen de eigenaar en zijn vrienden (team en vertrouwde
- * spelers). Een vreemde krijgt de zone dus nooit te zien; hij merkt pas iets als een blok niet breekt.
+ * Jouw keuze (8 oktober): de rand zien alleen de eigenaar en zijn vrienden. Een vreemde krijgt de zone dus nooit te
+ * zien; hij merkt pas iets als een blok niet breekt. Sinds hoofdstuk 110 (14 november) zijn "vrienden" hier alleen de
+ * vertrouwde spelers uit Access, nooit een scoreboard-team (zie ZoneData.Zone#seesBorder): op je server vond een dief
+ * je basis aan je rand, waarschijnlijk omdat een mod van de server iedereen in één team zette.
  *
  * Twee keer per seconde kijken we wat elke speler zou moeten zien. Is dat hetzelfde als de vorige
  * keer, dan sturen we niets.
@@ -59,7 +61,7 @@ public final class ZoneSync {
         ModNetwork.sendTo(player, new ZoneSyncPayload(views));
     }
 
-    /** De zones in de buurt waar deze speler mag bouwen (en dus de rand van mag zien). */
+    /** De zones in de buurt waarvan deze speler de rand mag zien: zijn eigen, en die van wie hem in Access zette. */
     public static List<ZoneSyncPayload.View> visibleTo(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
         List<ZoneSyncPayload.View> views = new ArrayList<>();
@@ -68,7 +70,7 @@ public final class ZoneSync {
             if (views.size() >= ZoneSyncPayload.MAX_ZONES) {
                 break;
             }
-            if (zone.owner() == null || !zone.isBuilder(level, player)
+            if (zone.owner() == null || !zone.seesBorder(player)
                     || zone.core().pos().distToCenterSqr(player.position()) > range * range) {
                 continue;
             }

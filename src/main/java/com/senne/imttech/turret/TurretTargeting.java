@@ -8,7 +8,6 @@ import net.minecraft.world.entity.OwnableEntity;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.scores.PlayerTeam;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -71,10 +70,7 @@ public final class TurretTargeting {
 
     /** Zit deze speler in hetzelfde team (of een bevriend team) als de eigenaar? */
     private static boolean sameTeam(ServerLevel level, String ownerName, Player player) {
-        if (ownerName.isEmpty()) {
-            return false;
-        }
-        PlayerTeam ownerTeam = level.getScoreboard().getPlayersTeam(ownerName);
-        return ownerTeam != null && ownerTeam.isAlliedTo(player.getTeam());
+        // Alleen als de config het zegt (hoofdstuk 110, zie TeamFriends).
+        return com.senne.imttech.security.TeamFriends.allied(level, ownerName, player);
     }
 }

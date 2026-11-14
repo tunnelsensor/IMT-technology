@@ -189,8 +189,9 @@ public final class ZoneGameTests {
     /**
      * Jouw wens: "binnen deze zone kunnen enkel players met toestemming plaatsen/breken". Een vreemde
      * kan in de zone niets breken of neerzetten (wel erbuiten); de eigenaar wel, een vertrouwde speler
-     * ook, en iemand uit het team van de eigenaar ook. Wie de kern overneemt, krijgt de zone: dan mag
-     * de oude eigenaar er niet meer bouwen.
+     * ook. Iemand uit het scoreboard-team van de eigenaar alleen als {@code [rules] teamsAreFriends} aan staat
+     * (hoofdstuk 110: standaard niet). Wie de kern overneemt, krijgt de zone: dan mag de oude eigenaar er niet
+     * meer bouwen.
      */
     @GameTest(template = ARENA, timeoutTicks = 40, batch = "zones")
     public static void zone_only_builders_place_and_break(GameTestHelper helper) {
@@ -235,16 +236,25 @@ public final class ZoneGameTests {
             throw new GameTestAssertException("Na weghalen uit Access kon de speler nog steeds breken");
         }
 
-        // Iemand uit het team van de eigenaar ook.
+        // Iemand uit het scoreboard-team van de eigenaar (hoofdstuk 110): standaard een vreemde (een rangen-mod zet vaak
+        // iedereen in één team), alleen met [rules] teamsAreFriends = true een vriend.
         Scoreboard scoreboard = helper.getLevel().getScoreboard();
         PlayerTeam team = scoreboard.addPlayerTeam("zone_test_team");
+        boolean teamsWere = com.senne.imttech.config.ImtConfig.Rules.TEAMS_ARE_FRIENDS;
         try {
             scoreboard.addPlayerToTeam("zone-owner", team);
             scoreboard.addPlayerToTeam("zone-outsider", team);
+            com.senne.imttech.config.ImtConfig.Rules.TEAMS_ARE_FRIENDS = false;
+            if (breakBlock(helper, outsider, wall) || place(helper, outsider, Items.COBBLESTONE, wall, Direction.UP)) {
+                throw new GameTestAssertException("Een teamgenoot kon in de zone bouwen of breken, terwijl teams standaard niet tellen");
+            }
+            helper.assertBlockPresent(Blocks.STONE, wall);
+            com.senne.imttech.config.ImtConfig.Rules.TEAMS_ARE_FRIENDS = true;
             if (!place(helper, outsider, Items.COBBLESTONE, wall, Direction.UP) || !breakBlock(helper, outsider, wall.above())) {
-                throw new GameTestAssertException("Een teamgenoot van de eigenaar kon in de zone niet bouwen of breken");
+                throw new GameTestAssertException("Met teamsAreFriends kon een teamgenoot van de eigenaar in de zone niet bouwen of breken");
             }
         } finally {
+            com.senne.imttech.config.ImtConfig.Rules.TEAMS_ARE_FRIENDS = teamsWere;
             scoreboard.removePlayerTeam(team);
         }
 
@@ -516,6 +526,9 @@ public final class ZoneGameTests {
      * Jouw keuze: de rand zien alleen de eigenaar en zijn vrienden. De server stuurt de zone dus naar
      * de eigenaar en een vertrouwde speler, niet naar een vreemde. Zonder stroom krijgt de eigenaar
      * hem nog wel (zijn spel tekent hem dan rood).
+     *
+     * Hoofdstuk 110 (jouw melding, 14 november: een dief vond je basis aan je rand): iemand die alleen in het
+     * scoreboard-team van de eigenaar zit, krijgt de rand nooit, ook niet met {@code [rules] teamsAreFriends} aan.
      */
     @GameTest(template = ARENA, timeoutTicks = 40, batch = "zones")
     public static void zone_border_only_for_friends(GameTestHelper helper) {
@@ -531,6 +544,23 @@ public final class ZoneGameTests {
         }
         if (seesZone(outsider, coreAbs, true) || seesZone(outsider, coreAbs, false)) {
             throw new GameTestAssertException("Een vreemde zou de zone niet mogen krijgen");
+        }
+        Scoreboard scoreboard = level.getScoreboard();
+        PlayerTeam team = scoreboard.addPlayerTeam("zone_border_team");
+        boolean teamsWere = com.senne.imttech.config.ImtConfig.Rules.TEAMS_ARE_FRIENDS;
+        try {
+            scoreboard.addPlayerToTeam("zone-owner", team);
+            scoreboard.addPlayerToTeam("zone-outsider", team);
+            for (boolean teams : new boolean[] {false, true}) {
+                com.senne.imttech.config.ImtConfig.Rules.TEAMS_ARE_FRIENDS = teams;
+                if (seesZone(outsider, coreAbs, true)) {
+                    throw new GameTestAssertException("Een teamgenoot (niet in Access) kreeg de rand van de zone"
+                            + (teams ? ", met teamsAreFriends aan" : ""));
+                }
+            }
+        } finally {
+            com.senne.imttech.config.ImtConfig.Rules.TEAMS_ARE_FRIENDS = teamsWere;
+            scoreboard.removePlayerTeam(team);
         }
         power(helper, false);
         core.powerTick(level);

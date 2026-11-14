@@ -114,6 +114,16 @@ public final class ImtConfig {
         /** Komen er vijandige raiddrones op spelers met de bril af? Hoe vaak en hoeveel: zie Raids. */
         @Tunable("Do hostile raid drones come after players wearing the glasses? (How often and how many: see [raids])")
         public static boolean RAIDS_ENABLED = true;
+
+        /**
+         * Telt het scoreboard-team (/team) van de eigenaar als vriend van zijn basis? Hoofdstuk 110: standaard niet meer,
+         * want rangen- en spelerslijst-mods zetten vaak iedereen in één team (zie security/TeamFriends).
+         */
+        @Tunable("Do players in the base owner's scoreboard team (/team) count as friends of the base: build in its "
+                + "zone, and pass its turrets, dome and security drones? Off by default: rank and tab-list mods often "
+                + "put every player in one team, and then everyone could raid every base. Add friends in the "
+                + "core's Access app instead. (The zone border is only ever shown to the owner and Access friends.)")
+        public static boolean TEAMS_ARE_FRIENDS = false;
     }
 
     // =============================================================================================== Glasses

@@ -31,7 +31,6 @@ import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.scores.PlayerTeam;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import org.jetbrains.annotations.Nullable;
 
@@ -82,8 +81,8 @@ public final class ImtDomes {
             return true;
         }
         ServerPlayer attacker = level.getServer().getPlayerList().getPlayer(attackerId);
-        PlayerTeam ownerTeam = level.getScoreboard().getPlayersTeam(dome.ownerName());
-        return attacker != null && ownerTeam != null && ownerTeam.isAlliedTo(attacker.getTeam());
+        // Het scoreboard-team alleen als de config het zegt (hoofdstuk 110, zie TeamFriends).
+        return com.senne.imttech.security.TeamFriends.allied(level, dome.ownerName(), attacker);
     }
 
     /** Wie er achter dit ding zit: de schutter van een projectiel, de eigenaar van een drone, of hijzelf. */

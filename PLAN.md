@@ -8261,6 +8261,53 @@ Mijn invulling (verander ik op jouw woord):
       door je om te draaien (je lijf draait niet helemaal mee met je hoofd): ga verder van de muur staan.
 - [x] **Volledige ronde** 594 tests (met het werk van hoofdstuk 108 van de andere sessie erbij), alle groen.
 
+### 110. Je zonerand ziet alleen jij (en wie jij vertrouwt), en een scoreboard-team is geen vriend meer (14 november)
+
+Jouw melding: "Ik heb een survival server, ik had in die server een base, alles was protected via autoscan, toch is mijn
+base geraid: de dief kon alles hakken ook al was hij in mijn zone, hij vond mijn base door zijn bril en zone borders aan te
+zetten. Zorg dat je, zoals de kabels, enkel je eigen zoneborders kunt zien."
+
+Wat ik vond: de server stuurt de rand van een zone alleen naar wie er mag bouwen (`ZoneSync.visibleTo`, al zo sinds
+8 oktober), en dezelfde regel beslist wie er mag hakken (`ZoneData.Zone.isBuilder`). Zag de dief je rand, dan was hij voor
+de mod dus een bouwer, en daarom kon hij ook alles hakken. Een bouwer was: de eigenaar, wie in Access staat, **of wie in
+hetzelfde scoreboard-team zit** (`/team`). Je server heeft rangen ([Donator], [Support]); zulke mods en mods voor de
+spelerslijst zetten spelers vaak allemaal in één team, en dan was iedereen een teamgenoot van iedereen. Dat team telde
+ook bij de torentjes (`TurretTargeting`), de koepel (`ImtDomes`) en de vrienden van de kern (`SecurityCores.isFriend`:
+security drones, lezers, laserwanden). Bewijzen kan ik het niet vanaf hier (de logs van de server staan bij je host); je
+ziet het met `/team list` (als operator) op de server.
+
+- [x] **De rand alleen voor jou en Access** (`ZoneData.Zone.seesBorder`): de eigenaar en de vertrouwde spelers uit
+      Access, nooit een team (ook niet als teams wel tellen, zie hieronder). `ZoneSync` gebruikt dat in plaats van
+      `isBuilder`. Omdat de x-ray van de kabels in een zone dezelfde lijst zones gebruikt (`CableSight.mayXray`), ziet
+      een teamgenoot ook je kabels in je zone niet meer door de muur.
+- [x] **Teams tellen standaard niet meer** (`security/TeamFriends`, `[rules] teamsAreFriends`, standaard `false`):
+      zonder die schakelaar is een teamgenoot overal een vreemde: hij mag niet bouwen of hakken in je zone, je
+      torentjes en de koepel laten hem niet door, en voor de kern is hij geen vriend. Vrienden zet je in de app Access.
+      Wie `/team` bewust voor zijn vrienden gebruikt, zet de schakelaar aan; dan werkt alles zoals vroeger, behalve de
+      rand. Alle vier de plekken die het team bekeken, vragen het nu aan `TeamFriends.allied`.
+- [x] **Tests** (geen nieuwe; twee bestaande uitgebreid): `zone_only_builders_place_and_break` (een teamgenoot kan
+      standaard niet hakken of bouwen, met `teamsAreFriends` wel) en `zone_border_only_for_friends` (een teamgenoot krijgt
+      de rand nooit, met de schakelaar uit en aan).
+- [x] **Volledige ronde** 581 tests, twee keer (in een eigen worktree, zonder het niet-gecommitte werk van de andere
+      sessies): de zonetests beide keren groen. Per ronde viel een andere test om die vaker wisselvallig is
+      (`guard_searches_where_he_lost_you`; daarna `raid_starts_outside_a_base` en `raven_soldier_shoots`), elk groen in
+      de andere ronde; geen van drie gebruikt de regels die hier veranderden.
+- [x] LEESMIJ (zones: "Wie mag wat", "De rand", nieuw "Teams tellen niet mee", de naamtag, en waar "je team" stond bij de
+      toren, laserwanden, koepel, torentjes, computers en lezers) en `publish/description.md` (voor servereigenaars).
+
+Mijn invulling (verander ik op jouw woord):
+- **Vertrouwde spelers uit Access zien je rand wel**: jij zet ze er zelf in, en ze bouwen mee. "Enkel je eigen" zou
+  strikt ook hen uitsluiten; zeg het als je dat liever hebt.
+- **Teams tellen nergens meer standaard** (zone, torentjes, koepel, kern), niet alleen voor de rand: anders kon de dief
+  je rand niet zien maar nog steeds alles hakken, en schoten je torentjes niet op hem. Je glazen (doelwit kiezen) en de
+  I.M.T-comms volgen nog wel het team, zoals Minecraft zelf (PvP tussen teamgenoten).
+- Geen nieuwe versie (het is een fix: het laatste getal telt vanzelf).
+
+Nog na te kijken door jou: kon de dief echt bouwen omdat hij in een team zat? Andere manieren waarop een zone uitgaat:
+geen stroom (een EMP op open kabels knipt de stroom even, zie hoofdstuk 35; ook 's nachts zonnepanelen zonder batterij),
+of iemand die je kern hackte. In de app **Logs** van je kern staat dan "Zone offline: not enough power"; als daar niets
+staat en je kern nog van jou is, was het het team.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het

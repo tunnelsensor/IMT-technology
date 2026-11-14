@@ -17,7 +17,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.scores.PlayerTeam;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -259,8 +258,8 @@ public final class SecurityCores {
         if (core.ownerId().equals(player.getUUID()) || core.isTrusted(player.getUUID())) {
             return true;
         }
-        PlayerTeam ownerTeam = level.getScoreboard().getPlayersTeam(core.ownerName());
-        return ownerTeam != null && ownerTeam.isAlliedTo(player.getTeam());
+        // Het scoreboard-team alleen als de config het zegt (hoofdstuk 110, zie TeamFriends).
+        return TeamFriends.allied(level, core.ownerName(), player);
     }
 
     /**

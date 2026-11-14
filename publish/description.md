@@ -114,7 +114,11 @@ and fire selector while you hold a gun.
   of them) is in `config/imttech.toml` and is synced to the players.
 - `[rules]` switches: `hackAllowed` (hacking a player lets you read their private messages
   while you can see them), `pickpocketAllowed`, `raidsEnabled` (raid drones come after glasses
-  wearers). `/gamerule imttechRaidGriefing false` stops raid drones from breaking blocks.
+  wearers), `teamsAreFriends` (off by default: only the players you add in a security core's
+  Access app are friends of your base; turn it on if your players use `/team` for that on purpose.
+  Rank and tab-list mods often put everyone in one team). `/gamerule imttechRaidGriefing false`
+  stops raid drones from breaking blocks.
+- A zone border is only ever shown to the base owner and the friends in its Access app.
 
 ## Credits and license
 

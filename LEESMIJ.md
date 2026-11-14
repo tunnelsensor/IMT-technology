@@ -74,7 +74,7 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (445 automati
     Wat je neerschiet, komt niet terug: de kern maakt geen nieuwe.
   De kern is heel sterk (slopen kan met diamant, maar duurt lang). Wie hem **hackt**, krijgt de
   toren: dan brandt het lampje groen, zijn Biebia's drones van jou, laten torentjes en laserwanden
-  jou en je team met rust, en bewaken ze de toren voor jou. Andere spelers vallen ze dan alleen
+  jou en je vrienden met rust, en bewaken ze de toren voor jou. Andere spelers vallen ze dan alleen
   aan als PvP aan staat.
 - Alle beveiliging draait op **stroom** van de verborgen krachtcentrale op de
   beveiligingsverdieping (een dicht blok met een mantel van **obsidiaan**; in een toren uit kamers is dat de
@@ -591,7 +591,7 @@ Kabels zijn **geen blokken**: je **tekent** ze.
   Eén zender is genoeg. **Gewoon rechtsklikken doet niets**, zodat je met een kabelrol makkelijk
   een kabel tegen hem aan legt. **Sluipen + rechtsklik met een lege hand** opent zijn instelscherm,
   maar alleen voor wie hem neerzette, of wie vertrouwd is in de basis waar hij staat (de eigenaar
-  van de beveiligingskern, zijn team en zijn vertrouwde spelers). Een ander hoort "This laser
+  van de beveiligingskern en zijn vertrouwde spelers). Een ander hoort "This laser
   emitter belongs to ...". In het scherm:
   - **Color**: blauw, cyaan, groen, geel, rood of paars.
   - **Signal**: *Normal* (redstone aan = laser aan) of *Inverted* (redstone aan = laser uit; zonder
@@ -634,7 +634,7 @@ Kabels zijn **geen blokken**: je **tekent** ze.
 - **Schildkoepel-generator** (blok, op stroom): een koepel om je basis. **Rechtsklik** opent
   zijn scherm: aan/uit, kleur, bereik (8 tot 32 blokken) en sterkte (1 tot 5). Groter en
   sterker kost meer stroom. Het is een hele bol, ook onder de generator (6 november): op een berg beschermt hij
-  ook de helling eronder. De koepel houdt alles tegen wat niet van jou of je team komt:
+  ook de helling eronder. De koepel houdt alles tegen wat niet van jou komt:
   pijlen en vuurballen, monsters en raiddrones (die worden naar buiten geduwd), laserschoten
   van raiddrones en andermans drones, en satellietaanvallen van anderen. Jouw eigen aanvallen
   gaan er gewoon doorheen, net als spelers en dieren. Elke treffer kost **schildkracht**; een
@@ -765,7 +765,7 @@ Raven-soldaten) binnen zicht, dan draait hij erheen en blijft hij erop schieten 
 - **Raketten**: klik rechts met **Rocket Ammo** (4 stuks uit een ijzerklompje-kruis met buskruit
   en redstone) of zet er een trechter boven. Dan gaat er om de 2,5 seconde ook een raket in een
   boogje op af, tot 24 blokken ver (20 stroom per raket). Er passen 64 in.
-- **Op wie**: monsters. Spelers alleen als PvP aan staat, en nooit jij of je team. Dieren,
+- **Op wie**: monsters. Spelers alleen als PvP aan staat, en nooit jij of je vrienden uit Access. Dieren,
   dorpelingen, je huisdieren en I.M.T-drones laat hij met rust. Wat hij neerhaalt telt
   als jouw buit.
 - **Uitzetten**: een redstone-signaal (een hendel, of een I.M.T-relais ernaast) zet hem
@@ -926,8 +926,8 @@ bekijken of te zien wie er waar binnenkwam.
 3. **Instellen** op de kern (of met de laptop), in de app **Computers**: links je computers, rechts
    de gekozen computer.
    - **Rename**: zijn naam ("Reception").
-   - **Who**: wie hem mag gebruiken: **Everyone** (iedereen die ervoor staat), **Trusted** (jij, je
-     team en je vertrouwde spelers uit Access; zo begint een nieuwe computer) of **Keycard group**
+   - **Who**: wie hem mag gebruiken: **Everyone** (iedereen die ervoor staat), **Trusted** (jij en
+     je vertrouwde spelers uit Access; zo begint een nieuwe computer) of **Keycard group**
      (wie een geldige keycard van dit netwerk uit die groep bij zich heeft; kies de groep met < en >).
      De eigenaar mag er altijd op.
    - **Code**: een eigen code (4-8 tekens, a-z en 0-9), of geen. De eigenaar hoeft hem niet te typen.
@@ -1046,7 +1046,7 @@ tegen de lezer, open dan de kluis 3 seconden; anders alarm". De server hangt aan
    staat er "in no diagram" na een nieuwe naam, dan gebruikt je diagram nog de oude naam.
    Een **keycardlezer** of **codepaneel** hernoem je ook ter plekke: **sluipen + rechtsklik met een
    lege hand**. Dat mag alleen wie hem neerzette, of wie vertrouwd is in de basis waar hij hangt (de
-   eigenaar van de kern, zijn team en zijn vertrouwde spelers). Bij een lezer hoort een ander dan
+   eigenaar van de kern en zijn vertrouwde spelers). Bij een lezer hoort een ander dan
    "This keycard reader belongs to ..."; bij een paneel krijgt hij gewoon de toetsen (iedereen moet
    een code kunnen typen). Onder het naamvak zie je meteen hoe je hem in een diagram noemt
    (`when keycard("Lab door"):` of `when codepanel("Front door"):`), en typ je een andere naam, dan
@@ -1358,7 +1358,7 @@ another security network").
   een nieuwe valt, gaat weg). Een zone heeft hooguit 48 kubussen; vindt de scan er meer, dan voegt hij
   ze samen. De getallen (`zoneScanWall`, `zoneScanMax`) staan onder `[security]`.
 
-**Wie mag wat.** In een zone mogen alleen **jij, je team en je vertrouwde spelers** (de app Access)
+**Wie mag wat.** In een zone mogen alleen **jij en je vertrouwde spelers** (de app Access)
 blokken plaatsen en breken; in creative mag iedereen. Een vreemde kan er niets breken of neerzetten;
 hij ziet dan "Protected zone". Wel mag iedereen **ladders, scaffolding, klimplanten, fakkels en
 lantaarns** plaatsen en weer weghalen (klimmen kan in het echt ook), en natuurlijk een Remote Frag of Remote EMP.
@@ -1371,7 +1371,7 @@ bruikbaar, net als in het echt: wie binnen is, kan kisten openen, deuren gebruik
 houten deur is dus geen slot; een ijzeren deur met een keycard-lezer of codepaneel buiten wel.
 
 **Geen naamtag in een zone** (sinds 12 november). Sta je in een zone die beschermt (met stroom), dan ziet niemand je naam
-boven je hoofd, behalve wie er mag bouwen: de eigenaar, zijn team en zijn vertrouwde spelers (en wie in creative speelt).
+boven je hoofd, behalve wie er mag bouwen: de eigenaar en zijn vertrouwde spelers (en wie in creative speelt).
 Zo vindt een vreemde je basis niet meer aan een naam die door de muren schijnt; de eigenaar en zijn vrienden zien wel de
 naam van een indringer. Buiten de zone, of als de zone geen stroom heeft, zie je iedereen gewoon. De lijst met spelers
 (Tab) blijft zoals hij is.
@@ -1385,9 +1385,18 @@ TNT in je eigen zone wel gewoon). Vuur brandt ze niet weg en lava steekt ze niet
 zuiger van buiten duwt of trekt er niets in of uit; monsters (endermen, withers, ravagers, zombies
 bij deuren) en raiddrones breken er niets.
 
-**De rand.** Jij en je vrienden zien de rand van de zone **door de I.M.T-bril**: doorzichtige
+**De rand.** Alleen jij en je vertrouwde spelers uit Access zien de rand van de zone **door de I.M.T-bril**
+(net als de kabels: je ziet alleen je eigen): doorzichtige
 blauwe wanden met een raster, tot zo'n 48 blokken ver (rood als de zone geen stroom heeft). Zonder
-bril zie je hem niet, en een vreemde ziet hem nooit. Aan/uit voor jezelf: **G > Information > Zone
+bril zie je hem niet, en een vreemde ziet hem nooit, ook niet als hij in hetzelfde scoreboard-team zit.
+
+**Teams tellen niet mee** (sinds 14 november). Vroeger was iedereen in het scoreboard-team van de eigenaar
+(`/team`) ook een vriend van zijn basis. Maar op een server met rangen of een mod voor de spelerslijst zitten
+spelers vaak allemaal in één team, en dan kon iedereen in elke zone hakken, de rand zien, en lieten de torentjes,
+de koepel en de drones van de kern iedereen met rust. Nu zijn vrienden alleen de spelers die je in de app
+**Access** van je kern zet. Gebruik je `/team` wel bewust voor je vrienden, zet dan `rules.teamsAreFriends = true`
+in `config/imttech.toml`: dan mogen teamgenoten weer bouwen en laten je verdedigingen ze met rust (de rand zien ze
+ook dan niet). Aan/uit voor jezelf: **G > Information > Zone
 border** (of een eigen toets). De oranje doos van de Zone Marker zie je ook zonder bril.
 
 **Stroom.** Een zone kost stroom bovenop de kern: 1 per 2000 blokken, om de twee seconden. Zonder

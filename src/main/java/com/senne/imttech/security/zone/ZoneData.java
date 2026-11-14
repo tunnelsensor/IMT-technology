@@ -27,7 +27,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
-import net.minecraft.world.scores.PlayerTeam;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -176,7 +175,8 @@ public final class ZoneData extends SavedData {
 
         /**
          * Mag deze speler hier bouwen? Dezelfde vrienden als bij de torentjes (zie
-         * SecurityCores.isFriend): de eigenaar, zijn team en wie hij vertrouwt (de app Access).
+         * SecurityCores.isFriend): de eigenaar en wie hij vertrouwt (de app Access). Zijn scoreboard-team alleen als
+         * {@code [rules] teamsAreFriends} aan staat (hoofdstuk 110, zie security/TeamFriends).
          */
         public boolean isBuilder(ServerLevel level, Player player) {
             return isBuilder(level, player.getUUID(), player.getScoreboardName());
@@ -184,15 +184,29 @@ public final class ZoneData extends SavedData {
 
         /** Hetzelfde, op nummer en naam (ook voor wie nu offline is, zoals wie een Remote Frag plakte). */
         public boolean isBuilder(ServerLevel level, @Nullable UUID id, String name) {
-            // De trainee van een oefening (hoofdstuk 27) bouwt en sloopt hier zoals een indringer, ook als het zijn zone is.
+            if (isOwnerOrTrusted(id)) {
+                return true;
+            }
+            return id != null && owner != null && !com.senne.imttech.training.Training.isDrillTrainee(core, id)
+                    && com.senne.imttech.security.TeamFriends.allied(level, ownerName, name);
+        }
+
+        /**
+         * Mag deze speler de rand van de zone zien (en dus ook de kabels erin door de muur, zie CableSight)? Alleen de
+         * eigenaar en wie hij in Access zette, nooit een team (hoofdstuk 110). Jouw wens, 14 november: "zorg dat je,
+         * zoals de kabels, enkel je eigen zoneborders kunt zien".
+         */
+        public boolean seesBorder(Player player) {
+            return isOwnerOrTrusted(player.getUUID());
+        }
+
+        /** De eigenaar of een vertrouwde speler uit Access (niet de trainee van een oefening, hoofdstuk 27). */
+        private boolean isOwnerOrTrusted(@Nullable UUID id) {
+            // De trainee van een oefening bouwt en sloopt hier zoals een indringer, ook als het zijn zone is.
             if (owner == null || id == null || com.senne.imttech.training.Training.isDrillTrainee(core, id)) {
                 return false;
             }
-            if (owner.equals(id) || trusted.contains(id)) {
-                return true;
-            }
-            PlayerTeam ownerTeam = level.getScoreboard().getPlayersTeam(ownerName);
-            return ownerTeam != null && !name.isEmpty() && ownerTeam.isAlliedTo(level.getScoreboard().getPlayersTeam(name));
+            return owner.equals(id) || trusted.contains(id);
         }
 
         /** Alleen de kubussen veranderen (en wat we daaruit uitrekenen). */
