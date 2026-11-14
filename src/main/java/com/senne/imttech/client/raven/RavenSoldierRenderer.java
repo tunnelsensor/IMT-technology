@@ -28,6 +28,8 @@ public class RavenSoldierRenderer extends HumanoidMobRenderer<RavenSoldierEntity
     public RavenSoldierRenderer(EntityRendererProvider.Context context) {
         super(context, new Model(context.bakeLayer(LAYER)), 0.5f);
         addLayer(new PackLayer(this));
+        // Hoofdstuk 109 (jouw keuze): een soldaat met een vest (RAVEN op zijn rug).
+        addLayer(new com.senne.imttech.client.armor.VestLayer<>(this, RavenSoldierEntity::vest));
     }
 
     /** Hoofdstuk 72, stap 5: zijn rugzak op zijn rug (soms een antracietgrijze Assault Pack), zoals bij een speler. */
@@ -45,7 +47,8 @@ public class RavenSoldierRenderer extends HumanoidMobRenderer<RavenSoldierEntity
             }
             pose.pushPose();
             getParentModel().body.translateAndRotate(pose);
-            com.senne.imttech.client.backpack.BackpackLayer.renderOnBack(pose, buffers, light, pack, soldier.level(), false);
+            com.senne.imttech.client.backpack.BackpackLayer.renderOnBack(pose, buffers, light, pack, soldier.level(), false,
+                    com.senne.imttech.client.armor.VestRenderer.backDepth(soldier, soldier.vest()));
             pose.popPose();
         }
     }

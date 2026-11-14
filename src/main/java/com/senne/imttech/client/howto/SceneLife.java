@@ -239,6 +239,8 @@ final class SceneLife {
             }
             // Hoofdstuk 72: als zesde de rugzak op zijn rug.
             Gear.setBack(person, Gear.BACK < worn.size() ? worn.get(Gear.BACK).copy() : ItemStack.EMPTY);
+            // Hoofdstuk 109: op plek Gear.VEST (de achtste) het vest.
+            Gear.setVest(person, Gear.VEST < worn.size() ? worn.get(Gear.VEST).copy() : ItemStack.EMPTY);
         } catch (RuntimeException e) {
             ImtTech.LOGGER.warn("[how it works] de uitrusting van een speler lukt niet", e);
         }

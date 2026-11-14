@@ -48,6 +48,7 @@ public class BodyScreen extends AbstractContainerScreen<BodyMenu> {
             case PlayerBodyEntity.GEAR + 2 -> new ItemStack(ModItems.MAG_POUCH.get());
             case PlayerBodyEntity.GEAR + 3, PlayerBodyEntity.GEAR + 4 -> new ItemStack(ModItems.LASER_RIFLE.get());
             case PlayerBodyEntity.NECK -> new ItemStack(ModItems.KEYCARD.get());
+            case PlayerBodyEntity.VEST -> new ItemStack(com.senne.imttech.armor.ArmorRegistry.PLATE_CARRIER.get());
             default -> ItemStack.EMPTY;
         };
     }

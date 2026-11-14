@@ -334,6 +334,8 @@ public final class ModNetwork {
                     case com.senne.imttech.guns.Gear.ACTION_USE_IFAK -> com.senne.imttech.backpack.Molle.useIfak(player, payload.arg() / 16, payload.arg() % 16);
                     // Hoofdstuk 100: de keycard aan je nek trekken (nog eens = terug aan je nek).
                     case com.senne.imttech.guns.Gear.ACTION_DRAW_KEYCARD -> com.senne.imttech.guns.NeckCard.draw(player);
+                    // Hoofdstuk 109: het scherm van je vest (de plates, de magazijnen, de tekst op je rug).
+                    case com.senne.imttech.guns.Gear.ACTION_OPEN_VEST -> com.senne.imttech.armor.Vests.openWorn(player);
                     default -> { }
                 }
             }

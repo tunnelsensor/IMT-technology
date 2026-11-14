@@ -5197,6 +5197,10 @@ public final class VisualCheck {
         if (want("backpackwalk")) {
             BackpackTour.walk(t);
         }
+        // --- De body armor (hoofdstuk 109): het vest op je lijf, het scherm, het vakje, de plates in beeld (VestTour).
+        if (want("vest")) {
+            VestTour.tour(t);
+        }
         // --- Elk wapen op zijn maat (hoofdstuk 105): in je eigen beeld, in de hand van Bram, in de holster en aan de
         // sling, en op de grond (GunScaleTour).
         if (want("gunscale")) {

@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "S": {
+      "item": "imttech:steel_ingot"
+    },
+    "P": {
+      "item": "imttech:polymer"
+    }
+  },
+  "pattern": [
+    "SSS",
+    "SPS"
+  ],
+  "result": {
+    "id": "imttech:steel_plate",
+    "count": 1
+  }
+}

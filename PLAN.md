@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 572 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 581 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -8161,6 +8161,105 @@ orbit. The target needs open sky."), pas na het richten, en in het G-menu stonde
 - **Mijn invullingen**: dezelfde schakelaar als de drones in plaats van een eigen getal; de melding en OUT OF REACH; en
   dat een aanval die al onderweg is, doorgaat. De versie blijft 2.10 (een kleine aanpassing: het derde getal telt
   vanzelf).
+
+### 109. Body armor: een vest met een plate voor en achter, drie magazijnen en je eigen tekst op je rug (14 november)
+
+Jouw wens: "body armor waar je plates in kunt steken, hoe sterker de plate hoe minder damage je neemt, de bodyarmor kan ook
+mags hebben (3) deze komen bij de ander 6 mags van een magpouch, je kunt op de achterkant van je vest zelf een tekst zetten
+zoals 'SWAT'".
+
+Jouw antwoorden (een vragenronde):
+- **Waar je het draagt**: in een **eigen vest-vakje**, over je borstplaat of de Tech Suit (met Curios het slot "body"); de
+  bescherming komt bovenop die van je borstplaat. (Mijn aanbeveling was het gewone borstplaat-vakje; jij koos dit.)
+- **Plates**: een **voor en een achter**. Een treffer van voren vangt de voorste op, van achteren de achterste; een
+  headshot gaat erlangs.
+- **Slijten**: elke treffer kost de plate wat (meer bij meer schade); een gebarsten plate houdt niets tegen tot je hem op
+  een aambeeld herstelt met zijn materiaal, of een andere insteekt.
+- **Extra's**, alle vier: Raven-soldaten met een vest (in hun lichaam na hun dood), kleuren en camo zoals de rugzakken (de
+  tekstkleur kies je zelf), het vest en de plates aan het Pegboard, en plates (soms een vest) in de buit.
+
+Alles in een eigen pakket `armor/` (en `client/armor/`), met een eigen register (`ArmorRegistry`) en een eigen
+berichtenlijst, net als de rugzakken.
+
+- [x] **De Plate Carrier** (`VestItem`, inhoud in het data component `imttech:vest` = `VestData`: de plate voor, de plate
+      achter, drie magazijnen, de tekst en zijn kleur). Het eigen vest-vakje is `Gear.VEST` (index 7, na je nek; een oude
+      wereld vult het rijtje vanzelf aan), met Curios het slot "body" (`CuriosGear.vest`). In je inventaris staat het links
+      naast het vakje van je borstplaat, net buiten het scherm met een eigen randje (de rij onder het craftraster is vol).
+      **Sneak + rechtsklik** met een vest trekt het aan (`Vests.putOn`). Recept: 5 leer, een touw, 3 polymeer.
+- [x] **De plates** (`PlateItem`, `PlateTier`): Polymer (IIIA), Steel (III), Titanium (III+), Netherite (IV). Ze houden
+      25, 40, 55 en 70 % van een treffer tegen (`[armor] plateReduction`) en gaan 50, 80, 120 en 200 schade mee
+      (`plateDurability`). Elke plate heeft dezelfde balk van 1000 stapjes (zo kan de config de duurzaamheid veranderen
+      zonder dat Minecraft de items anders moet kennen); wat hij tegenhoudt, kost hem stapjes. Op is **gebarsten**: een
+      eigen plaatje met barsten (override `imttech:cracked`) en geen bescherming. Herstellen op een **aambeeld** met zijn
+      eigen materiaal (een kwart per staaf, zoals gereedschap). Recepten: 6 polymeer; 5 staal + 1 polymeer; 5 titanium + 1
+      polymeer; een **hele** Titanium Plate + 2 netherite (een versleten plate zou je anders gratis herstellen).
+- [x] **Wat ze tegenhouden** (`PlateArmor`, op `LivingDamageEvent.Pre`: na je gewone harnas, vlak voor je hartjes eraf
+      gaan, dus niet als een schild of "even onkwetsbaar" de klap al tegenhield). Welke plate: ligt de schutter, de klap of
+      de ontploffing voor je lijf (`yBodyRot`), dan de voorste, anders de achterste. Een headshot gaat langs beide: een
+      kogel (`BulletEntity`) en de straal van een lasergeweer (`LaserGuns`) weten waar ze raakten en geven dat mee
+      (`HitSource`); een pijl boven je ogen min een stukje ook. Wat door harnas heen gaat (vallen, verdrinken, magie, de
+      leegte) en wat geen richting heeft (vuur, lava) houden ze niet tegen. Een tik als een plate een treffer opvangt
+      (`plate_hit`, ook voor de schutter te horen) en een krak als hij barst (`plate_crack`), met "Your front plate cracked!".
+- [x] **De plates in beeld** (`PlateHud`): links naast je hartjes twee kleine plates (voor, achter) in de kleur van hun
+      materiaal, met een balkje hoe heel ze zijn; gebarsten met een rood kruis, leeg alleen een omtrek.
+- [x] **Het scherm van het vest** (`VestMenu`, `VestScreen`): rechtsklik met het vest, of gedragen de knop **Vest** in het
+      wiel (`Gear.ACTION_OPEN_VEST`). Links de plates met hoeveel ze nog tegenhouden, in het midden het vest van achteren
+      (met de tekst die je typt), rechts de drie magazijnen, het tekstvak en 16 kleurvakjes. De vakjes lezen en schrijven
+      **het vest zelf** (niet een kopie van toen het scherm openging): een plate die slijt terwijl het open staat, zie je
+      meteen, en een klik zet hem niet terug. **Rechtsklik met een plate** terwijl je een vest draagt steekt hem erin
+      (voorop als daar niets of een gebarsten plate zit, anders achterop; `Vests.insertPlate`).
+- [x] **De drie magazijnen** (jouw wens: "deze komen bij de ander 6 mags van een magpouch"): `Molle.magazines` is nu je
+      magazijnpouch, dan je vest, dan de MOLLE-magazijnpouches; `Molle.store` (wegsteken, een leeg magazijn na het
+      herladen) vult je vest na je pouch en voor de MOLLE-pouches. Zo werken R (`MagPickerScreen`), het herladen uit een
+      vakje, de cellen van de lasergeweren en de HUD-tellers vanzelf mee.
+- [x] **De tekst op je rug**: hooguit 12 tekens (zonder kleurcodes of enters, `VestData.clean`), een van de 16 kleuren
+      (`VestTextPayload`). `VestRenderer` tekent hem op het zwarte klittenbandvlak tussen je schouderbladen, zo groot als
+      past (de letters iets hoger dan breed).
+- [x] **Het vest op je lijf** (`VestLayer`, model uit `tools/generate_vest_models.py`, met de stof, de band en de camo van
+      de rugzakken): op spelers, Raven-soldaten en het lichaam van een speler. Over een borstplaat een maatje groter en een
+      tikje hoger. De rugzak schuift erover (zijn borstbanden tekenen we dan niet: die liepen door de magazijnvakjes), het
+      geweer voor je borst en je keycard hangen ervoor.
+- [x] **Kleuren en camo**: het verfrecept van de rugzakken (`BackpackDyeRecipe`) kent ook het vest; nieuw is hij
+      antracietgrijs (`VestItem.CHARCOAL`), dus daar begint het mengen mee.
+- [x] **Pegboard**: het vest 5 x 6 gaatjes, met zijn rug (en je tekst) naar je toe; een plate 3 x 4.
+- [x] **Raven-soldaten**: 30 % (`[armor] ravenVestChance`) draagt een antracietgrijs vest met **RAVEN** in het rood, twee
+      plates (meestal staal, soms polymeer of titanium, al wat versleten) en soms een magazijn van zijn wapen. Hun plates
+      vangen jouw schoten op zoals de jouwe. Na zijn dood ligt het vest in zijn lichaam.
+- [x] **Buit**: in de kisten van de bunker polymeer en staal (in de slaapzaal soms een vest), in zijn kluis staal en
+      titanium (soms een vest), in de toren van Biebia staal en titanium, in zijn kluis titanium, zelden netherite en soms
+      een vest. Een plate uit een kist is wat versleten.
+- [x] **Het lichaam van een speler**: een vakje voor je vest (`PlayerBodyEntity.VEST` = 47, de vakjes van "andere mods"
+      schuiven een op; in een oud lichaam gaat wat daar lag bij Everything back gewoon in je inventaris), en je ziet het vest
+      op het lichaam liggen.
+- [x] **How it works**: een nieuw onderwerp "Body armor" bij Equipment (`howto/scenes/ArmorScenes`): het vest, de vier
+      plates, voor en achter en een headshot, slijten en het aambeeld, de magazijnen, je tekst, kleuren en de
+      Raven-soldaten.
+- [x] **Tests** (nieuw, in `ArmorGameTests`, in de bestaande batches "backpacks" en "bodies" zodat de volgorde van de
+      batches niet verandert): `vest_plates_stop_hits_from_their_own_side`, `a_worn_plate_cracks_and_stops_nothing`,
+      `vest_magazines_join_the_mag_pouch`, `vest_goes_in_its_own_slot`, `vest_screen_shows_the_live_vest`,
+      `raven_soldier_vest_goes_into_his_body`, `armor_items_have_a_tab_a_topic_and_a_pegboard_spot`,
+      `vest_dyes_like_a_backpack` en `plates_in_loot_and_recipes`. Een testspeler is na het verschijnen 3 seconden
+      onkwetsbaar (zoals elke speler die inlogt); de tests met schade wachten dat af.
+
+Mijn invulling (verander ik op jouw woord):
+- De vier soorten plate en hun getallen (25/40/55/70 % en 50/80/120/200), met de echte niveaus IIIA tot IV erbij.
+- Een plate houdt alles tegen wat een richting heeft (kogels, lasers, pijlen, klappen, ontploffingen), niet alleen kogels.
+- Een plate werkt helemaal tot hij barst (geen langzaam minder), en een gebarsten plate blijft in het vest zitten.
+- De tekst alleen op je rug (zoals je vroeg): draag je een rugzak, dan hangt die ervoor. De tekst staat zoals je hem typt
+  (geen hoofdletters afgedwongen), hooguit 12 tekens.
+- Het vest-vakje net buiten het inventarisscherm, links naast je borstplaat (in het scherm zelf was geen plek meer). Met
+  Curios (zoals jij speelt) zit het in het slot "body".
+- Plates wisselen kan ook terwijl je het vest draagt (in het scherm of met rechtsklik), zonder wachttijd.
+- Geen vertraging of zwaarte (zoals bij de rugzakken: dat koos je toen niet).
+- De HUD links naast je hartjes; de Raven-vesten antracietgrijs met RAVEN in het rood.
+- [x] **Gezien** (`gradlew runVisualCheck -Ponly=vest`, foto's vs01 tot vs20): het vest van achteren (SWAT) en van voren
+      (de magazijnen), over een ijzeren borstplaat en over de Tech Suit, met een rugzak en met de geweren aan de slings,
+      de plates naast je hartjes (heel en gebarsten), het scherm (met K9 UNIT getypt in het oranje), het vest-vakje in je
+      inventaris, het tabblad Equipment, een Raven-soldaat met RAVEN op zijn rug, het lichaam van een speler en het
+      Pegboard; en de animatie (`-Ponly=howtoall,howto:body_armor`, elk hoofdstukje). Geleerd: een rondleiding wordt
+      opgebouwd voor Minecraft de items kent (maak ItemStacks pas in een stap), en een foto van voren moet je niet nemen
+      door je om te draaien (je lijf draait niet helemaal mee met je hoofd): ga verder van de muur staan.
+- [x] **Volledige ronde** 594 tests (met het werk van hoofdstuk 108 van de andere sessie erbij), alle groen.
 
 ## Nog nooit in het spel bekeken
 

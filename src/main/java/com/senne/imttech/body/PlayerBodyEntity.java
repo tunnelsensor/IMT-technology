@@ -76,7 +76,12 @@ public class PlayerBodyEntity extends LivingEntity {
     public static final int GEAR = 41;
     /** Hoofdstuk 100: de keycard aan je nek, na de holster, de pouches en de slings. */
     public static final int NECK = 46;
-    public static final int EXTRA = 47;
+    /**
+     * Hoofdstuk 109: je vest (de Plate Carrier), na je nek. In een lichaam van voor hoofdstuk 109 was dit het eerste vakje
+     * van "andere mods": ligt daar geen vest, dan gaat het bij "Everything back" gewoon in je inventaris.
+     */
+    public static final int VEST = 47;
+    public static final int EXTRA = 48;
 
     private static final EntityDataAccessor<Optional<UUID>> OWNER =
             SynchedEntityData.defineId(PlayerBodyEntity.class, EntityDataSerializers.OPTIONAL_UUID);
@@ -84,6 +89,9 @@ public class PlayerBodyEntity extends LivingEntity {
             SynchedEntityData.defineId(PlayerBodyEntity.class, EntityDataSerializers.STRING);
     /** De rugzak op zijn rug (ook in jouw spel, om hem te tekenen met zijn kleur en pouches). */
     private static final EntityDataAccessor<ItemStack> PACK =
+            SynchedEntityData.defineId(PlayerBodyEntity.class, EntityDataSerializers.ITEM_STACK);
+    /** Hoofdstuk 109: het vest in zijn vakje, ook in jouw spel (om het te tekenen, met de tekst op zijn rug). */
+    private static final EntityDataAccessor<ItemStack> SHOWN_VEST =
             SynchedEntityData.defineId(PlayerBodyEntity.class, EntityDataSerializers.ITEM_STACK);
 
     /** Zo ver achter je sleept het lichaam mee. */
@@ -111,6 +119,13 @@ public class PlayerBodyEntity extends LivingEntity {
         builder.define(OWNER, Optional.empty());
         builder.define(OWNER_NAME, "");
         builder.define(PACK, ItemStack.EMPTY);
+        builder.define(SHOWN_VEST, ItemStack.EMPTY);
+    }
+
+    /** Hoofdstuk 109: het vest dat hij draagt (om te tekenen), of leeg. */
+    public ItemStack vest() {
+        ItemStack vest = level().isClientSide ? entityData.get(SHOWN_VEST) : loot.getItem(VEST);
+        return com.senne.imttech.armor.VestItem.isVest(vest) ? vest : ItemStack.EMPTY;
     }
 
     // ================================================================ Van wie, en wat erin zit
@@ -239,6 +254,11 @@ public class PlayerBodyEntity extends LivingEntity {
             return;
         }
         age++;
+        // Hoofdstuk 109: wat er in het vestvakje ligt, ziet iedereen op het lichaam (haalt iemand het eruit, dan is het weg).
+        ItemStack vest = vest();
+        if (!ItemStack.matches(entityData.get(SHOWN_VEST), vest)) {
+            entityData.set(SHOWN_VEST, vest.copy());
+        }
         float minutes = ImtConfig.Backpacks.BODY_MINUTES;
         if (minutes > 0 && age >= Math.round(minutes * 1200)) {
             spill(level);

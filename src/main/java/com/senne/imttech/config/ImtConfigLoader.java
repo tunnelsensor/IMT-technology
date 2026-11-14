@@ -77,7 +77,8 @@ public final class ImtConfigLoader {
             ImtConfig.Weapons.class,
             ImtConfig.Guns.class,
             ImtConfig.Armory.class,
-            ImtConfig.Backpacks.class);
+            ImtConfig.Backpacks.class,
+            ImtConfig.Armor.class);
 
     /** Eén instelbaar getal: waar het staat, de regel in het bestand, en de standaardwaarde. */
     private record Entry(Field field, ModConfigSpec.ConfigValue<?> value, Object fallback) {}

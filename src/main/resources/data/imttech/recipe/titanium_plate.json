@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "T": {
+      "item": "imttech:titanium_ingot"
+    },
+    "P": {
+      "item": "imttech:polymer"
+    }
+  },
+  "pattern": [
+    "TTT",
+    "TPT"
+  ],
+  "result": {
+    "id": "imttech:titanium_plate",
+    "count": 1
+  }
+}

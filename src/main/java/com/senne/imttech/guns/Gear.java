@@ -48,6 +48,9 @@ import org.jetbrains.annotations.Nullable;
  *   <li><b>Doodgaan</b>: zonder keepInventory vallen ze op de grond, net als de rest.</li>
  *   <li><b>Je nek</b> (hoofdstuk 100): een keycard in het nekvakje ({@link #NECK}, met Curios het slot "necklace"). Trekken
  *       houdt hem "over" wat je vasthoudt en na gebruik hangt hij weer aan je nek (zie NeckCard).</li>
+ *   <li><b>Je vest</b> (hoofdstuk 109): de Plate Carrier in het vest-vakje ({@link #VEST}, met Curios het slot "body"), over je
+ *       borstplaat. Zijn drie magazijnvakjes komen na je magazijnpouch: wegsteken vult eerst de pouch, dan het vest, dan de
+ *       MOLLE-pouches (zie armor/Vests en backpack/Molle).</li>
  * </ul>
  */
 public final class Gear {
@@ -69,6 +72,8 @@ public final class Gear {
     public static final int ACTION_USE_IFAK = 7;
     /** Hoofdstuk 100: de keycard aan je nek trekken, over wat je vasthoudt (nog eens = terug), zie NeckCard. */
     public static final int ACTION_DRAW_KEYCARD = 8;
+    /** Hoofdstuk 109: het scherm van het vest dat je draagt openen (de plates, de magazijnen, de tekst), zie armor/Vests. */
+    public static final int ACTION_OPEN_VEST = 9;
 
     /** Zoveel sling-vakjes draag je (jouw keuze: twee, een op je rug en een voor je borst). */
     public static final int SLINGS = 2;
@@ -82,8 +87,13 @@ public final class Gear {
      * mod toevoegt, tenzij Curios beschikbaar is, dan gebruik je dat"), na je rugzak. Met Curios: het slot "necklace".
      */
     public static final int NECK = BACK + 1;
-    /** Zoveel vakjes heeft de attachment: de drie van GearItem.Kind, dan de slings, je rugzak en je nek. */
-    public static final int SLOTS = NECK + 1;
+    /**
+     * Hoofdstuk 109: het vakje van je vest, de Plate Carrier (jouw keuze: "een eigen vest-vakje", over je borstplaat), na je
+     * nek. Met Curios: het slot "body". Een oude wereld zonder dit vakje vult het rijtje vanzelf aan.
+     */
+    public static final int VEST = NECK + 1;
+    /** Zoveel vakjes heeft de attachment: de drie van GearItem.Kind, dan de slings, je rugzak, je nek en je vest. */
+    public static final int SLOTS = VEST + 1;
 
     private static Boolean curiosLoaded;
 
@@ -181,6 +191,23 @@ public final class Gear {
         return NeckCard.fits(stack);
     }
 
+    /** Het vest dat je draagt, de Plate Carrier (een kopie), of leeg (hoofdstuk 109). */
+    public static ItemStack vest(Player player) {
+        if (curios()) {
+            return CuriosGear.vest(player);
+        }
+        return player.getData(ModAttachments.GEAR).get(VEST);
+    }
+
+    /** Dit vest (of leeg) in je vest-vakje. Geeft false als dat niet kan (Curios zonder slot "body"). */
+    public static boolean setVest(Player player, ItemStack stack) {
+        if (curios()) {
+            return CuriosGear.setVest(player, stack);
+        }
+        setSlot(player, VEST, stack);
+        return true;
+    }
+
     /**
      * Past dit in een sling-vakje: een laser rifle, sniper of shotgun met een sling eraan, of (hoofdstuk 103) een lang
      * vuurwapen (de MP5, de AK-47, de AWP, de Remington 870) met een sling eraan?
@@ -242,6 +269,7 @@ public final class Gear {
     public static boolean canStow(Player player, ItemStack stack) {
         return (slingAccepts(stack) && freeSling(player) >= 0) || (neckAccepts(stack) && neck(player).isEmpty())
                 || roomFor(player, stack) != null
+                || com.senne.imttech.armor.Vests.roomFor(player, stack)
                 || com.senne.imttech.backpack.Molle.roomFor(player, stack) != null;
     }
 
@@ -255,6 +283,10 @@ public final class Gear {
         }
         GearItem.Kind kind = roomFor(player, stack);
         if (kind == null) {
+            // Hoofdstuk 109: een magazijn of cel eerst in je vest (na je magazijnpouch).
+            if (com.senne.imttech.armor.Vests.roomFor(player, stack)) {
+                return Component.translatable("screen.imttech.wheel.into", vest(player).getHoverName());
+            }
             // Hoofdstuk 72, stap 2: anders in een MOLLE-pouch op je rugzak.
             com.senne.imttech.backpack.MolleItem.Kind molle = com.senne.imttech.backpack.Molle.roomFor(player, stack);
             return molle == null ? null : Component.translatable("screen.imttech.wheel.into", molle.text());
@@ -587,7 +619,7 @@ public final class Gear {
     /**
      * Een klik op een van de eigen vakjes (zie GearClickPayload): de drie naast je harnas (holster, granaatpouch,
      * magazijnpouch; {@code index} 0-2), de twee sling-vakjes onder het craftraster (3 en 4), (hoofdstuk 72) je rugzak
-     * ernaast (5) of (hoofdstuk 100) je nek daarnaast (6). Wat je aan je muis hebt
+     * ernaast (5), (hoofdstuk 100) je nek daarnaast (6) of (hoofdstuk 109) je vest links naast je borstplaat (7). Wat je aan je muis hebt
      * gaat erin, wat erin zat komt aan je muis (of ze wisselen). In een sling-vakje past alleen een geweer met een sling,
      * aan je nek alleen een keycard (van een stapel kaarten één).
      */
@@ -605,10 +637,13 @@ public final class Gear {
             return;
         }
         boolean back = index == BACK;
-        boolean sling = !back && index >= GearItem.Kind.values().length;
-        ItemStack worn = back ? back(player) : sling ? sling(player, index - GearItem.Kind.values().length)
+        // Hoofdstuk 109: het vest-vakje (links naast je borstplaat): alleen een Plate Carrier.
+        boolean vest = index == VEST;
+        boolean sling = !back && !vest && index >= GearItem.Kind.values().length;
+        ItemStack worn = vest ? vest(player) : back ? back(player) : sling ? sling(player, index - GearItem.Kind.values().length)
                 : get(player, GearItem.Kind.values()[index]);
-        boolean fits = back ? com.senne.imttech.backpack.BackpackItem.isBackpack(carried)
+        boolean fits = vest ? com.senne.imttech.armor.VestItem.isVest(carried)
+                : back ? com.senne.imttech.backpack.BackpackItem.isBackpack(carried)
                 : sling ? slingAccepts(carried) : GearItem.kindOf(carried) == GearItem.Kind.values()[index];
         if (carried.isEmpty()) {
             if (worn.isEmpty()) {

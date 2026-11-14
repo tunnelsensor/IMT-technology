@@ -123,15 +123,23 @@ public final class GearLayer extends RenderLayer<AbstractClientPlayer, PlayerMod
         if (!magazines.isEmpty()) {
             renderMagPouch(pose, buffers, light, player, magazines);
         }
+        // Hoofdstuk 109: een vest maakt je voorkant dikker (de magazijnvakjes): het geweer voor je borst en je keycard hangen
+        // er dan voor in plaats van erdoor.
+        float vestFront = com.senne.imttech.client.armor.VestRenderer.frontDepth(player, com.senne.imttech.armor.Vests.worn(player));
         if (!back.isEmpty()) {
             // Hoofdstuk 72: met een rugzak hangt het geweer over de rugzak heen (jouw keuze).
             renderSlung(pose, buffers, light, back, true, com.senne.imttech.client.backpack.BackpackLayer.slingShift(player));
         }
         if (!chest.isEmpty()) {
-            renderSlung(pose, buffers, light, chest, false, 0);
+            renderSlung(pose, buffers, light, chest, false, vestFront > 0 ? -(vestFront - 0.12f) : 0);
         }
         if (!neckCard.isEmpty()) {
+            pose.pushPose();
+            if (vestFront > 0) {
+                pose.translate(0, 0, -(vestFront - 0.015f));
+            }
             renderNeckCard(pose, buffers, light, player, neckCard);
+            pose.popPose();
         }
         pose.popPose();
     }

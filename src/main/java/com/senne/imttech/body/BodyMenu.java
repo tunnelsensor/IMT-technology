@@ -23,7 +23,7 @@ import net.neoforged.neoforge.network.payload.AdvancedOpenScreenPayload;
  *  rij 0   harnas (hoofd, borst, benen, voeten), andere hand, holster, granaatpouch, magazijnpouch, geweer op je rug
  *  rij 1-3 je inventaris
  *  rij 4   je werkbalk
- *  rij 5   geweer voor je borst, de keycard aan je nek (hoofdstuk 100), en wat andere mods lieten vallen
+ *  rij 5   geweer voor je borst, de keycard aan je nek (hoofdstuk 100), je vest (hoofdstuk 109), en wat andere mods lieten vallen
  * </pre>
  */
 public class BodyMenu extends AbstractContainerMenu {
@@ -68,8 +68,10 @@ public class BodyMenu extends AbstractContainerMenu {
         // Rij 5: het geweer voor je borst, de keycard aan je nek (hoofdstuk 100) en wat andere mods lieten vallen.
         addSlot(new LootSlot(container, PlayerBodyEntity.GEAR + 4, 8, TOP + 5 * 18));
         addSlot(new LootSlot(container, PlayerBodyEntity.NECK, 8 + 18, TOP + 5 * 18));
+        // Hoofdstuk 109: het vest (de Plate Carrier), naast de keycard.
+        addSlot(new LootSlot(container, PlayerBodyEntity.VEST, 8 + 2 * 18, TOP + 5 * 18));
         for (int i = 0; i < PlayerBodyEntity.SIZE - PlayerBodyEntity.EXTRA; i++) {
-            addSlot(new LootSlot(container, PlayerBodyEntity.EXTRA + i, 8 + (2 + i) * 18, TOP + 5 * 18));
+            addSlot(new LootSlot(container, PlayerBodyEntity.EXTRA + i, 8 + (3 + i) * 18, TOP + 5 * 18));
         }
         int inventoryY = TOP + 6 * 18 + 13;
         for (int row = 0; row < 3; row++) {

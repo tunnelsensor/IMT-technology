@@ -1,0 +1,76 @@
+{
+ "textures": {
+  "mag": "imttech:item/vest/mag",
+  "particle": "imttech:item/vest/mag"
+ },
+ "elements": [
+  {
+   "from": [
+    5.25,
+    10.2,
+    11.2
+   ],
+   "to": [
+    6.25,
+    11.8,
+    12.1
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      5.25,
+      4.2,
+      6.25,
+      5.8
+     ],
+     "texture": "#mag"
+    },
+    "south": {
+     "uv": [
+      5.25,
+      4.2,
+      6.25,
+      5.8
+     ],
+     "texture": "#mag"
+    },
+    "east": {
+     "uv": [
+      11.2,
+      4.2,
+      12.1,
+      5.8
+     ],
+     "texture": "#mag"
+    },
+    "west": {
+     "uv": [
+      11.2,
+      4.2,
+      12.1,
+      5.8
+     ],
+     "texture": "#mag"
+    },
+    "up": {
+     "uv": [
+      5.25,
+      11.2,
+      6.25,
+      12.1
+     ],
+     "texture": "#mag"
+    },
+    "down": {
+     "uv": [
+      5.25,
+      11.2,
+      6.25,
+      12.1
+     ],
+     "texture": "#mag"
+    }
+   }
+  }
+ ]
+}

@@ -2697,4 +2697,33 @@ public final class ImtConfig {
         @Tunable(value = "Chance (0 to 1) that a Raven soldier carries a charcoal Assault Pack full of loot", min = 0, max = 1)
         public static float RAVEN_PACK_CHANCE = 0.35f;
     }
+
+    // =============================================================================================== Armor
+
+    /**
+     * Hoofdstuk 109: de Plate Carrier (een vest in een eigen vakje, over je borstplaat) met een plate voor en een achter. Elk
+     * rijtje heeft vier getallen, een per soort plate, in deze volgorde: polymeer, staal, titanium, netherite.
+     */
+    @Section("Body armor (chapter 109): the Plate Carrier and its front and back plates. Every list has 4 numbers, one per "
+            + "plate: polymer, steel, titanium, netherite")
+    public static final class Armor {
+        private Armor() {}
+
+        /**
+         * Zoveel van een treffer houdt een plate tegen (0,55 = 55 %): jouw wens "hoe sterker de plate, hoe minder damage je
+         * neemt". Een plate vangt alleen treffers van zijn eigen kant op (de voorste van voren, de achterste van achteren); een
+         * headshot gaat erlangs, en wat geen richting heeft (vallen, vuur, verdrinken) ook.
+         */
+        @Tunable(value = "How much of a hit a plate stops (0.55 = 55 %), per plate", min = 0, max = 0.95)
+        public static float[] PLATE_REDUCTION = {0.25f, 0.40f, 0.55f, 0.70f};
+        /**
+         * Zoveel schade (in halve hartjes) kan een plate in totaal tegenhouden voor hij barst (jouw keuze: slijten per treffer).
+         * Een gebarsten plate houdt niets meer tegen tot je hem op een aambeeld herstelt met zijn materiaal.
+         */
+        @Tunable(value = "How much damage (half hearts) a plate can stop in total before it cracks, per plate", min = 1, max = 100_000)
+        public static float[] PLATE_DURABILITY = {50.0f, 80.0f, 120.0f, 200.0f};
+        /** Jouw keuze (extra's): zoveel kans (0 tot 1) heeft een Raven-soldaat op een vest met twee plates. */
+        @Tunable(value = "Chance (0 to 1) that a Raven soldier wears a Plate Carrier with two plates", min = 0, max = 1)
+        public static float RAVEN_VEST_CHANCE = 0.3f;
+    }
 }

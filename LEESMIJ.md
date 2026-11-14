@@ -34,7 +34,7 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (445 automati
   it works" in hoofdstuk 5). Het knopje **?** rechtsboven in je inventaris toont alle onderwerpen.
 - **In het creative-menu** staat alles van I.M.T op tien tabbladen, achter Combat: **Resources** (chips, upgrades,
   materialen), **Equipment** (de bril, het harnas, het raketpakket, de drone, de Illusion Jammer, en de holster, de
-  pouches, de rugzakken en de MOLLE-pouches), **Weapons** (de geweren met hun magazijnen en munitie, de granaten, de
+  pouches, de rugzakken en de MOLLE-pouches, het vest en de plates), **Weapons** (de geweren met hun magazijnen en munitie, de granaten, de
   ladingen en de banken), **Gun Parts** (de onderdelen van alle geweren en de Gun Sling), **Attachments**, **Power**,
   **Interior**, **Security**, **Robots** en **Datacenter**.
 - **De bril kun je niet maken.** Er bestaat geen recept voor: de enige I.M.T-bril in je
@@ -204,10 +204,10 @@ Elk item dat meer doet dan in een recept gaan, krijgt een animatie die laat zien
   **wijs je een blok aan**, dan zie je hoe het heet. Heeft een item meer animaties, dan blader je met de
   pijltjes bovenaan. **Esc** brengt je terug naar je inventaris, met alles nog zoals het was. In je eigen
   wereld staat het spel stil terwijl je kijkt.
-- **Alles is er** (61 van de 61), per tabblad:
+- **Alles is er** (62 van de 62), per tabblad:
   - *Equipment*: de bril, het harnas (minder schade, vliegen, landen, de laser cannon), de mini-raketten, de
-    drones van je arsenaal, de Illusion Jammer, de holster, de pouches en de slings, de militaire rugzakken en de
-    MOLLE-pouches.
+    drones van je arsenaal, de Illusion Jammer, de holster, de pouches en de slings, de militaire rugzakken, de
+    MOLLE-pouches en de body armor.
   - *Weapons*: de lasergeweren, de Ion Blaster, EMP-granaten, fraggranaten, rook en de flashbang, de Remote EMP en
     Remote Frag, granaten terugwerpen (en ladingen verplaatsen), de Glock 19, de MP5 en de AK-47, de AWP, de
     Remington 870, de Reloading Bench, en de armory (het Pegboard en de Ammo Box).
@@ -2823,6 +2823,74 @@ eten, en soms een onderdeel van een Glock of fakkels.
 
 **How it works**: houd W op een rugzak of een pouch (in je inventaris): "Military backpacks" (de maten, dragen, de rits,
 neerzetten, kleuren, van achteren openen en het lichaam) en "MOLLE pouches" (elke pouch).
+
+### Body armor: het vest met plates
+Jouw wens (hoofdstuk 109): "body armor waar je plates in kunt steken, hoe sterker de plate hoe minder damage je neemt, de
+bodyarmor kan ook mags hebben (3) deze komen bij de ander 6 mags van een magpouch, je kunt op de achterkant van je vest zelf
+een tekst zetten zoals 'SWAT'". De getallen staan onder `[armor]`.
+
+**De Plate Carrier** is een tactisch vest: een plate-tas voor en achter, schouderbanden, een cummerbund om je middel, drie
+magazijnvakjes op je buik en op je rug een zwart klittenbandvlak voor je eigen tekst. Nieuw is hij antracietgrijs.
+Recept: 5 leer, een touw en 3 polymeer.
+- **Dragen** (jouw keuze): in een **eigen vest-vakje**, over je borstplaat of de Tech Suit. Het vakje staat links naast het
+  vakje van je borstplaat, net buiten het inventarisscherm (de rij onder het craftraster is vol); met Curios is het het slot
+  "body". **Sneak + rechtsklik** met een vest in je hand trekt het meteen aan (een vest dat je al droeg komt in je hand).
+- Je ziet het op je lijf, met de magazijnen die boven uit de vakjes steken en je tekst op je rug. Over een borstplaat is
+  het een maatje groter. Een rugzak hangt over het vest (en dekt dan je tekst af, zoals echt), een geweer voor je borst en
+  je keycard hangen ervoor.
+
+**De plates** (jouw keuze: een voor en een achter). Vier soorten, van zwak naar sterk; hoe sterker, hoe meer van een treffer
+hij tegenhoudt (`plateReduction`) en hoe langer hij meegaat (`plateDurability`: hoeveel schade hij in totaal tegenhoudt):
+
+| Plate | Niveau | Houdt tegen | Gaat mee (schade) | Recept |
+|---|---|---|---|---|
+| Polymer Plate | IIIA | 25 % | 50 | 6 polymeer |
+| Steel Plate | III | 40 % | 80 | 5 stalen staven en 1 polymeer |
+| Titanium Plate | III+ | 55 % | 120 | 5 titanium en 1 polymeer |
+| Netherite Plate | IV | 70 % | 200 | een **hele** Titanium Plate en 2 netherite |
+
+- **Van welke kant**: komt een treffer van voren (de schutter, de klap of de ontploffing ligt voor je lijf), dan vangt de
+  voorste plate hem op; van achteren de achterste. Zonder plate aan die kant komt hij helemaal aan. Een **headshot** gaat
+  langs beide plates (een kogel en een laserstraal weten waar ze raakten, een pijl ook).
+- **Wat telt**: kogels, lasers, pijlen, klappen en ontploffingen. Vallen, vuur, lava, verdrinken, honger, magie en de leegte
+  niet. De plate komt na je gewone harnas: eerst haalt je borstplaat zijn deel eraf, dan de plate van wat overblijft.
+- **Slijten** (jouw keuze): wat een plate tegenhoudt, kost hem duurzaamheid (het balkje onder het item). Is hij op, dan is hij
+  **gebarsten** (het plaatje toont de barsten) en houdt hij niets meer tegen. Je hoort een doffe tik als een plate een treffer
+  opvangt (de schutter ook) en een krak als hij barst, met een regel boven je werkbalk.
+- **Herstellen**: op een **aambeeld** met zijn eigen materiaal (polymeer, staal, titanium of netherite); elke staaf herstelt
+  een kwart. Of steek een andere in.
+- **In beeld**: draag je een vest, dan staan links naast je hartjes twee kleine plates (voor en achter) in de kleur van hun
+  materiaal, met eronder hoe heel ze zijn (groen, oranje, rood); een gebarsten plate heeft een rood kruis.
+
+**Het scherm van het vest**: rechtsklik met het vest in je hand, of (gedragen) de knop **Vest** in het wiel (linker Alt).
+Links de plate voor en achter (met hoeveel ze nog tegenhouden), in het midden het vest van achteren met je tekst, rechts de
+drie magazijnen, de tekst en zijn kleur. **Rechtsklik met een plate in je hand** terwijl je een vest draagt, steekt hem er
+meteen in: voorop als daar niets (of een gebarsten plate) zit, anders achterop.
+
+**Drie magazijnen** (of energiecellen). Jouw wens: "deze komen bij de ander 6 mags van een magpouch". **R** toont ze na de
+magazijnen in je Magazine Pouch en voor die in de MOLLE-pouches op je rugzak; een leeg magazijn na het herladen en
+wegsteken (onderaan in het wiel) vullen ook in die volgorde: eerst je pouch, dan je vest, dan de MOLLE-pouches.
+
+**De tekst op je rug** (SWAT, POLICE, SECURITY...): hooguit 12 tekens, in een van de 16 kleuren van Minecraft. Je typt hem in
+het scherm van het vest en ziet hem meteen op het vest in het midden. Een korte tekst staat groot op het klittenbandvlak,
+een lange kleiner.
+
+**Kleuren** (jouw keuze: zoals de rugzakken): verven in de crafting table met een of meer kleurstoffen (gemengd zoals leer),
+of **bruin + lichtgroen + groen** voor **camo**. De plates, de magazijnen en de tekst blijven.
+
+**Op het Pegboard**: het vest hangt met zijn rug (en je tekst) naar je toe, 5 x 6 gaatjes; een losse plate 3 x 4.
+
+**Raven-soldaten** dragen soms (30 %, `ravenVestChance`) een antracietgrijs vest met **RAVEN** in het rood op de rug, met
+twee plates (meestal staal, soms polymeer of titanium, al wat versleten) en soms een magazijn van hun wapen. Hun plates
+vangen jouw schoten op zoals de jouwe: mik op het hoofd. Na hun dood ligt het vest in hun lichaam.
+
+**In de buit**: de kisten van de bunker (polymeer en staal, in de slaapzaal soms een vest), zijn kluis (staal en titanium,
+soms een vest), de toren van Biebia (staal en titanium) en zijn kluis (titanium, zelden netherite, soms een vest).
+
+**Het lichaam van een speler** heeft een vakje voor je vest (naast je keycard), en je ziet het vest op het lichaam liggen,
+met de tekst naar boven. **Everything back** trekt het je weer aan.
+
+**How it works**: houd W op het vest of een plate: "Body armor".
 
 ### Prestaties (advancements)
 De mod heeft een eigen prestatieboom die je door het spel leidt, van je eerste computerchip tot

@@ -65,6 +65,11 @@ public final class HowToTopics {
                     com.senne.imttech.backpack.BackpackRegistry.MOLLE_MAG_POUCH, com.senne.imttech.backpack.BackpackRegistry.MOLLE_GRENADE_POUCH,
                     com.senne.imttech.backpack.BackpackRegistry.DUMP_POUCH, com.senne.imttech.backpack.BackpackRegistry.IFAK,
                     com.senne.imttech.backpack.BackpackRegistry.UTILITY_POUCH),
+            // Hoofdstuk 109: de body armor, het vest met een plate voor en achter, drie magazijnen en een tekst op je rug.
+            topicItems("body_armor", "equipment", "Body armor", com.senne.imttech.howto.scenes.ArmorScenes::bodyArmor,
+                    () -> concat(List.<Item>of(com.senne.imttech.armor.ArmorRegistry.PLATE_CARRIER.get()),
+                            Arrays.stream(com.senne.imttech.armor.PlateTier.values())
+                                    .map(tier -> (Item) com.senne.imttech.armor.ArmorRegistry.plate(tier)).toList())),
             // ------------------------------------------------------------ Weapons
             topic("laser_guns", "weapons", "Laser guns", WeaponScenes::laserGuns, ModItems.LASER_PISTOL, ModItems.LASER_RIFLE,
                     ModItems.LASER_SNIPER, ModItems.LASER_SHOTGUN, ModItems.ENERGY_CELL),

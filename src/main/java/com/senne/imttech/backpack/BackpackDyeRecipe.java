@@ -41,7 +41,9 @@ public class BackpackDyeRecipe extends CustomRecipe {
             if (stack.isEmpty()) {
                 continue;
             }
-            if (BackpackItem.isBackpack(stack) || stack.getItem() instanceof MolleItem) {
+            // Hoofdstuk 109 (jouw keuze: kleuren + camo zoals de rugzakken): ook het vest, de Plate Carrier.
+            if (BackpackItem.isBackpack(stack) || stack.getItem() instanceof MolleItem
+                    || com.senne.imttech.armor.VestItem.isVest(stack)) {
                 if (!pack.isEmpty()) {
                     return null;
                 }
@@ -94,7 +96,9 @@ public class BackpackDyeRecipe extends CustomRecipe {
             result.remove(DataComponents.DYED_COLOR);
         } else if (!result.has(DataComponents.DYED_COLOR)) {
             // Een nieuwe rugzak is olijfgroen; mengen begint daarmee, zoals bij leer met zijn bruin.
-            result.set(DataComponents.DYED_COLOR, new DyedItemColor(BackpackItem.OLIVE, true));
+            // (Hoofdstuk 109: een nieuw vest is antracietgrijs, dus daar begint het mengen mee.)
+            result.set(DataComponents.DYED_COLOR, new DyedItemColor(
+                    com.senne.imttech.armor.VestItem.isVest(result) ? com.senne.imttech.armor.VestItem.CHARCOAL : BackpackItem.OLIVE, true));
         }
         result.set(DataComponents.DYED_COLOR, new DyedItemColor(mix(result.get(DataComponents.DYED_COLOR), parts.dyes()), true));
         return result;

@@ -43,6 +43,8 @@ public class PlayerBodyRenderer extends LivingEntityRenderer<PlayerBodyEntity, P
                 new HumanoidArmorModel<>(context.bakeLayer(ModelLayers.PLAYER_OUTER_ARMOR)),
                 context.getModelManager()));
         addLayer(new PackLayer(this));
+        // Hoofdstuk 109: zijn vest (hij ligt op zijn buik, dus de tekst op zijn rug kijkt naar boven).
+        addLayer(new com.senne.imttech.client.armor.VestLayer<>(this, PlayerBodyEntity::vest));
     }
 
     /** De huid van de eigenaar: van de speler als hij online is, anders de standaardhuid bij zijn naam. */
@@ -99,7 +101,8 @@ public class PlayerBodyRenderer extends LivingEntityRenderer<PlayerBodyEntity, P
             }
             pose.pushPose();
             getParentModel().body.translateAndRotate(pose);
-            BackpackLayer.renderOnBack(pose, buffers, light, pack, body.level(), !body.getItemBySlot(EquipmentSlot.CHEST).isEmpty());
+            BackpackLayer.renderOnBack(pose, buffers, light, pack, body.level(), !body.getItemBySlot(EquipmentSlot.CHEST).isEmpty(),
+                    com.senne.imttech.client.armor.VestRenderer.backDepth(body, body.vest()));
             pose.popPose();
         }
     }

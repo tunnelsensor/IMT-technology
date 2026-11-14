@@ -135,12 +135,14 @@ public class BulletEntity extends Projectile {
             // Waar de kogel het wezen raakt: alles boven de ogen min een klein stukje telt als het hoofd.
             Vec3 at = entity.getBoundingBox().inflate(0.1).clip(position(), position().add(getDeltaMovement()))
                     .orElse(hit.getLocation());
-            if (at.y >= target.getEyeY() - 0.25) {
+            boolean head = at.y >= target.getEyeY() - 0.25;
+            if (head) {
                 amount *= ImtConfig.Guns.HEADSHOT;
             }
             // Meteen: geen "even onkwetsbaar", anders doet een snel tweede schot niets.
             target.invulnerableTime = 0;
-            target.hurt(ModDamageTypes.bullet(level, getOwner()), amount);
+            // Hoofdstuk 109: de schade weet of hij in het hoofd zat, want een headshot gaat langs de plates van een vest.
+            target.hurt(com.senne.imttech.armor.HitSource.of(ModDamageTypes.bullet(level, getOwner()), head), amount);
             GunSkillsServer.hit(getOwner());
             level.sendParticles(ParticleTypes.CRIT, at.x, at.y, at.z, 6, 0.1, 0.1, 0.1, 0.1);
         } else {

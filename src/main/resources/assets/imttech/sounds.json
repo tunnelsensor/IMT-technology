@@ -776,6 +776,22 @@
       }
     ]
   },
+  "plate_hit": {
+    "subtitle": "subtitles.imttech.plate_hit",
+    "sounds": [
+      {
+        "name": "imttech:plate_hit"
+      }
+    ]
+  },
+  "plate_crack": {
+    "subtitle": "subtitles.imttech.plate_crack",
+    "sounds": [
+      {
+        "name": "imttech:plate_crack"
+      }
+    ]
+  },
   "gun.selector": {
     "subtitle": "subtitles.imttech.gun.selector",
     "sounds": [

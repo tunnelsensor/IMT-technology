@@ -21,7 +21,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
  * dat mijn mod toevoegt"): rechts van je poppetje, onder elkaar: de holster, de granaatpouch en de magazijnpouch; en
  * sinds hoofdstuk 55 de twee <b>sling-vakjes</b> (een geweer met sling op je rug, een voor je borst) in een rij onder
  * het craftraster, naast het vakje van je andere hand, en daarnaast (hoofdstuk 72) het vakje van je <b>rugzak</b> en
- * (hoofdstuk 100) dat van je <b>nek</b>, voor een keycard. Ze zijn geen echte vakjes van het inventarisscherm (dat is van
+ * (hoofdstuk 100) dat van je <b>nek</b>, voor een keycard. Hoofdstuk 109: je <b>vest</b> (de Plate Carrier) links naast je
+ * borstplaat, net buiten het scherm (die rij is vol), met een eigen randje. Ze zijn geen echte vakjes van het inventarisscherm (dat is van
  * Minecraft), maar we tekenen ze erbij en vangen de klik: wat je aan je muis hebt gaat erin, wat erin zat komt aan je
  * muis (zie Gear.click). Met Curios erbij zie je ze niet: dan zitten ze in de Curios-slots.
  */
@@ -34,6 +35,9 @@ public final class GearSlotsOverlay {
     /** De sling-vakjes: onder het 2x2-craftraster, rechts van het vakje van je andere hand. */
     private static final int SLING_X = 98;
     private static final int SLING_Y = 62;
+    /** Hoofdstuk 109: het vest-vakje, links naast het vakje van je borstplaat (dat staat op x 8, y 26). */
+    private static final int VEST_X = -22;
+    private static final int VEST_Y = 25;
 
     private static boolean shown(Screen screen) {
         return screen instanceof InventoryScreen && !Gear.curios();
@@ -41,6 +45,10 @@ public final class GearSlotsOverlay {
 
     /** De linkerbovenhoek van vakje {@code index} (0-2 naast je harnas, 3-4 de slings, 5 je rugzak, 6 je nek), op het scherm. */
     private static int[] at(InventoryScreen screen, int index) {
+        if (index == Gear.VEST) {
+            // Hoofdstuk 109: je vest, links naast je borstplaat (net buiten het scherm: de rij onder het craftraster is vol).
+            return new int[]{screen.getGuiLeft() + VEST_X, screen.getGuiTop() + VEST_Y};
+        }
         if (index == Gear.NECK) {
             // Hoofdstuk 100: je nek, rechts naast je rugzak (het laatste plekje van die rij).
             return new int[]{screen.getGuiLeft() + SLING_X + (Gear.SLINGS + 1) * STEP, screen.getGuiTop() + SLING_Y};
@@ -62,6 +70,9 @@ public final class GearSlotsOverlay {
 
     /** Wat er in dit vakje hoort, als vaag plaatje in een leeg vakje. */
     private static ItemStack ghost(int index) {
+        if (index == Gear.VEST) {
+            return new ItemStack(com.senne.imttech.armor.ArmorRegistry.PLATE_CARRIER.get());
+        }
         if (index == Gear.NECK) {
             return new ItemStack(ModItems.KEYCARD.get());
         }
@@ -79,6 +90,9 @@ public final class GearSlotsOverlay {
     }
 
     private static ItemStack worn(LocalPlayer player, int index) {
+        if (index == Gear.VEST) {
+            return Gear.vest(player);
+        }
         if (index == Gear.NECK) {
             return Gear.neck(player);
         }
@@ -92,6 +106,9 @@ public final class GearSlotsOverlay {
     }
 
     private static Component slotName(int index) {
+        if (index == Gear.VEST) {
+            return Component.translatable("screen.imttech.gear_slot.vest");
+        }
         if (index == Gear.NECK) {
             return Component.translatable("screen.imttech.gear_slot.neck");
         }
@@ -121,6 +138,11 @@ public final class GearSlotsOverlay {
             int y = at[1];
             ItemStack worn = worn(player, index);
             boolean hover = over(at, event.getMouseX(), event.getMouseY());
+            if (index == Gear.VEST) {
+                // Buiten het scherm: een eigen randje eromheen, zodat het niet los in de lucht hangt.
+                g.fill(x0 - 3, y - 3, x0 + 21, y + 21, HudStyle.argb(235, 0x10141A));
+                g.renderOutline(x0 - 3, y - 3, 24, 24, HudStyle.argb(255, 0x465460));
+            }
             g.fill(x0, y, x0 + 18, y + 18, HudStyle.argb(255, 0x1E2128));
             g.renderOutline(x0, y, 18, 18, HudStyle.argb(255, hover ? HudStyle.CYAN : 0x465460));
             if (worn.isEmpty()) {
@@ -133,7 +155,8 @@ public final class GearSlotsOverlay {
             } else {
                 g.renderItem(worn, x0 + 1, y + 1);
                 int filled = GearItem.kindOf(worn) != null ? GearItem.filled(worn)
-                        : com.senne.imttech.backpack.BackpackItem.isBackpack(worn) ? com.senne.imttech.backpack.BackpackItem.filled(worn) : 0;
+                        : com.senne.imttech.backpack.BackpackItem.isBackpack(worn) ? com.senne.imttech.backpack.BackpackItem.filled(worn)
+                        : com.senne.imttech.armor.VestItem.isVest(worn) ? com.senne.imttech.armor.VestItem.data(worn).filledMagazines() : 0;
                 if (filled > 0) {
                     g.pose().pushPose();
                     g.pose().translate(x0 + 12, y + 11, 200);

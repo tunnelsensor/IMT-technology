@@ -61,6 +61,8 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
     private static final EntityDataAccessor<Integer> SUSPECT = SynchedEntityData.defineId(RavenSoldierEntity.class, EntityDataSerializers.INT);
     /** Hoofdstuk 72, stap 5: de rugzak op zijn rug (soms een antracietgrijze Assault Pack), ook in jouw spel om hem te tekenen. */
     private static final EntityDataAccessor<ItemStack> PACK = SynchedEntityData.defineId(RavenSoldierEntity.class, EntityDataSerializers.ITEM_STACK);
+    /** Hoofdstuk 109 (jouw keuze): zijn vest met plates (soms), ook in jouw spel om het te tekenen. */
+    private static final EntityDataAccessor<ItemStack> VEST = SynchedEntityData.defineId(RavenSoldierEntity.class, EntityDataSerializers.ITEM_STACK);
     /**
      * 8 november: een sluipaanval (Takedown) is een korte worsteling. Wie hem vastheeft (het nummer van de speler, -1 =
      * niemand) en hoe lang het duurt (ticks, 0 = niemand heeft hem vast); je spel tekent er de animatie mee
@@ -160,6 +162,7 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
         builder.define(TAKEDOWN_BY, -1);
         builder.define(TAKEDOWN_LENGTH, 0);
         builder.define(PACK, ItemStack.EMPTY);
+        builder.define(VEST, ItemStack.EMPTY);
     }
 
     /** Hoofdstuk 72, stap 5: de rugzak op zijn rug, of leeg. */
@@ -169,6 +172,15 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
 
     public void setPack(ItemStack pack) {
         entityData.set(PACK, pack.copy());
+    }
+
+    /** Hoofdstuk 109: zijn vest (een kopie), of leeg. Zijn plates vangen treffers op zoals bij een speler (armor/PlateArmor). */
+    public ItemStack vest() {
+        return entityData.get(VEST).copy();
+    }
+
+    public void setVest(ItemStack vest) {
+        entityData.set(VEST, vest.copy());
     }
 
     // ================================================================ Zijn zintuigen (hoofdstuk 60)
@@ -383,6 +395,11 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
             spawnAtLocation(com.senne.imttech.backpack.RavenPacks.filled(pack(), getRandom(), weapon));
             setPack(ItemStack.EMPTY);
         }
+        // Hoofdstuk 109 (jouw keuze): zijn vest, met de plates zoals de strijd ze achterliet; het komt in zijn lichaam.
+        if (!entityData.get(VEST).isEmpty()) {
+            spawnAtLocation(vest());
+            setVest(ItemStack.EMPTY);
+        }
         if (keycardGuard) {
             ItemStack card = com.senne.imttech.structures.TowerGuards.staffCard(level, blockPosition());
             if (!card.isEmpty()) {
@@ -454,6 +471,9 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
         if (!pack().isEmpty()) {
             tag.put("Pack", pack().save(registryAccess()));
         }
+        if (!entityData.get(VEST).isEmpty()) {
+            tag.put("Vest", entityData.get(VEST).save(registryAccess()));
+        }
         if (post != null) {
             tag.putLong("Post", post.asLong());
         }
@@ -473,6 +493,7 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
         backup = tag.getBoolean("Backup");
         leaving = tag.getBoolean("Leaving");
         setPack(tag.contains("Pack") ? ItemStack.parseOptional(registryAccess(), tag.getCompound("Pack")) : ItemStack.EMPTY);
+        setVest(tag.contains("Vest") ? ItemStack.parseOptional(registryAccess(), tag.getCompound("Vest")) : ItemStack.EMPTY);
         post = tag.contains("Post") ? net.minecraft.core.BlockPos.of(tag.getLong("Post")) : null;
         route = tag.contains("Route")
                 ? java.util.Arrays.stream(tag.getLongArray("Route")).mapToObj(net.minecraft.core.BlockPos::of).toList()
@@ -493,6 +514,10 @@ public class RavenSoldierEntity extends Monster implements RangedAttackMob, Watc
         // Hoofdstuk 72, stap 5 (jouw keuze): soms een antracietgrijze Assault Pack op zijn rug.
         if (pack().isEmpty() && level.getRandom().nextFloat() < ImtConfig.Backpacks.RAVEN_PACK_CHANCE) {
             setPack(com.senne.imttech.backpack.RavenPacks.pack());
+        }
+        // Hoofdstuk 109 (jouw keuze): soms een vest met plates (RAVEN op zijn rug), met een magazijn of twee van zijn wapen.
+        if (entityData.get(VEST).isEmpty() && com.senne.imttech.armor.Vests.ravenGetsVest(level.getRandom())) {
+            setVest(com.senne.imttech.armor.Vests.ravenVest(level.getRandom(), getMainHandItem()));
         }
         return result;
     }

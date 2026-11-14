@@ -1612,6 +1612,29 @@ def bullet_impact():
     return finish(total, peak=0.6)
 
 
+def plate_hit():
+    """
+    Hoofdstuk 109: een treffer op een plate van een vest. Een harde tik met een korte metalen klank (de plate), meteen
+    gedempt door de stof van het vest eromheen, en een doffe dreun in je borst. Kort, zodat een salvo een rij tikken wordt.
+    """
+    r = np.random.default_rng(10901)
+    total = np.zeros(int(RATE * 0.22))
+    place(total, impact(r, 0.09, [(2350, 55, 0.5), (3900, 80, 0.32), (6100, 120, 0.18)], snap=0.9, snap_from=2200,
+                        thud=0.55, thud_hz=170), 0.0)
+    place(total, bandpass(noise(0.05), 300, 1800) * decay(0.05, 70) * 0.35, 0.004)
+    return finish_hard(total, peak=0.6)
+
+
+def plate_crack():
+    """Hoofdstuk 109: een plate barst. Een droge krak en wat knisperend gruis, alsof keramiek of metaal scheurt."""
+    r = np.random.default_rng(10902)
+    total = np.zeros(int(RATE * 0.5))
+    place(total, impact(r, 0.06, [(1800, 90, 0.35), (3200, 130, 0.25)], snap=1.0, snap_from=1500, thud=0.4, thud_hz=240), 0.0)
+    place(total, crackle(0.32, 14, 1200, 7000) * np.linspace(1, 0, int(RATE * 0.32)) * 0.55, 0.02)
+    place(total, bandpass(noise(0.12), 2500, 9000) * decay(0.12, 35) * 0.3, 0.05)
+    return finish_hard(total, peak=0.6)
+
+
 def holster_draw():
     """
     Een pistool uit de holster trekken (hoofdstuk 74, opnieuw): leer of kunststof dat langs het pistool schuurt, een
@@ -1751,6 +1774,8 @@ SOUNDS = {
     "bullet_impact": bullet_impact,
     "holster_draw": holster_draw,
     "backpack_zip": backpack_zip,
+    "plate_hit": plate_hit,
+    "plate_crack": plate_crack,
 }
 
 

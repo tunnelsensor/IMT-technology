@@ -89,6 +89,14 @@ public final class ModCreativeTabs {
                 for (com.senne.imttech.backpack.MolleItem.Kind kind : com.senne.imttech.backpack.MolleItem.Kind.values()) {
                     output.accept(com.senne.imttech.backpack.BackpackRegistry.molle(kind));
                 }
+                // De body armor (hoofdstuk 109): het vest (antracietgrijs, en in camo) en de vier plates, van zwak naar sterk.
+                output.accept(com.senne.imttech.armor.ArmorRegistry.PLATE_CARRIER.get());
+                ItemStack camoVest = new ItemStack(com.senne.imttech.armor.ArmorRegistry.PLATE_CARRIER.get());
+                camoVest.set(com.senne.imttech.backpack.BackpackRegistry.CAMO.get(), true);
+                output.accept(camoVest);
+                for (com.senne.imttech.armor.PlateTier tier : com.senne.imttech.armor.PlateTier.values()) {
+                    output.accept(com.senne.imttech.armor.ArmorRegistry.plate(tier));
+                }
             });
 
     /**

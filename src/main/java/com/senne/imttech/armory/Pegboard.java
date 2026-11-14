@@ -149,6 +149,13 @@ public final class Pegboard {
         if (stack.getItem() instanceof com.senne.imttech.backpack.MolleItem) {
             return new int[]{3, 3};
         }
+        // Hoofdstuk 109 (jouw keuze): het vest (met zijn rug en je tekst naar je toe) en de losse plates.
+        if (com.senne.imttech.armor.VestItem.isVest(stack)) {
+            return new int[]{5, 6};
+        }
+        if (com.senne.imttech.armor.PlateItem.tierOf(stack) != null) {
+            return new int[]{3, 4};
+        }
         if (stack.is(ModItems.ION_BLASTER.get())) {
             return new int[]{4, 4};
         }

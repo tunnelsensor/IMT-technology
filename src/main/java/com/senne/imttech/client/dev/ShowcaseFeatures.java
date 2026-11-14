@@ -3893,6 +3893,47 @@ final class ShowcaseFeatures {
                             player.getBoundingBox().inflate(12)).forEach(net.minecraft.world.entity.Entity::discard);
                     player.getInventory().clearContent();
                 }));
+        // ---------------------------------------------------------------- De body armor (hoofdstuk 109)
+        BlockPos vests = VestTour.YARD;
+        double vx = vests.getX() + 0.5;
+        double vy = vests.getY() + 1;
+        double vz = vests.getZ() + 0.5;
+        add("Body armor: the Plate Carrier", "Hoofdstuk 109. Je draagt een antracietgrijs vest met SWAT op je rug: eerst van "
+                + "achteren in derde persoon (de tekst op het zwarte klittenbandvlak), dan van voren (drie magazijnvakjes op je "
+                + "buik, twee met een magazijn erin). Links naast je hartjes staan je twee plates, voor en achter. Dan het scherm "
+                + "van het vest: links de stalen plate voor en de polymeren achter (hoeveel ze nog tegenhouden en welk deel van "
+                + "een treffer), in het midden het vest van achteren, rechts de magazijnen, de tekst en de 16 kleuren; je typt "
+                + "K9 UNIT in het oranje en ziet het meteen op het vest. Daarna een Raven-soldaat met een vest (RAVEN in het rood "
+                + "op zijn rug), en tot slot de wand met drie vesten (SWAT, ARMY in camo en POLICE in het blauw) en de vier "
+                + "plates, van polymeer tot netherite.",
+                GameType.SURVIVAL, new Vec3(vx, vy, vz), 0, 10, s -> s
+                .onServer(0, player -> VestTour.buildYard(player.serverLevel(), vests))
+                .onServer(0, VestTour::wearSwat)
+                .pause(40)
+                .camera(0, CameraType.THIRD_PERSON_BACK)
+                .pause(60)
+                .stand(0, vx, vy, vz, 180, 0)
+                .camera(0, CameraType.THIRD_PERSON_FRONT)
+                .pause(60)
+                .camera(0, CameraType.FIRST_PERSON)
+                .stand(0, vx, vy, vz, 0, 10)
+                .pause(50)
+                .onServer(0, com.senne.imttech.armor.Vests::openWorn)
+                .waitUntil(60, () -> Minecraft.getInstance().screen instanceof com.senne.imttech.client.armor.VestScreen)
+                .pause(50)
+                .step(0, () -> {
+                    if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.armor.VestScreen screen) {
+                        screen.type("K9 UNIT", net.minecraft.world.item.DyeColor.ORANGE);
+                    }
+                })
+                .pause(70)
+                .close(10)
+                .onServer(0, player -> VestTour.spawnRaven(player.serverLevel(), vests))
+                .stand(10, vests.getX() + 2.5, vy, vests.getZ() - 4.0, 0, 15)
+                .pause(70)
+                .stand(0, vx, vy, vests.getZ() + 1.5, 0, 5)
+                .pause(80)
+                .onServer(0, VestTour::cleanUp));
         // ---------------------------------------------------------------- De Glock in de stijl van TACZ (hoofdstuk 74)
         BlockPos range = ShowcaseScene.WEAPONS;
         Vec3 aimFrom = new Vec3(range.getX() + 0.5, range.getY() + 1, range.getZ() + 0.5);

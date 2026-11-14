@@ -354,6 +354,16 @@ public class GearWheelScreen extends Screen {
                             Component.translatable("screen.imttech.wheel.filled", filled, packSize.slots())),
                     filled + "/" + packSize.slots(), HudStyle.argb(255, HudStyle.WHITE), true, Gear.ACTION_OPEN_BACKPACK, 0, -1));
         }
+        // Hoofdstuk 109: het scherm van je vest (de plates, de drie magazijnen, de tekst op je rug).
+        ItemStack vest = Gear.vest(player);
+        if (com.senne.imttech.armor.VestItem.isVest(vest)) {
+            int mags = com.senne.imttech.armor.VestItem.data(vest).filledMagazines();
+            options.add(new Option(vest, Component.translatable("screen.imttech.wheel.vest"),
+                    lines(Component.translatable("screen.imttech.wheel.open", vest.getHoverName()),
+                            Component.translatable("screen.imttech.wheel.filled", mags, com.senne.imttech.armor.VestData.MAGS)),
+                    mags + "/" + com.senne.imttech.armor.VestData.MAGS, HudStyle.argb(255, HudStyle.WHITE), true,
+                    Gear.ACTION_OPEN_VEST, 0, -1));
+        }
         // Hoofdstuk 72, stap 2: elke MOLLE-pouch op je rugzak openen (zonder rits), en de genees-items uit je IFAK (een knop
         // per soort, met hoeveel): aanwijzen en loslaten = meteen gebruiken. Ook knoppen, want de ring zit vol.
         List<ItemStack> molle = com.senne.imttech.backpack.Molle.worn(player);

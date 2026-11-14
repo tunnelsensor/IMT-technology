@@ -481,6 +481,11 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
             LaserGunModels.render(pose, buffers, stack, light, true, null);
             return;
         }
+        // Hoofdstuk 109: het vest met zijn magazijnen en de tekst op zijn rug (die hangt naar je toe, zie rotation).
+        if (com.senne.imttech.armor.VestItem.isVest(stack)) {
+            com.senne.imttech.client.armor.VestRenderer.renderModel(pose, buffers, light, OverlayTexture.NO_OVERLAY, stack, level, null);
+            return;
+        }
         // Het gewone model: ItemRenderer schuift het zelf een half blok terug, dat zetten we hier recht.
         pose.translate(0.5, 0.5, 0.5);
         Minecraft.getInstance().getItemRenderer().render(stack, ItemDisplayContext.NONE, false, pose, buffers, light,
@@ -515,6 +520,11 @@ public class PegboardRenderer implements BlockEntityRenderer<PegboardBlockEntity
         // Hoofdstuk 72, stap 5: een rugzak of MOLLE-pouch hangt met zijn voorkant (de MOLLE-banden) naar je toe; in zijn
         // model kijkt die naar -z, dus een halve draai.
         if (com.senne.imttech.backpack.BackpackItem.isBackpack(stack) || stack.getItem() instanceof com.senne.imttech.backpack.MolleItem) {
+            q.rotateY((float) Math.PI);
+            return q;
+        }
+        // Hoofdstuk 109: een vest hangt met zijn rug (en je tekst, zoals SWAT) naar je toe; in zijn model kijkt de rug naar -z.
+        if (com.senne.imttech.armor.VestItem.isVest(stack)) {
             q.rotateY((float) Math.PI);
             return q;
         }

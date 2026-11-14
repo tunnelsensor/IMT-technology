@@ -79,9 +79,16 @@ public final class Molle {
 
     // ================================================================ Magazijnen en granaten
 
-    /** Je heup-pouch (als je die draagt) en dan de MOLLE-pouches van deze soort, als één rijtje vakjes (kopieën). */
+    /**
+     * Je heup-pouch (als je die draagt) en dan de MOLLE-pouches van deze soort, als één rijtje vakjes (kopieën). Voor
+     * magazijnen zitten sinds hoofdstuk 109 de drie vakjes van je vest ertussen (jouw wens: "deze komen bij de ander 6 mags
+     * van een magpouch"): eerst je magazijnpouch, dan je vest, dan de MOLLE-pouches op je rugzak.
+     */
     private static List<ItemStack> combined(Player player, GearItem.Kind hip, MolleItem.Kind molle) {
         List<ItemStack> all = new ArrayList<>(Gear.contents(player, hip));
+        if (molle == MolleItem.Kind.MAG) {
+            all.addAll(com.senne.imttech.armor.Vests.magazines(player));
+        }
         for (ItemStack pouch : worn(player)) {
             if (MolleItem.kindOf(pouch) == molle) {
                 all.addAll(MolleItem.contents(pouch));
@@ -97,6 +104,15 @@ public final class Molle {
             int size = hip.size();
             Gear.setContents(player, hip, new ArrayList<>(all.subList(0, Math.min(size, all.size()))));
             at = size;
+        }
+        // Hoofdstuk 109: de drie magazijnvakjes van je vest (als je er een draagt), na je magazijnpouch.
+        if (molle == MolleItem.Kind.MAG && com.senne.imttech.armor.VestItem.isVest(Gear.vest(player))) {
+            List<ItemStack> vest = new ArrayList<>();
+            for (int j = 0; j < com.senne.imttech.armor.VestData.MAGS; j++) {
+                vest.add(at + j < all.size() ? all.get(at + j) : ItemStack.EMPTY);
+            }
+            com.senne.imttech.armor.Vests.setMagazines(player, vest);
+            at += com.senne.imttech.armor.VestData.MAGS;
         }
         List<ItemStack> pouches = worn(player);
         for (int i = 0; i < pouches.size(); i++) {
@@ -160,8 +176,14 @@ public final class Molle {
         return null;
     }
 
-    /** Dit item (helemaal) in een MOLLE-magazijn- of granaatpouch stoppen. Geeft false als het niet past. */
+    /**
+     * Dit item (helemaal) in een MOLLE-magazijn- of granaatpouch stoppen. Geeft false als het niet past. Sinds hoofdstuk 109
+     * gaat een magazijn of cel eerst in een leeg vakje van je vest (dat komt na je magazijnpouch, voor de MOLLE-pouches).
+     */
     public static boolean store(Player player, ItemStack stack) {
+        if (com.senne.imttech.armor.Vests.store(player, stack)) {
+            return true;
+        }
         List<ItemStack> pouches = worn(player);
         for (int i = 0; i < pouches.size(); i++) {
             ItemStack pouch = pouches.get(i);

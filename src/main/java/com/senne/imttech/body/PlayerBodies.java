@@ -103,6 +103,9 @@ public final class PlayerBodies {
         // Hoofdstuk 100: de keycard aan je nek.
         body.loot().setItem(PlayerBodyEntity.NECK, keep(Gear.neck(player)));
         Gear.setNeck(player, ItemStack.EMPTY);
+        // Hoofdstuk 109: je vest, met zijn plates en magazijnen (je ziet het op het lichaam, met de tekst op zijn rug).
+        body.loot().setItem(PlayerBodyEntity.VEST, keep(Gear.vest(player)));
+        Gear.setVest(player, ItemStack.EMPTY);
         Vec3 at = player.position();
         if (at.y < level.getMinBuildHeight()) {
             at = LAST_GROUND.getOrDefault(player.getUUID(), Vec3.atBottomCenterOf(level.getSharedSpawnPos()));
@@ -262,6 +265,13 @@ public final class PlayerBodies {
      */
     private static boolean restoreGear(ServerPlayer player, int index, ItemStack stack) {
         GearItem.Kind[] kinds = GearItem.Kind.values();
+        if (index == PlayerBodyEntity.VEST - PlayerBodyEntity.GEAR) {
+            // Hoofdstuk 109: je vest terug in je vest-vakje (in een oud lichaam lag hier iets van een andere mod: inventaris).
+            if (!com.senne.imttech.armor.VestItem.isVest(stack)) {
+                return player.getInventory().add(stack.copy());
+            }
+            return Gear.vest(player).isEmpty() && Gear.setVest(player, stack.copy());
+        }
         if (index == PlayerBodyEntity.NECK - PlayerBodyEntity.GEAR) {
             if (!Gear.neckAccepts(stack)) {
                 return player.getInventory().add(stack.copy());

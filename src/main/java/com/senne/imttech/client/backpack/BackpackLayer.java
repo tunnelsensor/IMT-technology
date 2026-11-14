@@ -74,7 +74,9 @@ public class BackpackLayer extends RenderLayer<AbstractClientPlayer, PlayerModel
         if (player.isCrouching()) {
             pose.translate(0, 0.05, 0);
         }
-        renderOnBack(pose, buffers, light, pack, player.level(), !player.getItemBySlot(EquipmentSlot.CHEST).isEmpty());
+        // Hoofdstuk 109: met een vest hangt de rugzak over het vest (verder naar achteren).
+        renderOnBack(pose, buffers, light, pack, player.level(), !player.getItemBySlot(EquipmentSlot.CHEST).isEmpty(),
+                com.senne.imttech.client.armor.VestRenderer.backDepth(player, com.senne.imttech.armor.Vests.worn(player)));
         pose.popPose();
     }
 
@@ -102,7 +104,9 @@ public class BackpackLayer extends RenderLayer<AbstractClientPlayer, PlayerModel
      */
     public static float slingShift(AbstractClientPlayer player) {
         BackpackItem.Size size = BackpackItem.sizeOf(Gear.back(player));
-        return size == null ? 0 : depth(size) + 0.02f;
+        // Hoofdstuk 109: een vest maakt je rug dikker; de rugzak (en het geweer erover) schuift zoveel naar achteren.
+        float vest = com.senne.imttech.client.armor.VestRenderer.backDepth(player, com.senne.imttech.armor.Vests.worn(player));
+        return size == null ? 0 : depth(size) + 0.02f + vest;
     }
 
     /**
@@ -110,6 +114,16 @@ public class BackpackLayer extends RenderLayer<AbstractClientPlayer, PlayerModel
      * omlaag, +z is je rug).
      */
     public static void renderOnBack(PoseStack pose, MultiBufferSource buffers, int light, ItemStack pack, Level level, boolean armour) {
+        renderOnBack(pose, buffers, light, pack, level, armour, 0);
+    }
+
+    /**
+     * Hoofdstuk 109: hetzelfde over een vest. {@code vestBack}: zoveel dikker maakt het vest je rug (blokken, 0 zonder vest);
+     * de rugzak hangt dan zoveel verder naar achteren, en zijn schouderbanden voor je borst tekenen we niet (die zouden
+     * door de magazijnvakjes van het vest lopen; je ziet de schouderbanden van het vest).
+     */
+    public static void renderOnBack(PoseStack pose, MultiBufferSource buffers, int light, ItemStack pack, Level level, boolean armour,
+                                    float vestBack) {
         BackpackItem.Size size = BackpackItem.sizeOf(pack);
         if (size == null) {
             return;
@@ -119,14 +133,16 @@ public class BackpackLayer extends RenderLayer<AbstractClientPlayer, PlayerModel
         // Het model staat rechtop met zijn voorkant naar -z; op je rug moet het ondersteboven (+y is hier omlaag) en
         // achterstevoren (de banden tegen je rug): samen een halve draai om de x-as.
         float top = a[2] + (a[0] - 8) / 16f;
-        float back = 0.13f + (armour ? 1 / 16f : 0) + (a[1] - 8) / 16f;
+        float back = 0.13f + (vestBack > 0 ? vestBack + 0.005f : armour ? 1 / 16f : 0) + (a[1] - 8) / 16f;
         pose.translate(0, top, back);
         pose.mulPose(Axis.XP.rotationDegrees(180));
         Minecraft.getInstance().getItemRenderer().renderStatic(pack, ItemDisplayContext.NONE, light, OverlayTexture.NO_OVERLAY,
                 pose, buffers, level, 0);
         renderPouches(pose, buffers, light, OverlayTexture.NO_OVERLAY, pack, level);
         pose.popPose();
-        renderStraps(pose, buffers, light, size, armour);
+        if (vestBack <= 0) {
+            renderStraps(pose, buffers, light, size, armour);
+        }
     }
 
     /**

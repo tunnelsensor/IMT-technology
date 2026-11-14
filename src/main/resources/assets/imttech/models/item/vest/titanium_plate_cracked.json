@@ -1,0 +1,6 @@
+{
+ "parent": "minecraft:item/generated",
+ "textures": {
+  "layer0": "imttech:item/vest/titanium_plate_cracked"
+ }
+}
