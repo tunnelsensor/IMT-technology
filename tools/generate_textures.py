@@ -4268,6 +4268,174 @@ def guard_drone_textures():
     save(im, "item/guard_drone.png")
 
 
+def rc_car_textures():
+    """
+    De RC Car (hoofdstuk 108, zie RcCarModel): een donker onderstel met een gele streep, een gele open laadbak achterop
+    (zijn kofferbak), een gele motorkap, zwarte wielen met een grijze naaf, een antenne, twee koplampen en een boor in
+    vier trapjes. De boor heeft de kleur van zijn boorkop (zie car/DrillHead): ijzer, steel, titanium of netherite, elk
+    een eigen textuur. Plus de lichtlaag (de koplampen en het lampje op de antenne) en de iconen in je rugzak: de auto
+    van opzij, de RC Controller, en de vier boorkoppen.
+    """
+    yellow, yellow_hi, yellow_dark = (232, 176, 40, 255), (250, 206, 84, 255), (176, 124, 22, 255)
+    chassis, chassis_hi, chassis_dark = (52, 56, 64, 255), (74, 80, 92, 255), (30, 33, 38, 255)
+    tyre, tyre_hi = (22, 22, 26, 255), (50, 50, 56, 255)
+    hub = (150, 156, 166, 255)
+    steel, steel_hi, steel_dark = (168, 176, 188, 255), (214, 220, 228, 255), (108, 116, 128, 255)
+    lamp, lamp_glow = (255, 244, 190, 255), (255, 250, 220, 255)
+    tex = img(64, 64)
+    glow = img(64, 64)
+
+    def paint(regions, color, top=None, bottom=None):
+        for region in regions.values():
+            fill_region(tex, region, color)
+        if top is not None:
+            fill_region(tex, regions["top"], top)
+        if bottom is not None:
+            fill_region(tex, regions["bottom"], bottom)
+
+    # Het onderstel (8 x 3 x 10): donker, met een gele streep over de zijkanten en een rooster vooraan.
+    body = box_regions(0, 0, 8, 3, 10)
+    paint(body, chassis, top=chassis_hi, bottom=chassis_dark)
+    for name in ("east", "west", "back"):
+        x, y, w, h = body[name]
+        for i in range(w):
+            tex.putpixel((x + i, y + 1), yellow)
+            tex.putpixel((x + i, y + h - 1), chassis_dark)
+    x, y, w, h = body["front"]
+    for i in range(w):
+        tex.putpixel((x + i, y), chassis_hi)
+        tex.putpixel((x + i, y + 1), chassis_dark if i % 2 == 0 else chassis)   # het rooster
+        tex.putpixel((x + i, y + 2), chassis_dark)
+
+    # De laadbak (6 x 3 x 6): geel, van boven open (donker vanbinnen, met een gele rand).
+    trunk = box_regions(0, 14, 6, 3, 6)
+    paint(trunk, yellow, top=chassis_dark, bottom=yellow_dark)
+    x, y, w, h = trunk["top"]
+    ImageDraw.Draw(tex).rectangle([x, y, x + w - 1, y + h - 1], outline=yellow_hi)
+    for name in ("east", "front", "west", "back"):
+        x, y, w, h = trunk[name]
+        for i in range(w):
+            tex.putpixel((x + i, y), yellow_hi)
+            tex.putpixel((x + i, y + h - 1), yellow_dark)
+
+    # De motorkap (6 x 1 x 4): geel, met twee donkere luchtgleufjes.
+    hood = box_regions(26, 14, 6, 1, 4)
+    paint(hood, yellow, top=yellow_hi, bottom=yellow_dark)
+    x, y, w, h = hood["top"]
+    px(tex, [(x + 1, y + 1), (x + 2, y + 1), (x + 3, y + 1), (x + 4, y + 1)], yellow_dark)
+    px(tex, [(x + 1, y + 2), (x + 4, y + 2)], yellow)
+
+    # De antenne (1 x 5 x 1): grijs, met een cyaan lampje bovenaan.
+    antenna = box_regions(48, 14, 1, 5, 1)
+    paint(antenna, hub)
+    fill_region(tex, antenna["top"], CYAN)
+    fill_region(glow, antenna["top"], CYAN)
+    for name in ("east", "front", "west", "back"):
+        x, y, w, h = antenna[name]
+        tex.putpixel((x, y), CYAN)
+        glow.putpixel((x, y), CYAN)
+
+    # Een koplamp (2 x 1 x 1): lichtgeel, en hij gloeit.
+    light = box_regions(48, 22, 2, 1, 1)
+    paint(light, chassis_dark)
+    fill_region(tex, light["front"], lamp)
+    fill_region(glow, light["front"], lamp_glow)
+
+    # Een wiel (2 x 4 x 4): een zwarte band met profiel, en op de zijkanten een grijze naaf.
+    wheel = box_regions(0, 26, 2, 4, 4)
+    paint(wheel, tyre)
+    for name in ("top", "bottom", "front", "back"):
+        x, y, w, h = wheel[name]
+        for yy in range(y, y + h, 2):
+            for xx in range(x, x + w):
+                tex.putpixel((xx, yy), tyre_hi)
+    for name in ("east", "west"):
+        x, y, w, h = wheel[name]
+        px(tex, [(x + 1, y + 1), (x + 2, y + 1), (x + 1, y + 2), (x + 2, y + 2)], hub)
+        px(tex, [(x, y), (x + 3, y), (x, y + 3), (x + 3, y + 3)], CLEAR)        # de hoekjes weg: een rond wiel
+
+    # De boor: vier trapjes metaal, met schuine donkere strepen (de groef). Elke boorkop heeft zijn eigen kleur (kleur,
+    # licht, donker), dus de auto heeft vier texturen: rc_car.png is de ijzeren kop van een nieuwe auto.
+    heads = {
+        "iron": ((204, 200, 192, 255), (240, 236, 228, 255), (138, 132, 124, 255)),
+        "steel": ((122, 132, 148, 255), (174, 184, 200, 255), (74, 82, 96, 255)),
+        "titanium": ((146, 188, 220, 255), (212, 236, 250, 255), (80, 120, 156, 255)),
+        "netherite": ((78, 68, 72, 255), (124, 110, 114, 255), (40, 34, 38, 255)),
+    }
+    base = tex
+    for head, (metal, metal_hi, metal_dark) in heads.items():
+        tex = base.copy()   # paint() hierboven tekent op "tex": dus nu op deze kopie
+        for u, w, d in ((14, 4, 2), (28, 3, 2), (40, 2, 1), (50, 1, 1)):
+            part = box_regions(u, 26, w, w, d)
+            paint(part, metal, top=metal_hi, bottom=metal_dark)
+            for name in ("east", "west", "top", "bottom"):
+                x, y, rw, rh = part[name]
+                for xx in range(x, x + rw):
+                    for yy in range(y, y + rh):
+                        if (xx + yy) % 2 == 0:
+                            tex.putpixel((xx, yy), metal_dark)
+            fill_region(tex, part["front"], metal_hi)
+            x, y, rw, rh = part["front"]
+            if rw >= 3:
+                ImageDraw.Draw(tex).rectangle([x, y, x + rw - 1, y + rh - 1], outline=metal)
+        save(tex, "entity/rc_car.png" if head == "iron" else "entity/rc_car_%s.png" % head)
+
+        # Het icoon van deze boorkop: een kegel met de punt omhoog en een schuine groef, op een donkere kraag met een
+        # gele ring (de kleur van de auto).
+        im = img(16, 16)
+        for y in range(1, 11):
+            half = 1 + (y - 1) // 2                      # de kegel wordt naar onder breder: 2, 2, 4, 4, ... 10 pixels
+            for x in range(8 - half, 8 + half):
+                stripe = (x + y) % 4
+                im.putpixel((x, y), metal_dark if stripe == 0 else metal_hi if stripe == 1 else metal)
+            im.putpixel((8 - half, y), metal_dark)        # de linkerrand donker, de rechterrand licht: een ronde kegel
+            im.putpixel((8 + half - 1, y), metal_hi if y > 2 else metal)
+        d = ImageDraw.Draw(im)
+        d.rectangle([4, 11, 11, 11], fill=chassis_dark)   # de kraag
+        d.rectangle([5, 12, 10, 12], fill=yellow)         # de gele ring
+        d.rectangle([5, 13, 10, 13], fill=chassis)
+        d.rectangle([6, 14, 9, 14], fill=chassis_dark)    # de as
+        px(im, [(5, 12)], yellow_dark)
+        px(im, [(10, 12)], yellow_hi)
+        save(im, "item/%s_drill_head.png" % head)
+    save(glow, "entity/rc_car_glow.png")
+
+    # Het icoon van de auto: van opzij, de boor naar rechts.
+    im = img(16, 16)
+    d = ImageDraw.Draw(im)
+    d.line([4, 3, 4, 6], fill=hub)                                   # antenne
+    px(im, [(4, 2)], CYAN)
+    d.rectangle([2, 6, 7, 9], fill=yellow, outline=yellow_dark)      # laadbak
+    d.line([3, 6, 6, 6], fill=yellow_hi)
+    d.rectangle([8, 8, 11, 9], fill=yellow_hi)                       # motorkap
+    d.rectangle([1, 10, 12, 11], fill=chassis)                       # onderstel
+    d.line([1, 10, 12, 10], fill=chassis_hi)
+    px(im, [(12, 9)], lamp)                                          # koplamp
+    d.polygon([(12, 8), (12, 11), (15, 10), (15, 9)], fill=steel)    # boor
+    px(im, [(13, 9), (14, 10)], steel_dark)
+    px(im, [(13, 10), (14, 9), (15, 9)], steel_hi)
+    for cx in (4, 10):                                               # wielen
+        d.ellipse([cx - 2, 10, cx + 2, 14], fill=tyre, outline=tyre_hi)
+        px(im, [(cx, 12)], hub)
+    save(im, "item/rc_car.png")
+
+    # Het icoon van de RC Controller: een grijs kastje met twee handvatten, een antenne, een kruisje en twee knoppen.
+    im = img(16, 16)
+    d = ImageDraw.Draw(im)
+    d.line([11, 6, 12, 2], fill=hub)                                 # antenne
+    px(im, [(12, 1)], CYAN)
+    d.rectangle([2, 6, 13, 11], fill=chassis, outline=chassis_dark)  # kastje
+    d.line([3, 6, 12, 6], fill=chassis_hi)
+    d.rectangle([2, 11, 4, 13], fill=chassis, outline=chassis_dark)  # handvatten
+    d.rectangle([11, 11, 13, 13], fill=chassis, outline=chassis_dark)
+    px(im, [(4, 8), (5, 8), (6, 8), (5, 7), (5, 9)], steel_hi)       # kruisje
+    d.rectangle([7, 8, 8, 9], fill=CYAN_DARK)                        # schermpje
+    px(im, [(7, 8)], CYAN)
+    px(im, [(10, 8)], yellow)                                        # knoppen
+    px(im, [(11, 9)], RED)
+    save(im, "item/rc_controller.png")
+
+
 def training_block_textures():
     """
     De trainingsblokken (hoofdstuk 26): Training Start (een groen afspeel-driehoekje in een cyaan ring), Training End
@@ -4416,4 +4584,5 @@ if __name__ == "__main__":
     robot_ammo()
     ion_blaster()
     guard_drone_textures()
+    rc_car_textures()
     training_block_textures()

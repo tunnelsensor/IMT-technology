@@ -91,6 +91,19 @@ public final class ModEntities {
                     .fireImmune()
                     .build("guard_drone"));
 
+    /**
+     * Hoofdstuk 108: de RC Car, het autootje dat je programmeert om te mijnen en te bouwen. Klein genoeg voor een gang
+     * van één blok breed en één blok hoog. MISC: je torentjes laten hem met rust, en hij verdwijnt nooit vanzelf.
+     */
+    public static final DeferredHolder<EntityType<?>, EntityType<com.senne.imttech.car.RcCarEntity>> RC_CAR =
+            ENTITIES.register("rc_car", () -> EntityType.Builder
+                    .<com.senne.imttech.car.RcCarEntity>of(com.senne.imttech.car.RcCarEntity::new, MobCategory.MISC)
+                    .sized(0.7f, 0.55f)
+                    .eyeHeight(0.4f)
+                    .clientTrackingRange(10)
+                    .fireImmune()
+                    .build("rc_car"));
+
     /** Een mini-raket uit het raketpakket van het harnas. */
     public static final DeferredHolder<EntityType<?>, EntityType<MiniRocketEntity>> MINI_ROCKET = ENTITIES.register(
             "mini_rocket", () -> EntityType.Builder.<MiniRocketEntity>of(MiniRocketEntity::new, MobCategory.MISC)
@@ -192,5 +205,6 @@ public final class ModEntities {
         event.put(SECURITY_DRONE.get(), com.senne.imttech.security.SecurityDroneEntity.createAttributes().build());
         event.put(GUARD_ROBOT.get(), GuardRobotEntity.createAttributes().build());
         event.put(GUARD_DRONE.get(), com.senne.imttech.robot.GuardDroneEntity.createAttributes().build());
+        event.put(RC_CAR.get(), com.senne.imttech.car.RcCarEntity.createAttributes().build());
     }
 }

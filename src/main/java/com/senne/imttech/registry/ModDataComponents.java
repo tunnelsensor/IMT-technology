@@ -166,6 +166,18 @@ public final class ModDataComponents {
                     .persistent(com.senne.imttech.robot.DroneData.CODEC)
                     .networkSynchronized(com.senne.imttech.robot.DroneData.STREAM_CODEC));
 
+    /** Hoofdstuk 108: wat er in een RC Car-item zit (naam, programma, energiecel, kofferbak; zie RcCarData). */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.imttech.car.RcCarData>> RC_CAR_DATA =
+            COMPONENTS.registerComponentType("rc_car_data", builder -> builder
+                    .persistent(com.senne.imttech.car.RcCarData.CODEC)
+                    .networkSynchronized(com.senne.imttech.car.RcCarData.STREAM_CODEC));
+
+    /** Hoofdstuk 108: met welke RC Car een RC Controller gekoppeld is (zie RcLink). */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.imttech.car.RcLink>> RC_LINK =
+            COMPONENTS.registerComponentType("rc_link", builder -> builder
+                    .persistent(com.senne.imttech.car.RcLink.CODEC)
+                    .networkSynchronized(com.senne.imttech.car.RcLink.STREAM_CODEC));
+
     /**
      * Hoofdstuk 35: wat een EMP Trigger onthoudt (zijn nummer en waar zijn Remote EMP's zitten). Hetzelfde soort gegevens
      * als bij de Frag Trigger, maar apart, zodat een EMP Trigger nooit een Remote Frag laat afgaan en andersom.

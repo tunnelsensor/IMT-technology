@@ -119,8 +119,9 @@ public final class ScriptChecker {
     }
 
     /**
-     * "keycard(...) only works in a server diagram, not in a robot program", of (hoofdstuk 25) "forward() only works
-     * in a robot program or a drone program, not in a server diagram". {@code allowed} zegt in welke soorten het wel werkt.
+     * "keycard(...) only works in a server diagram, not in a robot program", of (hoofdstuk 25 en 108) "forward() only
+     * works in a robot program, a drone program or a car program, not in a server diagram". {@code allowed} zegt in welke
+     * soorten het wel werkt.
      */
     static String wrongKind(String what, ProgramKind kind, java.util.function.Predicate<ProgramKind> allowed) {
         List<String> where = new ArrayList<>();
@@ -129,8 +130,11 @@ public final class ScriptChecker {
                 where.add("a " + other.noun());
             }
         }
-        return what + " only works in " + (where.isEmpty() ? "another kind of program" : String.join(" or ", where))
-                + ", not in a " + kind.noun();
+        // "a, b or c": komma's ertussen, en "or" voor de laatste.
+        String list = where.isEmpty() ? "another kind of program"
+                : where.size() == 1 ? where.getFirst()
+                : String.join(", ", where.subList(0, where.size() - 1)) + " or " + where.getLast();
+        return what + " only works in " + list + ", not in a " + kind.noun();
     }
 
     /** Iets dat een def gebruikt maar niet overal werkt: wat het is, en waar het wel werkt. */

@@ -14,6 +14,11 @@ import java.util.Locale;
  *       maar hij vliegt, dus hij kan ook omhoog en omlaag ({@code up(3)}, {@code down(1)}).</li>
  *   <li><b>TRAINING_END</b> (hoofdstuk 26): het programmaatje in een Training End-blok. Alleen {@code when trainee_hit:} (de
  *       trainee is geraakt), met {@code trainee}, {@code lives} en {@code hits}; het draait op je server.</li>
+ *   <li><b>CAR</b> (hoofdstuk 108): het programma van een RC Car, het autootje dat voor je mijnt en bouwt. Je schrijft
+ *       het op de auto zelf (sneak + rechtsklik, Program), niet in de app Logic: de auto heeft geen server nodig. Het
+ *       kent rijden ({@code forward(3)}, {@code turn_left()}), breken ({@code mine()}, {@code mine_up()}), plaatsen
+ *       ({@code place()}), oprapen en lossen ({@code collect()}, {@code unload()}), en {@code car.battery},
+ *       {@code block()}... Elke def zonder parameters is een functie op de RC Controller.</li>
  * </ul>
  * Welke woorden in welke soort mogen, staat bij elk blokje ({@link Op#allowedIn}) en elk gegeven
  * ({@code Expr.Variable}); ScriptChecker kijkt het na.
@@ -22,7 +27,8 @@ public enum ProgramKind {
     SERVER("Server diagram", "server diagram"),
     ROBOT("Robot program", "robot program"),
     DRONE("Drone program", "drone program"),
-    TRAINING_END("Training End program", "Training End program");
+    TRAINING_END("Training End program", "Training End program"),
+    CAR("RC Car program", "car program");
 
     private final String title;
     private final String noun;

@@ -354,7 +354,7 @@ public final class ScriptParser {
         }
         if (op == null && Expr.Function.byName(call.name()) != null) {
             throw new LogicException(line.number(), call.name() + "(...) gives a value: use it in an if or after =, like "
-                    + (call.name().equals("pin") ? "scanPin = pin(1)" : "if read(scanPin):"));
+                    + Expr.Function.byName(call.name()).example());
         }
         if (op == null) {
             throw new LogicException(line.number(), unknown(call.name()));
@@ -700,7 +700,8 @@ public final class ScriptParser {
 
     /** Hoe een when in deze soort programma begint, voor de foutmeldingen. */
     private String exampleWhen() {
-        return kind.onBot() ? "when started:" : kind == ProgramKind.TRAINING_END ? "when trainee_hit:" : "when keycard(\"Lab door\"):";
+        return kind.onBot() || kind == ProgramKind.CAR ? "when started:"
+                : kind == ProgramKind.TRAINING_END ? "when trainee_hit:" : "when keycard(\"Lab door\"):";
     }
 
     /** De triggers die in deze soort programma bestaan: "keycard, codepanel, turned_on, turned_off, every, message". */

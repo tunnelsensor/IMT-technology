@@ -86,6 +86,7 @@ package com.senne.imttech.config;
  *   Bypass ....... inbreken met de Bypass Kit, en zakkenrollen
  *   Lights ....... de Arc Lamp
  *   Robots ....... guard robots: wat elk onderdeel doet (hoofdstuk 21)
+ *   RcCar ........ de RC Car: het autootje dat je programmeert om te mijnen en te bouwen (hoofdstuk 108)
  *   Raven ........ Raven-soldaten
  *   Guards ....... bewakers zoals in Hitman: zien, horen, de radio, zoeken, lichamen (hoofdstuk 60)
  *   Raids ........ vijandige raiddrones
@@ -1985,6 +1986,57 @@ public final class ImtConfig {
         /** Zo lang (ticks) geeft een Training End-blok redstone na een treffer. */
         @Tunable(value = "Ticks a Training End block gives a redstone signal after each hit", min = 1, max = 200)
         public static float END_PULSE = 10.0f;
+    }
+
+    // =============================================================================================== RcCar
+
+    @Section("The RC Car (chapter 108): the little car you program to mine and build. It runs on an Energy Cell")
+    public static final class RcCar {
+        private RcCar() {}
+
+        /** Mag een RC Car blokken breken en plaatsen? Uit = hij rijdt alleen nog. */
+        @Tunable("May RC Cars break and place blocks? Set this to false on a server where players must mine and build "
+                + "themselves: the cars then only drive.")
+        public static boolean MAY_CHANGE_BLOCKS = true;
+        /** Zo snel rijdt hij (blokken per seconde). */
+        @Tunable(value = "How fast an RC Car drives (blocks per second)", min = 0.5, max = 10)
+        public static float SPEED = 2.5f;
+        /**
+         * Hoe snel zijn boor breekt met de beste kop (netherite): 1 = even snel als jij met ijzeren gereedschap (pickaxe,
+         * schep of bijl). De andere koppen zijn een deel hiervan: zie drillSpeed... hieronder.
+         */
+        @Tunable(value = "How fast the drill of an RC Car breaks blocks, for every drill head (1 = a Netherite Drill Head is as "
+                + "fast as you with iron tools, 2 = twice as fast)", min = 0.1, max = 20)
+        public static float MINE_SPEED = 1.0f;
+        /** De ijzeren boorkop (de kop van een nieuwe auto): een kwart van de snelheid van netherite. */
+        @Tunable(value = "Speed of the Iron Drill Head, the one a new RC Car has (1 = full speed, 0.25 = four times as slow)",
+                min = 0.01, max = 10)
+        public static float DRILL_SPEED_IRON = 0.25f;
+        /** De stalen boorkop. */
+        @Tunable(value = "Speed of the Steel Drill Head (1 = full speed)", min = 0.01, max = 10)
+        public static float DRILL_SPEED_STEEL = 0.4f;
+        /** De titanium boorkop (die breekt ook obsidiaan). */
+        @Tunable(value = "Speed of the Titanium Drill Head (1 = full speed)", min = 0.01, max = 10)
+        public static float DRILL_SPEED_TITANIUM = 0.65f;
+        /** De netherite boorkop: de volle snelheid. */
+        @Tunable(value = "Speed of the Netherite Drill Head (1 = full speed)", min = 0.01, max = 10)
+        public static float DRILL_SPEED_NETHERITE = 1.0f;
+        /** Stroom uit zijn energiecel voor één blok rijden. */
+        @Tunable(value = "Energy an RC Car uses to drive one block (from its Energy Cell)", max = 100_000, energy = true)
+        public static float MOVE_COST = 10.0f;
+        /** Stroom voor één blok breken, per punt hardheid (steen is 1,5, aarde 0,5, deepslate 3). */
+        @Tunable(value = "Energy an RC Car uses to break a block, per point of hardness (stone = 1.5, dirt = 0.5, deepslate = 3)",
+                max = 100_000, energy = true)
+        public static float MINE_COST = 30.0f;
+        /** Stroom voor één blok plaatsen. */
+        @Tunable(value = "Energy an RC Car uses to place one block", max = 100_000, energy = true)
+        public static float PLACE_COST = 10.0f;
+        /** Zo ver (blokken) reikt de RC Controller. */
+        @Tunable(value = "How far the RC Controller reaches (blocks)", min = 4, max = 512)
+        public static float CONTROL_RANGE = 64.0f;
+        /** Zo ver rond zichzelf (blokken) raapt hij op met collect(). */
+        @Tunable(value = "How far around itself an RC Car picks up items with collect() (blocks)", min = 0.5, max = 16)
+        public static float COLLECT_RANGE = 2.5f;
     }
 
     // =============================================================================================== Raven

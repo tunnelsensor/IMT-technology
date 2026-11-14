@@ -267,6 +267,13 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.ROBOT_DOCK.get());
                 output.accept(ModItems.GUARD_ROBOT.get());
                 output.accept(ModItems.GUARD_DRONE.get());
+                // Hoofdstuk 108: de RC Car, zijn controller en zijn boorkoppen.
+                output.accept(ModItems.RC_CAR.get());
+                output.accept(ModItems.RC_CONTROLLER.get());
+                output.accept(ModItems.IRON_DRILL_HEAD.get());
+                output.accept(ModItems.STEEL_DRILL_HEAD.get());
+                output.accept(ModItems.TITANIUM_DRILL_HEAD.get());
+                output.accept(ModItems.NETHERITE_DRILL_HEAD.get());
                 output.accept(ModItems.SOLDERING_IRON.get());
                 output.accept(ModItems.ROBOT_AMMO.get());
                 output.accept(ModItems.GUARD_ROBOT_SPAWN_EGG.get());

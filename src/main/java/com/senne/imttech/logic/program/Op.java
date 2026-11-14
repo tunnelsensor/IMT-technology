@@ -34,7 +34,7 @@ public enum Op {
     TURNED_OFF(Kind.TRIGGER, "turned_off", Arg.DEVICE, Arg.NONE, "This relay (or laser, dome, turret) is switched off"),
     EVERY(Kind.TRIGGER, "every", Arg.NONE, Arg.NUMBER, "Every so many seconds"),
     /** {@code when started:} (hoofdstuk 23): een robotprogramma begint. Zonder haakjes: er hoort niets bij. */
-    STARTED(Kind.TRIGGER, "started", Arg.NONE, Arg.NONE, "The robot (or drone) is switched on (or gets this program)"),
+    STARTED(Kind.TRIGGER, "started", Arg.NONE, Arg.NONE, "The robot (or drone) is switched on (or gets this program). An RC car: you press Start"),
     /** {@code when ordered("attack"):} (hoofdstuk 23): de server geeft deze robot een opdracht met order(...). */
     ORDERED(Kind.TRIGGER, "ordered", Arg.TEXT, Arg.NONE, "The server gives this robot (or drone) an order with order(...)"),
     /** Hoofdstuk 60: de zintuigen van een bewaker, voor je eigen robots en drones (zie bot/BotAlert). */
@@ -80,9 +80,9 @@ public enum Op {
 
     // ---------------------------------------------------------------- Een robot (hoofdstuk 23) of drone (hoofdstuk 25)
     /** {@code forward(3)}: zoveel blokken vooruit, blok voor blok. */
-    FORWARD(Kind.ACTION, "forward", Arg.NONE, Arg.NUMBER, "Walk (a drone: fly) this many blocks forward"),
+    FORWARD(Kind.ACTION, "forward", Arg.NONE, Arg.NUMBER, "Walk (a drone: fly, a car: drive) this many blocks forward"),
     /** {@code back(1)}: zoveel blokken achteruit (hij blijft dezelfde kant op kijken). */
-    BACK(Kind.ACTION, "back", Arg.NONE, Arg.NUMBER, "Walk (or fly) this many blocks backwards (still looking the same way)"),
+    BACK(Kind.ACTION, "back", Arg.NONE, Arg.NUMBER, "Walk (or fly, or drive) this many blocks backwards (still looking the same way)"),
     TURN_LEFT(Kind.ACTION, "turn_left", Arg.NONE, Arg.NONE, "Turn a quarter to the left"),
     TURN_RIGHT(Kind.ACTION, "turn_right", Arg.NONE, Arg.NONE, "Turn a quarter to the right"),
     /** {@code up(3)} (hoofdstuk 25): een drone vliegt zoveel blokken omhoog. */
@@ -94,7 +94,7 @@ public enum Op {
     /** {@code charge()} of {@code charge(80)}: naar het dock, laden tot zoveel procent, en terug. */
     CHARGE(Kind.ACTION, "charge", Arg.NONE, Arg.OPTIONAL_NUMBER, "Go to the dock, charge (to 100%, or charge(80)) and come back"),
     /** {@code stop()}: zichzelf uitzetten; hij gaat naar zijn dock en blijft daar. */
-    STOP(Kind.ACTION, "stop", Arg.NONE, Arg.NONE, "Switch yourself off: go back to the dock and stay there"),
+    STOP(Kind.ACTION, "stop", Arg.NONE, Arg.NONE, "Switch yourself off: go back to the dock and stay there (an RC car: stop its program here)"),
     /** {@code write(laserPin, true)}: een pin aan of uit zetten (of een filter geven). De waarden (pin, waarde) staan in expr. */
     WRITE(Kind.ACTION, "write", Arg.VALUES, Arg.NONE, "Switch the module on a pin on or off: write(laserPin, true)"),
     /**
@@ -104,6 +104,31 @@ public enum Op {
     AIM(Kind.ACTION, "aim", Arg.VALUES, Arg.NONE, "Point its weapons at a place: aim(x, y, z). aim() points them at whom the Scan sees again"),
     /** {@code send("intruder")}: een bericht naar de server; daar begint {@code when message("intruder"):}. */
     SEND(Kind.ACTION, "send", Arg.TEXT, Arg.NONE, "Send the server a message: its when message(...) starts"),
+
+    // ---------------------------------------------------------------- Een RC Car (hoofdstuk 108)
+    /**
+     * {@code mine()}: het blok vóór de auto breken (jouw wens: "breek voor jou, stap naar voor, breek boven jou").
+     * {@code mine(2)}: de twee blokken voor hem, het dichtste eerst (zijn boor reikt hooguit {@link #maxNumber} ver).
+     * Wat eruit valt, gaat in zijn kofferbak.
+     */
+    MINE(Kind.ACTION, "mine", Arg.NONE, Arg.OPTIONAL_NUMBER, "Break the block in front of the car: it goes into its trunk. mine(2): two blocks"),
+    /** {@code mine_up()}: het blok boven de auto; {@code mine_up(2)}: de twee blokken boven hem (een gang van 3 hoog). */
+    MINE_UP(Kind.ACTION, "mine_up", Arg.NONE, Arg.OPTIONAL_NUMBER, "Break the block above the car. mine_up(2): the two above it (a tunnel 3 high)"),
+    /** {@code mine_down()}: het blok onder de auto: hij zakt dan in het gat. */
+    MINE_DOWN(Kind.ACTION, "mine_down", Arg.NONE, Arg.OPTIONAL_NUMBER, "Break the block under the car: it drops into the hole"),
+    /**
+     * {@code place()}: een blok uit zijn kofferbak vóór de auto zetten (het eerste dat hij vindt), of
+     * {@code place("cobblestone")}: dat soort blok. De waarde staat in expr.
+     */
+    PLACE(Kind.ACTION, "place", Arg.VALUES, Arg.NONE, "Put a block from its trunk in front of the car. place(\"dirt\") takes that kind"),
+    /** {@code place_up()}: een blok boven de auto zetten (een plafond). */
+    PLACE_UP(Kind.ACTION, "place_up", Arg.VALUES, Arg.NONE, "Put a block from its trunk above the car"),
+    /** {@code place_down()}: een blok onder zichzelf zetten: de auto komt één blok hoger te staan (zoals jij een pilaar bouwt). */
+    PLACE_DOWN(Kind.ACTION, "place_down", Arg.VALUES, Arg.NONE, "Put a block under the car: it ends one block higher (a pillar)"),
+    /** {@code collect()}: wat er rond de auto op de grond ligt, gaat in zijn kofferbak. */
+    COLLECT(Kind.ACTION, "collect", Arg.NONE, Arg.NONE, "Pick up the items that lie around the car"),
+    /** {@code unload()}: de kofferbak leegmaken in de kist vóór de auto (geen kist: op de grond voor hem). */
+    UNLOAD(Kind.ACTION, "unload", Arg.NONE, Arg.NONE, "Empty the trunk into the chest in front of the car (no chest: onto the ground)"),
 
     // ---------------------------------------------------------------- De server geeft robots opdrachten (hoofdstuk 23)
     /**
@@ -225,10 +250,10 @@ public enum Op {
         }
     }
 
-    /** Wat het getal van dit blokje telt: "seconds" (wait, pulse, every), "blocks" (forward, back, up, down) of "percent" (charge). */
+    /** Wat het getal van dit blokje telt: "seconds" (wait, pulse, every), "blocks" (forward, back, up, down, mine) of "percent" (charge). */
     public String unit() {
         return switch (this) {
-            case FORWARD, BACK, UP, DOWN -> "blocks";
+            case FORWARD, BACK, UP, DOWN, MINE, MINE_UP, MINE_DOWN -> "blocks";
             case CHARGE -> "percent";
             default -> "seconds";
         };
@@ -237,7 +262,7 @@ public enum Op {
     /** Het kleinste en grootste getal dat dit blokje aanneemt. */
     public double minNumber() {
         return switch (this) {
-            case EVERY, FORWARD, BACK, UP, DOWN, CHARGE -> 1;
+            case EVERY, FORWARD, BACK, UP, DOWN, CHARGE, MINE, MINE_UP, MINE_DOWN -> 1;
             default -> 0.05;
         };
     }
@@ -247,6 +272,8 @@ public enum Op {
             case EVERY -> 3600;
             case WAIT -> 600;
             case FORWARD, BACK, UP, DOWN -> 64;
+            // Zo ver reikt de boor van een RC Car (hoofdstuk 108): mine_up(2) maakt een gang van 3 hoog.
+            case MINE, MINE_UP, MINE_DOWN -> 3;
             case CHARGE -> 100;
             default -> 60;
         };
@@ -303,6 +330,9 @@ public enum Op {
         if (this == ORDER) {
             return "order(\"|\", \"attack\")";
         }
+        if (this == MINE || this == MINE_UP || this == MINE_DOWN) {
+            return code + "()"; // meestal één blok: het getal (mine(2)) mag erbij
+        }
         if (text == Arg.VALUES) {
             return code + "(|)";
         }
@@ -325,6 +355,7 @@ public enum Op {
             case GOTO, AIM -> new String[] {"x", "y", "z"};
             case WRITE -> new String[] {"pin", "value"};
             case ORDER -> new String[] {"robot", "order", "x", "y", "z"};
+            case PLACE, PLACE_UP, PLACE_DOWN -> new String[] {"block"};
             default -> new String[0];
         };
     }
@@ -335,13 +366,18 @@ public enum Op {
             case GOTO, AIM -> new Expr.Type[] {Expr.Type.NUMBER, Expr.Type.NUMBER, Expr.Type.NUMBER};
             case WRITE -> new Expr.Type[] {Expr.Type.NUMBER, Expr.Type.ANY};
             case ORDER -> new Expr.Type[] {Expr.Type.TEXT, Expr.Type.TEXT, Expr.Type.NUMBER, Expr.Type.NUMBER, Expr.Type.NUMBER};
+            case PLACE, PLACE_UP, PLACE_DOWN -> new Expr.Type[] {Expr.Type.TEXT};
             default -> new Expr.Type[0];
         };
     }
 
-    /** Hoeveel waarden er minstens moeten zijn; de rest mag weg (bij order: de plek; bij aim: alles). */
+    /** Hoeveel waarden er minstens moeten zijn; de rest mag weg (bij order: de plek; bij aim en place: alles). */
     public int requiredValues() {
-        return this == ORDER ? 2 : this == AIM ? 0 : valueNames().length;
+        return switch (this) {
+            case ORDER -> 2;
+            case AIM, PLACE, PLACE_UP, PLACE_DOWN -> 0;
+            default -> valueNames().length;
+        };
     }
 
     /** Hoe je het schrijft, voor de foutmeldingen: {@code goto(10, 64, -20)}. */
@@ -351,6 +387,7 @@ public enum Op {
             case WRITE -> "write(laserPin, true)";
             case AIM -> "aim(10, 64, -20) or aim()";
             case ORDER -> "order(\"Guard 1\", \"attack\") or order(\"Guard 1\", \"attack\", 10, 64, -20)";
+            case PLACE, PLACE_UP, PLACE_DOWN -> code + "() or " + code + "(\"cobblestone\")";
             default -> code + "()";
         };
     }
@@ -359,7 +396,8 @@ public enum Op {
      * Mag dit blokje in deze soort programma (hoofdstuk 23)? Wat met lezers, panelen, relais-triggers en het
      * besturen van robots te maken heeft, hoort bij de server; lopen, pinnen en berichten sturen bij een robot
      * of een drone; omhoog en omlaag alleen bij een drone (hoofdstuk 25). De rest werkt overal (een robot schakelt
-     * relais via de server).
+     * relais via de server). Een RC Car (hoofdstuk 108) rijdt, breekt en plaatst; hij heeft geen server, dus geen relais,
+     * geen logboek en geen alarm, en geen {@code every}: hij doet alleen wat jij start.
      */
     public boolean allowedIn(ProgramKind kind) {
         return switch (this) {
@@ -368,10 +406,14 @@ public enum Op {
             // Robots en squads aansturen kan ook een Training End-blok (hoofdstuk 26: deactivate("Wave 1")).
             case ORDER, ACTIVATE, DEACTIVATE -> kind == ProgramKind.SERVER || kind == ProgramKind.TRAINING_END;
             case HIT -> kind == ProgramKind.TRAINING_END;
-            // Een Training End-blok doet alleen iets bij een treffer.
-            case EVERY -> kind != ProgramKind.TRAINING_END;
-            case STARTED, ORDERED, HEARD, SPOTTED, BODY_SEEN, FORWARD, BACK, TURN_LEFT, TURN_RIGHT, GOTO, CHARGE, STOP, WRITE, AIM, SEND -> kind.onBot();
+            // Een Training End-blok doet alleen iets bij een treffer; een RC Car alleen wat jij start.
+            case EVERY -> kind != ProgramKind.TRAINING_END && kind != ProgramKind.CAR;
+            case STARTED, FORWARD, BACK, TURN_LEFT, TURN_RIGHT, STOP -> kind.onBot() || kind == ProgramKind.CAR;
+            case ORDERED, HEARD, SPOTTED, BODY_SEEN, GOTO, CHARGE, WRITE, AIM, SEND -> kind.onBot();
             case UP, DOWN -> kind == ProgramKind.DRONE;
+            case MINE, MINE_UP, MINE_DOWN, PLACE, PLACE_UP, PLACE_DOWN, COLLECT, UNLOAD -> kind == ProgramKind.CAR;
+            // Wat via je server gaat (relais, het logboek, het alarm): een RC Car heeft geen server.
+            case ON, OFF, TOGGLE, PULSE, ALARM, LOG -> kind != ProgramKind.CAR;
             default -> true;
         };
     }

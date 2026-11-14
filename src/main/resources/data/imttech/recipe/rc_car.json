@@ -1,0 +1,36 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "D": {
+      "item": "imttech:iron_drill_head"
+    },
+    "C": {
+      "item": "imttech:computer_chip"
+    },
+    "H": {
+      "tag": "c:chests/wooden"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "B": {
+      "item": "imttech:robot_circuit_board"
+    },
+    "L": {
+      "item": "imttech:plastic"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    }
+  },
+  "pattern": [
+    "DCH",
+    "IBI",
+    "LRL"
+  ],
+  "result": {
+    "id": "imttech:rc_car",
+    "count": 1
+  }
+}

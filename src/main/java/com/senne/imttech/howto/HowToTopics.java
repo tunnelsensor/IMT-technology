@@ -169,6 +169,11 @@ public final class HowToTopics {
                     () -> concat(ModItems.ROBOT_MODULES.values().stream().map(module -> (Item) module.get()).toList(),
                             List.of(ModItems.ROBOT_CIRCUIT_BOARD.get(), ModItems.SOLDERING_IRON.get()))),
             topic("security_drones", "robots", "Security drones", RobotScenes::drones, ModItems.GUARD_DRONE, ModItems.DRONE_DOCK),
+            // Hoofdstuk 108: de RC Car, het autootje dat je programmeert om te mijnen en te bouwen, zijn controller en
+            // zijn boorkoppen.
+            topic("rc_car", "robots", "RC Car", com.senne.imttech.howto.scenes.CarScenes::rcCar, ModItems.RC_CAR,
+                    ModItems.RC_CONTROLLER, ModItems.IRON_DRILL_HEAD, ModItems.STEEL_DRILL_HEAD, ModItems.TITANIUM_DRILL_HEAD,
+                    ModItems.NETHERITE_DRILL_HEAD),
             topic("training", "robots", "Training", TrainingScenes::training, ModItems.TRAINING_START, ModItems.TRAINING_END,
                     ModItems.TRAINING_GOAL),
             // ------------------------------------------------------------ Datacenter

@@ -1415,7 +1415,7 @@ public final class LogicGameTests {
         expectError("when every(5):\n    aim(1, 2, 3)", 2, "aim() only works in a robot program");
 
         // Elk woord alleen in zijn eigen soort programma.
-        expectError("when started:\n    pass", 1, "when started: only works in a robot program or a drone program, not in a server diagram");
+        expectError("when started:\n    pass", 1, "when started: only works in a robot program, a drone program or a car program, not in a server diagram");
         expectError("when every(5):\n    forward(3)", 2, "forward() only works in a robot program");
         expectError("when every(5):\n    if read(1):\n        pass", 2, "read(...) only works in a robot program");
         expectError("when every(5):\n    if robot.battery < 10:\n        pass", 2, "robot.battery only works in a robot program");

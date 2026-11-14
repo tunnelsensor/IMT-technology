@@ -53,6 +53,9 @@ bunkers to raid.
   circuit board, and program what they see, where they go and when they shoot.
 - Programmable security drones with their own dock, squads, and training sessions with lives
   instead of health.
+- The RC Car: a little car with a drill and a trunk that mines and builds what you program, from
+  scratch: `mine()`, `forward(1)`, `mine_up()` in a loop is a mining tunnel. Every function you write
+  is a button on its RC Controller. Four drill heads, from iron (slow) to netherite (fast).
 
 **Weapons and gear**
 - Real firearms you build from six parts that wear and jam: the Glock 19, the MP5, the AK-47, the AWP (bolt

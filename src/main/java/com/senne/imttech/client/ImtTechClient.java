@@ -239,6 +239,7 @@ public class ImtTechClient {
         event.registerEntityRenderer(ModEntities.SECURITY_DRONE.get(), com.senne.imttech.client.drone.SecurityDroneRenderer::new);
         event.registerEntityRenderer(ModEntities.GUARD_ROBOT.get(), com.senne.imttech.client.robot.GuardRobotRenderer::new);
         event.registerEntityRenderer(ModEntities.GUARD_DRONE.get(), com.senne.imttech.client.robot.GuardDroneRenderer::new);
+        event.registerEntityRenderer(ModEntities.RC_CAR.get(), com.senne.imttech.client.car.RcCarRenderer::new);
         event.registerEntityRenderer(ModEntities.ROLLING_EMP_GRENADE.get(), com.senne.imttech.client.weapons.GrenadeRenderer::new);
         event.registerEntityRenderer(ModEntities.STICKY_EMP_GRENADE.get(), com.senne.imttech.client.weapons.GrenadeRenderer::new);
         event.registerEntityRenderer(ModEntities.FRAG_GRENADE.get(), com.senne.imttech.client.weapons.GrenadeRenderer::new);
@@ -265,6 +266,8 @@ public class ImtTechClient {
         event.registerLayerDefinition(DroneModel.LAYER, DroneModel::createBodyLayer);
         event.registerLayerDefinition(com.senne.imttech.client.robot.GuardDroneModel.LAYER,
                 com.senne.imttech.client.robot.GuardDroneModel::createBodyLayer);
+        event.registerLayerDefinition(com.senne.imttech.client.car.RcCarModel.LAYER,
+                com.senne.imttech.client.car.RcCarModel::createBodyLayer);
         event.registerLayerDefinition(com.senne.imttech.client.raven.RavenSoldierRenderer.LAYER,
                 com.senne.imttech.client.raven.RavenSoldierRenderer::createLayer);
         event.registerLayerDefinition(com.senne.imttech.client.suit.MiniRocketRenderer.LAYER,

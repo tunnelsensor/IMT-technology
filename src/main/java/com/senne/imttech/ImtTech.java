@@ -143,6 +143,7 @@ public class ImtTech {
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.BotProgramGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.BotSenseGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.DroneGameTests.class));
+        modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.RcCarGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.TrainingGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.DrillGameTests.class));
         modEventBus.addListener((RegisterGameTestsEvent event) -> event.register(com.senne.imttech.gametest.KeycardGroupGameTests.class));
@@ -184,6 +185,7 @@ public class ImtTech {
             com.senne.imttech.training.Training.clear();
             com.senne.imttech.training.TrainingGoals.clear();
             com.senne.imttech.training.TrainingEnds.clear();
+            com.senne.imttech.car.RcCars.clear(); // hoofdstuk 108: welke RC Cars er reden
         });
         NeoForge.EVENT_BUS.addListener(ImtServer::onServerStopped);
         NeoForge.EVENT_BUS.addListener(ImtServer::onLivingDamaged);
@@ -242,6 +244,8 @@ public class ImtTech {
         ModGameRules.register();
         NeoForge.EVENT_BUS.addListener(ImtRaids::onServerTick);
         NeoForge.EVENT_BUS.addListener(ImtRaids::onBlockBreak);
+        // Hoofdstuk 108: een naamkaartje op een RC Car (alleen wie hem mag besturen, met de regels van Rename).
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.car.RcCars::onEntityInteract);
         NeoForge.EVENT_BUS.addListener(ImtRaids::onServerStopped);
         // Hoofdstuk 75: ga je dood, dan vliegen de raiddrones weg (als allerlaatste, net als het lichaam).
         NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST, ImtRaids::onPlayerDeath);

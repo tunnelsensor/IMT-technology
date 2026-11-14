@@ -5620,6 +5620,15 @@ public final class VisualCheck {
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }
 
+        // --- Hoofdstuk 108: de RC Car (-Ponly=rccar): de auto, het boren, zijn scherm, de code-editor, de kofferbak en de
+        // items. En zijn twee plaatjes voor How it works (-Ponly=howtopics:car; dat verandert bestanden van de mod).
+        if (want("rccar")) {
+            RcCarTour.tour(t);
+        }
+        if (ONLY.contains("howtopics:car")) {
+            RcCarTour.pictures(t);
+        }
+
         // --- How it works (hoofdstuk 63): de plaatjes van echte schermen (alleen als je erom vraagt: dat verandert
         // bestanden van de mod), en W op een item, de animatie van de Power Battery, het knopje en het overzicht.
         if (ONLY.contains("howtopics")) {

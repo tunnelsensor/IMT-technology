@@ -28,7 +28,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "41";
+    private static final String PROTOCOL_VERSION = "42";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -218,6 +218,12 @@ public final class ModNetwork {
                 com.senne.imttech.robot.Robots.handleAction(player, payload);
             }
         });
+        // Het scherm van een RC Car en de RC Controller (hoofdstuk 108): starten, stoppen, zijn programma, oppakken.
+        registrar.playToServer(RcCarActionPayload.TYPE, RcCarActionPayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                com.senne.imttech.car.RcCars.handleAction(player, payload);
+            }
+        });
         // Solderen op het bord van een robot (hoofdstuk 22).
         registrar.playToServer(SolderPayload.TYPE, SolderPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) {
@@ -297,6 +303,8 @@ public final class ModNetwork {
                 (payload, context) -> ClientPayloadHandlers.onRobotOpen(payload, context));
         registrar.playToClient(TrainingOpenPayload.TYPE, TrainingOpenPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onTrainingOpen(payload, context));
+        registrar.playToClient(RcCarOpenPayload.TYPE, RcCarOpenPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onRcCarOpen(payload, context));
         registrar.playToClient(InputNameOpenPayload.TYPE, InputNameOpenPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onInputNameOpen(payload, context));
         // Camerabeelden van overal (hoofdstuk 94): de wereld rond de camera's die je bekijkt, en wie daar rondloopt.

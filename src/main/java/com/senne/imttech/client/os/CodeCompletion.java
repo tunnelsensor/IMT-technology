@@ -308,13 +308,18 @@ public final class CodeCompletion {
                 if (function == Expr.Function.CARD_IN_GROUP) {
                     items.add(new Item(function.code() + "(\"...\")", function.code() + "(\"\")", function.code().length() + 2,
                             function.help(), VARIABLE));
+                } else if (function.withoutValues()) {
+                    // block() (hoofdstuk 108): niets tussen de haakjes, dus de cursor komt erachter.
+                    items.add(new Item(function.code() + "()", function.code() + "()", -1, function.help(), VARIABLE));
                 } else {
                     items.add(new Item(function.code() + "(...)", function.code() + "()", function.code().length() + 1,
                             function.help(), VARIABLE));
                 }
             }
         }
-        items.add(new Item("is_on(\"...\")", "is_on(\"\")", 7, "Is that device switched on right now?", VARIABLE));
+        if (data.kind() != ProgramKind.CAR) { // een RC Car heeft geen server, dus geen apparaten (hoofdstuk 108)
+            items.add(new Item("is_on(\"...\")", "is_on(\"\")", 7, "Is that device switched on right now?", VARIABLE));
+        }
         items.add(new Item("not", "not ", -1, "The opposite: not is_night", KEYWORD));
         items.add(new Item("and", "and ", -1, "Both must be true", KEYWORD));
         items.add(new Item("or", "or ", -1, "One of them must be true", KEYWORD));

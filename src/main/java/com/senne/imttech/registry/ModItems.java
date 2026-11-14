@@ -360,6 +360,36 @@ public final class ModItems {
             new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON));
 
     /**
+     * Hoofdstuk 108: de RC Car, het autootje dat je programmeert om te mijnen en te bouwen; rechtsklik zet hem neer.
+     * Zijn naam, programma, energiecel en kofferbak zitten in het item (zie RcCarData).
+     */
+    public static final DeferredItem<com.senne.imttech.car.RcCarItem> RC_CAR = ITEMS.registerItem(
+            "rc_car", com.senne.imttech.car.RcCarItem::new,
+            new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON));
+
+    /** Hoofdstuk 108: de RC Controller: de functies van je RC Car van ver starten. */
+    public static final DeferredItem<com.senne.imttech.car.RcControllerItem> RC_CONTROLLER = ITEMS.registerItem(
+            "rc_controller", com.senne.imttech.car.RcControllerItem::new, new Item.Properties().stacksTo(1));
+
+    /**
+     * Hoofdstuk 108: de boorkoppen van de RC Car (zie car/DrillHead): ijzer (de kop van een nieuwe auto, traag), steel,
+     * titanium en netherite (zo snel als jij met ijzeren gereedschap). Rechtsklik op de auto met een kop: die zit erop.
+     */
+    public static final DeferredItem<com.senne.imttech.car.DrillHeadItem> IRON_DRILL_HEAD = drillHead(com.senne.imttech.car.DrillHead.IRON);
+    public static final DeferredItem<com.senne.imttech.car.DrillHeadItem> STEEL_DRILL_HEAD = drillHead(com.senne.imttech.car.DrillHead.STEEL);
+    public static final DeferredItem<com.senne.imttech.car.DrillHeadItem> TITANIUM_DRILL_HEAD = drillHead(com.senne.imttech.car.DrillHead.TITANIUM);
+    public static final DeferredItem<com.senne.imttech.car.DrillHeadItem> NETHERITE_DRILL_HEAD = drillHead(com.senne.imttech.car.DrillHead.NETHERITE);
+
+    private static DeferredItem<com.senne.imttech.car.DrillHeadItem> drillHead(com.senne.imttech.car.DrillHead head) {
+        Item.Properties properties = new Item.Properties().stacksTo(16);
+        if (head == com.senne.imttech.car.DrillHead.NETHERITE) {
+            properties.fireResistant(); // zoals alles van netherite: lava doet hem niets
+        }
+        return ITEMS.registerItem(head.getSerializedName() + "_drill_head",
+                itemProperties -> new com.senne.imttech.car.DrillHeadItem(head, itemProperties), properties);
+    }
+
+    /**
      * Hoofdstuk 22: de modules die je op de printplaat soldeert ("scan_module" tot "camera_module"), en de
      * verbrande module die overblijft na een kortsluiting ("burnt_module").
      */

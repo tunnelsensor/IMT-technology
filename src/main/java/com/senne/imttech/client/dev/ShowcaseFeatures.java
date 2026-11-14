@@ -2192,6 +2192,25 @@ final class ShowcaseFeatures {
                     .pause(160);
         });
 
+        add("RC Car", "Hoofdstuk 108: de RC Car, een autootje dat je programmeert om te mijnen en te bouwen. Voor je staat "
+                + "Digger (geel, met een boor vooraan, een laadbak achterop en twee koplampen) voor een blok steen; rechts "
+                + "staat een blok steen met een glazen dak, met Miner in een hoek. Eerst het scherm van Digger (sneak + "
+                + "rechtsklik): READY, zijn batterij (een Energy Cell, 86%), zijn kofferbak (23 items), zijn boorkop (Iron Drill "
+                + "Head, speed 25%), links zijn functies strip_mine en room (die schreef je er zelf op: een nieuwe auto heeft "
+                + "geen programma), rechts de pijltjes om hem met de hand te rijden. Dan Program: de code-editor met zijn "
+                + "programma (elke def is een knop), rechts alles wat hij kent. Terug: met Forward rijdt hij een blok naar de "
+                + "steen, en dan klik je strip_mine aan: bovenaan staat RUNNING strip_mine, en hij boort een gang van 1 breed en "
+                + "2 hoog (zijn boor draait, het blok barst, hij rijdt erin en breekt het blok erboven). Met de ijzeren kop duurt "
+                + "een blok anderhalve seconde; na een paar blokken zet je er een Netherite Drill Head op (rechtsklik met de "
+                + "kop: zijn boor wordt donker, onderaan 'Digger: Netherite Drill Head on') en boort hij vier keer zo snel. Je "
+                + "stopt hem en kijkt in "
+                + "zijn kofferbak (rechtsklik): de cobblestone die hij brak. Dan heb je een RC Controller in je hand, gekoppeld "
+                + "met Miner: rechtsklik opent zijn scherm van ver ('via RC Controller'), je kiest room, en door het glazen dak "
+                + "zie je van boven hoe hij rij voor rij een kamer van 5 breed, 3 hoog en 5 diep uithakt en terugkeert naar zijn "
+                + "hoek (ruim een minuut; onderaan 'Miner: room is done'). Tot slot pak je Digger op met Pick up: hij zit in je "
+                + "rugzak, met zijn programma, zijn cel, zijn boorkop en zijn kofferbak.",
+                RcCarTour.SHOW_FROM, 143, 15, RcCarTour::showcase);
+
         add("Training", "Hoofdstuk 26: training zoals in een trainingskamp. In de werkplaats staat nu vooraan links een Training "
                 + "Start-blok, en achteraan een Training Goal-blok (een geblokte finishvlag) met links een Training End-blok (met "
                 + "een redstonelamp erop) en rechts een donkere Super Battle-robot (squad Wave 2). Links en rechts in het midden "

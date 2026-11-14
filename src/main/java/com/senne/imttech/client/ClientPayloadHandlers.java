@@ -272,6 +272,22 @@ public final class ClientPayloadHandlers {
         }
     }
 
+    /**
+     * Het scherm van een RC Car openen (sneak + rechtsklik, of de RC Controller; hoofdstuk 108), of zijn code-editor
+     * (de knop Program: die komt in de plaats van het scherm dat open stond).
+     */
+    public static void onRcCarOpen(com.senne.imttech.network.RcCarOpenPayload payload, IPayloadContext context) {
+        Minecraft mc = Minecraft.getInstance();
+        if (payload.editor()) {
+            if (mc.screen == null || mc.screen instanceof com.senne.imttech.client.car.RcCarScreen) {
+                mc.setScreen(new com.senne.imttech.client.os.RcCarCodeScreen(payload.entityId(), payload.owner(),
+                        payload.remote(), payload.source()));
+            }
+        } else if (mc.screen == null) {
+            mc.setScreen(new com.senne.imttech.client.car.RcCarScreen(payload.entityId(), payload.owner(), payload.remote()));
+        }
+    }
+
     /** Het scherm van een guard robot openen (sneak + rechtsklik, hoofdstuk 21). */
     public static void onRobotOpen(com.senne.imttech.network.RobotOpenPayload payload, IPayloadContext context) {
         Minecraft mc = Minecraft.getInstance();

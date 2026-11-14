@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "A": {
+      "item": "minecraft:lightning_rod"
+    },
+    "B": {
+      "item": "minecraft:stone_button"
+    },
+    "C": {
+      "item": "imttech:computer_chip"
+    },
+    "L": {
+      "item": "imttech:plastic"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    }
+  },
+  "pattern": [
+    "A  ",
+    "BCB",
+    "LRL"
+  ],
+  "result": {
+    "id": "imttech:rc_controller",
+    "count": 1
+  }
+}

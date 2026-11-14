@@ -116,6 +116,17 @@ public sealed interface Expr {
         DRONE_NAME("drone.name", Type.TEXT, "the name of the drone", null),
         DRONE_BLOCKED("drone.blocked", Type.BOOL, "true if something stood in the way at its last move", null),
         DRONE_CONNECTED("drone.connected", Type.BOOL, "true if the drone can talk to the server (in the area of the core, with power)", null),
+        // Een RC Car (hoofdstuk 108): over zichzelf, zijn energiecel en zijn kofferbak.
+        CAR_BATTERY("car.battery", Type.NUMBER, "how full the energy cell of the car is (0-100; 0 without a cell)", null),
+        CAR_X("car.x", Type.NUMBER, "where the car stands: x", null),
+        CAR_Y("car.y", Type.NUMBER, "where the car stands: y (the height)", null),
+        CAR_Z("car.z", Type.NUMBER, "where the car stands: z", null),
+        CAR_FACING("car.facing", Type.TEXT, "where the car looks: \"north\", \"east\", \"south\" or \"west\"", null),
+        CAR_NAME("car.name", Type.TEXT, "the name of the car", null),
+        CAR_BLOCKED("car.blocked", Type.BOOL, "true if its last step, mine or place did not work (something in the way, a block it cannot break, an empty trunk)", null),
+        CAR_FULL("car.full", Type.BOOL, "true if the trunk of the car has no empty slot left", null),
+        CAR_ITEMS("car.items", Type.NUMBER, "how many items are in the trunk of the car", null),
+        CAR_BLOCKS("car.blocks", Type.NUMBER, "how many blocks the car can still place (the blocks in its trunk)", null),
         // Na when ordered(...): de opdracht van de server.
         ORDER_NAME("order.name", Type.TEXT, "the order the server gave, like \"attack\"", Op.ORDERED),
         ORDER_X("order.x", Type.NUMBER, "the place the server gave with the order: x", Op.ORDERED),
@@ -180,6 +191,9 @@ public sealed interface Expr {
             }
             if (name.startsWith("drone.")) {
                 return kind == ProgramKind.DRONE;
+            }
+            if (name.startsWith("car.")) {
+                return kind == ProgramKind.CAR; // hoofdstuk 108
             }
             if (name.startsWith("order.") || name.startsWith("sound.") || name.startsWith("target.") || name.startsWith("body.")) {
                 return kind.onBot();
@@ -247,7 +261,15 @@ public sealed interface Expr {
          * {@code card.in_group("security")} (25 oktober): zit de kaart in die groep, zelf of via een groep die erin zit?
          * Alleen een geldige kaart zit in een groep, dus {@code if card.in_group("security"): accept()} is al veilig.
          */
-        CARD_IN_GROUP("card.in_group", Type.BOOL, "true if the card is valid here and in this group (or in a group inside it), like card.in_group(\"security\")", Op.KEYCARD);
+        CARD_IN_GROUP("card.in_group", Type.BOOL, "true if the card is valid here and in this group (or in a group inside it), like card.in_group(\"security\")", Op.KEYCARD),
+        /**
+         * {@code block()}, {@code block_up()} en {@code block_down()} (hoofdstuk 108): welk blok er voor, boven of onder
+         * een RC Car zit, als tekst: "stone", "diamond_ore", "air", "water". Zo kan zijn programma kijken voor het breekt:
+         * {@code if block() == "diamond_ore":}, of doorgaan tot het vrij is: {@code while block() != "air":}.
+         */
+        BLOCK("block", Type.TEXT, "the block in front of the car, as text: \"stone\", \"diamond_ore\", \"air\"...", null),
+        BLOCK_UP("block_up", Type.TEXT, "the block above the car, as text (\"air\" if there is none)", null),
+        BLOCK_DOWN("block_down", Type.TEXT, "the block under the car, as text", null);
 
         /** Zoveel pinnen heeft de printplaat van een robot (zoals BotBoard.PINS). */
         public static final int PINS = 8;
@@ -273,12 +295,32 @@ public sealed interface Expr {
             return help;
         }
 
-        /** Pinnen heeft alleen een robot of een drone; active() kent de server (die weet wie er staat), kaarten alleen de server. */
+        /**
+         * Pinnen heeft alleen een robot of een drone; active() kent de server (die weet wie er staat), kaarten alleen de
+         * server; block() alleen een RC Car (hoofdstuk 108).
+         */
         public boolean allowedIn(ProgramKind kind) {
             return switch (this) {
                 case ACTIVE -> kind == ProgramKind.SERVER || kind == ProgramKind.TRAINING_END;
                 case CARD_IN_GROUP -> kind == ProgramKind.SERVER;
+                case BLOCK, BLOCK_UP, BLOCK_DOWN -> kind == ProgramKind.CAR;
                 default -> kind.onBot();
+            };
+        }
+
+        /** Neemt deze functie niets tussen de haakjes ({@code block()})? */
+        public boolean withoutValues() {
+            return this == BLOCK || this == BLOCK_UP || this == BLOCK_DOWN;
+        }
+
+        /** Hoe je hem gebruikt, voor de foutmeldingen: {@code scanPin = pin(1)}, {@code if block() == "stone":}. */
+        public String example() {
+            return switch (this) {
+                case PIN -> "scanPin = pin(1)";
+                case READ -> "if read(scanPin):";
+                case ACTIVE -> "if active(\"Wave 1\") == 0:";
+                case CARD_IN_GROUP -> "if card.in_group(\"security\"):";
+                case BLOCK, BLOCK_UP, BLOCK_DOWN -> "if " + name + "() == \"stone\":";
             };
         }
 
@@ -729,6 +771,13 @@ public sealed interface Expr {
                 }
                 return new Call(function, List.copyOf(args));
             }
+            if (function.withoutValues()) {
+                // block(), block_up(), block_down() (hoofdstuk 108): niets tussen de haakjes.
+                if (!args.isEmpty()) {
+                    throw new LogicException(function.name + "() takes nothing between the brackets, like " + function.example());
+                }
+                return new Call(function, List.of());
+            }
             String example = function == Function.PIN ? "pin(1)" : "read(scanPin)";
             if (args.size() != 1) {
                 throw new LogicException(function.name + " needs one pin between the brackets, like " + example);
@@ -984,6 +1033,14 @@ public sealed interface Expr {
         default boolean inGroup(String group) {
             return false;
         }
+
+        /**
+         * Welk blok er bij een RC Car zit (hoofdstuk 108): {@code direction} 0 = voor hem ({@code block()}), 1 = boven hem
+         * ({@code block_up()}), -1 = onder hem ({@code block_down()}). Dat weet de auto; standaard: lucht.
+         */
+        default Object block(int direction) {
+            return "air";
+        }
     }
 
     /** De ingebouwde gegevens ({@code card.number}, {@code robot.battery}...) die in deze uitdrukking staan. */
@@ -1090,6 +1147,10 @@ public sealed interface Expr {
                 }
                 if (c.function() == Function.CARD_IN_GROUP) {
                     yield facts.inGroup(text(eval(c.args().getFirst(), facts)));
+                }
+                if (c.function().withoutValues()) {
+                    // block(), block_up(), block_down() (hoofdstuk 108): dat vraagt hij aan de auto.
+                    yield facts.block(c.function() == Function.BLOCK ? 0 : c.function() == Function.BLOCK_UP ? 1 : -1);
                 }
                 // pin(1) is gewoon het getal; read(pin) vraagt het aan de robot.
                 double pin = Math.rint(toNumber(eval(c.args().getFirst(), facts)));

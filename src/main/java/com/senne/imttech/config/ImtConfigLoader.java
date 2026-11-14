@@ -71,6 +71,7 @@ public final class ImtConfigLoader {
             ImtConfig.Lights.class,
             ImtConfig.Robots.class,
             ImtConfig.Training.class,
+            ImtConfig.RcCar.class,
             ImtConfig.Raven.class,
             ImtConfig.Guards.class,
             ImtConfig.Raids.class,

@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "M": {
+      "item": "imttech:steel_ingot"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    }
+  },
+  "pattern": [
+    " M ",
+    "MMM",
+    " R "
+  ],
+  "result": {
+    "id": "imttech:steel_drill_head",
+    "count": 1
+  }
+}

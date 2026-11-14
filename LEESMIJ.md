@@ -204,7 +204,7 @@ Elk item dat meer doet dan in een recept gaan, krijgt een animatie die laat zien
   **wijs je een blok aan**, dan zie je hoe het heet. Heeft een item meer animaties, dan blader je met de
   pijltjes bovenaan. **Esc** brengt je terug naar je inventaris, met alles nog zoals het was. In je eigen
   wereld staat het spel stil terwijl je kijkt.
-- **Alles is er** (62 van de 62), per tabblad:
+- **Alles is er** (63 van de 63), per tabblad:
   - *Equipment*: de bril, het harnas (minder schade, vliegen, landen, de laser cannon), de mini-raketten, de
     drones van je arsenaal, de Illusion Jammer, de holster, de pouches en de slings, de militaire rugzakken, de
     MOLLE-pouches en de body armor.
@@ -222,7 +222,8 @@ Elk item dat meer doet dan in een recept gaan, krijgt een animatie die laat zien
     het codepaneel, autorisatiecodes en de Auth Console, de netwerkknop en -hendel, laserpoorten, de laserbrug, de
     schildkoepel, camera's en de schermmuur, torentjes, de Bypass Kit (lezers en panelen hacken, laserdraden
     knippen en zakkenrollen), de Hacking Laptop en de I.M.T Phone.
-  - *Robots*: een guard robot bouwen en programmeren, modules solderen en wat ze doen, security drones en training.
+  - *Robots*: een guard robot bouwen en programmeren, modules solderen en wat ze doen, security drones, de RC Car en
+    training.
   - *Datacenter*: serverracks en warmte en fans.
   In de animaties lopen ook wezens rond: jij (met je eigen skin, je holster en pouches, of in het harnas met
   blauwe straalvlammen onder je laarzen), een vreemde in je basis, een husk, een raiddrone, je eigen robots en
@@ -1879,6 +1880,134 @@ niemand.
 De getallen staan in `config/imttech.toml` onder `[robots]` (`droneHealth`, `droneBattery`,
 `droneDockChargeRate`, `droneDrainOn`, `droneDrainFlying`, `droneSpeed`, `droneScanRange`, `droneScanAngle`,
 `droneFireInterval`, `droneTakeOff`) en `[security]` (`towerDrones`).
+
+### De RC Car: een autootje dat je programmeert (sinds 14 november)
+Een **RC Car** is een klein geel autootje met een boor vooraan en een laadbak achterop. Het doet niets uit zichzelf, en
+een nieuwe auto heeft **geen programma**: **jij schrijft het**, en dan mijnt en bouwt het voor je, zoals de Agent in
+Minecraft Education. Je hebt er geen server of datacenter voor nodig: het programma zit in de auto zelf.
+
+**Maken.** Aan de werkbank: een **Iron Drill Head**, een **Computer Chip** en een kist bovenaan; ijzer, een **Robot
+Circuit Board** en ijzer in het midden; plastic, redstone en plastic onderaan. De **RC Controller**: een
+bliksemafleider linksboven; een stenen knop, een Computer Chip en een stenen knop in het midden; plastic, redstone en
+plastic onderaan. De boorkop staat hieronder. Alles staat op het tabblad **Robots**.
+
+**Neerzetten en oppakken.** Rechtsklik met de auto op een blok: hij staat daar, met zijn neus de kant op waar jij
+kijkt (dat is "vooruit"), en hij is van jou. Oppakken: **Pick up** op zijn scherm, of **sneak + slaan**. Zijn naam,
+programma, energiecel, boorkop en kofferbak zitten in het item, dus zet je hem ergens anders neer, dan is het dezelfde
+auto.
+
+**Stroom.** Hij rijdt op een **Energy Cell** (dezelfde als van de lasergeweren; je laadt hem in het **Charging
+Station**). **Rechtsklik op de auto met een cel**: die gaat erin, en de cel die erin zat krijg je terug. Rijden kost 10
+FE per blok, breken 30 FE per punt hardheid (steen 45, aarde 15), plaatsen 10: een volle cel is ruim 350 blokken steen.
+Is de cel leeg, dan stopt hij en lees je dat in de chat; zijn lichtjes zijn dan uit.
+
+**De boorkop.** Hoe snel hij boort, hangt af van zijn boorkop. Er zijn er vier:
+
+| Boorkop | Snelheid | Een blok steen | Breekt ook obsidiaan |
+|---|---|---|---|
+| **Iron Drill Head** (zit op een nieuwe auto) | 25% | 1,5 seconde | nee |
+| **Steel Drill Head** | 40% | 1 seconde | nee |
+| **Titanium Drill Head** | 65% | 0,6 seconde | ja |
+| **Netherite Drill Head** | 100% | 0,4 seconde | ja |
+
+Netherite is zo snel als jij met een ijzeren pickaxe. Een kop van ijzer, steel of titanium maak je van 4 staven (één
+boven, drie in het midden) met redstone eronder; de netherite kop van een **Titanium Drill Head** met 2 staven
+netherite. **Rechtsklik op de auto met een boorkop**: die zit erop, en de kop die erop zat krijg je terug. De boor van
+de auto krijgt de kleur van zijn kop, en zijn scherm zegt welke hij heeft. **Bedrock** breekt geen enkele kop. Probeert
+hij iets wat zijn kop niet aankan, dan is `car.blocked` waar en staat op zijn scherm welke kop hij nodig heeft.
+
+**De kofferbak.** **Rechtsklik op de auto**: zijn kofferbak gaat open (18 vakjes; dat mag iedereen, zoals bij een
+kist). Wat hij breekt gaat erin; is hij vol, dan blijft het op de grond liggen. Wat hij plaatst komt eruit. Een RC Car,
+een shulkerdoos en een volle Ammo Box of pouch passen er niet in, en de auto zelf past niet in een rugzak of
+shulkerdoos (geen dozen in dozen).
+
+**Zijn scherm.** **Sneak + rechtsklik** op de auto met een lege hand (alleen jij; een ander alleen in een basis waar
+jullie allebei bij horen). Bovenaan wat hij doet (READY, RUNNING strip_mine, NO CELL...), zijn batterij, zijn kofferbak en zijn
+boorkop. Links zijn **functies**: klik er een aan en hij voert haar uit **vanaf de plek waar hij staat**. Rechts rijd
+je hem met de hand, één stap per klik (Forward, Back, Left, Right, Mine, Up, Down): zo zet je hem goed voor je een
+functie start. Onderaan: **Start** (zijn hoofdprogramma), **Stop**, **Program** (de code), **Cell out**, **Pick up**,
+en zijn naam. Rijdt hij van je weg terwijl het scherm open staat, dan blijven de knoppen werken tot 64 blokken ver;
+alleen oppakken en de cel eruit halen moet van dichtbij (8 blokken).
+
+**Zijn programma.** De knop **Program** opent de code-editor (dezelfde als in de app Logic: kleuren, **Ctrl+Spatie**
+toont wat je kunt typen, **Check** kijkt het na, **Save** zet het op de auto). Rechts staat alles wat de auto kent:
+klik op een regel en hij staat in je code. Een nieuwe auto heeft een **lege editor**: je schrijft alles zelf. Twee
+voorbeelden om over te typen (ze staan ook in How it works, **W** op de auto):
+
+```
+def strip_mine():
+    for i in range(20):
+        mine()
+        forward(1)
+        mine_up()
+```
+
+Dat is een gang van 2 hoog en 20 lang: breek voor je, stap naar voor, breek boven je. En een kamer van 5 breed, 3 hoog
+en 5 diep (zet de auto in een hoek, met de muur links van hem):
+
+```
+def room():
+    for row in range(5):
+        mine_up(2)
+        for step in range(4):
+            mine()
+            forward(1)
+            mine_up(2)
+        back(4)
+        if row < 4:
+            turn_right()
+            mine()
+            forward(1)
+            turn_left()
+    turn_left()
+    forward(4)
+    turn_right()
+```
+
+- **Elke `def naam():`** (zonder iets tussen de haakjes) is een **functie**: een knop op zijn scherm en op de RC
+  Controller. Een def met parameters (`def lane(length: int):`) is een hulpje dat je andere stukken gebruiken.
+  **`when started:`** is het hoofdprogramma: dat loopt als je op Start drukt.
+- **Rijden**: `forward(3)`, `back(1)` (hij blijft dezelfde kant op kijken), `turn_left()`, `turn_right()`. Hij rijdt
+  één blok op of af. Een muur, of een gat van meer dan één blok: hij stopt, en `car.blocked` is waar.
+- **Breken**: `mine()` (het blok voor hem), `mine_up()` (boven hem), `mine_down()` (onder hem: hij zakt in het gat).
+  Met een getal tot 3: `mine_up(2)` breekt de twee blokken boven hem (een gang van 3 hoog). Het heet `mine` omdat
+  `break` al het woord is om uit een lus te stappen. Valt er **grind of zand** in het gat, dan wacht hij tot het ligt
+  en breekt hij dat ook: na `mine()` is de plek echt vrij.
+- **Plaatsen**: `place()` (voor hem), `place_up()` (boven hem), `place_down()` (onder hem: hij komt zelf een blok
+  hoger te staan, zoals jij een pilaar bouwt). Hij neemt het eerste blok uit zijn kofferbak, of het soort dat je
+  zegt: `place("cobblestone")`. Alleen gewone blokken van één blok, op een vrije plek: geen kist, oven, bed,
+  machine, deur of hoge plant, en geen halve plaat op een halve plaat.
+- **Kofferbak**: `collect()` raapt op wat er rond hem ligt; `unload()` legt alles in de kist voor hem (staat daar geen
+  kist: op de grond).
+- **Kijken**: `block()`, `block_up()` en `block_down()` zeggen welk blok er zit: `"stone"`, `"diamond_ore"`,
+  `"air"`, `"water"`. Bijvoorbeeld `if block() == "diamond_ore":`.
+- **Wat hij weet**: `car.battery` (0 tot 100), `car.blocked`, `car.full` (de kofferbak is vol), `car.items`,
+  `car.blocks` (hoeveel blokken hij nog kan plaatsen), `car.x`, `car.y`, `car.z`, `car.facing`, `car.name`.
+- **Verder**: `say("...")` (hij zegt het in je chat), `wait(2)`, `stop()` (zijn programma stopt hier), en alles van de
+  taal: `for i in range(3):`, `while ...:`, `if ...:` met `else:`, `break`, en namen (`count = 0`).
+
+**De RC Controller.** **Rechtsklik op een auto** met de controller in je hand: gekoppeld. (Zet je een auto neer terwijl
+je een controller bij je hebt die nog nergens mee gekoppeld is, dan koppelt die vanzelf.) Daarna opent **rechtsklik**
+(in de lucht of op een blok) het scherm van die auto, tot 64 blokken ver: een functie kiezen, Start, Stop, de pijltjes
+en zijn programma. Alleen oppakken en de cel eruit halen kan niet van ver. Te ver, of de auto is opgepakt: "No signal".
+De koppeling blijft als je de auto oppakt en ergens anders neerzet.
+
+**Goed om te weten.**
+- Hij doet **één klus tegelijk**: is hij bezig, druk dan eerst op Stop.
+- Hij breekt en plaatst met de rechten van **wie de klus startte**. In een **beschermde zone** dus alleen als die
+  speler daar mag bouwen (en uit zo'n zone raapt hij ook niets op); de spawnbescherming van een server geldt ook voor
+  hem. Een gebarsten blok blijft gebarsten, slopen in een Biebia's Industries Tower telt voor wie de klus startte, en
+  bewakers horen hem boren.
+- **Andermans auto** bestuur je alleen in een basis waar jullie allebei bij horen. Staat hij in jouw beschermde zone,
+  dan mag je hem stilzetten en oppakken (**sneak + slaan**): laat je auto dus niet achter in de zone van een ander.
+- Hij kan **niet kapot**, hij duwt niemand weg, en stromend water duwt hem niet weg. Een **EMP-granaat** stopt zijn
+  klus en legt hem even stil. Een naamkaartje werkt alleen op je eigen auto.
+- Hij werkt zolang het stuk wereld waar hij staat geladen is: loop je honderden blokken weg, dan staat hij stil tot je
+  terug bent (en begint hij niet vanzelf opnieuw).
+- De getallen staan in `config/imttech.toml` onder `[rcCar]`: `speed`, `mineSpeed`, de snelheid van elke boorkop
+  (`drillSpeedIron`, `drillSpeedSteel`, `drillSpeedTitanium`, `drillSpeedNetherite`), `moveCost`, `mineCost`,
+  `placeCost`, `controlRange`, `collectRange`, en `mayChangeBlocks` (zet dat op `false` op een server waar spelers zelf
+  moeten mijnen: de auto's rijden dan alleen nog).
 
 ### Training zoals Rookie squad
 Zoals in een trainingskamp: je laat je eigen beveiliging op jezelf (of een vriend) schieten, met

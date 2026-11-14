@@ -419,7 +419,7 @@ public final class DroneGameTests {
         expectProblem("when started:\n    if robot.battery < 10:\n        charge()\n", ProgramKind.DRONE,
                 "robot.battery only works in a robot program, not in a drone program");
         expectProblem("when every(5):\n    forward(3)\n", ProgramKind.SERVER,
-                "forward() only works in a robot program or a drone program, not in a server diagram");
+                "forward() only works in a robot program, a drone program or a car program, not in a server diagram");
         expectProblem("when started:\n    activate(\"Drone 1\")\n", ProgramKind.DRONE,
                 "activate() only works in a server diagram or a Training End program, not in a drone program");
         helper.succeed();

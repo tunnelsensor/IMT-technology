@@ -49,12 +49,22 @@ public final class CrackDrops {
 
     /** Een speler breekt een blok (en niemand hield het tegen): had het barsten, dan onthouden we dat even. */
     public static void onBreak(BlockEvent.BreakEvent event) {
-        if (!(event.getLevel() instanceof ServerLevel level) || !canCrack(event.getState())) {
+        if (event.getLevel() instanceof ServerLevel level) {
+            breaking(level, event.getPos(), event.getState());
+        }
+    }
+
+    /**
+     * Dit blok wordt nu gebroken, door een speler of (hoofdstuk 108) door een RC Car: had het barsten, dan onthouden we
+     * dat even, zodat er zo meteen een gebarsten blok uit valt. Roep dit aan vóór het blok weg is.
+     */
+    public static void breaking(ServerLevel level, net.minecraft.core.BlockPos pos, BlockState state) {
+        if (!canCrack(state)) {
             return;
         }
-        CrackData.Crack crack = CrackData.get(level).at(level, event.getPos());
+        CrackData.Crack crack = CrackData.get(level).at(level, pos);
         if (crack != null && (crack.damage() > 0 || crack.patches() > 0)) {
-            BREAKING.put(GlobalPos.of(level.dimension(), event.getPos().immutable()), crack.block());
+            BREAKING.put(GlobalPos.of(level.dimension(), pos.immutable()), crack.block());
         }
     }
 

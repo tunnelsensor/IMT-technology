@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 581 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 600 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -8161,6 +8161,172 @@ orbit. The target needs open sky."), pas na het richten, en in het G-menu stonde
 - **Mijn invullingen**: dezelfde schakelaar als de drones in plaats van een eigen getal; de melding en OUT OF REACH; en
   dat een aanval die al onderweg is, doorgaat. De versie blijft 2.10 (een kleine aanpassing: het derde getal telt
   vanzelf).
+
+### 108. De RC Car: een autootje dat je programmeert om te mijnen en te bouwen (14 november)
+
+Jouw wens: "Zorg dat je robots kunnen programeren zoals in education edition zodat die kunnen helpen bij het
+uitminden/bouwen van je base. Je programeerd een nieuw soort robot (rc car) dit autotje kan rijden door wat jij
+progameert bijvoorbeel, herhaal breek voor jou, stap naar voor, breek boven jou... dit maakt dan een lange strip min. Je
+kunt hier ook functions op zetten die je via een controller kunt aansturen bijvoorbeel je hebt een functie die een kamer
+van 5x3x5 uithakt, als je die kiest voer die de code uit voor die functie vanaf de plek waar je staat, je kunt deze rc car
+ook oppakken en in je invertory zetten".
+
+En later die dag, toen je hem bekeken had: "Ik heb al is gekeken wat er is, ik zag bij de rc car dat er al twee functions
+zijn, deze moeten weg want ik wil dat je de rc car vanaf 0 moet programeren, deze functions kun je wel zelf schrijven maar
+er mag geen voorbestaande code zijn, in de 'how it works kun je dit wel als voorbeeld geven. Zorg ook dt je de drill head
+kunt upgraden zodat een basic drillhead wel even duurt om iets te hakken, netherite is de snelheid dat die nu hakt".
+
+Ik heb niets gevraagd en alles zelf ingevuld (zie onderaan): zeg het als je iets anders wil.
+
+- [x] **De taal** (`logic/program`): een vierde soort programma naast server, robot en drone: het **RC Car program**
+      (`ProgramKind.CAR`). Het is dezelfde taal (def, for, while, if, namen, rekenen), met de woorden van een auto:
+      rijden (`forward(3)`, `back(1)`, `turn_left()`, `turn_right()`), breken (`mine()`, `mine_up()`, `mine_down()`, met
+      een getal tot 3 erbij voor meer blokken: `mine_up(2)` is een gang van 3 hoog), plaatsen (`place()`, `place_up()`,
+      `place_down()`, of `place("cobblestone")` voor een soort), `collect()` (oprapen wat er ligt), `unload()` (de
+      kofferbak leeg in de kist voor hem), `say(...)`, `wait(...)` en `stop()`. Wat hij weet: `car.battery`, `car.x/y/z`,
+      `car.facing`, `car.name`, `car.blocked`, `car.full`, `car.items`, `car.blocks`, en `block()`, `block_up()` en
+      `block_down()` (welk blok er zit: `"stone"`, `"air"`...). "Breken" heet `mine` omdat `break` al het woord is om
+      uit een lus te stappen. Een auto heeft geen server: relais, het logboek, het alarm, `every` en pinnen kent hij
+      niet, en de code zegt dat ("on() only works in a server diagram, a robot program, a drone program or a Training
+      End program, not in a car program"). Ctrl+Spatie stelt alleen voor wat een auto kent.
+- [x] **Functies**: elke `def naam():` zonder parameters is een **functie**: een knop op het scherm van de auto en op de
+      RC Controller. Kies je er een, dan voert de auto haar uit vanaf de plek waar hij staat. Een def mét parameters
+      (`def lane(length: int):`) is een hulpje voor je andere stukken. `when started:` is het hoofdprogramma: dat loopt
+      met de knop **Start**.
+- [x] **Geen code vooraf** (jouw tweede wens): een nieuwe auto heeft **geen programma**. Zijn scherm zegt "No functions
+      yet", en je schrijft alles zelf. Jouw twee voorbeelden (**strip_mine**: 20 keer breek voor je, stap naar voor,
+      breek boven je; en **room**: een kamer van 5 breed, 3 hoog en 5 diep) staan alleen nog in How it works, als
+      plaatje van de echte editor, om over te typen. Ook de voorbeelden die je in de editor met één klik invoegde, zijn
+      weg: rechts staan alleen nog losse woorden. Een lege editor zegt in grijze letters hoe je begint; dat is geen code
+      (het verdwijnt zodra je typt, en er wordt niets van bewaard).
+- [x] **De auto** (`car/RcCarEntity`, `CarBrain`, `CarMove`, `CarWork`): een klein geel autootje met een boor, een
+      laadbak en twee koplampen, dat in een gang van één blok past. Hij rijdt blok voor blok (ook één blok op of af),
+      precies zoals een guard robot loopt. Hij doet niets uit zichzelf: geen aan en uit, maar één klus tegelijk (Start,
+      een functie, of een stap met de hand), tot die klaar is of je op **Stop** drukt.
+- [x] **Breken**: zijn boor is een pickaxe, schep, bijl en schoffel in één, en wat eruit valt is wat jij zou krijgen.
+      Hoe snel hij boort en wat hij aankan, hangt af van zijn **boorkop** (hieronder). Bedrock laat hij altijd staan,
+      en obsidiaan als zijn kop te zwak is: dan is `car.blocked` waar en zegt hij waarom en welke kop hij nodig heeft
+      ("Obsidian is too hard for its Iron Drill Head: it needs a Titanium one"). Je ziet het blok barsten en hoort het
+      tikken. **Grind en zand**: valt er iets in het gat, dan wacht hij tot het ligt en breekt hij dat ook (bij
+      `mine_up()` valt het tot op de auto zelf: hij breekt zich vrij). Na `mine()` is de plek dus echt vrij.
+- [x] **De boorkop** (jouw tweede wens, `car/DrillHead`): vier koppen, in de materialen van je wapens en je plates:
+      **Iron** (de kop van een nieuwe auto), **Steel**, **Titanium** en **Netherite**. Netherite boort zo snel als de
+      auto eerst deed (zo snel als jij met een ijzeren pickaxe: een blok steen in 0,4 seconde); titanium haalt 65%
+      daarvan (0,6 seconde), steel 40% (1 seconde) en ijzer 25% (anderhalve seconde: "een basic drill head duurt wel
+      even"). IJzer en steel breken wat ijzeren gereedschap breekt; titanium en netherite breken ook obsidiaan en
+      ancient debris. **Rechtsklik op de auto met een kop**: die zit erop, en de kop die erop zat krijg je terug (dat mag
+      ook terwijl hij boort). De boor van de auto heeft de kleur van zijn kop, zijn scherm zegt welke hij heeft en hoe
+      snel die is, en de kop gaat mee in het item als je de auto oppakt. Een blok kost voor elke kop evenveel stroom.
+- [x] **Plaatsen**: `place()` zet een blok uit zijn kofferbak voor hem, `place_up()` boven hem, en `place_down()` onder
+      hem: hij komt dan zelf een blok hoger te staan, zoals jij een pilaar bouwt. Hij plaatst alleen gewone blokken
+      van één blok, op een vrije plek: geen kist, oven, bed of machine (zo'n blok hoort een speler als eigenaar te
+      krijgen, en die heeft een auto niet), geen deur of hoge plant, en geen halve plaat op een halve plaat.
+- [x] **Stroom**: hij rijdt op een **Energy Cell** (die van de lasergeweren; je laadt hem in het Charging Station).
+      Rechtsklik op de auto met een cel: die gaat erin en de oude krijg je terug. Rijden kost 10 FE per blok, breken 30
+      FE per punt hardheid (steen 45), plaatsen 10: een volle cel (20 000 FE) is ruim 350 blokken steen. Leeg: de klus
+      stopt en je leest het in de chat. Zonder stroom zijn zijn lichtjes uit.
+- [x] **De kofferbak**: 18 vakjes. Wat hij breekt gaat erin (is hij vol, dan blijft het liggen). Rechtsklik op de auto:
+      de kofferbak gaat open, voor iedereen, zoals een kist. Een RC Car, een shulker box en een volle Ammo Box of pouch
+      passen er niet in (de regel van je rugzakken: geen dozen in dozen), en de auto zelf past niet in een rugzak of
+      shulkerdoos.
+- [x] **Zijn scherm** (sneak + rechtsklik met een lege hand, `client/car/RcCarScreen`): wat hij doet (READY, RUNNING
+      strip_mine, NO CELL...), zijn batterij, zijn kofferbak en zijn boorkop, links zijn functies als knoppen, rechts
+      pijltjes om hem met de hand te rijden (Forward, Back, Left, Right, Mine, Up, Down), en onderaan Start, Stop,
+      **Program**, Cell out, Pick up en zijn naam. Het scherm leest alles elke keer van de auto zelf, dus je ziet het
+      meteen veranderen. Rijdt hij van je weg terwijl het scherm open staat, dan blijven de knoppen werken tot 64
+      blokken (Stop moet het altijd doen); verder weg staat er NO SIGNAL.
+- [x] **De code-editor** (de knop Program, `client/os/RcCarCodeScreen`): dezelfde editor als in de app Logic (kleuren,
+      Ctrl+Spatie, ongedaan maken), met rechts alles wat de auto kent, per soort: klik op een regel en hij staat in je
+      code (onderaan lees je wat hij doet). Check kijkt hem na, Save zet hem op de auto. Je hebt er geen server of
+      datacenter voor nodig: het programma zit in de auto.
+- [x] **De RC Controller**: rechtsklik op een auto met de controller = koppelen (zet je een auto neer met een vrije
+      controller in je rugzak, dan koppelt die vanzelf). Daarna opent rechtsklik, tot 64 blokken ver, het scherm van die
+      auto ("via RC Controller"): een functie kiezen, Start, Stop, de pijltjes en zijn programma. Oppakken en de cel
+      eruit kan alleen als je erbij staat (8 blokken).
+- [x] **Oppakken**: de knop Pick up, of sneak + slaan. Zijn naam, programma, cel, boorkop en kofferbak (elk voorwerp in
+      zijn eigen vakje) zitten in het item; zet je hem weer neer, dan is het dezelfde auto en vindt je controller hem
+      nog. Hij kijkt de kant op waar jij kijkt.
+- [x] **Regels**: wie hem neerzette is zijn eigenaar, en die bestuurt hem altijd. Een ander bestuurt hem alleen in een
+      basis waar jullie **allebei** bij horen (vrienden in één basis gebruiken dus elkaars auto's; een vreemde die een
+      Security Core naast jouw auto zet, krijgt hem niet). Staat andermans auto in **jouw beschermde zone**, dan mag je
+      hem stilzetten en oppakken (sneak + slaan): hij kan niet kapot, dus wie er een bij jou achterlaat, is hem kwijt.
+      Tijdens een klus breekt en plaatst hij met de rechten van **wie de klus startte**: in een beschermde zone alleen
+      als die speler daar mag bouwen, en uit zo'n zone raapt hij ook niets op. Een auto is dus geen manier om in te
+      breken, ook niet de auto van iemand die daar wel mag bouwen. De spawnbescherming van een server geldt ook voor
+      hem. Een **gebarsten blok** geeft ook bij een auto een gebarsten blok, slopen in een **Biebia's Industries
+      Tower** komt op rekening van wie de klus startte (de raiddrones komen dus ook als je auto het doet), en
+      **bewakers en robots horen** hem boren. Hij kan niet kapot (je programma zit erin), en stromend water duwt hem
+      niet weg. Een EMP-granaat stopt zijn klus en legt hem even stil. Met `mayChangeBlocks = false` in `[rcCar]`
+      rijden de auto's op een server alleen nog.
+- [x] **Maken**: de RC Car van een **Iron Drill Head**, een Computer Chip, een kist, 2 ijzer, een Robot Circuit Board, 2
+      plastic en redstone; de RC Controller van een bliksemafleider, 2 stenen knoppen, een Computer Chip, 2 plastic en
+      redstone. Een boorkop van ijzer, steel of titanium: 4 staven (één boven, drie in het midden) met redstone eronder;
+      de **Netherite Drill Head** van een Titanium Drill Head met 2 staven netherite (zoals een Netherite Plate). Ze
+      staan op het tabblad Robots.
+- [x] **Config** `[rcCar]`: `mayChangeBlocks`, `speed` (2,5 blokken per seconde), `mineSpeed`, `drillSpeedIron` (0,25),
+      `drillSpeedSteel` (0,4), `drillSpeedTitanium` (0,65), `drillSpeedNetherite` (1), `moveCost`, `mineCost`,
+      `placeCost`, `controlRange` (64) en `collectRange`.
+- [x] **How it works**: het onderwerp **RC Car** (tabblad Robots; W op de auto, de controller of een boorkop): wat hij
+      is, de energiecel, zijn programma (jouw voorbeeld strip mine, als plaatje van de echte editor), een gang mijnen,
+      een groter voorbeeld (de kamer van 5x3x5), de RC Controller (met een plaatje van zijn scherm), een betere
+      boorkop, en de kofferbak en oppakken. 63 van de 63 onderwerpen zijn klaar.
+- [x] **De showcase**: de functie **"RC Car"** (na "Security drones"): het scherm, het programma, strip_mine (eerst
+      met de ijzeren boorkop, dan met de netherite: vier keer zo snel), de kofferbak, de controller met room (je kijkt
+      door een glazen dak hoe de kamer ontstaat), en oppakken. Die heb ik niet zelf laten lopen (alleen de rondleiding
+      met screenshots): kijk hem na met `python tools/showcase.py`.
+- [x] **CurseForge**: een regel over de RC Car in `publish/description.md` (bij "Robots and drones").
+- [x] **Tests**: negentien nieuwe (`RcCarGameTests`), samen 600. De taal (een leeg programma klopt en heeft geen
+      functies, de twee voorbeelden kloppen, wat mag en wat niet, de foutmeldingen, heen en terug, Ctrl+Spatie); een
+      gang van vier blokken; de kamer van 5 x 3 x 5 uit het voorbeeld (74 blokken, de muren staan er nog, hij staat weer
+      in zijn hoek); een blok op en af rijden en een muur; obsidiaan en bedrock (met de ijzeren kop niet, obsidiaan met
+      netherite wel); de vier boorkoppen (steen in 8, 12, 19 en 30 ticks, even veel stroom); een zone (de auto van een
+      vreemde niet, die van de eigenaar wel); grind dat valt; een gebarsten blok; plaatsen; de energiecel; oprapen en
+      lossen; het item (een nieuwe auto is leeg en heeft de ijzeren kop, een kop wisselen, oppakken en weer neerzetten,
+      de controller, creative, en /kill met doMobLoot uit); de knoppen van ver (tot 64 blokken, oppakken alleen
+      dichtbij, een vreemde niets); starten, stoppen, een stap met de hand en een EMP; en vier voor wat de review vond:
+      halve platen en sneeuw (geen crash meer), een pad en stromend water, andermans auto in jouw zone, en namen (een
+      functie `manual`, een naamkaartje). De foutmelding "only works in ..." noemt nu meer soorten, met komma's;
+      twee oude tests verwachtten de oude zin. Ze staan in bestaande batches (zie hoofdstuk 107).
+- [x] **Gezien**: `gradlew runVisualCheck -Ponly=rccar` (rc01 tot rc20: de auto van vier kanten en in het donker, het
+      boren, de gang, zijn scherm, de editor met Ctrl+Spatie en het paneel, de kofferbak, de vier items met hun
+      tooltip, vier auto's met elk een andere boorkop, en het scherm en de lege editor van een nieuwe auto),
+      `-Ponly=howtopics:car` (de drie plaatjes) en `-Ponly=howtoall,howto:rc_car` (elk hoofdstukje van de animatie). Op
+      de foto's zag ik onder meer: de uitleg onder het paneel werd afgekapt (nu vier regels), Stop werkte niet meer
+      zodra de auto 8 blokken was weggereden (nu tot 64), in de animatie zat de auto achter een muur (de gang is nu aan
+      de voorkant open), en de HUD van je bril scheen door de plaatjes van How it works heen (nu zonder HUD).
+- [x] **Review**: één onafhankelijke reviewer over de kernbestanden (bewust smal: zie mijn notitie over de
+      gebruikslimiet). Hij vond twaalf dingen; ik heb ze elk tegen de code van Minecraft nagekeken, en ze klopten:
+      (1) **een servercrash**: `place()` met een halve plaat op een halve plaat van hetzelfde soort (of sneeuw op
+      sneeuw) liet Minecraft eindeloos in zichzelf rondvragen; elke speler met een auto en twee halve platen kon de
+      server daarmee laten crashen. De auto zet een blok nu alleen op een vrije plek (samenvoegen doet hij niet).
+      (2) **Wie mag wat**: de auto brak en plaatste met de rechten van zijn eigenaar, ook als iemand anders hem
+      bestuurde, en met de regel van de guard robots nam een vreemde jouw auto over door een Security Core in de buurt
+      te zetten. Zie "Regels" hierboven voor hoe het nu is. (3) Op een pad, akkerland, soul sand of modder (een vloer
+      van 14 of 15 pixels) brak hij de vloer voor hem in plaats van het blok voor zijn neus. (4) Stromend water duwde
+      hem van zijn plek. (5) De kofferbak volgde de regel van de rugzakken niet. (6) De regel van de Biebia's
+      Industries Tower keek in de wereld van de speler in plaats van die van de auto. (7) Een naamkaartje hernoemde
+      elke auto, van wie hij ook was. (8) Een functie die `manual` heette, deed niets. (9) Na oppakken stond er "Air is
+      in your inventory", en in creative met een volle rugzak verdween de auto. (10) Met de spelregel doMobLoot uit
+      verdween een auto bij /kill, met alles erin. (11) Een deur zette zijn bovenste helft neer zonder dat de zone
+      werd nagekeken, `collect()` raapte op door de muur van een zone, en de spawnbescherming van een server gold niet.
+      (12) In creative verbrak oppakken en weer neerzetten de koppeling met de controller. Alle twaalf zijn opgelost.
+      Na mijn tweede ronde (de boorkoppen en het lege programma) heb ik geen tweede review laten lopen: die heb ik zelf
+      nagelezen.
+- **Mijn invullingen**: de naam `mine` (niet `break`); functies zijn defs zonder parameters; het programma schrijf je op
+  de auto zelf (niet in de app Logic), zodat hij ook ver van je basis werkt; een Energy Cell als batterij; een
+  kofferbak van 18 vakjes die iedereen mag openen; hij kan niet kapot; `place_down()` tilt hem een blok op; de boor
+  reikt hooguit 3 blokken; hij rijdt geen blok over een gat; hij houdt zijn stuk wereld niet zelf geladen (loop je
+  honderden blokken weg, dan staat hij stil tot je terug bent); de pijltjes om met de hand te rijden; 64 blokken
+  bereik; de recepten en alle getallen; wie een klus start is verantwoordelijk (zijn rechten tellen in een zone);
+  andermans auto bestuur je alleen in een basis waar jullie allebei bij horen, en in je eigen zone mag je hem
+  oppakken. Bij je tweede wens: de vier koppen in de materialen van de mod (ijzer, steel,
+  titanium, netherite) in plaats van die van Minecraft (ijzer, diamant, netherite); hun snelheden (25, 40, 65 en 100%);
+  dat titanium en netherite ook obsidiaan breken; wisselen met rechtsklik en de oude kop terugkrijgen (de auto heeft
+  altijd een kop); netherite maken van een titanium kop, zoals bij je plates; dat ook de voorbeelden met één klik uit
+  de editor weg zijn; en de grijze uitleg in een lege editor. Versie **2.12**.
+- **Nog niet**: blokjes (zoals in de app Logic) in plaats van code voor de auto; een auto die ook omhoog kan; een
+  betoverde boor (fortune, silk touch); hem laten doorwerken als je ver weg bent. Uit de review blijft één ding open:
+  slopen in een Biebia's Industries Tower telt niet mee als wie de klus startte op dat moment niet op de server is.
 
 ### 109. Body armor: een vest met een plate voor en achter, drie magazijnen en je eigen tekst op je rug (14 november)
 

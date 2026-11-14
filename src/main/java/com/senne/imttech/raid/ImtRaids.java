@@ -159,15 +159,23 @@ public final class ImtRaids {
      * komen ze kijken.
      */
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
-        if (!(event.getPlayer() instanceof ServerPlayer player)) {
-            return;
+        if (event.getPlayer() instanceof ServerPlayer player && player.level() instanceof ServerLevel level) {
+            towerBlockBroken(player, level, event.getPos());
         }
-        if (player.isCreative() || !(player.level() instanceof ServerLevel level) || !ModGameRules.raidsOn(level)) {
+    }
+
+    /**
+     * Deze speler haalde dit blok weg, zelf of (hoofdstuk 108) met zijn RC Car: ligt het in een Biebia's Industries
+     * Tower, dan valt dat op, en doet hij het vaak genoeg, dan komen ze kijken. {@code level} is de wereld van het blok:
+     * een auto kan in een andere wereld rijden dan waar zijn baas nu is.
+     */
+    public static void towerBlockBroken(ServerPlayer player, ServerLevel level, net.minecraft.core.BlockPos pos) {
+        if (player.isCreative() || !ModGameRules.raidsOn(level)) {
             return;
         }
         // Er is geen opzoeking op naam, dus vragen we het per structuur: is dit de Biebia's Industries Tower?
         if (!level.structureManager()
-                .getStructureWithPieceAt(event.getPos(), holder -> holder.is(BIEBIA_TOWER)).isValid()) {
+                .getStructureWithPieceAt(pos, holder -> holder.is(BIEBIA_TOWER)).isValid()) {
             return;
         }
         long now = level.getGameTime();
