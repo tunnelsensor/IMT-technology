@@ -2650,6 +2650,19 @@ final class ShowcaseFeatures {
                 .pause(100)
                 .close(20));
 
+        add("Router", "Hoofdstuk 112: de Router, het netwerk zonder kabel naar elk apparaat. Links staat een Security Core met "
+                + "één groene PoE-kabel naar een plat zwart kastje met twee antennes en vier lampjes: Router 1. Daaromheen staan, "
+                + "zonder kabels, een relais met een lamp (Front door), een camera en een keycardlezer op een pilaar (Lab door); "
+                + "verderop staat Router 2 met nog een relais en een lamp (Garden light). Eerst het scherm van Router 1 "
+                + "(rechtsklik): bovenaan online, 5 / 10 linked, reaches 32 blocks en 'Security Core in this network'; onder "
+                + "LINKED de kern, het relais, de camera, de lezer en Router 2, elk met hun afstand en een knop Unlink; onder "
+                + "IN RANGE wat er nog in de buurt staat. Je klikt op de regel van het relais: het scherm gaat dicht en er "
+                + "lopen vonkjes van het relais naar de router. Dan schakelt het relais: de lamp gaat aan en weer uit. Daarna "
+                + "valt de stroom van de router weg (zijn lampjes gaan uit): het relais krijgt een opdracht maar de lamp "
+                + "blijft uit. Met de stroom terug gaat de lamp wel aan. Tot slot het scherm van Router 2 (1 van zijn plekken "
+                + "is Router 1), en van boven gaat ook de lamp bij Router 2 aan: twee sprongen door de lucht naar de kern.",
+                RouterTour.SHOW_FROM, 180, 20, RouterTour::showcase);
+
         add("Network button and lever", "Hoofdstuk 38. Een netwerkhendel en een netwerkknop op de vloer, met een PoE-kabel "
                 + "naar de desktop, en een diagram op de server: when lever(\"Night mode\") en when button(\"Doorbell\"). De "
                 + "hendel gaat om: een vakje loopt over de kabel naar de kern en I.M.T zegt \"Night mode on\" (lever.on). "

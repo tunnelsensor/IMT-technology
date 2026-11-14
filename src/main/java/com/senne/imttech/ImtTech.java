@@ -229,6 +229,8 @@ public class ImtTech {
         // Hoofdstuk 94: camerabeelden van overal (de wereld rond de camera's die je bekijkt naar je spel sturen), en het net
         // van een kern geladen houden zolang iemand het gebruikt (een camera aan een lange kabel blijft eraan hangen).
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.lan.NetworkKeeper::onServerTick);
+        // Hoofdstuk 112: een netwerkapparaat dat je neerzet, zoekt zelf een Router in de buurt (zie lan/Routers).
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.lan.Routers::onPlaced);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.feed.FeedServer::onServerTick);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.feed.FeedServer::onLoggedOut);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->

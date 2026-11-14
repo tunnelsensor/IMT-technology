@@ -62,6 +62,25 @@ public final class BaseTrust {
     }
 
     /**
+     * Zou deze speler het apparaat mogen instellen ({@link #mayEdit}), zonder dat er iets verandert? {@link #mayEdit}
+     * maakt een apparaat van niemand meteen van wie het opent; dat hoort alleen als je er zelf bij staat. Wie van een
+     * afstand iets vraagt (een Router die de apparaten in zijn buurt verbindt, hoofdstuk 112), gebruikt deze: een
+     * apparaat van niemand mag dan wel, maar blijft van niemand. (Gevonden door de nalezing: een router neerzetten nam
+     * anders relais en apparaten zonder eigenaar tot 32 blokken ver over.)
+     */
+    public static boolean wouldAllow(ServerPlayer player, Placed device) {
+        ServerLevel level = player.serverLevel();
+        BlockPos pos = device.getBlockPos();
+        if (com.senne.imttech.training.Training.isDrillTraineeAt(level, pos, player.getUUID())) {
+            return false;
+        }
+        if (player.getUUID().equals(device.owner()) || trustedHere(level, pos, player)) {
+            return true;
+        }
+        return device.owner() == null && baseOwnerAt(level, pos) == null && !inBuilding(level, pos);
+    }
+
+    /**
      * Van wie het apparaat is, voor de melding als je het niet mag instellen: wie het neerzette, anders de
      * eigenaar van de basis waar het staat. Leeg als het van niemand is (dan zit het op slot).
      */

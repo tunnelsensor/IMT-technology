@@ -5633,6 +5633,16 @@ public final class VisualCheck {
             RcCarTour.pictures(t);
         }
 
+        // --- Hoofdstuk 112: de Router (-Ponly=router): het kastje met en zonder stroom, apparaten zonder kabel eromheen,
+        // zijn scherm, een signaal door de lucht, en het scherm van een relais met en zonder netwerk. En zijn plaatje voor
+        // How it works (-Ponly=howtopics:router; dat verandert een bestand van de mod).
+        if (want("router")) {
+            RouterTour.tour(t);
+        }
+        if (ONLY.contains("howtopics:router")) {
+            RouterTour.pictures(t);
+        }
+
         // --- How it works (hoofdstuk 63): de plaatjes van echte schermen (alleen als je erom vraagt: dat verandert
         // bestanden van de mod), en W op een item, de animatie van de Power Battery, het knopje en het overzicht.
         if (ONLY.contains("howtopics")) {

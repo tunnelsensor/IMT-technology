@@ -33,21 +33,31 @@ import org.jetbrains.annotations.Nullable;
  *       Groups op de Security OS-desktop (jouw notitie: "dit kan enkel nog op de desktop").</li>
  *   <li><b>Invert</b>: het relais geeft redstone als het UIT staat (alleen bij een echt relais; een koepel
  *       of torentje geeft geen redstone).</li>
+ *   <li><b>Network</b> (hoofdstuk 112): hangt het relais aan een netwerk (een netwerkkabel of een Router)? Zonder
+ *       netwerk schakelt alleen de knop Pulse hier het nog. Alleen als je het scherm bij het relais zelf opende (de
+ *       server zegt het dan); een relais van vóór de Router heeft geen netwerk nodig, en dan staat er niets.</li>
  * </ul>
  */
 public class RelayEditScreen extends Screen {
     private static final int PANEL_W = 260;
-    private static final int PANEL_H = 160;
+    private static final int PANEL_H = 174;
 
     private final int index;
+    /** Hoofdstuk 112: wat de server over het netwerk van dit relais zei (zie RelayEditPayload), of UNKNOWN. */
+    private final int network;
     private EditBox nameBox;
     private @Nullable Button invertButton;
     private int left;
     private int top;
 
     public RelayEditScreen(int index) {
+        this(index, com.senne.imttech.network.RelayEditPayload.UNKNOWN);
+    }
+
+    public RelayEditScreen(int index, int network) {
         super(Component.translatable("screen.imttech.relay_edit"));
         this.index = index;
+        this.network = network;
     }
 
     @Override
@@ -90,13 +100,13 @@ public class RelayEditScreen extends Screen {
         if (relayBlock() != null) {
             invertButton = Button.builder(invertLabel(), button -> PacketDistributor.sendToServer(
                             new RelayActionPayload(RelayActionPayload.Op.INVERT, ImtRedstone.Op.TOGGLE, index, "", "")))
-                    .bounds(left + 10, top + 106, PANEL_W - 20, 20)
+                    .bounds(left + 10, top + 120, PANEL_W - 20, 20)
                     .tooltip(Tooltip.create(Component.translatable("screen.imttech.relay_edit.invert.tip")))
                     .build();
             addRenderableWidget(invertButton);
         }
 
-        int buttons = top + 132;
+        int buttons = top + 146;
         addRenderableWidget(Button.builder(Component.translatable("screen.imttech.relay_edit.save"), button -> save())
                 .bounds(left + 10, buttons, 100, 20).build());
         // Even testen of het werkt: een korte puls (zonder bril alleen als je ernaast staat).
@@ -178,5 +188,13 @@ public class RelayEditScreen extends Screen {
                 HudStyle.argb(255, HudStyle.CYAN), true);
         HudStyle.wrappedCentered(g, font, Component.translatable("screen.imttech.relay_edit.group_hint"), left + PANEL_W / 2,
                 top + 84, PANEL_W - 20, HudStyle.argb(140, HudStyle.WHITE));
+        // Hoofdstuk 112: zijn netwerk (alleen als de server het erbij zei, en het relais er een nodig heeft).
+        if (network == com.senne.imttech.network.RelayEditPayload.ONLINE) {
+            g.drawString(font, Component.translatable("screen.imttech.relay_edit.network_on"), left + 10, top + 107,
+                    HudStyle.argb(230, HudStyle.GREEN), false);
+        } else if (network == com.senne.imttech.network.RelayEditPayload.OFFLINE) {
+            g.drawString(font, font.plainSubstrByWidth(Component.translatable("screen.imttech.relay_edit.network_off").getString(),
+                    PANEL_W - 20), left + 10, top + 107, HudStyle.argb(240, HudStyle.ORANGE), false);
+        }
     }
 }

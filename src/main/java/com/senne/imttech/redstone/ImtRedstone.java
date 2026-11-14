@@ -269,8 +269,50 @@ public final class ImtRedstone {
             index = player.getData(ModAttachments.RELAYS).indexAt(player.level().dimension(), pos);
         }
         if (index >= 0) {
-            ModNetwork.sendTo(player, new RelayEditPayload(index));
+            ServerLevel level = player.serverLevel();
+            int network = !needsNetwork(level, pos) ? RelayEditPayload.NO_NEED
+                    : offline(level, pos) ? RelayEditPayload.OFFLINE : RelayEditPayload.ONLINE;
+            ModNetwork.sendTo(player, new RelayEditPayload(index, network));
         }
+    }
+
+    // ================================================================ Aan het netwerk (hoofdstuk 112)
+
+    /**
+     * Heeft het relais op deze plek een netwerk nodig om van op afstand te schakelen? Jouw wens: "relay's moeten hier ook
+     * aanhangen ... als je geen router gebruikt dan heeft een relay wel een netwerkkabel nodig". Dat geldt voor elk relais
+     * dat een speler neerzette sinds hoofdstuk 112; relais van daarvoor alleen als de config het zegt
+     * ({@code [network] oldRelaysNeedNetwork}). Met {@code [network] required = false} (en in de automatische tests) heeft
+     * geen enkel apparaat een netwerk nodig, dus een relais ook niet. Voor al het andere (een koepel, een torentje, een
+     * stroomkast) is dit altijd false: die hebben hun eigen regels.
+     */
+    public static boolean needsNetwork(Level level, BlockPos pos) {
+        if (!com.senne.imttech.lan.LanGrid.required() || !level.isLoaded(pos)
+                || !(level.getBlockEntity(pos) instanceof RelayBlockEntity relay)) {
+            return false;
+        }
+        return relay.networked() || ImtConfig.Network.OLD_RELAYS_NEED_NETWORK;
+    }
+
+    /**
+     * Is dit een relais dat een netwerk nodig heeft en er geen heeft? Dan luistert het niet naar je bril, je diagrammen of
+     * een relay emitter. "Een netwerk" is een weg naar een Security Core: langs netwerkkabels, of draadloos via een Router
+     * met stroom (zie LanGrid). Het relais onthoudt het antwoord (zie RelayBlockEntity.linked) voor als we het een
+     * volgende keer niet kunnen nakijken.
+     */
+    public static boolean offline(Level level, BlockPos pos) {
+        if (!needsNetwork(level, pos) || !(level.getBlockEntity(pos) instanceof RelayBlockEntity relay)) {
+            return false;
+        }
+        boolean linked = com.senne.imttech.lan.LanGrid.reachesCore(level, pos);
+        // Zeker weten we het als er een kern gevonden is, of als de zoektocht nergens langs een stuk wereld kwam dat niet
+        // geladen is. Anders (je schakelt van ver, en alleen het stukje van het relais zelf is geladen) telt wat het
+        // relais zelf nog weet van de laatste keer dat het zeker was.
+        if (linked || com.senne.imttech.lan.LanGrid.searchComplete(level, pos)) {
+            relay.rememberLinked(linked);
+            return !linked;
+        }
+        return !relay.linked();
     }
 
     // ================================================================ Wat de speler vraagt
@@ -299,7 +341,9 @@ public final class ImtRedstone {
             case SWITCH -> {
                 // Hoofdstuk 106: van op afstand schakelen gaat via je datacenter. Zonder datacenter (of als het niet
                 // draait) schakel je alleen wat vlak bij je staat, zoals zonder bril.
-                if (glasses != null && DatacenterGlasses.linked(player)) {
+                // Hoofdstuk 112: de eigen knop van een relais zonder netwerk (je staat ernaast) werkt altijd, ook met je
+                // bril op: dat is niet "van op afstand". (Gevonden door de nalezing.)
+                if (glasses != null && DatacenterGlasses.linked(player) && !ownButton(player, data, payload)) {
                     switchRelays(player, glasses, data, payload);
                 } else {
                     switchNearby(player, data, payload);
@@ -450,9 +494,9 @@ public final class ImtRedstone {
         List<Relay> found = payload.index() >= 0
                 ? (data.get(payload.index()) == null ? List.<Relay>of() : List.of(data.get(payload.index())))
                 : payload.index() == RelayActionPayload.GROUP_ONLY ? data.inGroup(payload.name()) : data.find(payload.name());
-        List<Relay> targets = withoutDrillBase(player, keepOwn(player, found));
+        List<Relay> targets = withNetwork(player, withoutDrillBase(player, keepOwn(player, found)));
         if (targets.isEmpty() && !found.isEmpty()) {
-            return; // alleen relais van een ander, of van je basis tijdens een oefening: dat zeiden we al
+            return; // alleen relais van een ander, zonder netwerk, of van je basis tijdens een oefening: dat zeiden we al
         }
         if (targets.isEmpty()) {
             ImtServer.send(player, Component.translatable("imt.imttech.msg.relay_unknown", payload.name()),
@@ -494,6 +538,17 @@ public final class ImtRedstone {
     }
 
     /**
+     * Is dit de eigen knop van één relais dat geen netwerk heeft, terwijl je ernaast staat? Dan schakelt het zoals zonder
+     * bril (zie {@link #switchNearby}): een relais zonder netwerk bereik je niet van op afstand, maar wel met je hand.
+     */
+    private static boolean ownButton(ServerPlayer player, ImtRelays data, RelayActionPayload payload) {
+        Relay relay = data.get(payload.index());
+        MinecraftServer server = player.getServer();
+        ServerLevel level = relay == null || server == null ? null : server.getLevel(relay.dimension());
+        return level != null && relay.channel() < 0 && nearby(player, relay) && offline(level, relay.pos());
+    }
+
+    /**
      * Zonder bril: alleen het ene relais waar je naast staat (de knop "test" in zijn scherm), en gratis.
      * Alleen je eigen relais.
      */
@@ -512,7 +567,7 @@ public final class ImtRedstone {
             return;
         }
         if (!withoutDrillBase(player, keepOwn(player, List.of(relay))).isEmpty()) {
-            apply(server, relay, payload.relayOp());
+            apply(server, relay, payload.relayOp(), true); // je staat ernaast: dat werkt ook zonder netwerk (hoofdstuk 112)
         }
     }
 
@@ -539,13 +594,48 @@ public final class ImtRedstone {
         return allowed;
     }
 
+    /**
+     * Hoofdstuk 112: de relais die een netwerk hebben (of er geen nodig hebben). Zat er een bij zonder netwerk, dan zegt
+     * I.M.T dat: "... has no network".
+     */
+    private static List<Relay> withNetwork(ServerPlayer player, List<Relay> relays) {
+        MinecraftServer server = player.getServer();
+        List<Relay> reachable = new ArrayList<>();
+        String cut = null;
+        int cutCount = 0;
+        for (Relay relay : relays) {
+            ServerLevel level = server == null ? null : server.getLevel(relay.dimension());
+            if (level != null && relay.channel() < 0) {
+                if (!level.hasChunkAt(relay.pos())) {
+                    level.getChunk(relay.pos());
+                }
+                if (offline(level, relay.pos())) {
+                    cut = cut == null ? relay.name() : cut;
+                    cutCount++;
+                    continue;
+                }
+            }
+            reachable.add(relay);
+        }
+        if (cut != null) {
+            tell(player, cutCount == 1 ? Component.translatable("imt.imttech.msg.relay_no_network", cut)
+                    : Component.translatable("imt.imttech.msg.relays_no_network", cutCount), ImtMessagePayload.Level.WARNING);
+        }
+        return reachable;
+    }
+
     /** Zet één relais echt om in de wereld. Geeft false als het blok er niet meer staat. */
     private static boolean apply(MinecraftServer server, Relay relay, Op op) {
+        return apply(server, relay, op, false);
+    }
+
+    /** Zoals hierboven; {@code local} = je staat ernaast (de knop Pulse in zijn scherm): dat werkt ook zonder netwerk. */
+    private static boolean apply(MinecraftServer server, Relay relay, Op op, boolean local) {
         ServerLevel level = server == null ? null : server.getLevel(relay.dimension());
         if (level == null) {
             return false;
         }
-        return switchAt(level, relay.pos(), relay.channel(), op, Math.round(ImtConfig.Relays.PULSE_TICKS));
+        return switchAt(level, relay.pos(), relay.channel(), op, Math.round(ImtConfig.Relays.PULSE_TICKS), local);
     }
 
     /**
@@ -555,8 +645,16 @@ public final class ImtRedstone {
      * (die kiezen zelf hoe lang een puls duurt). Geeft false als er niets (meer) staat.
      *
      * Ging het apparaat echt aan of uit, dan hoort de server dat (voor "when turned_on(...)").
+     *
+     * Hoofdstuk 112: dit is schakelen van op afstand. Een relais dat een netwerk nodig heeft en er geen heeft, hoort het
+     * niet: dan gebeurt er niets, en geeft dit false (zie {@link #offline}).
      */
     public static boolean switchAt(ServerLevel level, BlockPos pos, int channel, Op op, int pulseTicks) {
+        return switchAt(level, pos, channel, op, pulseTicks, false);
+    }
+
+    /** Zoals hierboven; met {@code local} (je staat ernaast en drukt op zijn eigen knop) telt het netwerk niet. */
+    private static boolean switchAt(ServerLevel level, BlockPos pos, int channel, Op op, int pulseTicks, boolean local) {
         // Ver weg? Dan laadt I.M.T dat stukje wereld even in.
         if (!level.hasChunkAt(pos)) {
             level.getChunk(pos);
@@ -564,6 +662,9 @@ public final class ImtRedstone {
         Boolean before = isOnAt(level, pos, channel);
         if (before == null) {
             return false; // weggehaald of opgeblazen
+        }
+        if (!local && channel < 0 && offline(level, pos)) {
+            return false; // een relais zonder netwerk (hoofdstuk 112)
         }
         boolean wanted = switch (op) {
             case ON, PULSE -> true;

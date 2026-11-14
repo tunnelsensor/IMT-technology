@@ -40,6 +40,8 @@ bunkers to raid.
 - Camera Monitors that merge into one big screen on your wall (up to 8 x 6): drag each camera to where you want it.
 - A Security Core with its own desktop (Security OS): a camera wall, devices, keycards and code
   panels, files and traps, and protected build zones.
+- A Router gives the network to up to ten devices within 32 blocks without a cable (routers can
+  hang on routers); relays you place now need the network too, but still no power.
 - Wire your security with network cables, PoE cables and a network switch; network buttons and
   levers start your diagrams, and you can watch signals and power run along the cables.
 - Rayshields (laser gates in six colours), shield domes, rocket and laser turrets, security

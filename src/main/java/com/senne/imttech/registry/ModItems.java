@@ -118,6 +118,9 @@ public final class ModItems {
     /** Hoofdstuk 38: de Network Switch. */
     public static final DeferredItem<BlockItem> NETWORK_SWITCH = ITEMS.registerSimpleBlockItem("network_switch",
             ModBlocks.NETWORK_SWITCH, new Item.Properties().rarity(Rarity.UNCOMMON));
+    /** Hoofdstuk 112: de Router. */
+    public static final DeferredItem<BlockItem> ROUTER = ITEMS.registerSimpleBlockItem("router",
+            ModBlocks.ROUTER, new Item.Properties().rarity(Rarity.UNCOMMON));
     /** Hoofdstuk 40: de Computer en de Monitor. */
     public static final DeferredItem<BlockItem> COMPUTER = ITEMS.registerSimpleBlockItem("computer",
             ModBlocks.COMPUTER, new Item.Properties().rarity(Rarity.UNCOMMON));

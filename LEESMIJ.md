@@ -204,7 +204,7 @@ Elk item dat meer doet dan in een recept gaan, krijgt een animatie die laat zien
   **wijs je een blok aan**, dan zie je hoe het heet. Heeft een item meer animaties, dan blader je met de
   pijltjes bovenaan. **Esc** brengt je terug naar je inventaris, met alles nog zoals het was. In je eigen
   wereld staat het spel stil terwijl je kijkt.
-- **Alles is er** (63 van de 63), per tabblad:
+- **Alles is er** (64 van de 64), per tabblad:
   - *Equipment*: de bril, het harnas (minder schade, vliegen, landen, de laser cannon), de mini-raketten, de
     drones van je arsenaal, de Illusion Jammer, de holster, de pouches en de slings, de militaire rugzakken, de
     MOLLE-pouches en de body armor.
@@ -215,7 +215,8 @@ Elk item dat meer doet dan in een recept gaan, krijgt een animatie die laat zien
     onderdelen.
   - *Attachments*: de attachments (twee animaties).
   - *Power*: de Power Battery, stroom maken (zonnepaneel en warmtegenerator), kabels maken (koperdraad, de
-    Polymerizer en plastic), de Electric Furnace, stroomkabels, netwerkkabels met PoE en de switch, en de stroomkast.
+    Polymerizer en plastic), de Electric Furnace, stroomkabels, netwerkkabels met PoE en de switch, de Router, en de
+    stroomkast.
   - *Interior*: de holotafel, de harnas-werkbank met zijn upgrades, barsten herstellen (Repair Paste, de Crusher en
     de Compactor), het laadstation, het landingsplatform, de Arc Lamp met de lichtschakelaar, en relais.
   - *Security*: de Security Core, computer en monitor, zones, de Block Reinforcer, handboeien, keycards en lezers,
@@ -443,6 +444,14 @@ hele **groep**. Met je stem: *"zet de voordeur aan"*, *"doe de val uit"*, *"geef
 - **Invert**: in het scherm van een relais zet de knop **Invert** het om: dan geeft het redstone
   als het **uit** staat. Je ziet het aan een rode rand om het lampje. Zonder bril moet je ernaast
   staan.
+- **Aan het netwerk** (sinds 14 november): een relais dat je **vanaf nu** neerzet, luistert alleen van
+  op afstand (je bril, je stem, een diagram, een relay emitter) als het aan een netwerk hangt: een
+  **Router** binnen 32 blokken, of een netwerkkabel naar je kern. Stroom heeft het niet nodig. In zijn
+  scherm staat **Network: connected** of **No network**; de knop **Pulse** in dat scherm werkt altijd
+  (je staat ernaast). Zonder netwerk zegt I.M.T dat ("... has no network"). **Relais die er al stonden,
+  werken zoals vroeger.** Wil je dat ook die een netwerk nodig hebben, zet dan in `config/imttech.toml`
+  onder `[network]` `oldRelaysNeedNetwork = true`. (Met `required = false` heeft niets een netwerk
+  nodig, ook een nieuw relais niet.)
 - **Relay emitter** (een relais, een comparator en redstone): het omgekeerde van een relais. Geef
   hem redstone (een knop, hendel, drukplaat...) en hij schakelt jouw relais. In zijn scherm typ je
   de naam van een relais of een groep, en kies je **Follow** (redstone aan = aan, uit = uit),
@@ -800,7 +809,8 @@ Bijvoorbeeld: generatoren aan de achterkant, torentjes links, lasers rechts.
 Je beveiliging is echt bekabeld. Een **Network Cable** (wit; koperdraad, een stroomkabel en plastic geven er 4)
 loopt van de desktop (de **Security Core**) naar elk beveiligingsapparaat: keycardlezer, codepaneel,
 camera, beveiligingstorentje, serverrek, laserpoort en laserbrug. Pas dan staat het apparaat in de
-app **Devices** van de desktop, en hoort het bij die kern.
+app **Devices** van de desktop, en hoort het bij die kern. Zonder kabel naar elk apparaat kan ook: met
+een **Router** (zie hieronder).
 - Je **tekent** hem net als een stroomkabel (rechtermuisknop ingedrukt), en hij zit net zo vast:
   netwerkkabels naast elkaar (niet aan een stroom- of PoE-kabel), en een apparaat naast een kabel. Een apparaat dat direct tegen de kern staat,
   heeft geen kabel nodig. Serverracks, laserzenders en brugzenders geven het netwerk door aan wie
@@ -843,6 +853,49 @@ app **Devices** van de desktop, en hoort het bij die kern.
   `config/imttech.toml` onder `[network]` `required = false`: dan horen apparaten zoals vroeger bij de
   kern in wiens gebied ze staan, en hebben lezers en panelen geen stroom nodig. Onder `[network]`
   staan ook `signalRange` (hoe ver weg je de vakjes en streepjes ziet) en `flowSeconds`.
+
+### De Router: het netwerk zonder kabel naar elk apparaat (sinds 14 november)
+Een **Router** (een ender pearl, twee ijzer, een Computer Chip, twee redstone en een netwerkkabel) is een plat
+zwart kastje met twee antennes. Hij hangt zelf aan het netwerk, en geeft dat **draadloos** door aan de
+apparaten om hem heen: relais, camera's, lezers, panelen, laserpoorten, torentjes, serverracks... Die
+hebben dan **geen netwerkkabel** meer nodig.
+- **Aansluiten**: een netwerk- of PoE-kabel van je kern (of van een switch) naar de router. Een PoE-kabel
+  geeft hem meteen zijn stroom. Staat hij binnen bereik van je kern of van een andere router en heeft hij
+  geen kabel, dan verbindt hij daar zelf draadloos mee.
+- **Bereik**: 32 blokken in een rechte lijn, ook door muren (`[network] routerRange`).
+- **Tien plekken**: één router heeft hooguit 10 verbindingen (`[network] routerDevices`). Een verbinding
+  met een **andere router** telt als één ervan, bij allebei: zo is het "één router + negen andere
+  apparaten". Met een router aan een router kom je verder dan 32 blokken, of aan meer dan tien apparaten.
+  Iets dat het netwerk zelf doorgeeft (een laserpoort van vier zenders, een kast vol serverracks, een
+  schermmuur) kost maar één plek: de rest hangt eraan vast.
+- **Eén router per apparaat**: een apparaat hangt aan hooguit één router. Alleen de **Security Core** mag
+  aan meer routers tegelijk hangen (bij elke router kost hij één plek): zet je twee routers zonder kabel
+  bij je kern, dan krijgen ze allebei hun netwerk van de kern.
+- **Vanzelf**: zet je een netwerkapparaat neer dat nog nergens aan hangt, dan gaat het aan de
+  dichtstbijzijnde router met een vrije plek die van jou is (of van je basis), en zie je even een rij
+  lichtjes van het apparaat naar de router. Zet je een router neer, dan pakt hij de losse apparaten in
+  zijn buurt die van jou zijn, de dichtste eerst. Is hij vol, dan lees je dat: zet er dan een router bij.
+- **Zijn scherm** (rechtsklik): bovenaan of hij stroom heeft (**online**) en of er een Security Core in
+  zijn netwerk zit; onder **LINKED** wat eraan hangt (met de afstand en **Unlink**), onder **IN RANGE**
+  wat er binnen bereik staat, er niet aan hangt en van jou is (met **Link**; een apparaat dat aan een
+  andere router hangt, verhuist dan). Klik op een regel en er loopt een rij lichtjes van dat apparaat
+  naar de router: zo zie je welk het is.
+- **Van wie**: het scherm krijgt alleen wie de router neerzette, of wie vertrouwd is in de basis waar
+  hij staat; een ander leest van wie hij is. En je verbindt alleen apparaten die je zelf mag instellen:
+  die van jou, of die in een basis waar je vertrouwd bent. De apparaten van een ander staan dus niet in
+  je lijst, ook niet als ze binnen bereik staan: zo hangt niemand jouw camera of je torentje aan zijn
+  router, en vindt niemand je basis met het scherm van zijn eigen router.
+- **Stroom**: een router gebruikt een beetje stroom (`[power] routerUpkeep`, zoals de switch). Zonder
+  stroom, of in een EMP-puls, geeft hij niets door: alles wat alleen via hem aan het netwerk hangt, valt
+  uit tot de stroom terug is. Zijn lampjes zijn dan uit.
+- **Stroom voor de apparaten zelf**: wat altijd al stroom nodig had (een camera, een lezer, een
+  laserpoort) heeft dat nog steeds: de router vervangt alleen de netwerkkabel. Relais hebben geen stroom
+  nodig.
+- **Wat je ziet**: een kaart, een code of een knop op een apparaat aan een router stuurt een lichtblauw
+  vakje **door de lucht** naar de router, en dan over de kabel naar de kern (G > Information > Cable
+  signals).
+- Een router krijgt een naam ("Router 1"; een andere naam geef je op een aambeeld) en breekt met een
+  pickaxe; zijn naam gaat mee in het item. In de app Devices staat hij (nog) niet.
 
 ### Bewakingscamera's: beeld zo ver als je kabel reikt
 Een **Security Camera** hang je aan de muur, aan het plafond of op de vloer. Met een netwerkkabel naar de desktop van je kern

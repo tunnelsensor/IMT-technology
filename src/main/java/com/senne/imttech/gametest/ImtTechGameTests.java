@@ -4904,8 +4904,11 @@ public final class ImtTechGameTests {
         float start = player.getHealth();
         helper.succeedWhen(() -> {
             if (player.getHealth() >= start) {
+                // Het wapen staat erbij: deze test viel op 14 november twee rondes na elkaar om met de soldaat op precies
+                // dezelfde plek (de hoek van de muur). Het vermoeden: met een wapen voor ver weg vindt hij je daar te
+                // dichtbij, stapt achteruit, ziet je niet meer, en begint opnieuw. Valt hij weer om, dan zie je het hier.
                 throw new GameTestAssertException("De soldaat vond nog geen plek om de muur heen ("
-                        + soldier.blockPosition() + ")");
+                        + soldier.blockPosition() + ", wapen: " + soldier.getMainHandItem().getItem() + ")");
             }
         });
     }

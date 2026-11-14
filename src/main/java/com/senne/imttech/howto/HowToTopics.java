@@ -130,6 +130,8 @@ public final class HowToTopics {
             topic("power_cables", "power", "Power cables", PowerScenes::cables, ModItems.CABLE),
             topic("network_cables", "power", "Network cables and PoE", PowerScenes::network, ModItems.NETWORK_CABLE, ModItems.POE_CABLE,
                     ModItems.NETWORK_SWITCH),
+            // Hoofdstuk 112: de Router (het netwerk zonder kabel naar elk apparaat).
+            topic("router", "power", "Router", PowerScenes::router, ModItems.ROUTER),
             topic("power_cabinet", "power", "The power cabinet", PowerScenes::cabinet, ModItems.POWER_CABINET),
             // ------------------------------------------------------------ Interior
             topic("holo_table", "interior", "Holo table", InteriorItemScenes::holoTable, ModItems.HOLO_TABLE),

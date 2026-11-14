@@ -40,8 +40,14 @@ import org.jetbrains.annotations.Nullable;
  *
  * <b>Van jou</b> (13 oktober): wie het neerzet, is de eigenaar, en alleen die kan het bewerken en
  * schakelen. Dat onthoudt RelayBlockEntity.
+ *
+ * <b>Aan het netwerk</b> (hoofdstuk 112, jouw wens van 14 november: "relay's moeten hier ook aanhangen maar hebben nog
+ * steeds geen stroom nodig ... als je geen router gebruikt dan heeft een relay wel een netwerkkabel nodig"): een relais
+ * dat je vanaf nu neerzet, luistert alleen naar je bril, je diagrammen en je relay emitters als het aan een netwerk hangt:
+ * een netwerkkabel ernaast, of draadloos aan een Router. Stroom heeft het niet nodig. De knop Pulse in zijn eigen scherm
+ * werkt altijd (je staat er dan naast). Relais die er al stonden, werken zoals vroeger (zie ImtRedstone.needsNetwork).
  */
-public class RelayBlock extends Block implements EntityBlock {
+public class RelayBlock extends Block implements EntityBlock, com.senne.imttech.lan.NetworkConnectable {
     /** Staat het aan (volgens I.M.T)? Het lampje bovenop is dan groen. */
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
     /** Omgekeerd: redstone als het uit staat. Je ziet het aan het rode streepje boven het lampje. */
@@ -79,6 +85,20 @@ public class RelayBlock extends Block implements EntityBlock {
         return new RelayBlockEntity(pos, state);
     }
 
+    /** Hoofdstuk 112: om de vijf seconden kijkt een relais of het nog aan een netwerk hangt (zie RelayBlockEntity.serverTick). */
+    @Override
+    public <T extends BlockEntity> net.minecraft.world.level.block.entity.@Nullable BlockEntityTicker<T> getTicker(
+            Level level, BlockState state, net.minecraft.world.level.block.entity.BlockEntityType<T> type) {
+        if (level.isClientSide) {
+            return null;
+        }
+        return (tickLevel, pos, tickState, blockEntity) -> {
+            if (blockEntity instanceof RelayBlockEntity relay && tickLevel instanceof ServerLevel serverLevel) {
+                relay.serverTick(serverLevel, pos);
+            }
+        };
+    }
+
     // ---------------------------------------------------------------- Redstone
 
     @Override
@@ -111,8 +131,18 @@ public class RelayBlock extends Block implements EntityBlock {
         if (placer instanceof ServerPlayer player) {
             if (level.getBlockEntity(pos) instanceof RelayBlockEntity relay) {
                 relay.setOwner(player);
+                relay.setNetworked(true); // hoofdstuk 112: een nieuw relais heeft een netwerk nodig
             }
             ImtRedstone.register(player, pos);
+        }
+    }
+
+    /** Neergezet (ook zonder speler): er hangt een netwerkblok bij, dus de netten opnieuw zoeken (hoofdstuk 112). */
+    @Override
+    protected void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
+        super.onPlace(state, level, pos, oldState, movedByPiston);
+        if (!oldState.is(this)) {
+            com.senne.imttech.lan.LanGrid.changed();
         }
     }
 
@@ -124,6 +154,9 @@ public class RelayBlock extends Block implements EntityBlock {
     protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
         if (!state.is(newState.getBlock()) && level instanceof ServerLevel serverLevel) {
             ImtRedstone.forget(serverLevel, pos);
+            // Hoofdstuk 112: zijn plek bij een router komt vrij, en de netten lopen anders.
+            com.senne.imttech.lan.RouterLinks.get(serverLevel).forget(pos);
+            com.senne.imttech.lan.LanGrid.changed();
         }
         super.onRemove(state, level, pos, newState, movedByPiston);
     }

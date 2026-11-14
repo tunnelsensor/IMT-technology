@@ -2996,6 +2996,38 @@ def power_cabinet_textures():
     save(top, "block/power_cabinet_top.png")
 
 
+def router_textures():
+    """
+    Hoofdstuk 112: de Router, een plat zwart kastje met twee antennes (het model: tools/generate_block_models.py router()).
+    - body: mat zwartgrijs plastic; bovenop een lichter randje en drie ventilatiesleufjes, en langs de zijkanten een
+      lichte bovenrand (de plaatjes volgen de maten van het kastje: 12 breed, 8 diep, 3 hoog);
+    - antenna: effen donker, het topje iets lichter;
+    - de lampjes: led_on (groen), led_power (blauw) en led_off (donker).
+    Alleen deze functie draaien:
+        python -c "import sys; sys.path.insert(0,'tools'); import generate_textures as g; g.router_textures()"
+    """
+    plastic = (38, 42, 50, 255)
+    edge = (66, 72, 84, 255)
+    slit = (20, 22, 28, 255)
+    body = img(16, 16, plastic)
+    d = ImageDraw.Draw(body)
+    d.rectangle([2, 4, 13, 11], outline=edge)      # de bovenkant van het kastje (x 2..13, z 4..11)
+    for y in (6, 8):
+        d.line([5, y, 10, y], fill=slit)           # ventilatiesleufjes
+    d.line([0, 13, 15, 13], fill=edge)             # de bovenrand van de zijkanten (rij 13 t/m 15)
+    d.line([0, 15, 15, 15], fill=slit)
+    save(body, "block/router_body.png")
+
+    antenna = img(16, 16, (30, 33, 40, 255))
+    d = ImageDraw.Draw(antenna)
+    d.rectangle([0, 0, 15, 6], fill=(48, 52, 62, 255))   # het topje (de bovenste pixels van de antenne)
+    save(antenna, "block/router_antenna.png")
+
+    save(img(16, 16, (90, 245, 130, 255)), "block/router_led_on.png")
+    save(img(16, 16, (90, 190, 255, 255)), "block/router_led_power.png")
+    save(img(16, 16, (36, 52, 40, 255)), "block/router_led_off.png")
+
+
 def network_switch_textures():
     """
     Hoofdstuk 38: de Network Switch, een netwerkkast naast de stroomkast.
@@ -4565,6 +4597,7 @@ if __name__ == "__main__":
     landing_pad_textures()
     power_cabinet_textures()
     network_switch_textures()
+    router_textures()
     computer_textures()
     camera_monitor_textures()
     server_rack_textures()

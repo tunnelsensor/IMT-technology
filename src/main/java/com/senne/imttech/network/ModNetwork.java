@@ -28,7 +28,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "42";
+    private static final String PROTOCOL_VERSION = "43";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -114,6 +114,12 @@ public final class ModNetwork {
         registrar.playToServer(SwitchActionPayload.TYPE, SwitchActionPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) {
                 com.senne.imttech.lan.NetworkSwitches.handleAction(player, payload);
+            }
+        });
+        // Hoofdstuk 112: een knop in het scherm van een Router (verbinden, losmaken, aanwijzen, verversen).
+        registrar.playToServer(RouterActionPayload.TYPE, RouterActionPayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                com.senne.imttech.lan.Routers.handleAction(player, payload);
             }
         });
         registrar.playToServer(CabinetActionPayload.TYPE, CabinetActionPayload.STREAM_CODEC, (payload, context) -> {
@@ -291,6 +297,8 @@ public final class ModNetwork {
                 (payload, context) -> ClientPayloadHandlers.onCameraWallOpen(payload, context));
         registrar.playToClient(SwitchOpenPayload.TYPE, SwitchOpenPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onSwitchOpen(payload, context));
+        registrar.playToClient(RouterOpenPayload.TYPE, RouterOpenPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onRouterOpen(payload, context));
         registrar.playToClient(CableTrafficPayload.TYPE, CableTrafficPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onCableTraffic(payload, context));
         registrar.playToClient(HoloOpenPayload.TYPE, HoloOpenPayload.STREAM_CODEC,

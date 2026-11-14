@@ -55,7 +55,7 @@ public final class ClientPayloadHandlers {
     public static void onRelayEdit(RelayEditPayload payload, IPayloadContext context) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen == null) {
-            mc.setScreen(new RelayEditScreen(payload.index()));
+            mc.setScreen(new RelayEditScreen(payload.index(), payload.network()));
         }
     }
 
@@ -214,6 +214,19 @@ public final class ClientPayloadHandlers {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen == null) {
             mc.setScreen(new NetworkSwitchScreen(payload.pos(), payload.name()));
+        }
+    }
+
+    /**
+     * Hoofdstuk 112: het scherm van een Router. Staat het al open (voor deze router), dan krijgt het alleen de nieuwe
+     * lijst; anders gaat het open, maar alleen als de server dat vroeg (een verversing opent geen scherm dat je net sloot).
+     */
+    public static void onRouterOpen(com.senne.imttech.network.RouterOpenPayload payload, IPayloadContext context) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen instanceof RouterScreen screen && screen.pos().equals(payload.pos())) {
+            screen.update(payload);
+        } else if (mc.screen == null && payload.open()) {
+            mc.setScreen(new RouterScreen(payload));
         }
     }
 

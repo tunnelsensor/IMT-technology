@@ -347,6 +347,9 @@ public final class ImtConfig {
         /** Stroom die een Network Switch elke twee seconden haalt (zonder: geen netwerk door de switch). */
         @Tunable(value = "Grid energy a network switch uses every two seconds (without it, no network passes through it)", energy = true)
         public static float NETWORK_SWITCH_UPKEEP = 30.0f;
+        /** Hoofdstuk 112: stroom die een Router elke twee seconden haalt (zonder: zijn draadloze verbindingen geven niets door). */
+        @Tunable(value = "Grid energy a Router uses every two seconds (without it, its wireless links pass nothing)", energy = true)
+        public static float ROUTER_UPKEEP = 30.0f;
         /** Stroom die een netwerkknop elke twee seconden haalt (zonder: de server hoort hem niet). */
         @Tunable(value = "Grid energy a network button uses every two seconds (without it, the server does not hear it)", energy = true)
         public static float BUTTON_UPKEEP = 5.0f;
@@ -1336,6 +1339,32 @@ public final class ImtConfig {
                 + "far (and keeps it loaded while you watch). Your own game can show less (cameraFeedDistance in "
                 + "imttech-client.toml)", min = 16, max = 128)
         public static float CAMERA_FEED_MAX = 64.0f;
+
+        /**
+         * Hoofdstuk 112 (jouw wens: "een router: hier kun je elk ding draadloos tot op 32 blokken op connecten"): zo ver
+         * (blokken, in een rechte lijn, ook door muren) reikt een Router.
+         */
+        @Tunable(value = "How far (blocks, in a straight line, also through walls) a Router reaches: a device this close can "
+                + "be linked to it without a network cable", min = 4, max = 128)
+        public static float ROUTER_RANGE = 32.0f;
+
+        /**
+         * Hoeveel apparaten één Router draadloos kan hebben (jouw wens: "elke router kan max 10 devices"). Een andere Router
+         * waar hij mee verbonden is, telt als één ervan: "dan is het één router + negen andere devices".
+         */
+        @Tunable(value = "How many devices one Router can link. Another Router it is linked to counts as one of them", min = 1,
+                max = 64)
+        public static float ROUTER_DEVICES = 10.0f;
+
+        /**
+         * Hoofdstuk 112 (jouw wens: "relay's moeten hier ook aanhangen"): een relais dat je vanaf nu neerzet, luistert alleen
+         * als het aan een netwerk hangt (een netwerkkabel, of een Router). Relais die er al stonden, blijven werken zoals
+         * vroeger, tenzij je dit aanzet: dan hebben ook die een netwerk nodig.
+         */
+        @Tunable("Do relays that were placed before the Router update also need a network (a network cable or a Router) to be "
+                + "switched from a distance? false = those old relays keep working without one. Relays placed from now on "
+                + "always need a network (unless required is false)")
+        public static boolean OLD_RELAYS_NEED_NETWORK = false;
     }
 
     // =============================================================================================== Logic

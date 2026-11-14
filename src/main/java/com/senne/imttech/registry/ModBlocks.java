@@ -212,6 +212,17 @@ public final class ModBlocks {
                     .sound(SoundType.METAL)
                     .lightLevel(state -> state.getValue(com.senne.imttech.lan.NetworkSwitchBlock.ONLINE) ? 3 : 0));
 
+    /** Hoofdstuk 112: de Router, die het netwerk draadloos doorgeeft aan de apparaten om hem heen (zie lan/RouterBlock). */
+    public static final DeferredBlock<com.senne.imttech.lan.RouterBlock> ROUTER = BLOCKS.registerBlock(
+            "router", com.senne.imttech.lan.RouterBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(3.0f, 6.0f)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL)
+                    .noOcclusion()
+                    .lightLevel(state -> state.getValue(com.senne.imttech.lan.RouterBlock.ONLINE) ? 3 : 0));
+
     /** Hoofdstuk 40: de Computer, een pc-kast op het netwerk van een kern (zie computer/ComputerBlock). */
     public static final DeferredBlock<com.senne.imttech.computer.ComputerBlock> COMPUTER = BLOCKS.registerBlock(
             "computer", com.senne.imttech.computer.ComputerBlock::new,

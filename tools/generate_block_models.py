@@ -498,6 +498,36 @@ def network_controls():
           {"parent": "imttech:block/network_lever_inventory", "display": display})
 
 
+def router():
+    """
+    De Router (hoofdstuk 112): een plat kastje van 12 x 3 x 8 met achteraan twee antennes van 8 hoog, en op de voorkant
+    (het noorden; de blockstate draait het) vier lampjes: het eerste is het stroomlampje (blauw), de andere drie groen. Met
+    stroom geven de lampjes licht ('router_on'), zonder zijn ze donker ('router').
+    """
+    turn = {"north": 0, "east": 90, "south": 180, "west": 270}
+    leds = [([3.5, 1, 3.9], [4.5, 2, 4]), ([6.5, 1, 3.9], [7.5, 2, 4]), ([8.5, 1, 3.9], [9.5, 2, 4]),
+            ([10.5, 1, 3.9], [11.5, 2, 4])]
+    for on in (False, True):
+        textures = {"particle": "imttech:block/router_body", "body": "imttech:block/router_body",
+                    "antenna": "imttech:block/router_antenna",
+                    "led": "imttech:block/router_led_" + ("on" if on else "off"),
+                    "power": "imttech:block/router_led_" + ("power" if on else "off")}
+        elements = [box([2, 0, 4], [14, 3, 12], "#body"),
+                    box([3, 3, 10], [4, 11, 11], "#antenna", skip=("down",)),
+                    box([12, 3, 10], [13, 11, 11], "#antenna", skip=("down",))]
+        for i, (frm, to) in enumerate(leds):
+            elements.append(box(frm, to, "#power" if i == 0 else "#led", glow=on, skip=("south",)))
+        save("router_on" if on else "router", textures, elements)
+    variants = {}
+    for facing, y in turn.items():
+        for on in (False, True):
+            option = {"model": "imttech:block/router" + ("_on" if on else "")}
+            if y:
+                option["y"] = y
+            variants["facing=%s,online=%s" % (facing, "true" if on else "false")] = option
+    blockstate("router", variants)
+
+
 def robot_dock():
     """
     Het Robot Dock (hoofdstuk 21): een lage laadplaat waar de robot op staat, met achteraan een paal met een
@@ -692,6 +722,7 @@ if __name__ == "__main__":
     arc_lamp()
     light_switch()
     network_controls()
+    router()
     robot_dock()
     computer_and_monitor()
     camera_monitor()

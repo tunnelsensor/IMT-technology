@@ -7,7 +7,18 @@ import com.senne.imttech.energy.CableKind;
 import com.senne.imttech.energy.CableSpoolItem;
 import com.senne.imttech.energy.Cables;
 import com.senne.imttech.energy.PowerGrid;
+import com.senne.imttech.config.ImtConfig;
 import com.senne.imttech.lan.LanGrid;
+import com.senne.imttech.lan.RouterBlock;
+import com.senne.imttech.lan.RouterBlockEntity;
+import com.senne.imttech.lan.RouterLinks;
+import com.senne.imttech.lan.Routers;
+import com.senne.imttech.network.RelayActionPayload;
+import com.senne.imttech.network.RouterActionPayload;
+import com.senne.imttech.redstone.ImtRedstone;
+import com.senne.imttech.redstone.RelayBlock;
+import com.senne.imttech.redstone.RelayBlockEntity;
+import com.senne.imttech.registry.ModAttachments;
 import com.senne.imttech.logic.InputDeviceBlock;
 import com.senne.imttech.logic.InputLight;
 import com.senne.imttech.logic.LogicEvents;
@@ -1255,5 +1266,526 @@ public final class NetworkGameTests {
                 .thenIdle(45)
                 .thenExecute(() -> check(coreOf(helper, openReader) == core, "Na de EMP-puls werkt de open netwerkkabel niet"))
                 .thenSucceed();
+    }
+
+    // ================================================================ Hoofdstuk 112: de Router
+
+    /** Een Router op deze plek met stroom (een volle generator eronder): aangemeld, en zijn lampjes branden. */
+    private static BlockPos router(GameTestHelper helper, BlockPos pos) {
+        helper.setBlock(pos, ModBlocks.ROUTER.get());
+        generator(helper, pos.below());
+        ((RouterBlockEntity) helper.getBlockEntity(pos)).updateOnline(helper.getLevel());
+        helper.assertBlockProperty(pos, RouterBlock.ONLINE, true);
+        return helper.absolutePos(pos);
+    }
+
+    /** Doet {@code action} met een ander bereik en een ander aantal plekken voor de routers, en zet het daarna terug. */
+    private static void withRouterLimits(float range, float devices, Runnable action) {
+        float oldRange = ImtConfig.Network.ROUTER_RANGE;
+        float oldDevices = ImtConfig.Network.ROUTER_DEVICES;
+        ImtConfig.Network.ROUTER_RANGE = range;
+        ImtConfig.Network.ROUTER_DEVICES = devices;
+        LanGrid.changed();
+        try {
+            action.run();
+        } finally {
+            ImtConfig.Network.ROUTER_RANGE = oldRange;
+            ImtConfig.Network.ROUTER_DEVICES = oldDevices;
+            LanGrid.changed();
+        }
+    }
+
+    /**
+     * Jouw wens: "een router: hier kun je elk ding draadloos tot op 32 blokken op connecten". Een lezer zonder kabel hoort
+     * bij geen kern; verbind je hem met een router die met een kabel aan de kern hangt, dan wel (en staat hij in Devices).
+     * De weg van de lezer naar de kern loopt via de router. Zonder stroom geeft de router niets door (hij hangt zelf nog
+     * wel aan de kern); maak je de lezer los, dan is hij weer van niemand. Buiten het bereik verbindt hij niet, en een
+     * verbinding die buiten het bereik raakt (de config veranderde) telt niet meer.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "lan")
+    public static void router_links_a_device_without_a_cable(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), null);
+        line(helper, CableKind.NETWORK, new BlockPos(3, 3, 2), new BlockPos(5, 3, 2));
+        BlockPos routerPos = new BlockPos(6, 3, 2);
+        BlockPos router = router(helper, routerPos);
+        check(coreOf(helper, routerPos) == core, "De router hangt niet met zijn kabel aan de kern");
+        BlockPos reader = new BlockPos(14, 3, 8);
+        helper.setBlock(reader, ModBlocks.KEYCARD_READER.get());
+        BlockPos readerAbs = helper.absolutePos(reader);
+        check(coreOf(helper, reader) == null, "Een lezer zonder kabel en zonder router hoort bij een kern");
+        check(Routers.link(level, router, readerAbs), "De router verbond de lezer niet: " + Routers.whyNot(level, router, readerAbs));
+        check(coreOf(helper, reader) == core, "Een lezer aan een router hoort niet bij de kern van die router");
+        SecurityDevices.forget(level, core);
+        check(SecurityDevices.scan(level, core).inputs().contains(readerAbs), "Een lezer aan een router staat niet in Devices");
+        List<BlockPos> path = LanGrid.path(level, readerAbs);
+        check(path.size() >= 3 && path.getFirst().equals(readerAbs) && path.get(1).equals(router)
+                && path.getLast().equals(core.getBlockPos()), "De weg van de lezer naar de kern loopt niet via de router: " + path);
+        check(LanGrid.networkOf(level, readerAbs).containsAll(List.of(readerAbs, router, core.getBlockPos())),
+                "De lezer, de router en de kern zitten niet in hetzelfde net: " + LanGrid.networkOf(level, readerAbs));
+        check("screen.imttech.router.already".equals(Routers.whyNot(level, router, readerAbs)),
+                "Twee keer dezelfde verbinding kan: " + Routers.whyNot(level, router, readerAbs));
+        // Geen stroom: de router hangt zelf nog aan de kern, maar geeft niets door.
+        RouterBlockEntity entity = (RouterBlockEntity) helper.getBlockEntity(routerPos);
+        helper.setBlock(routerPos.below(), Blocks.AIR);
+        entity.updateOnline(level);
+        helper.assertBlockProperty(routerPos, RouterBlock.ONLINE, false);
+        check(coreOf(helper, reader) == null, "Een router zonder stroom geeft het netwerk nog door");
+        check(coreOf(helper, routerPos) == core, "Een router zonder stroom hangt zelf niet meer aan de kern");
+        generator(helper, routerPos.below());
+        entity.updateOnline(level);
+        check(coreOf(helper, reader) == core, "Met stroom terug geeft de router het netwerk niet weer door");
+        // Het bereik: buiten bereik verbindt hij niet, en wat buiten bereik raakt, telt niet meer.
+        BlockPos panel = new BlockPos(9, 3, 2);
+        helper.setBlock(panel, ModBlocks.CODE_PANEL.get());
+        withRouterLimits(5, 10, () -> {
+            check(coreOf(helper, reader) == null, "Een lezer buiten het (nieuwe) bereik hangt nog aan de router");
+            BlockPos far = new BlockPos(20, 3, 2);
+            helper.setBlock(far, ModBlocks.KEYCARD_READER.get());
+            check("screen.imttech.router.too_far".equals(Routers.whyNot(level, router, helper.absolutePos(far))),
+                    "Te ver weg geeft: " + Routers.whyNot(level, router, helper.absolutePos(far)));
+            check(!Routers.link(level, router, helper.absolutePos(far)), "De router verbond een lezer buiten zijn bereik");
+            check(Routers.link(level, router, helper.absolutePos(panel)) && coreOf(helper, panel) == core,
+                    "Een paneel binnen het bereik hangt niet aan de router");
+        });
+        check(coreOf(helper, reader) == core, "Terug in bereik hangt de lezer niet weer aan de router");
+        // Losmaken, en geen netwerkblok.
+        check(Routers.unlink(level, router, readerAbs) && coreOf(helper, reader) == null, "Losgemaakt hoort de lezer nog bij de kern");
+        helper.setBlock(new BlockPos(8, 3, 6), Blocks.STONE);
+        check("screen.imttech.router.not_a_device".equals(Routers.whyNot(level, router, helper.absolutePos(new BlockPos(8, 3, 6)))),
+                "Een steen kun je verbinden");
+        helper.succeed();
+    }
+
+    /**
+     * Jouw wens: "elke router kan max 10 devices en kan ook verbinden met andere routers, die horen dan ook bij één van de
+     * devices". Een tweede router zonder kabel hangt draadloos aan de eerste; een lezer aan de tweede hoort zo bij de kern
+     * (twee sprongen door de lucht). De verbinding tussen de routers kost bij allebei één plek. Is een router vol, dan
+     * verbindt hij niets meer, ook niet met een router; haal je een router weg, dan zijn al zijn verbindingen weg.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "lan")
+    public static void routers_chain_and_have_ten_places(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        RouterLinks links = RouterLinks.get(level);
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 12), null);
+        line(helper, CableKind.NETWORK, new BlockPos(3, 3, 12), new BlockPos(5, 3, 12));
+        BlockPos first = router(helper, new BlockPos(6, 3, 12));
+        BlockPos secondPos = new BlockPos(16, 3, 12);
+        BlockPos second = router(helper, secondPos);
+        check(links.isRouter(first) && links.isRouter(second), "Een router meldt zich niet aan als hij neergezet wordt");
+        check(coreOf(helper, secondPos) == null, "Een router zonder kabel en zonder verbinding hangt aan een kern");
+        check(Routers.link(level, first, second), "De routers verbonden niet: " + Routers.whyNot(level, first, second));
+        check(links.count(first) == 1 && links.count(second) == 1, "De verbinding tussen twee routers kost niet bij allebei één "
+                + "plek: " + links.count(first) + " en " + links.count(second));
+        check(coreOf(helper, secondPos) == core, "De tweede router hangt niet via de eerste aan de kern");
+        BlockPos reader = new BlockPos(20, 3, 16);
+        helper.setBlock(reader, ModBlocks.KEYCARD_READER.get());
+        BlockPos readerAbs = helper.absolutePos(reader);
+        check(Routers.link(level, second, readerAbs) && coreOf(helper, reader) == core,
+                "Een lezer aan de tweede router hoort niet bij de kern");
+        check(first.equals(links.routerOf(readerAbs)) == false && second.equals(links.routerOf(readerAbs)),
+                "De lezer hangt niet aan de tweede router");
+        // Een apparaat hangt aan hooguit één router: verbindt de eerste hem, dan verhuist hij.
+        check(Routers.link(level, first, readerAbs) && first.equals(links.routerOf(readerAbs)) && links.count(second) == 1,
+                "Een lezer die een andere router verbindt, verhuisde niet");
+        check(Routers.link(level, second, readerAbs), "De lezer kon niet terug naar de tweede router");
+        // Vol: de tweede router heeft nu de eerste router en de lezer. Met twee plekken past er niets meer bij.
+        BlockPos panel = new BlockPos(18, 3, 10);
+        helper.setBlock(panel, ModBlocks.CODE_PANEL.get());
+        BlockPos third = router(helper, new BlockPos(12, 3, 18));
+        withRouterLimits(32, 2, () -> {
+            check("screen.imttech.router.full".equals(Routers.whyNot(level, second, helper.absolutePos(panel))),
+                    "Een volle router zegt: " + Routers.whyNot(level, second, helper.absolutePos(panel)));
+            check("screen.imttech.router.other_full".equals(Routers.whyNot(level, third, second)),
+                    "Verbinden met een volle router zegt: " + Routers.whyNot(level, third, second));
+            check(!Routers.link(level, second, helper.absolutePos(panel)) && !Routers.link(level, third, second),
+                    "Een volle router verbond toch nog iets");
+        });
+        check(Routers.link(level, second, helper.absolutePos(panel)), "Met tien plekken past het paneel er niet bij");
+        // De tweede router weg: al zijn verbindingen ook, en de lezer is weer van niemand.
+        helper.setBlock(secondPos, Blocks.AIR);
+        check(!links.isRouter(second) && links.count(first) == 0 && links.routerOf(readerAbs) == null,
+                "Na het weghalen van een router bestaan zijn verbindingen nog");
+        check(coreOf(helper, reader) == null, "Zonder zijn router hoort de lezer nog bij de kern");
+        helper.succeed();
+    }
+
+    /**
+     * Vanzelf: een router die je neerzet, zoekt eerst zijn eigen weg naar het netwerk (hier: de kern in de buurt) en pakt
+     * dan de losse apparaten binnen zijn bereik. Wat al aan een netwerk hangt (een lezer tegen de kern aan) laat hij met
+     * rust, en van een laserpoort van twee zenders verbindt hij er maar één: de andere hangt eraan vast. Een apparaat dat
+     * je daarna neerzet, gaat zelf aan de router, tot die vol is. En alleen aan een router die je mag instellen.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "lan")
+    public static void routers_and_devices_find_each_other(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        RouterLinks links = RouterLinks.get(level);
+        ServerPlayer alice = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(10, 3, 12), "lan-router-own");
+        ServerPlayer bob = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(10, 3, 12), "lan-router-other");
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), null);
+        BlockPos touching = new BlockPos(3, 3, 2);
+        helper.setBlock(touching, ModBlocks.KEYCARD_READER.get());
+        BlockPos loose = new BlockPos(12, 3, 10);
+        helper.setBlock(loose, ModBlocks.KEYCARD_READER.get());
+        BlockPos panel = new BlockPos(10, 3, 14);
+        helper.setBlock(panel, ModBlocks.CODE_PANEL.get());
+        BlockPos gateLow = new BlockPos(14, 3, 6);
+        helper.setBlock(gateLow, ModBlocks.LASER_EMITTER.get());
+        helper.setBlock(gateLow.above(), ModBlocks.LASER_EMITTER.get());
+        BlockPos routerPos = new BlockPos(10, 3, 10);
+        BlockPos router = router(helper, routerPos);
+        int linked = Routers.autoLink(level, router, null);
+        List<BlockPos> now = links.linked(router);
+        check(now.contains(core.getBlockPos()), "De router zocht niet zelf de kern in de buurt: " + now);
+        check(now.contains(helper.absolutePos(loose)) && now.contains(helper.absolutePos(panel)),
+                "De router pakte de losse lezer en het paneel niet: " + now);
+        check(!now.contains(helper.absolutePos(touching)), "De router pakte een lezer die al tegen de kern aan staat");
+        boolean low = now.contains(helper.absolutePos(gateLow));
+        boolean high = now.contains(helper.absolutePos(gateLow.above()));
+        check(low != high, "Van een laserpoort van twee zenders hoort er precies één aan de router: " + now);
+        check(linked == 4 && links.count(router) == 4, "De router verbond er " + linked + " (en telt " + links.count(router) + ")");
+        check(coreOf(helper, gateLow) == core && coreOf(helper, gateLow.above()) == core, "De hele laserpoort hangt niet aan de kern");
+        // Een nieuw apparaat gaat zelf aan de router (tot die vol is).
+        BlockPos fresh = new BlockPos(8, 3, 8);
+        helper.setBlock(fresh, ModBlocks.KEYCARD_READER.get());
+        check(router.equals(Routers.autoJoin(level, helper.absolutePos(fresh), null)) && coreOf(helper, fresh) == core,
+                "Een nieuwe lezer ging niet zelf aan de router");
+        check(Routers.autoJoin(level, helper.absolutePos(fresh), null) == null, "Een lezer die al verbonden is, verbond nog eens");
+        BlockPos extra = new BlockPos(8, 3, 12);
+        helper.setBlock(extra, ModBlocks.KEYCARD_READER.get());
+        withRouterLimits(32, 5, () -> check(Routers.autoJoin(level, helper.absolutePos(extra), null) == null
+                && links.routerOf(helper.absolutePos(extra)) == null, "Een lezer ging aan een volle router"));
+        // Alleen aan een router die je mag instellen: die van Alice neemt wat Bob neerzet niet, wat Alice neerzet wel.
+        ((RouterBlockEntity) helper.getBlockEntity(routerPos)).setOwner(alice);
+        check(Routers.autoJoin(level, helper.absolutePos(extra), bob) == null, "De lezer van een ander ging aan de router van Alice");
+        check(router.equals(Routers.autoJoin(level, helper.absolutePos(extra), alice)), "De lezer van Alice ging niet aan haar router");
+        helper.succeed();
+    }
+
+    /**
+     * Het scherm van de router: alleen wie hem mag instellen (wie hem neerzette) verbindt en maakt los, en alleen met
+     * apparaten die hij zelf mag instellen. Van te ver weg doet een knop niets.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "lan")
+    public static void router_screen_links_only_what_you_may_change(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        RouterLinks links = RouterLinks.get(level);
+        ServerPlayer alice = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 3, 6), "lan-screen-a");
+        ServerPlayer bob = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 3, 6), "lan-screen-b");
+        BlockPos routerPos = new BlockPos(6, 3, 4);
+        BlockPos router = router(helper, routerPos);
+        ((RouterBlockEntity) helper.getBlockEntity(routerPos)).setOwner(alice);
+        BlockPos reader = new BlockPos(10, 3, 4);
+        helper.setBlock(reader, ModBlocks.KEYCARD_READER.get());
+        ((com.senne.imttech.logic.InputDeviceBlockEntity) helper.getBlockEntity(reader)).setOwner(alice);
+        BlockPos readerAbs = helper.absolutePos(reader);
+        Routers.handleAction(bob, new RouterActionPayload(router, RouterActionPayload.LINK, readerAbs));
+        check(!links.linked(router, readerAbs), "Bob verbond iets aan de router van Alice");
+        Routers.handleAction(alice, new RouterActionPayload(router, RouterActionPayload.LINK, readerAbs));
+        check(links.linked(router, readerAbs), "Alice kon haar lezer niet aan haar router hangen");
+        Routers.handleAction(bob, new RouterActionPayload(router, RouterActionPayload.UNLINK, readerAbs));
+        check(links.linked(router, readerAbs), "Bob maakte iets los van de router van Alice");
+        // Van te ver weg doet een knop niets.
+        alice.teleportTo(alice.getX() + 12, alice.getY(), alice.getZ());
+        Routers.handleAction(alice, new RouterActionPayload(router, RouterActionPayload.UNLINK, readerAbs));
+        check(links.linked(router, readerAbs), "Een knop van te ver weg werkte");
+        alice.teleportTo(alice.getX() - 12, alice.getY(), alice.getZ());
+        Routers.handleAction(alice, new RouterActionPayload(router, RouterActionPayload.UNLINK, readerAbs));
+        check(!links.linked(router, readerAbs), "Alice kon haar lezer niet losmaken");
+        // Bob met zijn eigen router: de lezer van Alice mag hij niet instellen, dus ook niet verbinden.
+        BlockPos bobRouterPos = new BlockPos(6, 3, 8);
+        BlockPos bobRouter = router(helper, bobRouterPos);
+        ((RouterBlockEntity) helper.getBlockEntity(bobRouterPos)).setOwner(bob);
+        Routers.handleAction(bob, new RouterActionPayload(bobRouter, RouterActionPayload.LINK, readerAbs));
+        check(!links.linked(bobRouter, readerAbs), "Bob hing de lezer van Alice aan zijn eigen router");
+        BlockPos own = new BlockPos(10, 3, 8);
+        helper.setBlock(own, ModBlocks.KEYCARD_READER.get());
+        ((com.senne.imttech.logic.InputDeviceBlockEntity) helper.getBlockEntity(own)).setOwner(bob);
+        Routers.handleAction(bob, new RouterActionPayload(bobRouter, RouterActionPayload.LINK, helper.absolutePos(own)));
+        check(links.linked(bobRouter, helper.absolutePos(own)), "Bob kon zijn eigen lezer niet aan zijn eigen router hangen");
+        // Vanzelf verbinden neemt niets over: een relais en een lezer van niemand blijven van niemand (gevonden door de
+        // nalezing: een router neerzetten maakte ze van jou, tot 32 blokken ver).
+        BlockPos nobodysRelay = new BlockPos(12, 3, 10);
+        helper.setBlock(nobodysRelay, ModBlocks.RELAY.get());
+        BlockPos nobodysReader = new BlockPos(12, 3, 12);
+        helper.setBlock(nobodysReader, ModBlocks.KEYCARD_READER.get());
+        Routers.autoLink(level, bobRouter, bob);
+        Routers.autoJoin(level, helper.absolutePos(nobodysReader), alice);
+        check(ImtRedstone.relayOwner(level, helper.absolutePos(nobodysRelay)) == null,
+                "Een router neerzetten nam een relais van niemand over");
+        check(((com.senne.imttech.logic.InputDeviceBlockEntity) helper.getBlockEntity(nobodysReader)).owner() == null,
+                "Vanzelf verbinden nam een lezer van niemand over");
+        check(bob.getUUID().equals(((RouterBlockEntity) helper.getBlockEntity(bobRouterPos)).owner()),
+                "Een apparaat neerzetten nam de router van een ander over");
+        // Een knop met een plek heel ver weg (een stuk wereld dat niet geladen is) doet niets, en laadt niets.
+        BlockPos farAway = router.offset(20_000, 0, 20_000);
+        Routers.handleAction(alice, new RouterActionPayload(farAway, RouterActionPayload.REFRESH, farAway));
+        Routers.handleAction(alice, new RouterActionPayload(router, RouterActionPayload.LINK, farAway));
+        check(!level.isLoaded(farAway), "Een knop van het routerscherm laadde een stuk wereld ver weg");
+        helper.succeed();
+    }
+
+    /**
+     * Gevonden door de nalezing: een tweede router bij de kern pakte de kern af van de eerste, en dan had alles aan de
+     * eerste router geen netwerk meer. De kern mag aan meer routers tegelijk hangen (bij elke router één plek); een gewoon
+     * apparaat verhuist nog steeds. Maak je één router los van de kern, dan houdt de andere hem; is de kern weg, dan komen
+     * zijn plekken bij allebei de routers weer vrij.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "lan")
+    public static void two_routers_share_the_core(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        RouterLinks links = RouterLinks.get(level);
+        BlockPos corePos = new BlockPos(12, 3, 12);
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, corePos, null);
+        BlockPos coreAbs = core.getBlockPos();
+        BlockPos first = router(helper, new BlockPos(5, 3, 12));
+        BlockPos reader = new BlockPos(3, 3, 8);
+        helper.setBlock(reader, ModBlocks.KEYCARD_READER.get());
+        BlockPos readerAbs = helper.absolutePos(reader);
+        check(Routers.link(level, first, coreAbs) && Routers.link(level, first, readerAbs) && coreOf(helper, reader) == core,
+                "De lezer hangt niet via de eerste router aan de kern");
+        BlockPos second = router(helper, new BlockPos(19, 3, 12));
+        BlockPos panel = new BlockPos(21, 3, 8);
+        helper.setBlock(panel, ModBlocks.CODE_PANEL.get());
+        BlockPos panelAbs = helper.absolutePos(panel);
+        check(Routers.link(level, second, coreAbs), "De tweede router verbond de kern niet: " + Routers.whyNot(level, second, coreAbs));
+        check(links.linked(first, coreAbs) && links.linked(second, coreAbs),
+                "De tweede router pakte de kern af van de eerste: " + links.routersOf(coreAbs));
+        check(coreOf(helper, reader) == core, "De lezer aan de eerste router verloor zijn kern toen de tweede router de kern verbond");
+        check(Routers.link(level, second, panelAbs) && coreOf(helper, panel) == core, "Het paneel hangt niet via de tweede router aan de kern");
+        check(links.count(first) == 2 && links.count(second) == 2, "De kern kost niet bij elke router één plek: "
+                + links.count(first) + " en " + links.count(second));
+        SecurityDevices.forget(level, core);
+        check(SecurityDevices.scan(level, core).inputs().containsAll(List.of(readerAbs, panelAbs)),
+                "De kern ziet niet de apparaten van allebei zijn routers");
+        // Een gewoon apparaat verhuist nog steeds.
+        check(Routers.link(level, second, readerAbs) && second.equals(links.routerOf(readerAbs)) && !links.linked(first, readerAbs)
+                && links.routersOf(readerAbs).size() == 1, "Een gewoon apparaat hangt aan twee routers: " + links.routersOf(readerAbs));
+        check(Routers.link(level, first, readerAbs), "De lezer kon niet terug naar de eerste router");
+        // Eén router los van de kern: de andere houdt hem.
+        check(Routers.unlink(level, first, coreAbs) && links.linked(second, coreAbs) && !links.linked(first, coreAbs),
+                "Losmaken van de ene router maakte de kern ook los van de andere");
+        check(coreOf(helper, reader) == null && coreOf(helper, panel) == core, "Na het losmaken klopt niet meer wie de kern heeft");
+        check(Routers.link(level, first, coreAbs) && coreOf(helper, reader) == core, "De eerste router kon de kern niet opnieuw verbinden");
+        // De kern weg: bij allebei de routers komt zijn plek weer vrij (zodra het netwerk er langs zoekt).
+        helper.setBlock(corePos, Blocks.AIR);
+        check(coreOf(helper, reader) == null && coreOf(helper, panel) == null, "Zonder kern hebben de apparaten nog een kern");
+        check(links.routersOf(coreAbs).isEmpty() && links.count(first) == 1 && links.count(second) == 1,
+                "Een kern die weg is, houdt nog een plek bezet: " + links.linked(first) + " en " + links.linked(second));
+        helper.succeed();
+    }
+
+    /**
+     * De lijst van de routers overleeft bewaren en weer lezen (data/imttech_routers.dat): wat er aan welke router hangt (in
+     * dezelfde volgorde), twee routers aan elkaar, en een kern aan twee routers tegelijk. En daarna werkt hij nog: haal je
+     * een router weg, dan blijft de kern aan de andere hangen.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "lan")
+    public static void router_links_survive_a_save(GameTestHelper helper) {
+        RouterLinks links = new RouterLinks();
+        BlockPos first = new BlockPos(100, 64, 100);
+        BlockPos second = new BlockPos(120, 64, 100);
+        BlockPos core = new BlockPos(110, 64, 110);
+        BlockPos reader = new BlockPos(101, 64, 105);
+        BlockPos relay = new BlockPos(125, -20, 96);
+        links.addRouter(first);
+        links.addRouter(second);
+        check(links.link(first, second) && links.link(first, core, true) && links.link(second, core, true)
+                && links.link(first, reader) && links.link(second, relay), "De lijst nam een verbinding niet aan");
+        check(!links.link(first, second) && !links.link(second, first) && !links.link(reader, relay) && !links.link(first, first),
+                "De lijst nam een verbinding aan die niet kan (dubbel, geen router, of met zichzelf)");
+        var registries = helper.getLevel().registryAccess();
+        RouterLinks loaded = RouterLinks.load(links.save(new CompoundTag(), registries), registries);
+        check(loaded.routers().equals(java.util.Set.of(first, second)), "Na het lezen zijn dit de routers: " + loaded.routers());
+        check(loaded.linked(first).equals(List.of(second, core, reader)) && loaded.linked(second).equals(List.of(first, core, relay)),
+                "Na het lezen hangt er iets anders aan de routers: " + loaded.linked(first) + " en " + loaded.linked(second));
+        check(java.util.Set.copyOf(loaded.routersOf(core)).equals(java.util.Set.of(first, second)),
+                "Na het lezen hangt de kern niet meer aan allebei de routers: " + loaded.routersOf(core));
+        check(first.equals(loaded.routerOf(reader)) && second.equals(loaded.routerOf(relay)) && loaded.routerOf(first) == null,
+                "Na het lezen klopt niet meer aan welke router een apparaat hangt");
+        check(loaded.partners(reader).equals(List.of(first)) && java.util.Set.copyOf(loaded.partners(core)).equals(java.util.Set.of(first, second))
+                && loaded.partners(first).equals(List.of(second, core, reader)), "Na het lezen kloppen de draadloze buren niet");
+        loaded.removeRouter(first);
+        check(loaded.routersOf(core).equals(List.of(second)) && loaded.routerOf(reader) == null && loaded.linked(second).equals(List.of(core, relay))
+                && !loaded.isRouter(first), "Na het weghalen van een router klopt de gelezen lijst niet: " + loaded.linked(second));
+        loaded.forget(core);
+        check(loaded.routersOf(core).isEmpty() && loaded.linked(second).equals(List.of(relay)), "Een kern vergeten laat iets achter");
+        helper.succeed();
+    }
+
+    /**
+     * Gevonden door de nalezing: (1) het torentje van een ander kon je aan je eigen router hangen, en (2) het scherm van
+     * een router toonde elk netwerkapparaat binnen 32 blokken aan iedereen die hem opende, ook wat een ander achter een
+     * muur heeft staan. Nu krijgt alleen wie de router mag instellen zijn scherm, staat onder IN RANGE alleen wat je zelf
+     * mag verbinden, en verbindt een router (met de hand of vanzelf) nooit het torentje, het relais of de lezer van een
+     * ander. En wie heel snel achter elkaar op de knoppen drukt, komt niet verder dan acht keer.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "lan")
+    public static void router_screen_keeps_other_devices_secret(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        RouterLinks links = RouterLinks.get(level);
+        ServerPlayer alice = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 3, 6), "lan-secret-a");
+        ServerPlayer bob = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 3, 6), "lan-secret-b");
+        BlockPos aliceRouterPos = new BlockPos(6, 3, 4);
+        BlockPos aliceRouter = router(helper, aliceRouterPos);
+        ((RouterBlockEntity) helper.getBlockEntity(aliceRouterPos)).setOwner(alice);
+        BlockPos bobRouterPos = new BlockPos(6, 3, 8);
+        BlockPos bobRouter = router(helper, bobRouterPos);
+        ((RouterBlockEntity) helper.getBlockEntity(bobRouterPos)).setOwner(bob);
+        // Van Alice: een lezer, een torentje en een relais. Van Bob: een lezer.
+        BlockPos reader = new BlockPos(10, 3, 4);
+        helper.setBlock(reader, ModBlocks.KEYCARD_READER.get());
+        ((com.senne.imttech.logic.InputDeviceBlockEntity) helper.getBlockEntity(reader)).setOwner(alice);
+        BlockPos turret = new BlockPos(10, 3, 6);
+        helper.setBlock(turret, ModBlocks.SECURITY_TURRET.get());
+        ((TurretBlockEntity) helper.getBlockEntity(turret)).setOwner(alice);
+        BlockPos relay = new BlockPos(10, 3, 8);
+        helper.setBlock(relay, ModBlocks.RELAY.get());
+        ((RelayBlockEntity) helper.getBlockEntity(relay)).setOwner(alice);
+        BlockPos own = new BlockPos(11, 3, 10);
+        helper.setBlock(own, ModBlocks.KEYCARD_READER.get());
+        ((com.senne.imttech.logic.InputDeviceBlockEntity) helper.getBlockEntity(own)).setOwner(bob);
+        BlockPos readerAbs = helper.absolutePos(reader);
+        BlockPos turretAbs = helper.absolutePos(turret);
+        BlockPos relayAbs = helper.absolutePos(relay);
+        BlockPos ownAbs = helper.absolutePos(own);
+        // Het scherm: alleen voor wie de router mag instellen.
+        check(Routers.screenData(bob, aliceRouter, true) == null, "Bob kreeg het scherm van de router van Alice");
+        com.senne.imttech.network.RouterOpenPayload forAlice = Routers.screenData(alice, aliceRouter, true);
+        com.senne.imttech.network.RouterOpenPayload forBob = Routers.screenData(bob, bobRouter, true);
+        check(forAlice != null && forBob != null, "Wie zijn eigen router opent, krijgt geen scherm");
+        List<BlockPos> aliceSees = forAlice.nearby().stream().map(com.senne.imttech.network.RouterOpenPayload.Entry::pos).toList();
+        List<BlockPos> bobSees = forBob.nearby().stream().map(com.senne.imttech.network.RouterOpenPayload.Entry::pos).toList();
+        check(aliceSees.containsAll(List.of(readerAbs, turretAbs, relayAbs)), "Alice ziet haar eigen apparaten niet onder IN RANGE: " + aliceSees);
+        check(!aliceSees.contains(ownAbs) && !aliceSees.contains(bobRouter), "Alice ziet de lezer of de router van Bob: " + aliceSees);
+        check(bobSees.contains(ownAbs), "Bob ziet zijn eigen lezer niet onder IN RANGE: " + bobSees);
+        check(!bobSees.contains(readerAbs) && !bobSees.contains(turretAbs) && !bobSees.contains(relayAbs) && !bobSees.contains(aliceRouter),
+                "Het scherm van Bobs router verraadt de apparaten van Alice: " + bobSees);
+        // Verbinden: met de hand niet, en vanzelf ook niet (hier met een kort bereik, zodat de router in dit veld blijft).
+        Routers.handleAction(bob, new RouterActionPayload(bobRouter, RouterActionPayload.LINK, turretAbs));
+        Routers.handleAction(bob, new RouterActionPayload(bobRouter, RouterActionPayload.LINK, relayAbs));
+        Routers.handleAction(bob, new RouterActionPayload(bobRouter, RouterActionPayload.LINK, aliceRouter));
+        withRouterLimits(8, 10, () -> Routers.autoLink(level, bobRouter, bob));
+        check(!links.linked(bobRouter, turretAbs) && links.routerOf(turretAbs) == null, "Bob hing het torentje van Alice aan zijn router");
+        check(!links.linked(bobRouter, relayAbs) && !links.linked(bobRouter, readerAbs) && !links.linked(bobRouter, aliceRouter),
+                "Bob hing het relais, de lezer of de router van Alice aan zijn router: " + links.linked(bobRouter));
+        check(links.linked(bobRouter, ownAbs), "De router van Bob verbond zijn eigen lezer niet vanzelf: " + links.linked(bobRouter));
+        Routers.handleAction(alice, new RouterActionPayload(aliceRouter, RouterActionPayload.LINK, turretAbs));
+        Routers.handleAction(alice, new RouterActionPayload(aliceRouter, RouterActionPayload.LINK, relayAbs));
+        check(links.linked(aliceRouter, turretAbs) && links.linked(aliceRouter, relayAbs), "Alice kon haar eigen torentje en relais niet verbinden");
+        // Wat eraan hangt, staat onder LINKED en niet meer onder IN RANGE.
+        com.senne.imttech.network.RouterOpenPayload after = Routers.screenData(alice, aliceRouter, false);
+        check(after != null && after.linked().stream().anyMatch(entry -> entry.pos().equals(turretAbs))
+                && after.nearby().stream().noneMatch(entry -> entry.pos().equals(turretAbs)), "Het torentje staat niet onder LINKED");
+        // Acht knoppen kort na elkaar gaan; de negende niet (het netwerk zoekt na elke verbinding opnieuw).
+        Routers.clear();
+        for (int i = 0; i < 4; i++) {
+            Routers.handleAction(alice, new RouterActionPayload(aliceRouter, RouterActionPayload.LINK, readerAbs));
+            Routers.handleAction(alice, new RouterActionPayload(aliceRouter, RouterActionPayload.UNLINK, readerAbs));
+        }
+        check(!links.linked(aliceRouter, readerAbs), "Acht knoppen na elkaar werkten niet allemaal");
+        Routers.handleAction(alice, new RouterActionPayload(aliceRouter, RouterActionPayload.LINK, readerAbs));
+        check(!links.linked(aliceRouter, readerAbs), "Een negende knop in dezelfde tick werkte nog");
+        Routers.clear();
+        Routers.handleAction(alice, new RouterActionPayload(aliceRouter, RouterActionPayload.LINK, readerAbs));
+        check(links.linked(aliceRouter, readerAbs), "Na een pauze werkt de knop niet weer");
+        helper.succeed();
+    }
+
+    /**
+     * Jouw wens: "relay's moeten hier ook aanhangen maar hebben nog steeds geen stroom nodig ... als je geen router gebruikt
+     * dan heeft een relay wel een netwerkkabel nodig". Een relais van vóór de Router (hier: neergezet zonder speler) werkt
+     * zoals vroeger. Een nieuw relais luistert niet zonder netwerk: niet naar een diagram (switchAt), niet naar je bril;
+     * alleen zijn eigen knop (je staat ernaast, zonder bril) schakelt het. Met een netwerkkabel naar de kern luistert het,
+     * en na het doorknippen weer niet. Aan een router met stroom ook, zonder stroom niet. In het telefoonboek van de kern
+     * staat een nieuw relais alleen als het aan zijn netwerk hangt. En met oldRelaysNeedNetwork heeft ook een oud relais
+     * een netwerk nodig.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "lan")
+    public static void new_relays_need_a_network(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 3, 5), "lan-relay");
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), owner);
+        // Een oud relais (twee blokken van de kern, dus niet er tegenaan).
+        BlockPos old = new BlockPos(2, 3, 4);
+        helper.setBlock(old, ModBlocks.RELAY.get());
+        BlockPos oldAbs = helper.absolutePos(old);
+        check(!ImtRedstone.needsNetwork(level, oldAbs) && !ImtRedstone.offline(level, oldAbs), "Een oud relais heeft een netwerk nodig");
+        check(ImtRedstone.switchAt(level, oldAbs, -1, ImtRedstone.Op.ON, 20) && helper.getBlockState(old).getValue(RelayBlock.POWERED),
+                "Een oud relais schakelt niet meer zonder netwerk");
+        // Een nieuw relais (zoals een speler het neerzet).
+        BlockPos fresh = new BlockPos(8, 3, 2);
+        helper.setBlock(fresh, ModBlocks.RELAY.get());
+        BlockPos freshAbs = helper.absolutePos(fresh);
+        RelayBlockEntity relay = (RelayBlockEntity) helper.getBlockEntity(fresh);
+        relay.setOwner(owner);
+        relay.setNetworked(true);
+        check(ImtRedstone.needsNetwork(level, freshAbs) && ImtRedstone.offline(level, freshAbs), "Een nieuw relais zonder kabel telt als verbonden");
+        check(!ImtRedstone.switchAt(level, freshAbs, -1, ImtRedstone.Op.ON, 20) && !helper.getBlockState(fresh).getValue(RelayBlock.POWERED),
+                "Een nieuw relais zonder netwerk schakelde van op afstand");
+        check(withNetwork(false, () -> !ImtRedstone.needsNetwork(level, freshAbs)), "Zonder netwerk-eis heeft een relais toch een netwerk nodig");
+        // Met je bril (op afstand): niets. Zonder bril, ernaast, met zijn eigen knop: wel.
+        ImtRedstone.register(owner, freshAbs);
+        ImtRedstone.register(owner, oldAbs);
+        int index = owner.getData(ModAttachments.RELAYS).indexAt(level.dimension(), freshAbs);
+        int oldIndex = owner.getData(ModAttachments.RELAYS).indexAt(level.dimension(), oldAbs);
+        check(index >= 0 && oldIndex >= 0, "De relais kwamen niet in de lijst");
+        ImtRedstone.handleAction(owner, RelayActionPayload.rename(index, "Fresh", ""));
+        ImtRedstone.handleAction(owner, RelayActionPayload.rename(oldIndex, "Old", ""));
+        // Van ver (meer dan 6 blokken), met je bril: niets.
+        owner.teleportTo(owner.getX() + 14, owner.getY(), owner.getZ());
+        ImtRedstone.handleAction(owner, RelayActionPayload.switchOne(index, ImtRedstone.Op.ON));
+        check(!helper.getBlockState(fresh).getValue(RelayBlock.POWERED), "Je bril schakelde van ver een relais zonder netwerk");
+        // Ernaast is het zijn eigen knop: die werkt, ook met je bril op (gevonden door de nalezing)...
+        owner.teleportTo(owner.getX() - 14, owner.getY(), owner.getZ());
+        ImtRedstone.handleAction(owner, RelayActionPayload.switchOne(index, ImtRedstone.Op.ON));
+        check(helper.getBlockState(fresh).getValue(RelayBlock.POWERED),
+                "De eigen knop van een relais zonder netwerk werkt niet met je bril op");
+        ImtRedstone.handleAction(owner, RelayActionPayload.switchOne(index, ImtRedstone.Op.OFF));
+        // ...en zonder bril.
+        ItemStack glasses = owner.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD);
+        owner.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, ItemStack.EMPTY);
+        ImtRedstone.handleAction(owner, RelayActionPayload.switchOne(index, ImtRedstone.Op.ON));
+        check(helper.getBlockState(fresh).getValue(RelayBlock.POWERED), "De eigen knop van een relais zonder netwerk werkt niet");
+        ImtRedstone.handleAction(owner, RelayActionPayload.switchOne(index, ImtRedstone.Op.OFF));
+        owner.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, glasses);
+        // Het telefoonboek van de kern: het oude relais wel (het staat in zijn gebied), het nieuwe zonder netwerk niet.
+        com.senne.imttech.logic.LogicDevices.refresh(level, core, owner);
+        check(!core.logic().devices("Old").isEmpty(), "Het oude relais staat niet in het telefoonboek van de kern");
+        check(core.logic().devices("Fresh").isEmpty(), "Een nieuw relais zonder netwerk staat in het telefoonboek van de kern");
+        // Een netwerkkabel van de kern naar het relais.
+        line(helper, CableKind.NETWORK, new BlockPos(3, 3, 2), new BlockPos(7, 3, 2));
+        check(!ImtRedstone.offline(level, freshAbs) && relay.linked(), "Met een netwerkkabel heeft het relais geen netwerk");
+        check(ImtRedstone.switchAt(level, freshAbs, -1, ImtRedstone.Op.ON, 20) && helper.getBlockState(fresh).getValue(RelayBlock.POWERED),
+                "Met een netwerkkabel schakelt het relais niet");
+        ImtRedstone.handleAction(owner, RelayActionPayload.switchOne(index, ImtRedstone.Op.OFF));
+        check(!helper.getBlockState(fresh).getValue(RelayBlock.POWERED), "Met een netwerkkabel schakelt je bril het relais niet");
+        com.senne.imttech.logic.LogicDevices.refresh(level, core, owner);
+        check(!core.logic().devices("Fresh").isEmpty(), "Een relais aan het netwerk staat niet in het telefoonboek van de kern");
+        // Doorgeknipt: weer niets (en het relais weet dat).
+        Cables.remove(CableKind.NETWORK, level, helper.absolutePos(new BlockPos(5, 3, 2)));
+        check(ImtRedstone.offline(level, freshAbs) && !relay.linked(), "Na het doorknippen heeft het relais nog een netwerk");
+        check(!ImtRedstone.switchAt(level, freshAbs, -1, ImtRedstone.Op.ON, 20), "Na het doorknippen schakelt het relais nog");
+        // Een router (zelf draadloos aan de kern) met stroom: het relais luistert. Zonder stroom niet.
+        BlockPos routerPos = new BlockPos(8, 3, 8);
+        BlockPos router = router(helper, routerPos);
+        check(Routers.link(level, router, core.getBlockPos()) && Routers.link(level, router, freshAbs),
+                "De router verbond de kern en het relais niet");
+        check(!ImtRedstone.offline(level, freshAbs) && ImtRedstone.switchAt(level, freshAbs, -1, ImtRedstone.Op.ON, 20),
+                "Aan een router met stroom luistert het relais niet");
+        helper.setBlock(routerPos.below(), Blocks.AIR);
+        ((RouterBlockEntity) helper.getBlockEntity(routerPos)).updateOnline(level);
+        check(ImtRedstone.offline(level, freshAbs) && !ImtRedstone.switchAt(level, freshAbs, -1, ImtRedstone.Op.OFF, 20),
+                "Aan een router zonder stroom luistert het relais nog");
+        // Met de config-knop hebben ook oude relais een netwerk nodig.
+        boolean before = ImtConfig.Network.OLD_RELAYS_NEED_NETWORK;
+        ImtConfig.Network.OLD_RELAYS_NEED_NETWORK = true;
+        try {
+            check(ImtRedstone.needsNetwork(level, oldAbs) && ImtRedstone.offline(level, oldAbs),
+                    "Met oldRelaysNeedNetwork heeft een oud relais geen netwerk nodig");
+        } finally {
+            ImtConfig.Network.OLD_RELAYS_NEED_NETWORK = before;
+        }
+        helper.succeed();
     }
 }

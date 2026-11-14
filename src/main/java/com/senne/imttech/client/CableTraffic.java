@@ -38,6 +38,10 @@ import org.jetbrains.annotations.Nullable;
  * over je eigen kabels en die in een zone waar je mag bouwen (hoofdstuk 92, zie CableSight). In een blok
  * (een switch, de kern) zie je het vakje niet: dat zit dan binnenin. Aan of uit in G > Information (Cable signals,
  * Power flow).
+ *
+ * Hoofdstuk 112: hangt een apparaat draadloos aan een Router, dan zit er in de weg een sprong door de lucht (twee plekken
+ * die niet naast elkaar liggen). Daar vliegt het vakje in een rechte lijn doorheen, lichtblauw en drie keer zo snel als
+ * over een kabel: zo zie je welk apparaat met welke router praat.
  */
 public final class CableTraffic {
     private CableTraffic() {}
@@ -52,6 +56,11 @@ public final class CableTraffic {
     private static final double DASH_LENGTH = 0.2;
     /** Verder weg dan dit (blokken) tekenen we niets. */
     private static final double RANGE = 64;
+
+    /** Een sprong door de lucht (van of naar een Router) gaat zoveel keer sneller dan een signaal over een kabel. */
+    private static final double AIR_SPEEDUP = 3.0;
+    /** De kleur van een signaal door de lucht: lichtblauw. */
+    private static final int AIR = 0x9FE8FF;
 
     /** De kleuren: wit (netwerk), groen (PoE) en geel (stroom). */
     private static final int WHITE = 0xFFFFFF;
@@ -79,8 +88,12 @@ public final class CableTraffic {
                     .setDepthTestState(RenderStateShard.NO_DEPTH_TEST)
                     .createCompositeState(false));
 
-    /** Een recht stukje van de weg: van a naar b, in welke plek van de weg ({@code cell}), vanaf hoe ver van het begin. */
-    private record Segment(Vec3 a, Vec3 b, int cell, double from, double length) {
+    /**
+     * Een recht stukje van de weg: van a naar b, in welke plek van de weg ({@code cell}), vanaf hoe ver van het begin.
+     * {@code air}: een sprong door de lucht tussen een Router en een apparaat (hoofdstuk 112); zijn {@code length} is dan
+     * korter dan de echte afstand, zodat het vakje er sneller doorheen gaat.
+     */
+    private record Segment(Vec3 a, Vec3 b, int cell, double from, double length, boolean air) {
         Vec3 at(double distance) {
             return length <= 0 ? a : a.lerp(b, Math.max(0, Math.min(1, (distance - from) / length)));
         }
@@ -146,13 +159,19 @@ public final class CableTraffic {
             boolean yours = kind != null && player != null
                     && CableSight.mayXray(Cables.owner(kind, level, pos), player.getUUID(), ZoneClientState.zones(), pos);
             cells.add(new Cell(kind != null, hidden, power ? YELLOW : kind == CableKind.POE ? GREEN : WHITE, yours));
+            // Liggen deze plek en de vorige niet naast elkaar, dan is het stukje ertussen een sprong door de lucht.
+            boolean hop = i > 0 && path.get(i - 1).distManhattan(pos) > 1;
             for (Vec3 point : points(level, path, i, kind, hidden)) {
                 if (last != null && point.distanceToSqr(last) > 1.0E-8) {
                     double piece = last.distanceTo(point);
-                    segments.add(new Segment(last, point, i, length, piece));
+                    if (hop) {
+                        piece /= AIR_SPEEDUP;
+                    }
+                    segments.add(new Segment(last, point, i, length, piece, hop));
                     length += piece;
                 }
                 last = point;
+                hop = false; // alleen het eerste stukje naar deze plek toe
             }
         }
         Vec3 centre = Vec3.atCenterOf(path.get(path.size() / 2));
@@ -260,7 +279,14 @@ public final class CableTraffic {
                 continue;
             }
             Cell cell = route.cells().get(segment.cell());
-            if (cell.cable() && (through ? cell.yours() : !cell.hidden())) {
+            if (segment.air()) {
+                // Door de lucht (hoofdstuk 112): altijd te zien (niet door muren heen), wat groter en lichtblauw.
+                if (!through) {
+                    Vec3 p = segment.at(distance);
+                    cuboid(m, vc, p, p, 0.08, AIR, 235);
+                    cuboid(m, vc, p, p, 0.17, AIR, 70);
+                }
+            } else if (cell.cable() && (through ? cell.yours() : !cell.hidden())) {
                 Vec3 p = segment.at(distance);
                 cuboid(m, vc, p, p, 0.07, cell.colour(), 230);
                 cuboid(m, vc, p, p, 0.14, cell.colour(), 70);
@@ -280,7 +306,7 @@ public final class CableTraffic {
         double offset = (now * FLOW_SPEED) % DASH_PERIOD;
         for (Segment segment : route.segments()) {
             Cell cell = route.cells().get(segment.cell());
-            if (!cell.cable() || (through ? !cell.yours() : cell.hidden()) || segment.length() <= 0) {
+            if (segment.air() || !cell.cable() || (through ? !cell.yours() : cell.hidden()) || segment.length() <= 0) {
                 continue;
             }
             double end = segment.from() + segment.length();

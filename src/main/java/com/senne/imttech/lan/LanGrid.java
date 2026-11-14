@@ -18,6 +18,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTestServer;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
@@ -39,6 +40,10 @@ import org.jetbrains.annotations.Nullable;
  *       bij stroom).</li>
  *   <li>Een open kabel binnen een EMP-puls geeft even niets door (zie Emp.cutsCable); een kabel in een muur wel.</li>
  *   <li>Raakt een net twee kernen, dan hoort een apparaat bij de dichtstbijzijnde langs de kabel.</li>
+ *   <li>Hoofdstuk 112 (jouw wens: "een router: hier kun je elk ding draadloos tot op 32 blokken op connecten"): een Router
+ *       met stroom geeft het netwerk door aan de apparaten (en routers) waar hij draadloos mee verbonden is, en andersom.
+ *       Zo'n sprong door de lucht telt in de zoektocht als één stap, net als een stukje kabel. Wie met wie verbonden is,
+ *       staat in {@link RouterLinks}.</li>
  * </ul>
  * Het zoeken kost wat werk, dus we onthouden het resultaat. Komt er ergens een kabel bij of gaat er een weg (of iets
  * anders dat het net verandert), dan verhogen we {@link #changed()} en zoeken we de volgende keer opnieuw.
@@ -65,14 +70,20 @@ public final class LanGrid {
     /** Telt elke verandering aan een net; staat hij anders dan bij het zoeken, dan zoeken we opnieuw. */
     private static int version;
 
-    /** Welke kern een apparaat had bij het zoeken (null = geen). */
-    private record Link(int version, long gameTime, @Nullable BlockPos core) {}
+    /**
+     * Welke kern een apparaat had bij het zoeken (null = geen), en of die zoektocht volledig was ({@code complete}): hij
+     * vond een kern, of hij kwam nergens langs een stuk wereld dat niet geladen is (en het net was niet te groot). Is hij
+     * niet volledig, dan betekent "geen kern" alleen "niet gevonden in wat nu geladen is" (zie {@link #searchComplete}).
+     */
+    private record Link(int version, long gameTime, @Nullable BlockPos core, boolean complete) {}
 
     /** Welke apparaten aan een kern hingen bij het zoeken. */
     private record Reach(int version, long gameTime, Set<BlockPos> devices) {}
 
     private static final Map<ResourceKey<Level>, Map<BlockPos, Link>> CORE_OF = new HashMap<>();
     private static final Map<ResourceKey<Level>, Map<BlockPos, Reach>> DEVICES_OF = new HashMap<>();
+    /** Per plek: alle netwerkblokken in hetzelfde net (zie {@link #networkOf}). */
+    private static final Map<ResourceKey<Level>, Map<BlockPos, Reach>> NETWORK_OF = new HashMap<>();
 
     /** Voor de automatische tests: het netwerk aan (true) of uit (false) gezet, of null = zoals de config zegt. */
     private static @Nullable Boolean requiredOverride;
@@ -112,6 +123,14 @@ public final class LanGrid {
     }
 
     /**
+     * De stand van de teller van {@link #changed()}. Wie zelf iets over het netwerk onthoudt (Routers: welke apparaten al
+     * een netwerk hebben), bewaart dit getal erbij: is het veranderd, dan klopt wat hij onthield niet meer.
+     */
+    public static int version() {
+        return version;
+    }
+
+    /**
      * De kern waar dit apparaat via netwerkkabels aan hangt (de dichtstbijzijnde langs de kabel), of null als het nergens
      * aan hangt. (Ook als er geen kabel nodig is: dit kijkt alleen naar de kabels; zie SecurityCores.deviceCore.)
      */
@@ -129,19 +148,44 @@ public final class LanGrid {
      * verder ({@link #MAX_NODES_FROM_CORE}).
      */
     private static @Nullable BlockPos corePosOf(Level level, BlockPos device) {
+        return link(level, device).core();
+    }
+
+    /** Wat we van dit apparaat weten (uit het geheugen als dat nog klopt, anders opnieuw gezocht). */
+    private static Link link(Level level, BlockPos device) {
         Map<BlockPos, Link> perLevel = CORE_OF.computeIfAbsent(level.dimension(), key -> new HashMap<>());
         Link link = perLevel.get(device);
         long now = level.getGameTime();
         if (link == null || link.version() != version || now - link.gameTime() > CORE_TICKS || now < link.gameTime()) {
-            boolean[] tooBig = {false};
-            BlockPos core = searchCore(level, device, null, tooBig);
-            if (core == null && tooBig[0]) {
+            boolean[] flags = {false, false}; // te groot, en: langs een stuk wereld dat niet geladen is
+            BlockPos core = searchCore(level, device, null, flags);
+            if (core == null && flags[0]) {
                 core = coreByReach(level, device);
             }
-            link = new Link(version, now, core);
+            link = new Link(version, now, core, core != null || !flags[0] && !flags[1]);
             perLevel.put(device.immutable(), link);
         }
-        return link.core();
+        return link;
+    }
+
+    /**
+     * Loopt er vanaf dit apparaat een weg naar een kern (langs kabels, of via een Router)? Anders dan {@link #coreOf}
+     * hoeft het stuk wereld van die kern nu niet geladen te zijn: de weg is gevonden toen dat wel zo was, en zolang er
+     * niets aan het net verandert, klopt hij nog. (Gevonden door de nalezing: een relais dat je van ver schakelde, leek
+     * "geen netwerk" te hebben als alleen het stuk wereld van zijn kern niet geladen was.)
+     */
+    public static boolean reachesCore(Level level, BlockPos device) {
+        return link(level, device).core() != null;
+    }
+
+    /**
+     * Was de laatste zoektocht naar de kern van dit apparaat volledig? Zo ja, dan is "geen kern" ({@link #coreOf} geeft
+     * null) echt waar: er loopt geen weg naar een kern. Zo nee, dan kwam de zoektocht langs een stuk wereld dat niet
+     * geladen is (of het net is te groot): de kern kan daarachter zitten. Hoofdstuk 112: een relais dat je van ver
+     * schakelt, staat vaak in zo'n half geladen stuk; dan telt wat het zelf nog weet (zie ImtRedstone.offline).
+     */
+    public static boolean searchComplete(Level level, BlockPos device) {
+        return link(level, device).complete();
     }
 
     /** Welke geladen kern dit apparaat bij zijn eigen zoektocht vond (voor een net dat te groot is om vanaf het apparaat te doorzoeken). */
@@ -198,7 +242,7 @@ public final class LanGrid {
      * alleen via een blok (de kern, een switch, een rack...). Elk netwerkblok neemt allebei de soorten aan.
      */
     private static @Nullable BlockPos searchCore(Level level, BlockPos device, @Nullable Map<Node, Node> parents,
-                                                 @Nullable boolean[] tooBig) {
+                                                 @Nullable boolean[] flags) {
         Set<Node> seen = new HashSet<>();
         ArrayDeque<Node> todo = new ArrayDeque<>();
         Node start = new Node(device.immutable(), null);
@@ -214,6 +258,9 @@ public final class LanGrid {
                 }
                 BlockPos next = at.pos().relative(direction);
                 if (!level.isLoaded(next)) {
+                    if (!level.isOutsideBuildHeight(next)) {
+                        noteUnloaded(flags); // daar kan een kabel verder lopen: we weten het niet
+                    }
                     continue;
                 }
                 BlockState state = level.getBlockState(next);
@@ -233,11 +280,37 @@ public final class LanGrid {
                     todo.add(block);
                 }
             }
+            // Hoofdstuk 112: door de lucht, van een router naar zijn apparaten of van een apparaat naar zijn router.
+            for (BlockPos next : wireless(level, at)) {
+                Node block = new Node(next.immutable(), null);
+                if (!level.isLoaded(next)) {
+                    noteUnloaded(flags); // zijn router (of een apparaat van deze router) staat in een stuk dat niet geladen is
+                    continue;
+                }
+                if (!seen.add(block)) {
+                    continue;
+                }
+                remember(parents, block, at);
+                BlockState state = level.getBlockState(next);
+                if (state.getBlock() instanceof SecurityCoreBlock) {
+                    return next;
+                }
+                if (conducts(level, next, state)) {
+                    todo.add(block);
+                }
+            }
         }
-        if (tooBig != null && !todo.isEmpty()) {
-            tooBig[0] = true; // gestopt met nog werk over: het net is groter dan we vanaf hier zoeken
+        if (flags != null && !todo.isEmpty()) {
+            flags[0] = true; // gestopt met nog werk over: het net is groter dan we vanaf hier zoeken
         }
         return null;
+    }
+
+    /** De zoektocht kwam langs een stuk wereld dat niet geladen is (zie {@link #searchComplete}). */
+    private static void noteUnloaded(@Nullable boolean[] flags) {
+        if (flags != null && flags.length > 1) {
+            flags[1] = true;
+        }
     }
 
     /**
@@ -298,6 +371,29 @@ public final class LanGrid {
                         todo.add(block);
                     }
                 }
+                // Hoofdstuk 112: door de lucht, van een router naar zijn apparaten (en van de kern naar zijn router).
+                for (BlockPos next : wireless(level, at)) {
+                    if (!level.isLoaded(next)) {
+                        addChunk(chunks, next); // de router of het apparaat staat in een stuk wereld dat niet geladen is
+                        continue;
+                    }
+                    BlockState state = level.getBlockState(next);
+                    if (state.getBlock() instanceof SecurityCoreBlock) {
+                        otherCore |= !next.equals(self);
+                        continue;
+                    }
+                    Node block = new Node(next.immutable(), null);
+                    if (!seen.add(block)) {
+                        continue;
+                    }
+                    if (state.getBlock() instanceof NetworkConnectable) {
+                        devices.add(next.immutable());
+                        addChunk(chunks, next);
+                    }
+                    if (conducts(level, next, state)) {
+                        todo.add(block);
+                    }
+                }
             }
             if (otherCore || !todo.isEmpty()) {
                 // Twee netten raken elkaar (of dit net is te groot om helemaal te doorzoeken): elk apparaat kijkt zelf welke
@@ -307,7 +403,7 @@ public final class LanGrid {
                 Map<BlockPos, Link> perLevel = CORE_OF.computeIfAbsent(level.dimension(), key -> new HashMap<>());
                 long now = level.getGameTime();
                 for (BlockPos device : devices) {
-                    perLevel.put(device, new Link(version, now, self));
+                    perLevel.put(device, new Link(version, now, self, true));
                 }
             }
         } finally {
@@ -317,6 +413,94 @@ public final class LanGrid {
             entity.rememberNetwork(chunks.toLongArray());
         }
         return Set.copyOf(devices);
+    }
+
+    // ================================================================ Het hele net (hoofdstuk 112)
+
+    /**
+     * Alle netwerkblokken (zie NetworkConnectable) in hetzelfde net als deze plek: alles wat je vanaf hier bereikt langs
+     * netwerkkabels, blokken die het netwerk doorgeven, routers en kernen. Anders dan {@link #devicesOf} hoeft er geen kern
+     * in dat net te zitten: een Storage Interface en zijn Chest Sensors aan één Router zijn ook een net. Zit er wel een
+     * kern in, dan geeft die het net door (wat aan de ene kant van de desktop hangt, zit in hetzelfde net als wat aan de
+     * andere kant hangt). De plek zelf zit erbij als daar een netwerkblok staat. Hooguit LIST_TICKS oud.
+     */
+    public static Set<BlockPos> networkOf(Level level, BlockPos from) {
+        Map<BlockPos, Reach> perLevel = NETWORK_OF.computeIfAbsent(level.dimension(), key -> new HashMap<>());
+        Reach reach = perLevel.get(from);
+        long now = level.getGameTime();
+        if (reach == null || reach.version() != version || now - reach.gameTime() >= LIST_TICKS || now < reach.gameTime()) {
+            if (perLevel.size() > 4096) {
+                perLevel.clear(); // plekken waar al lang niemand meer naar vroeg
+            }
+            reach = new Reach(version, now, searchNetwork(level, from));
+            perLevel.put(from.immutable(), reach);
+        }
+        return reach.devices();
+    }
+
+    /** Zoekt het hele net van deze plek (zie {@link #networkOf}). Een plek in een stuk wereld dat niet geladen is, heeft geen net. */
+    private static Set<BlockPos> searchNetwork(Level level, BlockPos from) {
+        if (!level.isLoaded(from)) {
+            return Set.of(); // hiervoor laden we niets (level.getBlockState zou dat stuk wereld anders laden)
+        }
+        Set<BlockPos> found = new LinkedHashSet<>();
+        Set<Node> seen = new HashSet<>();
+        ArrayDeque<Node> todo = new ArrayDeque<>();
+        Node start = new Node(from.immutable(), null);
+        seen.add(start);
+        todo.add(start);
+        if (level.getBlockState(from).getBlock() instanceof NetworkConnectable) {
+            found.add(from.immutable());
+        }
+        int followed = 0;
+        while (!todo.isEmpty() && followed++ < MAX_NODES_FROM_CORE) {
+            Node at = todo.poll();
+            BlockState atState = level.getBlockState(at.pos());
+            for (Direction direction : Direction.values()) {
+                if (closedPort(atState, direction)) {
+                    continue;
+                }
+                BlockPos next = at.pos().relative(direction);
+                if (!level.isLoaded(next)) {
+                    continue;
+                }
+                BlockState state = level.getBlockState(next);
+                if (closedPort(state, direction.getOpposite())) {
+                    continue;
+                }
+                followCables(level, at, next, state, seen, todo, null);
+                visitNetwork(level, next, state, seen, todo, found);
+            }
+            for (BlockPos next : wireless(level, at)) {
+                if (level.isLoaded(next)) {
+                    visitNetwork(level, next, level.getBlockState(next), seen, todo, found);
+                }
+            }
+        }
+        return java.util.Collections.unmodifiableSet(found);
+    }
+
+    /** Eén blok in de zoektocht naar het hele net: een netwerkblok telt mee, en een kern of een doorgevend blok gaat verder. */
+    private static void visitNetwork(Level level, BlockPos next, BlockState state, Set<Node> seen, ArrayDeque<Node> todo,
+                                     Set<BlockPos> found) {
+        Node block = new Node(next.immutable(), null);
+        if (!seen.add(block)) {
+            return;
+        }
+        if (state.getBlock() instanceof NetworkConnectable) {
+            found.add(next.immutable());
+        }
+        if (state.getBlock() instanceof SecurityCoreBlock || conducts(level, next, state)) {
+            todo.add(block);
+        }
+    }
+
+    /**
+     * De draadloze buren van deze plek in de zoektocht (hoofdstuk 112): van een router alles waar hij mee verbonden is,
+     * van een apparaat zijn router. Alleen vanaf een blok (niet vanaf een stukje kabel), en alleen op de server.
+     */
+    private static List<BlockPos> wireless(Level level, Node at) {
+        return at.kind() == null && level instanceof ServerLevel server ? Routers.partners(server, at.pos()) : List.of();
     }
 
     /** Onthoudt het stuk wereld (chunk) van deze plek, tot {@link #MAX_NETWORK_CHUNKS}. */
@@ -385,13 +569,16 @@ public final class LanGrid {
 
     /**
      * Geeft dit blok het netwerk door aan wie ertegen staat? Een serverrack, een laser- of brugzender, een Camera Monitor (19
-     * oktober: een heel scherm aan één kabel), of een switch met stroom (zie NetworkSwitchBlock.passes; de poorten kijkt de
-     * zoektocht zelf na). De kabels zelf volgt {@link #followCables}.
+     * oktober: een heel scherm aan één kabel), een switch met stroom (zie NetworkSwitchBlock.passes; de poorten kijkt de
+     * zoektocht zelf na), of (hoofdstuk 112) een Router met stroom. De kabels zelf volgt {@link #followCables}.
      */
     private static boolean conducts(Level level, BlockPos pos, BlockState state) {
         if (state.is(ModBlocks.SERVER_RACK.get()) || state.is(ModBlocks.LASER_EMITTER.get())
                 || state.is(ModBlocks.LASER_BRIDGE.get()) || state.is(ModBlocks.CAMERA_MONITOR.get())) {
             return true;
+        }
+        if (state.getBlock() instanceof RouterBlock) {
+            return RouterBlock.passes(level, pos, state); // hoofdstuk 112: een router met stroom
         }
         return state.getBlock() instanceof NetworkSwitchBlock && NetworkSwitchBlock.passes(level, pos, state);
     }
@@ -400,5 +587,7 @@ public final class LanGrid {
     public static void clear() {
         CORE_OF.clear();
         DEVICES_OF.clear();
+        NETWORK_OF.clear();
+        Routers.clear();
     }
 }

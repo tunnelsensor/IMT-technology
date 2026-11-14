@@ -142,12 +142,20 @@ public final class SecurityCores {
     }
 
     /**
-     * Hangt het blok op deze plek aan een netwerkkabel (een beveiligingsapparaat), of hoort het bij een kern door waar het
-     * staat (een relais, koepel, stroomkast)? Een stukje wereld dat niet geladen is, laden we hiervoor niet in: dan
+     * Hangt het blok op deze plek aan een netwerkkabel (een beveiligingsapparaat, en sinds hoofdstuk 112 een nieuw relais),
+     * of hoort het bij een kern door waar het staat (een oud relais, koepel, stroomkast)? Een stukje wereld dat niet geladen is, laden we hiervoor niet in: dan
      * telt het als "door waar het staat".
      */
     private static boolean networked(Level level, BlockPos pos) {
-        return level.isLoaded(pos) && level.getBlockState(pos).getBlock() instanceof com.senne.imttech.lan.NetworkConnectable;
+        if (!level.isLoaded(pos)) {
+            return false;
+        }
+        // Hoofdstuk 112: een relais heeft een netwerkaansluiting, maar alleen een nieuw relais heeft het netwerk ook nodig;
+        // een relais van daarvoor hoort bij een kern door waar het staat, zoals altijd.
+        if (level.getBlockState(pos).getBlock() instanceof com.senne.imttech.redstone.RelayBlock) {
+            return com.senne.imttech.redstone.ImtRedstone.needsNetwork(level, pos);
+        }
+        return level.getBlockState(pos).getBlock() instanceof com.senne.imttech.lan.NetworkConnectable;
     }
 
     /**

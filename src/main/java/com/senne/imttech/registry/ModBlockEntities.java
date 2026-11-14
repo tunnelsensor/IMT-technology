@@ -48,6 +48,12 @@ public final class ModBlockEntities {
                     () -> new BlockEntityType<>(com.senne.imttech.lan.NetworkSwitchBlockEntity::new,
                             java.util.Set.of(ModBlocks.NETWORK_SWITCH.get()), null));
 
+    /** Hoofdstuk 112: de Router (naam, eigenaar, en of hij stroom heeft). */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.lan.RouterBlockEntity>> ROUTER =
+            BLOCK_ENTITIES.register("router",
+                    () -> new BlockEntityType<>(com.senne.imttech.lan.RouterBlockEntity::new,
+                            java.util.Set.of(ModBlocks.ROUTER.get()), null));
+
     /** Hoofdstuk 40: de Computer (naam, eigenaar, en wat de kern erop toestaat). */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.computer.ComputerBlockEntity>> COMPUTER =
             BLOCK_ENTITIES.register("computer",

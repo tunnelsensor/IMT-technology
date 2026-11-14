@@ -22,14 +22,14 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 602 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 610 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
 **Publiceren:** klaar voor CurseForge (17 oktober), onder **All Rights Reserved** (sinds 11 november, daarvoor
 MIT): de beschrijving, het logo, de changelog en een stappenplan staan in `publish/` (begin bij
 `publish/HOE-PUBLICEREN.md`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 128 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 137 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -8574,11 +8574,169 @@ Mijn invulling (verander ik op jouw woord):
   magazijnen wisselen gaat dus ook zonder werkbank).
 - Versie 2.13 (iets nieuws: een blok).
 
+### 112. De Router: het netwerk zonder kabel naar elk apparaat, en relais aan het netwerk (14 november)
+
+Jouw wens (je antwoord op mijn vraag hoe de Chest Sensors van het opslagsysteem aan hun Storage Interface hangen): "Je voegd
+een nieuw item toe een 'router' hier kun je elk ding draadloos tot op 32 blokken op connecten, relay's moeten hier ook
+aanhangen maar hebben nog steeds geen stroom nodig, deze sensoren voor de chest moeten geen stroom hebben net zoals
+relay's. Als je geen router gebruik dan heeft een relay wel een netwerk kabel nodig en de sensor's ook. POE kan ook maar is
+overbodig want stroom is niet nodig. Ander devices kunnen hier ook aan zoals gates die hebben dan wel nog steeds power nodig
+maar ze verbinden dan via de router, elke router kan max 10 devices en kan ook verbinen met ander routers die horen dan ook
+bij één van de deviecs dus dan is het één router + negen ander devices"
+
+De Router is een eigen hoofdstuk geworden: hij is ook zonder opslagsysteem nuttig, en het opslagsysteem (hoofdstuk 113:
+de Storage Interface, de Chest Sensors, de RC Car die haalt en opbergt) bouwt erop voort.
+
+- [x] **Het blok** (`lan/RouterBlock`, `RouterBlockEntity`): een plat zwart kastje met twee antennes en lampjes die
+      branden als hij stroom heeft; hij draait naar je toe als je hem zet. Hij heet "Router 1", "Router 2"... (of de naam
+      van het item, van een aambeeld), onthoudt wie hem neerzette, breekt met een pickaxe en neemt zijn naam mee in het
+      item. Recept: een ender pearl / ijzer, een Computer Chip, ijzer / redstone, een netwerkkabel, redstone. Op het
+      tabblad Power, na de switch. Hij gebruikt 30 stroom per twee seconden (`[power] routerUpkeep`, zoals de switch):
+      van een stroomkabel, een generator ernaast of een PoE-kabel.
+- [x] **Wie met wie** (`lan/RouterLinks`, bewaard per wereld in `data/imttech_routers.dat`): één lijst voor de hele
+      wereld, zodat geen enkel apparaat zelf iets hoeft te onthouden (een relais, camera of lezer blijft zoals hij was).
+      Een apparaat hangt aan hooguit één router (verbindt een andere router het, dan verhuist het); twee routers aan
+      elkaar kost bij allebei één plek ("één router + negen andere devices"); alleen de Security Core mag aan meer
+      routers tegelijk hangen.
+- [x] **Het netwerk zoekt door de lucht** (`lan/LanGrid`): een sprong van een router naar zijn apparaten (en terug) telt
+      in de zoektocht als één stap, net als een stukje kabel. Zo werkt alles wat het netwerk al deed vanzelf ook via een
+      router: bij welke kern een apparaat hoort, de app Devices, camerabeeld, laserpoorten op de schakelaar Lasers. Een
+      router geeft alleen door met stroom en buiten een EMP-puls. Stroom gaat niet door de lucht: wat stroom nodig had,
+      heeft dat nog steeds (jouw wens). Nieuw voor hoofdstuk 113: `LanGrid.networkOf` (alles in hetzelfde net als een
+      plek, ook als er geen kern in zit).
+- [x] **De regels** (`lan/Routers`): 32 blokken in een rechte lijn, ook door muren (`[network] routerRange`), en 10
+      verbindingen per router (`[network] routerDevices`). Een verbinding die buiten het bereik raakt (de config
+      veranderde) telt niet meer mee maar blijft staan; een apparaat dat weg is, ruimt de lijst op zodra het netwerk langs
+      zijn router zoekt.
+- [x] **Vanzelf**: zet je een netwerkapparaat neer dat nog nergens aan hangt, dan gaat het aan de dichtstbijzijnde
+      router met een vrije plek die jij mag instellen ("Linked to Router 1 (3 / 10)"; is alles vol: "Router 1 is full
+      (10 devices): place another Router"). Zet je een router neer, dan zoekt hij eerst zijn eigen weg naar het netwerk
+      (een kern of een router binnen bereik, als hij geen kabel heeft) en pakt hij daarna de losse apparaten in zijn
+      buurt die van jou zijn, de dichtste eerst. "Los" betekent: er zit geen router en geen kern in het net van dat
+      apparaat. Zo kost een laserpoort van vier zenders of een kast vol racks maar één plek: de rest hangt eraan vast.
+- [x] **Het scherm** (`client/RouterScreen`, `RouterOpenPayload`, `RouterActionPayload`; rechtsklik op de router):
+      bovenaan zijn naam, of hij stroom heeft en of er een Security Core in zijn netwerk zit; onder **LINKED** wat eraan
+      hangt (met de afstand en **Unlink**; "not loaded" of "too far" als er iets mis is), onder **IN RANGE** wat er binnen
+      bereik staat en er niet aan hangt (met **Link**; "on another Router" of "has a network" erbij). Klik op een regel
+      en er loopt een rij lichtjes van dat apparaat naar de router. De lijst ververst elke seconde, en na elke knop
+      meteen. Alleen wie de router mag instellen (wie hem neerzette, of wie vertrouwd is in die basis) krijgt het scherm.
+- [x] **Relais aan het netwerk** (`redstone/RelayBlock`, `RelayBlockEntity`, `ImtRedstone`): een relais is nu een
+      netwerkblok (een netwerkkabel sluit erop aan, en het kan aan een router), maar heeft nog steeds geen stroom nodig.
+      Een relais dat je **vanaf nu** neerzet, luistert alleen van op afstand (je bril, je stem, een groep, een diagram,
+      een relay emitter) als het aan een netwerk hangt: `ImtRedstone.switchAt` weigert anders, en I.M.T zegt "... has no
+      network (a network cable or a Router), so I cannot reach it." Zijn eigen knop **Pulse** (je staat ernaast) werkt
+      altijd. In zijn scherm staat **Network: connected** of **No network: needs a network cable or a Router**, en wie
+      een relais neerzet zonder netwerk in de buurt, leest wat hij moet doen. In het telefoonboek van een kern (de namen
+      voor je diagram) staat een nieuw relais alleen als het aan het netwerk van die kern hangt.
+- [x] **Wat je ziet** (`client/CableTraffic`): een kaart, een code of een knop op een apparaat aan een router stuurt een
+      lichtblauw vakje door de lucht naar de router, en dan over de kabel naar de kern.
+- [x] **Config**: `[network] routerRange` (32), `routerDevices` (10), `oldRelaysNeedNetwork` (false) en `[power]
+      routerUpkeep` (30).
+- [x] **How it works**: een nieuw onderwerp **Router** op het tabblad Power (`PowerScenes.router`, zes hoofdstukjes, met
+      een foto van het echte scherm), en bij de relais een hoofdstukje "On the network". 64 van de 64 onderwerpen zijn
+      klaar.
+- [x] **Showcase**: de functie "Router" (`RouterTour.showcase`): het scherm, de lichtjes, het relais dat schakelt, de
+      router zonder stroom en weer met stroom, en de tweede router.
+- [x] **Tests** (acht nieuwe, allemaal in de bestaande batch "lan"): `router_links_a_device_without_a_cable` (een lezer
+      zonder kabel hoort via de router bij de kern en staat in Devices; zonder stroom niet; buiten bereik niet),
+      `routers_chain_and_have_ten_places` (een router aan een router, de plekken, vol is vol, een router weg = zijn
+      verbindingen weg), `routers_and_devices_find_each_other` (vanzelf verbinden, een laserpoort kost één plek, alleen
+      aan een router die je mag instellen), `router_screen_links_only_what_you_may_change` (de knoppen van het scherm,
+      van te ver weg niets, niets overnemen, geen stuk wereld laden), `new_relays_need_a_network` (oude relais zoals
+      vroeger, een nieuw relais met en zonder kabel en router, de eigen knop, het telefoonboek, `oldRelaysNeedNetwork`),
+      `two_routers_share_the_core`, `router_links_survive_a_save` en `router_screen_keeps_other_devices_secret` (de
+      laatste drie na de nalezing hieronder).
+- [x] **Volledige ronde** 610 tests: vijf rondes. De derde en de vierde (in een eigen kopie van het project, met de
+      standaardwaarden uit de code) hadden alle 610 groen; in de vijfde (daar, na een regel commentaar en een andere
+      volgorde van twee vragen) viel alleen `raid_starts_outside_a_base` om, die vaker wisselt. De eerste twee, in de
+      gedeelde map, hadden rood dat niet van dit hoofdstuk is: ook `raid_starts_outside_a_base` (één keer), in de eerste
+      ronde `every_item_has_a_how_it_works` (de router had toen nog geen onderwerp) en twee keer
+      `raven_soldier_flanks_around_a_wall`, met de soldaat allebei de keren op precies dezelfde plek: de hoek van de muur.
+      Die test gebruikt niets van de router en draait vóór de batch "lan". Mijn vermoeden (niet bewezen): een soldaat
+      met een wapen voor ver weg (de AWP van hoofdstuk 103) vindt je bij die hoek te dichtbij, stapt achteruit, ziet je
+      dan niet meer en begint opnieuw, zodat hij nooit lang genoeg kan richten. De foutmelding van de test noemt nu zijn
+      wapen: valt hij weer om, dan weten we het.
+- [x] **Gezien** (`gradlew runVisualCheck -Ponly=router,howtopics:router`): de router met en zonder stroom, het overzicht
+      (één kabel van de kern naar de router, de apparaten eromheen zonder kabels), een signaal door de lucht, het scherm
+      van allebei de routers, de lichtjes van het relais naar de router, het scherm van een relais met en zonder
+      netwerk, de tooltip, en de foto voor How it works. Wat ik daarbij verbeterde: de foto "geen stroom" toonde nog
+      brandende lampjes (de router zette ze zelf weer aan: de rondleiding knipt nu echt zijn kabel door), de vonkjes
+      waren niet te zien (nu een rij lichtjes die even blijft hangen) en er stond een melding over het scherm. Deze
+      screenshots zijn van vóór de nalezing hieronder; daarna veranderde aan wat je ziet alleen de zin onderaan het
+      scherm (zie "Nog niet gedaan").
+- [x] LEESMIJ (nieuw "De Router", bij het netwerk en bij de relais "Aan het netwerk", en de lijst van How it works) en
+      `publish/description.md`.
+
+Gevonden bij een nalezing. Ik startte drie lezers, elk met een eigen invalshoek (rechten, de regels van de router, en
+het zoeken door het net) en daarna een scepticus per vondst. Twee lezers waren klaar toen de gebruikslimiet bereikt was:
+de derde lezer en alle sceptici hebben niet gelopen. Elke vondst hieronder heb ik daarom zelf nagekeken in de code, en
+`LanGrid` (het stuk van de derde lezer) heb ik zelf nagelezen. Alle acht waren echt:
+- [x] Een relais dat je van ver schakelde, leek **geen netwerk** te hebben als alleen het stuk wereld van zijn kern niet
+      geladen was. Nu telt of er een weg naar een kern loopt (`LanGrid.reachesCore`), en onthoudt het relais wat het bij
+      de laatste volledige zoektocht wist.
+- [x] De eigen knop **Pulse** van een relais zonder netwerk werkte niet met je bril op.
+- [x] Een knop van het routerscherm kon de server een **stuk wereld laten laden**: de plek uit het bericht werd bekeken
+      vóór de afstand. Nu altijd eerst: sta je er dichtbij, en is het geladen?
+- [x] Een router neerzetten maakte relais en apparaten **zonder eigenaar** tot 32 blokken ver van jou (de gewone regel
+      "van wie het als eerste opent"). Verbinden vraagt het nu alleen (`BaseTrust.wouldAllow`): van niemand blijft van
+      niemand.
+- [x] Het **torentje van een ander** kon je aan je eigen router hangen: een torentje onthoudt zijn eigenaar op zijn eigen
+      manier en viel onder "alles mag". Nu één regel voor elk netwerkblok (`Routers.mayLink`): het is van jou, of je bent
+      vertrouwd in de basis waar het staat; iets van niemand alleen op vrije grond.
+- [x] Een **tweede router** bij de kern pakte de kern af van de eerste, en dan had alles aan de eerste geen netwerk meer.
+      De kern mag nu aan meer routers tegelijk hangen.
+- [x] Het scherm van een router toonde **elk netwerkapparaat binnen 32 blokken** (wat het is, hoe het heet en hoe ver) aan
+      iedereen die een router opende, ook wat een ander achter een muur heeft staan: zo vond je een basis, net als met de
+      zonerand (hoofdstuk 110). Nu krijgt alleen wie de router mag instellen het scherm, staat onder IN RANGE alleen wat
+      je zelf mag verbinden, en wijs je alleen aan wat in je lijst staat.
+- [x] Het scherm **zocht elke seconde** voor elk apparaat in de buurt het hele net af, en de knoppen hadden geen rem. Nu
+      onthoudt een router het antwoord tot het netwerk verandert (hooguit vijf seconden), en spaart elke speler beurten
+      voor de knoppen (acht, elke tick een halve erbij): wie gewoon klikt merkt niets, een spel dat berichten spamt wel.
+
+En bij mijn eigen nalezing van `LanGrid` en `Routers`:
+- [x] `LanGrid.networkOf` voor een plek in een stuk wereld dat niet geladen is, liet dat stuk laden; nu is het antwoord
+      daar gewoon leeg.
+- [x] Een netwerkblok dat geen speler neerzet (een RC Car die bouwt) ging aan de eerste de beste router, ook die van een
+      ander; nu zoekt alleen wat een speler neerzet vanzelf zijn router.
+
+Mijn invulling (verander ik op jouw woord):
+- **Relais die er al stonden, werken zoals vroeger** zonder netwerk: anders valt bij deze update elke basis stil. Alleen
+  een relais dat je vanaf nu neerzet, heeft een netwerk nodig. Wil je het ook voor de oude: `[network]
+  oldRelaysNeedNetwork = true`. Met `required = false` (een oude wereld zonder kabels) heeft niets een netwerk nodig.
+- **"Van op afstand"** is alles behalve de knop in het scherm van het relais zelf: je bril, je stem, een groep, een
+  diagram en een relay emitter.
+- **De router zelf heeft stroom nodig** (30 per twee seconden, zoals de switch) en moet zelf aan het netwerk hangen: met
+  een kabel, of draadloos aan je kern of aan een andere router.
+- **Bereik** in een rechte lijn, dwars door muren, zonder dat het signaal zwakker wordt.
+- **De kern aan meer routers**, en dat kost bij elke router één van zijn tien plekken.
+- **Het scherm alleen voor wie de router mag instellen** (strenger dan de switch, waar iedereen de poorten mag zien):
+  de lijst zou anders verraden wat er in de buurt staat.
+- **Vanzelf verbinden** gebeurt alleen bij het neerzetten. Wat er al stond, verbind je in het scherm.
+- Het recept (een ender pearl voor het draadloze), en versie 2.14 (iets nieuws: een blok).
+
+Nog niet gedaan:
+- De router staat **niet in de app Devices** van de desktop (een andere naam geven of verbinden kan alleen aan de router
+  zelf).
+- De derde lezer van de nalezing (het zoeken door het net) en de sceptici hebben niet gelopen (zie hierboven).
+- Het geval "het relais onthoudt zijn netwerk terwijl het stuk wereld van zijn kern niet geladen is" heeft geen test: een
+  test kan geen stuk wereld ontladen.
+- De showcase-functie "Router" heb ik zelf niet afgespeeld (de rondleiding met dezelfde stappen wel).
+- **Opnieuw fotograferen** na de nalezing: de foto van het scherm in How it works toont onderaan nog de oude zin ("...
+  sparks ...", nu "... a line of lights ..."). Dat doe ik zodra jouw showcase dicht is: een tweede Minecraft-venster zou
+  er nu overheen springen.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **De Router (hoofdstuk 112)**: met tests gecontroleerd en gezien op screenshots (`-Ponly=router`), maar niet met de
+      muis gespeeld en nooit met een tweede speler. Probeer: (1) zet een router neer bij je kern (verbindt hij vanzelf,
+      en pakt hij je losse apparaten?), zet er een relais bij en schakel het met je bril; haal dan de stroom van de
+      router weg (zegt I.M.T dat het relais geen netwerk heeft?). (2) Zet een tweede router verderop en kijk in zijn
+      scherm of hij aan de eerste hangt. (3) Met een vriend op je server: krijgt hij het scherm van jouw router niet, en
+      ziet hij in het scherm van zijn eigen router jouw apparaten niet? (4) Voelen 32 blokken en 10 plekken goed
+      (`[network] routerRange`, `routerDevices`)?
 - [ ] **I.M.T minder sterk (hoofdstuk 106)**: met tests gecontroleerd en de schermen gezien op screenshots
       (`-Ponly=uplink`), maar niet gespeeld, en de app Monitor met een bril die bezig is heb ik niet gezien. Probeer:
       (1) **zonder datacenter** in survival: staat er NO DATACENTER in je HUD en onder de acties in het

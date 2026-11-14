@@ -530,6 +530,136 @@ public final class PowerScenes {
     /** Een helder vakje over een netwerkkabel (wit), zoals G > Information > Cable signals. */
     private static final int NETWORK_WHITE = 0xF2F6FA;
 
+    // ================================================================ De Router (hoofdstuk 112)
+
+    static BlockState routerBlock(boolean online) {
+        return ModBlocks.ROUTER.get().defaultBlockState().setValue(com.senne.imttech.lan.RouterBlock.FACING, Direction.SOUTH)
+                .setValue(com.senne.imttech.lan.RouterBlock.ONLINE, online);
+    }
+
+    /**
+     * De Router (jouw wens van 14 november: "een router: hier kun je elk ding draadloos tot op 32 blokken op connecten ...
+     * elke router kan max 10 devices en kan ook verbinden met andere routers"). Zes hoofdstukjes: de router aan de kern
+     * (één PoE-kabel), apparaten die zichzelf verbinden, tien plekken en een router aan een router, relais die nu een
+     * netwerk nodig hebben, zonder stroom valt alles eraf, en zijn scherm.
+     */
+    public static List<HowToScene> router() {
+        HowToSceneBuilder s = new HowToSceneBuilder("router", "Router").plate(8, 6);
+        BlockPos core = new BlockPos(1, 1, 2);
+        BlockPos gen = new BlockPos(0, 1, 2);
+        BlockPos router = new BlockPos(3, 1, 2);
+        BlockPos relay = new BlockPos(6, 1, 1);
+        BlockPos lamp = new BlockPos(7, 1, 1);
+        BlockPos camera = new BlockPos(5, 1, 4);
+        BlockPos cameraGen = new BlockPos(6, 1, 4);
+        BlockPos second = new BlockPos(2, 1, 5);
+        Vec3[] poe = {new Vec3(2.0, 1.05, 2.5), new Vec3(3.1, 1.05, 2.5)};
+        // De antennes van de router (achteraan, bovenop): daar komen en gaan de signalen door de lucht.
+        Vec3 antenna = new Vec3(3.5, 1.7, 2.3);
+        Vec3 relayTop = new Vec3(6.5, 1.3, 1.5);
+        Vec3 cameraTop = new Vec3(5.5, 1.5, 4.5);
+        Vec3 secondAntenna = new Vec3(2.5, 1.7, 5.3);
+        String range = HowToSceneBuilder.number(ImtConfig.Network.ROUTER_RANGE);
+        String places = HowToSceneBuilder.number(ImtConfig.Network.ROUTER_DEVICES);
+        s.idle(8);
+        s.chapter("No cable to every device");
+        s.place(core, SecurityScenes.core(Direction.SOUTH, true));
+        s.idle(4);
+        s.place(gen, heat(Direction.WEST));
+        s.idle(6);
+        s.place(router, routerBlock(false));
+        s.idle(10);
+        s.holdRight(16, new ItemStack(ModItems.POE_CABLE.get()), poe);
+        s.cable(CableKind.POE, 16, poe);
+        s.idle(18);
+        s.change(router, routerBlock(true));
+        s.outline(80, router, router, HowToSceneBuilder.CYAN);
+        s.text(100, HowToSceneBuilder.top(router), Side.RIGHT,
+                "A *Router* hangs on your network with one cable (a PoE cable also gives it its bit of power). What it links"
+                        + " needs no network cable anymore.");
+        s.idle(105);
+
+        s.chapter("Devices link by themselves");
+        s.place(relay, InteriorScenes.relay(false));
+        s.idle(3);
+        s.place(lamp, InteriorScenes.lamp(false));
+        s.idle(6);
+        s.signal(12, HowToSceneBuilder.CYAN, relayTop, antenna);
+        s.idle(14);
+        s.place(cameraGen, heat(Direction.WEST));
+        s.idle(3);
+        s.place(camera, SecurityScenes.camera(Direction.WEST).setValue(CameraBlock.ONLINE, false));
+        s.idle(6);
+        s.signal(12, HowToSceneBuilder.CYAN, cameraTop, antenna);
+        s.idle(14);
+        s.change(camera, SecurityScenes.camera(Direction.WEST));
+        s.text(110, new Vec3(5.5, 2.4, 2.5), Side.RIGHT,
+                "Place a device within *%s blocks* of a Router and it links by itself, through walls too. A new Router picks"
+                        + " up the loose devices around it. A camera or gate still needs its own power.", range);
+        s.idle(115);
+
+        s.chapter("Ten places");
+        s.place(second, routerBlock(false));
+        s.idle(8);
+        s.signal(14, HowToSceneBuilder.CYAN, secondAntenna, antenna);
+        s.idle(16);
+        s.outline(90, second, second, HowToSceneBuilder.CYAN);
+        s.text(110, HowToSceneBuilder.top(second), Side.LEFT,
+                "One Router links *%s* devices. Need more, or more reach? A Router can hang on another Router: that link takes"
+                        + " one place on both. This one still needs power of its own.", places);
+        s.idle(115);
+
+        s.chapter("Relays need the network");
+        s.signal(10, HowToSceneBuilder.CYAN, antenna, relayTop);
+        s.idle(10);
+        s.change(relay, InteriorScenes.relay(true));
+        s.change(lamp, InteriorScenes.lamp(true));
+        s.idle(24);
+        s.signal(10, HowToSceneBuilder.CYAN, antenna, relayTop);
+        s.idle(10);
+        s.change(relay, InteriorScenes.relay(false));
+        s.change(lamp, InteriorScenes.lamp(false));
+        s.idle(14);
+        s.signal(10, HowToSceneBuilder.CYAN, antenna, relayTop);
+        s.idle(10);
+        s.change(relay, InteriorScenes.relay(true));
+        s.change(lamp, InteriorScenes.lamp(true));
+        s.text(115, HowToSceneBuilder.top(relay), Side.LEFT,
+                "A relay you place now only listens to your glasses and diagrams when it is on the network: a Router, or a"
+                        + " network cable. It still needs no power. Relays that already stood there keep working.");
+        s.idle(120);
+
+        s.chapter("No power, no link");
+        s.change(router, routerBlock(false));
+        s.change(camera, SecurityScenes.camera(Direction.WEST).setValue(CameraBlock.ONLINE, false));
+        s.sound(SoundEvents.STONE_BUTTON_CLICK_OFF, 0.4f, 1.4f);
+        s.outline(70, router, router, HowToSceneBuilder.RED);
+        s.text(95, HowToSceneBuilder.top(router), Side.RIGHT,
+                "Without power a Router passes nothing on: everything that only hangs on it drops off the network until the"
+                        + " power is back.");
+        s.idle(80);
+        s.change(router, routerBlock(true));
+        s.change(camera, SecurityScenes.camera(Direction.WEST));
+        s.idle(25);
+
+        s.chapter("Its screen");
+        Vec3 front = HowToSceneBuilder.face(router, Direction.SOUTH).subtract(0, 0.35, 0);
+        s.text(70, HowToSceneBuilder.top(router), Side.RIGHT,
+                "Right-click your Router to open its screen. Only you can, and who you trust in your base.");
+        s.rightClick(front, ItemStack.EMPTY);
+        s.idle(60);
+        // Het echte scherm (het plaatje maakt de rondleiding: -Ponly=howtopics:router).
+        s.picture(170, "router_screen", 300, 226,
+                s.arrow(0.84f, 0.06f, "*online*: it has power"),
+                s.arrow(0.10f, 0.22f, "What hangs on this Router (at most %s)", places),
+                s.arrow(0.86f, 0.29f, "*Unlink* frees a place"),
+                s.arrow(0.12f, 0.57f, "Your devices in range that are not linked here"),
+                s.arrow(0.86f, 0.645f, "*Link* by hand"),
+                s.arrow(0.35f, 0.93f, "Click a line: lights show which device it is"));
+        s.idle(175);
+        return List.of(s.build());
+    }
+
     // ================================================================ De stroomkast
 
     static BlockState cabinet(boolean west, boolean east) {

@@ -149,6 +149,20 @@ public final class InteriorScenes {
                 "A *Relay Emitter* works the other way around: give it redstone and it switches your relays (follow, toggle"
                         + " or pulse). Free, and it works while you are offline.");
         s.idle(100);
+
+        // Hoofdstuk 112: een nieuw relais heeft een netwerk nodig (een Router, of een netwerkkabel).
+        s.chapter("On the network");
+        BlockPos router = new BlockPos(3, 1, 0);
+        s.place(router, com.senne.imttech.howto.scenes.PowerScenes.routerBlock(true));
+        s.idle(8);
+        s.signal(12, HowToSceneBuilder.CYAN, new Vec3(1.5, 1.3, 1.5), new Vec3(3.5, 1.7, 0.3));
+        s.signal(12, HowToSceneBuilder.CYAN, new Vec3(1.5, 1.3, 3.5), new Vec3(3.5, 1.7, 0.3));
+        s.idle(14);
+        s.outline(90, router, router, HowToSceneBuilder.CYAN);
+        s.text(110, HowToSceneBuilder.top(router), Side.RIGHT,
+                "A relay you place now only listens from a distance when it is on the network: put a *Router* nearby, or lay a"
+                        + " network cable to it. No power needed. Its own Pulse button always works.");
+        s.idle(115);
         return List.of(s.build());
     }
 }
