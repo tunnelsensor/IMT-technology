@@ -61,6 +61,8 @@ public final class ZoneApp {
         data.putInt("max", ImtConfig.Security.ZONE_MAX_BOXES);
         data.putInt("reach", Math.round(ImtConfig.Security.ZONE_RANGE));
         data.putInt("margin", ZoneScan.margin());
+        // Hoofdstuk 120: welke stukken wereld van de zone geladen blijven (groen op de kaart, en hoeveel bovenaan).
+        data.putLongArray("loaded", ZoneChunks.kept(level, core.getBlockPos()));
         if (viewer != null && !remote) {
             data.put("player", xyz(viewer.blockPosition()));
         }

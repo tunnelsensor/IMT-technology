@@ -10,6 +10,7 @@ import com.senne.imttech.security.SecurityCoreBlockEntity;
 import com.senne.imttech.security.SecurityCores;
 import com.senne.imttech.security.os.EventLog;
 import com.senne.imttech.security.zone.ZoneBox;
+import com.senne.imttech.security.zone.ZoneChunks;
 import com.senne.imttech.security.zone.ZoneApp;
 import com.senne.imttech.security.zone.ZoneData;
 import com.senne.imttech.security.zone.ZoneMarkerItem;
@@ -1496,5 +1497,244 @@ public final class ZoneGameTests {
             throw new GameTestAssertException("Kubussen maken duurde " + millis + " ms voor " + cells.size() + " blokken");
         }
         helper.succeed();
+    }
+
+    // ================================================================ Hoofdstuk 120: de zone blijft geladen
+
+    private static long chunk(int x, int z) {
+        return net.minecraft.world.level.ChunkPos.asLong(x, z);
+    }
+
+    /** De stukken wereld als "x,z", op volgorde (voor een foutmelding die je kunt lezen). */
+    private static String chunkNames(java.util.Collection<Long> chunks) {
+        List<String> names = new ArrayList<>();
+        for (long chunk : chunks) {
+            names.add(net.minecraft.world.level.ChunkPos.getX(chunk) + "," + net.minecraft.world.level.ChunkPos.getZ(chunk));
+        }
+        names.sort(null);
+        return names.toString();
+    }
+
+    private static java.util.Set<Long> chunkSet(long... chunks) {
+        java.util.Set<Long> set = new java.util.HashSet<>();
+        for (long chunk : chunks) {
+            set.add(chunk);
+        }
+        return set;
+    }
+
+    /** Geeft {@code got} precies deze stukken wereld (elk één keer)? */
+    private static void expectChunks(String what, it.unimi.dsi.fastutil.longs.LongList got, java.util.Set<Long> expected) {
+        java.util.Set<Long> set = chunkSet(got.toLongArray());
+        if (set.size() != got.size() || !set.equals(expected)) {
+            throw new GameTestAssertException(what + ": verwachtte de stukken " + chunkNames(expected) + ", kreeg "
+                    + chunkNames(got));
+        }
+    }
+
+    /** Staat er in de wereld een ticket van een "ticket controller" (in de testwereld alleen ZoneChunks) op dit stuk? */
+    private static boolean ticketed(ServerLevel level, long chunk) {
+        net.minecraft.world.level.ForcedChunksSavedData data = level.getDataStorage().get(
+                net.minecraft.world.level.ForcedChunksSavedData.factory(), "chunks");
+        if (data == null) {
+            return false;
+        }
+        java.util.Map<?, it.unimi.dsi.fastutil.longs.LongSet> owners = data.getBlockForcedChunks().getChunks();
+        for (it.unimi.dsi.fastutil.longs.LongSet chunks : owners.values()) {
+            if (chunks.contains(chunk)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Hoofdstuk 120 (jouw wens: "zorg dat een zone ook chunkloaded is behalve de laatste range van 10 omdat dat toch geen
+     * base is"): welke stukken wereld (chunks) van een zone geladen blijven. Alleen rekenen, zonder wereld:
+     * <ul>
+     *   <li>een basis van precies 2 x 2 stukken met 10 blokken rand eromheen: alleen die 4 (met de rand zouden het er 16
+     *       zijn), het stuk van de kern eerst;</li>
+     *   <li>met rand 0: alle 16;</li>
+     *   <li>twee kubussen tegen elkaar: de naad ertussen blijft geladen (het vierkant mag over beide liggen);</li>
+     *   <li>een smal kubusje (8 breed, te smal voor 10 blokken rand): zijn midden toch, ook als het met een hoek tegen de
+     *       basis ligt;</li>
+     *   <li>een zone van de oude Autoscan (3 blokken rand, van voor hoofdstuk 117): een hal, een gang en een generatorkamer
+     *       houden alle drie hun stukken (de nalezing vond dat de generatorkamer eerst helemaal wegviel);</li>
+     *   <li>een kern buiten zijn zone: zijn eigen stuk erbij, als eerste;</li>
+     *   <li>een reuzenzone: hooguit het maximum, de stukken het dichtst bij de kern;</li>
+     *   <li>geen kubussen: niets.</li>
+     * </ul>
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "zones")
+    public static void zone_chunks_leave_out_the_outer_margin(GameTestHelper helper) {
+        // De basis: x en z van 0 tot en met 31 (de stukken 0 en 1), met de 10 blokken rand van de Autoscan eromheen.
+        ZoneBox base = ZoneBox.of(new BlockPos(-10, 50, -10), new BlockPos(41, 80, 41));
+        BlockPos core = new BlockPos(5, 64, 5);
+        java.util.Set<Long> four = chunkSet(chunk(0, 0), chunk(1, 0), chunk(0, 1), chunk(1, 1));
+        it.unimi.dsi.fastutil.longs.LongList basis = ZoneChunks.wanted(List.of(base), core, 10, 256);
+        expectChunks("Een basis van 2 x 2 stukken met 10 blokken rand", basis, four);
+        if (basis.getLong(0) != chunk(0, 0)) {
+            throw new GameTestAssertException("Het stuk van de kern hoort eerst: " + chunkNames(basis));
+        }
+        // Zonder rand: de hele zone, van stuk -1 tot en met 2 (in x en in z).
+        int all = ZoneChunks.wanted(List.of(base), core, 0, 256).size();
+        if (all != 16) {
+            throw new GameTestAssertException("Zonder rand zou de hele zone (16 stukken) geladen blijven, niet " + all);
+        }
+        // Twee kubussen tegen elkaar (x 42 tot 93 sluit aan op 41): samen ligt x 0 tot 83 diep genoeg, dus de stukken 0
+        // tot en met 5. Elke kubus apart had de naad (stuk 2, x 32 tot 47) laten vallen.
+        ZoneBox next = ZoneBox.of(new BlockPos(42, 50, -10), new BlockPos(93, 80, 41));
+        java.util.Set<Long> twelve = new java.util.HashSet<>();
+        for (int x = 0; x <= 5; x++) {
+            twelve.add(chunk(x, 0));
+            twelve.add(chunk(x, 1));
+        }
+        expectChunks("Twee kubussen tegen elkaar", ZoneChunks.wanted(List.of(base, next), core, 10, 256), twelve);
+        // Een los kubusje van 8 x 8 ver weg: te smal voor 10 blokken rand, maar zijn midden blijft geladen.
+        ZoneBox post = ZoneBox.of(new BlockPos(200, 60, 0), new BlockPos(207, 70, 7));
+        java.util.Set<Long> withPost = new java.util.HashSet<>(four);
+        withPost.add(chunk(12, 0));
+        expectChunks("Een basis en een los smal kubusje", ZoneChunks.wanted(List.of(base, post), core, 10, 256), withPost);
+        // Hetzelfde kubusje met een hoek tegen de basis (42..49 raakt 41 schuin): ook zijn midden (stuk 2,2).
+        ZoneBox corner = ZoneBox.of(new BlockPos(42, 60, 42), new BlockPos(49, 70, 49));
+        java.util.Set<Long> withCorner = new java.util.HashSet<>(four);
+        withCorner.add(chunk(2, 2));
+        expectChunks("Een smal kubusje met een hoek tegen de basis", ZoneChunks.wanted(List.of(base, corner), core, 10, 256),
+                withCorner);
+        // Een zone van de oude Autoscan, elke kamer 3 blokken groter: een hal (0..19), een gang van 3 breed (x 20..79) en
+        // een generatorkamer (x 80..89). Alle drie houden hun stukken: de hal 0, de gang 1 tot 4, de generatorkamer 5.
+        List<ZoneBox> legacy = List.of(ZoneBox.of(new BlockPos(-3, 60, -3), new BlockPos(22, 70, 22)),
+                ZoneBox.of(new BlockPos(17, 60, 5), new BlockPos(82, 70, 13)),
+                ZoneBox.of(new BlockPos(77, 60, 1), new BlockPos(92, 70, 16)));
+        expectChunks("Een zone van de oude Autoscan (3 blokken rand)", ZoneChunks.wanted(legacy, new BlockPos(10, 64, 10), 10, 256),
+                chunkSet(chunk(0, 0), chunk(1, 0), chunk(2, 0), chunk(3, 0), chunk(4, 0), chunk(5, 0)));
+        // De kern buiten zijn zone: zijn eigen stuk eerst, dan de basis.
+        it.unimi.dsi.fastutil.longs.LongList outside = ZoneChunks.wanted(List.of(base), new BlockPos(300, 64, 300), 10, 256);
+        java.util.Set<Long> withCore = new java.util.HashSet<>(four);
+        withCore.add(chunk(18, 18));
+        expectChunks("De kern buiten zijn zone", outside, withCore);
+        if (outside.getLong(0) != chunk(18, 18)) {
+            throw new GameTestAssertException("Het stuk van de kern hoort eerst, ook buiten de zone: " + chunkNames(outside));
+        }
+        // Een reuzenzone met een maximum van 20: precies 20 stukken, het stuk van de kern eerst, de rest er vlak omheen.
+        ZoneBox huge = ZoneBox.of(new BlockPos(-500, 50, -500), new BlockPos(500, 80, 500));
+        it.unimi.dsi.fastutil.longs.LongList capped = ZoneChunks.wanted(List.of(huge), new BlockPos(0, 64, 0), 10, 20);
+        if (capped.size() != 20 || capped.getLong(0) != chunk(0, 0)) {
+            throw new GameTestAssertException("Een reuzenzone met maximum 20 gaf " + capped.size() + " stukken: " + chunkNames(capped));
+        }
+        for (long c : capped) {
+            if (Math.abs(net.minecraft.world.level.ChunkPos.getX(c)) > 2 || Math.abs(net.minecraft.world.level.ChunkPos.getZ(c)) > 2) {
+                throw new GameTestAssertException("De 20 stukken horen het dichtst bij de kern te liggen: " + chunkNames(capped));
+            }
+        }
+        if (!ZoneChunks.wanted(List.of(), core, 10, 256).isEmpty()) {
+            throw new GameTestAssertException("Zonder kubussen hoort er niets geladen te blijven");
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Hoofdstuk 120: een zone ver van de kern (en van elke speler) blijft echt geladen en draait, met tickets die
+     * Minecraft in de wereld bewaart; de rand van 10 blokken niet. Het net van de kern houdt NetworkKeeper dan ook geladen.
+     * Staat zoneChunkLoading uit, of is de zone weg, dan laten we alles los. (In de tests staat de ronde van elke tick uit,
+     * zie ZoneChunks.onServerTick: deze test roept ZoneChunks.syncNow zelf aan.)
+     */
+    @GameTest(template = ARENA, timeoutTicks = 100, batch = "zones")
+    public static void a_zone_stays_loaded_without_anyone_near(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(4, 3, 4), "loaded-owner");
+        ImtTechGameTests.placeCore(helper, CORE, owner);
+        BlockPos corePos = helper.absolutePos(CORE);
+        GlobalPos here = GlobalPos.of(level.dimension(), corePos);
+        // Een basis van 2 x 2 stukken wereld, 320 blokken ten westen van deze test (de tests liggen in rijen van 8 naar het
+        // oosten, dus daar staat geen arena), met de 10 blokken rand eromheen.
+        int cx = (corePos.getX() - 320) >> 4;
+        int cz = corePos.getZ() >> 4;
+        ZoneBox far = ZoneBox.of(new BlockPos((cx << 4) - 10, corePos.getY() - 5, (cz << 4) - 10),
+                new BlockPos((cx << 4) + 41, corePos.getY() + 10, (cz << 4) + 41));
+        java.util.Set<Long> expected = chunkSet(chunk(corePos.getX() >> 4, corePos.getZ() >> 4),
+                chunk(cx, cz), chunk(cx + 1, cz), chunk(cx, cz + 1), chunk(cx + 1, cz + 1));
+        ZoneData data = ZoneData.get(level);
+        boolean wasOn = ImtConfig.Security.ZONE_CHUNK_LOADING;
+        data.setBoxes(here, List.of(far));
+        ZoneChunks.syncNow(level, corePos);
+        try {
+            java.util.Set<Long> kept = chunkSet(ZoneChunks.kept(level, corePos));
+            if (!kept.equals(expected)) {
+                throw new GameTestAssertException("Geladen gehouden: " + chunkNames(kept) + ", verwachtte " + chunkNames(expected));
+            }
+            for (long c : expected) {
+                if (!ticketed(level, c)) {
+                    throw new GameTestAssertException("Geen ticket in de wereld op stuk " + chunkNames(List.of(c)));
+                }
+            }
+            // Het stuk ten westen van de basis is alleen rand (10 blokken): dat krijgt geen ticket.
+            if (ticketed(level, chunk(cx - 1, cz))) {
+                throw new GameTestAssertException("Het stuk met alleen de rand van 10 blokken kreeg toch een ticket");
+            }
+            if (!com.senne.imttech.lan.NetworkKeeper.inUse(level).contains(corePos)) {
+                throw new GameTestAssertException("Het net van een kern met een geladen zone hoort ook geladen te blijven");
+            }
+            if (!ZoneChunks.worthKeeping(data.zone(here))) {
+                throw new GameTestAssertException("Na een herstart zou deze zone geladen moeten blijven");
+            }
+        } catch (RuntimeException failure) {
+            data.setBoxes(here, List.of());
+            ZoneChunks.syncNow(level, corePos);
+            throw failure;
+        }
+        // Een paar ticks later: de stukken ver weg zijn er, en ze draaien (wezens en blokken tikken er), zonder speler.
+        helper.runAfterDelay(3, () -> {
+            try {
+                var distance = level.getChunkSource().chunkMap.getDistanceManager();
+                for (long c : expected) {
+                    int x = net.minecraft.world.level.ChunkPos.getX(c);
+                    int z = net.minecraft.world.level.ChunkPos.getZ(c);
+                    if (level.getChunkSource().getChunkNow(x, z) == null || !distance.inEntityTickingRange(c)) {
+                        throw new GameTestAssertException("Stuk " + x + "," + z + " is niet geladen of draait niet");
+                    }
+                }
+                // De config uit: alles los. En weer aan: alles terug.
+                ImtConfig.Security.ZONE_CHUNK_LOADING = false;
+                ZoneChunks.syncNow(level, corePos);
+                if (ZoneChunks.kept(level, corePos).length != 0 || ticketed(level, chunk(cx, cz))
+                        || ZoneChunks.worthKeeping(data.zone(here))) {
+                    throw new GameTestAssertException("Met zoneChunkLoading = false hoort er niets geladen te blijven");
+                }
+                ImtConfig.Security.ZONE_CHUNK_LOADING = true;
+                ZoneChunks.syncNow(level, corePos);
+                if (!chunkSet(ZoneChunks.kept(level, corePos)).equals(expected)) {
+                    throw new GameTestAssertException("Met de config weer aan horen dezelfde stukken terug te komen");
+                }
+                // De zone weg: alles los, ook het net.
+                data.setBoxes(here, List.of());
+                ZoneChunks.syncNow(level, corePos);
+                for (long c : expected) {
+                    if (ticketed(level, c)) {
+                        throw new GameTestAssertException("Zonder zone staat er nog een ticket op " + chunkNames(List.of(c)));
+                    }
+                }
+                if (ZoneChunks.kept(level, corePos).length != 0
+                        || com.senne.imttech.lan.NetworkKeeper.inUse(level).contains(corePos)) {
+                    throw new GameTestAssertException("Zonder zone hoort de kern niets meer geladen te houden");
+                }
+                // Een zone waarvan de kern verdwenen is zonder afgebroken te worden (een gewist stuk wereld): die vergeten we,
+                // net als Zones.activeAt (de nalezing vond dat ze anders elke paar seconden opnieuw laadde).
+                BlockPos ghost = helper.absolutePos(new BlockPos(12, 3, 12));
+                GlobalPos ghostKey = GlobalPos.of(level.dimension(), ghost);
+                data.report(ghostKey, owner.getUUID(), owner.getScoreboardName(), List.of());
+                data.setBoxes(ghostKey, List.of(ZoneBox.of(ghost.offset(-2, -1, -2), ghost.offset(2, 3, 2))));
+                ZoneChunks.syncNow(level, ghost);
+                if (data.zone(ghostKey) != null || ZoneChunks.kept(level, ghost).length != 0) {
+                    data.forget(ghostKey);
+                    throw new GameTestAssertException("Een zone zonder kern hoort vergeten te worden");
+                }
+            } finally {
+                ImtConfig.Security.ZONE_CHUNK_LOADING = wasOn;
+                data.setBoxes(here, List.of());
+                ZoneChunks.syncNow(level, corePos);
+            }
+            helper.succeed();
+        });
     }
 }

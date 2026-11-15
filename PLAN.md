@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 632 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 634 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -9376,6 +9376,91 @@ Mijn invullingen (verander ik op jouw woord):
       de geciteerde meldingen bestonden niet. De test dekt nu ook de vreemde met zijn eigen auto, laden van ver, de app
       Robots zonder server, te lange code en een andere server.
 
+### 120. Je zone blijft geladen, ook als je ver weg bent (15 november)
+
+Jouw wens: "zorg dat een zone ook chunkloaded is behalve de laaste range van 10 omdat dat toch geen base is, dit maakt dat
+als de securicycore ver weg is het nog steeds werkt doordat alles loaded is".
+
+- [x] **De zone blijft geladen** (`security/zone/ZoneChunks`): Minecraft laat alleen de wereld rond de spelers draaien. Een
+      zone met een eigenaar en minstens één kubus houdt nu zelf haar stukken wereld (chunks) geladen, met tickets van een
+      eigen "ticket controller" van NeoForge (`imttech:zone`, met de plek van de kern als eigenaar). Minecraft bewaart die
+      tickets in de wereld en zet ze bij het opstarten zelf terug, nog voor er een speler is; dan vraagt het eerst aan ons
+      welke nog mogen (een kern die weg is, of een zone zonder kubussen: weg ermee). In zo'n stuk draaien de blokken en de
+      wezens gewoon (torentjes, generatoren, machines, serverkasten, robots, drones), maar gewassen groeien er niet harder
+      van en er komen geen monsters door.
+- [x] **Behalve de buitenste 10 blokken** (`zoneScanMargin`, de rand die de Autoscan om je kamers legt), per kubus: elke
+      kubus heeft een rand van 10 blokken, of minder als ze smaller is dan 21 blokken (een kubus van 9 breed heeft een rand
+      van 4: dan blijft haar middelste rij over). Een stuk wereld blijft geladen als een kubus erin een kolom heeft waarvan
+      het vierkant van haar rand naar alle kanten helemaal in de zone ligt (van bovenaf, alle kubussen samen: de naad tussen
+      twee kamers blijft dus geladen). Bij een zone van de Autoscan van nu (10 blokken rand) valt zo precies die rand weg.
+      Van elke kubus blijft minstens het midden geladen, en elk blok van de zone ligt in een geladen stuk of er direct naast
+      (hooguit 10 blokken van een geladen kolom); in een stuk ernaast werken blokken zoals torentjes en generatoren ook (het
+      draait half mee), alleen robots en drones staan daar stil. Zo houdt ook een zone die de Autoscan vóór hoofdstuk 117 maakte
+      (3 blokken rand) al haar kamers.
+- [x] **De kern en zijn netwerk**: het stuk wereld van de kern blijft altijd geladen (als eerste, ook als de kern ver
+      buiten zijn zone staat): zonder geladen kern werkt geen apparaat in je zone. En `lan/NetworkKeeper` houdt nu ook het
+      netwerk van zo'n kern geladen (de stukken waar zijn netwerkkabels door lopen, geladen maar niet draaiend): anders vond
+      een apparaat in je zone zijn kern niet als de kabel ertussen door een stuk wereld liep dat niet geladen was.
+- [x] **Zonder haperen**: elke tick hooguit 64 stukken erbij. Een stuk dat nog niet geladen is, laadt eerst op de
+      achtergrond (met een tijdelijk ticket, zoals bij een speler die aankomt) en wordt pas daarna vastgezet: vastzetten
+      van een stuk dat er nog niet is, laat de server wachten tot het van de schijf komt. Loslaten gebeurt meteen, binnen
+      een seconde nadat de kern weg is, de zone leeg is of de config het uitzet. Welke stukken bij een zone horen, rekenen
+      we alleen opnieuw uit als haar kubussen, de rand of het maximum veranderen, en per zone hooguit één keer per seconde
+      (wie snel op + en - klikt in de app Zone, laat de server niet haperen). Het stuk van de kern komt eerst; de rest pas
+      als de kern er nog blijkt te staan. Is een kern verdwenen zonder afgebroken te worden (een stuk wereld dat met een
+      ander programma gewist werd), dan vergeten we zijn zone, zoals `Zones.activeAt` al deed.
+- [x] **Config** (`[security]`): `zoneChunkLoading` (aan) en `zoneChunkLoadingMax` (256 stukken per zone, die het dichtst bij
+      de kern eerst).
+- [x] **De app Zone**: op de kaart zacht groen welke stukken geladen blijven (onder je kubussen; de rand van 10 blokken is
+      meestal alleen blauw), met linksonder in de kaart een klein vakje "12 chunks kept loaded".
+- [x] **Teksten**: How it works (Zones: "Your zone stays loaded when you are far away (not its outer 10 blocks)"), LEESMIJ
+      ("Je zone blijft geladen").
+- [x] **Tests** (batch zones, geen nieuwe batchnaam): `zone_chunks_leave_out_the_outer_margin` (alleen rekenen: een basis van
+      2 x 2 stukken met 10 blokken rand geeft die 4 stukken en geen 16, de naad tussen twee kubussen, een smal kubusje, ook
+      met een hoek tegen de basis, een zone van de oude Autoscan met 3 blokken rand die al haar kamers houdt, een kern buiten
+      zijn zone, een reuzenzone met maximum 20, geen kubussen) en `a_zone_stays_loaded_without_anyone_near` (een zone 320
+      blokken van de test: die stukken zijn geladen en draaien zonder speler, met tickets in de wereld, de rand niet, het net
+      van de kern ook; met de config uit of zonder kubussen alles los; een zone zonder kern wordt vergeten). In de tests
+      staat de ronde van elke tick uit (zoals bij NetworkKeeper: anders bleven de zones van oude tests geladen en
+      veranderde de wereld van latere tests); de tests roepen `ZoneChunks.syncNow` zelf aan. Het rekenwerk heb ik ook
+      naast een trage maar zekere versie gelegd (elke kolom van elke kubus apart nagelopen): 370 willekeurige zones, geen
+      verschil.
+- [x] **Review**: drie onafhankelijke lezers (de tickets en hun levensloop, het rekenwerk, wat het met de rest van de mod
+      doet), met per lezer een controleur die elke vondst tegen de code en de bronnen van NeoForge nakeek (6 agents). Bevestigd
+      en opgelost: (1) een zone van vóór hoofdstuk 117 (de Autoscan nam toen 3 blokken rand) verloor met één rand van 10 voor de
+      hele zone hele kamers, zoals een generatorkamer achter een gang: nu heeft elke kubus haar eigen rand; (2) met lange
+      smalle kubussen, of een veel grotere `zoneScanMargin`, kon het rekenen bij elke klik in de app Zone tot een seconde
+      duren: nu precies en snel (het midden van een kubus eerst, de tabel alleen bij een naad) en hooguit één keer per
+      seconde; (3) een kern die verdween zonder afgebroken te worden, liet zijn zone elke paar seconden opnieuw laden: nu
+      vergeten we die zone; (4) NetworkKeeper liet de server na een herstart wachten tot het stuk van elke kern geladen was:
+      nu neemt hij alleen kernen die er al zijn; (5) het getal bovenaan de app paste nooit naast NO POWER (of bij een grote
+      zone): nu een vakje in de kaart. Afgewezen door de controleur: een kubus die met een hoek tegen een andere ligt (bewuste
+      keuze, en met de rand per kubus ook weg).
+- [x] **Volledige ronde**: 634 tests, allemaal groen, op master met hoofdstuk 121 erbij, in een eigen worktree (192
+      batchnamen, zoals voorheen). In de ronde daarvoor faalde één keer `guard_searches_where_he_lost_you` (die wisselt
+      vaker en raakt zones niet).
+
+Mijn invulling (verander ik op jouw woord):
+- **Ook zonder stroom en als je offline bent** blijft je zone geladen: zo laden je zonnepanelen een lege kern weer op terwijl
+  je weg bent, en draait je basis door als je uitlogt. Alleen de config, een lege zone of een kern die weg is zetten het uit.
+  Een verlaten basis blijft zo geladen tot iemand zijn kern weghakt; een server die dat niet wil, zet `zoneChunkLoading` uit.
+- **Geen gewassen en geen monsters**: alleen wat er staat en rondloopt draait. Gewassen laten groeien zonder speler kost veel
+  rekenwerk per stuk wereld (en monsters die niemand ziet verdwijnen toch meteen weer).
+- **De rand is `zoneScanMargin`** (10), per kubus: verander je die, dan verandert ook wat niet geladen blijft. Heeft een
+  kubus minder rand dan 10 (een zone van de oude Autoscan, een kubus die je zelf strak om je basis tekende, of een kant
+  waar een buurzone in de weg lag), dan kan een strook van je basis aan de rand in een stuk ernaast vallen: blokken zoals
+  torentjes en generatoren werken daar toch, alleen robots en drones staan er dan stil. Scan je een oude zone opnieuw met
+  de Autoscan, dan krijgt ze 10 blokken rand en blijven al je kamers helemaal geladen.
+- **Hooguit 256 stukken per zone** (een basis van 256 x 256 blokken), die het dichtst bij de kern eerst. Geen maximum voor
+  de hele server.
+- **Lange stroomkabels** tussen een verre kern en je zone blijven niet geladen (netwerkkabels wel): zet je generatoren bij de
+  kern of in je zone.
+- **Versie 2.19**: een nieuw systeem.
+
+Nog niet gedaan:
+- Niet in het spel bekeken: de groene vlakken en het vakje in de app Zone (er draaide een spel, en een tweede venster steelt
+  de focus); zie "Nog nooit in het spel bekeken".
+
 ### 121. De arm van de RC Car gaat tot vijf blokken hoog (15 november)
 
 Jouw wens: "een rc car arm moet tot 5 blokken hoog kunnen gaan, dit maakt dat je een kamer of gang simpeler kunt
@@ -9424,6 +9509,13 @@ eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er
 - [ ] **De arm tot vijf hoog (hoofdstuk 121)**: met tests en screenshots gecontroleerd, niet gespeeld. Probeer: (1) laat
       de auto een kamer of gang van 5 of 6 hoog uitminen met de `dig` uit LEESMIJ; (2) kijk van dichtbij omhoog naar de
       boor: blijft de auto zichtbaar? (3) ziet de mast er goed uit op vijf hoog, ook terwijl hij schuift?
+- [ ] **Je zone blijft geladen (hoofdstuk 120)**: alleen met tests gecontroleerd. Probeer: (1) open de app Zone: zie je op de
+      kaart groene vlakken onder je kubussen, met de rand van 10 blokken erbuiten, en linksonder "N chunks kept loaded"? Valt
+      het vakje nergens over iets belangrijks heen? (2) Zet een
+      torentje of een generator in je basis, loop meer dan 200 blokken weg (of log uit en weer in): draait alles nog (een
+      generator die verder brandt, een RC Car die verder mijnt)? (3) Zet je kern ver van je zone (tot 500 blokken, met een
+      netwerkkabel ertussen): werken de lezers en torentjes in je zone als je daar staat? (4) Merkt je server iets van de
+      geladen zones (lag)?
 
 - [ ] **RC programs op de server (hoofdstuk 119)**: met tests gecontroleerd en gezien op screenshots (`-Ponly=rccar`), maar
       niet met de muis gespeeld. Probeer: (1) schrijf in de app Logic een RC program (**+**, **RC program**), zet je auto

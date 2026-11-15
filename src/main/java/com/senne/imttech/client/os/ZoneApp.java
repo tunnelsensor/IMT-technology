@@ -360,6 +360,17 @@ final class ZoneApp {
         g.fill(rx0, rz1 - 1, rx1, rz1, limit);
         g.fill(rx0, rz0, rx0 + 1, rz1, limit);
         g.fill(rx1 - 1, rz0, rx1, rz1, limit);
+        // Hoofdstuk 120: de stukken wereld (16 x 16 blokken) die geladen blijven, zacht groen onder de kubussen. De rand
+        // van de zone (10 blokken, zoneScanMargin) valt er meestal buiten: die is alleen blauw.
+        int loadedColour = HudStyle.argb(70, HudStyle.GREEN);
+        long[] loaded = zone.getLongArray("loaded");
+        for (long chunk : loaded) {
+            int bx = net.minecraft.world.level.ChunkPos.getX(chunk) << 4;
+            int bz = net.minecraft.world.level.ChunkPos.getZ(chunk) << 4;
+            int x0 = mapPx(bx);
+            int z0 = mapPz(bz);
+            g.fill(x0, z0, Math.max(x0 + 1, mapPx(bx + 16)), Math.max(z0 + 1, mapPz(bz + 16)), loadedColour);
+        }
         for (int i = 0; i < boxes.size(); i++) {
             int[] box = boxes.get(i);
             boolean chosen = i == selected;
@@ -396,6 +407,21 @@ final class ZoneApp {
             int px = mapPx(player[0]);
             int pz = mapPz(player[2]);
             g.fill(px - 1, pz - 1, px + 2, pz + 2, HudStyle.argb(255, 0xFFE14A));
+        }
+        // Hoofdstuk 120: wat het groen betekent en hoeveel stukken het zijn, klein linksonder in de kaart (de regel
+        // bovenaan is al vol met "NO POWER" of een grote zone; de nalezing vond dat het getal daar vaak niet paste).
+        if (loaded.length > 0) {
+            String legend = loaded.length + (loaded.length == 1 ? " chunk" : " chunks") + " kept loaded";
+            int lx = mapX + 3;
+            int ly = mapY + mapSize - 10;
+            int lw = 7 + Math.round(font.width(legend) * 0.75f);
+            g.fill(lx - 1, ly - 1, lx + lw + 1, ly + 8, HudStyle.argb(170, 0x000000));
+            g.fill(lx, ly + 1, lx + 5, ly + 6, HudStyle.argb(200, HudStyle.GREEN));
+            g.pose().pushPose();
+            g.pose().translate(lx + 7, ly + 1, 0.0f);
+            g.pose().scale(0.75f, 0.75f, 1.0f);
+            g.drawString(font, legend, 0, 0, HudStyle.argb(255, HudStyle.WHITE), false);
+            g.pose().popPose();
         }
         g.disableScissor();
     }

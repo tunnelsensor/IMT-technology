@@ -232,6 +232,13 @@ public class ImtTech {
         // Hoofdstuk 94: camerabeelden van overal (de wereld rond de camera's die je bekijkt naar je spel sturen), en het net
         // van een kern geladen houden zolang iemand het gebruikt (een camera aan een lange kabel blijft eraan hangen).
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.lan.NetworkKeeper::onServerTick);
+        // Hoofdstuk 120: een zone blijft geladen (behalve de buitenste rand), ook als er niemand in de buurt is. De tickets
+        // horen bij een eigen "ticket controller" van NeoForge: zo bewaart Minecraft ze in de wereld.
+        modEventBus.addListener((net.neoforged.neoforge.common.world.chunk.RegisterTicketControllersEvent event) ->
+                event.register(com.senne.imttech.security.zone.ZoneChunks.CONTROLLER));
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.zone.ZoneChunks::onServerTick);
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->
+                com.senne.imttech.security.zone.ZoneChunks.clear());
         // Hoofdstuk 112: een netwerkapparaat dat je neerzet, zoekt zelf een Router in de buurt (zie lan/Routers).
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.lan.Routers::onPlaced);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.security.feed.FeedServer::onServerTick);

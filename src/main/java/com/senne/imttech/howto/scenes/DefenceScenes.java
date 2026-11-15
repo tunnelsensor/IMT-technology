@@ -263,6 +263,10 @@ public final class DefenceScenes {
         s.text(80, HowToSceneBuilder.face(gen, Direction.WEST), Side.LEFT,
                 "A zone costs power (a bigger zone more). Fine-tune it in the *Zone* app, or let *Autoscan* find your rooms.");
         s.idle(85);
+        // Hoofdstuk 120: de zone blijft geladen (behalve de buitenste rand).
+        s.text(80, HowToSceneBuilder.top(core), Side.RIGHT,
+                "Your zone stays loaded when you are far away (not its outer 10 blocks): turrets and machines keep working.");
+        s.idle(85);
         return List.of(s.build());
     }
 

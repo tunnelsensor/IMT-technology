@@ -25,7 +25,10 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
  * geladen, met een "ticket" zoals de laptop dat doet voor de kern:
  * <ul>
  *   <li>iemand heeft de desktop van die kern open (op de kern, op een Computer, met de laptop of zijn telefoon);</li>
- *   <li>iemand staat bij een schermmuur van die kern (binnen 96 blokken van een Camera Monitor).</li>
+ *   <li>iemand staat bij een schermmuur van die kern (binnen 96 blokken van een Camera Monitor);</li>
+ *   <li>de zone van die kern blijft geladen (hoofdstuk 120, zie security/zone/ZoneChunks): dan ook zijn net, anders vond
+ *       een apparaat in je zone zijn kern niet meer als die ver weg staat (de kabel ertussen lag in een stuk wereld dat
+ *       niet geladen was), en hingen je camera's aan een lange kabel er niet meer aan.</li>
  * </ul>
  * Alleen geladen, niet levend: daar tikt niets extra's (een boerderij ver weg draait er niet van). Komt het net in een stuk
  * dat nu geladen werd verder, dan vindt de volgende zoektocht (om de twee seconden) dat ook, en laden we het volgende stuk:
@@ -54,21 +57,28 @@ public final class NetworkKeeper {
         }
         for (ServerLevel level : server.getAllLevels()) {
             for (BlockPos core : inUse(level)) {
-                if (level.isLoaded(core) && level.getBlockEntity(core) instanceof SecurityCoreBlockEntity entity) {
+                // Alleen een kern waarvan het stuk wereld er al helemaal is (hoofdstuk 120, gevonden door de nalezing):
+                // level.isLoaded zegt al ja zodra het stuk een ticket heeft, en getBlockEntity liet de server dan wachten
+                // tot het van de schijf kwam. Na een herstart staan de kernen van alle geladen zones zo klaar; een kern die
+                // nog laadt, nemen we bij de volgende ronde mee.
+                net.minecraft.world.level.chunk.LevelChunk chunk =
+                        level.getChunkSource().getChunkNow(core.getX() >> 4, core.getZ() >> 4);
+                if (chunk != null && chunk.getBlockEntity(core) instanceof SecurityCoreBlockEntity entity) {
                     keepLoaded(level, entity);
                 }
             }
         }
     }
 
-    /** De kernen in deze wereld waarvan iemand nu het net gebruikt. */
-    static Set<BlockPos> inUse(ServerLevel level) {
+    /** De kernen in deze wereld waarvan iemand nu het net gebruikt, of waarvan de zone geladen blijft (hoofdstuk 120). */
+    public static Set<BlockPos> inUse(ServerLevel level) {
         Set<BlockPos> cores = new HashSet<>();
         for (SecurityOs.Session session : SecurityOs.sessions()) {
             if (session.dimension() == level.dimension()) {
                 cores.add(session.core());
             }
         }
+        cores.addAll(com.senne.imttech.security.zone.ZoneChunks.keptCores(level));
         if (level.players().isEmpty()) {
             return cores;
         }

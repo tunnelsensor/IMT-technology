@@ -1339,6 +1339,24 @@ public final class ImtConfig {
         @Tunable(value = "Autoscan: how long (seconds) the pings at an opening, the 'Include cave' offer and 'Undo scan' stay",
                 min = 10, max = 3600)
         public static float ZONE_SCAN_PING_SECONDS = 300.0f;
+
+        // ------------------------------------------------------------------------- Een zone blijft geladen (hoofdstuk 120)
+        /**
+         * Jouw wens van 15 november: "zorg dat een zone ook chunkloaded is behalve de laatste range van 10 omdat dat toch
+         * geen base is". Een zone met een eigenaar blijft geladen, ook als niemand in de buurt is (ook zonder stroom, ook
+         * als de eigenaar offline is), behalve de buitenste ZONE_SCAN_MARGIN blokken; het stuk van de kern zelf en zijn
+         * netwerkkabels ook. Zie security/zone/ZoneChunks.
+         */
+        @Tunable("Keep the protected zone of a security core loaded (chunk loaded), also when nobody is near and when its owner "
+                + "is offline, so the base keeps working: turrets, generators, machines, robots and drones. Left out: the outer "
+                + "zoneScanMargin blocks of each zone box (wall and margin, not base; a narrower box keeps its middle). The "
+                + "chunk of the core itself and the chunks its network cables run through stay loaded too. Crops do not grow "
+                + "and no mobs spawn there because of it")
+        public static boolean ZONE_CHUNK_LOADING = true;
+        /** Zoveel stukken wereld (chunks) houdt één zone hooguit geladen, die het dichtst bij de kern eerst. */
+        @Tunable(value = "At most this many chunks (16 x 16 blocks, the full height) one zone keeps loaded, the ones nearest to "
+                + "its security core first", min = 1, max = 4096)
+        public static float ZONE_CHUNK_LOADING_MAX = 256.0f;
     }
 
     // =============================================================================================== Network

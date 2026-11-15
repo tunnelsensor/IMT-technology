@@ -1469,6 +1469,25 @@ Autoscan gaat dat snel) om je basis echt van jou te maken.
 - Een **lange melding** onderaan de desktop staat sinds hoofdstuk 116 in een kader over de taakbalk, over hooguit drie
   regels, in plaats van links van je scherm af te lopen.
 
+**Je zone blijft geladen** (sinds 15 november, hoofdstuk 120). Minecraft laat alleen de wereld rond de spelers draaien:
+ben je ver weg, dan staat je basis stil. Een zone (met een eigenaar en minstens één kubus) blijft nu **geladen**, ook als
+er niemand in de buurt is, ook als je offline bent, ook zonder stroom (zo laden je zonnepanelen je kern weer op) en ook na
+een herstart van de server: je torentjes, generatoren, machines, serverkasten, robots en drones draaien gewoon door.
+- Van elke kubus **de buitenste 10 blokken** niet (`zoneScanMargin`: de muur en de marge die de Autoscan om je kamers legt,
+  geen basis), of minder als de kubus smaller is dan 21 blokken: dan blijft haar midden geladen. Een stuk wereld (een
+  chunk: 16 × 16 blokken, de hele hoogte) blijft geladen als er een plek van een kubus in ligt die meer dan die rand binnen
+  je zone ligt; kubussen die tegen elkaar liggen tellen samen, dus de naad tussen twee kamers blijft geladen. Elk blok van
+  je zone ligt zo in een geladen stuk of er direct naast; in een stuk ernaast werken blokken zoals torentjes en generatoren
+  ook, alleen robots en drones staan daar stil. Ook een zone die de Autoscan maakte vóór hoofdstuk 117 (15 november, toen 3 blokken
+  rand) houdt zo al haar kamers; scan je haar opnieuw, dan blijven ook de randen van je kamers helemaal geladen.
+- Ook het stuk wereld van je **kern** zelf (ook als die ver buiten je zone staat), en de stukken waar zijn
+  **netwerkkabels** door lopen: zo vinden de apparaten in je zone hun kern, ook over een lange kabel.
+- Gewassen groeien er niet van, en er komen geen monsters door: alleen wat er staat en rondloopt, draait.
+- In de app **Zone** zie je op de kaart welke stukken geladen blijven (zacht groen onder je kubussen), met linksonder in de
+  kaart hoeveel ("12 chunks kept loaded").
+- Hooguit **256 stukken** per zone, die het dichtst bij je kern eerst (`zoneChunkLoadingMax`); met
+  `zoneChunkLoading = false` onder `[security]` staat het uit.
+
 **Wie mag wat.** In een zone mogen alleen **jij en je vertrouwde spelers** (de app Access)
 blokken plaatsen en breken; in creative mag iedereen. Een vreemde kan er niets breken of neerzetten;
 hij ziet dan "Protected zone". Wel mag iedereen **ladders, scaffolding, klimplanten, fakkels en
