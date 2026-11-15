@@ -1020,8 +1020,9 @@ public final class VisualCheck {
             // met een wachtwoord. Eerst het G-menu (Systems: Datacenter, CONNECT; nachtzicht staat sinds hoofdstuk 123 op
             // Tech), dan het scherm: een fout wachtwoord, dan het goede; daarna staat de naam van de kern onder Datacenter,
             // en in het scherm "On ... : online".
-            BlockPos uplinkCore = new BlockPos(8, -60, 4);
-            BlockPos uplinkRack = new BlockPos(10, -60, 4);
+            // Binnen 8 blokken van waar je staat (0.5, -60, -3.2): zo gaat ook de desktop van de kern open (de app Monitor).
+            BlockPos uplinkCore = new BlockPos(4, -60, 2);
+            BlockPos uplinkRack = new BlockPos(6, -60, 2);
             String[] uplinkIp = {""};
             t.onServer(0, player -> {
                 ServerLevel level = player.serverLevel();
@@ -1078,6 +1079,47 @@ public final class VisualCheck {
             t.open(10, () -> new com.senne.imttech.client.os.OsLoginScreen(com.senne.imttech.client.os.OsLoginScreen.Mode.GLASSES,
                     com.senne.imttech.client.ImtClientState.uplinkIp));
             t.shot(10, "ul14_connect_screen_connected");
+            t.close(0);
+            // Hoofdstuk 123: de verbinding staat op de bril. Je inventaris, met de muis op de bril in het helmvakje (8, 8 in
+            // het scherm): de tooltip zegt met welke kern hij verbonden is.
+            t.open(10, () -> new net.minecraft.client.gui.screens.inventory.InventoryScreen(Minecraft.getInstance().player));
+            t.step(10, () -> {
+                if (Minecraft.getInstance().screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> screen) {
+                    HowToTour.mouseTo(screen.getGuiLeft() + 16, screen.getGuiTop() + 16);
+                }
+            });
+            t.shot(3, "ul15_glasses_tooltip");
+            t.step(5, () -> HowToTour.mouseTo(1, 1));
+            t.close(0);
+            // Het Brain-scherm: rechtsboven op welk datacenter het brein draait.
+            t.open(10, com.senne.imttech.client.BrainScreen::new);
+            t.shot(10, "ul16_brain_screen_connected");
+            t.close(0);
+            // De app Monitor van de kern: onder RUNNING wiens bril eraan hangt ("Glasses: ...").
+            t.onServer(5, player -> com.senne.imttech.security.os.SecurityOs.open(player, uplinkCore));
+            t.step(10, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen os) {
+                    os.tourOpen(com.senne.imttech.client.os.SecurityOsScreen.App.MONITOR);
+                }
+            });
+            t.shot(25, "ul17_monitor_glasses_linked");
+            t.close(10);
+            // Een nieuw wachtwoord op de kern: de bril moet opnieuw verbinden (de HUD, het G-menu, het verbindscherm).
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(uplinkCore) instanceof com.senne.imttech.security.SecurityCoreBlockEntity be) {
+                    be.setPassword("bitech2", player.serverLevel().random);
+                }
+            });
+            t.waitUntil(60, () -> com.senne.imttech.client.ImtClientState.datacenterLink == 5);
+            t.shot(10, "ul18_hud_password_changed");
+            t.open(10, ImtMenuScreen::new);
+            t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.SYSTEMS);
+            t.shot(10, "ul19_menu_reconnect");
+            t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.COMBAT);
+            t.close(0);
+            t.open(10, () -> new com.senne.imttech.client.os.OsLoginScreen(com.senne.imttech.client.os.OsLoginScreen.Mode.GLASSES,
+                    com.senne.imttech.client.ImtClientState.uplinkIp));
+            t.shot(10, "ul20_connect_screen_password_changed");
             t.close(0);
             // Naar de Nether (bovenop het dak van bedrock, daar is ruimte): vier drones hangen in je baan, niets kwam mee.
             t.onServer(10, player -> {

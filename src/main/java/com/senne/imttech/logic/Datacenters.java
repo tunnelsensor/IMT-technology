@@ -75,11 +75,14 @@ public final class Datacenters extends SavedData {
      * Wat de bril van een speler bewaart, en waar (hoofdstuk 106 en 123).
      *
      * @param mb   zoveel MB (zijn waypoints)
-     * @param ip   het IP van de kern op wiens SSD's het staat: waar zijn bril de laatste keer verbonden mee werkte ("" = op
-     *             geen enkel datacenter: zijn bril was niet verbonden, of het werkte daar niet)
-     * @param name de naam van de speler (voor de app Monitor: wiens bril aan dit datacenter hangt)
+     * @param ip    het IP van de kern op wiens SSD's het staat: waar zijn bril de laatste keer verbonden mee was ("" = op
+     *              geen enkel datacenter: zijn bril was niet verbonden)
+     * @param stamp met welk wachtwoord van die kern de bril verbonden was (zie SystemPassword.stamp): heeft de kern nu een
+     *              ander (een nieuw wachtwoord, een overname, of een nieuwe kern op dezelfde plek met hetzelfde IP), dan
+     *              staat het daar niet meer, ook als die speler nog niet terug online kwam
+     * @param name  de naam van de speler (voor de app Monitor: wiens bril aan dit datacenter hangt)
      */
-    public record GlassesData(double mb, String ip, String name) {}
+    public record GlassesData(double mb, String ip, String stamp, String name) {}
 
     public static Datacenters get(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(
@@ -146,11 +149,11 @@ public final class Datacenters extends SavedData {
     }
 
     /**
-     * De bril van deze speler bewaart nu zoveel MB, op het datacenter van de kern met dit IP ("" = op geen enkel). Alleen als
-     * er iets veranderde, wordt het bewaard.
+     * De bril van deze speler bewaart nu zoveel MB, op het datacenter van de kern met dit IP ("" = op geen enkel), verbonden
+     * met dit wachtwoord van die kern ({@code stamp}). Alleen als er iets veranderde, wordt het bewaard.
      */
-    public void setGlassesData(UUID owner, double mb, String ip, String name) {
-        GlassesData now = new GlassesData(Math.max(0.0, mb), ip, name);
+    public void setGlassesData(UUID owner, double mb, String ip, String stamp, String name) {
+        GlassesData now = new GlassesData(Math.max(0.0, mb), ip, stamp, name);
         GlassesData before = glassesData.get(owner);
         if (now.mb() <= 0 && ip.isEmpty()) {
             if (glassesData.remove(owner) != null) {
@@ -158,7 +161,7 @@ public final class Datacenters extends SavedData {
             }
             return;
         }
-        if (before != null && Math.abs(before.mb() - now.mb()) < 1.0e-6 && before.ip().equals(ip) && before.name().equals(name)) {
+        if (now.equals(before)) {
             return;
         }
         glassesData.put(owner, now);
@@ -367,6 +370,7 @@ public final class Datacenters extends SavedData {
             item.putUUID("Owner", entry.getKey());
             item.putDouble("Mb", entry.getValue().mb());
             item.putString("Ip", entry.getValue().ip());
+            item.putString("Stamp", entry.getValue().stamp());
             item.putString("Name", entry.getValue().name());
             glasses.add(item);
         }
@@ -430,7 +434,7 @@ public final class Datacenters extends SavedData {
             CompoundTag item = (CompoundTag) element;
             if (item.hasUUID("Owner") && (item.getDouble("Mb") > 0 || !item.getString("Ip").isEmpty())) {
                 data.glassesData.put(item.getUUID("Owner"), new GlassesData(Math.max(0.0, item.getDouble("Mb")),
-                        item.getString("Ip"), item.getString("Name")));
+                        item.getString("Ip"), item.getString("Stamp"), item.getString("Name")));
             }
         }
         for (Tag element : tag.getList("Backups", Tag.TAG_COMPOUND)) {

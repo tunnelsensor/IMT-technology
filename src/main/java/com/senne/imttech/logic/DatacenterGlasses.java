@@ -449,11 +449,19 @@ public final class DatacenterGlasses {
     }
 
     /**
-     * Staat wat deze bril bewaart op dit datacenter? Dat is het datacenter waar hij de laatste keer verbonden mee werkte
-     * (hoofdstuk 123: zijn speler kan offline zijn, of de bril afhebben; dan geldt wat we het laatst zagen).
+     * Staat wat deze bril bewaart op dit datacenter? Dat is het datacenter waarmee hij de laatste keer verbonden was
+     * (hoofdstuk 123: zijn speler kan offline zijn, of de bril afhebben; dan geldt wat we het laatst zagen), en alleen
+     * zolang dat met het wachtwoord van nu is. Zette de eigenaar een nieuw wachtwoord, nam iemand de kern over (dat wist
+     * het wachtwoord), of staat er een nieuwe kern op dezelfde plek (met hetzelfde IP), dan telt het daar meteen niet meer,
+     * ook als die speler niet online is. (Gevonden door de nalezing: wie je eraf gooide, bleef anders in de app Monitor
+     * staan, en zijn waypoints bleven op je SSD's tellen tot hij weer inlogde.)
      */
     private static boolean storesOn(MinecraftServer server, Datacenters.GlassesData data, GlobalPos datacenter) {
-        return !data.ip().isEmpty() && datacenter.equals(CoreNetworkData.get(server).find(data.ip()));
+        if (data.ip().isEmpty() || data.stamp().isEmpty() || !datacenter.equals(CoreNetworkData.get(server).find(data.ip()))) {
+            return false;
+        }
+        Datacenters.Summary summary = Datacenters.get(server).summary(datacenter);
+        return summary != null && data.stamp().equals(summary.passwordStamp());
     }
 
     /**
@@ -555,7 +563,7 @@ public final class DatacenterGlasses {
         if (link(player) != Link.OK) {
             STANDING.remove(player.getUUID());
             if (required() && !player.isCreative()) {
-                remember(player, waypoints, ""); // ook zonder datacenter onthouden we hoeveel hij al bewaart (op geen enkel)
+                remember(player, waypoints); // ook zonder werkend datacenter onthouden we hoeveel hij bewaart, en waar
             }
             return;
         }
@@ -566,7 +574,7 @@ public final class DatacenterGlasses {
         }
         STANDING.put(player.getUUID(), new Standing(serving.pos(), player.getGameProfile().getName(), List.copyOf(kinds),
                 waypoints, now(player.server) + STANDING_TICKS));
-        remember(player, waypoints, serving.summary().ip());
+        remember(player, waypoints);
     }
 
     /** Deze speler is weg (of zijn bril is af): niets van hem loopt nog door. */
@@ -588,12 +596,32 @@ public final class DatacenterGlasses {
     }
 
     /**
-     * Onthoudt (in de wereld) hoeveel de bril van deze speler bewaart, en op welk datacenter (het IP van de kern, "" = op
-     * geen enkel), zodat het ook meetelt als hij niet online is.
+     * Onthoudt (in de wereld) hoeveel de bril van deze speler bewaart, en waar: bij de kern waarmee de bril die hij op heeft
+     * verbonden is, met welk wachtwoord (geen verbinding: op geen enkel datacenter). Zo telt het ook mee als hij niet online
+     * is. Draait dat datacenter even niet, dan staat het er nog (de SSD's zijn er nog); met een oud wachtwoord telt het daar
+     * niet meer (zie {@link #storesOn}).
      */
-    private static void remember(ServerPlayer player, int waypoints, String ip) {
-        Datacenters.get(player.server).setGlassesData(player.getUUID(), waypointsMb(waypoints), ip,
-                player.getGameProfile().getName());
+    private static void remember(ServerPlayer player, int waypoints) {
+        ImtUplink uplink = uplinkOf(player);
+        Datacenters.get(player.server).setGlassesData(player.getUUID(), waypointsMb(waypoints),
+                uplink == null ? "" : uplink.ip(), uplink == null ? "" : uplink.stamp(), player.getGameProfile().getName());
+    }
+
+    /**
+     * De bril van deze speler is net verbonden of losgekoppeld: onthoud meteen waar hij nu bewaart (ook in creative, en ook
+     * als de regel uit staat; anders bleef een oude kern hem in de app Monitor tonen).
+     */
+    public static void rememberNow(ServerPlayer player) {
+        remember(player, player.getData(com.senne.imttech.registry.ModAttachments.WAYPOINTS).waypoints().size());
+    }
+
+    /**
+     * Voor het G-menu en het scherm Datacenter (gevonden door de nalezing): hoe het met de verbinding van de bril staat, los
+     * van of de bril een datacenter nodig heeft. In creative of als de regel uit staat, is {@link #link} altijd NOT_NEEDED
+     * (alles werkt dan zonder); dit zegt toch of het wachtwoord nog klopt, voor het brein.
+     */
+    public static Link uplinkState(ServerPlayer player) {
+        return resolve(player).link();
     }
 
     /**

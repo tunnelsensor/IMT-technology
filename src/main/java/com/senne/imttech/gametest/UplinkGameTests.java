@@ -661,9 +661,14 @@ public final class UplinkGameTests {
                             + DatacenterGlasses.link(stranger));
             check(!DatacenterGlasses.ready(stranger, DatacenterGlasses.Kind.ORDER), "Met het oude wachtwoord mocht een opdracht toch");
             check(DatacenterBrain.delayFor(owner) == -1, "Met het oude wachtwoord heeft het brein toch een datacenter");
-            ImtServer.reportToDatacenter(stranger);
+            // Meteen, ook zonder dat de vreemde nog iets meldt (hij kan offline zijn): zijn waypoint telt niet meer, en de app
+            // Monitor toont niemand meer.
             check(same(DatacenterGlasses.storedMb(server, here), 0.0),
                     "Wat de vreemde bewaart, telt nog mee: " + DatacenterGlasses.storedMb(server, here) + " MB");
+            check(LogicServer.snapshot(level, core).getList("glassesLinked", Tag.TAG_STRING).isEmpty(),
+                    "Na een nieuw wachtwoord toont de app Monitor nog brillen");
+            check(DatacenterGlasses.uplinkState(stranger) == DatacenterGlasses.Link.PASSWORD_CHANGED,
+                    "De toestand van de verbinding voor het G-menu: " + DatacenterGlasses.uplinkState(stranger));
             GlassesUplink.connect(owner, ip, "uplink2");
             check(DatacenterGlasses.link(owner) == DatacenterGlasses.Link.OK, "Met het nieuwe wachtwoord: " + DatacenterGlasses.link(owner));
 
@@ -671,6 +676,8 @@ public final class UplinkGameTests {
             GlassesUplink.disconnect(owner);
             check(ImtData.getUplink(glasses) == null && DatacenterGlasses.link(owner) == DatacenterGlasses.Link.NOT_CONNECTED
                     && DatacenterBrain.delayFor(owner) == -1, "Losgekoppeld, maar de bril is " + DatacenterGlasses.link(owner));
+            check(LogicServer.snapshot(level, core).getList("glassesLinked", Tag.TAG_STRING).isEmpty(),
+                    "Na het loskoppelen toont de app Monitor de eigenaar nog");
 
             // De kern is weg (zijn IP is weer vrij): er antwoordt niets meer op dat IP.
             GlassesUplink.connect(owner, ip, "uplink2");

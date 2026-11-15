@@ -99,9 +99,10 @@ public final class GlassesUplink {
                         ImtMessagePayload.Level.ALERT);
             }
         }
-        // Wat er van deze bril op het vorige datacenter liep, telt daar niet meer; vanaf de volgende seconde telt het hier.
+        // Wat er van deze bril op het vorige datacenter liep, telt daar niet meer; vanaf nu telt het hier.
         DatacenterGlasses.forget(player.getUUID());
         DatacenterBrain.forget(player.getUUID());
+        DatacenterGlasses.rememberNow(player);
         reply(player, true, "");
         ImtServer.send(player, Component.translatable("imt.imttech.msg.uplink_connected", core.hostname(), core.ip()),
                 ImtMessagePayload.Level.INFO);
@@ -122,6 +123,7 @@ public final class GlassesUplink {
         ImtData.setUplink(glasses, null);
         DatacenterGlasses.forget(player.getUUID());
         DatacenterBrain.forget(player.getUUID());
+        DatacenterGlasses.rememberNow(player);
         // In het logboek van de kern, als die geladen is (voor een afscheid laden we geen stuk wereld).
         GlobalPos where = CoreNetworkData.get(player.server).find(uplink.ip());
         ServerLevel level = where == null ? null : player.server.getLevel(where.dimension());

@@ -480,6 +480,7 @@ public final class ClientPayloadHandlers {
         ImtClientState.datacenterLoad = payload.linkLoad();
         ImtClientState.uplinkHost = payload.uplinkHost();
         ImtClientState.uplinkIp = payload.uplinkIp();
+        ImtClientState.uplinkState = payload.uplinkState();
     }
 
     public static void onPing(PingMarkerPayload payload, IPayloadContext context) {

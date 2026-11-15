@@ -247,7 +247,9 @@ public class ImtMenuScreen extends Screen {
      */
     private static Status datacenterStatus() {
         String host = ImtClientState.uplinkHost;
-        return switch (ImtClientState.datacenterLink) {
+        // De toestand van de verbinding zelf (ook in creative en als de regel uit staat: dan zie je toch RECONNECT als het
+        // wachtwoord van de kern veranderde, en het brein daardoor niet meer werkt).
+        return switch (ImtClientState.uplinkState) {
             case 1 -> new Status(Component.literal(host), HudStyle.GREEN);
             case 2 -> new Status(Component.translatable("screen.imttech.no_datacenter"), HudStyle.RED);
             case 3 -> new Status(Component.translatable("screen.imttech.datacenter_offline"), HudStyle.RED);

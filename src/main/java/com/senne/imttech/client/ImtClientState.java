@@ -263,6 +263,11 @@ public final class ImtClientState {
      */
     public static String uplinkHost = "";
     public static String uplinkIp = "";
+    /**
+     * Hoofdstuk 123: hoe het met de verbinding van je bril staat (hetzelfde nummer als datacenterLink, maar ook in creative
+     * en als de regel uit staat, waar datacenterLink altijd 0 is). Voor het G-menu en het scherm Datacenter.
+     */
+    public static int uplinkState = 4;
 
     /** Hoofdstuk 106: kan je bril nu nadenken en bewaren (hij heeft geen datacenter nodig, of het draait)? */
     public static boolean datacenterWorks() {
@@ -316,5 +321,6 @@ public final class ImtClientState {
         datacenterLoad = 0;
         uplinkHost = "";
         uplinkIp = "";
+        uplinkState = 4;
     }
 }

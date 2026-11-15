@@ -1337,7 +1337,8 @@ public final class ImtServer {
                 link.ordinal(),
                 DatacenterGlasses.loadPercent(player),
                 uplink[0],
-                uplink[1]));
+                uplink[1],
+                DatacenterGlasses.uplinkState(player).ordinal()));
     }
 
     public static void send(ServerPlayer player, Component message, ImtMessagePayload.Level level) {

@@ -356,7 +356,7 @@ public class OsLoginScreen extends Screen {
         } else {
             String state;
             int rgb;
-            switch (com.senne.imttech.client.ImtClientState.datacenterLink) {
+            switch (com.senne.imttech.client.ImtClientState.uplinkState) {
                 case 1 -> {
                     state = ": online";
                     rgb = HudStyle.GREEN;

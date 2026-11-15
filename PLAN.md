@@ -9616,13 +9616,33 @@ trusted te zijn, trusted is enkel voor het toegang hebben tot de cable x ray van
 - [x] **Tests**: `glasses_connect_with_the_ip_and_password_of_a_core` opnieuw geschreven (een vreemde met het wachtwoord
       verbindt wel en de eigenaar hoort het; de verbinding hangt aan de bril; een nieuw wachtwoord gooit iedereen eraf, en wat
       de vreemde bewaart telt daarna niet meer). Geen test erbij, en nog altijd 192 batchnamen.
-- [x] **Volledige ronde**: 635 tests, allemaal groen (op hoofdstuk 122).
-- [ ] **Nalezing**: niet gebeurd. De twee lezers (de nieuwe regels, en het scherm en de teksten) stopten allebei op de
-      weeklimiet van je abonnement (open tot 19 november, 20:00), zonder iets te melden. Ik liep de belangrijkste punten
-      zelf na: een gekopieerde of doorgegeven bril, een verhuisde kern (hij houdt zijn wachtwoord, dus de bril blijft
-      verbonden), een afgebroken kern (NO DATACENTER), datacenters van voor dit hoofdstuk (nog zonder stempel: de eerste
-      verbinding zet hem), de overname, en de tekst-sleutels die weg zijn. Het plaatje van het G-menu in How it works
-      toont het tabblad Drones en klopt dus nog.
+- [x] **Volledige ronde**: 635 tests, allemaal groen (op hoofdstuk 122). Na de nalezing: in elke ronde faalde één test die
+      niets met de bril te maken heeft, de rest (ook alle tests van de bril) was groen. `raid_drones_come_for_you` ("een
+      raiddrone begon 102 blokken hoog") faalde in 3 van de 4 rondes, en ook op het schone master zonder deze wijziging
+      (1 van de 2 keer): sinds hoofdstuk 117 telt elke kern tot 564 blokken ver als basis waar een raiddrone niet mag
+      landen, en in de testwereld staan overal kernen van andere tests; zijn landingsplek schuift dan soms tot op het dak
+      van een andere testarena (mijn verklaring, niet bewezen). Eén keer faalde `mp5_fires_and_obeys_its_fire_selector`
+      (de bekende wisselvallige wapentests). Die raidtest moet nog robuust gemaakt worden: een klus voor een volgend
+      hoofdstuk.
+- [x] **Nalezing** (jouw vraag: "doe nog de review en schermafbeelding van de wijzigingen"). De eerste poging (twee lezers)
+      stopte op de weeklimiet van je abonnement; de tweede, met één lezer voor hoofdstuk 122 en 123 samen, lukte wel (zo'n
+      250.000 tokens). Bevestigd en opgelost: (1) wie je eraf gooide met een nieuw wachtwoord (of een overname, of een nieuwe
+      kern op dezelfde plek, die hetzelfde IP krijgt) bleef in de app Monitor staan, en zijn waypoints bleven op je SSD's
+      tellen tot hij weer inlogde. Nu onthoudt wat een bril bewaart ook met welk wachtwoord hij verbonden was
+      (`Datacenters.GlassesData.stamp`): klopt dat niet meer, dan telt het meteen niet meer. Verbinden en loskoppelen werken
+      het ook meteen bij (ook in creative), en een datacenter dat even niet draait houdt zijn lijst; (2) in creative of met
+      `uplink.required = false` zag je na een nieuw wachtwoord nergens RECONNECT (het brein stopte dan stil): de status
+      van de bril stuurt nu ook de toestand van de verbinding zelf mee (`uplinkState`, protocol 49), en de optie Datacenter
+      en het verbindscherm tonen die. Nagekeken en in orde: de lengtes in de netwerkberichten, de nummers van de toestanden
+      tussen server en spel, alle tekst-sleutels, alle plekken waar een wachtwoord verandert, en dat je zonder het wachtwoord
+      van nu nergens bij kunt.
+- [x] **Screenshots** (`gradlew runVisualCheck -Ponly=uplink`, nieuw: ul09 tot ul20): de HUD zonder verbinding, Systems
+      met Datacenter (CONNECT), Tech met nachtzicht, het verbindscherm (leeg, met een fout wachtwoord, verbonden met de knop
+      Disconnect), de HUD na het verbinden, de tooltip van de bril, het Brain-scherm ("Datacenter: dev-sec"), de app Monitor
+      ("Glasses: Dev"), en na een nieuw wachtwoord: de HUD (DATACENTER PASSWORD CHANGED), Systems (RECONNECT) en het
+      verbindscherm ("password changed"). Alles past; de regel "On ... : password changed" vult het paneel net (een langere
+      naam krijgt "..."). De onderste vakjes van het G-menu liggen over je hartjes en je werkbalk, zoals bij elk tabblad met
+      vijf of meer opties (dat was al zo).
 
 Mijn invulling (verander ik op jouw woord):
 - **Een nieuw wachtwoord koppelt alle brillen los**, ook die van de eigenaar zelf: anders kon de eigenaar niemand meer van
@@ -9633,16 +9653,15 @@ Mijn invulling (verander ik op jouw woord):
 - Geen nieuwe versie: een verandering aan iets van vandaag (2.20 blijft, het laatste getal telt vanzelf).
 
 Nog niet gedaan:
-- Niet in het spel bekeken, en geen screenshots (de rondleiding `gradlew runVisualCheck -Ponly=uplink` heeft nu ul09 Systems,
-  ul09b Tech met nachtzicht, en ul13 Systems verbonden).
+- Niet zelf gespeeld, en nooit met een tweede speler (zie "Nog nooit in het spel bekeken").
 
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
-- [ ] **Je bril verbinden met een security core (hoofdstuk 122 en 123)**: alleen met tests gecontroleerd, geen
-      screenshots. Probeer: (1) G-menu, tabblad Systems, Datacenter: typ het IP (de app Status van je kern) en je wachtwoord.
+- [ ] **Je bril verbinden met een security core (hoofdstuk 122 en 123)**: met tests gecontroleerd en gezien op screenshots
+      (`-Ponly=uplink`, ul09 tot ul20), maar niet met de muis gespeeld. Probeer: (1) G-menu, tabblad Systems, Datacenter: typ het IP (de app Status van je kern) en je wachtwoord.
       Staat er daarna onder Datacenter de naam van je kern in het groen, en is de rode regel in je HUD weg? Staat nachtzicht
       nu op Tech? (2) Een fout wachtwoord: staat de rode melding netjes boven de knoppen? (3) Laat een vriend verbinden met
       je wachtwoord: krijg je een bericht, en zie je hem in de app Monitor onder RUNNING ("Glasses: ...")? (4) Zet een nieuw
