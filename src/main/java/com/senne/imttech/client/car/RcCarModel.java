@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.senne.imttech.ImtTech;
 import com.senne.imttech.car.RcCarEntity;
+import com.senne.imttech.logic.program.Op;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.model.geom.ModelPart;
@@ -21,8 +22,10 @@ import net.minecraft.util.Mth;
  * hij rijdt, de boor draait als hij boort.
  *
  * Met een RC Robot Arm (hoofdstuk 118; sinds hoofdstuk 113 heette dat gewoon "de arm") staat er achter de boor een gele
- * behuizing: zo zie je van ver dat hij een arm heeft. Staat de arm omhoog (arm_up()), dan schuift de boor een of twee
- * blokken omhoog langs een mast die uit die behuizing groeit. Boort hij het blok boven of onder zich weg (mine_up(),
+ * behuizing: zo zie je van ver dat hij een arm heeft. Staat de arm omhoog (arm_up()), dan schuift de boor een tot vijf
+ * blokken omhoog (hoofdstuk 121) langs een mast die uit die behuizing groeit: één stuk mast per blok, zodat de gele ringen
+ * erop overal even ver uit elkaar staan (één paal die vijf keer zo lang uitgerekt wordt, rekt ook zijn ringen vijf keer
+ * uit). Boort hij het blok boven of onder zich weg (mine_up(),
  * mine_down()), dan kantelt de boor die kant op. Zonder arm zit de boor vast op zijn neus, zoals op een nieuwe auto.
  *
  * Maten zijn in pixels (16 pixels = 1 blok). Minecraft-modellen staan "op hun kop": y = 24 is de grond en kleinere y
@@ -45,7 +48,8 @@ public class RcCarModel extends EntityModel<RcCarEntity> {
     private final ModelPart drillMount;
     /** De boor zelf: die draait om zijn eigen lengte-as, ook als hij gekanteld is. */
     private final ModelPart drill;
-    private final ModelPart mast;
+    /** De mast van de arm: één stuk van een blok hoog per blok dat de arm omhoog kan (hoofdstuk 121: vijf). */
+    private final ModelPart[] mast = new ModelPart[Op.MAX_ARM];
     private final ModelPart armBase;
 
     public RcCarModel(ModelPart root) {
@@ -56,7 +60,9 @@ public class RcCarModel extends EntityModel<RcCarEntity> {
         }
         drillMount = body.getChild("drill_mount");
         drill = drillMount.getChild("drill");
-        mast = body.getChild("mast");
+        for (int i = 0; i < mast.length; i++) {
+            mast[i] = body.getChild("mast_" + i);
+        }
         armBase = body.getChild("arm_base");
     }
 
@@ -97,11 +103,15 @@ public class RcCarModel extends EntityModel<RcCarEntity> {
                         .texOffs(50, 26).addBox(-0.5f, -0.5f, -6, 1, 1, 1),
                 PartPose.ZERO);
 
-        // De mast van de arm (hoofdstuk 113): een paal van één blok hoog achter de boor, die het model uitrekt tot waar
-        // de boor staat (zie setupAnim). Zijn draaipunt zit onderaan, op de hoogte van de boor als de arm beneden is.
-        body.addOrReplaceChild("mast",
-                CubeListBuilder.create().texOffs(0, 40).addBox(-1, -16, -1, 2, 16, 2),
-                PartPose.offset(0, -DRILL_HEIGHT, -3));
+        // De mast van de arm (hoofdstuk 113): een paal achter de boor, die meegroeit tot waar de boor staat (zie
+        // setupAnim). Sinds hoofdstuk 121 vijf stukken van één blok op elkaar (allemaal met dezelfde textuur): het
+        // onderste begint op de hoogte van de boor als de arm beneden is, elk volgende een blok hoger. Het draaipunt van
+        // elk stuk zit onderaan, zodat het stuk dat nog maar half uitgeschoven is, van onder naar boven groeit.
+        for (int i = 0; i < Op.MAX_ARM; i++) {
+            body.addOrReplaceChild("mast_" + i,
+                    CubeListBuilder.create().texOffs(0, 40).addBox(-1, -16, -1, 2, 16, 2),
+                    PartPose.offset(0, -DRILL_HEIGHT - 16.0f * i, -3));
+        }
 
         // De behuizing van de RC Robot Arm (hoofdstuk 118): een geel blok achter de boor (4 breed, 6 hoog, 3 diep), waar
         // de mast uit groeit. Je ziet hem alleen als de auto een arm heeft.
@@ -135,8 +145,13 @@ public class RcCarModel extends EntityModel<RcCarEntity> {
         drillMount.y = -DRILL_HEIGHT - lift;
         drillMount.xRot = -tilt * Mth.HALF_PI;
         armBase.visible = hasArm;
-        mast.visible = hasArm && lift > 0.3f;
-        mast.yScale = Math.max(0.001f, lift / 16.0f);
+        // De mast (hoofdstuk 121): de stukken onder de boor helemaal, het bovenste stuk zover als de boor erboven staat.
+        // Staat de arm stil, dan is lift precies 16 pixels per blok: dan zijn alle stukken die je ziet even lang.
+        for (int i = 0; i < mast.length; i++) {
+            float part = (lift - 16.0f * i) / 16.0f;
+            mast[i].visible = hasArm && part > 0.02f;
+            mast[i].yScale = Mth.clamp(part, 0.001f, 1.0f);
+        }
     }
 
     @Override

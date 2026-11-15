@@ -31,7 +31,8 @@ import org.jetbrains.annotations.Nullable;
  *       Boven en onder zich boort hij alleen met een RC Robot Arm (hoofdstuk 118); zonder arm: {@code car.blocked}.</li>
  *   <li><b>Place</b> ({@code place()}, {@code place_up()}, {@code place_down()}): een blok uit zijn kofferbak.</li>
  *   <li><b>Arm</b> ({@code arm_up()}, {@code arm_down()}, hoofdstuk 113): zijn arm met de boor gaat een blok omhoog of
- *       omlaag (hooguit twee blokken boven het blok vóór hem). Alles wat hij vóór zich doet (breken, plaatsen, kijken,
+ *       omlaag (hooguit vijf blokken boven het blok vóór hem, sinds hoofdstuk 121; daarvoor twee). Alles wat hij vóór
+ *       zich doet (breken, plaatsen, kijken,
  *       een kist) doet hij op die hoogte: zie {@link #front()}. Alleen met een RC Robot Arm (hoofdstuk 118).</li>
  *   <li><b>Chest</b> ({@code take()}, {@code put()}, {@code check()}, hoofdstuk 113): uit de kist vóór hem nemen, erin
  *       leggen, of erin kijken. Dat duurt even (de arm reikt erin).</li>
@@ -147,7 +148,7 @@ public final class CarMove {
     }
 
     /**
-     * Het blok waar zijn arm bij kan (hoofdstuk 113): het blok vóór de auto, zoveel hoger als zijn arm staat (0, 1 of 2).
+     * Het blok waar zijn arm bij kan (hoofdstuk 113): het blok vóór de auto, zoveel hoger als zijn arm staat (0 tot 5).
      * Daar breekt hij met {@code mine()}, plaatst hij met {@code place()}, kijkt hij met {@code block()}, en daar staat
      * de kist van {@code take()}, {@code put()}, {@code check()} en {@code in chest()}.
      */
@@ -315,7 +316,7 @@ public final class CarMove {
                     blocked = true;
                     finished = true;
                 } else {
-                    blocked = moved < Math.abs(arm.levels()); // arm_up(2) vanaf 1: hij kwam maar één blok hoger
+                    blocked = moved < Math.abs(arm.levels()); // arm_up(2) vanaf 4: hij kwam maar één blok hoger (hooguit 5)
                     car.setArm(to);
                     car.playSound(com.senne.imttech.registry.ModSounds.ROBOT_STEP.get(), 0.2f, 1.2f);
                     waitTicks = ARM_TICKS * moved;

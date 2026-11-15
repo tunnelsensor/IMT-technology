@@ -60,7 +60,7 @@ bunkers to raid.
   program on your base's server and load a copy onto your cars. Every function you write is a button
   on its RC Controller. Four drill heads, from iron (slow) to netherite (fast), and an RC
   Robot Arm you add and program (`arm_up()`): without it the car only breaks the block in front of it,
-  with it it mines above and below itself and reaches three blocks high.
+  with it it mines above and below itself and reaches six blocks high.
 - A storage system you program yourself: order an item at the Storage Interface and your RC Car drives
   through your chest room to fetch it (`if item("iron_ingot") in chest():`, `take(...)`, `put()`), or
   puts away what you hand in. Chest Sensors show your chests live, and a Charging Pad keeps the car charged.

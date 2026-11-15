@@ -319,8 +319,8 @@ public final class RcCars {
 
     /**
      * Rechtsklik op de auto met een RC Robot Arm (jouw keuze: "rechtsklik, zoals een boorkop"): de arm zit erop, en zijn
-     * boor zit voortaan op die arm. Dan kan hij ook hoger, boven en onder zich minen en kisten tot twee blokken hoger
-     * bereiken. Heeft hij er al een, dan gebeurt er niets (en lees je dat).
+     * boor zit voortaan op die arm. Dan kan hij ook hoger, boven en onder zich minen en kisten tot vijf blokken hoger
+     * bereiken (hoofdstuk 121). Heeft hij er al een, dan gebeurt er niets (en lees je dat).
      */
     public static void putArmOn(ServerPlayer player, RcCarEntity car, InteractionHand hand) {
         if (!mayEdit(player, car)) {

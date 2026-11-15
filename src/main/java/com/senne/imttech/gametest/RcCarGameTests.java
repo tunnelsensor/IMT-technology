@@ -191,8 +191,12 @@ public final class RcCarGameTests {
         // De getallen en waarden.
         expectProblem("def a():\n    mine(2)\n", ProgramKind.CAR, "mine() breaks one block now, without a number");
         expectProblem("def a():\n    mine_up(2)\n", ProgramKind.CAR, "raise the arm: arm_up() and then mine()");
-        expectProblem("def a():\n    arm_up(3)\n", ProgramKind.CAR, "arm_up takes 1 to 2 blocks, not 3");
-        expectProblem("def a():\n    arm_down(0)\n", ProgramKind.CAR, "arm_down takes 1 to 2 blocks");
+        // Hoofdstuk 121: de arm gaat tot vijf blokken hoog, dus arm_up(5) mag en arm_up(6) niet. (Zoals de dig van zes hoog
+        // in LEESMIJ.)
+        String tall = "def dig():\n    for i in range(5):\n        mine()\n        arm_up()\n    mine()\n    arm_down(5)\n    arm_up(5)\n";
+        check(problem(tall, ProgramKind.CAR).isEmpty(), "Een dig van zes hoog hoort te mogen: " + problem(tall, ProgramKind.CAR));
+        expectProblem("def a():\n    arm_up(6)\n", ProgramKind.CAR, "arm_up takes 1 to 5 blocks, not 6");
+        expectProblem("def a():\n    arm_down(0)\n", ProgramKind.CAR, "arm_down takes 1 to 5 blocks");
         expectProblem("def a():\n    place(3)\n", ProgramKind.CAR, "place: the block must be text");
         expectProblem("def a():\n    place(\"a\", \"b\")\n", ProgramKind.CAR, "place needs 0 or 1 values");
         expectProblem("def a():\n    block()\n", ProgramKind.CAR, "block(...) gives a value");

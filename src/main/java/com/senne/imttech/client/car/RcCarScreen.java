@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  *  Battery [##########--------]  56%
  *  Trunk   23 items
  *  Drill   Iron Drill Head  speed 25%
- *  Arm     RC Robot Arm  height 1 of 2          [^] [v] [Arm off]
+ *  Arm     RC Robot Arm  height 1 of 5          [^] [v] [Arm off]
  *  FUNCTIONS of Strip miner          DRIVE BY HAND
  *  [ strip_mine            ]            [Forward]
  *  [ room                  ]        [Left]    [Right]

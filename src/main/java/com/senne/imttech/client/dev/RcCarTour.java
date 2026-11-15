@@ -46,7 +46,9 @@ import org.jetbrains.annotations.Nullable;
  *   server (de knop Program, hoofdstuk 119), de app Logic met zijn RC program en een nieuw RC program, de app Robots met
  *   de auto en zijn keuzelijst, zijn kofferbak, en de items in je inventaris met hun tooltip (de auto, de controller, de
  *   ijzeren en de netherite boorkop, de arm); dan vier auto's met elk een andere boorkop, het scherm en de RC programs
- *   van een nieuwe auto, en de RC Robot Arm. Screenshots rc01 tot rc28.</li>
+ *   van een nieuwe auto, en de RC Robot Arm. Sinds hoofdstuk 121 ook de arm op zijn hoogste stand (vijf blokken): van
+ *   opzij, van dichtbij omhoog kijkend naar de boor (dan moet je de auto nog steeds zien) en zijn scherm. Screenshots
+ *   rc01 tot rc32.</li>
  *   <li>{@code gradlew runVisualCheck -Ponly=howtopics:car}: de vier plaatjes van echte schermen voor de animatie van
  *   How it works ({@code rc_car_screen}, de RC programs op de auto: {@code rc_car_programs}, en de app Logic met de twee
  *   voorbeelden: {@code logic_rc_strip_mine} en {@code logic_rc_room}); die komen in de mod zelf te staan.</li>
@@ -215,7 +217,7 @@ final class RcCarTour {
     /**
      * Alleen voor de rondleiding met screenshots: vier auto's op een rij met elk een andere boorkop, "Rookie": een nieuwe
      * auto, zonder programma, met de ijzeren kop en zonder arm, en naast hem "Armed": dezelfde auto met een RC Robot Arm
-     * (hoofdstuk 118), onder een blok steen.
+     * (hoofdstuk 118), onder een blok steen. En "Tall" (hoofdstuk 121): een auto met arm voor een muur van zes hoog.
      */
     private static void extras(ServerPlayer player) {
         for (DrillHead head : DrillHead.values()) {
@@ -229,10 +231,17 @@ final class RcCarTour {
         player.serverLevel().setBlockAndUpdate(armed.above(), Blocks.STONE.defaultBlockState());
         // Armed heeft nog zijn eigen code van vóór hoofdstuk 119 (die toont de lijst met RC programs bovenaan).
         spawn(player, armed, "Armed", 100.0f, DrillHead.IRON, true, "def hello():\n    say(\"Hi, I am \" + car.name)\n");
+        // Hoofdstuk 121: Tall, met een RC Robot Arm, voor een muur van steen van zes hoog (zo hoog als zijn arm reikt).
+        for (int up = 0; up <= com.senne.imttech.logic.program.Op.MAX_ARM; up++) {
+            player.serverLevel().setBlockAndUpdate(TALL.north().above(up), Blocks.STONE.defaultBlockState());
+        }
+        spawn(player, TALL, "Tall", 100.0f, DrillHead.NETHERITE, true, CarProgram.EMPTY);
     }
 
     /** Waar "Armed" staat: twee blokken ten westen van Rookie. */
     private static final BlockPos ARMED = YARD.offset(-6, 0, 3);
+    /** Hoofdstuk 121: waar "Tall" staat (zijn arm gaat tot vijf blokken hoog), oostelijk van de vier boorkoppen. */
+    private static final BlockPos TALL = YARD.offset(13, 0, 2);
 
     /**
      * Voor de showcase: een blok steen van 7 breed, 8 diep en 3 hoog met een glazen dak, en in de rand ervan (een
@@ -430,6 +439,29 @@ final class RcCarTour {
         t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof RcCarProgramScreen);
         t.step(5, () -> HowToTour.mouseTo(2, 2));
         t.shot(10, "rc29_own_code");
+        t.close(5);
+        // Hoofdstuk 121 (jouw wens: "een rc car arm moet tot 5 blokken hoog kunnen gaan"): Tall heft zijn arm in één keer
+        // helemaal op (arm_up(5)), voor zijn muur van zes hoog. Van opzij zie je de hele mast: vijf stukken met gele ringen.
+        double tx = TALL.getX() + 0.5;
+        double tz = TALL.getZ() + 0.5;
+        t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+        t.onServer(0, player -> on(player, "Tall",
+                car -> car.brain().startManual(new CarMove.Arm(com.senne.imttech.logic.program.Op.MAX_ARM), player)));
+        t.stand(0, tx + 6.0, YARD.getY(), tz - 0.5, 90, -14);
+        t.shot(40, "rc30_arm_five_high");
+        // Van dichtbij omhoog kijken naar de boor: de auto zelf staat dan onder je scherm. Toch zie je de mast en de boor
+        // (RcCarEntity.getBoundingBoxForCulling rekent de arm mee; anders verdween de hele auto hier).
+        t.stand(0, tx + 1.1, YARD.getY(), tz + 1.1, 147, -60);
+        t.shot(15, "rc31_arm_look_up");
+        t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+        // Zijn scherm: height 5 of 5.
+        t.onServer(0, player -> on(player, "Tall", car -> {
+            player.teleportTo(car.getX(), car.getY(), car.getZ() + 2.0);
+            RcCars.open(player, car, false);
+        }));
+        t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof RcCarScreen);
+        t.step(5, () -> HowToTour.mouseTo(2, 2));
+        t.shot(15, "rc32_screen_arm_five");
         t.close(5);
     }
 

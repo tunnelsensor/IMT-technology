@@ -13,8 +13,12 @@ import net.minecraft.world.item.TooltipFlag;
  *
  * Een nieuwe RC Car heeft alleen de boor op zijn neus: hij breekt het blok recht voor zich, en hij kan alleen bij de kist
  * recht voor zich. Met deze arm erop zit zijn boor op een arm die hij programmeert: dan kan hij ook hoger
- * ({@code arm_up()}), boven ({@code mine_up()}) en onder zich ({@code mine_down()}) minen, en kisten tot twee blokken
+ * ({@code arm_up()}), boven ({@code mine_up()}) en onder zich ({@code mine_down()}) minen, en kisten tot vijf blokken
  * hoger bereiken (jouw keuze: "één onderdeel voor alles"). De boor op de arm is gewoon zijn boorkop.
+ *
+ * Hoofdstuk 121 (jouw wens: "een rc car arm moet tot 5 blokken hoog kunnen gaan, dit maakt dat je een kamer of gang
+ * simpeler kunt uitminen"): de arm gaat tot vijf blokken boven het blok vóór de auto, dus de auto breekt zes blokken
+ * boven elkaar zonder te bewegen. Daarvoor was het twee.
  *
  * Erop zetten: rechtsklik op de auto met de arm, zoals een boorkop. Hij gaat mee als je de auto oppakt. Eraf halen: de
  * knop Arm off op het scherm van de auto (zie RcCars.takeArmOff); je krijgt hem terug.

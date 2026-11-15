@@ -159,8 +159,8 @@ public sealed interface Expr {
         CAR_FULL("car.full", Type.BOOL, "true if the trunk of the car has no empty slot left", null),
         CAR_ITEMS("car.items", Type.NUMBER, "how many items are in the trunk of the car", null),
         CAR_BLOCKS("car.blocks", Type.NUMBER, "how many blocks the car can still place (the blocks in its trunk)", null),
-        // Hoofdstuk 113: de arm van de auto, en de kist vóór hem (op de hoogte van zijn arm).
-        CAR_ARM("car.arm", Type.NUMBER, "how high the arm of the car is: 0 (the block in front of it), 1 or 2 blocks higher", null),
+        // Hoofdstuk 113: de arm van de auto, en de kist vóór hem (op de hoogte van zijn arm). Sinds hoofdstuk 121 tot 5 hoog.
+        CAR_ARM("car.arm", Type.NUMBER, "how high the arm of the car is: 0 (the block in front of it) up to 5 blocks higher", null),
         CHEST_SLOTS("chest.slots", Type.NUMBER, "how many slots the chest in front of the car has (0 = there is no chest there)", null),
         CHEST_FREE("chest.free", Type.NUMBER, "how many slots of the chest in front of the car are empty", null),
         CHEST_ITEMS("chest.items", Type.NUMBER, "how many items are in the chest in front of the car", null),

@@ -130,8 +130,8 @@ public final class CarScenes {
         s.actor("car", type, 40, 0, EAST, bare, start);
         s.text(125, start.add(0, 0.9, 0), Side.RIGHT,
                 "A new car only breaks the block *straight in front of it*. To mine above or below itself (*mine_up()*,"
-                        + " *mine_down()*), to raise its drill (*arm_up()*) or to reach a chest higher up, it needs an *RC Robot"
-                        + " Arm*. [Right Button] the car with it; *Arm off* on its screen takes it off again.");
+                        + " *mine_down()*), to raise its drill up to *5 blocks* (*arm_up()*) or to reach a chest higher up, it"
+                        + " needs an *RC Robot Arm*. [Right Button] the car with it; *Arm off* on its screen takes it off again.");
         s.idle(16);
         s.rightClick(start.add(0, 0.4, 0), new ItemStack(ModItems.RC_ROBOT_ARM.get()));
         s.idle(24);

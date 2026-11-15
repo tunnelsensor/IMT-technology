@@ -9376,10 +9376,54 @@ Mijn invullingen (verander ik op jouw woord):
       de geciteerde meldingen bestonden niet. De test dekt nu ook de vreemde met zijn eigen auto, laden van ver, de app
       Robots zonder server, te lange code en een andere server.
 
+### 121. De arm van de RC Car gaat tot vijf blokken hoog (15 november)
+
+Jouw wens: "een rc car arm moet tot 5 blokken hoog kunnen gaan, dit maakt dat je een kamer of gang simpeler kunt
+uitminen".
+
+- [x] **Tot vijf blokken hoog** (`Op.MAX_ARM` van 2 naar 5): `arm_up()` zet de arm nu tot vijf blokken boven het blok
+      vóór de auto. Hij breekt, plaatst, kijkt en opent kisten dus tot zes blokken boven elkaar zonder te bewegen (zes
+      kisten hoog). `arm_up(5)` en `arm_down(5)` mogen (bij `arm_up(6)` zegt de editor "arm_up takes 1 to 5 blocks, not
+      6"), `car.arm` gaat van 0 tot 5, en zijn scherm zegt "height 3 of 5". Hoger dan 5 of lager dan 0 geeft
+      `car.blocked`, zoals vroeger boven 2. Elk blok kost nog steeds 5 FE en duurt even lang.
+- [x] **De mast**: één stuk mast per blok (vijf stukken met dezelfde textuur op elkaar) in plaats van één paal die
+      uitgerekt werd. Zo blijven de gele ringen op de mast even ver uit elkaar, ook op vijf hoog (op twee hoog waren ze al
+      dubbel zo lang uitgerekt).
+- [x] **Een oud foutje dat nu pas echt opviel**: Minecraft tekent een wezen alleen als zijn kader in beeld is, en het
+      kader van de auto is maar een half blok hoog. Keek je omhoog naar de boor terwijl de auto zelf net onder je scherm
+      stond, dan verdween de hele auto, met mast en boor (op twee hoog kon dat al, op vijf hoog zou je het bij elke kamer
+      zien). Nu telt de arm mee in het kader voor het tekenen (`RcCarEntity.getBoundingBoxForCulling`, ook voor de
+      camerabeelden); botsen en raken gaan nog steeds over zijn kleine kader.
+- [x] **Teksten**: de helptekst van `arm_up` en `car.arm`, de tooltip van de RC Robot Arm ("mine up to 5 blocks higher
+      ... reach chests up to 5 blocks higher"), How it works (de RC Car: "raise its drill up to 5 blocks"; het
+      opslagsysteem: "six chests high"), LEESMIJ (met een `dig` voor een kamer of gang van 5 hoog) en de beschrijving voor
+      CurseForge ("reaches six blocks high"). Het plaatje van zijn scherm in How it works is opnieuw gemaakt (height 0
+      of 5).
+- [x] **Tests**: `rc_car_arm_reaches_three_high` heet nu `rc_car_arm_reaches_six_high`: de arm gaat tot 5 en niet verder,
+      breekt op 0, 2 en 5 hoog, plaatst op 4 hoog, laat het blok op 6 hoog staan, `arm_down(5)` vanaf 4 geeft
+      `car.blocked`, en het kader voor het tekenen groeit vijf blokken mee. De taaltest kijkt naar `arm_up(6)` en naar een
+      `dig` van zes hoog. Nog steeds 632 tests.
+- [x] **Screenshots** (`-Ponly=rccar`): rc30 (de arm op vijf hoog van opzij, voor een muur van zes), rc31 (van dichtbij
+      omhoog kijkend naar de boor: de auto blijft zichtbaar), rc32 (zijn scherm: height 5 of 5).
+- [x] **Nalezing** (drie lezers, elk met een eigen kijk: de server, het tekenen, de teksten; hun vondsten nagekeken door
+      een tweede lezer). De server en het tekenen in orde; op vijf plekken stond nog de oude 2, alle vijf echt en
+      hersteld: de uitleg bij de showcase "RC Car" (height 0 of 2; nu uit `Op.MAX_ARM`, zodat hij niet weer veroudert),
+      de schets van het autoscherm in `RcCarScreen`, een voorbeeld in `CarMove`, een opmerking in de rondleiding van het
+      opslagsysteem ("de hoogste stand" was stand 2) en de uitleg van de mast in `tools/generate_textures.py`.
+- **Mijn invullingen**: "tot 5 blokken hoog" lees ik als de stand van de arm op zijn scherm (height 5 of 5): vijf blokken
+  boven het blok vóór hem, dus zes blokken boven elkaar. Bedoelde je 5 blokken in totaal, dan wordt het 4. De mast gaat,
+  net als vroeger, door blokken boven de auto heen (een plafond houdt hem niet tegen). Jouw voorbeeld van de kamer
+  (5 x 3 x 5) bleef zoals het was; in LEESMIJ staat hoe je hem hoger maakt. Geen nieuwe versie: het is een aanpassing van
+  iets dat er al was (het patchnummer telt vanzelf).
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
+
+- [ ] **De arm tot vijf hoog (hoofdstuk 121)**: met tests en screenshots gecontroleerd, niet gespeeld. Probeer: (1) laat
+      de auto een kamer of gang van 5 of 6 hoog uitminen met de `dig` uit LEESMIJ; (2) kijk van dichtbij omhoog naar de
+      boor: blijft de auto zichtbaar? (3) ziet de mast er goed uit op vijf hoog, ook terwijl hij schuift?
 
 - [ ] **RC programs op de server (hoofdstuk 119)**: met tests gecontroleerd en gezien op screenshots (`-Ponly=rccar`), maar
       niet met de muis gespeeld. Probeer: (1) schrijf in de app Logic een RC program (**+**, **RC program**), zet je auto

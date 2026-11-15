@@ -9,6 +9,7 @@ import com.senne.imttech.energy.Cables;
 import com.senne.imttech.lan.RouterBlockEntity;
 import com.senne.imttech.lan.Routers;
 import com.senne.imttech.logic.program.LogicException;
+import com.senne.imttech.logic.program.Op;
 import com.senne.imttech.logic.program.ProgramKind;
 import com.senne.imttech.logic.program.ScriptParser;
 import com.senne.imttech.logic.program.ScriptPrinter;
@@ -162,7 +163,7 @@ public final class StorageGameTests {
                 "when ordered(\"store\") klopt niet in een autoprogramma");
         // De nieuwe woorden zijn nergens bezet: een programma van vóór hoofdstuk 113 mag ze als eigen naam hebben, ook een
         // autoprogramma (dat bestaat sinds hoofdstuk 108). Zijn eigen def gaat dan vóór het woord van de taal; dat de auto
-        // die def ook echt draait, test rc_car_arm_reaches_three_high. (Gevonden bij de nalezing.)
+        // die def ook echt draait, test rc_car_arm_reaches_six_high. (Gevonden bij de nalezing.)
         String oldCar = "take = 0\ndef check():\n    take = take + 1\n\ndef lane(int put):\n    for arm_up in range(put):\n"
                 + "        check()\n";
         check(problem(oldCar, ProgramKind.CAR).isEmpty(), "Een autoprogramma van vóór de update met de namen take, check, put en"
@@ -195,54 +196,70 @@ public final class StorageGameTests {
     /**
      * Jouw keuze: een arm die je programmeert, "en deze gebruik je vanaf nu ook voor het minen van 1+ block range". Met
      * arm_up() doet de auto alles wat hij vóór zich doet een blok hoger: kijken (block()), breken (mine()) en plaatsen
-     * (place()). Hoger dan twee blokken komt hij niet (car.blocked), en de arm kost een beetje stroom.
+     * (place()). Sinds hoofdstuk 121 (jouw wens: "een rc car arm moet tot 5 blokken hoog kunnen gaan") komt hij tot vijf
+     * blokken hoger, dus zes blokken boven elkaar; hoger niet (car.blocked). De arm kost een beetje stroom. En met de arm
+     * omhoog groeit het kader mee waarmee Minecraft beslist of het de auto tekent (anders verdween hij met mast en boor
+     * zodra je omhoog keek naar de boor).
      */
     @GameTest(template = ARENA, timeoutTicks = 600)
-    public static void rc_car_arm_reaches_three_high(GameTestHelper helper) {
+    public static void rc_car_arm_reaches_six_high(GameTestHelper helper) {
         BlockPos start = new BlockPos(7, 2, 10);
         BlockPos front = start.north();
         helper.setBlock(front, Blocks.STONE);
         helper.setBlock(front.above(2), Blocks.STONE);
-        helper.setBlock(front.above(3), Blocks.STONE);
+        helper.setBlock(front.above(5), Blocks.STONE);
+        helper.setBlock(front.above(6), Blocks.STONE);
         RcCarEntity car = car(helper, start, """
                 stones = 0
                 top = false
+                high = 0
                 take = 0
                 def put():
                     take = take + 1
                 def tower():
-                    for i in range(3):
+                    for i in range(6):
                         if block() == "stone":
                             stones = stones + 1
                         mine()
-                        if i < 2:
+                        if i < 5:
                             arm_up()
+                    high = car.arm
                     arm_up()
                     top = car.blocked
                     arm_down()
                     place("cobblestone")
-                    arm_down(2)
+                    arm_down(5)
                     put()
                 """);
         check(car.arm() == 0, "Een nieuwe auto heeft zijn arm niet beneden");
+        // Het kader voor het tekenen: met de arm op zijn hoogst vijf blokken hoger dan met de arm beneden.
+        double low = car.getBoundingBoxForCulling().maxY;
+        car.setArm(Op.MAX_ARM);
+        double raised = car.getBoundingBoxForCulling().maxY;
+        car.setArm(0);
+        check(raised >= low + Op.MAX_ARM - 0.01, "Met de arm omhoog groeit het kader voor het tekenen niet mee: van " + low
+                + " naar " + raised);
         check(car.brain().startFunction("tower"), "De functie tower begon niet");
         helper.succeedWhen(() -> {
             check(!car.brain().busy(), "De auto is nog bezig");
-            check(Double.valueOf(2).equals(car.brain().global("stones")), "block() zag met de arm " + car.brain().global("stones")
-                    + " stenen in plaats van 2 (beneden en twee hoger)");
+            check(Double.valueOf(3).equals(car.brain().global("stones")), "block() zag met de arm " + car.brain().global("stones")
+                    + " stenen in plaats van 3 (beneden, twee en vijf hoger)");
+            check(Double.valueOf(Op.MAX_ARM).equals(car.brain().global("high")), "De arm kwam tot " + car.brain().global("high")
+                    + " in plaats van " + Op.MAX_ARM + " blokken hoog");
             check(Boolean.TRUE.equals(car.brain().global("top")), "arm_up() boven de hoogste stand gaf geen car.blocked");
             helper.assertBlockPresent(Blocks.AIR, front);
-            helper.assertBlockPresent(Blocks.COBBLESTONE, front.above());
             helper.assertBlockPresent(Blocks.AIR, front.above(2));
-            helper.assertBlockPresent(Blocks.STONE, front.above(3));
-            check(car.trunk().countItem(Items.COBBLESTONE) == 1, "In de kofferbak ligt " + car.trunk().countItem(Items.COBBLESTONE)
-                    + " cobblestone in plaats van 1 (twee gebroken, één geplaatst)");
+            helper.assertBlockPresent(Blocks.COBBLESTONE, front.above(4));
+            helper.assertBlockPresent(Blocks.AIR, front.above(5));
+            helper.assertBlockPresent(Blocks.STONE, front.above(6));
+            check(car.trunk().countItem(Items.COBBLESTONE) == 2, "In de kofferbak ligt " + car.trunk().countItem(Items.COBBLESTONE)
+                    + " cobblestone in plaats van 2 (drie gebroken, één geplaatst)");
             check(car.arm() == 0, "Zijn arm staat niet weer beneden: " + car.arm());
             // Een programma van vóór de update met een eigen def put(): put() draait die def, niet het put van de taal.
             check(Double.valueOf(1).equals(car.brain().global("take")), "put() draaide niet de eigen def put() van het programma: take = "
                     + car.brain().global("take"));
-            // arm_down(2) vanaf 1: hij kwam maar één blok lager, dus car.blocked.
-            check(car.body().blocked(), "arm_down(2) vanaf stand 1 gaf geen car.blocked");
+            // arm_down(5) vanaf 4: hij kwam maar vier blokken lager, dus car.blocked.
+            check(car.body().blocked(), "arm_down(5) vanaf stand 4 gaf geen car.blocked");
         });
     }
 

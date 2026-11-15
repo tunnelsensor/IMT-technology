@@ -2048,7 +2048,7 @@ shulkerdoos (geen dozen in dozen).
 
 **Zijn scherm.** **Sneak + rechtsklik** op de auto met een lege hand (alleen jij; een ander alleen in een basis waar
 jullie allebei bij horen). Bovenaan wat hij doet (READY, RUNNING strip_mine, NO CELL...), zijn batterij, zijn kofferbak en zijn
-boorkop, en de regel **Arm**: heeft hij een RC Robot Arm, dan hoe hoog die staat (height 0 of 2), twee knopjes om hem
+boorkop, en de regel **Arm**: heeft hij een RC Robot Arm, dan hoe hoog die staat (height 0 of 5), twee knopjes om hem
 een blok hoger of lager te zetten, en **Arm off**.
 Links zijn **functies**: klik er een aan en hij voert haar uit **vanaf de plek waar hij staat**. Rechts rijd
 je hem met de hand, één stap per klik (Forward, Back, Left, Right, Mine, Up, Down): zo zet je hem goed voor je een
@@ -2123,6 +2123,19 @@ def room():
     back(1)
 ```
 
+Een **hogere kamer of gang** (sinds hoofdstuk 121): de arm komt tot vijf blokken hoog, dus de auto breekt tot zes
+blokken boven elkaar zonder te bewegen. Voor 5 hoog schrijf je `dig` zo: vier keer breken en de arm een blok hoger, dan
+het bovenste blok, en de arm in één keer weer omlaag. Met `range(5)` en `arm_down(5)` wordt het 6 hoog.
+
+```
+def dig():
+    for i in range(4):
+        mine()
+        arm_up()
+    mine()
+    arm_down(4)
+```
+
 - **Elke `def naam():`** (zonder iets tussen de haakjes) is een **functie**: een knop op zijn scherm en op de RC
   Controller. Een def met parameters (`def lane(int length):`) is een hulpje dat je andere stukken gebruiken.
   **`when started:`** is het hoofdprogramma: dat loopt als je op Start drukt.
@@ -2134,10 +2147,11 @@ def room():
   wacht hij tot het ligt en breekt hij dat ook: na `mine()` is de plek echt vrij.
 - **De arm** (sinds versie 2.15; sinds versie 2.16 alleen met een **RC Robot Arm**): de boor zit op een arm die je
   programmeert. `arm_up()` zet hem een blok hoger,
-  `arm_down()` een blok lager; met een getal twee tegelijk (`arm_down(2)`). Hij komt **twee blokken** boven het blok
-  voor de auto, dus drie blokken hoog. Alles wat de auto **voor zich** doet, doet hij op de hoogte van zijn arm:
-  `mine()`, `place()`, `block()`, `unload()` en de kisten hieronder. Je ziet de arm langs een mast omhoog schuiven.
-  `car.arm` zegt hoe hoog hij staat (0, 1 of 2); wil je hoger dan 2 of lager dan 0, dan is `car.blocked` waar. De arm
+  `arm_down()` een blok lager; met een getal meer tegelijk (`arm_up(5)`, `arm_down(2)`). Hij komt **vijf blokken**
+  boven het blok voor de auto (sinds hoofdstuk 121; daarvoor twee), dus zes blokken hoog. Alles wat de auto **voor
+  zich** doet, doet hij op de hoogte van zijn arm: `mine()`, `place()`, `block()`, `unload()` en de kisten hieronder.
+  Je ziet de arm langs een mast omhoog schuiven (een stuk mast per blok).
+  `car.arm` zegt hoe hoog hij staat (0 tot 5); wil je hoger dan 5 of lager dan 0, dan is `car.blocked` waar. De arm
   een blok bewegen kost 5 FE. **`mine(2)`, `mine_up(2)` en `mine_down(2)` bestaan niet meer** (jouw keuze: de arm is
   er nu voor alles wat verder dan één blok reikt): schrijf `arm_up()` en dan `mine()`. Naar beneden kan de arm niet:
   herhaal daar `mine_down()` (na elke keer zakt de auto in het gat). De editor zegt het als je het oude nog typt. Een

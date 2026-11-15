@@ -110,7 +110,7 @@ public final class StorageScenes {
         s.idle(10);
         s.actor("car", type, 2 * DRIVE, 2 * DRIVE, EAST, car(0, 100), home, atStack);
         s.text(200, new Vec3(3.5, 4.6, 2.5), Side.RIGHT,
-                "The car drives where its program says. With an *RC Robot Arm* it reaches *three chests high* (*arm_up()*)."
+                "The car drives where its program says. With an *RC Robot Arm* it reaches *six chests high* (*arm_up()*)."
                         + " *if item(...) in chest():* looks inside, *take(...)* takes it into the trunk. Back home, *put()*"
                         + " delivers it.");
         s.idle(2 * DRIVE);

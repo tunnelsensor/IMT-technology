@@ -342,7 +342,7 @@ final class StorageTour {
         // De twee sensors en de router van dichtbij, van schuin boven.
         t.view(0, x + 4.0, YARD.getY() + 7.0, z + 4.5, 180, 42);
         t.shot(20, "st02_chest_sensors");
-        // De auto met zijn arm omhoog bij een stapel (hier voor de foto: zijn arm op de hoogste stand).
+        // De auto met zijn arm omhoog bij een stapel (hier voor de foto: zijn arm bij de bovenste ton van de stapel, stand 2).
         t.onServer(0, player -> {
             RcCarEntity car = car(player);
             if (car != null) {

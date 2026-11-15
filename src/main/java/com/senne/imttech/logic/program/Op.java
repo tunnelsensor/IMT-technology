@@ -138,10 +138,11 @@ public enum Op {
     /**
      * {@code arm_up()} (hoofdstuk 113, jouw keuze: een arm die je programmeert, "en deze gebruik je vanaf nu ook voor het
      * minen van 1+ block range"): de arm met de boor gaat één blok omhoog (of {@code arm_up(2)}: twee). Alles wat de auto
-     * vóór zich doet ({@code mine()}, {@code place()}, {@code block()}, een kist) doet hij dan op die hoogte.
+     * vóór zich doet ({@code mine()}, {@code place()}, {@code block()}, een kist) doet hij dan op die hoogte. Sinds
+     * hoofdstuk 121 tot vijf blokken hoog ({@link #MAX_ARM}).
      */
-    ARM_UP(Kind.ACTION, "arm_up", Arg.NONE, Arg.OPTIONAL_NUMBER, "Raise the arm of the car one block (arm_up(2): two). What the car does in front of it "
-            + "(mine, place, block(), a chest) happens at that height. Needs an RC Robot Arm"),
+    ARM_UP(Kind.ACTION, "arm_up", Arg.NONE, Arg.OPTIONAL_NUMBER, "Raise the arm of the car one block (arm_up(2): two), up to 5 blocks. What the car "
+            + "does in front of it (mine, place, block(), a chest) happens at that height. Needs an RC Robot Arm"),
     /** {@code arm_down()}: de arm één blok omlaag (of {@code arm_down(2)}). Alleen met een RC Robot Arm (hoofdstuk 118). */
     ARM_DOWN(Kind.ACTION, "arm_down", Arg.NONE, Arg.OPTIONAL_NUMBER, "Lower the arm of the car one block (arm_down(2): two). Needs an RC Robot Arm"),
     /**
@@ -210,8 +211,13 @@ public enum Op {
 
     /** Zo lang mag een tekst (say, alarm, log) of een naam hooguit zijn. */
     public static final int MAX_TEXT = 80;
-    /** Zo hoog komt de arm van een RC Car hooguit (hoofdstuk 113): 0 = het blok vóór hem, 2 = twee blokken hoger. */
-    public static final int MAX_ARM = 2;
+    /**
+     * Zo hoog komt de arm van een RC Car hooguit: 0 = het blok vóór hem, 5 = vijf blokken hoger, dus zes blokken boven
+     * elkaar (hoofdstuk 121, jouw wens: "een rc car arm moet tot 5 blokken hoog kunnen gaan, dit maakt dat je een kamer
+     * of gang simpeler kunt uitminen"; van hoofdstuk 113 tot dan was het 2). Het model van de auto heeft een stuk mast
+     * per blok (RcCarModel).
+     */
+    public static final int MAX_ARM = 5;
 
     private final Kind kind;
     private final String code;
@@ -304,7 +310,7 @@ public enum Op {
             case EVERY -> 3600;
             case WAIT -> 600;
             case FORWARD, BACK, UP, DOWN -> 64;
-            // Zo hoog komt de arm van een RC Car (hoofdstuk 113): twee blokken boven het blok vóór hem, dus drie kisten hoog.
+            // Zo hoog komt de arm van een RC Car (hoofdstuk 121): vijf blokken boven het blok vóór hem, dus zes kisten hoog.
             case ARM_UP, ARM_DOWN -> MAX_ARM;
             case CHARGE -> 100;
             default -> 60;

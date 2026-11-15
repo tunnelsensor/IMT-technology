@@ -35,6 +35,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.ItemContainerContents;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.fluids.FluidType;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,7 +60,8 @@ import org.jetbrains.annotations.Nullable;
  *   <li><b>RC Robot Arm</b> (hoofdstuk 118, jouw wens: "als die hoger dan 1 block wil minen, dus boven of onder zich,
  *       heeft die een robotarm met drill nodig"): een nieuwe auto heeft alleen de boor op zijn neus en breekt het blok
  *       recht voor zich. Rechtsklik met een RC Robot Arm: dan zit zijn boor op een arm, en kan hij ook hoger, boven en
- *       onder zich minen en kisten tot twee blokken hoger bereiken. De knop Arm off op zijn scherm haalt hem eraf.</li>
+ *       onder zich minen en kisten tot vijf blokken hoger bereiken (hoofdstuk 121; daarvoor twee). De knop Arm off op
+ *       zijn scherm haalt hem eraf.</li>
  *   <li><b>Kofferbak</b>: 18 vakjes. Wat hij breekt gaat erin; wat hij plaatst komt eruit. Rechtsklik op de auto:
  *       de kofferbak gaat open (voor iedereen, zoals een kist).</li>
  *   <li><b>Oppakken</b> (jouw wens: "je kunt deze rc car ook oppakken en in je inventory zetten"): de knop Pick up in
@@ -91,7 +93,7 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
     private static final EntityDataAccessor<Integer> ITEMS = SynchedEntityData.defineId(RcCarEntity.class, EntityDataSerializers.INT);
     /** Zijn boorkop (het nummer van de DrillHead), voor zijn model en zijn scherm. */
     private static final EntityDataAccessor<Integer> DRILL = SynchedEntityData.defineId(RcCarEntity.class, EntityDataSerializers.INT);
-    /** Hoe hoog zijn arm staat (hoofdstuk 113): 0 = het blok vóór hem, 1 of 2 blokken hoger. Voor zijn model. */
+    /** Hoe hoog zijn arm staat (hoofdstuk 113): 0 = het blok vóór hem, tot 5 blokken hoger (hoofdstuk 121). Voor zijn model. */
     private static final EntityDataAccessor<Integer> ARM = SynchedEntityData.defineId(RcCarEntity.class, EntityDataSerializers.INT);
     /** Heeft hij een RC Robot Arm (hoofdstuk 118)? Voor zijn model en zijn scherm. */
     private static final EntityDataAccessor<Boolean> ROBOT_ARM = SynchedEntityData.defineId(RcCarEntity.class, EntityDataSerializers.BOOLEAN);
@@ -386,8 +388,9 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
     // ================================================================ Zijn arm (hoofdstuk 113)
 
     /**
-     * Hoe hoog zijn arm staat: 0 = het blok vóór hem, 1 of 2 blokken hoger (jouw keuze: een arm die je programmeert, tot
-     * drie kisten hoog). Op die hoogte breekt, plaatst en kijkt hij, en opent hij een kist. (Ook in je spel: zijn model.)
+     * Hoe hoog zijn arm staat: 0 = het blok vóór hem, tot 5 blokken hoger (jouw keuze: een arm die je programmeert;
+     * hoofdstuk 121, jouw wens: "tot 5 blokken hoog", dus zes kisten hoog). Op die hoogte breekt, plaatst en kijkt hij, en
+     * opent hij een kist. (Ook in je spel: zijn model.)
      */
     public int arm() {
         return entityData.get(ARM);
@@ -395,6 +398,21 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
 
     public void setArm(int level) {
         entityData.set(ARM, hasRobotArm() ? Math.max(0, Math.min(com.senne.imttech.logic.program.Op.MAX_ARM, level)) : 0);
+    }
+
+    /**
+     * Minecraft tekent een wezen alleen als zijn kader in beeld is (met een half blok rand). Het kader van de auto is
+     * maar een half blok hoog, maar met de arm omhoog steekt zijn boor tot vijf blokken boven hem uit (hoofdstuk 121).
+     * Daarom telt de arm hier mee: anders verdween de hele auto, met mast en boor, zodra jij omhoog keek naar de boor en
+     * de auto zelf net onder je scherm stond. Dit kader is alleen voor het tekenen (en de camerabeelden); botsen en
+     * raken gaan nog steeds over zijn kleine kader.
+     */
+    @Override
+    public AABB getBoundingBoxForCulling() {
+        // In je spel schuift de arm nog even na (ook als hij zakt): de hoogste van de twee telt.
+        float arm = Math.max(arm(), armShown);
+        AABB box = super.getBoundingBoxForCulling();
+        return arm > 0 ? box.expandTowards(0, arm, 0) : box;
     }
 
     // ================================================================ Zijn RC Robot Arm (hoofdstuk 118)

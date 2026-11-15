@@ -4388,7 +4388,8 @@ def rc_car_textures():
         px(tex, [(x, y), (x + 3, y), (x, y + 3), (x + 3, y + 3)], CLEAR)        # de hoekjes weg: een rond wiel
 
     # De mast van de arm (2 x 16 x 2, hoofdstuk 113): donker staal met gele ringen, zoals een hefmast. Je ziet hem alleen
-    # als de arm omhoog staat: dan rekt het model hem uit tot de hoogte van de boor (zie RcCarModel).
+    # als de arm omhoog staat: dan zet het model tot vijf stukken van één blok op elkaar (hoofdstuk 121, zie RcCarModel),
+    # en de ringen om de 4 pixels lopen zo door van stuk tot stuk.
     mast = box_regions(0, 40, 2, 16, 2)
     paint(mast, chassis, top=chassis_hi, bottom=chassis_dark)
     for name in ("east", "front", "west", "back"):
