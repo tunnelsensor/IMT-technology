@@ -47,7 +47,9 @@ public record LogicProgram(String name, boolean enabled, LogicGraph graph, Strin
     }
 
     public static LogicProgram load(CompoundTag tag) {
-        String source = tag.getString("Source");
+        // Hoofdstuk 114: parameters van vóór die tijd (def open(door: string):) worden def open(string door): (de blokjes
+        // zet LogicGraph.load net zo om, dus de code past er nog bij en je commentaar blijft staan).
+        String source = CodeUpgrade.source(tag.getString("Source"));
         ProgramKind kind = ProgramKind.byName(tag.getString("Kind"));
         LogicGraph graph = LogicGraph.load(tag.getCompound("Graph"));
         boolean renamed = graph.renameReservedDefs();

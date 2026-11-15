@@ -925,7 +925,7 @@ final class LogicApp {
         lines.add(header("YOUR OWN BLOCKS (def)"));
         lines.add(new HelpLine("def open_door():", "def open_door():\n    accept()\n    pulse(\"" + device + "\", 3)\n",
                 "Write steps once (at the left edge), then use them in many whens with open_door()", 0xC9A0FF, null));
-        lines.add(new HelpLine("def open_door(door: string):", "def open_door(door: string):\n    accept()\n    log(\"Opened \" + door)\n    pulse(door, 3)\n",
+        lines.add(new HelpLine("def open_door(string door):", "def open_door(string door):\n    accept()\n    log(\"Opened \" + door)\n    pulse(door, 3)\n",
                 "A def with values it needs (parameters, with a type): use it with open_door(\"" + device + "\"). Inside, door is a name.",
                 0xC9A0FF, null));
         java.util.regex.Matcher defs = java.util.regex.Pattern.compile("(?m)^def\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\(([^)]*)\\)")

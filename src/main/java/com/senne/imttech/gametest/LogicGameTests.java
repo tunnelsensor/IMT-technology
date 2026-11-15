@@ -174,7 +174,7 @@ public final class LogicGameTests {
             def activate_alarm():
                 alarm("Alarm!")
 
-            def open_door(door: string, secs: float):
+            def open_door(string door, float secs):
                 log("Opening " + door)
                 pulse(door, secs)
             """;
@@ -232,7 +232,7 @@ public final class LogicGameTests {
         String own = """
                 count: int = 0
 
-                def open(door: string):
+                def open(string door):
                     pulse(door, 2)
                     count = count + 1
 
@@ -250,9 +250,9 @@ public final class LogicGameTests {
         // Fouten met uitleg.
         expectError("count: int = 2.5\n\nwhen every(10):\n    pass", 1, "whole number");
         expectError("lockdown: bool = 0\n\nwhen every(10):\n    pass", 1, "cannot give it");
-        expectError("def open(door: strng):\n    pass\n\nwhen every(10):\n    open(\"a\")", 1, "I don't know the type");
-        expectError("def open(door: string):\n    pass\n\nwhen every(10):\n    open()", 5, "needs 1 value");
-        expectError("def open(door: string):\n    pass\n\nwhen every(10):\n    open(3)", 5, "must be text");
+        expectError("def open(strng door):\n    pass\n\nwhen every(10):\n    open(\"a\")", 1, "I don't know the type");
+        expectError("def open(string door):\n    pass\n\nwhen every(10):\n    open()", 5, "needs 1 value");
+        expectError("def open(string door):\n    pass\n\nwhen every(10):\n    open(3)", 5, "must be text");
         expectError("when every(10):\n    global", 2, "first line");
         expectError("global\n\nwhen every(10):\n    pass", 3, "global script holds only defs");
         expectError("when every(10):\n    on(Lamp)", 2, "If you meant a device");
@@ -270,10 +270,145 @@ public final class LogicGameTests {
         if (!types.contains("int") || !types.contains("bool")) {
             throw new GameTestAssertException("Na count: verwachtte ik de soort-woorden, maar kreeg: " + types);
         }
-        List<String> calls = complete("def open(door: string):\n    pass\n\nwhen every(10):\n    |", ProgramKind.SERVER);
-        if (!calls.contains("open(door: string)")) {
+        List<String> calls = complete("def open(string door):\n    pass\n\nwhen every(10):\n    |", ProgramKind.SERVER);
+        if (!calls.contains("open(string door)")) {
             throw new GameTestAssertException("Ctrl+Spatie toonde de def niet met zijn parameter: " + calls);
         }
+        helper.succeed();
+    }
+
+    /**
+     * Hoofdstuk 114 (jouw wens: "zoals in C#"): de parameters van een def met het soort-woord vóór de naam en zonder dubbele
+     * punt, {@code def open(string door, int times):}. De oude vorm ({@code door: string}) geeft een fout die zegt hoe het
+     * nu moet, in de code en in het vak Parameters van een DEF-blokje; Ctrl+Spatie stelt in een def eerst de soorten voor.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "logic_language")
+    public static void logic_params_type_first_like_csharp(GameTestHelper helper) {
+        String code = """
+                def open(string door, int times, x):
+                    for i in range(times):
+                        pulse(door, x)
+
+                when every(10):
+                    open("Lamp", 2, 1)
+                """;
+        Script script = ScriptParser.parse(code);
+        var params = script.functions().getFirst().params();
+        if (params.size() != 3 || !params.get(0).name().equals("door") || params.get(0).varType() != com.senne.imttech.logic.program.VarType.STRING
+                || !params.get(1).name().equals("times") || params.get(1).varType() != com.senne.imttech.logic.program.VarType.INT
+                || !params.get(2).name().equals("x") || params.get(2).varType() != null) {
+            throw new GameTestAssertException("De parameters zoals in C# werden niet goed gelezen: " + params);
+        }
+        if (!ScriptPrinter.print(script).equals(code)) {
+            throw new GameTestAssertException("Terugschrijven gaf andere code:\n" + ScriptPrinter.print(script));
+        }
+        if (!ScriptPrinter.print(GraphConverter.toScript(LogicGraph.load(GraphConverter.toGraph(script, null).save()))).equals(code)) {
+            throw new GameTestAssertException("Via de blokjes (opslaan en laden) kwamen de parameters anders terug");
+        }
+        // De oude vorm, en andere fouten, met uitleg.
+        expectError("def open(door: string):\n    pass\n\nwhen every(10):\n    open(\"a\")", 1,
+                "Write the type before the name, like in C#: def open(string door):");
+        expectError("def open(door: strng):\n    pass\n\nwhen every(10):\n    open(\"a\")", 1, "without a colon");
+        expectError("def open(string):\n    pass\n\nwhen every(10):\n    open(\"a\")", 1, "After string comes the name of the parameter");
+        expectError("def open(string door = \"a\"):\n    pass\n\nwhen every(10):\n    open(\"a\")", 1, "gets its value when you use the def");
+        expectError("def open(string door int times):\n    pass\n\nwhen every(10):\n    open(\"a\", 1)", 1, "Separate the parameters with a comma");
+        expectError("def open(string door,):\n    pass\n\nwhen every(10):\n    open(\"a\")", 1, "missing after the comma");
+        // Het vak Parameters van een DEF-blokje leest hetzelfde.
+        String old = com.senne.imttech.logic.program.Checks.exprProblem(Op.DEF, "door: string");
+        if (old == null || !old.contains("Write the type before the name")) {
+            throw new GameTestAssertException("Het DEF-blokje met door: string gaf niet de goede fout: " + old);
+        }
+        String fine = com.senne.imttech.logic.program.Checks.exprProblem(Op.DEF, "string door, int times");
+        if (fine != null) {
+            throw new GameTestAssertException("Het DEF-blokje met string door, int times gaf een fout: " + fine);
+        }
+        // Ctrl+Spatie: aan het begin van een parameter de soort-woorden.
+        List<String> first = complete("def open(|", ProgramKind.SERVER);
+        List<String> second = complete("def open(string door, |", ProgramKind.SERVER);
+        if (!first.contains("int") || !first.contains("bool") || !second.contains("float") || !second.contains("string")) {
+            throw new GameTestAssertException("In een def verwachtte ik de soort-woorden, maar kreeg: " + first + " / " + second);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Hoofdstuk 114: code die nog met de oude parameters bewaard is ({@code def open(door: string):}), draait bij het laden
+     * vanzelf om: in een diagram (de code en de blokjes, zodat je commentaar blijft staan), in een RC Car (in de wereld en
+     * als item) en in een Training End-blok. De rest van de code (commentaar, {@code count: int = 0}, Windows-regels)
+     * blijft staan.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "logic_language")
+    public static void logic_old_params_upgraded_on_load(GameTestHelper helper) {
+        // De omzetter zelf.
+        String oldCode = "# opens a door\ncount: int = 0\n\ndef open(door: string, secs:float, x):  # with a pulse\n"
+                + "    pulse(door, secs)\n    count = count + 1\n\nwhen every(10):\n    open(\"Lamp\", 2, 1)\n";
+        String newCode = "# opens a door\ncount: int = 0\n\ndef open(string door, float secs, x):  # with a pulse\n"
+                + "    pulse(door, secs)\n    count = count + 1\n\nwhen every(10):\n    open(\"Lamp\", 2, 1)\n";
+        String upgraded = com.senne.imttech.logic.program.CodeUpgrade.source(oldCode);
+        if (!upgraded.equals(newCode)) {
+            throw new GameTestAssertException("De oude code werd niet goed omgezet:\n" + upgraded);
+        }
+        if (!com.senne.imttech.logic.program.CodeUpgrade.source(newCode).equals(newCode)) {
+            throw new GameTestAssertException("Code die al goed stond, veranderde toch");
+        }
+        String windows = com.senne.imttech.logic.program.CodeUpgrade.source("def a(n: int):\r\n    pass\r\n");
+        if (!windows.equals("def a(int n):\r\n    pass\r\n")) {
+            throw new GameTestAssertException("Code met Windows-regels werd niet goed omgezet: " + windows.replace("\r", "\\r"));
+        }
+        // Een diagram zoals een oude wereld het bewaarde: de oude code, en een DEF-blokje met door: string.
+        LogicProgram fresh = new LogicProgram("Doors", true, GraphConverter.toGraph(ScriptParser.parse(newCode), null), newCode);
+        CompoundTag tag = fresh.save();
+        tag.putString("Source", oldCode);
+        boolean foundDef = false;
+        for (net.minecraft.nbt.Tag element : tag.getCompound("Graph").getList("Nodes", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+            CompoundTag entry = (CompoundTag) element;
+            if (entry.getString("o").equals("DEF")) {
+                entry.putString("e", "door: string, secs: float, x");
+                foundDef = true;
+            }
+        }
+        if (!foundDef) {
+            throw new GameTestAssertException("De test vond geen DEF-blokje om oud te maken");
+        }
+        LogicProgram loaded = LogicProgram.load(tag);
+        if (!loaded.source().equals(newCode)) {
+            throw new GameTestAssertException("De code van het diagram werd bij het laden niet omgezet:\n" + loaded.source());
+        }
+        if (!loaded.graph().problems(ProgramKind.SERVER).isEmpty()) {
+            throw new GameTestAssertException("De blokjes kloppen na het laden niet: " + loaded.graph().problems(ProgramKind.SERVER).getFirst().message());
+        }
+        String fromBlocks = ScriptPrinter.print(GraphConverter.toScript(loaded.graph()));
+        if (!ScriptPrinter.print(ScriptParser.parse(loaded.source())).equals(fromBlocks)) {
+            throw new GameTestAssertException("De omgezette code past niet meer bij de blokjes (dan viel je commentaar weg):\n" + fromBlocks);
+        }
+        // Een RC Car in de wereld, en een als item.
+        String oldCar = "def lane(length: int):\n    forward(length)\n\ndef home():\n    lane(3)\n";
+        String newCar = "def lane(int length):\n    forward(length)\n\ndef home():\n    lane(3)\n";
+        com.senne.imttech.car.RcCarEntity car = helper.spawn(com.senne.imttech.registry.ModEntities.RC_CAR.get(), new BlockPos(4, 2, 4));
+        CompoundTag carTag = car.saveWithoutId(new CompoundTag());
+        carTag.putString("Source", oldCar);
+        car.load(carTag);
+        if (!car.source().equals(newCar) || !car.functions().equals(List.of("home"))) {
+            throw new GameTestAssertException("De RC Car werd niet omgezet: " + car.source() + " / functies " + car.functions());
+        }
+        com.senne.imttech.car.RcCarData data = com.senne.imttech.car.RcCarData.DEFAULT;
+        car.applyData(new com.senne.imttech.car.RcCarData("", oldCar, java.util.Optional.empty(), data.cell(), data.trunk(), data.drill()));
+        if (!car.source().equals(newCar) || !car.functions().equals(List.of("home"))) {
+            throw new GameTestAssertException("Een RC Car uit een oud item werd niet omgezet: " + car.source());
+        }
+        // Een Training End-blok.
+        BlockPos endPos = new BlockPos(8, 2, 8);
+        helper.setBlock(endPos, ModBlocks.TRAINING_END.get());
+        var end = (com.senne.imttech.training.TrainingEndBlockEntity) helper.getBlockEntity(endPos);
+        var registries = helper.getLevel().registryAccess();
+        CompoundTag endTag = end.saveWithoutMetadata(registries);
+        endTag.putString("Code", "def score(points: int):\n    log(\"hit \" + points)\n\nwhen trainee_hit:\n    score(hits)\n");
+        end.loadWithComponents(endTag, registries);
+        String endCode = "def score(int points):\n    log(\"hit \" + points)\n\nwhen trainee_hit:\n    score(hits)\n";
+        if (!end.source().equals(endCode)) {
+            throw new GameTestAssertException("Het Training End-blok werd niet omgezet: " + end.source());
+        }
+        ScriptParser.parse(end.source(), ProgramKind.TRAINING_END); // en de omgezette code klopt
         helper.succeed();
     }
 

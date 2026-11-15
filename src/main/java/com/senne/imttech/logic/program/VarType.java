@@ -5,8 +5,8 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * De soorten die je bij een naam of een parameter kunt schrijven (hoofdstuk 43, jouw wens: "variabelen: string, int,
- * bool"), zoals in Python met een dubbele punt: {@code lockdown: bool = false}, {@code count: int = 0},
- * {@code def open_door(door: string):}.
+ * bool"). Bij een naam zoals in Python met een dubbele punt: {@code lockdown: bool = false}, {@code count: int = 0}. Bij
+ * een parameter sinds hoofdstuk 114 zoals in C# (jouw wens): het soort-woord vóór de naam, {@code def open_door(string door):}.
  * <ul>
  *   <li><b>int</b>: een heel getal. Krijgt hij een getal met een komma, dan wordt het naar beneden afgerond
  *       (7 / 2 wordt 3), zoals in C++.</li>

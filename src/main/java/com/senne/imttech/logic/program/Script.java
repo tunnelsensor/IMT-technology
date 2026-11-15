@@ -9,7 +9,7 @@ import org.jetbrains.annotations.Nullable;
  * een lijst van "when"-blokken en eigen blokken ("def"), elk met de regels eronder, in de volgorde
  * waarin ze in de code staan.
  * <pre>
- * def open_lab(door: string):        Function("open_lab", [door: string])
+ * def open_lab(string door):        Function("open_lab", [string door])
  *     accept()                       Action(ACCEPT)
  *     pulse(door, 3)                 Action(PULSE, textExpr "door", 3)
  *
@@ -43,8 +43,9 @@ public record Script(List<Top> items, boolean global) {
     public record Handler(Op trigger, String text, double number, List<Stmt> body, int ref) implements Top {}
 
     /**
-     * Een parameter van een def (hoofdstuk 43): {@code door: string}. {@code type} is het soort-woord (int, float,
-     * string, bool), of leeg als er geen staat (dan mag elke waarde).
+     * Een parameter van een def (hoofdstuk 43): {@code string door} (sinds hoofdstuk 114 zoals in C#, daarvoor
+     * {@code door: string}). {@code type} is het soort-woord (int, float, string, bool), of leeg als er geen staat (dan
+     * mag elke waarde).
      */
     public record Param(String name, String type) {
         /** De soort, of null als er geen soort-woord staat. */
@@ -58,9 +59,9 @@ public record Script(List<Top> items, boolean global) {
             return varType == null ? Expr.Type.ANY : varType.exprType();
         }
 
-        /** Zoals in de code: {@code door: string} of {@code door}. */
+        /** Zoals in de code: {@code string door} of {@code door}. */
         public String code() {
-            return type.isEmpty() ? name : name + ": " + type;
+            return type.isEmpty() ? name : type + " " + name;
         }
     }
 
@@ -71,7 +72,7 @@ public record Script(List<Top> items, boolean global) {
             this(name, List.of(), body, ref);
         }
 
-        /** De parameters zoals in de code: {@code door: string, times: int}. */
+        /** De parameters zoals in de code: {@code string door, int times}. */
         public String paramsCode() {
             StringBuilder code = new StringBuilder();
             for (Param param : params) {

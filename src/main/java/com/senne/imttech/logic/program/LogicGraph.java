@@ -658,6 +658,10 @@ public final class LogicGraph {
             }
             String expr = entry.getString("e"); // een diagram van vóór hoofdstuk 20 heeft hem niet: leeg
             node.expr = expr.length() > Op.MAX_TEXT * 3 ? expr.substring(0, Op.MAX_TEXT * 3) : expr;
+            if (op == Op.DEF) {
+                // Hoofdstuk 114: de parameters zoals in C# (string door). Een diagram van daarvoor heeft door: string.
+                node.expr = CodeUpgrade.params(node.expr);
+            }
             // Hoofdstuk 43: het soort-woord van een naam, en een apparaat als code (van vóór die tijd: leeg).
             node.type = VarType.byWord(entry.getString("ty")) == null ? "" : entry.getString("ty");
             String textExpr = entry.getString("de");

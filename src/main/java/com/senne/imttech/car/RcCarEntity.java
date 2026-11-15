@@ -371,7 +371,7 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
     /** Neem over wat er in een RC Car-item zit: naam, programma, cel, kofferbak en boorkop. */
     public void applyData(RcCarData data) {
         setCustomName(data.name().isEmpty() ? null : Component.literal(data.name()));
-        source = data.source();
+        source = com.senne.imttech.logic.program.CodeUpgrade.source(data.source()); // een item van vóór hoofdstuk 114 (zie readAdditionalSaveData)
         setDrill(data.drill());
         link = data.link().orElseGet(UUID::randomUUID);
         cell = data.cell() < 0 ? ItemStack.EMPTY : EnergyCellItem.withCharge(data.cell());
@@ -726,7 +726,8 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
         owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
         ownerName = tag.getString("OwnerName");
         link = tag.hasUUID("Link") ? tag.getUUID("Link") : UUID.randomUUID();
-        source = tag.contains("Source") ? tag.getString("Source") : CarProgram.EMPTY;
+        // Code van vóór hoofdstuk 114 (def lane(length: int):) wordt def lane(int length):.
+        source = tag.contains("Source") ? com.senne.imttech.logic.program.CodeUpgrade.source(tag.getString("Source")) : CarProgram.EMPTY;
         setDrill(DrillHead.byId(tag.getString("DrillHead"))); // een auto zonder dit gegeven heeft de ijzeren kop
         cell = tag.contains("Cell") ? EnergyCellItem.withCharge(tag.getFloat("Cell")) : ItemStack.EMPTY;
         trunk.clearContent();

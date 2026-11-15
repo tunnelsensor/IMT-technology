@@ -138,7 +138,7 @@ public final class RcCarGameTests {
                 steps = 3
                 when started:
                     lane(steps)
-                def lane(length: int):
+                def lane(int length):
                     for i in range(length):
                         mine()
                         forward(1)

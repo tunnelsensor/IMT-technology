@@ -323,7 +323,7 @@ public final class Interpreter {
 
     /**
      * De parameters van een def (hoofdstuk 43) met de waarden van de aanroep: {@code open_door("Lab door", 3)} bij
-     * {@code def open_door(door: string, times: int):} geeft door = "Lab door" en times = 3. De waarden rekenen we uit
+     * {@code def open_door(string door, int times):} geeft door = "Lab door" en times = 3. De waarden rekenen we uit
      * met de namen van wie aanroept (die zijn er nu nog). Te weinig waarden: de rest krijgt de lege waarde van zijn
      * soort (dat laat de controle niet toe, maar een oud of vreemd diagram kan het hebben).
      */

@@ -167,7 +167,7 @@ public final class Checks {
                 return valuesProblem(op, Expr.parseLenientList(expr));
             }
             if (op == Op.DEF) {
-                // Hoofdstuk 43: de parameters van een def (door: string, times: int).
+                // Hoofdstuk 43: de parameters van een def (sinds hoofdstuk 114: string door, int times).
                 return paramsProblem(parseParams(expr), java.util.Set.of());
             }
             if (op == Op.CALL) {
@@ -218,45 +218,87 @@ public final class Checks {
     // ================================================================ Parameters en aanroepen (hoofdstuk 43)
 
     /**
-     * Leest de parameters van een def zoals ze tussen de haakjes staan: {@code door: string, times: int} (of alleen
-     * {@code door}). Gooit een LogicException met uitleg als het niet klopt.
+     * Leest de parameters van een def zoals ze in het vak Parameters van een DEF-blokje staan: {@code string door, int times}
+     * (of alleen {@code door}). Gooit een LogicException met uitleg als het niet klopt.
      */
     public static java.util.List<Script.Param> parseParams(String text) {
-        java.util.List<Script.Param> params = new java.util.ArrayList<>();
         if (text.isBlank()) {
-            return params;
+            return new java.util.ArrayList<>();
         }
         java.util.List<Lexer.Token> tokens = Lexer.tokens(text);
-        int i = 0;
-        while (true) {
-            Lexer.Token name = tokens.get(i);
-            if (name.type() != Lexer.Type.NAME) {
-                throw new LogicException(name.type() == Lexer.Type.END ? "A parameter is missing after the comma"
-                        : "A parameter needs a name, like door: string (not " + name + ")");
+        return parseParams(tokens, 0, tokens.size() - 1, "open_door");
+    }
+
+    /**
+     * Leest de parameters tussen {@code from} en {@code to} (de {@code )} of het einde, niet meegeteld). Sinds hoofdstuk 114
+     * zoals in C# (jouw wens): eerst het soort-woord, dan de naam, zonder dubbele punt: {@code string door, int times}. Het
+     * soort-woord mag weg ({@code door}): dan past elke waarde. {@code def} is de naam van de def, voor de voorbeelden in
+     * de uitleg. Gooit een LogicException (zonder regelnummer) als het niet klopt.
+     */
+    static java.util.List<Script.Param> parseParams(java.util.List<Lexer.Token> tokens, int from, int to, String def) {
+        java.util.List<Script.Param> params = new java.util.ArrayList<>();
+        int i = from;
+        while (i < to) {
+            Lexer.Token first = tokens.get(i);
+            if (first.type() != Lexer.Type.NAME) {
+                throw new LogicException(first.is(",") ? "A parameter is missing before the comma"
+                        : "A parameter needs a name, like def " + def + "(string door): (not " + first + ")");
             }
-            i++;
             String type = "";
-            if (tokens.get(i).is(":")) {
-                Lexer.Token word = tokens.get(i + 1);
-                if (word.type() != Lexer.Type.NAME || VarType.byWord(word.text()) == null) {
-                    throw new LogicException(word.type() == Lexer.Type.END
-                            ? "After " + name.text() + ": comes a type: " + VarType.words()
-                            : "I don't know the type \"" + word.text() + "\": use " + VarType.words());
+            Lexer.Token name = first;
+            Lexer.Token next = tokens.get(i + 1);
+            if (VarType.byWord(first.text()) != null) {
+                // string door: het soort-woord, dan de naam.
+                if (next.type() != Lexer.Type.NAME) {
+                    throw new LogicException("After " + first.text() + " comes the name of the parameter, like def " + def + "("
+                            + first.text() + " " + exampleName(VarType.byWord(first.text())) + "):");
                 }
-                type = word.text();
+                type = first.text();
+                name = next;
                 i += 2;
+            } else if (next.is(":")) {
+                // door: string, zoals vóór hoofdstuk 114 (en in Python): zeg hoe het nu moet.
+                Lexer.Token word = tokens.get(i + 2);
+                VarType known = word.type() == Lexer.Type.NAME ? VarType.byWord(word.text()) : null;
+                throw new LogicException(known != null
+                        ? "Write the type before the name, like in C#: def " + def + "(" + known.word() + " " + first.text() + "):"
+                        : "Write the type before the name, without a colon, like def " + def + "(string " + first.text()
+                        + "): the types are " + VarType.words());
+            } else if (next.type() == Lexer.Type.NAME) {
+                // strng door: twee woorden, maar het eerste is geen soort.
+                throw new LogicException("I don't know the type \"" + first.text() + "\": use " + VarType.words() + ", like def "
+                        + def + "(string " + next.text() + "):");
+            } else {
+                i++;
+            }
+            if (i < to && tokens.get(i).is("=")) {
+                Script.Param example = new Script.Param(name.text(), type.isEmpty() ? "string" : type);
+                throw new LogicException("A parameter gets its value when you use the def, not here: write def " + def + "("
+                        + example.code() + "): and then " + def + "(" + exampleValue(example) + ")");
             }
             params.add(new Script.Param(name.text(), type));
-            if (tokens.get(i).is(",")) {
-                i++;
-                continue;
+            if (i == to) {
+                break;
             }
-            if (tokens.get(i).type() != Lexer.Type.END) {
-                throw new LogicException(tokens.get(i).is("=") ? "A parameter gets its value when you use the def, not here: def open_door(door: string):"
-                        : "Separate the parameters with a comma, like def open_door(door: string, times: int):");
+            if (!tokens.get(i).is(",")) {
+                throw new LogicException("Separate the parameters with a comma, like def " + def + "(string door, int times):");
             }
-            return params;
+            i++;
+            if (i == to) {
+                throw new LogicException("A parameter is missing after the comma");
+            }
         }
+        return params;
+    }
+
+    /** Een voorbeeldnaam voor een parameter van deze soort, voor de uitleg: {@code int times}, {@code string door}. */
+    private static String exampleName(VarType type) {
+        return switch (type) {
+            case INT -> "times";
+            case FLOAT -> "secs";
+            case STRING -> "door";
+            case BOOL -> "open";
+        };
     }
 
     /** Mogen deze parameters zo heten (zoals een naam), en staat er geen naam twee keer? Geeft de fout, of null. */

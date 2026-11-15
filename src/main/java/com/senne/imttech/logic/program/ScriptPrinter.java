@@ -8,7 +8,7 @@ import java.util.List;
  * {@code elif}. Zo zie je in de code precies wat de blokjes doen.
  *
  * Hoofdstuk 43: een global script begint met de regel {@code global}; een naam met een soort-woord wordt
- * {@code count: int = 0}; een def met parameters {@code def open_door(door: string):}; een aanroep met waarden
+ * {@code count: int = 0}; een def met parameters {@code def open_door(string door):} (sinds hoofdstuk 114 zoals in C#); een aanroep met waarden
  * {@code open_door("Lab door")}; en een apparaat als code {@code pulse(door, 3)}.
  */
 public final class ScriptPrinter {
@@ -90,7 +90,7 @@ public final class ScriptPrinter {
 
     /**
      * Zoals hierboven, en (hoofdstuk 43) met het apparaat als code ({@code textExpr}: {@code pulse(door, 3)}), de
-     * parameters van een def ({@code expr} bij DEF: {@code def open_door(door: string)}) of de waarden van een aanroep
+     * parameters van een def ({@code expr} bij DEF: {@code def open_door(string door)}) of de waarden van een aanroep
      * ({@code expr} bij CALL: {@code open_door("Lab door")}).
      */
     public static String call(Op op, String text, double number, String expr, String textExpr) {

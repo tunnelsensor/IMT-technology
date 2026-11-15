@@ -187,7 +187,9 @@ public final class ScriptParser {
 
     /**
      * Een eigen blok: {@code def naam():} met de stappen eronder. Sinds hoofdstuk 43 met parameters tussen de haakjes:
-     * {@code def open_door(door: string, times: int):} (het soort-woord mag weg: dan past elke waarde).
+     * {@code def open_door(string door, int times):} (het soort-woord mag weg: dan past elke waarde). Tot hoofdstuk 114
+     * stond het soort-woord erachter, met een dubbele punt ({@code door: string}); zulke oude code zet
+     * {@link CodeUpgrade} bij het laden om.
      */
     private Script.Function function(Line line) {
         List<Lexer.Token> tokens = line.tokens();
@@ -210,38 +212,12 @@ public final class ScriptParser {
         if (tokens.get(close).type() == Lexer.Type.END) {
             throw new LogicException(line.number(), "def " + name.text() + "( is missing its closing )");
         }
-        List<Script.Param> params = new ArrayList<>();
-        for (int i = 3; i < close; ) {
-            Lexer.Token param = tokens.get(i);
-            if (param.type() != Lexer.Type.NAME) {
-                throw new LogicException(line.number(), param.is(",") ? "A parameter is missing before the comma"
-                        : "A parameter needs a name, like def " + name.text() + "(door: string):");
-            }
-            String type = "";
-            i++;
-            if (tokens.get(i).is(":")) {
-                Lexer.Token word = tokens.get(i + 1);
-                if (word.type() != Lexer.Type.NAME || VarType.byWord(word.text()) == null) {
-                    throw new LogicException(line.number(), word.is(")") || word.type() == Lexer.Type.END
-                            ? "After " + param.text() + ": comes a type: " + VarType.words()
-                            : "I don't know the type \"" + word.text() + "\": use " + VarType.words());
-                }
-                type = word.text();
-                i += 2;
-            } else if (tokens.get(i).is("=")) {
-                throw new LogicException(line.number(), "A parameter gets its value when you use the def: write def "
-                        + name.text() + "(" + param.text() + ": string): and then " + name.text() + "(\"Lab door\")");
-            }
-            params.add(new Script.Param(param.text(), type));
-            if (tokens.get(i).is(",")) {
-                i++;
-                if (i == close) {
-                    throw new LogicException(line.number(), "A parameter is missing after the comma");
-                }
-            } else if (i != close) {
-                throw new LogicException(line.number(), "Separate the parameters with a comma, like def " + name.text()
-                        + "(door: string, times: int):");
-            }
+        // Sinds hoofdstuk 114 zoals in C#: def open_door(string door, int times): (zelfde lezer als het DEF-blokje).
+        List<Script.Param> params;
+        try {
+            params = Checks.parseParams(tokens, 3, close, name.text());
+        } catch (LogicException e) {
+            throw e.atLine(line.number());
         }
         problem = Checks.paramsProblem(params, functionNames, kind);
         if (problem != null) {

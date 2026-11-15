@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 620 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 622 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -8960,6 +8960,45 @@ Nog niet gedaan:
 - **`raven_soldier_flanks_around_a_wall`** valt om als de soldaat een AWP krijgt (drie keer gezien, één keer met het
   wapen in de melding). De vraag voor jou: moet een soldaat met een AWP om een muur heen lopen, of hoort een sluipschutter
   juist op afstand te blijven? Tot dan blijft die test soms rood.
+
+### 114. Parameters zoals in C#: eerst het soort-woord, dan de naam (15 november)
+
+Jouw wens: "Kun je zorgen dat bij het maken van functions met parameters moet je nu (temp: bool) doen maar het met zoals in
+c# zijn (bool temp) dus naam en datatype omwisselen en geen : gebruiken. Zorg dat als bij het laden van een wereld waar na
+de update die dingen nog zo fout staan dat automatich word opgedraaid."
+
+- [x] **De nieuwe vorm**: `def open_door(string door, int times):`. Het soort-woord mag nog altijd weg
+      (`def open_door(door):`, dan past elke waarde). De code (`ScriptParser`) en het vak Parameters van een DEF-blokje
+      lezen het met dezelfde lezer (`Checks.parseParams`), en de printer schrijft het zo terug (`Script.Param.code`).
+- [x] **De oude vorm geeft uitleg**: `def open(door: string):` zegt "Write the type before the name, like in C#:
+      def open(string door):". Ook met uitleg: een soort-woord zonder naam (`def open(string):`), een waarde erbij
+      (`string door = "a"`), een vergeten komma, en een soort die niet bestaat (`strng door`).
+- [x] **Omdraaien bij het laden** (`logic/program/CodeUpgrade`): elke def-regel in bewaarde code, en het vak Parameters
+      van elk DEF-blokje (`LogicGraph.load`). Op elke plek waar code bewaard wordt: de diagrammen op de server (ook global
+      scripts, programma's van robots en drones, en back-ups op het datacenter: die gaan allemaal via
+      `LogicProgram.load`), de RC Car (in de wereld én als item in een kist of je inventaris) en het Training End-blok.
+      Je commentaar, je lege regels en de rest blijven staan. Omdat de code en de blokjes allebei omgedraaid worden, past
+      de code nog bij de blokjes, en toont de app Logic hem zoals jij hem schreef.
+- [x] **Ctrl+Spatie** stelt na `def naam(` en na een komma de vier soorten voor (na `naam:` in een def niet meer). Ook
+      bijgewerkt: het voorbeeld "def name(type value):", de hulp in de app Logic, het voorbeeld van de RC Car (opslag)
+      en het vak van het DEF-blokje ("Parameters (like string door)").
+- [x] **Tests**: twee nieuwe (`logic_params_type_first_like_csharp`: de nieuwe vorm, de fouten, het DEF-blokje en
+      Ctrl+Spatie; `logic_old_params_upgraded_on_load`: een oud diagram, een oude RC Car in de wereld en als item, en
+      een oud Training End-blok), en de bestaande tests met parameters in de nieuwe vorm.
+- [x] **Volledige ronde** 622 tests, twee keer: de nieuwe en alle taaltests beide keren groen. Rood waren alleen
+      tests die vaker wisselen en geen code gebruiken: de eerste keer `guard_searches_where_he_lost_you` en
+      `raid_starts_outside_a_base`, de tweede keer alleen `raid_starts_outside_a_base`.
+- [x] LEESMIJ (Parameters, en de RC Car).
+
+Mijn invulling (verander ik op jouw woord):
+- **Alleen de parameters zijn veranderd**: een naam met een soort blijft `count: int = 0` (je vroeg het voor functions).
+  Wil je daar ook `int count = 0`, zeg het; dan draai ik dat bij het laden net zo om.
+- **Het soort-woord mag weg** bij een parameter (in C# moet het): zo blijven je defs zonder soort werken.
+- Geen nieuwe versie: iets bestaands is veranderd, geen nieuw blok of systeem (het laatste getal telt vanzelf).
+
+Nog niet gedaan:
+- Niet in het spel bekeken: de editor en Ctrl+Spatie alleen in de tests, het omdraaien niet met een echte oude wereld
+  (wel met hoe een oude wereld het bewaart).
 
 ## Nog nooit in het spel bekeken
 

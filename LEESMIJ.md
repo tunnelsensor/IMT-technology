@@ -1224,14 +1224,19 @@ when keycard("Lab door"):
   die soort: een `int` is een heel getal (krijgt hij 2,5, dan wordt het 2; `7 / 2` wordt 3, zoals in C++),
   een `float` een kommagetal, een `string` tekst en een `bool` waar of onwaar. Zonder soort-woord raadt de
   taal de soort uit de waarde, zoals altijd. Na `naam:` toont Ctrl+Spatie de vier soorten.
-- **Parameters** (sinds 4 november): een def kan waarden meekrijgen: `def open_door(door: string, secs: float):`
-  en dan `open_door("Vault door", 3)`. Binnen de def is `door` een gewone naam, ook als **apparaat**:
+- **Parameters** (sinds 4 november): een def kan waarden meekrijgen: `def open_door(string door, float secs):`
+  en dan `open_door("Vault door", 3)`. Sinds 15 november schrijf je het **soort-woord vóór de naam, zonder dubbele
+  punt**, zoals in C# (`bool temp`, niet meer `temp: bool`); het soort-woord mag ook weg (`def open_door(door):`, dan
+  past elke waarde). Code die nog met de oude vorm bewaard is (in een diagram, een robot, een RC Car of een Training
+  End), wordt bij het laden van de wereld vanzelf omgedraaid; je commentaar blijft staan. Typ je toch nog
+  `door: string`, dan zegt Check hoe het nu moet. Na `def naam(` toont Ctrl+Spatie de vier soorten.
+  Binnen de def is `door` een gewone naam, ook als **apparaat**:
   `pulse(door, secs)`. Zo typ je minder: één def die accepteert, logt en de deur opent, voor elke deur.
   Check kijkt na of je er genoeg waarden bij zet, en van de goede soort. Een apparaat mag daardoor
   overal een naam of berekening zijn: `on(door)`, `on("Lamp " + i)`; met iets dat geen waarde heeft
   (`on(Lamp)`) zegt Check dat je het tussen aanhalingstekens moet zetten.
   ```
-  def open_door(door: string):
+  def open_door(string door):
       accept()
       log("Opened " + door)
       pulse(door, 3)
@@ -2029,7 +2034,7 @@ def room():
 ```
 
 - **Elke `def naam():`** (zonder iets tussen de haakjes) is een **functie**: een knop op zijn scherm en op de RC
-  Controller. Een def met parameters (`def lane(length: int):`) is een hulpje dat je andere stukken gebruiken.
+  Controller. Een def met parameters (`def lane(int length):`) is een hulpje dat je andere stukken gebruiken.
   **`when started:`** is het hoofdprogramma: dat loopt als je op Start drukt.
 - **Rijden**: `forward(3)`, `back(1)` (hij blijft dezelfde kant op kijken), `turn_left()`, `turn_right()`. Hij rijdt
   één blok op of af. Een muur, of een gat van meer dan één blok: hij stopt, en `car.blocked` is waar.
@@ -2211,7 +2216,7 @@ when ordered("store"):
     if car.items > 0:
         put()
 
-def go_home(steps: int):
+def go_home(int steps):
     if steps > 0:
         back(steps)
     turn_left()

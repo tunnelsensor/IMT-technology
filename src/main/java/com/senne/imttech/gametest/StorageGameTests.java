@@ -159,7 +159,7 @@ public final class StorageGameTests {
         // De nieuwe woorden zijn nergens bezet: een programma van vóór hoofdstuk 113 mag ze als eigen naam hebben, ook een
         // autoprogramma (dat bestaat sinds hoofdstuk 108). Zijn eigen def gaat dan vóór het woord van de taal; dat de auto
         // die def ook echt draait, test rc_car_arm_reaches_three_high. (Gevonden bij de nalezing.)
-        String oldCar = "take = 0\ndef check():\n    take = take + 1\n\ndef lane(put: int):\n    for arm_up in range(put):\n"
+        String oldCar = "take = 0\ndef check():\n    take = take + 1\n\ndef lane(int put):\n    for arm_up in range(put):\n"
                 + "        check()\n";
         check(problem(oldCar, ProgramKind.CAR).isEmpty(), "Een autoprogramma van vóór de update met de namen take, check, put en"
                 + " arm_up klopt niet meer: " + problem(oldCar, ProgramKind.CAR));
@@ -174,7 +174,7 @@ public final class StorageGameTests {
                     item = put
                 def check():
                     say("checked " + item)
-                def take(arm_up: int):
+                def take(int arm_up):
                     say("took " + arm_up)
                 """, ProgramKind.SERVER).isEmpty(), "Een serverdiagram met de namen item, put, check en take klopt niet meer: "
                 + problem("item = 0\nwhen every(5):\n    check()\ndef check():\n    say(\"x\")\n", ProgramKind.SERVER));

@@ -140,7 +140,8 @@ public class TrainingEndBlockEntity extends BlockEntity implements BaseTrust.Pla
         super.loadAdditional(tag, registries);
         owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
         ownerName = tag.getString("OwnerName");
-        source = tag.contains("Code") ? tag.getString("Code") : DEFAULT_CODE;
+        // Code van vóór hoofdstuk 114 (def score(points: int):) wordt def score(int points):.
+        source = tag.contains("Code") ? com.senne.imttech.logic.program.CodeUpgrade.source(tag.getString("Code")) : DEFAULT_CODE;
         built = false;
     }
 }

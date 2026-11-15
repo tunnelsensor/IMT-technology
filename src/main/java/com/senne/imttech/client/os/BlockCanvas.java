@@ -881,7 +881,7 @@ final class BlockCanvas {
             return "Range (3, or 1, 4)";
         }
         if (node.op == Op.DEF) {
-            return "Parameters (like door: string)";
+            return "Parameters (like string door)";
         }
         if (node.op == Op.CALL) {
             return "Values for its parameters";

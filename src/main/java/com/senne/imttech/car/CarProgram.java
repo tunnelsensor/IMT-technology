@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
  *   <li>{@code when started:} is het hoofdprogramma: dat loopt als je op Start drukt;</li>
  *   <li>elke {@code def naam():} zonder parameters is een <b>functie</b>: een knop op het scherm van de auto en op de RC
  *       Controller (jouw wens: "functions die je via een controller kunt aansturen"). Een def mét parameters
- *       ({@code def lane(length: int):}) is een hulpje dat andere stukken gebruiken.</li>
+ *       ({@code def lane(int length):}) is een hulpje dat andere stukken gebruiken.</li>
  * </ul>
  * De auto bewaart alleen de code; bij het laden maken we er opnieuw blokjes van ({@link #compile}).
  */
@@ -130,7 +130,7 @@ public final class CarProgram {
                 if car.items > 0:
                     put()
 
-            def go_home(steps: int):
+            def go_home(int steps):
                 if steps > 0:
                     back(steps)
                 turn_left()

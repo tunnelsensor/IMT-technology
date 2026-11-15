@@ -31,7 +31,8 @@ import org.jetbrains.annotations.Nullable;
  *   <li>na {@code if}, {@code and}, {@code or}, {@code not} of een vergelijking: de gegevens die bij
  *       de trigger van dat blok passen ({@code card.valid} alleen onder {@code when keycard}), je eigen namen en de
  *       gedeelde namen;</li>
- *   <li>na {@code naam:} (hoofdstuk 43): de soort-woorden int, float, string en bool;</li>
+ *   <li>na {@code naam:} (hoofdstuk 43) en (hoofdstuk 114) aan het begin van een parameter van een def
+ *       ({@code def open(}): de soort-woorden int, float, string en bool;</li>
  *   <li>tussen aanhalingstekens: de namen van je lezers, panelen of apparaten, afhankelijk van wat er
  *       voor de haakjes staat ({@code keycard("}, {@code codepanel("}, {@code on("}...).</li>
  * </ul>
@@ -120,6 +121,11 @@ public final class CodeCompletion {
     private static final Pattern FOR = Pattern.compile("^\\s*for\\s+([A-Za-z_][A-Za-z0-9_]*)\\s+in\\b");
     /** {@code naam:} vlak voor de cursor (hoofdstuk 43): daar komt een soort-woord. */
     private static final Pattern TYPE_SLOT = Pattern.compile("(?:^|[(,\\s])([A-Za-z_][A-Za-z0-9_]*)\\s*:$");
+    /**
+     * Het begin van een parameter van een def ({@code def open(} of {@code def open(string door, }), hoofdstuk 114: daar
+     * komt eerst het soort-woord, zoals in C#.
+     */
+    private static final Pattern PARAM_SLOT = Pattern.compile("^def\\s+[A-Za-z_][A-Za-z0-9_]*\\s*\\(([^)]*,)?\\s*$");
 
     public static Result complete(List<String> lines, int line, int col, Data data) {
         String text = lines.get(line);
@@ -165,7 +171,7 @@ public final class CodeCompletion {
         String head = before.substring(0, start);
         String trimmed = head.strip();
         List<Item> items = new ArrayList<>();
-        if (isTypeSlot(trimmed)) {
+        if (isTypeSlot(trimmed) || PARAM_SLOT.matcher(head).matches()) {
             types(items);
         } else if (trimmed.isEmpty() && head.isEmpty()) {
             topLevel(items, lines, data);
@@ -218,7 +224,7 @@ public final class CodeCompletion {
         }
         // De naam is meteen geselecteerd: typen vervangt hem.
         items.add(new Item("def name():", "def my_block():\n    ", 4, 8, Op.DEF.help(), CodeEditor.FUNCTION));
-        items.add(new Item("def name(value: type):", "def my_block(door: string):\n    ", 4, 8,
+        items.add(new Item("def name(type value):", "def my_block(string door):\n    ", 4, 8,
                 "Your own block with values it needs: use it with my_block(\"Lab door\")", CodeEditor.FUNCTION));
         items.add(new Item("name = value", "count = 0", 0, 5, Op.GLOBAL.help(), VARIABLE));
         items.add(new Item("name: type = value", "lockdown: bool = false", 0, 8,
@@ -349,7 +355,8 @@ public final class CodeCompletion {
             return false;
         }
         String firstWord = head.split("[\\s(:]+", 2)[0].toLowerCase(Locale.ROOT);
-        return !List.of("if", "elif", "while", "for", "when", "else").contains(firstWord);
+        // (Niet in een def: een parameter heeft zijn soort-woord sinds hoofdstuk 114 vóór de naam, zie PARAM_SLOT.)
+        return !List.of("if", "elif", "while", "for", "when", "else", "def").contains(firstWord);
     }
 
     /** Begint de code met {@code global} (hoofdstuk 43)? */
