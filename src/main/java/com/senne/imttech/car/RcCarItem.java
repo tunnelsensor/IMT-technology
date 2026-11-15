@@ -119,6 +119,10 @@ public class RcCarItem extends Item {
         // Hoofdstuk 118: met of zonder arm (zonder breekt hij alleen het blok recht voor zich).
         tooltip.add(Component.translatable(data.robotArm() ? "tooltip.imttech.rc_car.arm" : "tooltip.imttech.rc_car.no_arm")
                 .withStyle(ChatFormatting.GRAY));
+        // Hoofdstuk 119: welk RC program van je server er op hem staat (een kopie, die gaat mee in het item).
+        if (!data.program().isEmpty()) {
+            tooltip.add(Component.translatable("tooltip.imttech.rc_car.program", data.program()).withStyle(ChatFormatting.GRAY));
+        }
         int items = data.items();
         if (items > 0) {
             tooltip.add(Component.translatable("tooltip.imttech.rc_car.trunk", items).withStyle(ChatFormatting.GRAY));

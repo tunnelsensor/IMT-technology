@@ -1996,7 +1996,9 @@ De getallen staan in `config/imttech.toml` onder `[robots]` (`droneHealth`, `dro
 ### De RC Car: een autootje dat je programmeert (sinds 14 november)
 Een **RC Car** is een klein geel autootje met een boor vooraan en een laadbak achterop. Het doet niets uit zichzelf, en
 een nieuwe auto heeft **geen programma**: **jij schrijft het**, en dan mijnt en bouwt het voor je, zoals de Agent in
-Minecraft Education. Je hebt er geen server of datacenter voor nodig: het programma zit in de auto zelf.
+Minecraft Education. Sinds versie 2.18 schrijf je het op de **server** van je basis, als **RC program** in de app Logic,
+en laad je er een kopie van op de auto (zie "Zijn programma" hieronder). De server heb je alleen nodig om te laden:
+daarna draait de auto zijn kopie zelf, ook ver van je basis.
 
 **Maken.** Aan de werkbank: een **Iron Drill Head**, een **Computer Chip** en een kist bovenaan; ijzer, een **Robot
 Circuit Board** en ijzer in het midden; plastic, redstone en plastic onderaan. De **RC Controller**: een
@@ -2031,11 +2033,13 @@ hij iets wat zijn kop niet aankan, dan is `car.blocked` waar en staat op zijn sc
 **De RC Robot Arm** (sinds versie 2.16). Een nieuwe auto heeft alleen de boor op zijn neus: hij breekt enkel het blok
 **recht voor zich**, en hij komt alleen bij de kist recht voor zich. Om **boven of onder zich** te minen (`mine_up()`,
 `mine_down()`), zijn boor hoger te zetten (`arm_up()`) of een kist hoger te bereiken, heeft hij een **RC Robot Arm**
-nodig. Maken: 2 ijzer en een zuiger bovenaan (de arm), plastic, een Computer Chip en plastic onderaan (de voet).
+nodig. Maken: bovenaan een ijzer in het midden en een zuiger rechts; een ijzer in het midden; plastic, een Computer
+Chip en plastic onderaan (de voet). Gespiegeld mag ook.
 **Rechtsklik op de auto met de arm**: hij zit erop, en zijn boor zit voortaan op die arm (met dezelfde boorkop). Je ziet
 het aan de gele behuizing achter zijn boor. Eraf halen: **Arm off** op zijn scherm (van dichtbij); je krijgt de arm terug.
 Zonder arm geven `mine_up()`, `mine_down()`, `arm_up()` en `arm_down()` `car.blocked`, en op zijn scherm staat waarom.
-Een auto die je al had vóór deze versie, heeft zijn arm gehouden.
+Een auto die vóór deze versie al ergens stond, of die je had opgepakt, heeft zijn arm gehouden. Een auto die nog nooit
+neergezet was (nieuw van de werkbank), heeft er geen, net als een auto uit `/summon`.
 
 **De kofferbak.** **Rechtsklik op de auto**: zijn kofferbak gaat open (18 vakjes; dat mag iedereen, zoals bij een
 kist). Wat hij breekt gaat erin; is hij vol, dan blijft het op de grond liggen. Wat hij plaatst komt eruit. Een RC Car,
@@ -2048,15 +2052,35 @@ boorkop, en de regel **Arm**: heeft hij een RC Robot Arm, dan hoe hoog die staat
 een blok hoger of lager te zetten, en **Arm off**.
 Links zijn **functies**: klik er een aan en hij voert haar uit **vanaf de plek waar hij staat**. Rechts rijd
 je hem met de hand, één stap per klik (Forward, Back, Left, Right, Mine, Up, Down): zo zet je hem goed voor je een
-functie start. Onderaan: **Start** (zijn hoofdprogramma), **Stop**, **Program** (de code), **Cell out**, **Pick up**,
-en zijn naam. Rijdt hij van je weg terwijl het scherm open staat, dan blijven de knoppen werken tot 64 blokken ver;
+functie start. Boven de functies staat welk RC program erop staat. Onderaan: **Start** (zijn hoofdprogramma),
+**Stop**, **Program** (de RC programs van je server, zie hieronder), **Cell out**, **Pick up**, en zijn naam. Rijdt hij van je weg terwijl het scherm open staat, dan blijven de knoppen werken tot 64 blokken ver;
 alleen oppakken, de cel eruit halen en de arm eraf halen moet van dichtbij (8 blokken). Zonder arm staan Up en Down
 (boven en onder hem boren) uit.
 
-**Zijn programma.** De knop **Program** opent de code-editor (dezelfde als in de app Logic: kleuren, **Ctrl+Spatie**
-toont wat je kunt typen, **Check** kijkt het na, **Save** zet het op de auto). Rechts staat alles wat de auto kent:
-klik op een regel en hij staat in je code. Een nieuwe auto heeft een **lege editor**: je schrijft alles zelf. Twee
-voorbeelden om over te typen (ze staan ook in How it works, **W** op de auto):
+**Zijn programma** (sinds versie 2.18 op je server). Je schrijft het in de app **Logic** op de desktop van je Security
+Core: **+** en dan **RC program** (in de lijst met een groene **C**). Het is de editor die je kent: kleuren,
+**Ctrl+Spatie** toont wat je kunt typen, **Check** kijkt het na, **Save** bewaart het op de server, en met **Help** staat
+rechts alles wat de auto kent (klik op een regel en hij staat in je code). Een RC program neemt evenveel plaats in als
+een serverdiagram of een robot- of droneprogramma: dezelfde ruimte op de SSD, en samen hooguit 16 per server. Het is
+hooguit 8000 tekens lang (zoveel kan een auto bewaren). De server voert het zelf niet uit; het is voor je auto's.
+
+Op de auto laden kan op twee plekken:
+- Op **zijn scherm**: **Program** toont de RC programs van de server van de basis waar hij staat. Klik er een aan
+  (rechts zie je de code) en druk op **Load onto car**; onderaan staat of het lukte. Daarvoor moet de auto in het
+  gebied van die basis staan, moet
+  zijn eigenaar daar bij horen (de eigenaar van de kern, iemand die in die basis vertrouwd is, of zijn team als dat in de
+  config aan staat), moet jij daar vertrouwd zijn, en moet de server draaien. Lukt het niet, dan staat er waarom.
+- In de app **Robots** op de desktop: je auto's staan daar onder je robots en drones (soort **car**; alleen auto's die
+  nu geladen zijn), met wat ze doen, hun batterij en hun RC program. Kies een auto en druk op **Program** (met dezelfde
+  regels als op de auto: ook hier moet je de auto mogen besturen en moet de server draaien).
+
+De auto krijgt een **kopie**: verander je het programma later op de server, dan houdt hij zijn versie tot je het
+opnieuw laadt (de app Robots zegt dan "older than on the server"; staat hij in een andere basis, dan zegt hij dat zijn
+programma van de server van een andere basis komt). Die kopie gaat mee als je hem oppakt. Een auto die je vóór deze
+versie op de auto zelf programmeerde, houdt dat programma (in de app Robots: "(its own)") tot je er een RC program op
+laadt. **Program** op de auto toont die oude code bovenaan in de lijst ("(its own code)"): klik in de code, Ctrl+A en
+Ctrl+C, en plak hem in een nieuw RC program in de app Logic. Een nieuwe auto heeft geen programma: je schrijft alles zelf. Twee voorbeelden om over te typen (ze
+staan ook in How it works, **W** op de auto):
 
 ```
 def strip_mine():
@@ -2155,7 +2179,7 @@ def room():
 **De RC Controller.** **Rechtsklik op een auto** met de controller in je hand: gekoppeld. (Zet je een auto neer terwijl
 je een controller bij je hebt die nog nergens mee gekoppeld is, dan koppelt die vanzelf.) Daarna opent **rechtsklik**
 (in de lucht of op een blok) het scherm van die auto, tot 64 blokken ver: een functie kiezen, Start, Stop, de pijltjes
-en zijn programma. Alleen oppakken, de cel eruit halen en de arm eraf halen kan niet van ver. Te ver, of de auto is opgepakt: "No signal".
+en een RC program laden (als hij in je basis staat). Alleen oppakken, de cel eruit halen en de arm eraf halen kan niet van ver. Te ver, of de auto is opgepakt: "No signal".
 De koppeling blijft als je de auto oppakt en ergens anders neerzet.
 
 **Goed om te weten.**
@@ -2186,7 +2210,8 @@ programmeert, bouwt er iets echt slims mee. Het kan ook andersom: spullen inleve
 - Een **Storage Interface**: ijzer, een glazen ruit en ijzer bovenaan; een Computer Chip, een kist en een Computer Chip in
   het midden; ijzer, een netwerkkabel en ijzer onderaan. Hij heeft geen stroom nodig, onthoudt wie hem neerzette en
   neemt de naam van het item over (een aambeeld).
-- Een **RC Car** met een programma (zie hierboven), die je aan de interface koppelt.
+- Een **RC Car** met een RC program van je server (zie hierboven) en een **RC Robot Arm** (zonder arm komt hij alleen
+  bij de kist recht voor hem, op zijn eigen hoogte), die je aan de interface koppelt.
 - **Chest Sensors** als je wilt (vier per keer: redstone, een glazen ruit en redstone, met een netwerkkabel eronder).
 - Een **Charging Pad** als je wilt: ijzer, een zware drukplaat (de ijzeren) en ijzer, met eronder een Power Cable, een blok
   redstone en een Power Cable.
@@ -2250,9 +2275,12 @@ stopte, en wat hij al bij zich had ligt nog in zijn kofferbak. Maak je hem los (
 stuk wereld in dat niet geladen is), dan wacht de bestelling op een volgende auto die thuis staat, en wat al gebracht was
 telt nog.
 
-**Een voorbeeld om over te typen** (het staat ook in How it works, **W** op de interface). De auto staat **thuis** met
-zijn neus naar de interface. Rechts van hem loopt een gang, met links van die gang vier stapels kisten van drie hoog
-(de eerste stapel naast de interface). Heb je er meer of minder, verander dan `chests = 4`.
+**Een voorbeeld om over te typen** (het staat ook in How it works, **W** op de interface). Schrijf het als RC program in
+de app Logic en laad het op de auto. De auto staat **thuis** met zijn neus naar de interface. Rechts van hem loopt een
+gang, met links van die gang vier stapels kisten van drie hoog (de eerste stapel naast de interface). Heb je er meer of
+minder, verander dan `chests = 4`. Hij heeft een **RC Robot Arm** nodig: `look()`, `stow()` en `scan()` gebruiken
+`arm_up()`. Zonder arm kijkt hij alleen in de onderste kist van elke stapel: dan is `car.blocked` waar en staat op zijn
+scherm waarom.
 
 ```
 chests = 4
@@ -2320,8 +2348,9 @@ hij genoeg heeft. Thuis legt hij het in de interface. Opbergen: hij legt het bij
 ligt, in de eerste lege kist. Wat hij niet kwijt kan (alles vol), brengt hij terug naar de PICK-UP-vakjes.
 
 Zonder sensors weet een nieuwe interface nog niet wat er in je kisten ligt, en dan kun je niets bestellen. Zet deze
-functie erbij en je hebt een knop **scan** op het scherm van de auto: hij rijdt de gang af, kijkt in elke kist, en
-daarna weet de interface alles:
+functie erbij (in hetzelfde RC program; laad het daarna opnieuw op de auto) en je hebt een knop **scan** op het scherm
+van de auto: hij rijdt de gang af, kijkt in elke kist, en daarna weet de interface alles (met zijn arm ook de kisten
+erboven):
 
 ```
 def scan():

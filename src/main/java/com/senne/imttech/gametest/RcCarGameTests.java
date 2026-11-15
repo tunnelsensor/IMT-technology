@@ -26,6 +26,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
@@ -174,11 +175,11 @@ public final class RcCarGameTests {
         check(printed.equals(code), "De code van een auto kwam niet precies terug:\n" + printed);
 
         // Woorden van een auto werken alleen in een autoprogramma...
-        expectProblem("when started:\n    mine()\n", ProgramKind.ROBOT, "mine() only works in a car program, not in a robot program");
-        expectProblem("when started:\n    place()\n", ProgramKind.DRONE, "place() only works in a car program");
+        expectProblem("when started:\n    mine()\n", ProgramKind.ROBOT, "mine() only works in an RC program, not in a robot program");
+        expectProblem("when started:\n    place()\n", ProgramKind.DRONE, "place() only works in an RC program");
         expectProblem("when every(5):\n    if block() == \"air\":\n        say(\"x\")\n", ProgramKind.SERVER,
-                "block(...) only works in a car program");
-        expectProblem("when every(5):\n    if car.blocked:\n        say(\"x\")\n", ProgramKind.SERVER, "car.blocked only works in a car program");
+                "block(...) only works in an RC program");
+        expectProblem("when every(5):\n    if car.blocked:\n        say(\"x\")\n", ProgramKind.SERVER, "car.blocked only works in an RC program");
         // ...en een auto kent geen relais, geen logboek, geen every, geen pinnen en geen robot.*.
         expectProblem("def a():\n    on(\"Lamp\")\n", ProgramKind.CAR, "on() only works in");
         expectProblem("def a():\n    log(\"x\")\n", ProgramKind.CAR, "log() only works in");
@@ -939,8 +940,14 @@ public final class RcCarGameTests {
                 check(oldItem.robotArm(), "Een item van vóór deze update raakte zijn arm kwijt");
                 RcCarEntity saved = ModEntities.RC_CAR.get().create(helper.getLevel());
                 check(saved != null, "Er kwam geen auto");
-                saved.readAdditionalSaveData(new net.minecraft.nbt.CompoundTag());
+                // Elke bewaarde auto heeft een Link (sinds hoofdstuk 108).
+                net.minecraft.nbt.CompoundTag before = new net.minecraft.nbt.CompoundTag();
+                before.putUUID("Link", java.util.UUID.randomUUID());
+                saved.readAdditionalSaveData(before);
                 check(saved.hasRobotArm(), "Een auto die bewaard werd vóór deze update raakte zijn arm kwijt");
+                // Gevonden door de review: /summon (of een spawner) geeft een lege tag. Dat is een nieuwe auto: geen arm.
+                saved.readAdditionalSaveData(new net.minecraft.nbt.CompoundTag());
+                check(!saved.hasRobotArm(), "Een auto uit /summon kreeg gratis een arm");
                 net.minecraft.nbt.CompoundTag none = new net.minecraft.nbt.CompoundTag();
                 none.putBoolean("RobotArm", false);
                 saved.readAdditionalSaveData(none);
@@ -989,16 +996,16 @@ public final class RcCarGameTests {
                 com.senne.imttech.network.RcCarActionPayload.Op.RUN, "nap"));
         check(!car.brain().busy(), "Verder dan controlRange begon de functie toch");
 
-        // Een nieuwe naam en een nieuw programma van ver (binnen bereik), en dan van dichtbij oppakken.
+        // Een nieuwe naam van ver (binnen bereik). Een RC program laden kan hier niet: de auto staat niet in een basis met
+        // een server (hoofdstuk 119), dus hij houdt wat hij had. Dan van dichtbij oppakken.
         owner.moveTo(near.x, near.y + 20, near.z);
         RcCars.handleAction(owner, new com.senne.imttech.network.RcCarActionPayload(car.getId(),
                 com.senne.imttech.network.RcCarActionPayload.Op.RENAME, "Mole"));
+        check(car.displayName().equals("Mole"), "Hernoemen van ver werkte niet");
         RcCars.handleAction(owner, new com.senne.imttech.network.RcCarActionPayload(car.getId(),
-                com.senne.imttech.network.RcCarActionPayload.Op.SAVE, "def dig():\n    mine()\n"));
-        check(car.displayName().equals("Mole") && car.functions().equals(List.of("dig")), "Hernoemen of Save van ver werkte niet");
-        RcCars.handleAction(owner, new com.senne.imttech.network.RcCarActionPayload(car.getId(),
-                com.senne.imttech.network.RcCarActionPayload.Op.SAVE, "def broken(:\n"));
-        check(car.functions().equals(List.of("dig")), "Code die niet klopt, kwam toch op de auto");
+                com.senne.imttech.network.RcCarActionPayload.Op.LOAD, "Strip miner"));
+        check(car.functions().equals(List.of("nap")) && car.programName().isEmpty(),
+                "Buiten een basis kwam er toch een ander programma op de auto");
         owner.moveTo(near.x, near.y, near.z);
         RcCars.handleAction(owner, new com.senne.imttech.network.RcCarActionPayload(car.getId(),
                 com.senne.imttech.network.RcCarActionPayload.Op.PICK_UP, ""));
@@ -1186,7 +1193,7 @@ public final class RcCarGameTests {
                 com.senne.imttech.network.RcCarActionPayload.Op.RUN, "nap"));
         check(!car.brain().busy(), "De eigenaar van de zone startte een functie van andermans auto");
         RcCars.handleAction(owner, new com.senne.imttech.network.RcCarActionPayload(car.getId(),
-                com.senne.imttech.network.RcCarActionPayload.Op.SAVE, "def dig():\n    mine()\n"));
+                com.senne.imttech.network.RcCarActionPayload.Op.LOAD, "Strip miner"));
         check(car.functions().equals(List.of("nap")), "De eigenaar van de zone zette een ander programma op andermans auto");
         RcCars.handleAction(visitor, new com.senne.imttech.network.RcCarActionPayload(car.getId(),
                 com.senne.imttech.network.RcCarActionPayload.Op.RUN, "nap"));
@@ -1314,5 +1321,184 @@ public final class RcCarGameTests {
             check(jammed.getZ() > helper.absolutePos(empStart.north(6)).getZ() && Math.abs(jammed.getZ() - stoppedZ[1]) < 0.01,
                     "Na de EMP-granaat reed de auto door");
         });
+    }
+
+    // ================================================================ Zijn programma van de server (hoofdstuk 119)
+
+    /**
+     * Hoofdstuk 119 (jouw wens: "zorg dat je de rc car code op de server moet schrijven"): een RC program schrijf je in de
+     * app Logic. De knop Program op de auto laadt er een kopie van op hem, met de naam erbij (ook van ver, tot het bereik
+     * van zijn scherm); de app Robots kan dat ook, met dezelfde regels. Verander je het op de server, dan houdt de auto
+     * zijn kopie (de app Robots zegt dat die ouder is) tot je het opnieuw laadt. Een serverdiagram is geen RC program; een
+     * vreemde laadt niets, ook niet op zijn eigen auto in jouw basis (en die auto staat niet in jouw app Robots); te lange
+     * code komt er niet op; zonder draaiende server lukt het niet, ook niet vanuit de app Robots; en opgepakt houdt de auto
+     * zijn programma, de naam ervan en van welke server het kwam. (Uitgebreid na de nalezing van hoofdstuk 119.)
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "robot_upload")
+    public static void rc_car_loads_an_rc_program_from_the_server(GameTestHelper helper) {
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 3, 6), "car-load-owner");
+        ServerPlayer stranger = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(7, 3, 6), "car-load-stranger");
+        BlockPos corePos = new BlockPos(2, 3, 2);
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, corePos, owner);
+        BlockPos coreAbs = helper.absolutePos(corePos);
+        BlockPos rack = new BlockPos(12, 3, 12);
+        ImtTechGameTests.placeServer(helper, rack, core);
+        RcCarEntity car = car(helper, new BlockPos(8, 2, 8), "def nap():\n    wait(1)\n");
+        car.setOwner(owner);
+        // De eigen auto van een vreemde, in jouw basis.
+        RcCarEntity theirs = car(helper, new BlockPos(10, 2, 8), "def nap():\n    wait(1)\n");
+        theirs.setOwner(stranger);
+        String dig = "def dig():\n    mine()\n";
+        helper.runAfterDelay(25, () -> {
+            ImtTechGameTests.startServer(helper, rack, core);
+            com.senne.imttech.security.os.SecurityOs.open(owner, coreAbs);
+            saveProgram(owner, coreAbs, "", "Strip miner", dig, ProgramKind.CAR);
+            saveProgram(owner, coreAbs, "", "Tunnel", "def tunnel():\n    mine()\n", ProgramKind.CAR);
+            saveProgram(owner, coreAbs, "", "Doors", "when every(5):\n    log(\"x\")\n", ProgramKind.SERVER);
+            check(core.logic().program("Strip miner") != null && core.logic().program("Strip miner").kind() == ProgramKind.CAR,
+                    "Het RC program werd niet bewaard");
+            check(core.logic().program("Doors") != null && core.logic().program("Doors").kind() == ProgramKind.SERVER,
+                    "Het serverdiagram werd niet bewaard");
+            check(RcCars.rcPrograms(core).size() == 2, "De lijst met RC programs klopt niet: " + RcCars.rcPrograms(core).size());
+            // Zijn eigen code van vroeger: "(its own)" in de app Robots.
+            check(carRow(helper, core, car).getString("prog").equals("(its own)"), "De app Robots toont zijn eigen code niet als (its own)");
+
+            // Een vreemde: niets, niet op jouw auto en niet op zijn eigen auto in jouw basis (die staat ook niet in de app).
+            // Zijn eigen auto mag hij wel besturen: dan houden alleen de regels van dit hoofdstuk hem tegen (zijn auto hoort
+            // niet bij jouw basis, en hij is daar niet vertrouwd).
+            check(RcCars.find(theirs.link()) == theirs && RcCars.mayControl(stranger, theirs),
+                    "De auto van de vreemde is niet klaar voor de test (niet gevonden, of hij mag hem niet besturen)");
+            check(RcCars.server(helper.getLevel(), theirs) == null, "De auto van een vreemde hoort bij jouw server");
+            load(stranger, car, "Strip miner");
+            check(car.programName().isEmpty() && car.functions().equals(List.of("nap")), "Een vreemde laadde een programma op de auto");
+            load(stranger, theirs, "Strip miner");
+            check(theirs.programName().isEmpty() && theirs.functions().equals(List.of("nap")),
+                    "Een vreemde laadde een RC program van jouw server op zijn eigen auto");
+            check(carRowOrNull(helper, core, theirs) == null, "De auto van een vreemde staat in jouw app Robots");
+            // Een serverdiagram is geen RC program.
+            load(owner, car, "Doors");
+            check(car.programName().isEmpty() && car.functions().equals(List.of("nap")), "Een serverdiagram kwam op de auto");
+            // De knop Program op de auto: een kopie, met de naam en de server.
+            load(owner, car, "Strip miner");
+            check(car.programName().equals("Strip miner") && car.functions().equals(List.of("dig")),
+                    "Laden met de knop Program lukte niet: " + car.programName() + " " + car.functions());
+            check(car.programServer().equals(core.ip()), "De auto weet niet van welke server zijn programma kwam");
+            CompoundTag row = carRow(helper, core, car);
+            check(row.getString("prog").equals("Strip miner") && !row.getBoolean("old") && !row.getBoolean("other")
+                    && row.getBoolean("arm"), "De app Robots ziet de auto niet goed: " + row);
+
+            // Op de server veranderd: de auto houdt zijn kopie, de app zegt dat die ouder is.
+            saveProgram(owner, coreAbs, "Strip miner", "Strip miner", dig + "def deeper():\n    mine()\n    mine()\n",
+                    ProgramKind.CAR);
+            check(car.functions().equals(List.of("dig")), "De auto kreeg vanzelf de nieuwe versie");
+            check(carRow(helper, core, car).getBoolean("old"), "De app Robots zegt niet dat zijn kopie ouder is");
+            // Opnieuw laden, nu vanuit de app Robots (via de desktop, zoals de knop dat stuurt).
+            CompoundTag args = carArgs(car, "Strip miner");
+            com.senne.imttech.security.os.SecurityOs.handleAction(owner,
+                    new com.senne.imttech.network.OsActionPayload(coreAbs, "robot_car_program", args));
+            check(car.functions().equals(List.of("dig", "deeper")), "Laden vanuit de app Robots lukte niet: " + car.functions());
+            check(!carRow(helper, core, car).getBoolean("old"), "Na opnieuw laden zegt de app nog dat zijn kopie ouder is");
+            // In de app Robots kan geen leeg programma meer (dat wiste de code van een oude auto).
+            com.senne.imttech.robot.Robots.Desktop none = RcCars.desktop(owner, core, "robot_car_program", carArgs(car, ""));
+            check(none.error() && car.programName().equals("Strip miner"), "Een leeg programma vanuit de app Robots: " + none.text());
+
+            // Van ver (20 blokken, binnen het bereik van zijn scherm) lukt het; verder dan dat bereik niet.
+            net.minecraft.world.phys.Vec3 near = owner.position();
+            owner.moveTo(near.x, near.y + 20, near.z);
+            load(owner, car, "Tunnel");
+            check(car.programName().equals("Tunnel") && car.functions().equals(List.of("tunnel")), "Van 20 blokken ver laden lukte niet");
+            owner.moveTo(near.x, near.y + com.senne.imttech.config.ImtConfig.RcCar.CONTROL_RANGE + 6, near.z);
+            load(owner, car, "Strip miner");
+            check(car.programName().equals("Tunnel"), "Verder dan het bereik van zijn scherm kwam er toch een programma op");
+            owner.moveTo(near.x, near.y, near.z);
+
+            // Te lange code: niet bewaard, en een auto neemt hem ook niet aan.
+            saveProgram(owner, coreAbs, "", "Huge", "# " + "x".repeat(com.senne.imttech.logic.program.LogicProgram.MAX_SOURCE + 100),
+                    ProgramKind.CAR);
+            check(core.logic().program("Huge") == null, "Een te lang RC program werd toch bewaard");
+            check(car.loadProgram("Huge", "#".repeat(com.senne.imttech.logic.program.LogicProgram.MAX_SOURCE + 1)) != null
+                    && car.programName().equals("Tunnel"), "Een auto nam te lange code aan");
+            // Ook niet uit een item (alleen te maken met een aangepast spel): dan heeft hij geen programma.
+            RcCarEntity forged = ModEntities.RC_CAR.get().create(helper.getLevel());
+            RcCarData base = RcCarData.DEFAULT;
+            forged.applyData(new RcCarData("", "#".repeat(com.senne.imttech.logic.program.LogicProgram.MAX_SOURCE + 1),
+                    java.util.Optional.empty(), base.cell(), base.trunk(), base.drill(), false, "", ""));
+            check(forged.source().isEmpty() || forged.source().equals(CarProgram.EMPTY), "Een auto uit een item nam te lange code aan");
+
+            // Opgepakt en weer neergezet: zijn programma, de naam ervan en de server gaan mee.
+            load(owner, car, "Strip miner");
+            RcCarData data = car.toData();
+            check(data.program().equals("Strip miner") && data.source().contains("def deeper") && data.programServer().equals(core.ip()),
+                    "Het programma zat niet in zijn item");
+            RcCarEntity copy = ModEntities.RC_CAR.get().create(helper.getLevel());
+            copy.applyData(data);
+            check(copy.programName().equals("Strip miner") && copy.programServer().equals(core.ip())
+                    && copy.functions().equals(List.of("dig", "deeper")), "Weer neergezet had hij zijn programma niet meer");
+            RcCarData oldItem = RcCarData.CODEC.parse(net.minecraft.nbt.NbtOps.INSTANCE, new CompoundTag()).getOrThrow();
+            check(oldItem.program().isEmpty() && oldItem.programServer().isEmpty(), "Een item van vóór deze update heeft een programmanaam");
+
+            // Een programma met dezelfde naam van de server van een andere basis: niet "ouder", maar "van een andere server".
+            car.loadProgram("Strip miner", dig, "10.9.9.9");
+            CompoundTag elsewhere = carRow(helper, core, car);
+            check(elsewhere.getBoolean("other") && !elsewhere.getBoolean("old"), "Een programma van een andere server: " + elsewhere);
+
+            // Zonder draaiende server: niet geladen, ook niet vanuit de app Robots.
+            load(owner, car, "Tunnel");
+            check(car.programName().equals("Tunnel"), "Het programma van de andere server werd niet vervangen");
+            helper.setBlock(rack, Blocks.AIR);
+            com.senne.imttech.logic.LogicServer.forgetAll();
+            load(owner, car, "Strip miner");
+            check(car.programName().equals("Tunnel"), "Zonder server kwam er toch een programma op de auto");
+            com.senne.imttech.robot.Robots.Desktop offline = RcCars.desktop(owner, core, "robot_car_program", carArgs(car, "Strip miner"));
+            check(offline.error() && car.programName().equals("Tunnel"), "Zonder server laadde de app Robots toch: " + offline.text());
+            helper.succeed();
+        });
+    }
+
+    /** De knop Load onto car op het scherm van de auto, met dit RC program. */
+    private static void load(ServerPlayer player, RcCarEntity car, String program) {
+        RcCars.handleAction(player, new com.senne.imttech.network.RcCarActionPayload(car.getId(),
+                com.senne.imttech.network.RcCarActionPayload.Op.LOAD, program));
+    }
+
+    /** De knop Program in de app Robots voor deze auto, met dit RC program. */
+    private static CompoundTag carArgs(RcCarEntity car, String program) {
+        CompoundTag args = new CompoundTag();
+        args.putString("id", car.link().toString());
+        args.putString("program", program);
+        return args;
+    }
+
+    /** De regel van deze auto in de app Robots. */
+    private static CompoundTag carRow(GameTestHelper helper, SecurityCoreBlockEntity core, RcCarEntity car) {
+        CompoundTag row = carRowOrNull(helper, core, car);
+        if (row == null) {
+            throw new GameTestAssertException("De auto staat niet in de app Robots");
+        }
+        return row;
+    }
+
+    /** De regel van deze auto in de app Robots, of null als hij er niet in staat. */
+    private static @org.jetbrains.annotations.Nullable CompoundTag carRowOrNull(GameTestHelper helper, SecurityCoreBlockEntity core,
+                                                                                 RcCarEntity car) {
+        for (net.minecraft.nbt.Tag element : RcCars.snapshot(helper.getLevel(), core)) {
+            CompoundTag row = (CompoundTag) element;
+            if (row.getString("id").equals(car.link().toString())) {
+                return row;
+            }
+        }
+        return null;
+    }
+
+    /** Een programma bewaren zoals de app Logic dat doet. */
+    private static void saveProgram(ServerPlayer owner, BlockPos coreAbs, String old, String name, String code, ProgramKind kind) {
+        CompoundTag args = new CompoundTag();
+        args.putString("old", old);
+        args.putString("name", name);
+        args.put("graph", com.senne.imttech.logic.program.GraphConverter.toGraph(ScriptParser.parse(code, kind), null).save());
+        args.putString("source", code);
+        args.putString("kind", kind.name());
+        com.senne.imttech.security.os.SecurityOs.handleAction(owner,
+                new com.senne.imttech.network.OsActionPayload(coreAbs, "logic_save", args));
     }
 }

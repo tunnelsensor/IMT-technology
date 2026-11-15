@@ -568,6 +568,11 @@ public final class SecurityOs {
             case "cam_watch" -> com.senne.imttech.robot.Robots.watched(player.serverLevel(), core, args.getInt("robot"));
             // De app Training (hoofdstuk 26): de training stoppen.
             case "training_stop" -> notify(player, core, session, com.senne.imttech.training.Trainings.stop(player, core), false);
+            case "robot_car_program" -> {
+                // Hoofdstuk 119: een RC program van deze server op een RC Car laden (de app Robots), zie car/RcCars.
+                com.senne.imttech.robot.Robots.Desktop result = com.senne.imttech.car.RcCars.desktop(player, core, payload.op(), args);
+                notify(player, core, session, result.text(), result.error());
+            }
             case "robot_switch", "robot_rename", "robot_program", "robot_squad", "robot_delete" -> {
                 // De app Robots (hoofdstuk 21; een programma sturen: hoofdstuk 23; weghalen: 18 oktober), zie robot/Robots.
                 com.senne.imttech.robot.Robots.Desktop result = com.senne.imttech.robot.Robots.desktop(
@@ -871,8 +876,27 @@ public final class SecurityOs {
         }
         var graph = com.senne.imttech.logic.program.LogicGraph.load(graphTag);
         var kind = com.senne.imttech.logic.program.ProgramKind.byName(kindName);
-        // De defs en gedeelde namen van de andere global scripts (hoofdstuk 43) mag dit diagram gebruiken.
-        var library = com.senne.imttech.logic.program.Library.of(store.programs(), oldName.isEmpty() ? name : oldName);
+        // Hoofdstuk 119 (gevonden door de nalezing): de auto krijgt de code van een RC program letterlijk. De server maakt
+        // de blokjes daarom zelf uit die code (dan telt op de SSD wat de auto echt krijgt, en kan de code niet anders zijn
+        // dan de blokjes), en de code mag niet langer zijn dan wat een auto kan bewaren.
+        if (kind == com.senne.imttech.logic.program.ProgramKind.CAR) {
+            if (source.length() > com.senne.imttech.logic.program.LogicProgram.MAX_SOURCE) {
+                notify(player, core, session, "Not saved: an RC program can be at most "
+                        + com.senne.imttech.logic.program.LogicProgram.MAX_SOURCE + " characters (a car keeps no more)", true);
+                return;
+            }
+            try {
+                graph = com.senne.imttech.logic.program.GraphConverter.toGraph(com.senne.imttech.logic.program.ScriptParser.parse(
+                        source, com.senne.imttech.logic.program.ProgramKind.CAR), graph);
+            } catch (com.senne.imttech.logic.program.LogicException e) {
+                notify(player, core, session, "Not saved: " + e.describe(), true);
+                return;
+            }
+        }
+        // De defs en gedeelde namen van de andere global scripts (hoofdstuk 43) mag dit diagram gebruiken. Een RC program
+        // (hoofdstuk 119) niet: dat draait op de auto, die alleen zijn eigen kopie heeft en de server niet kan vragen.
+        var library = kind == com.senne.imttech.logic.program.ProgramKind.CAR ? com.senne.imttech.logic.program.Library.EMPTY
+                : com.senne.imttech.logic.program.Library.of(store.programs(), oldName.isEmpty() ? name : oldName);
         var problems = graph.problems(kind, library);
         if (!problems.isEmpty()) {
             notify(player, core, session, "Not saved: " + problems.getFirst().message(), true);
@@ -1462,6 +1486,9 @@ public final class SecurityOs {
             data.put("robots", com.senne.imttech.robot.Robots.snapshot(level, core));
             data.put("robotPrograms", com.senne.imttech.robot.Robots.programNames(core, com.senne.imttech.logic.program.ProgramKind.ROBOT));
             data.put("dronePrograms", com.senne.imttech.robot.Robots.programNames(core, com.senne.imttech.logic.program.ProgramKind.DRONE));
+            // Hoofdstuk 119: de RC Cars in het gebied, en de RC programs op deze server.
+            data.put("cars", com.senne.imttech.car.RcCars.snapshot(level, core));
+            data.put("carPrograms", com.senne.imttech.robot.Robots.programNames(core, com.senne.imttech.logic.program.ProgramKind.CAR));
         }
         if (rights.shows("TRAINING")) {
             data.put("training", com.senne.imttech.training.Trainings.snapshot(level, core));

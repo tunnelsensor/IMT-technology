@@ -29,7 +29,8 @@ import net.minecraft.world.phys.Vec3;
  *
  * Het toneel: links de interface met de auto ervoor (zijn "thuis"), en rechts een gang langs vier stapels tonnen van drie
  * hoog. De auto in de animatie doet wat het voorbeeldprogramma doet (CarProgram.EXAMPLE_STORAGE): de gang in, met zijn arm
- * langs de tonnen, en terug naar de interface. De twee plaatjes (het echte scherm en de echte editor) maakt de
+ * langs de tonnen, en terug naar de interface. De twee plaatjes (het echte scherm, en sinds hoofdstuk 119 de app Logic
+ * met het programma als RC program op je server) maakt de
  * rondleiding: {@code gradlew runVisualCheck -Ponly=howtopics:storage}.
  */
 public final class StorageScenes {
@@ -109,8 +110,9 @@ public final class StorageScenes {
         s.idle(10);
         s.actor("car", type, 2 * DRIVE, 2 * DRIVE, EAST, car(0, 100), home, atStack);
         s.text(200, new Vec3(3.5, 4.6, 2.5), Side.RIGHT,
-                "The car drives where its program says. *arm_up()* raises its arm, up to *three chests high*. *if item(...) in"
-                        + " chest():* looks inside, *take(...)* takes it into the trunk. Back home, *put()* delivers it.");
+                "The car drives where its program says. With an *RC Robot Arm* it reaches *three chests high* (*arm_up()*)."
+                        + " *if item(...) in chest():* looks inside, *take(...)* takes it into the trunk. Back home, *put()*"
+                        + " delivers it.");
         s.idle(2 * DRIVE);
         s.actor("car", type, ARM, 0, NORTH, car(0, 100), atStack);
         s.idle(ARM);
@@ -135,19 +137,19 @@ public final class StorageScenes {
         s.outline(50, station, station, HowToSceneBuilder.GREEN);
         s.idle(60);
 
-        // Het programma, als plaatje van de echte editor: zo typ je het zelf.
+        // Het programma, als plaatje van de app Logic (hoofdstuk 119: een RC program op je server): zo typ je het zelf.
         s.chapter("You write the program");
         s.actor("car", type, 200, 0, NORTH, car(0, 100), home);
         s.sneakRightClick(home.add(0, 0.4, 0), ItemStack.EMPTY);
         s.idle(20);
         // Vijf korte teksten (elk twee regels): meer past er niet onder elkaar naast het plaatje. Elk stipje staat net
         // achter de regel code waar het over gaat.
-        s.picture(175, "storage_code", 427, 240,
-                s.arrow(0.375f, 0.24f, "*when ordered(\"fetch\"):* runs for an order"),
-                s.arrow(0.61f, 0.365f, "*order.left*: how many are still missing"),
-                s.arrow(0.246f, 0.532f, "*look()*: your own def, checks a stack"),
-                s.arrow(0.236f, 0.699f, "Back home, *put()* lays it in the interface"),
-                s.arrow(0.377f, 0.782f, "*when ordered(\"store\"):* puts items away"));
+        s.picture(175, "logic_rc_storage", 427, 240,
+                s.arrow(0.24f, 0.232f, "An *RC program* on your server, loaded onto the car"),
+                s.arrow(0.60f, 0.311f, "*when ordered(\"fetch\"):* runs for an order"),
+                s.arrow(0.83f, 0.436f, "*order.left*: how many are still missing"),
+                s.arrow(0.47f, 0.603f, "*look()*: your own def, checks a stack"),
+                s.arrow(0.46f, 0.769f, "Back home, *put()* lays it in the interface"));
         s.idle(180);
 
         s.chapter("Storing, and a Charging Pad");

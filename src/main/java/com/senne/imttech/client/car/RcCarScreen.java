@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
  *  Trunk   23 items
  *  Drill   Iron Drill Head  speed 25%
  *  Arm     RC Robot Arm  height 1 of 2          [^] [v] [Arm off]
- *  FUNCTIONS                        DRIVE BY HAND
+ *  FUNCTIONS of Strip miner          DRIVE BY HAND
  *  [ strip_mine            ]            [Forward]
  *  [ room                  ]        [Left]    [Right]
  *  [ stairs_down           ]             [Back]
@@ -42,7 +42,8 @@ import org.jetbrains.annotations.Nullable;
  *  [Start] [Stop] [Program] [Cell out] [Pick up]         [Done]
  * </pre>
  * Links staan de functies van zijn programma (elke def zonder parameters): klik er een aan en de auto voert haar uit
- * vanaf de plek waar hij staat. Start loopt zijn hoofdprogramma (when started), Stop houdt alles tegen. Rechts rijd je
+ * vanaf de plek waar hij staat. Boven de functies staat de naam van het RC program van je server dat op hem staat
+ * (hoofdstuk 119); Program toont de RC programs van die server, en daar laad je er een op de auto. Start loopt zijn hoofdprogramma (when started), Stop houdt alles tegen. Rechts rijd je
  * hem met de hand, één stap per klik: zo zet je hem goed voor je een functie start.
  *
  * Drill is zijn boorkop en hoe snel die is (een betere kop zet je erop met rechtsklik op de auto, zie car/DrillHead).
@@ -99,6 +100,11 @@ public class RcCarScreen extends Screen {
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    /** Is dit het scherm van deze auto? (Hoofdstuk 119: alleen dan opent de lijst met RC programs erop, zie ClientPayloadHandlers.) */
+    public boolean isFor(int entityId) {
+        return this.entityId == entityId;
     }
 
     /** De auto zoals jouw spel hem kent, of null als hij weg is (opgepakt, of te ver). */
@@ -187,7 +193,8 @@ public class RcCarScreen extends Screen {
                 .bounds(x, footerY(), 44, 20).build());
         stopButton = addRenderableWidget(Button.builder(Component.literal("Stop"), b -> send(RcCarActionPayload.Op.STOP, ""))
                 .bounds(x + 48, footerY(), 40, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Program"), b -> send(RcCarActionPayload.Op.CODE, ""))
+        // Hoofdstuk 119: de RC programs van de server waar hij staat (de server stuurt de lijst, zie car/RcCars).
+        addRenderableWidget(Button.builder(Component.literal("Program"), b -> send(RcCarActionPayload.Op.PROGRAMS, ""))
                 .bounds(x + 92, footerY(), 58, 20).build());
         cellButton = addRenderableWidget(Button.builder(Component.literal("Cell out"), b -> send(RcCarActionPayload.Op.CELL_OUT, ""))
                 .bounds(x + 154, footerY(), 54, 20).build());
@@ -419,12 +426,19 @@ public class RcCarScreen extends Screen {
         // De kopjes boven de functies en de pijltjes.
         String functions = shown.size() > ROWS
                 ? String.format(Locale.ROOT, "FUNCTIONS %d-%d of %d", scroll + 1, scroll + ROWS, shown.size()) : "FUNCTIONS";
+        // Hoofdstuk 119: van welk RC program (van je server) ze zijn.
+        if (!car.programName().isEmpty() && shown.size() <= ROWS) {
+            functions = fit(functions + " of " + car.programName(), LIST_W + 10);
+        }
         g.drawString(font, functions, left + MARGIN, listY() - 11, HudStyle.argb(170, HudStyle.ORANGE), false);
         g.drawString(font, "DRIVE BY HAND", left + MARGIN + LIST_W + 14, listY() - 11, HudStyle.argb(170, HudStyle.ORANGE), false);
         if (shown.isEmpty()) {
+            // Hoofdstuk 119: zijn programma schrijf je op de server (een RC program in de app Logic) en laad je met Program.
             g.drawString(font, "No functions yet.", left + MARGIN, listY() + 4, HudStyle.argb(200, 0x9FC9D6), false);
-            g.drawString(font, "Press Program and write", left + MARGIN, listY() + 16, HudStyle.argb(200, 0x9FC9D6), false);
-            g.drawString(font, "def my_job():", left + MARGIN, listY() + 28, HudStyle.argb(230, 0xC9A0FF), false);
+            g.drawString(font, "Write an RC program in the Logic", left + MARGIN, listY() + 16, HudStyle.argb(200, 0x9FC9D6), false);
+            g.drawString(font, "app of your server, with", left + MARGIN, listY() + 28, HudStyle.argb(200, 0x9FC9D6), false);
+            g.drawString(font, "def my_job():", left + MARGIN, listY() + 40, HudStyle.argb(230, 0xC9A0FF), false);
+            g.drawString(font, "and load it here with Program.", left + MARGIN, listY() + 52, HudStyle.argb(200, 0x9FC9D6), false);
         }
 
         // Het laatste dat niet lukte (of wat er mis is met zijn programma).

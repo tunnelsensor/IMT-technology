@@ -28,7 +28,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "45";
+    private static final String PROTOCOL_VERSION = "46";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -313,6 +313,9 @@ public final class ModNetwork {
                 (payload, context) -> ClientPayloadHandlers.onTrainingOpen(payload, context));
         registrar.playToClient(RcCarOpenPayload.TYPE, RcCarOpenPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onRcCarOpen(payload, context));
+        // Hoofdstuk 119: de RC programs op de server, voor de knop Program op het scherm van een RC Car.
+        registrar.playToClient(RcCarProgramsPayload.TYPE, RcCarProgramsPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onRcCarPrograms(payload, context));
         registrar.playToClient(InputNameOpenPayload.TYPE, InputNameOpenPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onInputNameOpen(payload, context));
         // Camerabeelden van overal (hoofdstuk 94): de wereld rond de camera's die je bekijkt, en wie daar rondloopt.

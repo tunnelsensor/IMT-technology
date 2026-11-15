@@ -15,22 +15,26 @@ import net.minecraft.world.item.component.ItemContainerContents;
  * zetten"): alles gaat mee, zodat je hem ergens anders neerzet en hij precies dezelfde auto is.
  *
  * @param name     zijn naam ("" = geen: dan heet hij "RC Car")
- * @param source   de code van zijn programma (een nieuwe auto heeft er geen: die schrijf je zelf, zie CarProgram)
+ * @param source   de code van zijn programma (een nieuwe auto heeft er geen; sinds hoofdstuk 119 een kopie van een RC
+ *                 program van je server)
  * @param link     zijn vaste nummer, waaraan een RC Controller hem herkent (leeg bij een nieuwe auto: hij krijgt er een
  *                 als je hem neerzet)
  * @param cell     hoe vol zijn energiecel is, van 0 tot 100; {@link #NO_CELL} = hij heeft er geen
  * @param trunk    wat er in zijn kofferbak ligt
  * @param drill    zijn boorkop (een nieuwe auto heeft de ijzeren, zie DrillHead)
  * @param robotArm heeft hij een RC Robot Arm (hoofdstuk 118)? Een nieuwe auto niet.
+ * @param program  de naam van het RC program van de server waar zijn code een kopie van is (hoofdstuk 119); "" = geen
+ * @param programServer van welke server dat RC program kwam (het IP van die Security Core); "" = onbekend
+ *                 (een nieuwe auto, of een auto met code die je vóór hoofdstuk 119 op de auto zelf schreef)
  */
 public record RcCarData(String name, String source, Optional<UUID> link, float cell, ItemContainerContents trunk, DrillHead drill,
-                        boolean robotArm) {
+                        boolean robotArm, String program, String programServer) {
     /** Geen energiecel. */
     public static final float NO_CELL = -1.0f;
 
     /** Een nieuwe auto: geen naam, geen programma, geen cel, een lege kofferbak, de ijzeren boorkop, geen arm. */
     public static final RcCarData DEFAULT =
-            new RcCarData("", CarProgram.EMPTY, Optional.empty(), NO_CELL, ItemContainerContents.EMPTY, DrillHead.IRON, false);
+            new RcCarData("", CarProgram.EMPTY, Optional.empty(), NO_CELL, ItemContainerContents.EMPTY, DrillHead.IRON, false, "", "");
 
     /** Heeft hij een energiecel? */
     public boolean hasCell() {
@@ -44,7 +48,7 @@ public record RcCarData(String name, String source, Optional<UUID> link, float c
 
     /** Dezelfde auto zonder vast nummer (het item dat in creative in je hand blijft, zie RcCarItem). */
     public RcCarData withoutLink() {
-        return new RcCarData(name, source, Optional.empty(), cell, trunk, drill, robotArm);
+        return new RcCarData(name, source, Optional.empty(), cell, trunk, drill, robotArm, program, programServer);
     }
 
     public static final Codec<RcCarData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -57,7 +61,9 @@ public record RcCarData(String name, String source, Optional<UUID> link, float c
             DrillHead.CODEC.lenientOptionalFieldOf("drill", DrillHead.IRON).forGetter(RcCarData::drill),
             // Hoofdstuk 118: een auto die je oppakte vóór er een losse arm was, had een arm. Die houdt hij (jouw regel van
             // hoofdstuk 106: wat er al is, blijft). Daarom is "geen veld" hier waar; een auto zonder arm bewaart false.
-            Codec.BOOL.optionalFieldOf("robot_arm", true).forGetter(RcCarData::robotArm)
+            Codec.BOOL.optionalFieldOf("robot_arm", true).forGetter(RcCarData::robotArm),
+            Codec.STRING.optionalFieldOf("program", "").forGetter(RcCarData::program),
+            Codec.STRING.optionalFieldOf("program_server", "").forGetter(RcCarData::programServer)
     ).apply(instance, RcCarData::new));
 
     /**
@@ -72,8 +78,11 @@ public record RcCarData(String name, String source, Optional<UUID> link, float c
                 ItemContainerContents.STREAM_CODEC.encode(buf, data.trunk());
                 DrillHead.STREAM_CODEC.encode(buf, data.drill());
                 buf.writeBoolean(data.robotArm());
+                ByteBufCodecs.STRING_UTF8.encode(buf, data.program());
+                ByteBufCodecs.STRING_UTF8.encode(buf, data.programServer());
             },
             buf -> new RcCarData(ByteBufCodecs.STRING_UTF8.decode(buf), ByteBufCodecs.STRING_UTF8.decode(buf),
                     UUIDUtil.STREAM_CODEC.apply(ByteBufCodecs::optional).decode(buf), buf.readFloat(),
-                    ItemContainerContents.STREAM_CODEC.decode(buf), DrillHead.STREAM_CODEC.decode(buf), buf.readBoolean()));
+                    ItemContainerContents.STREAM_CODEC.decode(buf), DrillHead.STREAM_CODEC.decode(buf), buf.readBoolean(),
+                    ByteBufCodecs.STRING_UTF8.decode(buf), ByteBufCodecs.STRING_UTF8.decode(buf)));
 }

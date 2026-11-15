@@ -95,6 +95,8 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
     private static final EntityDataAccessor<Integer> ARM = SynchedEntityData.defineId(RcCarEntity.class, EntityDataSerializers.INT);
     /** Heeft hij een RC Robot Arm (hoofdstuk 118)? Voor zijn model en zijn scherm. */
     private static final EntityDataAccessor<Boolean> ROBOT_ARM = SynchedEntityData.defineId(RcCarEntity.class, EntityDataSerializers.BOOLEAN);
+    /** De naam van het RC program van de server dat op hem staat (hoofdstuk 119), voor zijn scherm; "" = geen. */
+    private static final EntityDataAccessor<String> PROGRAM_NAME = SynchedEntityData.defineId(RcCarEntity.class, EntityDataSerializers.STRING);
     /**
      * Waar zijn boor nu naar wijst terwijl hij boort (hoofdstuk 118): 0 = vooruit, 1 = omhoog (mine_up), -1 = omlaag
      * (mine_down). Voor zijn model: met de arm kantelt de boor naar het blok boven of onder hem.
@@ -110,6 +112,8 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
     private UUID link = UUID.randomUUID();
     /** De code van zijn programma, zoals jij hem schreef (een nieuwe auto heeft er geen). */
     private String source = CarProgram.EMPTY;
+    /** Hoofdstuk 119: van welke server zijn RC program kwam (het IP van die Security Core), of "" als dat niet bekend is. */
+    private String programServer = "";
     private final SimpleContainer trunk = new SimpleContainer(TRUNK_SIZE) {
         /** De kofferbak gaat dicht als de auto weg is of te ver van je wegrijdt. */
         @Override
@@ -173,6 +177,7 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
         builder.define(ARM, 0);
         builder.define(ROBOT_ARM, false);
         builder.define(DRILL_WAY, 0);
+        builder.define(PROGRAM_NAME, "");
     }
 
     // ================================================================ Zijn programma
@@ -205,6 +210,53 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
         brain.setProgram(compiled);
         showProgram(compiled, "");
         return null;
+    }
+
+    /**
+     * Een RC program van de server op deze auto (hoofdstuk 119): een kopie van zijn code, met zijn naam. Klopt de code niet
+     * (voor een auto), dan blijft het oude en krijg je de fout terug; anders null. Wat hij deed, stopt.
+     */
+    public @Nullable String loadProgram(String name, String code) {
+        return loadProgram(name, code, "");
+    }
+
+    /**
+     * Zoals {@link #loadProgram(String, String)}, en ook van welke server het kwam ({@code server}: het IP van die Security
+     * Core; "" = onbekend). Zo vergelijkt de app Robots zijn kopie alleen met het programma van díe server, niet met een
+     * programma dat toevallig even heet op een andere server. Code langer dan {@link LogicProgram#MAX_SOURCE} tekens
+     * neemt hij niet aan (gevonden door de nalezing: zijn item en zijn opgeslagen gegevens kunnen dat niet bewaren).
+     */
+    public @Nullable String loadProgram(String name, String code, String server) {
+        if (code.length() > LogicProgram.MAX_SOURCE) {
+            return "this RC program is too long for a car (at most " + LogicProgram.MAX_SOURCE + " characters)";
+        }
+        String problem = setSource(code);
+        if (problem == null) {
+            entityData.set(PROGRAM_NAME, name);
+            programServer = name.isEmpty() ? "" : server;
+        }
+        return problem;
+    }
+
+    /**
+     * Code die langer is dan een auto kan bewaren (alleen te maken met een aangepast spel, bv. een item in creative), laadt
+     * hij niet: anders kon zijn item of zijn opslag stuklopen (gevonden door de nalezing van hoofdstuk 119).
+     */
+    private static String limited(String code) {
+        return code.length() > LogicProgram.MAX_SOURCE ? CarProgram.EMPTY : code;
+    }
+
+    /** Van welke server zijn RC program kwam (het IP van die kern), of "" als dat niet bekend is. */
+    public String programServer() {
+        return programServer;
+    }
+
+    /**
+     * De naam van het RC program van de server dat op hem staat ("" = geen: een nieuwe auto, of een auto met code die je
+     * vóór hoofdstuk 119 op de auto zelf schreef). (Ook in je spel: zijn scherm.)
+     */
+    public String programName() {
+        return entityData.get(PROGRAM_NAME);
     }
 
     /** Maakt van de bewaarde code zijn programma (na het laden, of uit zijn item). Klopt de code niet meer, dan zegt zijn scherm dat. */
@@ -411,7 +463,9 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
     public void applyData(RcCarData data) {
         setCustomName(data.name().isEmpty() ? null : Component.literal(data.name()));
         setRobotArm(data.robotArm());
-        source = com.senne.imttech.logic.program.CodeUpgrade.source(data.source()); // een item van vóór hoofdstuk 114 (zie readAdditionalSaveData)
+        entityData.set(PROGRAM_NAME, data.program());
+        programServer = data.programServer();
+        source = limited(com.senne.imttech.logic.program.CodeUpgrade.source(data.source())); // een item van vóór hoofdstuk 114 (zie readAdditionalSaveData)
         setDrill(data.drill());
         link = data.link().orElseGet(UUID::randomUUID);
         cell = data.cell() < 0 ? ItemStack.EMPTY : EnergyCellItem.withCharge(data.cell());
@@ -424,7 +478,7 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
     public RcCarData toData() {
         return new RcCarData(hasCustomName() ? getCustomName().getString() : "", source, java.util.Optional.of(link),
                 cell.isEmpty() ? RcCarData.NO_CELL : EnergyCellItem.charge(cell), ItemContainerContents.fromItems(trunk.getItems()),
-                drill(), hasRobotArm());
+                drill(), hasRobotArm(), programName(), programServer);
     }
 
     /** Het item waarin hij verandert als je hem oppakt (met alles erin). */
@@ -764,6 +818,8 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
         tag.putString("OwnerName", ownerName);
         tag.putUUID("Link", link);
         tag.putString("Source", source);
+        tag.putString("ProgramName", programName());
+        tag.putString("ProgramServer", programServer);
         if (!cell.isEmpty()) {
             tag.putFloat("Cell", EnergyCellItem.charge(cell)); // hoe vol (0 tot 100); geen cel = niets
         }
@@ -785,15 +841,20 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
         ownerName = tag.getString("OwnerName");
         link = tag.hasUUID("Link") ? tag.getUUID("Link") : UUID.randomUUID();
         // Code van vóór hoofdstuk 114 (def lane(length: int):) wordt def lane(int length):.
-        source = tag.contains("Source") ? com.senne.imttech.logic.program.CodeUpgrade.source(tag.getString("Source")) : CarProgram.EMPTY;
+        source = tag.contains("Source") ? limited(com.senne.imttech.logic.program.CodeUpgrade.source(tag.getString("Source")))
+                : CarProgram.EMPTY;
+        entityData.set(PROGRAM_NAME, tag.getString("ProgramName")); // een auto van vóór hoofdstuk 119: geen naam
+        programServer = tag.getString("ProgramServer");
         setDrill(DrillHead.byId(tag.getString("DrillHead"))); // een auto zonder dit gegeven heeft de ijzeren kop
         cell = tag.contains("Cell") ? EnergyCellItem.withCharge(tag.getFloat("Cell")) : ItemStack.EMPTY;
         trunk.clearContent();
         ContainerHelper.loadAllItems(tag.getCompound("Trunk"), trunk.getItems(), registryAccess());
         body.setFacing(tag.contains("Facing") ? Direction.from2DDataValue(tag.getByte("Facing")) : null);
         // Hoofdstuk 118: een auto die bewaard werd vóór er een losse arm was, had een arm. Die houdt hij (jouw regel van
-        // hoofdstuk 106: wat er al is, blijft). Een auto van nu bewaart altijd of hij er een heeft.
-        setRobotArm(!tag.contains("RobotArm") || tag.getBoolean("RobotArm"));
+        // hoofdstuk 106: wat er al is, blijft). Een auto van nu bewaart altijd of hij er een heeft. Elke bewaarde auto
+        // heeft een Link (sinds hoofdstuk 108); zonder Link is het een nieuwe auto uit /summon of een spawner, en een
+        // nieuwe auto heeft geen arm. (Gevonden door de review: anders gaf Arm off daar een gratis arm.)
+        setRobotArm(tag.contains("RobotArm") ? tag.getBoolean("RobotArm") : tag.hasUUID("Link"));
         setArm(tag.getByte("Arm"));
         armShown = arm(); // net geladen (of een auto in een animatie van How it works): de arm staat er meteen
         armShownO = armShown;
@@ -801,14 +862,16 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
                 tag.get("Station")).result().orElse(null) : null;
         applyProgram();
         syncBattery();
-        // Alleen voor de animaties van How it works (howto/scenes/CarScenes): een auto die boort. In de wereld zegt zijn
-        // lijf dat elke tick zelf (zie serverTick).
+        // Alleen voor de animaties van How it works (howto/scenes/CarScenes): een auto die boort, en naar waar (DrillWay:
+        // 1 omhoog, -1 omlaag, niets = recht vooruit). In de wereld zegt zijn lijf dat elke tick zelf (zie serverTick).
+        // Een animatie laadt dezelfde auto steeds opnieuw en laat hem niet ticken: daarom elke keer ook de kanteling
+        // (gevonden door de review: na de eerste mine_up bleef de boor anders de hele animatie omhoog wijzen).
         if (tag.contains("Drilling")) {
-            entityData.set(DRILLING, tag.getBoolean("Drilling"));
-        }
-        if (tag.contains("DrillWay")) {
-            entityData.set(DRILL_WAY, (int) tag.getByte("DrillWay"));
-            tiltShown = tag.getBoolean("Drilling") ? tag.getByte("DrillWay") : 0; // in een animatie: meteen gekanteld
+            boolean drilling = tag.getBoolean("Drilling");
+            int way = tag.getByte("DrillWay");
+            entityData.set(DRILLING, drilling);
+            entityData.set(DRILL_WAY, way);
+            tiltShown = drilling ? way : 0; // in een animatie: meteen gekanteld (of meteen weer recht)
             tiltShownO = tiltShown;
         }
     }

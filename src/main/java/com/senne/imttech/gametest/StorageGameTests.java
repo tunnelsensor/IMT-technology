@@ -138,13 +138,13 @@ public final class StorageGameTests {
         String printed = ScriptPrinter.print(ScriptParser.parse(code, ProgramKind.CAR));
         check(printed.equals(code), "De code van de opslag kwam niet precies terug:\n" + printed);
         // Alleen in een autoprogramma.
-        expectProblem("when started:\n    take()\n", ProgramKind.ROBOT, "take() only works in a car program");
-        expectProblem("when every(5):\n    check()\n", ProgramKind.SERVER, "check() only works in a car program");
+        expectProblem("when started:\n    take()\n", ProgramKind.ROBOT, "take() only works in an RC program");
+        expectProblem("when every(5):\n    check()\n", ProgramKind.SERVER, "check() only works in an RC program");
         expectProblem("when every(5):\n    if item(\"a\") in chest():\n        say(\"x\")\n", ProgramKind.SERVER,
-                "item(...) only works in a car program");
-        expectProblem("when every(5):\n    if \"a\" in chest():\n        say(\"x\")\n", ProgramKind.SERVER, "in chest() only works in a car program");
+                "item(...) only works in an RC program");
+        expectProblem("when every(5):\n    if \"a\" in chest():\n        say(\"x\")\n", ProgramKind.SERVER, "in chest() only works in an RC program");
         expectProblem("when ordered(\"attack\"):\n    if order.item == \"a\":\n        say(\"x\")\n", ProgramKind.ROBOT,
-                "order.item only works in a car program");
+                "order.item only works in an RC program");
         // Wat erbij hoort.
         expectProblem("def a():\n    take(3)\n", ProgramKind.CAR, "take: the item must be text");
         expectProblem("def a():\n    take(\"a\", \"b\")\n", ProgramKind.CAR, "take: the count must be a number");

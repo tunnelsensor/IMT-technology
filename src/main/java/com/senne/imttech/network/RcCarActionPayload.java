@@ -37,10 +37,10 @@ public record RcCarActionPayload(int entityId, Op op, String text) implements Cu
         PICK_UP,
         /** De energiecel eruit (terug in je rugzak). */
         CELL_OUT,
-        /** Geef me de code: de server stuurt haar terug en dan opent de editor. */
-        CODE,
-        /** De code uit de editor bewaren (de server kijkt haar nog eens na). */
-        SAVE,
+        /** Hoofdstuk 119: welke RC programs staan er op de server waar de auto staat? Het antwoord: RcCarProgramsPayload. */
+        PROGRAMS,
+        /** Hoofdstuk 119: laad het RC program met deze naam (in text) van de server op de auto (een kopie). */
+        LOAD,
         /** De RC Robot Arm eraf (hoofdstuk 118): je krijgt hem terug. Alleen van dichtbij. */
         ARM_OFF
     }

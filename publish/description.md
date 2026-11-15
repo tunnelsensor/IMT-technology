@@ -56,8 +56,9 @@ bunkers to raid.
 - Programmable security drones with their own dock, squads, and training sessions with lives
   instead of health.
 - The RC Car: a little car with a drill and a trunk that mines and builds what you program, from
-  scratch: `mine()`, `forward(1)`, `mine_up()` in a loop is a mining tunnel. Every function you write
-  is a button on its RC Controller. Four drill heads, from iron (slow) to netherite (fast), and an RC
+  scratch: `mine()`, `forward(1)`, `mine_up()` in a loop is a mining tunnel. You write it as an RC
+  program on your base's server and load a copy onto your cars. Every function you write is a button
+  on its RC Controller. Four drill heads, from iron (slow) to netherite (fast), and an RC
   Robot Arm you add and program (`arm_up()`): without it the car only breaks the block in front of it,
   with it it mines above and below itself and reaches three blocks high.
 - A storage system you program yourself: order an item at the Storage Interface and your RC Car drives

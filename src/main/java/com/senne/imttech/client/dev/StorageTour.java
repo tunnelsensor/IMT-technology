@@ -6,7 +6,8 @@ import com.senne.imttech.car.DrillHead;
 import com.senne.imttech.car.RcCarEntity;
 import com.senne.imttech.car.RcCars;
 import com.senne.imttech.client.car.RcCarScreen;
-import com.senne.imttech.client.os.RcCarCodeScreen;
+import com.senne.imttech.client.os.RcCarProgramScreen;
+import com.senne.imttech.client.os.SecurityOsScreen;
 import com.senne.imttech.client.storage.StorageScreen;
 import com.senne.imttech.energy.CableKind;
 import com.senne.imttech.energy.Cables;
@@ -15,6 +16,7 @@ import com.senne.imttech.lan.RouterBlockEntity;
 import com.senne.imttech.lan.RouterLinks;
 import com.senne.imttech.lan.Routers;
 import com.senne.imttech.network.RcCarActionPayload;
+import com.senne.imttech.security.os.SecurityOs;
 import com.senne.imttech.registry.ModBlocks;
 import com.senne.imttech.registry.ModEntities;
 import com.senne.imttech.station.ChargerBlockEntity;
@@ -56,10 +58,11 @@ import org.jetbrains.annotations.Nullable;
  *   aan een netwerkkabel, op een andere een Chest Sensor aan een Router. Het overzicht, de sensors van dichtbij, de auto
  *   met zijn arm omhoog, het scherm van de interface (een item kiezen, een lopende en een afgeronde bestelling, de
  *   tabbladen Store en Cars), Porter die echt opbergt (zijn arm omhoog bij een stapel) en het scherm erna, het scherm
- *   van de auto met de knoppen van de arm, zijn programma, de laadplaat, en de drie items met hun tooltip. Screenshots
- *   st01 tot st14.</li>
+ *   van de auto met de knoppen van de arm, de RC programs van de server (hoofdstuk 119: zijn programma Storage staat
+ *   erop), de laadplaat, en de drie items met hun tooltip. Screenshots st01 tot st14.</li>
  *   <li>{@code gradlew runVisualCheck -Ponly=howtopics:storage}: de twee plaatjes voor de animatie van How it works
- *   ({@code storage_screen} en {@code storage_code}); die komen in de mod zelf te staan.</li>
+ *   ({@code storage_screen}, en de app Logic met het RC program van Porter: {@code logic_rc_storage}); die komen in de
+ *   mod zelf te staan.</li>
  *   <li>De showcase-functie "Storage system" (zie ShowcaseFeatures): {@link #showcase}.</li>
  * </ul>
  */
@@ -89,8 +92,14 @@ final class StorageTour {
     };
     private static final int[][] COUNTS = {{96, 48, 20}, {40, 12, 64}, {64, 64, 20}, {64, 6, 9}};
 
-    /** Het programma dat de speler van de rondleiding op zijn auto schreef: het voorbeeld van How it works. */
+    /** Het programma dat de speler van de rondleiding voor zijn auto schreef: het voorbeeld van How it works. */
     private static final String WRITTEN = CarProgram.EXAMPLE_STORAGE;
+
+    /**
+     * Hoofdstuk 119: de Security Core van de basis van de opslagkamer (met een server, en daarop het RC program "Storage"
+     * van Porter). Buiten het stuk dat het toneel leegmaakt, links achter de auto.
+     */
+    private static final BlockPos BASE = YARD.offset(-9, 0, 4);
 
     /** De interface van het toneel (op de server), of null. */
     private static @Nullable StorageInterfaceBlockEntity station(ServerPlayer player) {
@@ -138,8 +147,9 @@ final class StorageTour {
     /**
      * Zet het toneel klaar: de interface (van jou), de laadplaat onder de auto met een generator ernaast, vier stapels
      * tonnen met spullen, een Chest Sensor met een netwerkkabel naar de interface, een Chest Sensor aan een Router (die
-     * zelf draadloos aan de interface hangt), en de auto "Porter" met het voorbeeldprogramma, gekoppeld aan de interface.
-     * De interface weet al wat er in elke ton zit (alsof Porter er eerder in keek).
+     * zelf draadloos aan de interface hangt), de basis (een kern met een server en het RC program Storage, hoofdstuk 119),
+     * en de auto "Porter" met dat RC program, gekoppeld aan de interface. De interface weet al wat er in elke ton zit
+     * (alsof Porter er eerder in keek).
      */
     private static void stage(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
@@ -209,6 +219,8 @@ final class StorageTour {
         links.addRouter(ROUTER);
         Routers.link(level, ROUTER, STATION);
         Routers.link(level, ROUTER, ROUTER_SENSOR);
+        // De basis: zijn programma staat als RC program op de server (hoofdstuk 119).
+        RcCarTour.base(player, BASE, "Storage", WRITTEN);
         // De auto, thuis op de laadplaat, gekoppeld aan de interface.
         RcCarEntity car = ModEntities.RC_CAR.get().create(level);
         if (car != null) {
@@ -222,7 +234,7 @@ final class StorageTour {
             car.swapCell(EnergyCellItem.withCharge(72.0f));
             car.setDrill(DrillHead.IRON);
             car.setRobotArm(true); // hoofdstuk 118: zonder arm komt hij niet bij de kisten hoger dan het blok vóór hem
-            String problem = car.setSource(WRITTEN);
+            String problem = car.loadProgram("Storage", WRITTEN);
             if (problem != null) {
                 ImtTech.LOGGER.warn("[visual check] het programma van Porter klopt niet: {}", problem);
             }
@@ -388,7 +400,7 @@ final class StorageTour {
         open(t);
         t.shot(10, "st08c_screen_stored");
         t.close(5);
-        // Het scherm van de auto: de stand van zijn arm met de twee knoppen, en zijn programma.
+        // Het scherm van de auto: de stand van zijn arm met de twee knoppen, en de RC programs van de server (Program).
         t.onServer(10, player -> {
             RcCarEntity car = car(player);
             if (car != null) {
@@ -401,14 +413,12 @@ final class StorageTour {
         t.step(0, () -> {
             int id = carId();
             if (id >= 0) {
-                PacketDistributor.sendToServer(new RcCarActionPayload(id, RcCarActionPayload.Op.CODE, ""));
+                PacketDistributor.sendToServer(new RcCarActionPayload(id, RcCarActionPayload.Op.PROGRAMS, ""));
             }
         });
-        t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof RcCarCodeScreen);
+        t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof RcCarProgramScreen);
         t.step(5, () -> HowToTour.mouseTo(2, 2));
         t.shot(15, "st10_car_program");
-        t.close(5);
-        t.close(5);
         t.close(5);
         // De laadplaat: Porter met een halflege cel, de strepen gloeien.
         t.onServer(0, player -> {
@@ -452,8 +462,8 @@ final class StorageTour {
 
     /**
      * De plaatjes van echte schermen voor de animatie van How it works: het scherm van de interface (alleen zijn paneel:
-     * een item gekozen, een bestelling klaar), en de code-editor van de auto met het voorbeeldprogramma (het hele venster).
-     * Ze komen in src/main/resources te staan (zie HowToTour.capture).
+     * een item gekozen, een bestelling klaar), en de app Logic met het RC program van de auto (het hele venster, hoofdstuk
+     * 119). Ze komen in src/main/resources te staan (zie HowToTour.capture).
      */
     static void pictures(DevScript t) {
         double x = YARD.getX() + 0.5;
@@ -482,34 +492,29 @@ final class StorageTour {
             }
         });
         t.close(5);
-        // De editor met het programma van Porter.
+        // De app Logic op de desktop van de kern, met het RC program van Porter (hoofdstuk 119).
         t.onServer(10, player -> {
-            RcCarEntity car = car(player);
-            if (car != null) {
-                RcCars.open(player, car, false);
-            }
+            player.teleportTo(BASE.getX() + 0.5, BASE.getY(), BASE.getZ() + 2.5);
+            SecurityOs.open(player, BASE);
         });
-        t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof RcCarScreen);
+        t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof SecurityOsScreen);
+        t.step(5, () -> HowToTour.mouseTo(1, 1));
         t.step(5, () -> {
-            int id = carId();
-            if (id >= 0) {
-                PacketDistributor.sendToServer(new RcCarActionPayload(id, RcCarActionPayload.Op.CODE, ""));
+            if (Minecraft.getInstance().screen instanceof SecurityOsScreen screen) {
+                screen.tourCloseAll();
+                screen.tourLogicOpen("Storage");
             }
         });
-        t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof RcCarCodeScreen);
-        t.step(5, () -> HowToTour.mouseTo(2, 2));
         t.pause(14);
         t.waitUntil(40, HowToTour::caretHidden);
         t.step(0, () -> {
             Minecraft mc = Minecraft.getInstance();
-            if (mc.screen instanceof RcCarCodeScreen) {
-                HowToTour.capture("storage_code", 0, 0, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
+            if (mc.screen instanceof SecurityOsScreen) {
+                HowToTour.capture("logic_rc_storage", 0, 0, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
             } else {
-                ImtTech.LOGGER.warn("[visual check] de editor van de RC Car staat niet open (maar {})", mc.screen);
+                ImtTech.LOGGER.warn("[visual check] de desktop staat niet open (maar {})", mc.screen);
             }
         });
-        t.close(5);
-        t.close(5);
         t.close(5);
         t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
     }

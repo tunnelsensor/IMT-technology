@@ -27,6 +27,8 @@ import org.jetbrains.annotations.Nullable;
  *  Drone 1     drone  standby   100%  Hover patrol
  *  ─────────────────────────────────────────────────────────
  *  Guard 4     robot  far away  40%
+ *  ─────────────────────────────────────────────────────────
+ *  Digger      car    ready     72%   Strip miner
  *
  *  Guard 1  at 12 64 -40  dock  (older than on the server)
  *  [Rename] [Switch off] [Squad] [Program]              [Delete]
@@ -37,6 +39,10 @@ import org.jetbrains.annotations.Nullable;
  * op hem tot hij terug is, en Delete (18 oktober) haalt hem uit de lijst (eerst "Sure?", nog een keer klikken). Bestaat
  * hij toch nog, dan komt hij vanzelf terug als hij weer geladen is. De lijst komt van de server (zie
  * robot/Robots.snapshot, uit BotNetwork).
+ *
+ * Sinds hoofdstuk 119 staan ook de RC Cars van deze basis erin (soort "car", na de robots; jouw keuze: een RC program
+ * laad je op het scherm van de auto en hier). Voor een auto is er alleen de knop Program: die laadt een kopie van een RC
+ * program van deze server op hem (zie car/RcCars.snapshot en car/RcCars.desktop). Alleen auto's die nu geladen zijn.
  */
 final class RobotsApp {
     /** Zo hoog is één regel van de tabel. */
@@ -72,12 +78,23 @@ final class RobotsApp {
         this.screen = screen;
     }
 
+    /** De robots en drones, en daarna de RC Cars (hoofdstuk 119: met "car" erbij, zodat de rest weet wat ze zijn). */
     private List<CompoundTag> robots() {
         List<CompoundTag> list = new ArrayList<>();
         for (Tag element : screen.data().getList("robots", Tag.TAG_COMPOUND)) {
             list.add((CompoundTag) element);
         }
+        for (Tag element : screen.data().getList("cars", Tag.TAG_COMPOUND)) {
+            CompoundTag car = ((CompoundTag) element).copy();
+            car.putBoolean("car", true);
+            car.putBoolean("loaded", true); // de server stuurt alleen auto's die nu geladen zijn
+            list.add(car);
+        }
         return list;
+    }
+
+    private static boolean isCar(@Nullable CompoundTag row) {
+        return row != null && row.getBoolean("car");
     }
 
     private EditBox nameBox() {
@@ -108,16 +125,28 @@ final class RobotsApp {
         return robot.getString("id").equals(deleting) && net.minecraft.Util.getMillis() < deletingUntil ? "Sure?" : "Delete";
     }
 
-    /** De robotprogramma's op deze server (of de droneprogramma's, voor een drone), en "" = geen programma. */
+    /**
+     * De robotprogramma's op deze server (of de droneprogramma's, voor een drone), en "" = geen programma. Voor een RC Car
+     * de RC programs, zonder "geen programma" (gevonden door de nalezing: dat wiste zonder vragen de code van een auto van
+     * vóór hoofdstuk 119, en een auto zonder programma heb je nergens voor nodig).
+     */
     private List<String> programOptions() {
         CompoundTag robot = robot(choosing);
         boolean drone = robot != null && robot.getBoolean("drone");
         List<String> options = new ArrayList<>();
-        for (Tag tag : screen.data().getList(drone ? "dronePrograms" : "robotPrograms", Tag.TAG_STRING)) {
+        String list = isCar(robot) ? "carPrograms" : drone ? "dronePrograms" : "robotPrograms";
+        for (Tag tag : screen.data().getList(list, Tag.TAG_STRING)) {
             options.add(tag.getAsString());
         }
-        options.add("");
+        if (!isCar(robot)) {
+            options.add("");
+        }
         return options;
+    }
+
+    /** Staat er bovenaan de keuzelijst "nog geen programma's" (de lijst heeft alleen "geen programma", of niets)? */
+    private boolean noPrograms(List<String> options) {
+        return options.isEmpty() || options.size() == 1 && options.getFirst().isEmpty();
     }
 
     private @Nullable CompoundTag robot(@Nullable String id) {
@@ -172,6 +201,11 @@ final class RobotsApp {
         String id = robot.getString("id");
         List<Button> buttons = new ArrayList<>();
         int x = a.x() + 4;
+        if (isCar(robot)) {
+            // Een RC Car (hoofdstuk 119): alleen een RC program laden. Hernoemen doe je met een naamplaatje, oppakken bij hem.
+            buttons.add(new Button("program", "Program", x, OsDraw.buttonWidth(font, "Program"), true, 0x9ED8FF));
+            return buttons;
+        }
         String rename = renameLabel(robot);
         buttons.add(new Button("rename", rename, x, OsDraw.buttonWidth(font, rename), loaded,
                 rename.equals("Save") ? HudStyle.GREEN : HudStyle.CYAN));
@@ -204,7 +238,8 @@ final class RobotsApp {
             choosing = null;
         }
         if (robots.isEmpty()) {
-            g.drawString(font, "No guard robots or drones in this network's area yet.", a.x() + 5, a.y() + 5, HudStyle.argb(255, OsDraw.GREY), false);
+            g.drawString(font, "No guard robots, drones or RC Cars in this network's area yet.", a.x() + 5, a.y() + 5,
+                    HudStyle.argb(255, OsDraw.GREY), false);
             g.drawString(font, "Build a robot in a Robot Assembler, or put a Security Drone", a.x() + 5, a.y() + 15,
                     HudStyle.argb(255, OsDraw.GREY), false);
             g.drawString(font, "on a Drone Dock here.", a.x() + 5, a.y() + 25, HudStyle.argb(255, OsDraw.GREY), false);
@@ -245,6 +280,10 @@ final class RobotsApp {
 
     /** Eén robot op één regel: naam, soort, toestand, batterij, programma en squad. */
     private void renderRow(GuiGraphics g, Font font, SecurityOsScreen.Area a, int y, CompoundTag robot) {
+        if (isCar(robot)) {
+            renderCarRow(g, font, a, y, robot);
+            return;
+        }
         boolean loaded = robot.getBoolean("loaded");
         int ty = y + 3;
         cell(g, font, robot.getString("n"), a.x() + COL_NAME, ty, COL_TYPE - COL_NAME - 4, loaded ? HudStyle.WHITE : OsDraw.GREY);
@@ -267,6 +306,31 @@ final class RobotsApp {
         String squad = robot.getString("sq");
         cell(g, font, squad.isEmpty() ? "-" : squad, a.x() + COL_SQUAD, ty, a.w() - COL_SQUAD - 4,
                 squad.isEmpty() ? OsDraw.GREY : 0xF1E87C);
+    }
+
+    /**
+     * Eén RC Car op één regel (hoofdstuk 119): naam, "car", wat hij doet, zijn batterij (een streepje zonder cel), zijn RC
+     * program (oranje als de server er intussen een nieuwere versie van heeft) en geen squad.
+     */
+    private void renderCarRow(GuiGraphics g, Font font, SecurityOsScreen.Area a, int y, CompoundTag car) {
+        int ty = y + 3;
+        cell(g, font, car.getString("n"), a.x() + COL_NAME, ty, COL_TYPE - COL_NAME - 4, HudStyle.WHITE);
+        cell(g, font, "car", a.x() + COL_TYPE, ty, COL_STATE - COL_TYPE - 4, LogicApp.CAR_COLOUR);
+        String state = car.getString("st");
+        int colour = switch (state) {
+            case "running" -> HudStyle.GREEN;
+            case "ready" -> HudStyle.CYAN;
+            default -> HudStyle.RED; // no cell, cell empty, jammed
+        };
+        cell(g, font, state, a.x() + COL_STATE, ty, COL_BATT - COL_STATE - 4, colour);
+        int battery = car.getInt("bat");
+        cell(g, font, battery < 0 ? "-" : battery + "%", a.x() + COL_BATT, ty, COL_PROGRAM - COL_BATT - 4,
+                battery < 0 ? OsDraw.GREY : battery < 20 ? HudStyle.RED : battery < 50 ? HudStyle.ORANGE : OsDraw.GREY);
+        String program = car.getString("prog");
+        cell(g, font, program.isEmpty() ? "-" : program, a.x() + COL_PROGRAM, ty, COL_SQUAD - COL_PROGRAM - 4,
+                program.isEmpty() || program.startsWith("(") ? OsDraw.GREY
+                        : car.getBoolean("old") || car.getBoolean("other") ? HudStyle.ORANGE : 0x9ED8FF);
+        cell(g, font, "-", a.x() + COL_SQUAD, ty, a.w() - COL_SQUAD - 4, OsDraw.GREY);
     }
 
     /** Tekst in een vakje van de tabel, afgeknipt als hij te lang is. */
@@ -293,6 +357,21 @@ final class RobotsApp {
             String hint = squadMode ? "like Wave 1, empty = none; Enter = save, Esc = cancel" : "Enter = save, Esc = cancel";
             g.drawString(font, OsDraw.fitRight(font, hint, a.x() + a.w() - boxRight - 8), boxRight + 4, y + 1,
                     HudStyle.argb(255, OsDraw.GREY), false);
+        } else if (isCar(robot)) {
+            // Een RC Car (hoofdstuk 119): waar hij staat, of hij een arm heeft, en wat er met zijn programma is.
+            String info = "at " + robot.getInt("x") + " " + robot.getInt("y") + " " + robot.getInt("z")
+                    + (robot.getBoolean("arm") ? "   robot arm" : "   no robot arm");
+            g.drawString(font, robot.getString("n"), a.x() + 5, y + 1, HudStyle.argb(255, HudStyle.WHITE), false);
+            int x = a.x() + 11 + font.width(robot.getString("n"));
+            g.drawString(font, info, x, y + 1, HudStyle.argb(255, OsDraw.GREY), false);
+            x += font.width(info);
+            String note = robot.getBoolean("old") ? "   (older than on the server: load it again)"
+                    : robot.getBoolean("other") ? "   (from the server of another base)"
+                    : robot.getString("prog").startsWith("(") ? "   (code from before RC programs)" : "";
+            if (!note.isEmpty()) {
+                g.drawString(font, OsDraw.fitRight(font, note, Math.max(0, a.x() + a.w() - x - 4)), x, y + 1,
+                        HudStyle.argb(255, HudStyle.ORANGE), false);
+            }
         } else {
             boolean loaded = robot.getBoolean("loaded");
             StringBuilder info = new StringBuilder();
@@ -322,7 +401,8 @@ final class RobotsApp {
     /** Waar de lijst met programma's staat: midden in de app, zo hoog als nodig. */
     private int[] chooserBox(SecurityOsScreen.Area a) {
         int w = Math.min(a.w() - 20, 200);
-        int h = 30 + programOptions().size() * OPTION_H + OsDraw.BUTTON_H;
+        List<String> options = programOptions();
+        int h = 30 + (options.size() + (noPrograms(options) ? 1 : 0)) * OPTION_H + OsDraw.BUTTON_H;
         return new int[] {a.x() + (a.w() - w) / 2, a.y() + 8, w, Math.min(h, a.h() - 16)};
     }
 
@@ -339,9 +419,10 @@ final class RobotsApp {
                 x + 4, y + 4, HudStyle.argb(255, HudStyle.ORANGE), false);
         int oy = y + 16;
         List<String> options = programOptions();
-        if (options.size() == 1) {
+        if (noPrograms(options)) {
             boolean drone = robot != null && robot.getBoolean("drone");
-            g.drawString(font, OsDraw.fitLeft(font, (drone ? "No drone programs" : "No robot programs") + " yet: make one in Logic (+)",
+            String none = isCar(robot) ? "No RC programs" : drone ? "No drone programs" : "No robot programs";
+            g.drawString(font, OsDraw.fitLeft(font, none + " yet: make one in Logic (+)",
                     box[2] - 8), x + 4, oy, HudStyle.argb(255, OsDraw.GREY), false);
             oy += OPTION_H;
         }
@@ -451,13 +532,14 @@ final class RobotsApp {
     /** Een klik in de lijst met programma's: dat programma naar de robot, of Cancel (of ernaast: ook dicht). */
     private void clickChooser(Font font, SecurityOsScreen.Area a, int mx, int my) {
         int[] box = chooserBox(a);
-        int oy = box[1] + 16 + (programOptions().size() == 1 ? OPTION_H : 0);
+        int oy = box[1] + 16 + (noPrograms(programOptions()) ? OPTION_H : 0);
         for (String option : programOptions()) {
             if (OsDraw.inside(mx, my, box[0] + 2, oy - 1, box[2] - 4, OPTION_H)) {
                 CompoundTag args = new CompoundTag();
                 args.putString("id", choosing);
                 args.putString("program", option);
-                screen.send("robot_program", args);
+                // Hoofdstuk 119: voor een RC Car een eigen knop (de server zoekt hem bij de auto's, zie car/RcCars.desktop).
+                screen.send(isCar(robot(choosing)) ? "robot_car_program" : "robot_program", args);
                 choosing = null;
                 return;
             }
@@ -477,6 +559,20 @@ final class RobotsApp {
         deleting = null;
         selected = robots.isEmpty() ? null : robots.getFirst().getString("id");
         choosing = selected;
+    }
+
+    /** Alleen voor de screenshot-rondleiding (hoofdstuk 119): de eerste RC Car gekozen en in beeld, eventueel met zijn keuzelijst. */
+    void tourChooseCar(boolean chooser) {
+        List<CompoundTag> robots = robots();
+        deleting = null;
+        for (int i = 0; i < robots.size(); i++) {
+            if (isCar(robots.get(i))) {
+                scroll = Math.max(0, i - 2);
+                selected = robots.get(i).getString("id");
+                choosing = chooser ? selected : null;
+                return;
+            }
+        }
     }
 
     /** Alleen voor de screenshot-rondleiding: de eerste robot in een squad gekozen en in beeld (één robot erboven). */

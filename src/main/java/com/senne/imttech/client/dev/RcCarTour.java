@@ -8,10 +8,17 @@ import com.senne.imttech.car.RcCarEntity;
 import com.senne.imttech.car.RcCars;
 import com.senne.imttech.car.RcControllerItem;
 import com.senne.imttech.client.car.RcCarScreen;
-import com.senne.imttech.client.os.RcCarCodeScreen;
+import com.senne.imttech.client.os.RcCarProgramScreen;
+import com.senne.imttech.client.os.SecurityOsScreen;
+import com.senne.imttech.logic.ServerRackBlockEntity;
+import com.senne.imttech.logic.program.ProgramKind;
 import com.senne.imttech.network.RcCarActionPayload;
+import com.senne.imttech.registry.ModBlocks;
 import com.senne.imttech.registry.ModEntities;
 import com.senne.imttech.registry.ModItems;
+import com.senne.imttech.security.SecurityCoreBlockEntity;
+import com.senne.imttech.security.os.SecurityOs;
+import com.senne.imttech.station.ChargerBlockEntity;
 import com.senne.imttech.weapons.EnergyCellItem;
 import java.util.function.Consumer;
 import net.minecraft.client.Minecraft;
@@ -35,13 +42,14 @@ import org.jetbrains.annotations.Nullable;
  *
  * <ul>
  *   <li>{@code gradlew runVisualCheck -Ponly=rccar}: een auto voor een blok steen, van voren, van opzij, van achter en in
- *   het donker (zijn lichtjes); dan boort hij een gang (de boor draait, de barstjes), zijn scherm, de code-editor (met
- *   Ctrl+Spatie en het paneel rechts), zijn kofferbak, en de items in je inventaris met hun tooltip (de auto, de
- *   controller, de ijzeren en de netherite boorkop); dan vier auto's met elk een andere boorkop, en het scherm en de
- *   lege editor van een nieuwe auto. Screenshots rc01 tot rc20.</li>
- *   <li>{@code gradlew runVisualCheck -Ponly=howtopics:car}: de drie plaatjes van echte schermen voor de animatie van
- *   How it works ({@code rc_car_screen}, en de editor met de twee voorbeelden: {@code rc_car_code} en
- *   {@code rc_car_code_room}); die komen in de mod zelf te staan.</li>
+ *   het donker (zijn lichtjes); dan boort hij een gang (de boor draait, de barstjes), zijn scherm, de RC programs van de
+ *   server (de knop Program, hoofdstuk 119), de app Logic met zijn RC program en een nieuw RC program, de app Robots met
+ *   de auto en zijn keuzelijst, zijn kofferbak, en de items in je inventaris met hun tooltip (de auto, de controller, de
+ *   ijzeren en de netherite boorkop, de arm); dan vier auto's met elk een andere boorkop, het scherm en de RC programs
+ *   van een nieuwe auto, en de RC Robot Arm. Screenshots rc01 tot rc28.</li>
+ *   <li>{@code gradlew runVisualCheck -Ponly=howtopics:car}: de vier plaatjes van echte schermen voor de animatie van
+ *   How it works ({@code rc_car_screen}, de RC programs op de auto: {@code rc_car_programs}, en de app Logic met de twee
+ *   voorbeelden: {@code logic_rc_strip_mine} en {@code logic_rc_room}); die komen in de mod zelf te staan.</li>
  *   <li>De showcase-functie "RC Car" (zie ShowcaseFeatures): {@link #showcase}.</li>
  * </ul>
  */
@@ -79,10 +87,74 @@ final class RcCarTour {
     }
 
     /**
-     * Het programma dat de speler van de rondleiding op zijn auto's schreef: jouw twee voorbeelden (een nieuwe auto heeft
+     * Het programma dat de speler van de rondleiding voor zijn auto's schreef: jouw twee voorbeelden (een nieuwe auto heeft
      * zelf geen programma).
      */
     private static final String WRITTEN = CarProgram.EXAMPLE_STRIP_MINE + "\n" + CarProgram.EXAMPLE_ROOM;
+
+    /** Het RC program "Mining" van Digger en Miner: de twee voorbeelden en een hoofdprogramma. */
+    private static final String MINING = WRITTEN + """
+
+            # Runs when you press Start.
+            when started:
+                say("Hello, I am " + car.name)
+                strip_mine()
+            """;
+
+    /**
+     * Hoofdstuk 119: de Security Core van de basis waar de auto's bij horen (zijn RC programs staan op die server). Buiten
+     * het stuk dat het toneel leegmaakt, schuin achter de auto's.
+     */
+    static final BlockPos BASE = YARD.offset(-12, 0, 10);
+
+    /** Een volle warmtegenerator op deze plek (stroom voor de kern en het serverrek). */
+    private static void generator(ServerLevel level, BlockPos pos) {
+        level.setBlockAndUpdate(pos, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+        if (level.getBlockEntity(pos) instanceof ChargerBlockEntity charger) {
+            charger.fill(200_000);
+        }
+    }
+
+    /**
+     * Hoofdstuk 119: een basis van deze speler op {@code at}: een Security Core (met een wachtwoord, dan opent de desktop
+     * niet meteen Settings) met een serverrek ertegen (twee CPU's, RAM, een SSD en twee fans), elk met een volle
+     * warmtegenerator eronder, en op die server deze RC programs ({@code programs}: telkens een naam en dan de code).
+     * Bestaan ze al (een tweede keer de rondleiding), dan worden ze vervangen. Ook voor de rondleiding van het opslagsysteem.
+     */
+    static @Nullable SecurityCoreBlockEntity base(ServerPlayer player, BlockPos at, String... programs) {
+        ServerLevel level = player.serverLevel();
+        generator(level, at.below());
+        level.setBlockAndUpdate(at, ModBlocks.SECURITY_CORE.get().defaultBlockState());
+        BlockPos rack = at.east();
+        generator(level, rack.below());
+        level.setBlockAndUpdate(rack, ModBlocks.SERVER_RACK.get().defaultBlockState());
+        if (level.getBlockEntity(rack) instanceof ServerRackBlockEntity be && be.parts().isEmpty()) {
+            be.insert(new ItemStack(ModItems.SERVER_CPU.get()));
+            be.insert(new ItemStack(ModItems.SERVER_CPU.get()));
+            be.insert(new ItemStack(ModItems.SERVER_RAM.get()));
+            be.insert(new ItemStack(ModItems.SERVER_SSD.get()));
+            be.insert(new ItemStack(ModItems.SERVER_FAN.get()));
+            be.insert(new ItemStack(ModItems.SERVER_FAN.get()));
+            be.setName("rack1");
+        }
+        if (!(level.getBlockEntity(at) instanceof SecurityCoreBlockEntity core)) {
+            return null;
+        }
+        core.setOwner(player);
+        core.ensureSystem(level);
+        core.setPassword("bitech1", level.random);
+        // Eerst de RC programs van een vorige keer weg (een nieuw RC program uit de rondleiding stond anders op de plaatjes).
+        for (com.senne.imttech.logic.program.LogicProgram old : java.util.List.copyOf(core.logic().programs())) {
+            if (old.kind() == ProgramKind.CAR) {
+                core.logic().remove(old.name());
+            }
+        }
+        for (int i = 0; i + 1 < programs.length; i += 2) {
+            core.logic().put(null, VisualCheck.robotProgram(programs[i], programs[i + 1], ProgramKind.CAR));
+        }
+        core.setChanged();
+        return core;
+    }
 
     /**
      * Een nieuwe auto op deze plek, met zijn neus naar het noorden, van deze speler, met een cel, deze boorkop, met of
@@ -115,10 +187,11 @@ final class RcCarTour {
     }
 
     /**
-     * Zet het toneel klaar: een vlakke plek, een blok steen van 3 breed, 3 hoog en 6 diep ten noorden van de auto, en de
-     * auto zelf ("Digger", van jou, met een cel van 86%, de ijzeren boorkop van een nieuwe auto, een RC Robot Arm (zijn
-     * strip_mine boort ook boven zich), wat cobblestone in zijn kofferbak, en een programma: de twee voorbeelden plus een
-     * hoofdprogramma).
+     * Zet het toneel klaar: een vlakke plek, een blok steen van 3 breed, 3 hoog en 6 diep ten noorden van de auto, de
+     * basis (hoofdstuk 119: een kern met een server en drie RC programs: Mining, Strip miner en Room), en de auto zelf
+     * ("Digger", van jou, met een cel van 86%, de ijzeren boorkop van een nieuwe auto, een RC Robot Arm (zijn strip_mine
+     * boort ook boven zich), wat cobblestone in zijn kofferbak, en het RC program Mining van de server: de twee voorbeelden
+     * plus een hoofdprogramma).
      */
     private static void stage(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
@@ -131,14 +204,10 @@ final class RcCarTour {
         for (BlockPos pos : BlockPos.betweenClosed(YARD.offset(-1, 0, -7), YARD.offset(1, 2, -2))) {
             level.setBlockAndUpdate(pos, Blocks.STONE.defaultBlockState());
         }
-        RcCarEntity car = spawn(player, YARD, "Digger", 86.0f, DrillHead.IRON, true, WRITTEN + """
-
-                # Runs when you press Start.
-                when started:
-                    say("Hello, I am " + car.name)
-                    strip_mine()
-                """);
+        base(player, BASE, "Mining", MINING, "Strip miner", CarProgram.EXAMPLE_STRIP_MINE, "Room", CarProgram.EXAMPLE_ROOM);
+        RcCarEntity car = spawn(player, YARD, "Digger", 86.0f, DrillHead.IRON, true, CarProgram.EMPTY);
         if (car != null) {
+            car.loadProgram("Mining", MINING);
             car.trunk().addItem(new ItemStack(Items.COBBLESTONE, 23));
         }
     }
@@ -158,7 +227,8 @@ final class RcCarTour {
         // Armed: twee blokken naast Rookie, met een blok steen boven zich (om omhoog te boren) en twee blokken ervoor.
         BlockPos armed = ARMED;
         player.serverLevel().setBlockAndUpdate(armed.above(), Blocks.STONE.defaultBlockState());
-        spawn(player, armed, "Armed", 100.0f, DrillHead.IRON, true, CarProgram.EMPTY);
+        // Armed heeft nog zijn eigen code van vóór hoofdstuk 119 (die toont de lijst met RC programs bovenaan).
+        spawn(player, armed, "Armed", 100.0f, DrillHead.IRON, true, "def hello():\n    say(\"Hi, I am \" + car.name)\n");
     }
 
     /** Waar "Armed" staat: twee blokken ten westen van Rookie. */
@@ -180,7 +250,10 @@ final class RcCarTour {
             level.setBlockAndUpdate(pos, Blocks.GLASS.defaultBlockState());
         }
         level.setBlockAndUpdate(ROOM, Blocks.AIR.defaultBlockState());
-        spawn(player, ROOM, "Miner", 100.0f, DrillHead.NETHERITE, true, WRITTEN);
+        RcCarEntity miner = spawn(player, ROOM, "Miner", 100.0f, DrillHead.NETHERITE, true, CarProgram.EMPTY);
+        if (miner != null) {
+            miner.loadProgram("Mining", MINING);
+        }
     }
 
     static void tour(DevScript t) {
@@ -225,24 +298,34 @@ final class RcCarTour {
         t.shot(15, "rc08_screen_running");
         t.step(0, () -> send("Digger", RcCarActionPayload.Op.STOP, ""));
         t.shot(15, "rc09_screen_ready");
-        // De code-editor: de knop Program. Dan Ctrl+Spatie op een lege, ingesprongen regel, en de muis op het paneel rechts.
-        t.step(0, () -> send("Digger", RcCarActionPayload.Op.CODE, ""));
-        t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof RcCarCodeScreen);
-        t.shot(10, "rc10_code_editor");
-        t.step(0, () -> {
-            if (Minecraft.getInstance().screen instanceof RcCarCodeScreen screen) {
-                screen.tourCompletion();
-            }
+        // Hoofdstuk 119: de knop Program toont de RC programs van de server van de basis (Mining staat al op de auto).
+        t.step(0, () -> send("Digger", RcCarActionPayload.Op.PROGRAMS, ""));
+        t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof RcCarProgramScreen);
+        t.step(5, () -> HowToTour.mouseTo(2, 2));
+        t.shot(10, "rc10_rc_programs");
+        // Load onto car met Room: de lijst werkt zich bij, en onderaan staat wat het laden zei. Dan weer Mining.
+        t.step(0, () -> send("Digger", RcCarActionPayload.Op.LOAD, "Room"));
+        t.shot(15, "rc10b_rc_program_loaded");
+        t.step(0, () -> send("Digger", RcCarActionPayload.Op.LOAD, "Mining"));
+        t.close(10);
+        // Op de desktop van de kern: de app Logic met het RC program Mining (de groene C), een nieuw RC program (na +, met
+        // zijn uitleg), en de app Robots met Digger in de tabel en de keuzelijst van zijn knop Program.
+        t.onServer(5, player -> {
+            player.teleportTo(BASE.getX() + 0.5, BASE.getY(), BASE.getZ() + 2.5);
+            SecurityOs.open(player, BASE);
         });
-        t.shot(5, "rc11_code_ctrl_space");
-        t.step(0, () -> {
-            if (Minecraft.getInstance().screen instanceof RcCarCodeScreen screen) {
-                screen.tourHelp(9);
-            }
-        });
-        t.shot(5, "rc12_code_help");
-        t.close(2);
-        t.close(5);
+        t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof SecurityOsScreen);
+        t.step(5, () -> HowToTour.mouseTo(1, 1));
+        t.step(5, () -> os(SecurityOsScreen::tourCloseAll));
+        t.step(0, () -> os(screen -> screen.tourLogicOpen("Mining")));
+        t.shot(10, "rc11_logic_rc_program");
+        t.step(0, () -> os(screen -> screen.tourLogicNew(ProgramKind.CAR)));
+        t.shot(10, "rc12_logic_new_rc_program");
+        t.step(0, () -> os(SecurityOsScreen::tourCloseAll));
+        t.step(5, () -> os(screen -> screen.tourRobotsCar(false)));
+        t.shot(10, "rc27_robots_app_car");
+        t.step(0, () -> os(screen -> screen.tourRobotsCar(true)));
+        t.shot(5, "rc28_robots_app_car_programs");
         t.close(5);
         // De kofferbak (rechtsklik op de auto): daarvoor sta je erbij.
         t.onServer(5, player -> on(player, "Digger", car -> {
@@ -294,7 +377,8 @@ final class RcCarTour {
         t.shot(30, "rc18_four_drill_heads");
         t.step(0, () -> zoom(false));
         t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
-        // Een nieuwe auto: geen programma. Zijn scherm zegt dat, en zijn editor is leeg (met grijze uitleg).
+        // Een nieuwe auto: geen programma. Zijn scherm zegt waar je het schrijft, en Program toont de RC programs van de
+        // server (er staat er nog geen op de auto).
         t.onServer(0, player -> on(player, "Rookie", car -> {
             player.teleportTo(car.getX(), car.getY(), car.getZ() + 2.0);
             RcCars.open(player, car, false);
@@ -302,11 +386,10 @@ final class RcCarTour {
         t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof RcCarScreen);
         t.step(5, () -> HowToTour.mouseTo(2, 2));
         t.shot(15, "rc19_new_car_screen");
-        t.step(0, () -> send("Rookie", RcCarActionPayload.Op.CODE, ""));
-        t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof RcCarCodeScreen);
+        t.step(0, () -> send("Rookie", RcCarActionPayload.Op.PROGRAMS, ""));
+        t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof RcCarProgramScreen);
         t.step(5, () -> HowToTour.mouseTo(2, 2));
-        t.shot(10, "rc20_empty_editor");
-        t.close(5);
+        t.shot(10, "rc20_new_car_rc_programs");
         t.close(5);
         // Hoofdstuk 118: Rookie zonder arm en Armed met arm naast elkaar, van schuin voor (de gele behuizing achter de boor).
         double ax = ARMED.getX() + 0.5;
@@ -340,12 +423,20 @@ final class RcCarTour {
         t.step(5, () -> HowToTour.mouseTo(2, 2));
         t.shot(15, "rc26_screen_no_arm");
         t.close(5);
+        // Armed met zijn eigen code van vroeger: Program toont die bovenaan (alleen lezen, om over te typen).
+        t.onServer(0, player -> on(player, "Armed", car -> RcCars.open(player, car, false)));
+        t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof RcCarScreen);
+        t.step(5, () -> send("Armed", RcCarActionPayload.Op.PROGRAMS, ""));
+        t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof RcCarProgramScreen);
+        t.step(5, () -> HowToTour.mouseTo(2, 2));
+        t.shot(10, "rc29_own_code");
+        t.close(5);
     }
 
     /**
-     * De plaatjes van echte schermen voor de animatie van How it works: het scherm van de auto (alleen zijn paneel), en
-     * twee keer de code-editor (het hele venster): met het voorbeeld strip mine, en met het voorbeeld kamer. Ze komen in
-     * src/main/resources te staan (zie HowToTour.capture).
+     * De plaatjes van echte schermen voor de animatie van How it works: het scherm van de auto (alleen zijn paneel), de RC
+     * programs van de server op de auto (het hele venster, hoofdstuk 119), en twee keer de app Logic (het hele venster): met
+     * het voorbeeld strip mine, en met het voorbeeld kamer. Ze komen in src/main/resources te staan (zie HowToTour.capture).
      */
     static void pictures(DevScript t) {
         double x = YARD.getX() + 0.5;
@@ -358,7 +449,7 @@ final class RcCarTour {
         t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
         t.onServer(20, player -> on(player, "Digger", car -> {
             // Voor het plaatje: de twee functies uit de voorbeelden (zonder het hoofdprogramma van de rondleiding).
-            car.setSource(WRITTEN);
+            car.loadProgram("Mining", WRITTEN);
             RcCars.open(player, car, false);
         }));
         t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof RcCarScreen);
@@ -372,35 +463,47 @@ final class RcCarTour {
                 ImtTech.LOGGER.warn("[visual check] het scherm van de RC Car staat niet open (maar {})", mc.screen);
             }
         });
+        // De knop Program: de RC programs van de server (Mining staat op de auto, zoals op de server, en is gekozen).
+        t.onServer(0, player -> on(player, "Digger", car -> car.loadProgram("Mining", MINING)));
+        t.step(5, () -> send("Digger", RcCarActionPayload.Op.PROGRAMS, ""));
+        t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof RcCarProgramScreen);
+        t.step(5, () -> HowToTour.mouseTo(2, 2));
+        t.step(15, () -> {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.screen instanceof RcCarProgramScreen) {
+                HowToTour.capture("rc_car_programs", 0, 0, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
+            } else {
+                ImtTech.LOGGER.warn("[visual check] de RC programs van de auto staan niet open (maar {})", mc.screen);
+            }
+        });
         t.close(5);
-        codePicture(t, "rc_car_code", CarProgram.EXAMPLE_STRIP_MINE);
-        codePicture(t, "rc_car_code_room", CarProgram.EXAMPLE_ROOM);
+        // De app Logic op de desktop van de kern, met elk voorbeeld als RC program.
+        t.onServer(5, player -> {
+            player.teleportTo(BASE.getX() + 0.5, BASE.getY(), BASE.getZ() + 2.5);
+            SecurityOs.open(player, BASE);
+        });
+        t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof SecurityOsScreen);
+        t.step(5, () -> HowToTour.mouseTo(1, 1));
+        t.step(5, () -> os(SecurityOsScreen::tourCloseAll));
+        logicPicture(t, "logic_rc_strip_mine", "Strip miner");
+        logicPicture(t, "logic_rc_room", "Room");
+        t.close(5);
         t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
     }
 
-    /** Een plaatje van de code-editor van Digger met deze code erin (het hele venster). */
-    private static void codePicture(DevScript t, String name, String source) {
-        t.onServer(10, player -> on(player, "Digger", car -> {
-            car.setSource(source);
-            RcCars.open(player, car, false);
-        }));
-        t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof RcCarScreen);
-        t.step(5, () -> send("Digger", RcCarActionPayload.Op.CODE, ""));
-        t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof RcCarCodeScreen);
-        t.step(5, () -> HowToTour.mouseTo(2, 2));
+    /** Een plaatje van de app Logic met dit RC program open (het hele venster; de desktop staat al open). */
+    private static void logicPicture(DevScript t, String name, String program) {
+        t.step(0, () -> os(screen -> screen.tourLogicOpen(program)));
         t.pause(14);
         t.waitUntil(40, HowToTour::caretHidden);
         t.step(0, () -> {
             Minecraft mc = Minecraft.getInstance();
-            if (mc.screen instanceof RcCarCodeScreen) {
+            if (mc.screen instanceof SecurityOsScreen) {
                 HowToTour.capture(name, 0, 0, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
             } else {
-                ImtTech.LOGGER.warn("[visual check] de editor van de RC Car staat niet open (maar {})", mc.screen);
+                ImtTech.LOGGER.warn("[visual check] de desktop staat niet open (maar {})", mc.screen);
             }
         });
-        t.close(5);
-        t.close(5);
-        t.close(5);
     }
 
     // ================================================================ De showcase
@@ -409,7 +512,7 @@ final class RcCarTour {
     static final Vec3 SHOW_FROM = Vec3.atBottomCenterOf(YARD.offset(3, 0, 4));
 
     /**
-     * De showcase-functie "RC Car": Digger (voor een blok steen) en zijn scherm, zijn programma, de functie strip_mine
+     * De showcase-functie "RC Car": Digger (voor een blok steen) en zijn scherm, de RC programs van de server, de functie strip_mine
      * vanaf zijn scherm (eerst met de ijzeren boorkop, dan met de netherite: vier keer zo snel), zijn kofferbak; dan de RC
      * Controller, gekoppeld met Miner, die van ver de functie room start: door het glazen dak zie je de kamer van 5 x 3 x 5
      * ontstaan. Tot slot pak je Digger op.
@@ -421,10 +524,10 @@ final class RcCarTour {
                 .onServer(0, RcCarTour::stage)
                 .onServer(0, RcCarTour::roomStage)
                 .pause(80)
-                // Het scherm van Digger (sneak + rechtsklik), en zijn programma (de knop Program).
+                // Het scherm van Digger (sneak + rechtsklik), en de RC programs van de server (de knop Program).
                 .onServer(0, player -> on(player, "Digger", car -> RcCars.open(player, car, false)))
                 .pause(120)
-                .step(0, () -> send("Digger", RcCarActionPayload.Op.CODE, ""))
+                .step(0, () -> send("Digger", RcCarActionPayload.Op.PROGRAMS, ""))
                 .pause(200)
                 .close(10)
                 // Met de pijltjes één blok vooruit, en dan de functie strip_mine: hij boort een gang door de steen.
@@ -512,6 +615,15 @@ final class RcCarTour {
         int id = carId(name);
         if (id >= 0) {
             PacketDistributor.sendToServer(new RcCarActionPayload(id, op, text));
+        }
+    }
+
+    /** Doe dit met de desktop, als die open staat. */
+    private static void os(Consumer<SecurityOsScreen> action) {
+        if (Minecraft.getInstance().screen instanceof SecurityOsScreen screen) {
+            action.accept(screen);
+        } else {
+            ImtTech.LOGGER.warn("[visual check] de desktop staat niet open (maar {})", Minecraft.getInstance().screen);
         }
     }
 

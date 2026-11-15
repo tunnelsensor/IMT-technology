@@ -14,9 +14,12 @@ import java.util.Locale;
  *       maar hij vliegt, dus hij kan ook omhoog en omlaag ({@code up(3)}, {@code down(1)}).</li>
  *   <li><b>TRAINING_END</b> (hoofdstuk 26): het programmaatje in een Training End-blok. Alleen {@code when trainee_hit:} (de
  *       trainee is geraakt), met {@code trainee}, {@code lives} en {@code hits}; het draait op je server.</li>
- *   <li><b>CAR</b> (hoofdstuk 108): het programma van een RC Car, het autootje dat voor je mijnt en bouwt. Je schrijft
- *       het op de auto zelf (sneak + rechtsklik, Program), niet in de app Logic: de auto heeft geen server nodig. Het
- *       kent rijden ({@code forward(3)}, {@code turn_left()}), breken ({@code mine()}, {@code mine_up()}), plaatsen
+ *   <li><b>CAR</b> (hoofdstuk 108): het programma van een RC Car, het autootje dat voor je mijnt en bouwt; in het spel
+ *       heet het een "RC program". Sinds hoofdstuk 119 (jouw wens: "zorg dat je de rc car code op de server moet
+ *       schrijven, voeg een extra script toe 'RC program', dit neemt evenveel in als een server diagram of robot/drone
+ *       program") schrijf je het in de app Logic, zoals een robotprogramma: het staat op je server (en telt mee voor je
+ *       SSD's en de 16 diagrammen), en de auto krijgt een kopie (de knop Program op de auto, of de app Robots). Het kent
+ *       rijden ({@code forward(3)}, {@code turn_left()}), breken ({@code mine()}, {@code mine_up()}), plaatsen
  *       ({@code place()}), oprapen en lossen ({@code collect()}, {@code unload()}), en {@code car.battery},
  *       {@code block()}... Elke def zonder parameters is een functie op de RC Controller.</li>
  * </ul>
@@ -24,18 +27,21 @@ import java.util.Locale;
  * ({@code Expr.Variable}); ScriptChecker kijkt het na.
  */
 public enum ProgramKind {
-    SERVER("Server diagram", "server diagram"),
-    ROBOT("Robot program", "robot program"),
-    DRONE("Drone program", "drone program"),
-    TRAINING_END("Training End program", "Training End program"),
-    CAR("RC Car program", "car program");
+    SERVER("Server diagram", "server diagram", "a"),
+    ROBOT("Robot program", "robot program", "a"),
+    DRONE("Drone program", "drone program", "a"),
+    TRAINING_END("Training End program", "Training End program", "a"),
+    CAR("RC program", "RC program", "an");
 
     private final String title;
     private final String noun;
+    /** Het lidwoord in een zin: "a robot program", maar "an RC program" (je zegt "ar-see"). */
+    private final String article;
 
-    ProgramKind(String title, String noun) {
+    ProgramKind(String title, String noun, String article) {
         this.title = title;
         this.noun = noun;
+        this.article = article;
     }
 
     /** De naam in het spel: "Robot program". */
@@ -43,9 +49,14 @@ public enum ProgramKind {
         return title;
     }
 
-    /** Zoals in een zin: "only works in a robot program". */
+    /** Zoals in een zin, zonder lidwoord: "robot program". */
     public String noun() {
         return noun;
+    }
+
+    /** Zoals in een zin, met het lidwoord: "a robot program", "an RC program". */
+    public String aNoun() {
+        return article + " " + noun;
     }
 
     /** Draait het op een robot of een drone (een "bot")? Dan kent het lopen, pinnen en opdrachten. */

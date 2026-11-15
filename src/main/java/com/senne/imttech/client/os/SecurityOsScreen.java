@@ -410,6 +410,12 @@ public class SecurityOsScreen extends Screen {
         robots.tourChooseProgram();
     }
 
+    /** Alleen voor de screenshot-rondleiding (hoofdstuk 119): in de app Robots de eerste RC Car, eventueel met zijn keuzelijst. */
+    public void tourRobotsCar(boolean chooser) {
+        openApp(App.ROBOTS);
+        robots.tourChooseCar(chooser);
+    }
+
     /** Alleen voor de screenshot-rondleiding: in de app Robots "Sure?" op Delete van de eerste robot ver weg (18 oktober). */
     public void tourRobotsAskDelete() {
         openApp(App.ROBOTS);

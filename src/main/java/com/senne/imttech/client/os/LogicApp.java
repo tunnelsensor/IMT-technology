@@ -244,6 +244,10 @@ final class LogicApp {
      * mag dit diagram gebruiken. De controle hier (Check) en op de server (Save) kijken er allebei mee.
      */
     private com.senne.imttech.logic.program.Library library() {
+        if (kind == ProgramKind.CAR) {
+            // Een RC program (hoofdstuk 119) draait op de auto, die alleen zijn eigen kopie heeft: geen global scripts.
+            return com.senne.imttech.logic.program.Library.EMPTY;
+        }
         List<LogicProgram> programs = new ArrayList<>();
         for (Entry entry : entries) {
             if (entry.graph().global()) {
@@ -313,10 +317,15 @@ final class LogicApp {
         }
         int loose = blockGraph.size() - blockGraph.reachable().size();
         int handlers = (int) blockGraph.nodes().stream().filter(node -> node.op.isTrigger()).count();
+        int defs = (int) blockGraph.nodes().stream().filter(node -> node.op == Op.DEF).count();
         if (blockGraph.global()) {
             show("Global script: " + blockGraph.size() + (blockGraph.size() == 1 ? " block" : " blocks")
                     + " (DEF blocks and names at start, for all your diagrams)", HudStyle.GREEN);
-        } else if (handlers == 0) {
+        } else if (kind == ProgramKind.CAR && handlers == 0 && defs == 0) {
+            // Hoofdstuk 119 (gevonden door de nalezing): in een RC program is een DEF een knop op de auto, geen WHEN nodig.
+            show(blockGraph.size() == 0 ? "Start with a DEF block (a button on the car)"
+                    : "Add a DEF block: every def is a button on the car", HudStyle.ORANGE);
+        } else if (handlers == 0 && kind != ProgramKind.CAR) {
             show(blockGraph.size() == 0 ? "Start with a WHEN block (on the right)"
                     : "Add a WHEN block: a DEF does nothing until a when uses it", HudStyle.ORANGE);
         } else if (loose > 0) {
@@ -345,8 +354,14 @@ final class LogicApp {
                         + (shared == 1 ? " shared name" : " shared names") + " for all your diagrams (" + blocks
                         + (blocks == 1 ? " block)" : " blocks)"), HudStyle.GREEN);
             } else if (script.items().isEmpty()) {
-                show("Empty: start with a line like when keycard(\"Reader 1\"):", HudStyle.ORANGE);
-            } else if (script.handlers().isEmpty()) {
+                // Hoofdstuk 119: een RC program begint met een def (een knop op de auto), een robot of drone met when started.
+                show(kind == ProgramKind.CAR ? "Empty: start with def strip_mine(): (a button on the car)"
+                        : kind == ProgramKind.ROBOT || kind == ProgramKind.DRONE ? "Empty: start with the line when started:"
+                        : "Empty: start with a line like when keycard(\"Reader 1\"):", HudStyle.ORANGE);
+            } else if (kind == ProgramKind.CAR && script.handlers().isEmpty() && script.functions().isEmpty()) {
+                show("No problems, but no def yet: every def is a button on the car", HudStyle.ORANGE);
+            } else if (script.handlers().isEmpty() && kind != ProgramKind.CAR) {
+                // In een RC program is een def zonder when gewoon een knop op de auto: daar hoort deze waarschuwing niet.
                 show("No problems, but no when uses your defs yet (a def does nothing on its own)", HudStyle.ORANGE);
             } else {
                 show("No problems: " + blocks + (blocks == 1 ? " block" : " blocks"), HudStyle.GREEN);
@@ -429,8 +444,10 @@ final class LogicApp {
         if (!confirmed("new", "Unsaved changes: click New again to throw them away")) {
             return;
         }
-        // Een droneprogramma heet "Flight 1": "Drone 1" is al de naam van je eerste drone.
-        String base = newKind == ProgramKind.ROBOT ? "Robot " : newKind == ProgramKind.DRONE ? "Flight " : "Diagram ";
+        // Een droneprogramma heet "Flight 1": "Drone 1" is al de naam van je eerste drone. Een RC program (hoofdstuk 119):
+        // "RC 1".
+        String base = newKind == ProgramKind.ROBOT ? "Robot " : newKind == ProgramKind.DRONE ? "Flight "
+                : newKind == ProgramKind.CAR ? "RC " : "Diagram ";
         int number = 1;
         while (find(base + number) != null) {
             number++;
@@ -442,7 +459,15 @@ final class LogicApp {
         nameBox().setValue(base + number);
         loadedName = "";
         String reader = firstInput(Op.KEYCARD);
-        String code = newKind == ProgramKind.ROBOT
+        // Een RC program begint zonder code (jouw wens bij de RC Car: "er mag geen voorbestaande code zijn"): alleen uitleg.
+        String code = newKind == ProgramKind.CAR
+                ? "# An RC program, for your RC Cars.\n"
+                        + "# Every def without parameters, like\n"
+                        + "# def dig():, is a button on the car.\n"
+                        + "# Load it onto a car: Program on the car's\n"
+                        + "# screen, or in the Robots app.\n"
+                        + "# Help shows what a car can do.\n"
+                : newKind == ProgramKind.ROBOT
                 ? "# A robot program: it runs on the robot itself. Press Help to see what a robot can do.\nwhen started:\n    pass\n"
                 : newKind == ProgramKind.DRONE
                 ? "# A drone program: it runs on the drone itself. Press Help to see what a drone can do.\nwhen started:\n    up(2)\n"
@@ -704,9 +729,11 @@ final class LogicApp {
             OsDraw.button(g, font, x + 4, top + 15, "Server diagram", true, HudStyle.CYAN);
             OsDraw.button(g, font, x + 4, top + 15 + OsDraw.BUTTON_H + 3, "Robot program", true, 0xF1E87C);
             OsDraw.button(g, font, x + 4, top + 15 + 2 * (OsDraw.BUTTON_H + 3), "Drone program", true, DRONE_COLOUR);
+            // Een RC program (hoofdstuk 119): het programma van een RC Car.
+            OsDraw.button(g, font, x + 4, top + 15 + 3 * (OsDraw.BUTTON_H + 3), "RC program", true, CAR_COLOUR);
             // Een global script (hoofdstuk 43): defs en gedeelde namen voor al je diagrammen.
-            OsDraw.button(g, font, x + 4, top + 15 + 3 * (OsDraw.BUTTON_H + 3), "Global script", true, HudStyle.ORANGE);
-            OsDraw.button(g, font, x + 4, top + 15 + 4 * (OsDraw.BUTTON_H + 3), "Cancel", true, OsDraw.GREY);
+            OsDraw.button(g, font, x + 4, top + 15 + 4 * (OsDraw.BUTTON_H + 3), "Global script", true, HudStyle.ORANGE);
+            OsDraw.button(g, font, x + 4, top + 15 + 5 * (OsDraw.BUTTON_H + 3), "Cancel", true, OsDraw.GREY);
             return;
         }
         int y = top + 3;
@@ -720,7 +747,8 @@ final class LogicApp {
             }
             g.fill(x + 4, y + 2, x + 7, y + 5, HudStyle.argb(255, entry.on() ? HudStyle.GREEN : 0x4A5A62));
             String name = (selected && dirty() ? "*" : "") + entry.name();
-            boolean bot = entry.kind().onBot();
+            boolean car = entry.kind() == ProgramKind.CAR;
+            boolean bot = entry.kind().onBot() || car;
             boolean global = entry.graph().global();
             g.drawString(font, OsDraw.fitLeft(font, name, SIDE - (bot || global ? 24 : 14)), x + 10, y,
                     HudStyle.argb(255, entry.on() || bot ? HudStyle.WHITE : OsDraw.GREY), false);
@@ -728,7 +756,9 @@ final class LogicApp {
                 // Een robotprogramma: een geel R'tje rechts (het draait op een robot, niet op de server); een
                 // droneprogramma (hoofdstuk 25): een lichtblauwe D.
                 boolean drone = entry.kind() == ProgramKind.DRONE;
-                g.drawString(font, drone ? "D" : "R", x + SIDE - 10, y, HudStyle.argb(255, drone ? DRONE_COLOUR : 0xF1E87C), false);
+                // Een RC program (hoofdstuk 119): een groene C (het draait op een RC Car).
+                g.drawString(font, car ? "C" : drone ? "D" : "R", x + SIDE - 10, y,
+                        HudStyle.argb(255, car ? CAR_COLOUR : drone ? DRONE_COLOUR : 0xF1E87C), false);
             } else if (global) {
                 // Een global script (hoofdstuk 43): een oranje G.
                 g.drawString(font, "G", x + SIDE - 10, y, HudStyle.argb(255, HudStyle.ORANGE), false);
@@ -768,6 +798,9 @@ final class LogicApp {
     private record HelpLine(String label, @Nullable String insert, String tip, int colour, @Nullable CompoundTag input) {}
 
     private List<HelpLine> helpLines() {
+        if (kind == ProgramKind.CAR) {
+            return carHelpLines(); // hoofdstuk 119: wat een RC Car kent
+        }
         List<HelpLine> lines = new ArrayList<>();
         String reader = firstInput(Op.KEYCARD);
         String panel = firstInput(Op.CODEPANEL);
@@ -1025,6 +1058,8 @@ final class LogicApp {
 
     /** De kleur van een droneprogramma (de D in de lijst, de knop na +). */
     private static final int DRONE_COLOUR = 0x8FE3FF;
+    /** De kleur van een RC program (hoofdstuk 119): groen, zoals de knop Start van de auto. */
+    static final int CAR_COLOUR = 0x6BE88B;
 
     /** Een serverdiagram dat een robot roept (voorbeeld in Help). */
     private static final String CALL_EXAMPLE = """
@@ -1123,6 +1158,90 @@ final class LogicApp {
         return new HelpLine(text, null, "", HudStyle.ORANGE, null);
     }
 
+    /**
+     * Wat een RC Car kent (hoofdstuk 119: zijn programma schrijf je voortaan hier, als RC program), per soort. Het zijn losse
+     * woorden, geen kant-en-klare programma's (jouw wens bij de RC Car: "er mag geen voorbestaande code zijn"); voorbeelden
+     * staan in How it works.
+     */
+    private List<HelpLine> carHelpLines() {
+        List<HelpLine> lines = new ArrayList<>();
+        lines.add(header("START WITH"));
+        lines.add(new HelpLine("def name():", "def name():\n    ",
+                "A function: a button on the car's screen and on the RC Controller. Give it your own name", 0xC9A0FF, null));
+        lines.add(new HelpLine("when started:", "when started:\n    ", "The main program: it runs when you press Start on the car",
+                HudStyle.CYAN, null));
+        lines.add(new HelpLine("when ordered(\"fetch\"):", "when ordered(\"fetch\"):\n    ",
+                "Someone ordered an item at the Storage Interface of this car: order.item, order.count, order.left", HudStyle.CYAN, null));
+        lines.add(new HelpLine("when ordered(\"store\"):", "when ordered(\"store\"):\n    ",
+                "Someone put items into the Storage Interface to store them", HudStyle.CYAN, null));
+        lines.add(header("DRIVE"));
+        lines.add(item("forward(3) / back(1)", "forward(1)", Op.FORWARD));
+        lines.add(item("turn_left() / turn_right()", "turn_right()", Op.TURN_RIGHT));
+        lines.add(header("MINE"));
+        lines.add(item("mine()", "mine()", Op.MINE));
+        lines.add(item("mine_up()", "mine_up()", Op.MINE_UP));
+        lines.add(item("mine_down()", "mine_down()", Op.MINE_DOWN));
+        lines.add(header("ARM (needs an RC Robot Arm)"));
+        lines.add(item("arm_up() / arm_up(2)", "arm_up()", Op.ARM_UP));
+        lines.add(item("arm_down() / arm_down(2)", "arm_down()", Op.ARM_DOWN));
+        lines.add(header("BUILD"));
+        lines.add(item("place() / place(\"...\")", "place()", Op.PLACE));
+        lines.add(item("place_up()", "place_up()", Op.PLACE_UP));
+        lines.add(item("place_down()", "place_down()", Op.PLACE_DOWN));
+        lines.add(header("TRUNK AND CHESTS"));
+        lines.add(item("collect()", "collect()", Op.COLLECT));
+        lines.add(item("unload()", "unload()", Op.UNLOAD));
+        lines.add(item("take(\"...\", 8)", "take(\"iron_ingot\", 8)", Op.TAKE));
+        lines.add(item("put(\"...\", 8)", "put(\"iron_ingot\", 8)", Op.PUT));
+        lines.add(item("check()", "check()", Op.CHECK));
+        lines.add(new HelpLine("if ... in chest():", "if item(\"iron_ingot\") in chest():\n    ",
+                "Is that item in the chest in front of the car (at the height of its arm)? in trunk() looks in its own trunk",
+                HudStyle.WHITE, null));
+        lines.add(header("THE CAR KNOWS"));
+        for (Expr.Function function : Expr.Function.values()) {
+            if (function.allowedIn(ProgramKind.CAR)) {
+                String call = function.code() + (function.takesItem() ? "(\"iron_ingot\")" : "()");
+                lines.add(new HelpLine(function.code() + (function.takesItem() ? "(\"...\")" : "()"), call, function.help(),
+                        0xF1E87C, null));
+            }
+        }
+        for (Expr.Variable variable : Expr.Variable.values()) {
+            if (variable.allowedIn(ProgramKind.CAR)) {
+                lines.add(new HelpLine(variable.code(), variable.code(), variable.help(), 0xF1E87C, null));
+            }
+        }
+        lines.add(header("REPEAT AND CHECK"));
+        lines.add(new HelpLine("for i in range(3):", "for i in range(3):\n    ", Op.FOR.help() + ". i is 0, 1, 2", 0xFF79C6, null));
+        lines.add(new HelpLine("while ...:", "while car.battery > 10:\n    ", Op.WHILE.help(), 0xFF79C6, null));
+        lines.add(new HelpLine("if ...:", "if car.blocked:\n    ", Op.IF.help(), 0xFF79C6, null));
+        lines.add(new HelpLine("else: / elif ...:", "else:\n    ", "What happens when the if is not true", 0xFF79C6, null));
+        lines.add(new HelpLine("break", "break", Op.BREAK.help(), 0xFF79C6, null));
+        lines.add(header("OTHER"));
+        lines.add(item("wait(2)", "wait(2)", Op.WAIT));
+        lines.add(new HelpLine("say(\"...\")", "say(\"Done\")", "The car tells you something in the chat", 0x9ED8FF, null));
+        lines.add(item("stop()", "stop()", Op.STOP));
+        lines.add(new HelpLine("count = 0", "count = 0\n",
+                "At the left edge: a name for the whole program. It keeps its value between jobs.", 0xF1E87C, null));
+        lines.add(new HelpLine("def lane(int length):", "def lane(int length):\n    for i in range(length):\n        mine()\n        forward(1)\n",
+                "A def with values it needs (parameters): a helper for your other steps, not a button. Use it with lane(5)",
+                0xC9A0FF, null));
+        lines.add(header("YOUR OWN BLOCKS (def)"));
+        java.util.regex.Matcher defs = java.util.regex.Pattern.compile("(?m)^def\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\(([^)]*)\\)")
+                .matcher(editor.text());
+        boolean any = false;
+        while (defs.find()) {
+            any = true;
+            boolean takes = !defs.group(2).isBlank();
+            lines.add(new HelpLine(defs.group(1) + "(" + defs.group(2).strip() + ")", defs.group(1) + "()",
+                    takes ? "one of your helpers (needs: " + defs.group(2).strip() + ")" : "one of your functions: a button on the car",
+                    0xC9A0FF, null));
+        }
+        if (!any) {
+            lines.add(new HelpLine("(none yet)", null, "Write def name(): at the left edge, with the steps under it", OsDraw.GREY, null));
+        }
+        return lines;
+    }
+
     private static HelpLine item(String label, String insert, Op op) {
         return new HelpLine(label, insert, op.help(), op.isTrigger() ? HudStyle.CYAN : 0x9ED8FF, null);
     }
@@ -1185,9 +1304,11 @@ final class LogicApp {
                 newDiagram(ProgramKind.ROBOT);
             } else if (OsDraw.inside(mx, my, bx, top + 15 + 2 * (OsDraw.BUTTON_H + 3), OsDraw.buttonWidth(font, "Drone program"), OsDraw.BUTTON_H)) {
                 newDiagram(ProgramKind.DRONE);
-            } else if (OsDraw.inside(mx, my, bx, top + 15 + 3 * (OsDraw.BUTTON_H + 3), OsDraw.buttonWidth(font, "Global script"), OsDraw.BUTTON_H)) {
+            } else if (OsDraw.inside(mx, my, bx, top + 15 + 3 * (OsDraw.BUTTON_H + 3), OsDraw.buttonWidth(font, "RC program"), OsDraw.BUTTON_H)) {
+                newDiagram(ProgramKind.CAR);
+            } else if (OsDraw.inside(mx, my, bx, top + 15 + 4 * (OsDraw.BUTTON_H + 3), OsDraw.buttonWidth(font, "Global script"), OsDraw.BUTTON_H)) {
                 newGlobalScript();
-            } else if (OsDraw.inside(mx, my, bx, top + 15 + 4 * (OsDraw.BUTTON_H + 3), OsDraw.buttonWidth(font, "Cancel"), OsDraw.BUTTON_H)) {
+            } else if (OsDraw.inside(mx, my, bx, top + 15 + 5 * (OsDraw.BUTTON_H + 3), OsDraw.buttonWidth(font, "Cancel"), OsDraw.BUTTON_H)) {
                 choosingKind = false;
             }
             if (mx >= a.x() && mx < a.x() + SIDE) {

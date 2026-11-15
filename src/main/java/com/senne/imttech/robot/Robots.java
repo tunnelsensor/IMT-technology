@@ -382,7 +382,7 @@ public final class Robots {
                 return new Desktop("There is no program called " + name, true);
             }
             if (found.kind() != entry.kind()) {
-                return new Desktop(name + " is a " + found.kind().noun() + ", not a " + entry.kind().noun(), true);
+                return new Desktop(name + " is " + found.kind().aNoun() + ", not " + entry.kind().aNoun(), true);
             }
             program = LogicProgram.load(found.save()); // een kopie: de robot houdt hem, ook als je hem later verandert
         }

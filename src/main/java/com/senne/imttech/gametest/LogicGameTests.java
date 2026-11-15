@@ -393,7 +393,7 @@ public final class LogicGameTests {
         }
         com.senne.imttech.car.RcCarData data = com.senne.imttech.car.RcCarData.DEFAULT;
         car.applyData(new com.senne.imttech.car.RcCarData("", oldCar, java.util.Optional.empty(), data.cell(), data.trunk(), data.drill(),
-                data.robotArm()));
+                data.robotArm(), data.program(), data.programServer()));
         if (!car.source().equals(newCar) || !car.functions().equals(List.of("home"))) {
             throw new GameTestAssertException("Een RC Car uit een oud item werd niet omgezet: " + car.source());
         }
@@ -1551,7 +1551,7 @@ public final class LogicGameTests {
         expectError("when every(5):\n    aim(1, 2, 3)", 2, "aim() only works in a robot program");
 
         // Elk woord alleen in zijn eigen soort programma.
-        expectError("when started:\n    pass", 1, "when started: only works in a robot program, a drone program or a car program, not in a server diagram");
+        expectError("when started:\n    pass", 1, "when started: only works in a robot program, a drone program or an RC program, not in a server diagram");
         expectError("when every(5):\n    forward(3)", 2, "forward() only works in a robot program");
         expectError("when every(5):\n    if read(1):\n        pass", 2, "read(...) only works in a robot program");
         expectError("when every(5):\n    if robot.battery < 10:\n        pass", 2, "robot.battery only works in a robot program");

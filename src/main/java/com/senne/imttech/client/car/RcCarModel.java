@@ -126,12 +126,14 @@ public class RcCarModel extends EntityModel<RcCarEntity> {
         // De arm (hoofdstuk 113): de boor schuift vloeiend omhoog (16 pixels per blok; kleinere y is hoger), en de mast
         // rekt mee. Kantelen (hoofdstuk 118): naar boven gaat de boor ook een stukje omhoog, tot zijn punt het blok boven
         // de auto raakt; naar onder blijft hij op zijn plek en wijst zijn punt in de grond.
-        float arm = Mth.lerp(partial, car.armShownO, car.armShown);
-        float tilt = Mth.lerp(partial, car.tiltShownO, car.tiltShown);
+        // Zonder arm (ook net na Arm off) staat de boor meteen op zijn neus: anders zakte hij nog even zonder mast terug
+        // (gevonden door de review).
+        boolean hasArm = car.hasRobotArm();
+        float arm = hasArm ? Mth.lerp(partial, car.armShownO, car.armShown) : 0.0f;
+        float tilt = hasArm ? Mth.lerp(partial, car.tiltShownO, car.tiltShown) : 0.0f;
         float lift = Mth.lerp(Math.abs(tilt), 16.0f * arm, tilt > 0 ? UP_REACH : 0.0f);
         drillMount.y = -DRILL_HEIGHT - lift;
         drillMount.xRot = -tilt * Mth.HALF_PI;
-        boolean hasArm = car.hasRobotArm();
         armBase.visible = hasArm;
         mast.visible = hasArm && lift > 0.3f;
         mast.yScale = Math.max(0.001f, lift / 16.0f);

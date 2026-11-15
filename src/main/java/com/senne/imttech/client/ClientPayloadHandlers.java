@@ -291,13 +291,24 @@ public final class ClientPayloadHandlers {
      */
     public static void onRcCarOpen(com.senne.imttech.network.RcCarOpenPayload payload, IPayloadContext context) {
         Minecraft mc = Minecraft.getInstance();
-        if (payload.editor()) {
-            if (mc.screen == null || mc.screen instanceof com.senne.imttech.client.car.RcCarScreen) {
-                mc.setScreen(new com.senne.imttech.client.os.RcCarCodeScreen(payload.entityId(), payload.owner(),
-                        payload.remote(), payload.source()));
-            }
-        } else if (mc.screen == null) {
+        if (mc.screen == null) {
             mc.setScreen(new com.senne.imttech.client.car.RcCarScreen(payload.entityId(), payload.owner(), payload.remote()));
+        }
+    }
+
+    /**
+     * Hoofdstuk 119: de RC programs op de server, voor de knop Program van een RC Car. Staat dat scherm van deze auto al
+     * open, dan werkt het zich bij (na Load onto car stuurt de server de lijst opnieuw, met wat het laden zei). Openen
+     * doet het alleen als de knop Program erom vroeg en het scherm van díe auto nog open staat (gevonden door de
+     * nalezing: een lijst die te laat binnenkwam, sprong anders weer open nadat je al terug was).
+     */
+    public static void onRcCarPrograms(com.senne.imttech.network.RcCarProgramsPayload payload, IPayloadContext context) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen instanceof com.senne.imttech.client.os.RcCarProgramScreen screen && screen.isFor(payload.entityId())) {
+            screen.update(payload);
+        } else if (payload.open() && mc.screen instanceof com.senne.imttech.client.car.RcCarScreen carScreen
+                && carScreen.isFor(payload.entityId())) {
+            mc.setScreen(new com.senne.imttech.client.os.RcCarProgramScreen(payload));
         }
     }
 

@@ -5680,8 +5680,9 @@ public final class VisualCheck {
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
         }
 
-        // --- Hoofdstuk 108: de RC Car (-Ponly=rccar): de auto, het boren, zijn scherm, de code-editor, de kofferbak en de
-        // items. En zijn twee plaatjes voor How it works (-Ponly=howtopics:car; dat verandert bestanden van de mod).
+        // --- Hoofdstuk 108: de RC Car (-Ponly=rccar): de auto, het boren, zijn scherm, de RC programs van de server (en de
+        // apps Logic en Robots, hoofdstuk 119), de kofferbak en de items. En zijn vier plaatjes voor How it works
+        // (-Ponly=howtopics:car; dat verandert bestanden van de mod).
         if (want("rccar")) {
             RcCarTour.tour(t);
         }

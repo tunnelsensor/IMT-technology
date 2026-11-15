@@ -27,8 +27,9 @@ import net.minecraft.world.phys.Vec3;
  * kamer van 5x3x5 (jouw tweede voorbeeld), de controller, een betere boorkop, en de kofferbak en oppakken.
  *
  * Een nieuwe auto heeft geen programma (jouw wens: "ik wil dat je de rc car vanaf 0 moet programmeren; in de how it
- * works kun je dit wel als voorbeeld geven"). De twee voorbeelden staan daarom hier: als plaatje van de echte editor met
- * die code erin (de rondleiding maakt ze: {@code gradlew runVisualCheck -Ponly=howtopics:car}).
+ * works kun je dit wel als voorbeeld geven"). De twee voorbeelden staan daarom hier: als plaatje van de app Logic met die
+ * code erin, want sinds hoofdstuk 119 schrijf je het programma als RC program op je server; en een plaatje van het scherm
+ * waarmee je het op de auto laadt (de rondleiding maakt ze: {@code gradlew runVisualCheck -Ponly=howtopics:car}).
  *
  * De auto in de animatie is een echte RC Car met de gegevens zoals het spel ze bewaart ({@link #car}): met of zonder
  * cel (dan branden zijn lichtjes wel of niet), boren of niet (dan draait zijn boor), met een boorkop (de kleur van zijn
@@ -86,7 +87,7 @@ public final class CarScenes {
         s.actor("show", type, 120, 0, 35.0f, bare, show);
         s.text(115, show.add(0, 0.7, 0), Side.RIGHT,
                 "The *RC Car* is a little car with a drill and a trunk. It does nothing by itself, and a new one has *no"
-                        + " program*: you *write it yourself*. Then it mines and builds for you.");
+                        + " program*: you *write it yourself*, on your server. Then it mines and builds for you.");
         s.idle(122);
 
         s.chapter("An Energy Cell");
@@ -103,18 +104,26 @@ public final class CarScenes {
         s.meter(70, start.add(0, 1.3, 0), "ENERGY CELL", 1.0f, 1.0f, HowToSceneBuilder.GREEN);
         s.idle(80);
 
-        // Jouw eerste voorbeeld, als plaatje van de editor: zo typ je het zelf. De pijltjes staan van boven naar beneden
-        // (dan kruisen hun lijntjes niet).
+        // Jouw eerste voorbeeld, als plaatje van de app Logic: zo typ je het zelf, als RC program op je server (hoofdstuk
+        // 119). Dan sneak + rechtsklik op de auto en Program: het scherm waarmee je het op de auto laadt. De volgorde van
+        // de pijltjes is zo gekozen dat hun lijntjes niet kruisen (nagekeken op de foto's van -Ponly=howtoall); het stipje
+        // van + staat links van de knop, zodat zijn lijntje niet door de knoppen loopt.
         s.chapter("You write its program");
-        s.actor("car", type, 170, 0, EAST, bare, start);
+        s.actor("car", type, 315, 0, EAST, bare, start);
+        s.picture(150, "logic_rc_strip_mine", 427, 240,
+                s.arrow(0.17f, 0.161f, "In the *Logic* app: *+* then *RC program*"),
+                s.arrow(0.51f, 0.228f, "*def* makes a function: a button on the car. *Help* lists all it can do"),
+                s.arrow(0.24f, 0.282f, "Your *RC programs* on the server, each with a green *C*"),
+                s.arrow(0.575f, 0.269f, "*for i in range(20):* does the steps under it 20 times"));
+        s.idle(155);
         s.sneakRightClick(start.add(0, 0.4, 0), ItemStack.EMPTY);
         s.idle(20);
-        s.picture(145, "rc_car_code", 427, 240,
-                s.arrow(0.297f, 0.157f, "An example. *def* makes a function: a button on the car"),
-                s.arrow(0.355f, 0.199f, "*for i in range(20):* does the steps under it 20 times"),
-                s.arrow(0.73f, 0.33f, "Everything the car knows: click a line to put it in your code"),
-                s.arrow(0.78f, 0.89f, "*Check* looks for mistakes, *Save* puts it on the car"));
-        s.idle(150);
+        s.picture(135, "rc_car_programs", 427, 240,
+                s.arrow(0.62f, 0.157f, "Its code (you change it in the Logic app)"),
+                s.arrow(0.19f, 0.207f, "*Program* on the car: the RC programs of the server of its base"),
+                s.arrow(0.64f, 0.89f, "*Load onto car*: the car gets a copy"),
+                s.arrow(0.035f, 0.89f, "Changed it on the server? Load it again"));
+        s.idle(140);
 
         // Hoofdstuk 118 (jouw wens): boven of onder zich minen kan alleen met een RC Robot Arm.
         s.chapter("The RC Robot Arm");
@@ -160,14 +169,14 @@ public final class CarScenes {
         s.actor("car", type, 60, 0, EAST, idle, at);
         s.idle(60);
 
-        // Jouw tweede voorbeeld: de kamer van 5x3x5, weer als plaatje van de editor.
+        // Jouw tweede voorbeeld: de kamer van 5x3x5, weer als plaatje van de app Logic.
         s.chapter("A bigger example: a room");
         s.actor("car", type, 175, 0, EAST, idle, at);
-        s.picture(170, "rc_car_code_room", 427, 240,
-                s.arrow(0.211f, 0.157f, "*dig()*: three blocks high, with the arm"),
-                s.arrow(0.288f, 0.407f, "*arm_down(2)* lowers the arm again"),
-                s.arrow(0.234f, 0.49f, "*room*: 5 wide, 3 high, 5 deep, ahead and to the right"),
-                s.arrow(0.266f, 0.782f, "*back(4)* drives back to the start of the lane"));
+        s.picture(170, "logic_rc_room", 427, 240,
+                s.arrow(0.43f, 0.228f, "*dig()*: three blocks high, with the arm"),
+                s.arrow(0.51f, 0.478f, "*arm_down(2)* lowers the arm again"),
+                s.arrow(0.455f, 0.561f, "*room*: 5 wide, 3 high, 5 deep, ahead and to the right"),
+                s.arrow(0.60f, 0.686f, "*for row in range(5):* five lanes, side by side"));
         s.idle(175);
 
         s.chapter("The RC Controller");

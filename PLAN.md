@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 631 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 632 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -9080,8 +9080,8 @@ Jouw antwoorden op mijn vier vragen:
   knop op het scherm van de auto, en je krijgt hem terug;
 - **de boor op de arm** is dezelfde boorkop als vooraan.
 
-- [x] **De RC Robot Arm** (`car/RcRobotArmItem`, tabblad Robots): 2 ijzer en een zuiger (de arm) bovenaan, plastic, een
-      Computer Chip en plastic onderaan (de voet). Rechtsklik op de auto met de arm: hij zit erop. Heeft hij er al een,
+- [x] **De RC Robot Arm** (`car/RcRobotArmItem`, tabblad Robots): bovenaan een ijzer in het midden en een zuiger rechts,
+      een ijzer in het midden, plastic, een Computer Chip en plastic onderaan (de voet); gespiegeld mag ook. Rechtsklik op de auto met de arm: hij zit erop. Heeft hij er al een,
       dan gebeurt er niets en lees je dat. De naam is "RC Robot Arm": "Robot Arm" alleen leek op de armen van je guard
       robots (Battle Arms en zo).
 - [x] **Zonder arm**: `mine_up()`, `mine_down()`, `arm_up()` en `arm_down()` geven `car.blocked`, en zijn scherm en je
@@ -9110,6 +9110,15 @@ Jouw antwoorden op mijn vier vragen:
       het blok voor zich wel; met arm (erop gezet zoals een speler dat doet) lukt alles; de arm gaat mee in het item;
       Arm off geeft hem terug; een auto en een item van vóór deze update houden hun arm. De andere tests van de auto en
       van het opslagsysteem geven hun auto een arm. Samen 623.
+- [x] **Nalezing** (een tweede ronde lezers, elke vondst door nog een lezer nagekeken; drie daarvan kon de limiet niet meer
+      nalezen, die heb ik zelf in de code nagekeken). Zes fouten, alle zes echt, hersteld in hoofdstuk 119: (1) in How it
+      works bleef de boor na de eerste `mine_up()` de hele animatie schuin omhoog wijzen, ook na Replay bij de auto zonder
+      arm (de animatie laadt dezelfde auto steeds opnieuw en liet de kanteling staan); (2) na Arm off zweefde de boor nog
+      even zonder mast in de lucht; (3) een auto uit `/summon` of een spawner kreeg gratis een arm, en Arm off gaf dan een
+      arm die niemand gemaakt had: nu houdt alleen een bewaarde auto (die heeft altijd een Link) zijn arm; (4) de animatie
+      en de LEESMIJ van het opslagsysteem zeiden niet dat de auto voor hogere kisten een RC Robot Arm nodig heeft; (5) het
+      recept stond niet per rij beschreven; (6) "een auto die je al had, heeft zijn arm gehouden" klopte niet voor een
+      auto die nog nooit neergezet was. De test van de arm kijkt nu ook naar `/summon`.
 - **Mijn invullingen**: de naam RC Robot Arm; het recept; de gele behuizing en het kantelen van de boor; zonder arm een
   melding en `car.blocked` in plaats van een fout in de code (je kunt de arm er later nog op zetten); plaatsen boven en
   onder zich (`place_up`, `place_down`) kan nog zonder arm, want je vroeg het voor minen; Arm off alleen van dichtbij,
@@ -9270,11 +9279,106 @@ Mijn invulling (verander ik op jouw woord):
 Nog niet gedaan:
 - Niet in het spel bekeken, en nooit met een tweede speler (zie "Nog nooit in het spel bekeken").
 
+### 119. RC programs: de code van je RC Car staat op je server (15 november)
+
+Jouw wens: "zorg dat je het rc card code op de server moet schrijven, voeg dus een extra script toe 'RC program', dit
+neemt evenveel in als een server diagram of robot/drone program"
+
+Jouw antwoorden op mijn drie vragen:
+- **op de auto laden**: allebei: met de knop Program op het scherm van de auto (de RC programs van de server van de basis
+  waar hij staat) én in de app Robots op de desktop;
+- **verander je het op de server**: dan verandert er niets op de auto (hij heeft een kopie); opnieuw laden om bij te werken;
+- **oude auto's** (met code die je op de auto zelf schreef) houden hun programma.
+
+- [x] **Een nieuw soort programma: RC program** (`ProgramKind.CAR`): in de app Logic na **+** de knop **RC program**
+      (groen), en in de lijst een groene **C**. Een nieuw RC program begint met alleen uitleg in commentaar, zonder
+      voorbeeldcode (jouw regel: een auto programmeer je vanaf 0). Het is dezelfde editor: Check, Ctrl+Spatie met de
+      woorden van de auto, en Help met alles wat de auto kent. Het neemt evenveel plaats in als een serverdiagram of een
+      robot- of droneprogramma (dezelfde ruimte op de SSD, samen hooguit 16 per server), maar de server voert het zelf
+      niet uit. Een woord van een server of een robot geeft "on() only works in a server diagram ..., not in an RC
+      program", en een woord van de auto elders "mine() only works in an RC program, not in a robot program". De server
+      maakt de blokjes zelf uit de code (dan telt op de SSD wat de auto echt krijgt), en een RC program is hooguit 8000
+      tekens (zoveel kan een auto bewaren). In de blokjes is een DEF genoeg (een knop op de auto, geen WHEN nodig).
+- [x] **Laden met de knop Program** (`client/os/RcCarProgramScreen`): links de RC programs van de server van de basis waar
+      de auto staat, rechts de code van het programma dat je aanklikt (lezen; veranderen doe je in Logic), onderaan wat
+      er nu op de auto staat en **Load onto car**; na Load staat daar een paar seconden of het lukte, of waarom niet (de
+      melding boven je werkbalk valt achter het scherm). Is de auto te ver: NO SIGNAL; is hij weg: het scherm gaat dicht.
+      Back of Esc gaat terug naar het scherm van de auto. Het lukt alleen
+      als de auto in het gebied van een basis staat waar zijn eigenaar bij hoort (de eigenaar van de kern, vertrouwd, of
+      zijn team met `teamsAreFriends`), jij daar vertrouwd bent en de server draait; anders staat er waarom ("This car
+      stands outside a base: drive it into the area of your Security Core", "The server of this base is offline: ...").
+      Met de RC Controller kan het ook van ver (64 blokken), want de auto zelf moet in de basis staan.
+- [x] **Laden in de app Robots**: de RC Cars van de basis staan onder de robots en drones, met soort **car** (groen), wat
+      ze doen (ready, running, no cell, cell empty, jammed), hun batterij en hun RC program; onderaan waar ze staan en of
+      ze een arm hebben. Voor een auto is er één knop, **Program**: de RC programs van de server, met dezelfde regels als
+      Load onto car op de auto (jij mag de auto besturen, je bent vertrouwd in de basis, de server draait).
+- [x] **Een kopie**: de auto krijgt de code en de naam van het programma. Verander je het op de server, dan houdt hij zijn
+      versie, en in de app Robots staat zijn programma oranje met "(older than on the server: load it again)". De auto
+      onthoudt ook van welke server het kwam: staat hij in een andere basis, dan zegt de app "(from the server of another
+      base)" in plaats van "ouder" (de namen RC 1, RC 2 komen op elke server voor). De naam, de code en de server gaan mee
+      in het item als je hem oppakt (de tooltip zegt "RC program: Mining"), en op zijn scherm staat "FUNCTIONS of Mining".
+- [x] **Geen editor meer op de auto**: de knop Program opende tot nu de code-editor op de auto; die is weg. Een nieuwe
+      auto zegt op zijn scherm waar je het schrijft ("Write an RC program in the Logic app of your server ... and load it
+      here with Program").
+- [x] **Oude auto's houden hun code** (jouw keuze): een auto die je vóór deze versie programmeerde, draait gewoon verder; in
+      de app Robots staat "(its own)" en onderaan "(code from before RC programs)". Program op de auto toont die code
+      bovenaan in de lijst ("(its own code)", alleen lezen; Ctrl+A en Ctrl+C kopiëren hem), zodat je hem kunt overtypen in
+      een RC program. Laad je er een RC program op, dan is zijn oude code weg. Een auto zonder programma maken kan niet
+      (dat wiste zonder vragen die oude code).
+- [x] **How it works**: het hoofdstukje "You write its program" toont de app Logic met het voorbeeld (een plaatje van het
+      echte scherm) en het scherm met de RC programs op de auto; "A bigger example: a room" de app Logic met het tweede
+      voorbeeld. In de animatie van het opslagsysteem de app Logic met het programma van de auto.
+- [x] **Tests**: één nieuwe, `rc_car_loads_an_rc_program_from_the_server`: "(its own)" voor zijn oude code; een vreemde
+      laadt niets, ook niet op zijn eigen auto in jouw basis (die hij wel mag besturen; hij staat ook niet in jouw app
+      Robots); een serverdiagram komt er niet op; de knop Program laadt een kopie met de naam en de server; op de server
+      veranderd = de auto houdt de zijne en de app Robots zegt dat; opnieuw laden via de desktop (de echte knop van de app
+      Robots); geen leeg programma; van 20 blokken ver lukt het, verder dan het bereik van zijn scherm niet; te lange code
+      wordt niet bewaard en niet geladen (ook niet uit een item); naam, code en server gaan mee in het item; een programma
+      van een andere server is "other" en niet "old"; en zonder draaiende server lukt het niet, ook niet vanuit de app
+      Robots. Twee oude tests die code direct op de auto bewaarden: dat kan niet meer, ze kijken nu dat er buiten een basis
+      en in andermans zone niets op de auto komt. Samen 632.
+- [x] Rondleiding (`-Ponly=rccar`): een basis met kern en server bij de auto's; `rc10` de RC programs op de auto, `rc11` en
+      `rc12` de app Logic (het RC program Mining, en een nieuw RC program), `rc10b` na Load onto car, `rc27` en `rc28` de
+      app Robots met de auto en zijn keuzelijst, `rc20` de RC programs van een nieuwe auto, `rc29` een auto met zijn eigen
+      code van vroeger. Het opslagsysteem (`-Ponly=storage`) net zo (`st10`).
+      LEESMIJ ("Zijn programma", en het opslagsysteem) en de tooltip van de auto.
+
+Mijn invullingen (verander ik op jouw woord):
+- De auto haalt zijn programma bij **de server van de basis waar hij staat**, net als een robot: een auto ver buiten je
+  basis krijgt geen nieuw programma. Na het laden heeft hij de server niet meer nodig.
+- In de app Robots staan alleen **auto's die nu geladen zijn**: een auto ver weg kun je niets sturen (een robot heeft een
+  wachtrij bij zijn dock, een auto niet).
+- **Geen voorbeeldcode** in een nieuw RC program, alleen uitleg in commentaar; de voorbeelden staan in How it works.
+- **De app Robots** laadt met dezelfde regels als de knop op de auto, dus ook wie op een Computer de app Robots mag
+  gebruiken, laadt alleen op een auto die hij mag besturen (een robot krijgt een programma van wie de app mag gebruiken).
+- **Geen "(no program)"** voor een auto: een RC program kies je, weghalen kan niet.
+- Versie **2.18** (nieuw: een soort programma en een scherm; netwerkversie 46, dus spelers hebben de nieuwe jar nodig).
+
+- [x] **Nalezing** (drie lezers, elk met een eigen kijk: de server, de schermen, de uitleg en de tests; de twee ernstigste
+      vondsten per lezer nagekeken door een tweede lezer, alle zes echt; de andere elf heb ik zelf in de code nagekeken).
+      Hersteld: (1) de app Robots laadde ook als de server uit stond, en zonder de regels van de auto; (2) een RC program
+      uit blokjes kon als code veel langer worden dan een auto kan bewaren: wie de auto oppakte, viel van de server (nu
+      maakt de server de blokjes uit de code, hooguit 8000 tekens, en een auto neemt nooit langere code aan); (3) de lijst
+      na Load onto car sprong soms weer open nadat je al terug was; (4) je zag niet of laden lukte; (5) "(no program)"
+      wiste zonder vragen de oude code van een auto; (6) het scherm volgde de auto niet (weg of te ver); (7) de oude code
+      van een auto kon je nergens meer zien; (8) "ouder dan op de server" vergeleek met een programma dat toevallig even
+      heet op een andere server; (9) de server rekende op de SSD met blokjes die de speler stuurde, niet met de code; (10)
+      de blokjes in Logic vroegen om een WHEN in een RC program; (11) een klik onder de laatste regel van de lijst koos een
+      programma dat je niet zag; en in de uitleg: een def met parameters is geen knop, `car.blocked` zegt niet waarom, en
+      de geciteerde meldingen bestonden niet. De test dekt nu ook de vreemde met zijn eigen auto, laden van ver, de app
+      Robots zonder server, te lange code en een andere server.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **RC programs op de server (hoofdstuk 119)**: met tests gecontroleerd en gezien op screenshots (`-Ponly=rccar`), maar
+      niet met de muis gespeeld. Probeer: (1) schrijf in de app Logic een RC program (**+**, **RC program**), zet je auto
+      in je basis en laad het met de knop Program op de auto; (2) verander het op de server: zegt de app Robots "older
+      than on the server", en laadt Program daar de nieuwe versie? (3) rijd de auto buiten je basis en druk op Program:
+      staat er waarom het niet kan? (4) met een vriend die vertrouwd is in je basis: kan hij een RC program op jouw auto
+      laden, en een vreemde niet?
 - [ ] **Kernen vlak bij elkaar en de zone als bereik (hoofdstuk 117)**: alleen met tests gecontroleerd, niet gespeeld en
       nooit met een tweede speler. Probeer: (1) zet twee kernen vlak naast elkaar zonder zone: lukt het? (2) Laat een vriend
       (of een tweede account) een kern in jouw zone zetten, ook terwijl je generator uit staat: zegt het spel "This is inside
