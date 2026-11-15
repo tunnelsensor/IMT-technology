@@ -119,18 +119,15 @@ public class ImtMenuScreen extends Screen {
             action(ImtAction.ILLUSION_STOP));
 
     /**
-     * Tabblad Tech: dingen in je wereld aansturen. Sinds hoofdstuk 122 ook je datacenter: met welke kern je bril verbonden
-     * is (het scherm vraagt het IP en het wachtwoord van die kern). Hier en niet op Systems: daar past geen achtste optie
-     * (zie Information).
+     * Tabblad Tech: dingen in je wereld aansturen. Sinds hoofdstuk 123 ook nachtzicht (jouw keuze: "nightvision mag dan naar
+     * tech"), zodat de optie Datacenter op Systems past.
      */
     private static final List<Option> TECH = List.of(
             open("screen.imttech.menu.redstone", HudStyle.ORANGE, RelayListScreen::new),
             open("screen.imttech.menu.music", HudStyle.GREEN, MusicScreen::new),
             action(ImtAction.HACK_PLAYER),
             action(ImtAction.HACK_STOP),
-            new Option(Component.translatable("screen.imttech.menu.datacenter"), glasses -> datacenterStatus(),
-                    () -> ImtClientEvents.openIfAuthorized(Minecraft.getInstance(), new com.senne.imttech.client.os.OsLoginScreen(
-                            com.senne.imttech.client.os.OsLoginScreen.Mode.GLASSES, ImtClientState.uplinkIp))));
+            action(ImtAction.TOGGLE_NIGHT_VISION));
 
     /** Tabblad Transport: laat je vervoeren of stuur spullen weg. */
     private static final List<Option> TRANSPORT = List.of(
@@ -203,7 +200,12 @@ public class ImtMenuScreen extends Screen {
                             ? new Status(Component.translatable("screen.imttech.on"), HudStyle.GREEN)
                             : new Status(Component.translatable("screen.imttech.off"), GREY),
                     ImtClientConfig::toggleVoiceTextInHud),
-            action(ImtAction.TOGGLE_NIGHT_VISION));
+            // Hoofdstuk 122 en 123: met welke kern je bril verbonden is (het scherm vraagt het IP en het wachtwoord van die
+            // kern). Jouw keuze: hier op Systems, en nachtzicht naar Tech (zo blijven het er zeven: met een achtste lagen de
+            // vakjes over de hint, zie Information).
+            new Option(Component.translatable("screen.imttech.menu.datacenter"), glasses -> datacenterStatus(),
+                    () -> ImtClientEvents.openIfAuthorized(Minecraft.getInstance(), new com.senne.imttech.client.os.OsLoginScreen(
+                            com.senne.imttech.client.os.OsLoginScreen.Mode.GLASSES, ImtClientState.uplinkIp))));
 
     private static List<Option> optionsOf(MenuTab tab) {
         return switch (tab) {
@@ -240,7 +242,8 @@ public class ImtMenuScreen extends Screen {
 
     /**
      * Hoofdstuk 122: wat er onder de optie Datacenter staat: de naam van de kern waar je bril aan hangt (groen als het
-     * draait), of waarom het niet werkt (rood), of CONNECT als hij nergens aan hangt.
+     * draait), of waarom het niet werkt (rood; RECONNECT als het wachtwoord van de kern veranderde), of CONNECT als hij
+     * nergens aan hangt.
      */
     private static Status datacenterStatus() {
         String host = ImtClientState.uplinkHost;
@@ -249,7 +252,7 @@ public class ImtMenuScreen extends Screen {
             case 2 -> new Status(Component.translatable("screen.imttech.no_datacenter"), HudStyle.RED);
             case 3 -> new Status(Component.translatable("screen.imttech.datacenter_offline"), HudStyle.RED);
             case 4 -> new Status(Component.translatable("screen.imttech.menu.connect"), HudStyle.CYAN);
-            case 5 -> new Status(Component.translatable("screen.imttech.no_access"), HudStyle.RED);
+            case 5 -> new Status(Component.translatable("screen.imttech.reconnect"), HudStyle.RED);
             // Creative, of de regel staat uit: je bril heeft er geen nodig (maar kan wel verbonden zijn, voor het brein).
             default -> host.isEmpty() ? new Status(Component.translatable("screen.imttech.menu.connect"), GREY)
                     : new Status(Component.literal(host), HudStyle.CYAN);
@@ -415,11 +418,11 @@ public class ImtMenuScreen extends Screen {
             return new Status(Component.translatable("screen.imttech.out_of_reach"), HudStyle.RED);
         }
         if (!ImtClientState.datacenterWorks() && needsDatacenter(action, glasses)) {
-            // Hoofdstuk 122: ook "niet verbonden" en "geen toegang" (je bent op die kern niet meer de eigenaar of vertrouwd).
+            // Hoofdstuk 122 en 123: ook "niet verbonden" en "opnieuw verbinden" (het wachtwoord van die kern veranderde).
             return new Status(Component.translatable(switch (ImtClientState.datacenterLink) {
                 case 3 -> "screen.imttech.datacenter_offline";
                 case 4 -> "screen.imttech.not_connected";
-                case 5 -> "screen.imttech.no_access";
+                case 5 -> "screen.imttech.reconnect";
                 default -> "screen.imttech.no_datacenter";
             }), HudStyle.RED);
         }

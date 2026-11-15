@@ -34,8 +34,8 @@ import org.jetbrains.annotations.Nullable;
  * Hetzelfde scherm vraagt ook de code van een Computer (hoofdstuk 40, een rechtsklik op zijn monitor): dan staat er
  * alleen het vak voor de code, met de naam van de computer bovenaan. En sinds hoofdstuk 50 de schermen van de I.M.T
  * Phone: verbinden (IP + wachtwoord), een PIN kiezen, en de PIN intypen (zie {@link Mode}). En sinds hoofdstuk 122 het
- * scherm Datacenter van de I.M.T-bril (G-menu, tabblad Tech): het IP en het wachtwoord van de kern waar je bril aan moet
- * hangen, met eronder waar hij nu aan hangt, en een knop Disconnect.
+ * scherm Datacenter van de I.M.T-bril (G-menu, tabblad Systems): het IP en het wachtwoord van de kern waar je bril aan
+ * moet hangen, met eronder waar hij nu aan hangt, en een knop Disconnect.
  */
 public class OsLoginScreen extends Screen {
     /** Wat dit scherm vraagt. */
@@ -370,7 +370,7 @@ public class OsLoginScreen extends Screen {
                     rgb = HudStyle.RED;
                 }
                 case 5 -> {
-                    state = ": no access";
+                    state = ": password changed";
                     rgb = HudStyle.RED;
                 }
                 default -> { // creative, of de regel staat uit in de config: je bril heeft er dan geen nodig

@@ -258,8 +258,8 @@ public final class ImtClientState {
     public static int datacenterLink;
     public static int datacenterLoad;
     /**
-     * Hoofdstuk 122: de naam en het IP van de kern waarmee je je bril verbond ("" = met geen enkele). Sindsdien ook
-     * datacenterLink 4 = niet verbonden, en 5 = geen toegang (je bent daar niet meer de eigenaar of vertrouwd).
+     * Hoofdstuk 122: de naam en het IP van de kern waarmee je bril verbonden is ("" = met geen enkele). Sindsdien ook
+     * datacenterLink 4 = niet verbonden, en (hoofdstuk 123) 5 = het wachtwoord van die kern veranderde: opnieuw verbinden.
      */
     public static String uplinkHost = "";
     public static String uplinkIp = "";

@@ -92,6 +92,15 @@ public final class ModDataComponents {
                     .persistent(com.senne.imttech.security.PhoneLink.CODEC)
                     .networkSynchronized(com.senne.imttech.security.PhoneLink.STREAM_CODEC));
 
+    /**
+     * Hoofdstuk 123: met welke security core een I.M.T-bril verbonden is (het IP, de naam, en welk wachtwoord), zie
+     * imt/ImtUplink. Het staat op de bril zelf: geef je hem door, dan blijft hij verbonden.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.imttech.imt.ImtUplink>> GLASSES_UPLINK =
+            COMPONENTS.registerComponentType("glasses_uplink", builder -> builder
+                    .persistent(com.senne.imttech.imt.ImtUplink.CODEC)
+                    .networkSynchronized(com.senne.imttech.imt.ImtUplink.STREAM_CODEC));
+
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<String>> LAST_IP =
             COMPONENTS.registerComponentType("last_ip", builder -> builder
                     .persistent(Codec.STRING)

@@ -116,8 +116,8 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (445 automati
   dicht en zit hij weer in je rugzak; breek je hem eerder af, dan krijg je hem ook terug (maar
   begin je opnieuw).
   Sinds 15 november wist een overname ook echt de toegang: de spelers die de vorige eigenaar vertrouwde en zijn
-  wachtwoord zijn weg (zet zelf een nieuw wachtwoord in Settings), en de mappen en notities blijven staan. Hun bril hangt
-  dus ook niet meer aan dit datacenter.
+  wachtwoord zijn weg (zet zelf een nieuw wachtwoord in Settings), en de mappen en notities blijven staan. Omdat het
+  wachtwoord weg is, hangt er ook geen enkele bril meer aan dit datacenter.
 - De laptop is ook je **laptop voor op afstand**: rechtsklik ermee in de lucht en log met het IP en
   het wachtwoord in op de desktop van een kern, waar je ook bent (zie "Je desktop van overal" in
   hoofdstuk 5).
@@ -145,7 +145,7 @@ I.M.T**:
 
 | Snelactie | In het G-menu | Vroeger |
 |-----------|---------------|---------|
-| Nachtzicht aan/uit | Systems | N |
+| Nachtzicht aan/uit | Tech | N |
 | Ertsen-scan | Information | B |
 | Vijanden door muren aan/uit | Information | H |
 | Doelwit markeren waar je naar kijkt | Drones (Mark target) | R |
@@ -175,11 +175,11 @@ magazine pouch", "Quickdraw: keycard from your neck"), ook allemaal standaard zo
 | **Drones** | Doelwit markeren (wat in je vizier staat), zwerm, één drone, escorte, escortevorm, stand down, markeringen wissen |
 | **Recon drones** | Drone-camera, spionagedrone, meekijken, rapport |
 | **Transport** | Zelf vliegen, autopiloot, vrachtdrone, iemand vervoeren |
-| **Tech** | Redstone-relais, muziek (Spotify), hacken |
+| **Tech** | Redstone-relais, muziek (Spotify), hacken, nachtzicht |
 | **Illusion** | Valse muur, nep-leger, onzichtbaar veld, stoppen |
 | **Information** | Ertsen-scan, dreigingsscan, doelwit-analyse, kabel-xray (je eigen verborgen kabels zien), zonerand, Numbers (hoe grote getallen eruitzien: 5 000, 5.000, 5k...) |
 | **Navigation** | Waypoints, ping, comms, coördinaten aan/uit (X, Y en Z rechtsboven; de icoontjes van drankeffecten staan dan eronder) |
-| **Systems** | Eigendom overdragen, stem, spraakbesturing, commando's bewerken, spraaktekst, nachtzicht |
+| **Systems** | Eigendom overdragen, stem, spraakbesturing, het brein, commando's bewerken, spraaktekst, Datacenter (je bril verbinden met een kern) |
 
 Wisselen van tabblad: scrollen, de pijltjes links/rechts, of meteen met de cijfers **1** tot
 **9** en **0** (het tiende tabblad).
@@ -298,32 +298,34 @@ je je bril **verbond**, met zijn IP en wachtwoord (zie "Je bril verbinden met ee
   dreigingsscan en de doelwit-analyse blijven aan staan in je bril, maar tonen niets tot je datacenter er weer is.
 - **In de app Monitor** zie je het: de tegel BRAIN telt mee wat de brillen vragen, RAM en SSD ook, en in de lijst
   RUNNING staat wat er loopt ("I.M.T satellite strike (jouw naam)"). Het maakt je racks ook warmer.
-- **Creative** heeft geen datacenter nodig. Sinds 15 november kan het ook het datacenter van een vriend zijn die jou
-  vertrouwt (zie hieronder).
+- **Creative** heeft geen datacenter nodig. Sinds 15 november kan het ook het datacenter van een ander zijn, als je zijn
+  wachtwoord kent (zie hieronder).
 - Alle getallen staan onder `[uplink]` in `config/imttech.toml`; `uplink.required = false` zet de hele regel uit.
 
 ### Je bril verbinden met een security core (sinds 15 november)
 Je bril hangt niet meer vanzelf aan je sterkste datacenter: je **verbindt** hem met een security core, en dan draait alles
 wat de bril uitrekent of bewaart, en ook het brein, op het datacenter van **die** kern.
-- **Verbinden**: G-menu, tabblad **Tech**, **Datacenter**. Typ het **IP** van de kern (dat staat in zijn app Status) en
+- **Verbinden**: G-menu, tabblad **Systems**, **Datacenter**. Typ het **IP** van de kern (dat staat in zijn app Status) en
   zijn **wachtwoord**, en klik **Connect**. Het gaat zoals met de Hacking Laptop: de kern moet in dezelfde dimensie staan,
   stroom hebben en een wachtwoord (zet er een in Settings); een fout wachtwoord staat in zijn logboek, de eigenaar hoort
-  het, en na 5 keer moet je even wachten.
-- **Owner of trusted**: het goede wachtwoord is niet genoeg. Je moet op die kern de **eigenaar** zijn, of in zijn lijst
-  **Access** staan (vertrouwd). Kent iemand anders het wachtwoord, dan verbindt zijn bril niet, en krijgt de eigenaar een
-  alarm van I.M.T.
-- **Daarna** werkt het waar je ook bent (ook in de Nether, als je kern in de gewone wereld staat), zolang je daar de
-  eigenaar bent of vertrouwd. Haalt de eigenaar je uit Access, of neemt iemand de kern over, dan heeft je bril **meteen**
-  geen datacenter meer: in je HUD staat **NO ACCESS TO DATACENTER**. Is de kern weg, dan **NO DATACENTER**.
-- Een vriend die je vertrouwt, kan zijn bril dus aan **jouw** serverruimte hangen. Wat hij vraagt, neemt rekenkracht en RAM
-  van jouw datacenter, en zijn waypoints staan op jouw SSD's. In de app **Monitor** zie je onder RUNNING wiens bril eraan
-  hangt ("Glasses: Lotte, Senne").
+  het, en na 5 keer moet je even wachten. (Nachtzicht staat daarom sinds 15 november op het tabblad **Tech**.)
+- **Het wachtwoord is genoeg**: wie het kent, mag verbinden, ook zonder in Access te staan. Vertrouwd zijn (Access) is voor
+  iets anders, zoals de kabels in de zone van de basis door de muur zien. Verbindt iemand anders dan de eigenaar, dan krijgt
+  de eigenaar een bericht van I.M.T, en het staat in het logboek en in Messages.
+- **De verbinding staat op de bril zelf** (in de tooltip: "Datacenter: dev-sec (10.x.x.x)"). Geef je je bril door, dan
+  blijft hij verbonden; zet je een andere bril op, dan is die niet verbonden.
+- **Een nieuw wachtwoord gooit iedereen eraf**: zet de eigenaar een nieuw wachtwoord (in Settings), dan moet elke bril die
+  met het oude verbond opnieuw verbinden, ook die van de eigenaar zelf. In de HUD staat dan **DATACENTER PASSWORD
+  CHANGED**. Ook een overname met de Hacking Laptop wist het wachtwoord, dus dan hangt er geen enkele bril meer aan.
+- **Daarna** werkt het waar je ook bent (ook in de Nether, als je kern in de gewone wereld staat). Is de kern weg, dan staat
+  er **NO DATACENTER**.
+- Wie aan **jouw** serverruimte hangt, neemt rekenkracht en RAM van jouw datacenter, en zijn waypoints staan op jouw SSD's.
+  In de app **Monitor** zie je onder RUNNING wiens bril eraan hangt ("Glasses: Lotte, Senne").
 - **Niet verbonden**: in je HUD staat **DATACENTER NOT CONNECTED**, onder de acties in het G-menu **NOT CONNECTED**, en
   I.M.T zegt hoe je verbindt. Ook wie al een datacenter had, verbindt zijn bril één keer.
-- **Loskoppelen**: de knop **Disconnect** in hetzelfde scherm. Een ander IP verbinden vervangt de vorige verbinding. Een
-  nieuw wachtwoord op de kern koppelt niemand los: wie verbonden is, blijft dat zolang hij eigenaar of vertrouwd is.
+- **Loskoppelen**: de knop **Disconnect** in hetzelfde scherm. Een ander IP verbinden vervangt de vorige verbinding.
 - Onder de optie Datacenter in het G-menu staat de naam van je kern (groen als het draait, **CONNECT** als je bril nergens
-  aan hangt), en in het scherm zelf "On dev-lab (10.x.x.x): online".
+  aan hangt, **RECONNECT** na een nieuw wachtwoord), en in het scherm zelf "On dev-sec (10.x.x.x): online".
 - **Creative** heeft nog altijd geen datacenter nodig. Met `uplink.required = false` staat de regel uit (dan draait het
   brein, als je bril nergens mee verbonden is, op je sterkste eigen datacenter, zoals vroeger).
 

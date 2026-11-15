@@ -281,6 +281,23 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     public void setPassword(@Nullable String newPassword, RandomSource random) {
         password = newPassword == null ? null : SystemPassword.create(newPassword, random);
         setChanged();
+        passwordChanged();
+    }
+
+    /**
+     * Hoofdstuk 123: welk wachtwoord de kern nu heeft (zie SystemPassword.stamp), of "" zonder wachtwoord. Een I.M.T-bril
+     * onthoudt dit als hij verbindt; zet je een nieuw wachtwoord, dan moet elke bril opnieuw verbinden.
+     */
+    public String passwordStamp() {
+        return password == null ? "" : password.stamp();
+    }
+
+    /** Het wachtwoord veranderde: de brillen die met het oude verbonden waren, merken het meteen (zie Datacenters). */
+    private void passwordChanged() {
+        if (level instanceof ServerLevel server) {
+            com.senne.imttech.logic.Datacenters.get(server).updateStamp(GlobalPos.of(server.dimension(), worldPosition),
+                    passwordStamp());
+        }
     }
 
     /** Klopt dit wachtwoord? (Zonder wachtwoord klopt niets: dan moet je eerst een instellen.) */
@@ -424,6 +441,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         camerasEnabled = true;
         setChanged();
         syncZone();
+        passwordChanged(); // hoofdstuk 123: geen wachtwoord meer, dus geen enkele bril hangt hier nog aan
     }
 
     /** Een regel in het logboek (met de speltijd van nu). */

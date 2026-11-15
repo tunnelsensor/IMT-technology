@@ -74,7 +74,7 @@ public final class EquipmentScenes {
         s.idle(95);
 
         // Hoofdstuk 106 (jouw wens: "je hebt een datacenter nodig voor de IMT glasses"): de bril draait op je datacenter.
-        // Hoofdstuk 122: op het datacenter van de kern waarmee je hem verbond (IP en wachtwoord, en eigenaar of vertrouwd).
+        // Hoofdstuk 122 en 123: op het datacenter van de kern waarmee hij verbonden is (IP en wachtwoord; dat staat op de bril).
         s.chapter("Your datacenter");
         BlockPos rack = new BlockPos(1, 1, 0);
         s.place(rack, DatacenterScenes.rack(true, com.senne.imttech.logic.RackBay.CPU, com.senne.imttech.logic.RackBay.GPU,
@@ -88,9 +88,9 @@ public final class EquipmentScenes {
                         + " only the HUD, night vision and your shield work.");
         s.idle(135);
         s.text(130, HowToSceneBuilder.top(rack), Side.RIGHT,
-                "First *connect* your glasses: G menu, tab *Tech*, *Datacenter*. Type the *IP* of a security core (its"
-                        + " Status app) and its *password*. Only its owner and the players it *trusts* can connect, and only"
-                        + " for as long as they stay trusted.");
+                "First *connect* your glasses: G menu, tab *Systems*, *Datacenter*. Type the *IP* of a security core (its"
+                        + " Status app) and its *password*. Anyone who knows the password can connect, and a *new password*"
+                        + " disconnects every pair.");
         s.idle(135);
         return List.of(s.build());
     }

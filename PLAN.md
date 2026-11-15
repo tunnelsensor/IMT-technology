@@ -9580,17 +9580,73 @@ Nog niet gedaan:
   dat moment Minecraft speelde (een tweede spelvenster steelt je focus). Nooit met een tweede speler (zie "Nog nooit in het
   spel bekeken").
 
+Veranderd in hoofdstuk 123 (jouw wens, dezelfde dag): de verbinding staat op de bril, het wachtwoord is genoeg (trusted telt
+niet meer), een nieuw wachtwoord gooit iedereen eraf, en de optie Datacenter staat op Systems (nachtzicht op Tech).
+
+### 123. De verbinding hangt aan de bril, het wachtwoord is genoeg, en Datacenter staat op Systems (15 november)
+
+Jouw wens (na hoofdstuk 122): "Zorg dat de optie wel bij system staat, nightvision mag dan naar tech, zorg dat de bril
+connectie niet aan de speler hangt maar echt aan de bril, als iemand het wachtwoord kent kan die ook connecten zonder
+trusted te zijn, trusted is enkel voor het toegang hebben tot de cable x ray van de base zone van base..."
+
+- [x] **Datacenter op Systems, nachtzicht op Tech** (`ImtMenuScreen`): Systems houdt zeven opties (eigendom overdragen,
+      stem, spraakbesturing, brein, commando's bewerken, spraaktekst, Datacenter); Tech krijgt nachtzicht erbij.
+- [x] **De verbinding staat op de bril** (`imt/ImtUplink`, data component `glasses_uplink`, `ImtData.getUplink` en
+      `setUplink`): het IP, de naam van de kern, en welk wachtwoord hij had. Geef je de bril door, dan blijft hij verbonden;
+      een andere bril op is niet verbonden. In de tooltip: "Datacenter: dev-sec (10.x.x.x)" of "Datacenter: not connected".
+      De lijst per speler van hoofdstuk 122 (`Datacenters.uplinks`) is weg.
+- [x] **Het wachtwoord is genoeg** (`GlassesUplink.connect`): geen controle meer op eigenaar of Access. Verbindt iemand
+      anders dan de eigenaar, dan krijgt de eigenaar een bericht van I.M.T, een regel in Messages en in het logboek (zoals
+      bij een login met de laptop). Trusted (Access) speelt voor het datacenter geen rol meer; het blijft voor wat het al
+      deed, zoals de kabels in de zone door de muur zien (`CableSight`). Een kern zonder eigenaar is niemands datacenter:
+      daar verbind je niet mee.
+- [x] **Een nieuw wachtwoord gooit iedereen eraf** (`SystemPassword.stamp`, `SecurityCoreBlockEntity.passwordStamp`,
+      `Datacenters.Summary.passwordStamp`, `Datacenters.updateStamp`): de bril onthoudt welk wachtwoord de kern had (het
+      willekeurige stukje van dat wachtwoord, waaruit je het wachtwoord zelf niet kunt halen). Klopt dat niet meer, dan is
+      de bril **PASSWORD_CHANGED** (in de HUD DATACENTER PASSWORD CHANGED, in het G-menu RECONNECT): opnieuw verbinden met
+      het nieuwe wachtwoord. Het datacenter weet een nieuw wachtwoord meteen, niet pas na twee seconden. Een overname wist
+      het wachtwoord (hoofdstuk 122), dus dan hangt er geen enkele bril meer aan.
+- [x] **Bewaren** (`Datacenters.GlassesData`): wat een bril bewaart, telt op het datacenter waar hij de laatste keer
+      verbonden mee werkte (het IP), ook als zijn speler offline is; werkt het daar niet meer, dan staat het vanaf zijn
+      volgende seconde op geen enkel. De app Monitor toont de namen ("Glasses: ...") op dezelfde manier.
+- [x] **Teksten**: alle meldingen zeggen nu "G menu, Systems, Datacenter"; nieuw: "The password of ... changed: connect your
+      glasses again", en voor de eigenaar "... connected their I.M.T glasses to ...: they know its password". How it works,
+      de uitleg bij `uplink.required` in de config, en LEESMIJ (de sectie "Je bril verbinden met een security core", en de
+      tabellen met de tabbladen en de snelacties). Protocol 48.
+- [x] **Tests**: `glasses_connect_with_the_ip_and_password_of_a_core` opnieuw geschreven (een vreemde met het wachtwoord
+      verbindt wel en de eigenaar hoort het; de verbinding hangt aan de bril; een nieuw wachtwoord gooit iedereen eraf, en wat
+      de vreemde bewaart telt daarna niet meer). Geen test erbij, en nog altijd 192 batchnamen.
+- [x] **Volledige ronde**: 635 tests, allemaal groen (op hoofdstuk 122).
+- [ ] **Nalezing**: niet gebeurd. De twee lezers (de nieuwe regels, en het scherm en de teksten) stopten allebei op de
+      weeklimiet van je abonnement (open tot 19 november, 20:00), zonder iets te melden. Ik liep de belangrijkste punten
+      zelf na: een gekopieerde of doorgegeven bril, een verhuisde kern (hij houdt zijn wachtwoord, dus de bril blijft
+      verbonden), een afgebroken kern (NO DATACENTER), datacenters van voor dit hoofdstuk (nog zonder stempel: de eerste
+      verbinding zet hem), de overname, en de tekst-sleutels die weg zijn. Het plaatje van het G-menu in How it works
+      toont het tabblad Drones en klopt dus nog.
+
+Mijn invulling (verander ik op jouw woord):
+- **Een nieuw wachtwoord koppelt alle brillen los**, ook die van de eigenaar zelf: anders kon de eigenaar niemand meer van
+  zijn datacenter halen (trusted telt niet meer). Hetzelfde wachtwoord opnieuw zetten telt ook als nieuw.
+- **De eigenaar hoort het als iemand anders verbindt** (zoals bij de laptop).
+- **Trusted doet verder alles wat het al deed** (laserwanden, torentjes, bouwen in de zone, de kabel-xray): ik las "trusted
+  is enkel voor de cable x-ray" als: voor de bril telt het niet. Zeg het als trusted ook ergens anders iets niet meer mag.
+- Geen nieuwe versie: een verandering aan iets van vandaag (2.20 blijft, het laatste getal telt vanzelf).
+
+Nog niet gedaan:
+- Niet in het spel bekeken, en geen screenshots (de rondleiding `gradlew runVisualCheck -Ponly=uplink` heeft nu ul09 Systems,
+  ul09b Tech met nachtzicht, en ul13 Systems verbonden).
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
-- [ ] **Je bril verbinden met een security core (hoofdstuk 122)**: alleen met tests gecontroleerd, geen screenshots.
-      Probeer: (1) G-menu, tabblad Tech, Datacenter: typ het IP (de app Status van je kern) en je wachtwoord. Staat er daarna
-      onder de optie Datacenter de naam van je kern in het groen, en is de rode regel in je HUD weg? (2) Een fout wachtwoord:
-      staat de rode melding netjes boven de knoppen? (3) Laat een vriend verbinden die je in Access zette: zie je in de app
-      Monitor onder RUNNING "Glasses: ..."? Haal hem uit Access: staat er bij hem meteen NO ACCESS TO DATACENTER? (4) Het
-      Brain-scherm zonder verbinding: past "Not connected: G menu, Tech, Datacenter" naast de titel?
+- [ ] **Je bril verbinden met een security core (hoofdstuk 122 en 123)**: alleen met tests gecontroleerd, geen
+      screenshots. Probeer: (1) G-menu, tabblad Systems, Datacenter: typ het IP (de app Status van je kern) en je wachtwoord.
+      Staat er daarna onder Datacenter de naam van je kern in het groen, en is de rode regel in je HUD weg? Staat nachtzicht
+      nu op Tech? (2) Een fout wachtwoord: staat de rode melding netjes boven de knoppen? (3) Laat een vriend verbinden met
+      je wachtwoord: krijg je een bericht, en zie je hem in de app Monitor onder RUNNING ("Glasses: ...")? (4) Zet een nieuw
+      wachtwoord: staat er bij jullie allebei DATACENTER PASSWORD CHANGED? (5) De tooltip van de bril: "Datacenter: ..."?
 - [ ] **De arm tot vijf hoog (hoofdstuk 121)**: met tests en screenshots gecontroleerd, niet gespeeld. Probeer: (1) laat
       de auto een kamer of gang van 5 of 6 hoog uitminen met de `dig` uit LEESMIJ; (2) kijk van dichtbij omhoog naar de
       boor: blijft de auto zichtbaar? (3) ziet de mast er goed uit op vijf hoog, ook terwijl hij schuift?

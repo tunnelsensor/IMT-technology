@@ -75,6 +75,16 @@ public final class SystemPassword {
         return digitsOnly;
     }
 
+    /**
+     * Hoofdstuk 123: welk wachtwoord dit is, zonder iets over het wachtwoord zelf te zeggen: het willekeurige stukje ("salt")
+     * ervan, als tekst. Een nieuw wachtwoord (ook hetzelfde opnieuw) krijgt een nieuw stukje. Een bril onthoudt dit als hij
+     * verbindt (zie imt/ImtUplink): verandert het wachtwoord, dan moet hij opnieuw verbinden. De vingerafdruk zelf ("hash")
+     * verlaat de kern nooit, dus hiermee kraak je niets.
+     */
+    public String stamp() {
+        return java.util.HexFormat.of().formatHex(salt);
+    }
+
     private static byte[] digest(byte[] salt, String password) {
         try {
             MessageDigest sha = MessageDigest.getInstance("SHA-256");

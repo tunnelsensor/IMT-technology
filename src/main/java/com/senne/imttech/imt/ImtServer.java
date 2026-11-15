@@ -532,7 +532,7 @@ public final class ImtServer {
     /**
      * Hoofdstuk 106: je datacenter is weg of draait niet meer. Wat erop doorliep, stopt: je navigatie, je hacks en je
      * spionagedrone. (De scans blijven "aan" staan in je bril, maar tonen niets tot je datacenter er weer is.) Sinds
-     * hoofdstuk 122 ook als je je bril loskoppelde, of als je op die kern niet meer de eigenaar bent of vertrouwd.
+     * hoofdstuk 122 ook als je je bril loskoppelde, en sinds hoofdstuk 123 als het wachtwoord van die kern veranderde.
      */
     private static void stopWhatNeedsTheDatacenter(ServerPlayer player) {
         boolean stopped = false;

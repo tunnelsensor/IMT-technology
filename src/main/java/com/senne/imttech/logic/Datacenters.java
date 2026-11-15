@@ -49,9 +49,11 @@ public final class Datacenters extends SavedData {
      * @param power      hoofdstuk 106: de rekenkracht voor de bril (een CPU 1, een GPU 2, maal wat het RAM voedt, warm de
      *                   helft; zie DatacenterGlasses). -1 = nog niet gemeld (een wereld van voor hoofdstuk 106)
      * @param ramMb      hoofdstuk 106: zoveel MB RAM heeft het. -1 = nog niet gemeld
+     * @param passwordStamp hoofdstuk 123: welk wachtwoord de kern heeft (zie SystemPassword.stamp), "" = geen (of nog niet
+     *                   gemeld). Een bril die met een ander wachtwoord verbond, moet opnieuw verbinden.
      */
     public record Summary(@Nullable UUID owner, String host, String ip, boolean online, int capacity, int ownBlocks,
-                          int brainDelay, double power, double ramMb) {}
+                          int brainDelay, double power, double ramMb, String passwordStamp) {}
 
     /**
      * Eén backup: wat er op stond (de diagrammen en keycards, als LogicStore), van welk netwerk,
@@ -67,21 +69,17 @@ public final class Datacenters extends SavedData {
      * Hoofdstuk 106: zoveel MB bewaart de bril van elke speler (zijn waypoints). Het staat op de SSD's van het datacenter
      * waar zijn bril op draait (zie DatacenterGlasses), en telt daar mee, ook als die speler niet online is.
      */
-    private final Map<UUID, Double> glassesData = new HashMap<>();
+    private final Map<UUID, GlassesData> glassesData = new HashMap<>();
 
     /**
-     * Hoofdstuk 122 (jouw wens van 15 november: "zorg dat het datacenter voor je bril afhankelijk is van de security core
-     * waar je aanhangt, of owner of trusted; je moet je bril connecten via het ip van je security core met password voor
-     * dat die bril aan de serverroom hangt"): met welke kern de bril van een speler verbonden is.
+     * Wat de bril van een speler bewaart, en waar (hoofdstuk 106 en 123).
      *
-     * @param ip         het IP van die kern (zo vinden we hem terug, ook als hij is verhuisd: een kern houdt zijn IP)
-     * @param host       de naam van de kern toen je verbond ("dev-lab"), voor de meldingen als hij niet meer antwoordt
-     * @param playerName de naam van de speler (voor een scoreboard-team, als de config dat als vriend telt)
+     * @param mb   zoveel MB (zijn waypoints)
+     * @param ip   het IP van de kern op wiens SSD's het staat: waar zijn bril de laatste keer verbonden mee werkte ("" = op
+     *             geen enkel datacenter: zijn bril was niet verbonden, of het werkte daar niet)
+     * @param name de naam van de speler (voor de app Monitor: wiens bril aan dit datacenter hangt)
      */
-    public record Uplink(String ip, String host, String playerName) {}
-
-    /** Per speler: met welke kern zijn bril verbonden is (zie {@link Uplink}). Wie er niet in staat, is niet verbonden. */
-    private final Map<UUID, Uplink> uplinks = new HashMap<>();
+    public record GlassesData(double mb, String ip, String name) {}
 
     public static Datacenters get(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(
@@ -143,47 +141,48 @@ public final class Datacenters extends SavedData {
 
     /** Zoveel MB bewaart de bril van deze speler (0 als hij niets bewaart). */
     public double glassesData(@Nullable UUID owner) {
-        return owner == null ? 0.0 : glassesData.getOrDefault(owner, 0.0);
+        GlassesData data = owner == null ? null : glassesData.get(owner);
+        return data == null ? 0.0 : data.mb();
     }
 
-    /** De bril van deze speler bewaart nu zoveel MB. Alleen als het veranderde, wordt het bewaard. */
-    public void setGlassesData(UUID owner, double mb) {
-        double before = glassesData.getOrDefault(owner, 0.0);
-        if (Math.abs(before - mb) < 1.0e-6) {
+    /**
+     * De bril van deze speler bewaart nu zoveel MB, op het datacenter van de kern met dit IP ("" = op geen enkel). Alleen als
+     * er iets veranderde, wordt het bewaard.
+     */
+    public void setGlassesData(UUID owner, double mb, String ip, String name) {
+        GlassesData now = new GlassesData(Math.max(0.0, mb), ip, name);
+        GlassesData before = glassesData.get(owner);
+        if (now.mb() <= 0 && ip.isEmpty()) {
+            if (glassesData.remove(owner) != null) {
+                setDirty();
+            }
             return;
         }
-        if (mb <= 0) {
-            glassesData.remove(owner);
-        } else {
-            glassesData.put(owner, mb);
+        if (before != null && Math.abs(before.mb() - now.mb()) < 1.0e-6 && before.ip().equals(ip) && before.name().equals(name)) {
+            return;
         }
+        glassesData.put(owner, now);
         setDirty();
     }
 
-    // ================================================================ Met welke kern de bril verbonden is (hoofdstuk 122)
-
-    /** Met welke kern de bril van deze speler verbonden is, of null als hij met geen enkele verbonden is. */
-    public @Nullable Uplink uplink(@Nullable UUID player) {
-        return player == null ? null : uplinks.get(player);
+    /** Wat elke bril bewaart, en waar (voor de SSD's en de app Monitor). */
+    public Map<UUID, GlassesData> glassesData() {
+        return Map.copyOf(glassesData);
     }
 
-    /** De bril van deze speler is nu met deze kern verbonden (een vorige verbinding valt weg). */
-    public void setUplink(UUID player, Uplink uplink) {
-        if (!uplink.equals(uplinks.put(player, uplink))) {
+    // ================================================================ Het wachtwoord van een kern (hoofdstuk 123)
+
+    /**
+     * Het wachtwoord van de kern op deze plek veranderde (of hij kreeg er een, of verbond net een bril): de brillen die met
+     * een ander wachtwoord verbonden waren, merken het meteen, en niet pas bij zijn volgende melding (om de twee seconden).
+     */
+    public void updateStamp(GlobalPos pos, String stamp) {
+        Summary summary = summaries.get(pos);
+        if (summary != null && !summary.passwordStamp().equals(stamp)) {
+            summaries.put(pos, new Summary(summary.owner(), summary.host(), summary.ip(), summary.online(), summary.capacity(),
+                    summary.ownBlocks(), summary.brainDelay(), summary.power(), summary.ramMb(), stamp));
             setDirty();
         }
-    }
-
-    /** De bril van deze speler is met geen enkele kern meer verbonden. */
-    public void removeUplink(UUID player) {
-        if (uplinks.remove(player) != null) {
-            setDirty();
-        }
-    }
-
-    /** Alle verbonden brillen: van welke speler, en met welke kern. */
-    public Map<UUID, Uplink> uplinks() {
-        return Map.copyOf(uplinks);
     }
 
     // ================================================================ Backups
@@ -358,28 +357,20 @@ public final class Datacenters extends SavedData {
             item.putInt("Brain", summary.brainDelay());
             item.putDouble("Power", summary.power());
             item.putDouble("RamMb", summary.ramMb());
+            item.putString("Stamp", summary.passwordStamp());
             list.add(item);
         }
         tag.put("Datacenters", list);
         ListTag glasses = new ListTag();
-        for (Map.Entry<UUID, Double> entry : glassesData.entrySet()) {
+        for (Map.Entry<UUID, GlassesData> entry : glassesData.entrySet()) {
             CompoundTag item = new CompoundTag();
             item.putUUID("Owner", entry.getKey());
-            item.putDouble("Mb", entry.getValue());
+            item.putDouble("Mb", entry.getValue().mb());
+            item.putString("Ip", entry.getValue().ip());
+            item.putString("Name", entry.getValue().name());
             glasses.add(item);
         }
         tag.put("Glasses", glasses);
-        // Hoofdstuk 122: met welke kern elke bril verbonden is.
-        ListTag links = new ListTag();
-        for (Map.Entry<UUID, Uplink> entry : uplinks.entrySet()) {
-            CompoundTag item = new CompoundTag();
-            item.putUUID("Player", entry.getKey());
-            item.putString("Ip", entry.getValue().ip());
-            item.putString("Host", entry.getValue().host());
-            item.putString("Name", entry.getValue().playerName());
-            links.add(item);
-        }
-        tag.put("Uplinks", links);
         ListTag backupList = new ListTag();
         for (Backup backup : backups) {
             backupList.add(saveBackup(backup));
@@ -428,22 +419,18 @@ public final class Datacenters extends SavedData {
                 data.summaries.put(pos, new Summary(item.hasUUID("Owner") ? item.getUUID("Owner") : null, item.getString("Host"),
                         item.getString("Ip"), item.getBoolean("Online"), item.getInt("Cap"), item.getInt("Own"), item.getInt("Brain"),
                         item.contains("Power") ? item.getDouble("Power") : -1.0,
-                        item.contains("RamMb") ? item.getDouble("RamMb") : -1.0));
+                        item.contains("RamMb") ? item.getDouble("RamMb") : -1.0,
+                        item.getString("Stamp"))); // hoofdstuk 123; daarvoor: "" (tot de kern weer meldt)
             }
         }
+        // Wat elke bril bewaart, en waar (hoofdstuk 123: "Ip" en "Name"; daarvoor stond het op geen enkel datacenter tot de
+        // bril weer verbonden werkt). De verbindingen per speler van hoofdstuk 122 ("Uplinks") staan sinds hoofdstuk 123 op
+        // de bril zelf; die oude lijst lezen we niet meer.
         for (Tag element : tag.getList("Glasses", Tag.TAG_COMPOUND)) {
             CompoundTag item = (CompoundTag) element;
-            if (item.hasUUID("Owner") && item.getDouble("Mb") > 0) {
-                data.glassesData.put(item.getUUID("Owner"), item.getDouble("Mb"));
-            }
-        }
-        // Hoofdstuk 122: een wereld van daarvoor heeft geen "Uplinks": dan is nog geen enkele bril verbonden (jouw wens:
-        // je moet je bril eerst verbinden met het IP en het wachtwoord van een kern).
-        for (Tag element : tag.getList("Uplinks", Tag.TAG_COMPOUND)) {
-            CompoundTag item = (CompoundTag) element;
-            if (item.hasUUID("Player") && !item.getString("Ip").isEmpty()) {
-                data.uplinks.put(item.getUUID("Player"), new Uplink(item.getString("Ip"), item.getString("Host"),
-                        item.getString("Name")));
+            if (item.hasUUID("Owner") && (item.getDouble("Mb") > 0 || !item.getString("Ip").isEmpty())) {
+                data.glassesData.put(item.getUUID("Owner"), new GlassesData(Math.max(0.0, item.getDouble("Mb")),
+                        item.getString("Ip"), item.getString("Name")));
             }
         }
         for (Tag element : tag.getList("Backups", Tag.TAG_COMPOUND)) {

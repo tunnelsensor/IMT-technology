@@ -44,18 +44,17 @@ public final class DatacenterBrain {
      * Op welk datacenter het brein van deze speler draait, of null als nergens.
      *
      * Hoofdstuk 122 (jouw wens: "zorg dat het datacenter voor je bril afhankelijk is van de security core waar je
-     * aanhangt"): het brein zit in de bril, dus het draait op het datacenter van de kern waarmee je je bril verbond (met
-     * zijn IP en wachtwoord), zolang je daar de eigenaar bent of vertrouwd en het draait (zie DatacenterGlasses). Staat de
-     * regel van de bril uit in de config ({@code [uplink] required = false}) en is je bril nergens mee verbonden, dan
-     * zoals vroeger: je sterkste eigen datacenter.
+     * aanhangt"): het brein zit in de bril, dus het draait op het datacenter van de kern waarmee je bril verbonden is (met
+     * zijn IP en wachtwoord; sinds hoofdstuk 123 staat dat op de bril zelf), zolang dat wachtwoord geldt en het draait
+     * (zie DatacenterGlasses). Staat de regel van de bril uit in de config ({@code [uplink] required = false}) en is je bril
+     * nergens mee verbonden, dan zoals vroeger: je sterkste eigen datacenter.
      */
     public static @Nullable Map.Entry<GlobalPos, Datacenters.Summary> best(ServerPlayer player) {
         Map.Entry<GlobalPos, Datacenters.Summary> linked = DatacenterGlasses.linkedDatacenter(player);
-        // Alleen als je bril nergens mee verbonden is: hangt hij aan een kern waar het nu niet werkt (geen toegang meer,
+        // Alleen als je bril nergens mee verbonden is: hangt hij aan een kern waar het nu niet werkt (een nieuw wachtwoord,
         // offline, weg), dan geen brein, en niet stilletjes een ander datacenter. (Gevonden door de nalezing: zo zeiden het
         // G-menu en het Brain-scherm twee verschillende datacenters.)
-        if (linked != null || DatacenterGlasses.required()
-                || Datacenters.get(player.server).uplink(player.getUUID()) != null) {
+        if (linked != null || DatacenterGlasses.required() || DatacenterGlasses.connected(player)) {
             return linked;
         }
         return strongestOwned(player.server, player.getUUID());

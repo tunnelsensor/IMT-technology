@@ -1,12 +1,11 @@
 package com.senne.imttech.logic;
 
 import com.senne.imttech.config.ImtConfig;
+import com.senne.imttech.imt.ImtData;
 import com.senne.imttech.imt.ImtServer;
+import com.senne.imttech.imt.ImtUplink;
 import com.senne.imttech.network.ImtMessagePayload;
-import com.senne.imttech.security.SecurityCoreBlockEntity;
-import com.senne.imttech.security.TeamFriends;
 import com.senne.imttech.security.net.CoreNetworkData;
-import com.senne.imttech.security.zone.ZoneData;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -18,8 +17,8 @@ import net.minecraft.core.GlobalPos;
 import net.minecraft.gametest.framework.GameTestServer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,12 +30,13 @@ import org.jetbrains.annotations.Nullable;
  *
  * Hoe het werkt (alle getallen staan in {@link ImtConfig.Uplink}):
  * <ul>
- *   <li><b>Welk datacenter</b> (hoofdstuk 122, jouw wens van 15 november: "zorg dat het datacenter voor je bril
- *       afhankelijk is van de security core waar je aanhangt, of owner of trusted; je moet je bril connecten via het ip
- *       van je security core met password voor dat die bril aan de serverroom hangt"): het datacenter van de kern waarmee
- *       je je bril verbond, in het G-menu (Tech, Datacenter) met het IP en het wachtwoord van die kern (zie
- *       {@link GlassesUplink}). Alleen zolang jij daar de eigenaar bent of vertrouwd (Access): haalt de eigenaar je eruit,
- *       of neemt iemand de kern over, dan heeft je bril meteen geen datacenter meer. Het brein draait op hetzelfde
+ *   <li><b>Welk datacenter</b> (hoofdstuk 122 en 123, jouw wensen van 15 november: "je moet je bril connecten via het ip
+ *       van je security core met password voor dat die bril aan de serverroom hangt", en daarna: "zorg dat de bril
+ *       connectie niet aan de speler hangt maar echt aan de bril; als iemand het wachtwoord kent kan die ook connecten
+ *       zonder trusted te zijn"): het datacenter van de kern waarmee je je bril verbond, in het G-menu (Systems,
+ *       Datacenter) met het IP en het wachtwoord van die kern (zie {@link GlassesUplink}). De verbinding staat op de bril
+ *       zelf ({@link ImtUplink}). Wie het wachtwoord kent, mag verbinden; zet de eigenaar een nieuw wachtwoord (of neemt
+ *       iemand de kern over, wat het wachtwoord wist), dan moet elke bril opnieuw verbinden. Het brein draait op hetzelfde
  *       datacenter (zie {@link DatacenterBrain#best}). Niet verbonden: de bril doet niets meer dat nadenkt of iets
  *       bewaart. In creative heb je er geen nodig.</li>
  *   <li><b>Rekenkracht</b> (CPU's en GPU's): een CPU telt 1, een GPU 2, maal wat het RAM voedt, en warm de helft (de
@@ -56,8 +56,8 @@ import org.jetbrains.annotations.Nullable;
  * de laser cannon en de raketten, de camera van een drone, berichten en pings, en stoppen of landen (dat kan altijd).
  *
  * Alles hier staat in het geheugen van de server (zoals wachttijden): wie waar mee bezig is, vergeten we als de wereld
- * sluit. Alleen hoeveel de bril van een speler bewaart, staat in {@link Datacenters}: zo telt het ook mee op de SSD's
- * als die speler niet online is.
+ * sluit. Alleen hoeveel de bril van een speler bewaart (en op welk datacenter), staat in {@link Datacenters}: zo telt het
+ * ook mee op de SSD's als die speler niet online is.
  */
 public final class DatacenterGlasses {
     private DatacenterGlasses() {}
@@ -148,8 +148,11 @@ public final class DatacenterGlasses {
         OFFLINE,
         /** Hoofdstuk 122: zijn bril is met geen enkele kern verbonden. */
         NOT_CONNECTED,
-        /** Hoofdstuk 122: verbonden met een kern waar hij geen eigenaar (meer) is en niet (meer) vertrouwd. */
-        NO_ACCESS;
+        /**
+         * Hoofdstuk 123: verbonden met een wachtwoord dat de kern niet meer heeft (de eigenaar zette een nieuw, of iemand nam
+         * de kern over): opnieuw verbinden met het nieuwe wachtwoord.
+         */
+        PASSWORD_CHANGED;
 
         /** Kan de bril nu nadenken en bewaren? */
         public boolean works() {
@@ -212,26 +215,23 @@ public final class DatacenterGlasses {
     private record Resolved(Link link, @Nullable Server server, String host) {}
 
     /**
-     * Zoekt op waar de bril van deze speler aan hangt, ook als hij niet online is en ook als de kern niet geladen is: de
-     * verbinding staat in {@link Datacenters#uplink}, de kern met dat IP in het netwerk van de wereld (CoreNetworkData),
-     * hoe zijn datacenter ervoor staat in {@link Datacenters#summary}, en wie er mag in de zones (ZoneData). Zo laden we
-     * nooit een stuk wereld, ook niet als dit elke seconde gebeurt.
-     *
-     * @param name de naam van de speler (voor een scoreboard-team); leeg = de naam van toen hij verbond
+     * Zoekt op waar deze verbinding (van een bril) aan hangt: de kern met dat IP in het netwerk van de wereld
+     * (CoreNetworkData), hoe zijn datacenter ervoor staat ({@link Datacenters#summary}, ook als de kern niet geladen is), en
+     * of het wachtwoord van toen nog geldt (hoofdstuk 123). Zo laden we nooit een stuk wereld, ook niet als dit elke seconde
+     * gebeurt.
      */
-    private static Resolved resolve(MinecraftServer server, UUID player, String name) {
-        Datacenters datacenters = Datacenters.get(server);
-        Datacenters.Uplink uplink = datacenters.uplink(player);
+    private static Resolved resolve(MinecraftServer server, @Nullable ImtUplink uplink) {
         if (uplink == null) {
             return new Resolved(Link.NOT_CONNECTED, null, "");
         }
         GlobalPos pos = CoreNetworkData.get(server).find(uplink.ip());
-        Datacenters.Summary summary = pos == null ? null : datacenters.summary(pos);
+        Datacenters.Summary summary = pos == null ? null : Datacenters.get(server).summary(pos);
         if (pos == null || summary == null || summary.owner() == null) {
             return new Resolved(Link.NONE, null, uplink.host());
         }
-        if (!hasAccess(server, pos, summary.owner(), player, name.isEmpty() ? uplink.playerName() : name)) {
-            return new Resolved(Link.NO_ACCESS, null, summary.host());
+        // Hoofdstuk 123: verbonden met een wachtwoord dat de kern niet meer heeft (een nieuw, of geen meer na een overname).
+        if (uplink.stamp().isEmpty() || !uplink.stamp().equals(summary.passwordStamp())) {
+            return new Resolved(Link.PASSWORD_CHANGED, null, summary.host());
         }
         if (!summary.online() || summary.brainDelay() < 0) {
             return new Resolved(Link.OFFLINE, null, summary.host());
@@ -239,44 +239,22 @@ public final class DatacenterGlasses {
         return new Resolved(Link.OK, new Server(pos, summary), summary.host());
     }
 
+    /**
+     * De verbinding op de bril die deze speler op heeft (hoofdstuk 123: die staat op de bril zelf, zie {@link ImtUplink}).
+     * Alleen zijn eigen bril telt: een bril van een ander werkt toch niet voor hem.
+     */
+    private static @Nullable ImtUplink uplinkOf(ServerPlayer player) {
+        ItemStack glasses = ImtData.getWornGlasses(player);
+        return glasses.isEmpty() || !ImtData.isAuthorized(glasses, player) ? null : ImtData.getUplink(glasses);
+    }
+
     private static Resolved resolve(ServerPlayer player) {
-        return resolve(player.server, player.getUUID(), player.getGameProfile().getName());
+        return resolve(player.server, uplinkOf(player));
     }
 
-    /**
-     * Mag deze speler op het datacenter van deze kern (hoofdstuk 122, jouw wens: "of owner of trusted")? De eigenaar, de
-     * spelers die hij in Access zette, en zijn scoreboard-team als de config een team als vriend telt ([rules]
-     * teamsAreFriends, zie TeamFriends), net als bij een laserwand. We kijken in ZoneData: elke kern met een eigenaar
-     * vertelt daar wie hij vertrouwt, ook als zijn stuk wereld niet geladen is. Een oefening (hoofdstuk 27) telt hier niet:
-     * de bril van de trainee blijft gewoon werken.
-     *
-     * @param summaryOwner de eigenaar volgens het datacenter (als de kern nog niets aan ZoneData vertelde)
-     */
-    private static boolean hasAccess(MinecraftServer server, GlobalPos core, @Nullable UUID summaryOwner, UUID player,
-                                     String name) {
-        ZoneData.Zone zone = ZoneData.get(server).zone(core);
-        UUID owner = zone != null ? zone.owner() : summaryOwner;
-        if (owner == null) {
-            return false;
-        }
-        if (owner.equals(player) || zone != null && zone.trusts(player)) {
-            return true;
-        }
-        ServerLevel level = server.getLevel(core.dimension());
-        return zone != null && level != null && TeamFriends.allied(level, zone.ownerName(), name);
-    }
-
-    /**
-     * Mag deze speler zijn bril met deze kern verbinden (hoofdstuk 122)? Dezelfde regel als hierboven, maar op de kern zelf
-     * (die staat dan geladen: je verbindt met zijn IP en wachtwoord, zie {@link GlassesUplink}).
-     */
-    public static boolean mayConnect(ServerLevel level, SecurityCoreBlockEntity core, ServerPlayer player) {
-        UUID owner = core.ownerId();
-        if (owner == null) {
-            return false;
-        }
-        return owner.equals(player.getUUID()) || core.isTrusted(player.getUUID())
-                || TeamFriends.allied(level, core.ownerName(), player);
+    /** Is de bril die deze speler op heeft met een kern verbonden (of het daar nu werkt of niet)? */
+    public static boolean connected(ServerPlayer player) {
+        return uplinkOf(player) != null;
     }
 
     private static @Nullable Server serving(ServerPlayer player) {
@@ -305,7 +283,7 @@ public final class DatacenterGlasses {
      * is (de naam van nu als we die kennen, anders die van toen hij verbond), of twee keer "" als met geen enkele.
      */
     public static String[] uplinkLabel(ServerPlayer player) {
-        Datacenters.Uplink uplink = Datacenters.get(player.server).uplink(player.getUUID());
+        ImtUplink uplink = uplinkOf(player);
         if (uplink == null) {
             return new String[] {"", ""};
         }
@@ -318,7 +296,7 @@ public final class DatacenterGlasses {
         return link(player).works();
     }
 
-    /** Hetzelfde, maar zegt de speler waarom niet (niet verbonden, geen toegang, geen datacenter, of het draait niet). */
+    /** Hetzelfde, maar zegt de speler waarom niet (niet verbonden, een nieuw wachtwoord, geen datacenter, of het draait niet). */
     public static boolean requireLink(ServerPlayer player) {
         Link link = link(player);
         if (link.works()) {
@@ -333,7 +311,7 @@ public final class DatacenterGlasses {
         String host = resolve(player).host();
         Component message = switch (link) {
             case NOT_CONNECTED -> Component.translatable("imt.imttech.msg.datacenter_not_connected");
-            case NO_ACCESS -> Component.translatable("imt.imttech.msg.datacenter_no_access", host);
+            case PASSWORD_CHANGED -> Component.translatable("imt.imttech.msg.datacenter_password_changed", host);
             case OFFLINE -> Component.translatable("imt.imttech.msg.datacenter_offline", host);
             default -> Component.translatable("imt.imttech.msg.datacenter_none", host);
         };
@@ -449,9 +427,8 @@ public final class DatacenterGlasses {
     }
 
     /**
-     * Hoeveel MB de brillen op de SSD's van dit datacenter bewaren. Hoofdstuk 122: van iedereen wiens bril met deze kern
-     * verbonden is en die erop mag (de eigenaar en de spelers die hij vertrouwt), ook als ze niet online zijn, en ook als het
-     * datacenter nu niet draait (de SSD's zijn er nog).
+     * Hoeveel MB de brillen op de SSD's van dit datacenter bewaren: van iedereen wiens bril de laatste keer verbonden met
+     * deze kern werkte, ook als hij nu niet online is, en ook als het datacenter nu niet draait (de SSD's zijn er nog).
      */
     public static double storedMb(MinecraftServer server, GlobalPos datacenter) {
         return storedMb(server, datacenter, null);
@@ -462,34 +439,32 @@ public final class DatacenterGlasses {
         if (!required()) {
             return 0;
         }
-        Datacenters datacenters = Datacenters.get(server);
         double total = 0;
-        for (Map.Entry<UUID, Datacenters.Uplink> entry : datacenters.uplinks().entrySet()) {
-            if (!entry.getKey().equals(except) && storesOn(server, entry.getKey(), entry.getValue(), datacenter)) {
-                total += datacenters.glassesData(entry.getKey());
+        for (Map.Entry<UUID, Datacenters.GlassesData> entry : Datacenters.get(server).glassesData().entrySet()) {
+            if (!entry.getKey().equals(except) && storesOn(server, entry.getValue(), datacenter)) {
+                total += entry.getValue().mb();
             }
         }
         return total;
     }
 
-    /** Staat wat de bril van deze speler bewaart op dit datacenter (verbonden met deze kern, en hij mag erop)? */
-    private static boolean storesOn(MinecraftServer server, UUID player, Datacenters.Uplink uplink, GlobalPos datacenter) {
-        if (!datacenter.equals(CoreNetworkData.get(server).find(uplink.ip()))) {
-            return false;
-        }
-        Datacenters.Summary summary = Datacenters.get(server).summary(datacenter);
-        return summary != null && hasAccess(server, datacenter, summary.owner(), player, uplink.playerName());
+    /**
+     * Staat wat deze bril bewaart op dit datacenter? Dat is het datacenter waar hij de laatste keer verbonden mee werkte
+     * (hoofdstuk 123: zijn speler kan offline zijn, of de bril afhebben; dan geldt wat we het laatst zagen).
+     */
+    private static boolean storesOn(MinecraftServer server, Datacenters.GlassesData data, GlobalPos datacenter) {
+        return !data.ip().isEmpty() && datacenter.equals(CoreNetworkData.get(server).find(data.ip()));
     }
 
     /**
-     * Voor de app Monitor (hoofdstuk 122): wie zijn bril met dit datacenter verbond en erop mag, op naam. Zo ziet de
-     * eigenaar wie er aan zijn serverruimte hangt.
+     * Voor de app Monitor (hoofdstuk 122): wiens bril aan dit datacenter hangt, op naam (de laatste keer dat we hem zagen).
+     * Zo ziet de eigenaar wie zijn wachtwoord kent en er gebruik van maakt.
      */
     public static List<String> connectedNames(MinecraftServer server, GlobalPos datacenter) {
         List<String> names = new ArrayList<>();
-        for (Map.Entry<UUID, Datacenters.Uplink> entry : Datacenters.get(server).uplinks().entrySet()) {
-            if (storesOn(server, entry.getKey(), entry.getValue(), datacenter)) {
-                names.add(entry.getValue().playerName());
+        for (Datacenters.GlassesData data : Datacenters.get(server).glassesData().values()) {
+            if (storesOn(server, data, datacenter) && !data.name().isEmpty()) {
+                names.add(data.name());
             }
         }
         names.sort(String.CASE_INSENSITIVE_ORDER);
@@ -499,7 +474,7 @@ public final class DatacenterGlasses {
     // ================================================================ Een verzoek
 
     /**
-     * Kan de bril van deze speler dit nu vragen? Zo niet, dan zegt I.M.T waarom (niet verbonden, geen toegang, geen
+     * Kan de bril van deze speler dit nu vragen? Zo niet, dan zegt I.M.T waarom (niet verbonden, een nieuw wachtwoord, geen
      * datacenter, het draait niet, het is te zwak, het is bezig, of het RAM is vol) en geeft dit false: er gebeurt dan
      * niets, en dat kost niets.
      *
@@ -580,7 +555,7 @@ public final class DatacenterGlasses {
         if (link(player) != Link.OK) {
             STANDING.remove(player.getUUID());
             if (required() && !player.isCreative()) {
-                remember(player, waypoints); // ook zonder datacenter onthouden we hoeveel hij al bewaart
+                remember(player, waypoints, ""); // ook zonder datacenter onthouden we hoeveel hij al bewaart (op geen enkel)
             }
             return;
         }
@@ -591,7 +566,7 @@ public final class DatacenterGlasses {
         }
         STANDING.put(player.getUUID(), new Standing(serving.pos(), player.getGameProfile().getName(), List.copyOf(kinds),
                 waypoints, now(player.server) + STANDING_TICKS));
-        remember(player, waypoints);
+        remember(player, waypoints, serving.summary().ip());
     }
 
     /** Deze speler is weg (of zijn bril is af): niets van hem loopt nog door. */
@@ -612,14 +587,18 @@ public final class DatacenterGlasses {
         return Math.max(0, waypoints) * Math.max(0.0, ImtConfig.Uplink.WAYPOINT_MB);
     }
 
-    /** Onthoudt (in de wereld) hoeveel de bril van deze speler bewaart, zodat het ook meetelt als hij niet online is. */
-    private static void remember(ServerPlayer player, int waypoints) {
-        Datacenters.get(player.server).setGlassesData(player.getUUID(), waypointsMb(waypoints));
+    /**
+     * Onthoudt (in de wereld) hoeveel de bril van deze speler bewaart, en op welk datacenter (het IP van de kern, "" = op
+     * geen enkel), zodat het ook meetelt als hij niet online is.
+     */
+    private static void remember(ServerPlayer player, int waypoints, String ip) {
+        Datacenters.get(player.server).setGlassesData(player.getUUID(), waypointsMb(waypoints), ip,
+                player.getGameProfile().getName());
     }
 
     /**
      * Is er plaats om nog {@code mb} MB te bewaren voor de bril van deze speler? Zo niet, dan zegt I.M.T waarom (niet
-     * verbonden, geen toegang, geen datacenter, het draait niet, of de SSD's zijn vol) en geeft dit false.
+     * verbonden, een nieuw wachtwoord, geen datacenter, het draait niet, of de SSD's zijn vol) en geeft dit false.
      *
      * @param stored hoeveel waypoints hij nu al bewaart (die tellen mee, ook die van voor hij een datacenter had)
      */
@@ -644,7 +623,7 @@ public final class DatacenterGlasses {
 
     /**
      * Zoveel MB is er nog vrij op de SSD's: wat erop past, min de diagrammen, de backups die er staan, wat de brillen van
-     * de anderen erop bewaren (hoofdstuk 122: ook vertrouwde spelers hangen eraan), en wat de bril van {@code player} al
+     * de anderen erop bewaren (iedereen die het wachtwoord kent, kan eraan hangen), en wat de bril van {@code player} al
      * bewaart ({@code glassesMb}).
      */
     private static double freeSsdMb(MinecraftServer server, Server serving, UUID player, double glassesMb) {

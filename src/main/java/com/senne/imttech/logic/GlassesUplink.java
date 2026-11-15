@@ -2,6 +2,7 @@ package com.senne.imttech.logic;
 
 import com.senne.imttech.imt.ImtData;
 import com.senne.imttech.imt.ImtServer;
+import com.senne.imttech.imt.ImtUplink;
 import com.senne.imttech.network.ImtMessagePayload;
 import com.senne.imttech.network.ModNetwork;
 import com.senne.imttech.network.UplinkReplyPayload;
@@ -16,22 +17,25 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Je bril verbinden met het datacenter van een security core (hoofdstuk 122, jouw wens van 15 november: "zorg dat het
- * datacenter voor je bril afhankelijk is van de security core waar je aanhangt, of owner of trusted; je moet je bril
- * connecten via het ip van je security core met password voor dat die bril aan de serverroom hangt").
+ * Je bril verbinden met het datacenter van een security core (hoofdstuk 122 en 123, jouw wensen van 15 november: "je moet
+ * je bril connecten via het ip van je security core met password voor dat die bril aan de serverroom hangt", en daarna:
+ * "zorg dat de bril connectie niet aan de speler hangt maar echt aan de bril; als iemand het wachtwoord kent kan die ook
+ * connecten zonder trusted te zijn").
  *
  * Zo gaat het:
  * <ul>
- *   <li>In het G-menu, tabblad Tech, kies je Datacenter. Daar typ je het IP van een kern (dat staat in zijn app Status) en
+ *   <li>In het G-menu, tabblad Systems, kies je Datacenter. Daar typ je het IP van een kern (dat staat in zijn app Status) en
  *       zijn wachtwoord, net als met de Hacking Laptop of de I.M.T Phone.</li>
  *   <li>De server kijkt het na zoals bij de laptop ({@link SecurityOs#connect}): de kern moet in dezelfde dimensie staan,
  *       stroom hebben en een wachtwoord; een fout wachtwoord komt in zijn logboek, de eigenaar hoort het, en na te veel
  *       keer moet je even wachten.</li>
- *   <li>Het goede wachtwoord is niet genoeg: je moet op die kern ook de eigenaar zijn, of vertrouwd (Access). Kent iemand
- *       anders het wachtwoord, dan verbindt zijn bril niet, en hoort de eigenaar dat meteen.</li>
- *   <li>Gelukt: je bril hangt aan die kern (dat onthoudt de wereld, zie {@link Datacenters#uplink}). Alles wat de bril
- *       nadenkt of bewaart, en het brein, draait vanaf nu op zijn datacenter, waar je ook bent, zolang je daar de eigenaar
- *       bent of vertrouwd. Het logboek van de kern zegt wie er verbond.</li>
+ *   <li>Het goede wachtwoord is genoeg: wie het kent, mag verbinden, ook zonder in Access te staan (vertrouwd zijn is voor
+ *       iets anders, zoals de kabels in de zone door de muur zien). Is het niet de eigenaar die verbindt, dan hoort de
+ *       eigenaar dat (zoals bij een login met de laptop).</li>
+ *   <li>Gelukt: de verbinding staat op de bril zelf ({@link ImtUplink}): geef je de bril door, dan blijft hij verbonden.
+ *       Alles wat de bril nadenkt of bewaart, en het brein, draait vanaf nu op het datacenter van die kern, waar je ook
+ *       bent. De bril onthoudt ook welk wachtwoord de kern had: zet de eigenaar een nieuw wachtwoord (of neemt iemand de
+ *       kern over, wat het wachtwoord wist), dan moet de bril opnieuw verbinden. Zo gooit de eigenaar iedereen eraf.</li>
  *   <li>Loskoppelen kan altijd (de knop Disconnect in hetzelfde scherm). Een ander IP verbinden vervangt de vorige
  *       verbinding.</li>
  * </ul>
@@ -48,10 +52,16 @@ public final class GlassesUplink {
         }
     }
 
-    /** De bril van deze speler verbinden met de kern met dit IP, als het wachtwoord klopt en hij daar mag. */
-    public static void connect(ServerPlayer player, String ip, String password) {
+    /** De bril die deze speler op heeft, als het zijn eigen bril is; anders leeg. */
+    private static ItemStack ownGlasses(ServerPlayer player) {
         ItemStack glasses = ImtData.getWornGlasses(player);
-        if (glasses.isEmpty() || !ImtData.isAuthorized(glasses, player)) {
+        return !glasses.isEmpty() && ImtData.isAuthorized(glasses, player) ? glasses : ItemStack.EMPTY;
+    }
+
+    /** De bril van deze speler verbinden met de kern met dit IP, als het wachtwoord klopt. */
+    public static void connect(ServerPlayer player, String ip, String password) {
+        ItemStack glasses = ownGlasses(player);
+        if (glasses.isEmpty()) {
             reply(player, false, "Put on your own I.M.T glasses to connect them.");
             return;
         }
@@ -68,23 +78,27 @@ public final class GlassesUplink {
         if (core == null) {
             return; // SecurityOs.connect zei al waarom niet (geen systeem, geen stroom, fout wachtwoord...)
         }
-        ServerLevel level = player.serverLevel();
-        String name = player.getGameProfile().getName();
-        if (!DatacenterGlasses.mayConnect(level, core, player)) {
-            // Het wachtwoord klopte, maar deze speler is daar niemand: hij kent het wachtwoord van een ander. Dat moet de
-            // eigenaar weten (net als een fout wachtwoord).
-            core.logEvent(EventLog.Type.LOGIN_FAIL, name + " tried to connect I.M.T glasses (not trusted)");
-            core.addMessage(name + " knows the password, but is not trusted: glasses not connected", true);
-            ServerPlayer owner = core.ownerId() == null ? null : level.getServer().getPlayerList().getPlayer(core.ownerId());
-            if (owner != null && owner != player) {
-                ImtServer.send(owner, Component.translatable("imt.imttech.msg.uplink_refused_alert", name, core.hostname()),
-                        ImtMessagePayload.Level.ALERT);
-            }
-            reply(player, false, "Access denied: you are not the owner of " + core.hostname() + ", and not trusted there.");
+        if (core.ownerId() == null) {
+            // Een kern van niemand (de toren van Biebia, nog niet gehackt) is niemands datacenter.
+            reply(player, false, "This system has no owner, so there is no datacenter to connect to.");
             return;
         }
-        Datacenters.get(level).setUplink(player.getUUID(), new Datacenters.Uplink(core.ip(), core.hostname(), name));
+        ServerLevel level = player.serverLevel();
+        String name = player.getGameProfile().getName();
+        String stamp = core.passwordStamp();
+        ImtData.setUplink(glasses, new ImtUplink(core.ip(), core.hostname(), stamp));
+        // Het datacenter weet meteen welk wachtwoord hij nu heeft (anders pas bij zijn volgende melding, om de twee seconden).
+        Datacenters.get(level).updateStamp(GlobalPos.of(level.dimension(), core.getBlockPos()), stamp);
         core.logEvent(EventLog.Type.LOGIN, name + " connected I.M.T glasses");
+        if (!player.getUUID().equals(core.ownerId())) {
+            // Iemand anders kent het wachtwoord: dat moet de eigenaar weten (zoals bij een login met de laptop).
+            core.addMessage(name + " connected I.M.T glasses", true);
+            ServerPlayer owner = level.getServer().getPlayerList().getPlayer(core.ownerId());
+            if (owner != null && owner != player) {
+                ImtServer.send(owner, Component.translatable("imt.imttech.msg.uplink_connected_alert", name, core.hostname()),
+                        ImtMessagePayload.Level.ALERT);
+            }
+        }
         // Wat er van deze bril op het vorige datacenter liep, telt daar niet meer; vanaf de volgende seconde telt het hier.
         DatacenterGlasses.forget(player.getUUID());
         DatacenterBrain.forget(player.getUUID());
@@ -95,17 +109,17 @@ public final class GlassesUplink {
     }
 
     /**
-     * De bril van deze speler loskoppelen (dat kan altijd, ook zonder datacenter). Wat erop doorliep, stopt bij de
-     * volgende seconde: je navigatie, je hacks en je spionagedrone.
+     * De bril van deze speler loskoppelen (dat kan altijd, ook zonder datacenter). Wat erop doorliep, stopt meteen: je
+     * navigatie, je hacks en je spionagedrone.
      */
     public static void disconnect(ServerPlayer player) {
-        Datacenters datacenters = Datacenters.get(player.server);
-        Datacenters.Uplink uplink = datacenters.uplink(player.getUUID());
+        ItemStack glasses = ownGlasses(player);
+        ImtUplink uplink = glasses.isEmpty() ? null : ImtData.getUplink(glasses);
         if (uplink == null) {
             reply(player, false, "Your glasses are not connected to a datacenter.");
             return;
         }
-        datacenters.removeUplink(player.getUUID());
+        ImtData.setUplink(glasses, null);
         DatacenterGlasses.forget(player.getUUID());
         DatacenterBrain.forget(player.getUUID());
         // In het logboek van de kern, als die geladen is (voor een afscheid laden we geen stuk wereld).

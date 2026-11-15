@@ -56,6 +56,11 @@ public class ImtGlassesItem extends ArmorItem {
                 tooltip.add(Component.translatable("tooltip.imttech.transfer_pending").withStyle(ChatFormatting.GOLD));
             }
         }
+        // Hoofdstuk 123: met welke kern deze bril verbonden is (dat staat op de bril zelf).
+        ImtUplink uplink = ImtData.getUplink(stack);
+        tooltip.add(uplink == null
+                ? Component.translatable("tooltip.imttech.datacenter.none").withStyle(ChatFormatting.DARK_GRAY)
+                : Component.translatable("tooltip.imttech.datacenter", uplink.host(), uplink.ip()).withStyle(ChatFormatting.GRAY));
 
         int energy = ImtData.getEnergy(stack);
         int max = ImtData.getMaxEnergy(stack);

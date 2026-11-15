@@ -1610,15 +1610,15 @@ public final class ImtConfig {
 
         /**
          * De hoofdschakelaar. Uit = zoals vroeger: de bril werkt zonder datacenter (alleen het brein had er een nodig, en dat
-         * draait dan op je sterkste eigen datacenter als je bril nergens mee verbonden is). Hoofdstuk 122: aan = de bril
-         * draait op het datacenter van de kern waarmee je hem verbond (IP en wachtwoord), als je daar eigenaar of vertrouwd
-         * bent.
+         * draait dan op je sterkste eigen datacenter als je bril nergens mee verbonden is). Hoofdstuk 122 en 123: aan = de
+         * bril draait op het datacenter van de kern waarmee hij verbonden is (IP en wachtwoord; wie het wachtwoord kent, mag
+         * verbinden, en een nieuw wachtwoord gooit iedereen eraf).
          */
         @Tunable("Do the I.M.T glasses need a datacenter for everything that thinks or stores data (satellite "
                 + "strikes, the ore scan, drone orders, navigation and waypoints, the threat scan, target analysis, hacking, "
                 + "the spy drone, illusions, switching relays)? They use the datacenter of the security core they are "
-                + "connected to (G menu, Tech, Datacenter: its IP and password), while their wearer is its owner or "
-                + "trusted there. false = the old rule: the glasses work without one")
+                + "connected to (G menu, Systems, Datacenter: its IP and password; a new password on the core disconnects "
+                + "every pair of glasses). false = the old rule: the glasses work without one")
         public static boolean REQUIRED = true;
 
         // ------------------------------------------------------------------------- Eenmalige verzoeken

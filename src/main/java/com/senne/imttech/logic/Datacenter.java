@@ -407,7 +407,8 @@ public final class Datacenter {
         }
         // Hoofdstuk 106: ook de rekenkracht en het RAM, voor de bril van de eigenaar (zie DatacenterGlasses).
         datacenters.report(here, new Datacenters.Summary(core.ownerId(), core.hostname(), core.ip(), stats.online(),
-                stats.capacity(), core.logic().blocks(), stats.brainDelayTicks(), glassesPower(stats), stats.ramMb()));
+                stats.capacity(), core.logic().blocks(), stats.brainDelayTicks(), glassesPower(stats), stats.ramMb(),
+                core.passwordStamp()));
     }
 
     /**

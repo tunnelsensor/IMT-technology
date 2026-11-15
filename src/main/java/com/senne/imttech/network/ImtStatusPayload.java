@@ -28,8 +28,8 @@ import net.minecraft.world.phys.Vec3;
  * @param link         hoofdstuk 106: hoe de bril met zijn datacenter verbonden is (het nummer van
  *                     DatacenterGlasses.Link: 0 = geen nodig, 1 = verbonden, 2 = geen datacenter, 3 = het draait niet)
  * @param linkLoad     hoofdstuk 106: hoeveel procent van de rekenkracht van dat datacenter de brillen nu gebruiken
- * @param uplinkHost   hoofdstuk 122: de naam van de kern waarmee je je bril verbond ("" = met geen enkele); sinds dan ook
- *                     link 4 = niet verbonden en 5 = geen toegang (je bent daar niet meer de eigenaar of vertrouwd)
+ * @param uplinkHost   hoofdstuk 122: de naam van de kern waarmee je bril verbonden is ("" = met geen enkele); sinds dan ook
+ *                     link 4 = niet verbonden en (hoofdstuk 123) 5 = het wachtwoord van die kern veranderde
  * @param uplinkIp     hoofdstuk 122: het IP van die kern ("" = met geen enkele)
  */
 public record ImtStatusPayload(int swarmDrones, int guardDrones, List<Integer> cooldowns, List<Integer> marked,

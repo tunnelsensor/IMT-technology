@@ -1017,8 +1017,9 @@ public final class VisualCheck {
             t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.COMBAT);
             t.close(0);
             // Hoofdstuk 122: je bril verbinden met een kern. Een kern met een rack (een CPU, RAM en een SSD), op stroom en
-            // met een wachtwoord. Eerst het G-menu (Tech: Datacenter, CONNECT), dan het scherm: een fout wachtwoord, dan het
-            // goede; daarna staat de naam van de kern onder Datacenter, en in het scherm "On ... : online".
+            // met een wachtwoord. Eerst het G-menu (Systems: Datacenter, CONNECT; nachtzicht staat sinds hoofdstuk 123 op
+            // Tech), dan het scherm: een fout wachtwoord, dan het goede; daarna staat de naam van de kern onder Datacenter,
+            // en in het scherm "On ... : online".
             BlockPos uplinkCore = new BlockPos(8, -60, 4);
             BlockPos uplinkRack = new BlockPos(10, -60, 4);
             String[] uplinkIp = {""};
@@ -1047,8 +1048,10 @@ public final class VisualCheck {
                 }
             });
             t.open(60, ImtMenuScreen::new);
+            t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.SYSTEMS);
+            t.shot(10, "ul09_menu_systems_connect");
             t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.TECH);
-            t.shot(10, "ul09_menu_tech_connect");
+            t.shot(10, "ul09b_menu_tech_night_vision");
             t.close(0);
             t.open(10, () -> new com.senne.imttech.client.os.OsLoginScreen(com.senne.imttech.client.os.OsLoginScreen.Mode.GLASSES, ""));
             t.shot(10, "ul10_connect_screen");
@@ -1068,8 +1071,8 @@ public final class VisualCheck {
             t.waitUntil(100, () -> com.senne.imttech.client.ImtClientState.datacenterLink == 1);
             t.shot(10, "ul12_connected_hud");
             t.open(10, ImtMenuScreen::new);
-            t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.TECH);
-            t.shot(10, "ul13_menu_tech_connected");
+            t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.SYSTEMS);
+            t.shot(10, "ul13_menu_systems_connected");
             t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.COMBAT);
             t.close(0);
             t.open(10, () -> new com.senne.imttech.client.os.OsLoginScreen(com.senne.imttech.client.os.OsLoginScreen.Mode.GLASSES,

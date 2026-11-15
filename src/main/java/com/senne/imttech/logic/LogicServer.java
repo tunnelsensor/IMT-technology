@@ -296,8 +296,8 @@ public final class LogicServer {
         tag.putDouble("fed", stats.fed());
         int[] busy = LogicRunner.load(level, core);
         // Hoofdstuk 106: wat de brillen hier vragen neemt ook RAM, en wat de brillen bewaren (waypoints) staat op de SSD's
-        // (zie DatacenterGlasses). Hoofdstuk 122: van iedereen wiens bril met deze kern verbonden is (de eigenaar en wie
-        // hij vertrouwt). Nooit meer dan er is.
+        // (zie DatacenterGlasses). Hoofdstuk 122 en 123: van iedereen wiens bril met deze kern verbonden is (wie het
+        // wachtwoord kent). Nooit meer dan er is.
         GlobalPos here = GlobalPos.of(level.dimension(), core.getBlockPos());
         double glassesRam = stats.online() ? DatacenterGlasses.usedRamMb(level.getServer(), here) : 0.0;
         double glassesSsd = DatacenterGlasses.storedMb(level.getServer(), here);
@@ -360,8 +360,8 @@ public final class LogicServer {
             }
         }
         tag.put("glassesProcs", glasses);
-        // Hoofdstuk 122: wie zijn bril met deze kern verbond (en erop mag), op naam: zo ziet de eigenaar wie er aan zijn
-        // serverruimte hangt.
+        // Hoofdstuk 122: wie zijn bril met deze kern verbond, op naam: zo ziet de eigenaar wie er aan zijn serverruimte
+        // hangt (iedereen die het wachtwoord kent, kan dat).
         net.minecraft.nbt.ListTag linked = new net.minecraft.nbt.ListTag();
         for (String name : DatacenterGlasses.connectedNames(level.getServer(), here)) {
             linked.add(net.minecraft.nbt.StringTag.valueOf(name));

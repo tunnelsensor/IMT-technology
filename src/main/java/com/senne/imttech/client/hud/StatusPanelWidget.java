@@ -90,12 +90,12 @@ public final class StatusPanelWidget implements HudWidget {
         // Hoofdstuk 106: geen datacenter (of het draait niet): dan denkt en bewaart je bril niets. En is je datacenter
         // bijna vol bezig, dan staat dat er ook: een nieuw verzoek past er dan misschien niet meer bij.
         if (!ImtClientState.datacenterWorks()) {
-            // Hoofdstuk 122: ook "niet verbonden" (G-menu, Tech, Datacenter) en "geen toegang" (je bent op die kern niet
-            // meer de eigenaar of vertrouwd).
+            // Hoofdstuk 122 en 123: ook "niet verbonden" (G-menu, Systems, Datacenter) en "het wachtwoord veranderde" (de
+            // eigenaar zette een nieuw: opnieuw verbinden).
             panelText(c, Component.translatable(switch (ImtClientState.datacenterLink) {
                 case 3 -> "hud.imttech.datacenter_offline";
                 case 4 -> "hud.imttech.not_connected";
-                case 5 -> "hud.imttech.no_access";
+                case 5 -> "hud.imttech.password_changed";
                 default -> "hud.imttech.no_datacenter";
             }), x, y, argb(235, RED));
             y += LINE;

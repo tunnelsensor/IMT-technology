@@ -104,6 +104,22 @@ public final class ImtData {
         stack.set(ModDataComponents.OWNER.get(), owner);
     }
 
+    // ---------------------------------------------------------------- Verbonden met een kern (hoofdstuk 123)
+
+    /** Met welke security core deze bril verbonden is, of null als met geen enkele (zie ImtUplink). */
+    public static @Nullable ImtUplink getUplink(ItemStack stack) {
+        return stack.get(ModDataComponents.GLASSES_UPLINK.get());
+    }
+
+    /** Verbindt deze bril met een kern, of met null: met geen enkele meer (loskoppelen). */
+    public static void setUplink(ItemStack stack, @Nullable ImtUplink uplink) {
+        if (uplink == null) {
+            stack.remove(ModDataComponents.GLASSES_UPLINK.get());
+        } else {
+            stack.set(ModDataComponents.GLASSES_UPLINK.get(), uplink);
+        }
+    }
+
     /** Mag deze speler de functies van de bril gebruiken? Alleen de eigenaar mag dat. */
     public static boolean isAuthorized(ItemStack stack, Player player) {
         ImtOwner owner = getOwner(stack);

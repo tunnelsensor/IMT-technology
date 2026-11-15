@@ -206,15 +206,6 @@ public final class ZoneData extends SavedData {
             return isOwnerOrTrusted(player.getUUID());
         }
 
-        /**
-         * Hoofdstuk 122: zette de eigenaar deze speler in Access (vertrouwd)? Ook als de kern niet geladen is. Zonder de regel
-         * van een oefening (daarvoor is er {@link #isBuilder}): de bril van een vertrouwde speler blijft op dit datacenter
-         * werken, ook tijdens een oefening (zie DatacenterGlasses).
-         */
-        public boolean trusts(@Nullable UUID id) {
-            return id != null && trusted.contains(id);
-        }
-
         /** De eigenaar of een vertrouwde speler uit Access (niet de trainee van een oefening, hoofdstuk 27). */
         private boolean isOwnerOrTrusted(@Nullable UUID id) {
             // De trainee van een oefening bouwt en sloopt hier zoals een indringer, ook als het zijn zone is.

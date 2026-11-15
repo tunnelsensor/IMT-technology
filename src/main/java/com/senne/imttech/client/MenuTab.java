@@ -12,11 +12,12 @@ import net.minecraft.network.chat.Component;
  * - DRONES:      zwerm, één drone, escorte en hun vorm, stand down, markeringen wissen
  * - RECON:       drone-camera, spionagedrone, meekijken, rapport
  * - TRANSPORT:   zelf vliegen, autopiloot, vrachtdrone, iemand vervoeren
- * - TECH:        redstone-relais, muziek, hacken, en je datacenter (hoofdstuk 122: met welke kern je bril verbonden is)
+ * - TECH:        redstone-relais, muziek, hacken, nachtzicht (sinds hoofdstuk 123)
  * - ILLUSION:    valse muur, nep-leger, onzichtbaar veld, stoppen
  * - INFORMATION: ertsen-scan, dreigingsscan, doelwit-analyse
  * - NAVIGATION:  navigatie, ping, comms
- * - SYSTEMS:     eigendom overdragen, stem, spraakbesturing, nachtzicht (en in het midden: energie, verbruik)
+ * - SYSTEMS:     eigendom overdragen, stem, spraakbesturing, je datacenter (hoofdstuk 123: met welke kern je bril verbonden
+ *                is) (en in het midden: energie, verbruik)
  *
  * De volgorde hier is de volgorde in het menu.
  */
