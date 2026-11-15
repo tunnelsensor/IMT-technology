@@ -70,10 +70,13 @@ public class ZoneMarkerItem extends Item {
     public InteractionResult onItemUseFirst(ItemStack stack, UseOnContext context) {
         if (context.getPlayer() instanceof ServerPlayer player && context.getLevel() instanceof ServerLevel level) {
             if (player.isShiftKeyDown()) {
+                boolean fresh = freshClick(level, player);
                 if (selection(stack).box() == null) {
                     // Geen hoeken gekozen (hoofdstuk 45): de Autoscan, vanuit de kamer voor het aangeklikte blok (of
                     // het gebouw zelf, als dat blok gebouwd is).
-                    autoscan(level, player, context.getClickedPos().relative(context.getClickedFace()), context.getClickedPos());
+                    if (fresh) {
+                        scanOrInclude(level, player, context.getClickedPos().relative(context.getClickedFace()), context.getClickedPos());
+                    }
                 } else {
                     addSelection(level, player, stack);
                 }
@@ -92,8 +95,11 @@ public class ZoneMarkerItem extends Item {
             return InteractionResultHolder.pass(stack);
         }
         if (level instanceof ServerLevel serverLevel && player instanceof ServerPlayer serverPlayer) {
+            boolean fresh = freshClick(serverLevel, serverPlayer);
             if (selection(stack).box() == null) {
-                autoscan(serverLevel, serverPlayer, ZoneScan.roomStart(serverLevel, serverPlayer.blockPosition()), null);
+                if (fresh) {
+                    scanOrInclude(serverLevel, serverPlayer, ZoneScan.roomStart(serverLevel, serverPlayer.blockPosition()), null);
+                }
             } else {
                 addSelection(serverLevel, serverPlayer, stack);
             }
@@ -102,48 +108,72 @@ public class ZoneMarkerItem extends Item {
     }
 
     /**
+     * Is dit een nieuwe klik (hoofdstuk 116)? Een ingehouden knop klikt elke 4 ticks opnieuw; alleen een klik na een pauze
+     * van {@link #NEW_CLICK} ticks telt, anders zou een te lange klik meteen "ja, neem de grot erbij" zeggen, of na het
+     * toevoegen van een kubus meteen gaan scannen. Elke sluip-klik met de marker telt mee (ook die niets deed).
+     */
+    private static boolean freshClick(ServerLevel level, ServerPlayer player) {
+        long now = level.getGameTime();
+        Long previous = LAST_USE.put(player.getUUID(), now);
+        return previous == null || now - previous >= NEW_CLICK || now < previous;
+    }
+
+    /**
      * De Autoscan met de Zone Marker (hoofdstuk 45, jouw keuze: "sneak + klik met de Zone Marker scant vanaf die kamer").
      * {@code start} is de kamer (lucht) waar we beginnen; {@code clicked} het aangeklikte blok (of null in de lucht): is
      * de kamer niet dicht, dan proberen we vanaf dat blok het gebouw. De kubussen gaan naar je dichtstbijzijnde kern.
+     * Een ingehouden knop (een klik vlak na de vorige) doet niets.
      */
     public static void autoscan(ServerLevel level, ServerPlayer player, BlockPos start, @Nullable BlockPos clicked) {
-        // Een ingehouden knop klikt elke 4 ticks opnieuw: alleen een nieuwe klik telt (hoofdstuk 116), anders zou een
-        // te lange klik meteen "ja, neem de grot erbij" zeggen.
-        long now = level.getGameTime();
-        Long previous = LAST_USE.put(player.getUUID(), now);
-        if (previous != null && now - previous < NEW_CLICK && now >= previous) {
-            return;
+        if (freshClick(level, player)) {
+            scanOrInclude(level, player, start, clicked);
         }
+    }
+
+    /**
+     * Een nieuwe klik zonder hoeken. Hoofdstuk 116 (jouw wens: "bevestigen dat cave er bij moet"): kijk je naar de ping (of
+     * klik je ernaast) en doe je opnieuw sluipen + rechtsklik, dan neem je de grot erbij. Eerst scannen we nog eens gewoon
+     * vanaf waar de vorige scan begon: maakte je de opening intussen dicht, of is er nu een andere opening, dan krijg je die
+     * gewone uitkomst (een dichte kamer, of een nieuwe ping) en komt de grot er niet bij.
+     */
+    private static void scanOrInclude(ServerLevel level, ServerPlayer player, BlockPos start, @Nullable BlockPos clicked) {
         SecurityCoreBlockEntity core = ownCoreFor(level, player, start);
         if (core == null) {
             return;
         }
         ZoneBox limit = ZoneBox.of(core.zoneLow(), core.zoneHigh());
-        // Hoofdstuk 116 (jouw wens: "bevestigen dat cave er bij moet"): kijk je naar de ping (of klik je ernaast) en doe je
-        // opnieuw sluipen + rechtsklik, dan neem je de grot erbij, vanaf waar de vorige scan begon. Elke andere klik is
-        // gewoon een nieuwe scan.
+        long now = level.getGameTime();
         ZoneScanReports.Report offer = ZoneScanReports.offer(player, core);
-        boolean include = offer != null && now - offer.made() >= CONFIRM_DELAY && aimsAt(player, start, offer);
-        if (!ZoneScanReports.mayScan(player, include)) {
-            return;
-        }
+        boolean confirm = offer != null && now - offer.made() >= CONFIRM_DELAY && aimsAt(player, start, offer);
         BlockPos from = start;
-        if (include) {
-            ZoneScanReports.takeOffer(player, core);
+        ZoneScan.Result found;
+        if (confirm) {
             from = offer.start();
-        }
-        ZoneScan.Result found = ZoneScan.scan(level, from, limit, ImtConfig.Security.ZONE_MAX_BOXES, include);
-        if (!include && !found.ok() && found.offer() == null && clicked != null && ZoneScan.isBuilt(level.getBlockState(clicked))) {
-            // De kamer is niet dicht (open naar buiten, te ver, niet geladen): dan het gebouw vanaf het aangeklikte blok,
-            // met de ping van waar de kamer openlag.
-            found = ZoneScan.scan(level, clicked, limit, ImtConfig.Security.ZONE_MAX_BOXES).after(found);
+            ZoneScan.Result again = ZoneScan.scan(level, from, limit, ImtConfig.Security.ZONE_MAX_BOXES);
+            if (sameOffer(again, offer)) {
+                if (!ZoneScanReports.mayScan(player, true)) {
+                    tell(player, Component.literal("Autoscan: busy, try again in a moment"), true);
+                    return;
+                }
+                ZoneScanReports.takeOffer(player, core);
+                found = ZoneScan.scan(level, from, limit, ImtConfig.Security.ZONE_MAX_BOXES, ZoneScan.modeFor(offer.offer()));
+            } else {
+                found = again;
+            }
+        } else {
+            found = ZoneScan.scan(level, from, limit, ImtConfig.Security.ZONE_MAX_BOXES);
+            if (!found.ok() && found.offer() == null && clicked != null && ZoneScan.isBuilt(level.getBlockState(clicked))) {
+                // De kamer is niet dicht (open naar buiten, te ver, niet geladen): dan het gebouw vanaf het aangeklikte
+                // blok, met de ping van waar de kamer openlag.
+                found = ZoneScan.scan(level, clicked, limit, ImtConfig.Security.ZONE_MAX_BOXES).after(found);
+            }
         }
         ZoneScanReports.report(player, core, from, found);
+        boolean cave = ZoneScan.INCLUDE_CAVE.equals(found.offer());
         if (!found.ok()) {
             if (found.offer() != null) {
-                tell(player, Component.literal(found.marks().isEmpty()
-                        ? "Rooms too big: sneak + right-click here again to scan bigger"
-                        : "Open to a cave: look at the ping and sneak + right-click to include it").withStyle(ChatFormatting.GOLD));
+                tell(player, Component.literal(cave ? "Open to a cave: look at the ping and sneak + right-click to include it"
+                        : "Rooms too big: sneak + right-click here again to scan bigger").withStyle(ChatFormatting.GOLD));
                 player.playNotifySound(ModSounds.IMT_NOTIFY.get(), SoundSource.PLAYERS, 0.6f, 0.8f);
             } else {
                 tell(player, Component.literal("Autoscan: " + found.problem()), true);
@@ -155,23 +185,48 @@ public class ZoneMarkerItem extends Item {
         if (applied.changed()) {
             ZoneScanReports.remember(player, core, before);
         }
-        // Een doos om het gebouw, maar de kamer liep door in een grot: dat zeggen we erbij (de ping zegt hoe je hem erbij neemt).
-        String said = found.offer() != null ? applied.summary() + " · open to a cave: see the ping" : applied.shortText();
+        // Een doos om het gebouw, maar er is nog een keuze (de grot erbij, of groter scannen): dat zeggen we erbij, kort
+        // genoeg voor één regel onderaan je scherm.
+        String said = applied.shortText();
+        if (found.offer() != null) {
+            String hint = cave ? "open to a cave: see the ping" : "rooms too big: click here again";
+            said = applied.summary() + " · " + hint;
+            if (said.length() > SHORT_LINE) {
+                said = "Box around your building · " + hint;
+            }
+        }
         tell(player, Component.literal(said), false);
         player.playNotifySound(ModSounds.IMT_NOTIFY.get(), SoundSource.PLAYERS, 0.6f, 1.2f);
     }
 
-    /** Wanneer (speltijd) een speler de marker voor het laatst gebruikte (ook een klik die niets deed). */
+    /**
+     * Geeft de nieuwe gewone scan nog hetzelfde aanbod als het oude? Bij een grot: ook een grot, met de opening op (bijna)
+     * dezelfde plek. Bij "Scan bigger": nog steeds kamers die te groot zijn.
+     */
+    private static boolean sameOffer(ZoneScan.Result again, ZoneScanReports.Report offer) {
+        if (again.offer() == null || !again.offer().equals(offer.offer())) {
+            return false;
+        }
+        if (offer.marks().isEmpty() || again.marks().isEmpty()) {
+            return offer.marks().isEmpty() && again.marks().isEmpty();
+        }
+        return again.marks().getFirst().pos().closerThan(offer.marks().getFirst().pos(), NEAR_PING);
+    }
+
+    /** Wanneer (speltijd) een speler de marker voor het laatst met sluipen gebruikte (ook een klik die niets deed). */
     private static final Map<UUID, Long> LAST_USE = new HashMap<>();
     /** Zoveel ticks moeten er tussen twee klikken zitten om als een nieuwe klik te tellen (ingehouden: om de 4). */
-    private static final int NEW_CLICK = 6;
+    private static final int NEW_CLICK = 10;
     /** Pas zo lang (ticks) na het aanbod telt een klik als "ja": een snelle dubbelklik is geen keuze. */
     private static final int CONFIRM_DELAY = 20;
-    /** Zo dicht (blokken) bij een ping telt een klik als een klik op die ping, en zo ver mag je hem nog aankijken. */
+    /** Zo dicht (blokken) bij een ping telt een klik als een klik op die ping. */
     private static final double NEAR_PING = 3.0;
-    private static final double LOOK_RANGE = 64.0;
+    /** Zo ver weg (blokken) mag een ping zijn om hem aan te kijken (de ping zegt het alleen zo dichtbij, zie ZoneScanMarkRenderer). */
+    public static final double LOOK_RANGE = 64.0;
     /** Kijk je zo recht naar een ping (cosinus van de hoek, hier tien graden), dan kijk je ernaar. */
     private static final double LOOK_COS = 0.985;
+    /** Zo lang mag een regel in de actiebalk hooguit zijn (bij GUI-schaal 4 op 1080p past dat net). */
+    private static final int SHORT_LINE = 75;
 
     /**
      * Bedoelt deze klik de ping: kijk je er (door muren heen) naar, of klik je er vlak naast? Zonder pings (je kamers zijn

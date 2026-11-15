@@ -189,20 +189,34 @@ public final class ZoneScan {
 
     // ================================================================ Scannen
 
-    /** Een gewone scan vanaf {@code start} (zie {@link #scan(ServerLevel, BlockPos, ZoneBox, int, boolean)}). */
+    /** De tekst van de knop om de grot erbij te nemen, en die om groter te scannen (kamers zonder grot). */
+    public static final String INCLUDE_CAVE = "Include cave";
+    public static final String SCAN_BIGGER = "Scan bigger";
+
+    /** Wat voor scan: gewoon, de grot erbij ("Include cave"), of groter scannen ("Scan bigger": heel grote kamers). */
+    public enum Mode { NORMAL, CAVE, BIGGER }
+
+    /** De modus die bij een aanbod hoort. */
+    public static Mode modeFor(String offer) {
+        return SCAN_BIGGER.equals(offer) ? Mode.BIGGER : Mode.CAVE;
+    }
+
+    /** Een gewone scan vanaf {@code start} (zie {@link #scan(ServerLevel, BlockPos, ZoneBox, int, Mode)}). */
     public static Result scan(ServerLevel level, BlockPos start, ZoneBox limit, int maxBoxes) {
-        return scan(level, start, limit, maxBoxes, false);
+        return scan(level, start, limit, maxBoxes, Mode.NORMAL);
     }
 
     /**
      * Scant vanaf {@code start}: een blok in een kamer (lucht), of een blok van het gebouw. {@code limit} is hoe ver de
-     * zone mag komen (het bereik van de kern); {@code maxBoxes} hoeveel kubussen er hooguit uit mogen komen.
-     * {@code includeCave}: de knop "Include cave" (hoofdstuk 116), met een grotere grens en een tijdslimiet.
+     * zone mag komen (het bereik van de kern); {@code maxBoxes} hoeveel kubussen er hooguit uit mogen komen. Met
+     * {@code mode} CAVE of BIGGER (de knoppen van hoofdstuk 116) een grotere grens en een tijdslimiet; die grens is altijd
+     * groter dan die van een gewone scan, ook als iemand de getallen in het configbestand omdraait.
      */
-    public static Result scan(ServerLevel level, BlockPos start, ZoneBox limit, int maxBoxes, boolean includeCave) {
+    public static Result scan(ServerLevel level, BlockPos start, ZoneBox limit, int maxBoxes, Mode mode) {
         int rooms = roomMax();
-        return scan(level, start, limit, maxBoxes, rooms, includeCave ? caveMax() : rooms,
-                includeCave ? Math.max(1, Math.round(ImtConfig.Security.ZONE_SCAN_CAVE_MILLIS)) : 0);
+        boolean bigger = mode != Mode.NORMAL;
+        return scan(level, start, limit, maxBoxes, rooms, bigger ? Math.max(rooms + 1, caveMax()) : rooms,
+                bigger ? Math.max(1, Math.round(ImtConfig.Security.ZONE_SCAN_CAVE_MILLIS)) : 0, mode);
     }
 
     /**
@@ -211,6 +225,12 @@ public final class ZoneScan {
      * nemen); {@code millis}: na zoveel milliseconden stopt het vullen (0 = geen limiet).
      */
     public static Result scan(ServerLevel level, BlockPos start, ZoneBox limit, int maxBoxes, int roomMax, int max, int millis) {
+        return scan(level, start, limit, maxBoxes, roomMax, max, millis, max > roomMax ? Mode.CAVE : Mode.NORMAL);
+    }
+
+    /** Hetzelfde, met de modus erbij (CAVE en BIGGER verschillen alleen in hun teksten). */
+    public static Result scan(ServerLevel level, BlockPos start, ZoneBox limit, int maxBoxes, int roomMax, int max, int millis,
+                              Mode mode) {
         if (!limit.contains(start)) {
             return Result.failed("That is outside the reach of your core");
         }
@@ -219,7 +239,8 @@ public final class ZoneScan {
         if (state == null) {
             return Result.failed("That part of the world is not loaded");
         }
-        boolean includeCave = max > roomMax;
+        boolean includeCave = mode != Mode.NORMAL;
+        boolean bigger = mode == Mode.BIGGER;
         Leak leak = Leak.NONE;
         String headline = null;
         if (passable(level, start, state)) {
@@ -230,21 +251,30 @@ public final class ZoneScan {
             if (rooms.stop == Stop.CLOSED) {
                 // Dichte kamers (eventueel met de grot erbij): kubussen, en elke kubus de marge groter.
                 List<ZoneBox> roomBoxes = boxes(rooms.cells(), maxBoxes);
-                boolean cave = rooms.size() > roomMax;
+                boolean cave = !bigger && rooms.size() > roomMax;
                 List<Mark> mouths = rooms.mouths;
                 String note = mouths.isEmpty() ? (rooms.edge ? "The cave goes on past the reach of your core" : null)
-                        : "The cave touches the open air (see the ping): it is in your zone, but anyone can walk in there";
+                        : "The cave touches the open air (see the ping): anyone can walk in there";
                 return new Result(grow(roomBoxes, margin(), limit), roomBoxes, true, rooms.size(), null, mouths, List.of(), null,
                         cave, note == null ? null : "ROOMS + CAVE", note);
             }
             leak = leak(level, reader, rooms, limit, includeCave);
             String ping = leak.marks().isEmpty() ? "" : " (see the ping)";
+            if (bigger) {
+                // "Scan bigger" lukte niet (je kamers zijn dicht, maar nog groter): zonder het woord grot.
+                return switch (rooms.stop) {
+                    case UNLOADED -> Result.failed("NOT LOADED", "Part of your rooms is not loaded: go there and scan again", leak);
+                    case SLOW -> Result.failed("ROOMS TOO BIG", "Too big to scan without lag: mark a part with the Zone Marker", leak);
+                    default -> Result.failed("ROOMS TOO BIG", "Over " + String.format("%,d", max)
+                            + " blocks: mark a part with the Zone Marker", leak);
+                };
+            }
             if (includeCave) {
                 // "Include cave" lukte niet: zeggen waarom (zonder een doos als vervanging: je vroeg om de grot).
                 return switch (rooms.stop) {
                     case UNLOADED -> Result.failed("NOT LOADED", "Part of the cave is not loaded: go there and scan again", leak);
-                    case SLOW -> Result.failed("CAVE TOO BIG", "The cave is too big to scan without lag: close the opening" + ping, leak);
-                    default -> Result.failed("CAVE TOO BIG", "The cave is too big (over " + String.format("%,d", max)
+                    case SLOW -> Result.failed("CAVE TOO BIG", "Too big to scan without lag: close the opening" + ping, leak);
+                    default -> Result.failed("CAVE TOO BIG", "Cave too big (over " + String.format("%,d", max)
                             + " blocks): close the opening" + ping, leak);
                 };
             }
@@ -284,13 +314,13 @@ public final class ZoneScan {
             }
             start = solid;
         } else if (!isBuilt(state)) {
-            return Result.failed("That is a natural block: click a block of your building, or stand in a closed room");
+            return Result.failed("Natural block: click your building or stand in a closed room");
         }
         // Een open basis: alle gebouwde blokken die aan elkaar vastzitten, met een doos eromheen.
         Fill built = fill(reader, start, limit, roomMax, Long.MAX_VALUE, Sky.IGNORE, (pos, s) -> isBuilt(s));
         if (built.stop != Stop.CLOSED) {
             return Result.failed(headline, built.stop == Stop.UNLOADED ? "Part of your building is not loaded: go there and scan again"
-                    : "Your building is too big to scan in one go: scan a part with the Zone Marker", leak);
+                    : "Building too big for one scan: mark a part with the Zone Marker", leak);
         }
         int minX = Integer.MAX_VALUE;
         int minY = Integer.MAX_VALUE;
@@ -307,7 +337,8 @@ public final class ZoneScan {
             maxZ = Math.max(maxZ, BlockPos.getZ(cell));
         }
         List<ZoneBox> roomBoxes = List.of(ZoneBox.of(new BlockPos(minX, minY, minZ), new BlockPos(maxX, maxY, maxZ)));
-        String note = headline == null ? null : "Not closed, so a box around your building instead";
+        String note = headline == null ? null : leak.tooBig() ? "Too big for a room scan, so a box around your building instead"
+                : "Not closed, so a box around your building instead";
         return new Result(grow(roomBoxes, margin(), limit), roomBoxes, false, built.size(), null, leak.marks(), leak.path(),
                 leak.offer(), false, headline, note);
     }
@@ -576,29 +607,72 @@ public final class ZoneScan {
         }
         List<Mark> marks = new ArrayList<>();
         boolean cave = false;
+        // Een gat in een dak: de open lucht begint dan al op vloerhoogte, recht onder het gat. Dan wijst de ping naar het gat.
+        BlockPos roof = fill.stop == Stop.SKY ? roofHole(level, reader, BlockPos.of(path[n]), limit) : null;
         if (!anyInside) {
             // Uit natuursteen gehakt: alleen een korte overdekte gang naar de open lucht (een deuropening) wijzen we aan.
             if (fill.stop == Stop.SKY && covered(reader, path, n) <= 8) {
                 opening = n - 1;
-                marks.add(new Mark(BlockPos.of(path[opening]), Kind.OUTSIDE));
+                marks.add(new Mark(roof != null ? roof : BlockPos.of(path[opening]), Kind.OUTSIDE));
             }
         } else if (opening >= 0) {
             BlockPos at = BlockPos.of(path[opening]);
             if (fill.stop == Stop.SKY && n - opening <= CAVE_STEPS) {
-                marks.add(new Mark(at, Kind.OUTSIDE)); // een deuropening naar buiten
+                marks.add(new Mark(roof != null ? roof : at, Kind.OUTSIDE)); // een deuropening (of een gat in het dak) naar buiten
             } else {
                 marks.add(new Mark(at, Kind.CAVE));
                 cave = fill.stop != Stop.UNLOADED;
                 if (fill.stop == Stop.SKY) {
-                    marks.add(new Mark(BlockPos.of(path[n - 1]), Kind.CAVE_EXIT)); // eerst een grot, en die gaat naar buiten
+                    // Eerst een grot, en die gaat naar buiten.
+                    marks.add(new Mark(roof != null ? roof : BlockPos.of(path[n - 1]), Kind.CAVE_EXIT));
                 }
             }
         } else if (fill.stop == Stop.BIG && !includeCave) {
             tooBig = true; // alles langs de weg is binnen: een heel grote bunker, geen grot
         }
         // Na een mislukte "Include cave" geen knop meer (dan is het een giga cave); anders de grot erbij, of groter scannen.
-        String offer = includeCave ? null : cave ? "Include cave" : tooBig ? "Scan bigger" : null;
-        return new Leak(List.copyOf(marks), samplePath(path, opening), offer, cave, tooBig && !cave);
+        String offer = includeCave ? null : cave ? INCLUDE_CAVE : tooBig ? SCAN_BIGGER : null;
+        List<BlockPos> points = new ArrayList<>(samplePath(path, opening));
+        if (roof != null) {
+            points.add(roof); // de stippellijn loopt door tot het gat
+        }
+        return new Leak(List.copyOf(marks), List.copyOf(points), offer, cave, tooBig && !cave);
+    }
+
+    /**
+     * Een gat in een dak, of een schacht naar boven (hoofdstuk 116): de scan komt de open lucht dan al tegen op de hoogte
+     * waar hij begon, recht onder het gat. Vanaf daar klimmen we omhoog door de lucht tot het blok dat aan alle vier de
+     * kanten dicht is: het gat in het dak (of de onderkant van de schacht). Komt er zo geen (een deuropening met de open
+     * lucht erboven), dan null.
+     */
+    private static @Nullable BlockPos roofHole(ServerLevel level, Reader reader, BlockPos from, ZoneBox limit) {
+        BlockPos.MutableBlockPos pos = from.mutable();
+        for (int k = 0; k < RAY; k++) {
+            pos.move(Direction.UP);
+            if (!limit.contains(pos) || pos.getY() >= level.getMaxBuildHeight()) {
+                return null;
+            }
+            BlockState state = reader.state(pos);
+            if (state == null || !passable(level, pos, state)) {
+                return null;
+            }
+            if (closedAround(level, reader, pos)) {
+                return pos.immutable();
+            }
+        }
+        return null;
+    }
+
+    /** Zijn de vier blokken naast {@code pos} (noord, zuid, west, oost) allemaal dicht? */
+    private static boolean closedAround(ServerLevel level, Reader reader, BlockPos pos) {
+        for (Direction direction : Direction.Plane.HORIZONTAL) {
+            BlockPos side = pos.relative(direction);
+            BlockState state = reader.state(side);
+            if (state == null || passable(level, side, state)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -956,6 +1030,7 @@ public final class ZoneScan {
     public static Applied apply(com.senne.imttech.security.SecurityCoreBlockEntity core, Result result, int maxBoxes) {
         List<ZoneBox> before = List.copyOf(core.zoneBoxes());
         List<ZoneBox> boxes = new ArrayList<>(before);
+        java.util.Set<ZoneBox> old = new java.util.HashSet<>(before);
         int margin = margin();
         int added = 0;
         int blocked = 0;
@@ -981,28 +1056,38 @@ public final class ZoneScan {
                 continue;
             }
             ZoneBox found = fitted;
-            if (boxes.stream().anyMatch(old -> old.contains(found))) {
+            if (boxes.stream().anyMatch(box -> box.contains(found))) {
                 continue;
             }
-            int count = boxes.size();
+            // Wat de nieuwe kubus opslokt: een oude kubus telt als vervangen, een kubus van deze scan zelf niet.
+            for (ZoneBox gone : boxes) {
+                if (found.contains(gone)) {
+                    if (old.contains(gone)) {
+                        replaced++;
+                    } else {
+                        added--;
+                    }
+                }
+            }
             boxes.removeIf(found::contains);
-            replaced += count - boxes.size();
             boxes.add(found);
             added++;
         }
+        int full = 0;
         if (!mergeDown(boxes, maxBoxes, box -> !core.zoneBoxBlocked(box))) {
             while (boxes.size() > maxBoxes) {
                 boxes.removeLast();
                 added = Math.max(0, added - 1);
-                blocked++;
+                full++;
             }
         }
         List<ZoneBox> fitted = added > 0 || replaced > 0 ? core.setZoneBoxes(boxes) : before;
         long volume = ZoneData.unionVolume(fitted);
         String kind = result.cave() ? "rooms + cave" : result.enclosed() ? "rooms" : "building";
         StringBuilder summary = new StringBuilder("Autoscan (" + kind + "): ");
-        if (added == 0) {
-            summary.append(blocked == 0 ? "nothing new, your zone already covers it" : "nothing added");
+        if (added <= 0) {
+            added = 0;
+            summary.append(blocked == 0 && full == 0 ? "nothing new, your zone already covers it" : "nothing added");
         } else {
             summary.append(added).append(added == 1 ? " box added" : " boxes added");
         }
@@ -1011,6 +1096,9 @@ public final class ZoneScan {
         }
         if (blocked > 0) {
             summary.append(", ").append(blocked).append(" too close to another core");
+        }
+        if (full > 0) {
+            summary.append(", ").append(full).append(" skipped (zone full)");
         }
         String zone = "zone: " + fitted.size() + (fitted.size() == 1 ? " box, " : " boxes, ") + String.format("%,d", volume) + " blocks";
         core.logEvent(com.senne.imttech.security.os.EventLog.Type.ZONE, "Zone: autoscan, " + added + " added, " + replaced + " replaced");

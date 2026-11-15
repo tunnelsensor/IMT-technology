@@ -1457,7 +1457,7 @@ Autoscan gaat dat snel) om je basis echt van jou te maken.
     **één doos** om alle aaneengesloten **gebouwde** blokken (alles wat geen natuur is: geen steen, aarde, zand, erts,
     bomen) met 10 blokken marge; de ping en de knop voor de grot komen erbij. Met de Zone Marker klik je daarvoor een blok
     van je gebouw aan.
-  - **Undo** (of **Undo scan**) in de app zet je zone terug zoals hij voor je laatste Autoscan was: 5 minuten lang, en
+  - **Undo** in de app (eerst "Sure?") zet je zone terug zoals hij voor je laatste Autoscan was: 5 minuten lang, en
     alleen als je de zone daarna niet zelf veranderde.
   - Nog eens scannen voegt alleen toe wat er nog niet in zat (een oude kubus die helemaal in een nieuwe valt, gaat weg).
     Een zone heeft hooguit 48 kubussen; vindt de scan er meer, dan voegt hij ze samen, maar nooit tot een kubus die de

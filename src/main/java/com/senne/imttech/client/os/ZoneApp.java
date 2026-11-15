@@ -224,14 +224,17 @@ final class ZoneApp {
             y += 2 + renderReport(g, font, report, px, right, y + 1);
         }
         String delete = asking("delete:" + selected) ? "Sure?" : "Delete box";
-        int deleteW = button(g, font, px, y, delete, true, HudStyle.RED, () -> {
+        button(g, font, px, y, delete, true, HudStyle.RED, () -> {
             if (confirm("delete:" + selected)) {
                 CompoundTag args = new CompoundTag();
                 args.putInt("i", selected);
                 screen.send("zone_delete", args);
             }
         });
-        reportButtons(g, font, zone, report, px + deleteW + 4, y);
+        // De knoppen ernaast op een vaste plek: wordt "Delete box" bij de eerste klik het smallere "Sure?", dan schuift er
+        // niets onder je muis (anders deed de tweede klik iets heel anders).
+        int slot = px + Math.max(OsDraw.buttonWidth(font, "Delete box"), OsDraw.buttonWidth(font, "Sure?")) + 4;
+        reportButtons(g, font, zone, report, slot, y);
     }
 
     // ================================================================ Wat de Autoscan zag (hoofdstuk 116)
@@ -273,20 +276,24 @@ final class ZoneApp {
      */
     private int renderReport(GuiGraphics g, Font font, CompoundTag report, int px, int right, int y) {
         List<int[]> marks = marks(report);
-        List<String> lines = OsDraw.wrap(font, report.getString("text"), right - px, 2);
+        String text = report.getString("text");
         int colour = marks.isEmpty() ? HudStyle.ORANGE : markColour(marks.getFirst()[3]);
         String title = report.getString("title").isEmpty() ? "AUTOSCAN" : report.getString("title");
         int closeX = right - 8;
         g.drawString(font, OsDraw.fitRight(font, title, closeX - 4 - px), px, y, HudStyle.argb(255, colour), false);
         if (!marks.isEmpty()) {
-            // Waar de (eerste) opening is, zonder komma's: zo past het ook met grote getallen naast het kopje.
+            // Waar de (eerste) opening is, zonder komma's. Past dat niet helemaal naast het kopje, dan vooraan de uitleg:
+            // nooit afgeknipte getallen (via SSH zijn ze de enige plek die je hebt).
             int[] first = marks.getFirst();
+            String where = first[0] + " " + first[1] + " " + first[2];
             int wx = px + font.width(title) + 6;
-            String where = OsDraw.fitRight(font, first[0] + " " + first[1] + " " + first[2], closeX - 6 - wx);
-            if (closeX - 6 - wx > 10) {
+            if (font.width(where) <= closeX - 6 - wx) {
                 g.drawString(font, where, wx, y, HudStyle.argb(255, OsDraw.GREY), false);
+            } else {
+                text = "At " + where + ": " + text;
             }
         }
+        List<String> lines = OsDraw.wrap(font, text, right - px, 3);
         g.drawString(font, "x", closeX + 1, y, HudStyle.argb(255, HudStyle.RED), false);
         long id = report.getLong("id");
         hits.add(new Hit(closeX - 1, y - 2, 9, 11, () -> dismissedReport = id));
@@ -304,15 +311,21 @@ final class ZoneApp {
     private void reportButtons(GuiGraphics g, Font font, CompoundTag zone, @Nullable CompoundTag report, int x, int y) {
         String offer = report == null ? "" : report.getString("offer");
         if (!offer.isEmpty()) {
-            x += button(g, font, x, y, offer, true, HudStyle.ORANGE, () -> {
+            button(g, font, x, y, offer, true, HudStyle.ORANGE, () -> {
                 CompoundTag args = new CompoundTag();
                 args.putBoolean("cave", true);
                 screen.send("zone_scan", args);
-            }) + 4;
+            });
         }
+        // Undo staat altijd op zijn eigen plek (ook als Include cave er niet meer staat: een snelle tweede klik op Include
+        // cave raakt zo nooit Undo), en vraagt eerst "Sure?" zoals Delete box.
         if (zone.getBoolean("undo")) {
-            button(g, font, x, y, offer.isEmpty() ? "Undo scan" : "Undo", true, HudStyle.CYAN,
-                    () -> screen.send("zone_undo", new CompoundTag()));
+            int ux = x + OsDraw.buttonWidth(font, com.senne.imttech.security.zone.ZoneScan.INCLUDE_CAVE) + 4;
+            button(g, font, ux, y, asking("undo") ? "Sure?" : "Undo", true, HudStyle.CYAN, () -> {
+                if (confirm("undo")) {
+                    screen.send("zone_undo", new CompoundTag());
+                }
+            });
         }
     }
 

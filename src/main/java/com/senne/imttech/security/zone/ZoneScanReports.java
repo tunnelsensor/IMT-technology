@@ -94,12 +94,24 @@ public final class ZoneScanReports {
         return true;
     }
 
+    /** Na elke Autoscan dichtbij (zie {@link #report(ServerPlayer, SecurityCoreBlockEntity, BlockPos, ZoneScan.Result, boolean)}). */
+    public static void report(ServerPlayer player, SecurityCoreBlockEntity core, BlockPos start, ZoneScan.Result result) {
+        report(player, core, start, result, false);
+    }
+
     /**
      * Na elke Autoscan: onthouden wat hij zag (niets te melden = het oude verslag weg), en de pings naar de speler sturen
-     * (een lege lijst haalt de oude pings weg).
+     * (een lege lijst haalt de oude pings weg). Een nieuwe scan maakt Undo van de vorige ongedaan (Undo hoort altijd bij
+     * de laatste scan; veranderde die de zone, dan zet {@link #remember} hem weer). {@code far}: de speler is ver weg (SSH,
+     * telefoon), dan zegt de uitleg "(see the map)" in plaats van "(see the ping)".
      */
-    public static void report(ServerPlayer player, SecurityCoreBlockEntity core, BlockPos start, ZoneScan.Result result) {
+    public static void report(ServerPlayer player, SecurityCoreBlockEntity core, BlockPos start, ZoneScan.Result result,
+                              boolean far) {
+        UNDO.remove(player.getUUID());
         String text = result.ok() ? result.note() : result.problem();
+        if (text != null && far) {
+            text = text.replace("(see the ping)", "(see the map)");
+        }
         if (result.headline() == null && result.marks().isEmpty() || text == null) {
             REPORTS.remove(player.getUUID());
         } else {
@@ -136,8 +148,22 @@ public final class ZoneScanReports {
         if (report != null) {
             REPORTS.put(player.getUUID(), new Report(report.core(), report.start(), report.marks(), "", report.headline(),
                     report.text(), report.made(), report.until(), report.id()));
+            LAST_BUTTON.put(player.getUUID(), player.serverLevel().getGameTime());
         }
         return report;
+    }
+
+    /** Wanneer (speltijd) een speler voor het laatst een aanbod gebruikte of Undo deed (zie {@link #justPressed}). */
+    private static final Map<UUID, Long> LAST_BUTTON = new HashMap<>();
+
+    /**
+     * Drukte deze speler net (binnen een seconde) al op Include cave of Undo? Dan is een tweede druk een dubbele klik: die
+     * doet niets, en geeft ook geen rode foutmelding over het goede resultaat van de eerste heen.
+     */
+    public static boolean justPressed(ServerPlayer player) {
+        Long last = LAST_BUTTON.get(player.getUUID());
+        long now = player.serverLevel().getGameTime();
+        return last != null && now >= last && now - last < 20;
     }
 
     // ================================================================ Undo scan
@@ -165,7 +191,9 @@ public final class ZoneScanReports {
             return null;
         }
         Undo undo = UNDO.remove(player.getUUID());
+        // Undo hoort bij de laatste scan, en het verslag ook: allebei weg, en de pings ook.
         REPORTS.remove(player.getUUID());
+        LAST_BUTTON.put(player.getUUID(), player.serverLevel().getGameTime());
         ModNetwork.sendTo(player, new ZoneScanMarksPayload(List.of(), List.of(), false, 0));
         return undo.before();
     }
@@ -176,10 +204,12 @@ public final class ZoneScanReports {
             REPORTS.clear();
             UNDO.clear();
             LAST_INCLUDE.clear();
+            LAST_BUTTON.clear();
         } else {
             REPORTS.remove(player);
             UNDO.remove(player);
             LAST_INCLUDE.remove(player);
+            LAST_BUTTON.remove(player);
         }
     }
 }

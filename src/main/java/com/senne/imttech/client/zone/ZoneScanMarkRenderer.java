@@ -41,8 +41,11 @@ public final class ZoneScanMarkRenderer {
     private static final double OUTLINE_RANGE = 24.0;
     /** Tot zo ver (blokken) zie je de stippellijn. */
     private static final double PATH_RANGE = 64.0;
-    /** Zo breed (blokken per blok afstand) is een lijn: ongeveer twee pixels op een scherm van 1080 hoog met FOV 110. */
-    private static final double LINE_PER_BLOCK = 0.005;
+    /**
+     * Zo dik (blokken per blok afstand) maken we een lijn aan elke kant van de rand: samen ongeveer twee pixels op een
+     * scherm van 1080 hoog met FOV 110 (één blok op d blokken afstand is daar zo'n 378 / d pixels).
+     */
+    private static final double LINE_PER_BLOCK = 0.0026;
 
     /** Lijnen zonder diepte: altijd te zien, ook achter een muur. */
     private static final RenderType THROUGH = RenderType.create("imttech_zone_scan_marks", DefaultVertexFormat.POSITION_COLOR,
@@ -85,16 +88,15 @@ public final class ZoneScanMarkRenderer {
         pose.translate(-cam.x, -cam.y, -cam.z);
         Matrix4f m = pose.last().pose();
         VertexConsumer lines = buffers.getBuffer(THROUGH);
-        // De weg die de scan nam: kleine stipjes in het midden van elk blok, zwak.
+        // De weg die de scan nam: kleine, zwakke stipjes (één klein blokje elk) in het midden van elk blok.
         for (BlockPos point : scan.path()) {
             Vec3 centre = Vec3.atCenterOf(point);
             double distance = centre.distanceTo(cam);
             if (distance > PATH_RANGE) {
                 continue;
             }
-            double dot = Mth.clamp(distance * LINE_PER_BLOCK * 1.5, 0.03, 0.2);
-            ZoneBorderRenderer.outline(m, lines, centre.x - dot, centre.y - dot, centre.z - dot, centre.x + dot, centre.y + dot,
-                    centre.z + dot, pathRgb, 0.45f * fade, dot);
+            double dot = Mth.clamp(distance * LINE_PER_BLOCK * 1.5, 0.02, 0.12);
+            cube(m, lines, centre, dot, pathRgb, 0.35f * fade);
         }
         for (ZoneScanMarksPayload.Entry mark : scan.marks()) {
             BlockPos pos = mark.pos();
@@ -121,7 +123,9 @@ public final class ZoneScanMarkRenderer {
             }
             String text = mark.kindOf().label() + " · " + Math.round(distance) + " m";
             label(pose, buffers, camera, mc, above, text, colour(mark.kindOf()), fade);
-            if (marker && scan.offer() && mark.kindOf() != ZoneScan.Kind.CAVE_EXIT) {
+            // Alleen zo dichtbij als de server een blik op de ping laat tellen (verder weg zou de klik een nieuwe scan zijn).
+            if (marker && scan.offer() && mark.kindOf() != ZoneScan.Kind.CAVE_EXIT
+                    && distance <= com.senne.imttech.security.zone.ZoneMarkerItem.LOOK_RANGE) {
                 // Met de Zone Marker in je hand: hoe je de grot erbij neemt (jouw wens: "bevestigen dat cave er bij moet").
                 label(pose, buffers, camera, mc, above.add(0, -0.32 * Math.max(1.0, distance / 8.0), 0),
                         "Look here + sneak + right-click: include", 0xE6E6E6, fade);
@@ -129,6 +133,32 @@ public final class ZoneScanMarkRenderer {
         }
         buffers.endBatch();
         pose.popPose();
+    }
+
+    /** Een klein blokje (zes vlakjes) rond {@code centre}, {@code half} blokken naar elke kant. */
+    private static void cube(Matrix4f m, VertexConsumer out, Vec3 centre, double half, int rgb, float alpha) {
+        float ax = (float) (centre.x - half);
+        float ay = (float) (centre.y - half);
+        float az = (float) (centre.z - half);
+        float bx = (float) (centre.x + half);
+        float by = (float) (centre.y + half);
+        float bz = (float) (centre.z + half);
+        int r = (rgb >> 16) & 0xFF;
+        int g = (rgb >> 8) & 0xFF;
+        int b = rgb & 0xFF;
+        int a = Mth.clamp((int) (alpha * 255), 0, 255);
+        float[][] faces = {
+                {ax, ay, az, bx, ay, az, bx, by, az, ax, by, az},
+                {ax, ay, bz, bx, ay, bz, bx, by, bz, ax, by, bz},
+                {ax, ay, az, ax, ay, bz, ax, by, bz, ax, by, az},
+                {bx, ay, az, bx, ay, bz, bx, by, bz, bx, by, az},
+                {ax, ay, az, bx, ay, az, bx, ay, bz, ax, ay, bz},
+                {ax, by, az, bx, by, az, bx, by, bz, ax, by, bz}};
+        for (float[] f : faces) {
+            for (int i = 0; i < 12; i += 3) {
+                out.addVertex(m, f[i], f[i + 1], f[i + 2]).setColor(r, g, b, a);
+            }
+        }
     }
 
     /** Een tekstje dat altijd naar je toe kijkt, door muren heen (zwakker) en ervoor fel; verder weg wat groter. */

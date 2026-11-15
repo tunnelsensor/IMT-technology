@@ -9183,6 +9183,14 @@ Wat ik vond:
       `autoscan_never_loads_the_world` (een scan ver weg zegt "not loaded" en laadt niets) en
       `zone_boxes_stay_quick_for_a_big_cave` (een grillige grot van 150.000 blokken wordt hooguit 48 kubussen die alles
       dekken). De bestaande autoscan-test is ongewijzigd groen.
+- [x] **Nalezing** (drie lezers, elk met een controleur; 19 van de 20 punten echt): de knoppen naast Delete box staan
+      op een vaste plek (bij "Sure?" schoof Include cave of Undo onder je muis), Undo vraagt eerst "Sure?"; met de Zone
+      Marker scant een bevestiging eerst opnieuw gewoon en neemt de grot alleen erbij als dezelfde opening er nog is (maak
+      je het gat dicht en klik je ernaast, dan krijg je gewoon de dichte kamer); een ingehouden klik telt pas na een halve
+      seconde pauze als nieuwe klik; "Scan bigger" heet nergens meer een grot; Undo hoort altijd bij je laatste scan; een
+      dubbele klik geeft geen rode melding meer; een gat in een dak krijgt de ping in het dak; teksten korter (ook over
+      drie regels in de app), coördinaten nooit afgeknipt, via SSH "(see the map)"; de ping dunner en de stipjes echt
+      zwak; apply() telt vervangen kubussen goed; en de test laat nu ook een gang tot een niet-geladen stuk zien.
 - [x] Showcase: nieuw onderdeel **Zone autoscan cave**; de rondleiding maakt `zs03` tot `zs06` (de ping, het vakje in de
       app, na Include cave, de zone om bunker en grot). LEESMIJ (Autoscan) en de tooltip van de Zone Marker.
 

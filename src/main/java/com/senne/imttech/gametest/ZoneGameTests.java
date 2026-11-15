@@ -1377,7 +1377,7 @@ public final class ZoneGameTests {
                         throw new GameTestAssertException("Een tweede klik in dezelfde tik nam de grot al mee");
                     }
                 });
-                helper.runAfterDelay(25, () -> {
+                helper.runAfterDelay(30, () -> {
                     // Een nieuwe klik vlak bij de ping (het gat zit 2 blokken verderop): de grot erbij.
                     withRoomMax(1000, () -> ZoneMarkerItem.autoscan(level, owner, inRoom.east(), null));
                     if (core.zone() == null || !core.zone().contains(inCave)) {
@@ -1402,7 +1402,9 @@ public final class ZoneGameTests {
 
     /**
      * Hoofdstuk 116 ("als dit lag zou veroorzaken ... mag het toch niet"): de scan laadt nooit een stuk wereld. Een scan
-     * ver weg, waar niets geladen is, zegt dat het niet geladen is, en dat stuk is daarna nog steeds niet geladen.
+     * ver weg, waar niets geladen is, zegt dat het niet geladen is, en dat stuk is daarna nog steeds niet geladen. En een
+     * gang die in een geladen stuk begint en tot aan een stuk loopt dat niet geladen is: het vullen stopt daar ("not
+     * loaded"), en dat buurstuk is daarna nog steeds niet geladen.
      */
     @GameTest(template = ARENA, timeoutTicks = 20, batch = "zones")
     public static void autoscan_never_loads_the_world(GameTestHelper helper) {
@@ -1416,12 +1418,45 @@ public final class ZoneGameTests {
         if (level.getChunkSource().getChunkNow(far.getX() >> 4, far.getZ() >> 4) != null) {
             throw new GameTestAssertException("De scan laadde een stuk wereld op " + far);
         }
+        // Een stuk wereld nog verder weg laden we zelf (alleen dat ene stuk wordt helemaal klaar), met een gang van steen
+        // die aan de oostkant open is, tegen het buurstuk aan dat niet geladen is.
+        BlockPos corner = helper.absolutePos(new BlockPos(4, 6, 4)).offset(300_000, 0, 300_000);
+        int cx = corner.getX() >> 4;
+        int cz = corner.getZ() >> 4;
+        level.getChunk(cx, cz);
+        if (level.getChunkSource().getChunkNow(cx + 1, cz) != null) {
+            helper.succeed(); // het buurstuk was er toch al (dan valt hier niets te bewijzen)
+            return;
+        }
+        int x0 = cx << 4;
+        int z = (cz << 4) + 8;
+        int y = corner.getY();
+        net.minecraft.world.level.block.state.BlockState stone = Blocks.STONE.defaultBlockState();
+        net.minecraft.world.level.block.state.BlockState air = Blocks.AIR.defaultBlockState();
+        int quiet = net.minecraft.world.level.block.Block.UPDATE_CLIENTS | net.minecraft.world.level.block.Block.UPDATE_KNOWN_SHAPE;
+        for (int x = x0 + 3; x <= x0 + 15; x++) {
+            for (int dy = -1; dy <= 1; dy++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    boolean inside = dy == 0 && dz == 0 && x > x0 + 3;
+                    level.setBlock(new BlockPos(x, y + dy, z + dz), inside ? air : stone, quiet);
+                }
+            }
+        }
+        BlockPos start = new BlockPos(x0 + 4, y, z);
+        com.senne.imttech.security.zone.ZoneScan.Result corridor = com.senne.imttech.security.zone.ZoneScan.scan(level, start,
+                ZoneBox.of(start.offset(-20, -10, -20), start.offset(30, 10, 20)), 48);
+        if (corridor.ok() || corridor.problem() == null || !corridor.problem().contains("not loaded")) {
+            throw new GameTestAssertException("Een gang tot een stuk dat niet geladen is, zou 'not loaded' moeten zeggen: " + corridor);
+        }
+        if (level.getChunkSource().getChunkNow(cx + 1, cz) != null) {
+            throw new GameTestAssertException("De scan laadde het buurstuk van de gang");
+        }
         helper.succeed();
     }
 
     /**
      * Hoofdstuk 116: een grillige "grot" van zo'n 150.000 blokken (bolletjes langs een kronkelpad, steeds hetzelfde)
-     * wordt hooguit 48 kubussen die elk blok dekken, en dat gaat snel (ruim onder de 5 seconden; vroeger kon het
+     * wordt hooguit 48 kubussen die elk blok dekken, en dat gaat snel (ruim onder de seconde; vroeger kon het
      * samenvoegen van duizenden kubussen minuten duren).
      */
     @GameTest(template = ARENA, timeoutTicks = 20, batch = "zones")
@@ -1457,7 +1492,7 @@ public final class ZoneGameTests {
                 throw new GameTestAssertException("Een blok van de grot valt buiten de kubussen: " + BlockPos.of(cell));
             }
         }
-        if (millis > 5000) {
+        if (millis > 1000) {
             throw new GameTestAssertException("Kubussen maken duurde " + millis + " ms voor " + cells.size() + " blokken");
         }
         helper.succeed();

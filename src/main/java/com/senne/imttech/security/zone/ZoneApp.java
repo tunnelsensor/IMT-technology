@@ -106,22 +106,27 @@ public final class ZoneApp {
         ServerLevel level = player.serverLevel();
         ZoneBox limit = ZoneBox.of(core.zoneLow(), core.zoneHigh());
         BlockPos start;
+        ZoneScan.Mode mode = ZoneScan.Mode.NORMAL;
         if (cave) {
             // De knop geldt één keer, en alleen zolang het aanbod er is (een dubbele klik scant de grot niet twee keer).
-            if (ZoneScanReports.offer(player, core) == null) {
-                return new Result("Autoscan: nothing to include, scan again first", true);
+            ZoneScanReports.Report offer = ZoneScanReports.offer(player, core);
+            if (offer == null) {
+                // Een tweede klik vlak na de eerste: niets doen (geen rode melding over het goede resultaat heen).
+                return new Result(ZoneScanReports.justPressed(player) ? "" : "Autoscan: nothing to include, scan again first", true);
             }
             if (!ZoneScanReports.mayScan(player, true)) {
                 return new Result("Autoscan: busy, try again in a moment", true);
             }
-            start = ZoneScanReports.takeOffer(player, core).start();
+            ZoneScanReports.takeOffer(player, core);
+            start = offer.start();
+            mode = ZoneScan.modeFor(offer.offer());
         } else {
             start = scanStart(player, core, level, limit, remote);
         }
-        ZoneScan.Result found = ZoneScan.scan(level, start, limit, ImtConfig.Security.ZONE_MAX_BOXES, cave);
-        ZoneScanReports.report(player, core, start, found);
+        ZoneScan.Result found = ZoneScan.scan(level, start, limit, ImtConfig.Security.ZONE_MAX_BOXES, mode);
         // Op afstand (SSH, telefoon, of ver van de plek) zie je de ping niet: dan staat hij op de kaart van de app.
         boolean far = remote || player.distanceToSqr(start.getCenter()) > FAR * FAR;
+        ZoneScanReports.report(player, core, start, found, far);
         if (!found.ok()) {
             return new Result("Autoscan: " + where(found.problem(), far), true);
         }
@@ -146,7 +151,8 @@ public final class ZoneApp {
     private static Result undo(ServerPlayer player, SecurityCoreBlockEntity core) {
         List<ZoneBox> before = ZoneScanReports.undo(player, core);
         if (before == null) {
-            return new Result("Undo is no longer possible: your zone changed, or it was too long ago", true);
+            // Een tweede klik vlak na de eerste: niets doen.
+            return new Result(ZoneScanReports.justPressed(player) ? "" : "Undo is no longer possible: your zone changed, or it was too long ago", true);
         }
         List<ZoneBox> fitted = core.setZoneBoxes(before);
         core.logEvent(EventLog.Type.ZONE, "Zone: autoscan undone (" + fitted.size() + " boxes)");
