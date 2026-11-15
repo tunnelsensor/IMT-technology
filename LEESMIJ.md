@@ -1417,16 +1417,38 @@ another security network").
 - In de app **Zone** op de desktop van je kern (ook via SSH): een kaart van bovenaf, en per kubus de
   getallen van de twee hoeken (typen + Enter) en per kant een **−** en **+** om die kant één blok te
   verschuiven. **New box** zet een kubus van 7 × 5 × 7 waar je staat.
-- **Autoscan** (sinds 4 november): de knop **Autoscan** in de app scant vanaf de kern (of vanaf waar jij
-  staat, als je bij de kern bent); met de Zone Marker doe je **sluipen + rechtsklik zonder hoeken** om
-  vanuit die kamer te scannen. Een **dichte bunker** (deuren toe) wordt alle kamers die open met elkaar
-  verbonden zijn, **plus 3 blokken muur** eromheen (zo zit verborgen redstone er ook in), als een stel
-  kubussen. Loopt de scan naar buiten (een open basis, geen dak), dan volgt hij alle aaneengesloten
-  **gebouwde** blokken (alles wat geen natuur is: geen steen, aarde, zand, erts, bomen) vanaf het
-  aangeklikte blok en legt daar **één doos** omheen met 3 blokken marge; klik dan dus een blok van je
-  gebouw aan. Nog eens scannen voegt alleen toe wat er nog niet in zat (een oude kubus die helemaal in
-  een nieuwe valt, gaat weg). Een zone heeft hooguit 48 kubussen; vindt de scan er meer, dan voegt hij
-  ze samen. De getallen (`zoneScanWall`, `zoneScanMax`) staan onder `[security]`.
+- **Autoscan** (sinds 4 november; de ping en de grot erbij sinds 15 november, hoofdstuk 116): de knop **Autoscan** in de
+  app scant vanaf de kern (of vanaf waar jij staat, als je bij de kern bent); met de Zone Marker doe je **sluipen +
+  rechtsklik zonder hoeken** om vanuit die kamer te scannen. Een **dichte bunker** wordt alle kamers die open met elkaar
+  verbonden zijn, **plus 3 blokken muur** eromheen (zo zit verborgen redstone er ook in), als een stel kubussen. Een
+  deur (ook een open deur), tapijt of een halve plaat houdt de scan tegen; een gat, een open hek, of een fakkel, bordje
+  of knop in een gat niet.
+  - **Is de kamer niet dicht**, dan zoekt de scan **waar** hij openligt en zet daar een **ping**: een tekstje boven het
+    blok ("Opening: cave · 12 m"), door muren heen te zien en ook zonder bril, dichtbij een dun kader om het blok, en een
+    stippellijn van de weg die de scan nam (zo zie je ook waar het lek heen gaat als de scan de opening niet precies
+    vindt). **Roze** = een opening naar een grot, **rood** = een opening naar buiten, **paars** = waar een grot zelf de
+    open lucht raakt. In de app staat de ping ook als kruisje op de kaart, met onderaan een vakje dat zegt wat er is. De
+    ping blijft 5 minuten staan: lang genoeg om er vanaf de desktop naartoe te lopen en terug.
+  - **Komt de opening in een grot uit**, dan mag je **de grot erbij nemen**: in de app met de knop **Include cave**; met
+    de Zone Marker door **naar de ping te kijken** (of ernaast te klikken) en nog eens **sluipen + rechtsklik** te doen
+    (een ingehouden klik telt niet, een andere klik is gewoon een nieuwe scan). De grot telt tot aan de open lucht en de
+    rand van het bereik van je kern. **Een giga cave mag niet**: meer dan 150.000 blokken, of een scan die langer dan
+    0,1 seconde zou duren (dan zou de server haperen); dan zegt hij "The cave is too big" en maak je de opening dicht.
+    Zijn je kamers gewoon heel groot (meer dan 60.000 blokken, zonder grot), dan heet de knop **Scan bigger**.
+  - **Sta je bij je gebouw** (een gebouwd blok naast je) en is de kamer niet dicht, dan krijg je zoals vroeger meteen
+    **één doos** om alle aaneengesloten **gebouwde** blokken (alles wat geen natuur is: geen steen, aarde, zand, erts,
+    bomen) met 3 blokken marge; de ping en de knop voor de grot komen erbij. Met de Zone Marker klik je daarvoor een blok
+    van je gebouw aan.
+  - **Undo** (of **Undo scan**) in de app zet je zone terug zoals hij voor je laatste Autoscan was: 5 minuten lang, en
+    alleen als je de zone daarna niet zelf veranderde.
+  - Nog eens scannen voegt alleen toe wat er nog niet in zat (een oude kubus die helemaal in een nieuwe valt, gaat weg).
+    Een zone heeft hooguit 48 kubussen; vindt de scan er meer, dan voegt hij ze samen, maar nooit tot een kubus die de
+    zone van een ander raakt. De scan **laadt nooit een stuk wereld** (dat laat de server haperen): wat niet geladen is,
+    ziet hij niet, en dan zegt hij dat (via SSH van ver ziet hij alleen het stuk rond je kern). De getallen
+    (`zoneScanWall`, `zoneScanMax`, `zoneScanCaveMax`, `zoneScanCaveMillis`, `zoneScanPingSeconds`) staan onder
+    `[security]`.
+- Een **lange melding** onderaan de desktop staat sinds hoofdstuk 116 in een kader over de taakbalk, over hooguit drie
+  regels, in plaats van links van je scherm af te lopen.
 
 **Wie mag wat.** In een zone mogen alleen **jij en je vertrouwde spelers** (de app Access)
 blokken plaatsen en breken; in creative mag iedereen. Een vreemde kan er niets breken of neerzetten;

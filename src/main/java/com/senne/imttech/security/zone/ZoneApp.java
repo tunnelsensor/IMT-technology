@@ -59,9 +59,17 @@ public final class ZoneApp {
         data.putDouble("coreUpkeep", ImtConfig.Power.SECURITY_CORE_UPKEEP);
         data.putInt("max", ImtConfig.Security.ZONE_MAX_BOXES);
         data.putInt("reach", Math.round(ImtConfig.Security.ZONE_REACH));
+        data.putInt("margin", ZoneScan.margin());
         if (viewer != null && !remote) {
             data.put("player", xyz(viewer.blockPosition()));
         }
+        // Hoofdstuk 116: wat jouw laatste Autoscan zag (waar je kamers openliggen, en of de grot erbij mag), en of je hem
+        // nog kunt terugdraaien.
+        ZoneScanReports.Report report = viewer == null ? null : ZoneScanReports.get(viewer, core);
+        if (report != null) {
+            data.put("scan", report.save());
+        }
+        data.putBoolean("undo", viewer != null && ZoneScanReports.canUndo(viewer, core));
         return data;
     }
 
@@ -76,7 +84,8 @@ public final class ZoneApp {
         List<ZoneBox> boxes = new ArrayList<>(core.zoneBoxes());
         return switch (op) {
             case "zone_new" -> addBox(player, core, boxes, remote);
-            case "zone_scan" -> scan(player, core, remote);
+            case "zone_scan" -> scan(player, core, remote, args.getBoolean("cave"));
+            case "zone_undo" -> undo(player, core);
             case "zone_delete" -> deleteBox(core, boxes, args.getInt("i"));
             case "zone_grow" -> growBox(core, boxes, args.getInt("i"), args.getInt("side"), args.getInt("by"));
             case "zone_set" -> setBox(core, boxes, args.getInt("i"), args.getIntArray("box"));
@@ -87,28 +96,79 @@ public final class ZoneApp {
     /**
      * De Autoscan (hoofdstuk 45): vanaf de kern (de kamer waar hij staat), of waar jij staat als je bij de kern bent. Een
      * dichte bunker wordt kamers plus muur; een open basis een doos om het gebouw (zie ZoneScan).
+     * <p>
+     * Hoofdstuk 116: lopen je kamers door in een grot, dan zegt de app dat (met een ping op de opening) en verschijnt de
+     * knop "Include cave". Die stuurt {@code cave} = true: dezelfde scan opnieuw, vanaf waar de vorige begon, met de grot
+     * erbij (tenzij het een giga cave is).
      */
-    private static Result scan(ServerPlayer player, SecurityCoreBlockEntity core, boolean remote) {
+    private static Result scan(ServerPlayer player, SecurityCoreBlockEntity core, boolean remote, boolean cave) {
         ServerLevel level = player.serverLevel();
-        BlockPos start = core.getBlockPos();
         ZoneBox limit = ZoneBox.of(core.zoneLow(), core.zoneHigh());
-        if (!remote && limit.contains(player.blockPosition())) {
-            start = player.blockPosition();
+        BlockPos start;
+        if (cave) {
+            // De knop geldt één keer, en alleen zolang het aanbod er is (een dubbele klik scant de grot niet twee keer).
+            if (ZoneScanReports.offer(player, core) == null) {
+                return new Result("Autoscan: nothing to include, scan again first", true);
+            }
+            if (!ZoneScanReports.mayScan(player, true)) {
+                return new Result("Autoscan: busy, try again in a moment", true);
+            }
+            start = ZoneScanReports.takeOffer(player, core).start();
         } else {
-            // De kern zelf is een vast blok: begin in de lucht ernaast (boven, of een andere kant).
-            for (Direction direction : new Direction[] {Direction.UP, Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST}) {
-                BlockPos next = core.getBlockPos().relative(direction);
-                if (ZoneScan.passable(level, next, level.getBlockState(next))) {
-                    start = next;
-                    break;
-                }
+            start = scanStart(player, core, level, limit, remote);
+        }
+        ZoneScan.Result found = ZoneScan.scan(level, start, limit, ImtConfig.Security.ZONE_MAX_BOXES, cave);
+        ZoneScanReports.report(player, core, start, found);
+        // Op afstand (SSH, telefoon, of ver van de plek) zie je de ping niet: dan staat hij op de kaart van de app.
+        boolean far = remote || player.distanceToSqr(start.getCenter()) > FAR * FAR;
+        if (!found.ok()) {
+            return new Result("Autoscan: " + where(found.problem(), far), true);
+        }
+        List<ZoneBox> before = List.copyOf(core.zoneBoxes());
+        ZoneScan.Applied applied = ZoneScan.apply(core, found, ImtConfig.Security.ZONE_MAX_BOXES);
+        if (applied.changed()) {
+            ZoneScanReports.remember(player, core, before);
+        }
+        return new Result(applied.text(), false);
+    }
+
+    /** Verder dan dit (blokken) van waar de scan begon zie je de ping niet goed: dan verwijzen we naar de kaart. */
+    private static final double FAR = 64;
+
+    /** "(see the ping)" wordt "(see the map)" als je ver weg bent. */
+    private static String where(@Nullable String text, boolean far) {
+        String said = text == null ? "" : text;
+        return far ? said.replace("(see the ping)", "(see the map)") : said;
+    }
+
+    /** Undo scan (hoofdstuk 116): de zone terug zoals hij voor je laatste Autoscan was. */
+    private static Result undo(ServerPlayer player, SecurityCoreBlockEntity core) {
+        List<ZoneBox> before = ZoneScanReports.undo(player, core);
+        if (before == null) {
+            return new Result("Undo is no longer possible: your zone changed, or it was too long ago", true);
+        }
+        List<ZoneBox> fitted = core.setZoneBoxes(before);
+        core.logEvent(EventLog.Type.ZONE, "Zone: autoscan undone (" + fitted.size() + " boxes)");
+        return new Result("Autoscan undone: your zone has " + fitted.size() + (fitted.size() == 1 ? " box" : " boxes") + " again", false);
+    }
+
+    /**
+     * Waar de Autoscan begint: waar jij staat (bij de kern, binnen zijn bereik; sta je op tapijt of een halve plaat, het
+     * blok erboven), of in de lucht naast de kern.
+     */
+    private static BlockPos scanStart(ServerPlayer player, SecurityCoreBlockEntity core, ServerLevel level, ZoneBox limit,
+                                      boolean remote) {
+        if (!remote && limit.contains(player.blockPosition())) {
+            return ZoneScan.roomStart(level, player.blockPosition());
+        }
+        // De kern zelf is een vast blok: begin in de lucht ernaast (boven, of een andere kant).
+        for (Direction direction : new Direction[] {Direction.UP, Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST}) {
+            BlockPos next = core.getBlockPos().relative(direction);
+            if (ZoneScan.passable(level, next, level.getBlockState(next))) {
+                return next;
             }
         }
-        ZoneScan.Result found = ZoneScan.scan(level, start, limit, ImtConfig.Security.ZONE_MAX_BOXES);
-        if (!found.ok()) {
-            return new Result("Autoscan: " + found.problem(), true);
-        }
-        return new Result(ZoneScan.apply(core, found, ImtConfig.Security.ZONE_MAX_BOXES), false);
+        return core.getBlockPos();
     }
 
     /** Een nieuwe kubus van 7 x 5 x 7: waar je staat (de vloer onder je hoort erbij), of bij de kern. */

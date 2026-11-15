@@ -1085,4 +1085,274 @@ public final class ZoneGameTests {
         helper.assertBlockNotPresent(Blocks.STONE, high);
         finish(helper, core);
     }
+
+    // ================================================================ Hoofdstuk 116: de opening, de grot erbij, geen lag
+
+    /** Het gat in de oostmuur van de bunker (zie {@link #buildBunkerWithCave}). */
+    private static final BlockPos BUNKER_HOLE = new BlockPos(7, 4, 4);
+    /** De kern in de bunker (zijn generator zit in de vloer). */
+    private static final BlockPos CAVE_CORE = new BlockPos(2, 4, 2);
+
+    /**
+     * Een bunker van stenen bakstenen (1,3,1 tot 7,8,7: 100 blokken lucht binnen) met een gat in de oostmuur
+     * ({@link #BUNKER_HOLE}), en daarachter door een gat in zijn westmuur een "grot" van natuursteen (8,3,0 tot 21,11,15:
+     * 1176 blokken lucht binnen). Samen 1278 blokken: met een kamergrens van 400 is dat een grot. Alles zweeft een blok
+     * boven de vloer van de arena (die ligt op y = 1 en is van gepolijst andesiet: dat telt als gebouw, en dan zou de doos
+     * om de bunker de hele vloer meenemen).
+     */
+    private static void buildBunkerWithCave(GameTestHelper helper) {
+        for (BlockPos pos : BlockPos.betweenClosed(new BlockPos(8, 3, 0), new BlockPos(21, 11, 15))) {
+            boolean shell = pos.getX() == 8 || pos.getX() == 21 || pos.getY() == 3 || pos.getY() == 11 || pos.getZ() == 0 || pos.getZ() == 15;
+            helper.setBlock(pos.immutable(), shell ? Blocks.STONE : Blocks.AIR);
+        }
+        for (BlockPos pos : BlockPos.betweenClosed(new BlockPos(1, 3, 1), new BlockPos(7, 8, 7))) {
+            boolean shell = pos.getX() == 1 || pos.getX() == 7 || pos.getY() == 3 || pos.getY() == 8 || pos.getZ() == 1 || pos.getZ() == 7;
+            helper.setBlock(pos.immutable(), shell ? Blocks.STONE_BRICKS : Blocks.AIR);
+        }
+        helper.setBlock(BUNKER_HOLE, Blocks.AIR);
+        helper.setBlock(BUNKER_HOLE.east(), Blocks.AIR);
+    }
+
+    /** Ruim om de arena heen: zo ver mag de scan in deze tests (de bunker en de grot liggen er ver binnen). */
+    private static ZoneBox arenaLimit(GameTestHelper helper) {
+        return box(helper, new BlockPos(-2, 0, -2), new BlockPos(25, 15, 25));
+    }
+
+    /**
+     * Jouw wens (hoofdstuk 116): "ik wil dat je een ping krijgt van waar die autoscan dat ziet" en "de 'er is een cave dus
+     * autoscan werkt niet' moet je kunnen overriden ... als dit lag zou veroorzaken door dat het een giga cave is mag het
+     * toch niet". Een bunker met een gat naar een grot: de gewone scan (kamergrens 400) zegt "open to a cave", biedt aan
+     * de grot erbij te nemen en wijst precies het gat in de bunkermuur aan. Met de grot erbij (grens 2000) lukt het en
+     * dekken de kubussen de grot. Met een grens van 1000 is de grot te groot (een "giga cave"): dat mag niet.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "zones")
+    public static void autoscan_points_at_the_hole_into_a_cave(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        buildBunkerWithCave(helper);
+        ZoneBox limit = arenaLimit(helper);
+        // Midden in de kamer (geen gebouwd blok ernaast, dus geen doos om het gebouw als vervanging).
+        BlockPos start = helper.absolutePos(new BlockPos(4, 5, 4));
+        com.senne.imttech.security.zone.ZoneScan.Result first = com.senne.imttech.security.zone.ZoneScan.scan(level, start, limit,
+                48, 400, 400, 0);
+        if (first.ok() || !"Include cave".equals(first.offer()) || first.marks().isEmpty()) {
+            throw new GameTestAssertException("De bunker loopt door in een grot: de scan zou 'open to a cave' moeten zeggen: " + first);
+        }
+        BlockPos ping = first.marks().getFirst().pos();
+        if (!ping.equals(helper.absolutePos(BUNKER_HOLE)) || first.marks().getFirst().kind() != com.senne.imttech.security.zone.ZoneScan.Kind.CAVE) {
+            throw new GameTestAssertException("De ping zou op het gat " + helper.absolutePos(BUNKER_HOLE) + " moeten staan, niet " + first.marks());
+        }
+        // "Include cave": dezelfde scan met een grens van 2000.
+        com.senne.imttech.security.zone.ZoneScan.Result cave = com.senne.imttech.security.zone.ZoneScan.scan(level, start, limit,
+                48, 400, 2000, 0);
+        if (!cave.ok() || !cave.enclosed() || !cave.cave() || cave.cells() != 1278) {
+            throw new GameTestAssertException("Met de grot erbij zou de scan 1278 blokken moeten vinden: " + cave);
+        }
+        for (BlockPos inCave : new BlockPos[] {new BlockPos(9, 4, 1), new BlockPos(20, 10, 14), new BlockPos(15, 7, 8), new BlockPos(21, 11, 15)}) {
+            if (!ZoneShape.inAny(cave.boxes(), helper.absolutePos(inCave))) {
+                throw new GameTestAssertException("De grot op " + inCave + " zit niet in de kubussen: " + cave.boxes());
+            }
+        }
+        // Een giga cave (meer dan de grens van 1000): mag niet, met de ping nog steeds op het gat.
+        com.senne.imttech.security.zone.ZoneScan.Result giant = com.senne.imttech.security.zone.ZoneScan.scan(level, start, limit,
+                48, 400, 1000, 0);
+        if (giant.ok() || giant.offer() != null || giant.problem() == null || !giant.problem().contains("too big")
+                || giant.marks().isEmpty() || !giant.marks().getFirst().pos().equals(helper.absolutePos(BUNKER_HOLE))) {
+            throw new GameTestAssertException("Een grot boven de grens zou 'too big' moeten zijn, met de ping op het gat: " + giant);
+        }
+        // Het gat dicht: dan is het gewoon een dichte bunker van 100 blokken.
+        helper.setBlock(BUNKER_HOLE, Blocks.STONE_BRICKS);
+        com.senne.imttech.security.zone.ZoneScan.Result closed = com.senne.imttech.security.zone.ZoneScan.scan(level, start, limit,
+                48, 400, 400, 0);
+        if (!closed.ok() || !closed.enclosed() || closed.cave() || closed.cells() != 100 || !closed.marks().isEmpty()) {
+            throw new GameTestAssertException("Met het gat dicht is het een gewone bunker van 100 blokken: " + closed);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Hoofdstuk 116: een huisje met een deuropening naar de open lucht (een arena zonder dak). De scan vanaf het midden
+     * van de kamer (geen gebouwd blok ernaast) zegt "open to the outside" met een rode ping in de deuropening. Vanaf de
+     * vloer (een gebouwd blok ernaast) wordt het zoals altijd een doos om het huisje, met dezelfde ping erbij. Het huisje
+     * staat op natuursteen, zodat de vloer van de arena (gepolijst andesiet, dat telt als gebouw) er niet aan vastzit.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "zones", skyAccess = true)
+    public static void autoscan_shows_the_door_to_the_open_sky(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        for (BlockPos pos : BlockPos.betweenClosed(new BlockPos(1, 2, 1), new BlockPos(10, 2, 10))) {
+            helper.setBlock(pos.immutable(), Blocks.STONE);
+        }
+        for (BlockPos pos : BlockPos.betweenClosed(new BlockPos(2, 3, 2), new BlockPos(8, 8, 8))) {
+            boolean shell = pos.getX() == 2 || pos.getX() == 8 || pos.getY() == 3 || pos.getY() == 8 || pos.getZ() == 2 || pos.getZ() == 8;
+            helper.setBlock(pos.immutable(), shell ? Blocks.OAK_PLANKS : Blocks.AIR);
+        }
+        BlockPos door = new BlockPos(8, 4, 5);
+        helper.setBlock(door, Blocks.AIR);
+        helper.setBlock(door.above(), Blocks.AIR);
+        ZoneBox limit = arenaLimit(helper);
+        com.senne.imttech.security.zone.ZoneScan.Result middle = com.senne.imttech.security.zone.ZoneScan.scan(level,
+                helper.absolutePos(new BlockPos(5, 5, 5)), limit, 48);
+        // De ping staat in de deuropening (de bovenste helft: die ligt vanuit het midden het dichtst bij).
+        BlockPos pinged = middle.marks().isEmpty() ? null : middle.marks().getFirst().pos();
+        if (middle.ok() || middle.offer() != null || middle.marks().size() != 1
+                || middle.marks().getFirst().kind() != com.senne.imttech.security.zone.ZoneScan.Kind.OUTSIDE
+                || !helper.absolutePos(door).equals(pinged) && !helper.absolutePos(door.above()).equals(pinged)) {
+            throw new GameTestAssertException("Vanuit het midden: 'open to the outside' met de ping in de deur " + helper.absolutePos(door)
+                    + " verwacht: " + middle);
+        }
+        com.senne.imttech.security.zone.ZoneScan.Result floor = com.senne.imttech.security.zone.ZoneScan.scan(level,
+                helper.absolutePos(new BlockPos(5, 4, 5)), limit, 48);
+        ZoneBox expected = box(helper, new BlockPos(2 - 3, 3 - 3, 2 - 3), new BlockPos(8 + 3, 8 + 3, 8 + 3));
+        if (!floor.ok() || floor.enclosed() || floor.boxes().size() != 1 || !floor.boxes().getFirst().equals(expected)
+                || floor.marks().isEmpty() || floor.headline() == null || floor.note() == null) {
+            throw new GameTestAssertException("Vanaf de vloer: een doos om het huisje (" + expected + ") met de ping erbij verwacht: " + floor);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Hoofdstuk 116, zoals jij het doet: in de app Zone op de kern de knop Autoscan (je staat op de vloer, dus je krijgt
+     * meteen een doos om de bunker, met de ping en het aanbod erbij), dan "Include cave", dan Undo. En met de Zone Marker:
+     * sluipen + rechtsklik midden in de kamer (het aanbod), en een tijdje later opnieuw vlak bij de ping (de grot erbij).
+     * De kamergrens staat in elke stap even op 1000 (zo is de grot van 1277 blokken een grot), alleen binnen die stap,
+     * zodat geen andere test die grens ziet.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 120, batch = "zones")
+    public static void autoscan_cave_on_the_desktop_and_with_the_marker(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        buildBunkerWithCave(helper);
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(4, 4, 4), "cave-owner");
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, CAVE_CORE, owner);
+        BlockPos corePos = helper.absolutePos(CAVE_CORE);
+        BlockPos inCave = helper.absolutePos(new BlockPos(15, 7, 8));
+        withRoomMax(1000, () -> {
+            ZoneApp.Result said = ZoneApp.handle(owner, core, "zone_scan", new CompoundTag(), false);
+            if (core.zoneBoxes().isEmpty() || core.zone().contains(inCave)
+                    || com.senne.imttech.security.zone.ZoneScanReports.offer(owner, core) == null) {
+                throw new GameTestAssertException("Autoscan op de vloer: een doos om de bunker, nog niet de grot, en het aanbod verwacht: "
+                        + core.zoneBoxes() + " (de app zei: " + said.text() + ")");
+            }
+            CompoundTag snapshot = ZoneApp.snapshot(level, core, owner, false);
+            if (!"Include cave".equals(snapshot.getCompound("scan").getString("offer"))
+                    || snapshot.getCompound("scan").getList("marks", 11).isEmpty() || !snapshot.getBoolean("undo")) {
+                throw new GameTestAssertException("De app krijgt het aanbod, de ping en Undo niet mee: " + snapshot);
+            }
+        });
+        helper.runAfterDelay(15, () -> {
+            List<ZoneBox> building = List.copyOf(core.zoneBoxes());
+            withRoomMax(1000, () -> {
+                CompoundTag cave = new CompoundTag();
+                cave.putBoolean("cave", true);
+                // Via de desktop zelf, zoals de knop het stuurt.
+                com.senne.imttech.security.os.SecurityOs.open(owner, corePos);
+                com.senne.imttech.security.os.SecurityOs.handleAction(owner, new com.senne.imttech.network.OsActionPayload(corePos, "zone_scan", cave));
+                if (!core.zone().contains(inCave) || com.senne.imttech.security.zone.ZoneScanReports.offer(owner, core) != null) {
+                    throw new GameTestAssertException("'Include cave' zette de grot niet in de zone (of het aanbod bleef staan): " + core.zoneBoxes());
+                }
+                // Undo: terug naar alleen de doos om de bunker.
+                ZoneApp.Result undone = ZoneApp.handle(owner, core, "zone_undo", new CompoundTag(), false);
+                if (!core.zoneBoxes().equals(building)) {
+                    throw new GameTestAssertException("Undo zette de zone niet terug: " + core.zoneBoxes() + " in plaats van " + building
+                            + " (de app zei: " + undone.text() + ")");
+                }
+            });
+            helper.runAfterDelay(15, () -> {
+                // Met de Zone Marker: midden in de kamer (geen gebouwd blok ernaast) eerst alleen het aanbod.
+                core.setZoneBoxes(List.of());
+                BlockPos inRoom = helper.absolutePos(new BlockPos(5, 5, 5));
+                withRoomMax(1000, () -> {
+                    ZoneMarkerItem.autoscan(level, owner, inRoom, null);
+                    if (!core.zoneBoxes().isEmpty() || com.senne.imttech.security.zone.ZoneScanReports.offer(owner, core) == null) {
+                        throw new GameTestAssertException("De marker zou eerst alleen 'open to a cave' moeten zeggen: " + core.zoneBoxes());
+                    }
+                    // Meteen nog eens (een ingehouden knop): dat telt niet als "ja".
+                    ZoneMarkerItem.autoscan(level, owner, inRoom.east(), null);
+                    if (!core.zoneBoxes().isEmpty()) {
+                        throw new GameTestAssertException("Een tweede klik in dezelfde tik nam de grot al mee");
+                    }
+                });
+                helper.runAfterDelay(25, () -> {
+                    // Een nieuwe klik vlak bij de ping (het gat zit 2 blokken verderop): de grot erbij.
+                    withRoomMax(1000, () -> ZoneMarkerItem.autoscan(level, owner, inRoom.east(), null));
+                    if (core.zone() == null || !core.zone().contains(inCave)) {
+                        throw new GameTestAssertException("Sluipen + rechtsklik bij de ping nam de grot niet mee: " + core.zoneBoxes());
+                    }
+                    finish(helper, core);
+                });
+            });
+        });
+    }
+
+    /** Doet {@code work} met de kamergrens van de Autoscan even op {@code max}, en zet hem daarna terug (ook bij een fout). */
+    private static void withRoomMax(float max, Runnable work) {
+        float was = ImtConfig.Security.ZONE_SCAN_MAX;
+        try {
+            ImtConfig.Security.ZONE_SCAN_MAX = max;
+            work.run();
+        } finally {
+            ImtConfig.Security.ZONE_SCAN_MAX = was;
+        }
+    }
+
+    /**
+     * Hoofdstuk 116 ("als dit lag zou veroorzaken ... mag het toch niet"): de scan laadt nooit een stuk wereld. Een scan
+     * ver weg, waar niets geladen is, zegt dat het niet geladen is, en dat stuk is daarna nog steeds niet geladen.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "zones")
+    public static void autoscan_never_loads_the_world(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos far = helper.absolutePos(new BlockPos(4, 3, 4)).offset(250_000, 0, 250_000);
+        com.senne.imttech.security.zone.ZoneScan.Result result = com.senne.imttech.security.zone.ZoneScan.scan(level, far,
+                ZoneBox.of(far.offset(-20, -3, -20), far.offset(20, 20, 20)), 48);
+        if (result.ok() || result.problem() == null || !result.problem().contains("not loaded")) {
+            throw new GameTestAssertException("Een scan ver weg zou 'not loaded' moeten zeggen: " + result);
+        }
+        if (level.getChunkSource().getChunkNow(far.getX() >> 4, far.getZ() >> 4) != null) {
+            throw new GameTestAssertException("De scan laadde een stuk wereld op " + far);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Hoofdstuk 116: een grillige "grot" van zo'n 150.000 blokken (bolletjes langs een kronkelpad, steeds hetzelfde)
+     * wordt hooguit 48 kubussen die elk blok dekken, en dat gaat snel (ruim onder de 5 seconden; vroeger kon het
+     * samenvoegen van duizenden kubussen minuten duren).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "zones")
+    public static void zone_boxes_stay_quick_for_a_big_cave(GameTestHelper helper) {
+        java.util.Random random = new java.util.Random(116);
+        it.unimi.dsi.fastutil.longs.LongOpenHashSet cells = new it.unimi.dsi.fastutil.longs.LongOpenHashSet();
+        double x = 0;
+        double y = 0;
+        double z = 0;
+        while (cells.size() < 150_000) {
+            x += random.nextGaussian() * 4;
+            y = Math.max(-40, Math.min(40, y + random.nextGaussian() * 2));
+            z += random.nextGaussian() * 4;
+            int r = 3 + random.nextInt(5);
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dy = -r; dy <= r; dy++) {
+                    for (int dz = -r; dz <= r; dz++) {
+                        if (dx * dx + dy * dy + dz * dz <= r * r) {
+                            cells.add(BlockPos.asLong((int) x + dx, (int) y + dy, (int) z + dz));
+                        }
+                    }
+                }
+            }
+        }
+        long started = System.nanoTime();
+        List<ZoneBox> boxes = com.senne.imttech.security.zone.ZoneScan.boxes(cells, 48);
+        long millis = (System.nanoTime() - started) / 1_000_000;
+        if (boxes.size() > 48) {
+            throw new GameTestAssertException("Te veel kubussen: " + boxes.size());
+        }
+        for (long cell : cells) {
+            if (!ZoneShape.inAny(boxes, BlockPos.of(cell))) {
+                throw new GameTestAssertException("Een blok van de grot valt buiten de kubussen: " + BlockPos.of(cell));
+            }
+        }
+        if (millis > 5000) {
+            throw new GameTestAssertException("Kubussen maken duurde " + millis + " ms voor " + cells.size() + " blokken");
+        }
+        helper.succeed();
+    }
 }

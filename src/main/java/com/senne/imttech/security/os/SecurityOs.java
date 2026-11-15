@@ -555,7 +555,7 @@ public final class SecurityOs {
             case "logic_enable" -> enableProgram(player, core, session, args.getString("name"), args.getBoolean("on"));
             case "input_rename" -> renameInput(player, core, session,
                     new BlockPos(args.getInt("x"), args.getInt("y"), args.getInt("z")), args.getString("name"));
-            case "zone_new", "zone_scan", "zone_delete", "zone_grow", "zone_set" -> {
+            case "zone_new", "zone_scan", "zone_undo", "zone_delete", "zone_grow", "zone_set" -> {
                 // De app Zone (hoofdstuk 10), zie ZoneApp.
                 com.senne.imttech.security.zone.ZoneApp.Result result = com.senne.imttech.security.zone.ZoneApp.handle(
                         player, core, payload.op(), args, session.remote());

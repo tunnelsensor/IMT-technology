@@ -1516,10 +1516,9 @@ final class ShowcaseFeatures {
 
         add("Zone autoscan", "Hoofdstuk 45: de Autoscan (in survival). Naast de basis staat een dichte bunker van stenen "
                 + "bakstenen. Je staat erin met een Zone Marker zonder hoeken en doet sluipen + rechtsklik: 'Autoscan "
-                + "(closed rooms + 3 blocks of wall): 1 box added', en de blauwe rand ligt om de kamer en drie blokken "
-                + "muur eromheen (de rand zie je met de marker in je hand). Dan naar de open basis (geen dak): de app "
-                + "Zone op de kern, knop Autoscan: 'open base: a box around N built blocks + 3' en één doos om het hele "
-                + "gebouw.",
+                + "(rooms): 1 box added', en de blauwe rand ligt om de kamer en " + Math.round(com.senne.imttech.config.ImtConfig.Security.ZONE_SCAN_WALL)
+                + " blokken muur eromheen (de rand zie je met de marker in je hand). Dan naar de open basis (geen dak): de app "
+                + "Zone op de kern, knop Autoscan: 'Autoscan (building): 1 box added' en één doos om het hele gebouw.",
                 GameType.SURVIVAL, Vec3.atBottomCenterOf(ZONE_BASE.offset(-8, 0, 4)), 0, 10, s -> {
             BlockPos bunker = ZONE_BASE.offset(-12, 0, 0);
             s.onServer(0, ShowcaseFeatures::buildZoneBase)
@@ -1564,6 +1563,78 @@ final class ShowcaseFeatures {
                     .close(10)
                     .stand(0, ZONE_BASE.getX() + 6.5, ZONE_BASE.getY() + 3, ZONE_BASE.getZ() + 20.5, 180, 15)
                     .pause(80);
+        });
+
+        add("Zone autoscan cave", "Hoofdstuk 116: de Autoscan ziet een grot (in survival). Een bunker van stenen bakstenen "
+                + "(met een vloer van gewone steen) heeft een gat in de oostmuur, en daarachter ligt een 'grot' van steen. De "
+                + "kamergrens staat in deze demo even op 1000 blokken, zodat deze kleine grot al telt. Sluipen + rechtsklik met "
+                + "de Zone Marker midden in de bunker: 'Open to a cave', een roze ping op het gat (door de muur heen te zien) en "
+                + "een stippellijn van de weg die de scan nam. Dan kijk je naar de ping en doe je nog eens sluipen + rechtsklik: "
+                + "'Autoscan (rooms + cave)', en de blauwe rand ligt om de bunker en de grot. Tot slot de app Zone op de kern: "
+                + "de knop Undo scan zet de zone terug.",
+                GameType.SURVIVAL, Vec3.atBottomCenterOf(ZONE_BASE.offset(-10, 0, -24)), 0, 10, s -> {
+            BlockPos bunker = ZONE_BASE.offset(-14, 0, -30);
+            s.onServer(0, ShowcaseFeatures::buildZoneBase)
+                    .onServer(0, player -> {
+                        ServerLevel level = player.serverLevel();
+                        net.minecraft.world.level.block.state.BlockState air = Blocks.AIR.defaultBlockState();
+                        for (BlockPos pos : BlockPos.betweenClosed(bunker.offset(-1, 0, -1), bunker.offset(23, 12, 18))) {
+                            level.setBlock(pos, air, 2);
+                        }
+                        // De grot: een doos van steen (14 x 9 x 16) met lucht erin, oostelijk van de bunker.
+                        for (BlockPos pos : BlockPos.betweenClosed(bunker.offset(8, 0, 0), bunker.offset(21, 8, 15))) {
+                            boolean shell = pos.getX() == bunker.getX() + 8 || pos.getX() == bunker.getX() + 21 || pos.getY() == bunker.getY()
+                                    || pos.getY() == bunker.getY() + 8 || pos.getZ() == bunker.getZ() || pos.getZ() == bunker.getZ() + 15;
+                            level.setBlockAndUpdate(pos, shell ? Blocks.STONE.defaultBlockState() : air);
+                        }
+                        // De bunker: muren en dak van stenen bakstenen, de vloer van gewone steen (natuur).
+                        for (BlockPos pos : BlockPos.betweenClosed(bunker.offset(0, 0, 1), bunker.offset(7, 6, 8))) {
+                            boolean floor = pos.getY() == bunker.getY();
+                            boolean shell = floor || pos.getX() == bunker.getX() || pos.getX() == bunker.getX() + 7 || pos.getY() == bunker.getY() + 6
+                                    || pos.getZ() == bunker.getZ() + 1 || pos.getZ() == bunker.getZ() + 8;
+                            level.setBlockAndUpdate(pos, !shell ? air : floor ? Blocks.STONE.defaultBlockState() : Blocks.STONE_BRICKS.defaultBlockState());
+                        }
+                        level.setBlockAndUpdate(bunker.offset(3, 5, 4), Blocks.GLOWSTONE.defaultBlockState());
+                        // Het gat: door de oostmuur van de bunker en de westmuur van de grot.
+                        level.setBlockAndUpdate(bunker.offset(7, 1, 4), air);
+                        level.setBlockAndUpdate(bunker.offset(8, 1, 4), air);
+                        if (level.getBlockEntity(ZONE_BASE.offset(4, 0, 5)) instanceof com.senne.imttech.security.SecurityCoreBlockEntity core) {
+                            core.setZoneBoxes(java.util.List.of());
+                        }
+                        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.ZONE_MARKER.get()));
+                    })
+                    .pause(40)
+                    .stand(0, bunker.getX() + 3.5, bunker.getY() + 2, bunker.getZ() + 4.5, -90, 10)
+                    .pause(30)
+                    // Sluipen + rechtsklik midden in de bunker: het aanbod en de ping.
+                    .onServer(0, player -> withCaveDemoLimit(() -> com.senne.imttech.security.zone.ZoneMarkerItem.autoscan(
+                            player.serverLevel(), player, bunker.offset(3, 2, 4), null)))
+                    .pause(100)
+                    // Kijk naar de ping (het gat, oostelijk) en nog eens sluipen + rechtsklik: de grot erbij.
+                    .stand(0, bunker.getX() + 3.5, bunker.getY() + 1, bunker.getZ() + 4.5, -90, 15)
+                    .pause(30)
+                    .onServer(0, player -> withCaveDemoLimit(() -> com.senne.imttech.security.zone.ZoneMarkerItem.autoscan(
+                            player.serverLevel(), player, bunker.offset(3, 1, 4), null)))
+                    .pause(60)
+                    .stand(0, bunker.getX() + 26.5, bunker.getY() + 6, bunker.getZ() + 22.5, 135, 18)
+                    .pause(80)
+                    // De app Zone op de kern: Undo scan.
+                    .stand(0, ZONE_BASE.getX() + 4.5, ZONE_BASE.getY(), ZONE_BASE.getZ() + 4.5, 180, 10)
+                    .onServer(10, player -> com.senne.imttech.security.os.SecurityOs.open(player, ZONE_BASE.offset(4, 0, 5)))
+                    .step(15, () -> {
+                        if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen os) {
+                            os.tourZone(0);
+                        }
+                    })
+                    .pause(60)
+                    .onServer(0, player -> {
+                        if (player.serverLevel().getBlockEntity(ZONE_BASE.offset(4, 0, 5)) instanceof com.senne.imttech.security.SecurityCoreBlockEntity core) {
+                            com.senne.imttech.security.zone.ZoneApp.handle(player, core, "zone_undo", new net.minecraft.nbt.CompoundTag(), false);
+                        }
+                    })
+                    .pause(60)
+                    .close(10)
+                    .onServer(0, player -> player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY));
         });
 
         add("Remote Frag", "Hoofdstuk 35 (in plaats van C4): de Remote Frag (in survival). Eerst ben jij de eigenaar "
@@ -5280,6 +5351,20 @@ final class ShowcaseFeatures {
     // ---------------------------------------------------------------- De basis met een zone van hoofdstuk 10
 
     /** Waar de basis met een zone staat (ver van de rest: een kern beschermt 30 blokken om zich heen). */
+    /**
+     * Hoofdstuk 116: doet {@code work} met de kamergrens van de Autoscan even op 1000 blokken (zo telt de kleine grot van
+     * de demo "Zone autoscan cave" al als grot), en zet hem daarna terug.
+     */
+    private static void withCaveDemoLimit(Runnable work) {
+        float was = com.senne.imttech.config.ImtConfig.Security.ZONE_SCAN_MAX;
+        try {
+            com.senne.imttech.config.ImtConfig.Security.ZONE_SCAN_MAX = 1000;
+            work.run();
+        } finally {
+            com.senne.imttech.config.ImtConfig.Security.ZONE_SCAN_MAX = was;
+        }
+    }
+
     static final BlockPos ZONE_BASE = new BlockPos(-130, -60, 60);
 
     /**

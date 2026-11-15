@@ -1293,6 +1293,25 @@ public final class ImtConfig {
         public static float ZONE_SCAN_WALL = 3.0f;
         @Tunable("Autoscan: at most this many blocks of rooms (or of a building) are scanned; more is not a closed bunker")
         public static float ZONE_SCAN_MAX = 60_000.0f;
+        /**
+         * Hoofdstuk 116 (jouw wens: "bevestigen dat cave er bij moet ... als dit lag zou veroorzaken door dat het een giga
+         * cave is mag het toch niet"): zoveel blokken mogen kamers en grot samen tellen bij "Include cave". Meer = een
+         * giga cave, en die mag niet.
+         */
+        @Tunable(value = "Autoscan: 'Include cave' (your rooms open into a cave) scans at most this many blocks of rooms and"
+                + " cave together; a bigger cave is refused, so a giant cave never lags the server", min = 1000, max = 2_000_000)
+        public static float ZONE_SCAN_CAVE_MAX = 150_000.0f;
+        /** ...en zo lang (milliseconden) mag die scan duren; duurt hij langer, dan telt de grot als te groot. */
+        @Tunable(value = "Autoscan: 'Include cave' gives up after this many milliseconds (the cave then counts as too big),"
+                + " so the server never hangs on a scan", min = 5, max = 5000)
+        public static float ZONE_SCAN_CAVE_MILLIS = 100.0f;
+        /**
+         * Zo lang (seconden) blijven de pings van de Autoscan staan, het aanbod om de grot erbij te nemen en Undo scan: lang
+         * genoeg om van de desktop naar het gat te lopen en terug (5 minuten).
+         */
+        @Tunable(value = "Autoscan: how long (seconds) the pings at an opening, the 'Include cave' offer and 'Undo scan' stay",
+                min = 10, max = 3600)
+        public static float ZONE_SCAN_PING_SECONDS = 300.0f;
     }
 
     // =============================================================================================== Network

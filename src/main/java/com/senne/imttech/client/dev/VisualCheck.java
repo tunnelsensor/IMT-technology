@@ -5590,6 +5590,62 @@ public final class VisualCheck {
             t.stand(10, 203.5, -58, 74.5, 135, 18);
             t.shot(30, "zs02_autoscan_bunker_outside");
             t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            // Hoofdstuk 116: een bunker met een gat naar een "grot" (de kamergrens even op 1000, zodat deze kleine grot al
+            // telt). Eerst sluipen + rechtsklik met de marker midden in de bunker: de roze ping op het gat (door de muur heen),
+            // met de stippellijn; dan het vakje in de app Zone; dan "Include cave"; en de zone om bunker en grot.
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                BlockPos b = CAVE_BUNKER;
+                BlockState air = Blocks.AIR.defaultBlockState();
+                for (BlockPos pos : BlockPos.betweenClosed(b.offset(-1, 0, -1), b.offset(23, 12, 18))) {
+                    level.setBlock(pos, air, 2);
+                }
+                for (BlockPos pos : BlockPos.betweenClosed(b.offset(8, 0, 0), b.offset(21, 8, 15))) {
+                    boolean shell = pos.getX() == b.getX() + 8 || pos.getX() == b.getX() + 21 || pos.getY() == b.getY()
+                            || pos.getY() == b.getY() + 8 || pos.getZ() == b.getZ() || pos.getZ() == b.getZ() + 15;
+                    level.setBlockAndUpdate(pos, shell ? Blocks.STONE.defaultBlockState() : air);
+                }
+                for (BlockPos pos : BlockPos.betweenClosed(b.offset(0, 0, 1), b.offset(7, 6, 8))) {
+                    boolean floor = pos.getY() == b.getY();
+                    boolean shell = floor || pos.getX() == b.getX() || pos.getX() == b.getX() + 7 || pos.getY() == b.getY() + 6
+                            || pos.getZ() == b.getZ() + 1 || pos.getZ() == b.getZ() + 8;
+                    level.setBlockAndUpdate(pos, !shell ? air : floor ? Blocks.STONE.defaultBlockState() : Blocks.STONE_BRICKS.defaultBlockState());
+                }
+                level.setBlockAndUpdate(b.offset(3, 5, 4), Blocks.GLOWSTONE.defaultBlockState());
+                level.setBlockAndUpdate(b.offset(7, 1, 4), air);
+                level.setBlockAndUpdate(b.offset(8, 1, 4), air);
+                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,
+                        new net.minecraft.world.item.ItemStack(ModItems.ZONE_MARKER.get()));
+                player.teleportTo(level, b.getX() + 3.5, b.getY() + 1, b.getZ() + 4.5, -90, 15);
+                withCaveLimit(() -> com.senne.imttech.security.zone.ZoneMarkerItem.autoscan(level, player, b.offset(3, 2, 4), null));
+            });
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.stand(10, CAVE_BUNKER.getX() + 2.5, CAVE_BUNKER.getY() + 1, CAVE_BUNKER.getZ() + 5.5, -100, 12);
+            t.shot(40, "zs03_autoscan_cave_ping");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+            t.stand(10, 166.5, -60, 67.5, 0, 0);
+            t.onServer(5, player -> com.senne.imttech.security.os.SecurityOs.open(player, ZONE_CORE));
+            t.step(10, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.SecurityOsScreen os) {
+                    os.tourZone(0);
+                }
+            });
+            t.shot(15, "zs04_autoscan_cave_panel");
+            t.onServer(0, player -> {
+                if (player.serverLevel().getBlockEntity(ZONE_CORE) instanceof com.senne.imttech.security.SecurityCoreBlockEntity core) {
+                    withCaveLimit(() -> {
+                        net.minecraft.nbt.CompoundTag cave = new net.minecraft.nbt.CompoundTag();
+                        cave.putBoolean("cave", true);
+                        com.senne.imttech.security.zone.ZoneApp.handle(player, core, "zone_scan", cave, false);
+                    });
+                }
+            });
+            t.shot(25, "zs05_autoscan_cave_included");
+            t.close(5);
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+            t.stand(10, CAVE_BUNKER.getX() + 27.5, CAVE_BUNKER.getY() + 8, CAVE_BUNKER.getZ() + 24.5, 135, 22);
+            t.shot(40, "zs06_autoscan_cave_zone");
+            t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
             t.onServer(0, player -> player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,
                     net.minecraft.world.item.ItemStack.EMPTY));
             t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
@@ -6441,6 +6497,20 @@ public final class VisualCheck {
     }
 
     /** De kern van de basis met een zone in de rondleiding (zie buildZoneBase). */
+    /** Hoofdstuk 116: waar de rondleiding de bunker met de grot bouwt (naast de bunker van de gewone Autoscan). */
+    private static final BlockPos CAVE_BUNKER = new BlockPos(190, -61, 80);
+
+    /** Doet {@code work} met de kamergrens van de Autoscan even op 1000 blokken (de grot van de rondleiding is klein). */
+    private static void withCaveLimit(Runnable work) {
+        float was = com.senne.imttech.config.ImtConfig.Security.ZONE_SCAN_MAX;
+        try {
+            com.senne.imttech.config.ImtConfig.Security.ZONE_SCAN_MAX = 1000;
+            work.run();
+        } finally {
+            com.senne.imttech.config.ImtConfig.Security.ZONE_SCAN_MAX = was;
+        }
+    }
+
     private static final BlockPos ZONE_CORE = new BlockPos(164, -60, 65);
 
     /**

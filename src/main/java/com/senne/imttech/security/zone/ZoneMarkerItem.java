@@ -93,7 +93,7 @@ public class ZoneMarkerItem extends Item {
         }
         if (level instanceof ServerLevel serverLevel && player instanceof ServerPlayer serverPlayer) {
             if (selection(stack).box() == null) {
-                autoscan(serverLevel, serverPlayer, serverPlayer.blockPosition(), null);
+                autoscan(serverLevel, serverPlayer, ZoneScan.roomStart(serverLevel, serverPlayer.blockPosition()), null);
             } else {
                 addSelection(serverLevel, serverPlayer, stack);
             }
@@ -107,21 +107,94 @@ public class ZoneMarkerItem extends Item {
      * de kamer niet dicht, dan proberen we vanaf dat blok het gebouw. De kubussen gaan naar je dichtstbijzijnde kern.
      */
     public static void autoscan(ServerLevel level, ServerPlayer player, BlockPos start, @Nullable BlockPos clicked) {
+        // Een ingehouden knop klikt elke 4 ticks opnieuw: alleen een nieuwe klik telt (hoofdstuk 116), anders zou een
+        // te lange klik meteen "ja, neem de grot erbij" zeggen.
+        long now = level.getGameTime();
+        Long previous = LAST_USE.put(player.getUUID(), now);
+        if (previous != null && now - previous < NEW_CLICK && now >= previous) {
+            return;
+        }
         SecurityCoreBlockEntity core = ownCoreFor(level, player, start);
         if (core == null) {
             return;
         }
         ZoneBox limit = ZoneBox.of(core.zoneLow(), core.zoneHigh());
-        ZoneScan.Result found = ZoneScan.scan(level, start, limit, ImtConfig.Security.ZONE_MAX_BOXES);
-        if (!found.ok() && clicked != null && !ZoneScan.passable(level, clicked, level.getBlockState(clicked))) {
-            found = ZoneScan.scan(level, clicked, limit, ImtConfig.Security.ZONE_MAX_BOXES);
-        }
-        if (!found.ok()) {
-            tell(player, Component.literal("Autoscan: " + found.problem()), true);
+        // Hoofdstuk 116 (jouw wens: "bevestigen dat cave er bij moet"): kijk je naar de ping (of klik je ernaast) en doe je
+        // opnieuw sluipen + rechtsklik, dan neem je de grot erbij, vanaf waar de vorige scan begon. Elke andere klik is
+        // gewoon een nieuwe scan.
+        ZoneScanReports.Report offer = ZoneScanReports.offer(player, core);
+        boolean include = offer != null && now - offer.made() >= CONFIRM_DELAY && aimsAt(player, start, offer);
+        if (!ZoneScanReports.mayScan(player, include)) {
             return;
         }
-        tell(player, Component.literal(ZoneScan.apply(core, found, ImtConfig.Security.ZONE_MAX_BOXES)), false);
+        BlockPos from = start;
+        if (include) {
+            ZoneScanReports.takeOffer(player, core);
+            from = offer.start();
+        }
+        ZoneScan.Result found = ZoneScan.scan(level, from, limit, ImtConfig.Security.ZONE_MAX_BOXES, include);
+        if (!include && !found.ok() && found.offer() == null && clicked != null && ZoneScan.isBuilt(level.getBlockState(clicked))) {
+            // De kamer is niet dicht (open naar buiten, te ver, niet geladen): dan het gebouw vanaf het aangeklikte blok,
+            // met de ping van waar de kamer openlag.
+            found = ZoneScan.scan(level, clicked, limit, ImtConfig.Security.ZONE_MAX_BOXES).after(found);
+        }
+        ZoneScanReports.report(player, core, from, found);
+        if (!found.ok()) {
+            if (found.offer() != null) {
+                tell(player, Component.literal(found.marks().isEmpty()
+                        ? "Rooms too big: sneak + right-click here again to scan bigger"
+                        : "Open to a cave: look at the ping and sneak + right-click to include it").withStyle(ChatFormatting.GOLD));
+                player.playNotifySound(ModSounds.IMT_NOTIFY.get(), SoundSource.PLAYERS, 0.6f, 0.8f);
+            } else {
+                tell(player, Component.literal("Autoscan: " + found.problem()), true);
+            }
+            return;
+        }
+        List<ZoneBox> before = List.copyOf(core.zoneBoxes());
+        ZoneScan.Applied applied = ZoneScan.apply(core, found, ImtConfig.Security.ZONE_MAX_BOXES);
+        if (applied.changed()) {
+            ZoneScanReports.remember(player, core, before);
+        }
+        // Een doos om het gebouw, maar de kamer liep door in een grot: dat zeggen we erbij (de ping zegt hoe je hem erbij neemt).
+        String said = found.offer() != null ? applied.summary() + " · open to a cave: see the ping" : applied.shortText();
+        tell(player, Component.literal(said), false);
         player.playNotifySound(ModSounds.IMT_NOTIFY.get(), SoundSource.PLAYERS, 0.6f, 1.2f);
+    }
+
+    /** Wanneer (speltijd) een speler de marker voor het laatst gebruikte (ook een klik die niets deed). */
+    private static final Map<UUID, Long> LAST_USE = new HashMap<>();
+    /** Zoveel ticks moeten er tussen twee klikken zitten om als een nieuwe klik te tellen (ingehouden: om de 4). */
+    private static final int NEW_CLICK = 6;
+    /** Pas zo lang (ticks) na het aanbod telt een klik als "ja": een snelle dubbelklik is geen keuze. */
+    private static final int CONFIRM_DELAY = 20;
+    /** Zo dicht (blokken) bij een ping telt een klik als een klik op die ping, en zo ver mag je hem nog aankijken. */
+    private static final double NEAR_PING = 3.0;
+    private static final double LOOK_RANGE = 64.0;
+    /** Kijk je zo recht naar een ping (cosinus van de hoek, hier tien graden), dan kijk je ernaar. */
+    private static final double LOOK_COS = 0.985;
+
+    /**
+     * Bedoelt deze klik de ping: kijk je er (door muren heen) naar, of klik je er vlak naast? Zonder pings (je kamers zijn
+     * gewoon heel groot): een klik vlak bij waar de vorige scan begon.
+     */
+    private static boolean aimsAt(ServerPlayer player, BlockPos start, ZoneScanReports.Report offer) {
+        if (offer.marks().isEmpty()) {
+            return start.closerThan(offer.start(), NEAR_PING);
+        }
+        net.minecraft.world.phys.Vec3 eye = player.getEyePosition();
+        net.minecraft.world.phys.Vec3 look = player.getViewVector(1.0f);
+        for (ZoneScan.Mark mark : offer.marks()) {
+            net.minecraft.world.phys.Vec3 centre = net.minecraft.world.phys.Vec3.atCenterOf(mark.pos());
+            if (centre.distanceToSqr(net.minecraft.world.phys.Vec3.atCenterOf(start)) <= NEAR_PING * NEAR_PING) {
+                return true;
+            }
+            net.minecraft.world.phys.Vec3 toward = centre.subtract(eye);
+            double distance = toward.length();
+            if (distance > 0.01 && distance <= LOOK_RANGE && toward.scale(1.0 / distance).dot(look) >= LOOK_COS) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Met de marker breek je niets (ook niet in creative). */
@@ -136,6 +209,7 @@ public class ZoneMarkerItem extends Item {
         tooltip.add(Component.translatable("tooltip.imttech.zone_marker.add").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.imttech.zone_marker.remove").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.imttech.zone_marker.scan").withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable("tooltip.imttech.zone_marker.cave").withStyle(ChatFormatting.GRAY));
         ZoneBox box = selection(stack).box();
         if (box != null) {
             tooltip.add(Component.translatable("tooltip.imttech.zone_marker.selection", box.size(), box.volume())
@@ -307,12 +381,20 @@ public class ZoneMarkerItem extends Item {
         player.displayClientMessage(message.copy().withStyle(error ? ChatFormatting.RED : ChatFormatting.AQUA), true);
     }
 
-    /** Uitgelogd of de server stopt: niets meer onthouden. */
+    /** Een melding in de kleur die hij al heeft (zoals het goudgele aanbod om de grot erbij te nemen). */
+    private static void tell(ServerPlayer player, Component message) {
+        player.displayClientMessage(message, true);
+    }
+
+    /** Uitgelogd of de server stopt: niets meer onthouden (ook niet wat de laatste Autoscan zag, hoofdstuk 116). */
     static void forget(@Nullable UUID player) {
         if (player == null) {
             PENDING.clear();
+            LAST_USE.clear();
         } else {
             PENDING.remove(player);
+            LAST_USE.remove(player);
         }
+        ZoneScanReports.forget(player);
     }
 }

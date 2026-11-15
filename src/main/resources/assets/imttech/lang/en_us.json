@@ -1557,6 +1557,7 @@
   "tooltip.imttech.zone_marker.add": "Sneak + right-click: add the box to your zone.",
   "tooltip.imttech.zone_marker.remove": "Sneak + left-click a box of your zone: remove it.",
   "tooltip.imttech.zone_marker.scan": "Sneak + right-click without corners: Autoscan the room you are in (closed rooms + 3 blocks of wall, or a box around an open building).",
+  "tooltip.imttech.zone_marker.cave": "Open to a cave? Look at the ping and sneak + right-click again: the cave joins your zone.",
   "tooltip.imttech.zone_marker.selection": "Selected: %s (%s blocks)",
   "zone.imttech.marker.corner": "Corner %s: %s %s %s. Now click the other corner.",
   "zone.imttech.marker.size": "Corner %s set: %s (%s blocks). Sneak + right-click to add it to your zone.",

@@ -93,4 +93,25 @@ final class OsDraw {
         }
         return ".." + cut;
     }
+
+    /**
+     * Verdeelt tekst over regels van hooguit {@code width} pixels, op de spaties (hoofdstuk 116, jouw notitie: de tekst
+     * van de Autoscan "komt uit de GUI"). Zijn het er meer dan {@code maxLines}, dan houden we er zoveel en krijgt de
+     * laatste ".." erachter: zo blijft een lange zin altijd binnen zijn vak.
+     */
+    static java.util.List<String> wrap(Font font, String text, int width, int maxLines) {
+        java.util.List<String> lines = new java.util.ArrayList<>();
+        for (net.minecraft.network.chat.FormattedText part
+                : font.getSplitter().splitLines(text, Math.max(1, width), net.minecraft.network.chat.Style.EMPTY)) {
+            lines.add(part.getString().strip());
+        }
+        if (lines.size() <= Math.max(1, maxLines)) {
+            return lines;
+        }
+        int keep = Math.max(1, maxLines);
+        java.util.List<String> kept = new java.util.ArrayList<>(lines.subList(0, keep));
+        // De volgende regel er even achter plakken: dat past nooit, dus fitRight knipt hem af en zet ".." erachter.
+        kept.set(keep - 1, fitRight(font, kept.get(keep - 1) + " " + lines.get(keep), width));
+        return kept;
+    }
 }

@@ -1046,10 +1046,42 @@ public class SecurityOsScreen extends Screen {
         // Helemaal rechts de knop Shut down (19 oktober); een melding van de server staat ervoor.
         OsDraw.button(g, font, shutDownX(), height - TASKBAR_H + 2, SHUT_DOWN, true, HudStyle.RED);
         if (!notice.isEmpty() && Util.getMillis() < noticeUntil) {
-            g.drawString(font, notice, shutDownX() - font.width(notice) - 8, height - TASKBAR_H + 5,
-                    HudStyle.argb(255, noticeError ? HudStyle.RED : HudStyle.GREEN), false);
+            renderNotice(g, tx);
         }
         g.pose().popPose();
+    }
+
+    /** Zoveel regels heeft een lange melding hooguit. */
+    private static final int NOTICE_MAX_LINES = 3;
+
+    /**
+     * De melding van de server (hoofdstuk 116, jouw notitie: "deze tekst komt uit de GUI"). Past hij in de taakbalk
+     * tussen de vensterknoppen ({@code taskbarEnd}) en Shut down, dan staat hij daar, zoals altijd. Anders komt hij in een
+     * kader óver de taakbalk (links van Shut down; de vensterknoppen zijn dan even bedekt), en is hij nog te lang, dan
+     * over hooguit drie regels die naar boven groeien: zo loopt een lange melding nooit meer van je scherm af, en bedekt
+     * hij je vensters zo weinig mogelijk (de knoppen onderaan de app Zone blijven te zien).
+     */
+    private void renderNotice(GuiGraphics g, int taskbarEnd) {
+        int colour = HudStyle.argb(255, noticeError ? HudStyle.RED : HudStyle.GREEN);
+        int right = shutDownX() - 8;
+        if (font.width(notice) <= right - taskbarEnd - 4) {
+            g.drawString(font, notice, right - font.width(notice), height - TASKBAR_H + 5, colour, false);
+            return;
+        }
+        List<String> lines = OsDraw.wrap(font, notice, Math.max(40, right - 14), NOTICE_MAX_LINES);
+        int textW = 0;
+        for (String line : lines) {
+            textW = Math.max(textW, font.width(line));
+        }
+        int x1 = right + 4;
+        int x0 = Math.max(2, x1 - textW - 10);
+        int y1 = height - 2;
+        int y0 = Math.min(height - TASKBAR_H + 2, y1 - lines.size() * 10 - 3);
+        g.fill(x0, y0, x1, y1, HudStyle.argb(250, BAR));
+        HudStyle.brackets(g, x0, y0, x1, y1, 4, colour);
+        for (int i = 0; i < lines.size(); i++) {
+            g.drawString(font, lines.get(i), x0 + 5, y1 - 2 - (lines.size() - i) * 10 + 1, colour, false);
+        }
     }
 
     private void renderWindow(GuiGraphics g, Win win, int mouseX, int mouseY, float partialTick) {

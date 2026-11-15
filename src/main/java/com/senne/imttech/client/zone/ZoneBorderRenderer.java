@@ -122,6 +122,8 @@ public final class ZoneBorderRenderer {
         if (mc.level == null || mc.player == null) {
             return;
         }
+        // Hoofdstuk 116: de pings van de Autoscan (waar je kamers openliggen) zie je altijd, ook zonder bril.
+        ZoneScanMarkRenderer.render(event, mc);
         // De rand (en de nummers van de kubussen) zie je alleen door je eigen bril, net als verborgen
         // kabels. Wat je met de Zone Marker aanklikt (de oranje doos) zie je ook zonder bril: anders
         // kon je zonder bril niet tekenen.
@@ -354,35 +356,41 @@ public final class ZoneBorderRenderer {
     /** Een dun kader (twaalf balkjes) om de doos van (x0, y0, z0) tot (x1, y1, z1). */
     public static void outline(Matrix4f m, VertexConsumer out, double x0, double y0, double z0, double x1, double y1, double z1,
                                int rgb, float alpha) {
+        outline(m, out, x0, y0, z0, x1, y1, z1, rgb, alpha, LINE);
+    }
+
+    /** Hetzelfde kader, met balkjes van {@code line} blokken dik (hoofdstuk 116: de ping houdt zo een vaste dikte op je scherm). */
+    public static void outline(Matrix4f m, VertexConsumer out, double x0, double y0, double z0, double x1, double y1, double z1,
+                               int rgb, float alpha, double line) {
         double[] xs = {x0, x1};
         double[] ys = {y0, y1};
         double[] zs = {z0, z1};
         for (double y : ys) {
             for (double z : zs) {
-                bar(m, out, x0, y, z, x1, y, z, rgb, alpha);
+                bar(m, out, x0, y, z, x1, y, z, rgb, alpha, line);
             }
         }
         for (double x : xs) {
             for (double z : zs) {
-                bar(m, out, x, y0, z, x, y1, z, rgb, alpha);
+                bar(m, out, x, y0, z, x, y1, z, rgb, alpha, line);
             }
         }
         for (double x : xs) {
             for (double y : ys) {
-                bar(m, out, x, y, z0, x, y, z1, rgb, alpha);
+                bar(m, out, x, y, z0, x, y, z1, rgb, alpha, line);
             }
         }
     }
 
-    /** Een dun balkje van (x0, y0, z0) naar (x1, y1, z1), LINE dik, met zes kanten. */
+    /** Een dun balkje van (x0, y0, z0) naar (x1, y1, z1), {@code line} dik, met zes kanten. */
     private static void bar(Matrix4f m, VertexConsumer out, double x0, double y0, double z0, double x1, double y1, double z1,
-                            int rgb, float alpha) {
-        float ax = (float) (Math.min(x0, x1) - LINE);
-        float ay = (float) (Math.min(y0, y1) - LINE);
-        float az = (float) (Math.min(z0, z1) - LINE);
-        float bx = (float) (Math.max(x0, x1) + LINE);
-        float by = (float) (Math.max(y0, y1) + LINE);
-        float bz = (float) (Math.max(z0, z1) + LINE);
+                            int rgb, float alpha, double line) {
+        float ax = (float) (Math.min(x0, x1) - line);
+        float ay = (float) (Math.min(y0, y1) - line);
+        float az = (float) (Math.min(z0, z1) - line);
+        float bx = (float) (Math.max(x0, x1) + line);
+        float by = (float) (Math.max(y0, y1) + line);
+        float bz = (float) (Math.max(z0, z1) + line);
         int r = (rgb >> 16) & 0xFF;
         int g = (rgb >> 8) & 0xFF;
         int b = rgb & 0xFF;

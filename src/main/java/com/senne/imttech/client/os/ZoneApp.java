@@ -70,6 +70,8 @@ final class ZoneApp {
     /** De knop die "Sure?" vraagt, en tot wanneer. */
     private String asking = "";
     private long askingUntil;
+    /** Hoofdstuk 116: het verslag van de Autoscan dat je wegklikte (het volgnummer; een nieuw verslag staat er weer). */
+    private long dismissedReport = -1;
     /** Waar de kaart stond bij het tekenen, en welk stuk wereld hij toont (voor een klik erop). */
     private int mapX;
     private int mapY;
@@ -148,18 +150,38 @@ final class ZoneApp {
         // De Autoscan (hoofdstuk 45): de kamers rond de kern (of rond jou) plus de muur, of een doos om het gebouw.
         String scan = "Autoscan";
         int scanW = OsDraw.buttonWidth(font, scan);
-        button(g, font, right - addW - 4 - scanW, y, scan, true, HudStyle.GREEN, () -> screen.send("zone_scan", new CompoundTag()));
+        int scanX = right - addW - 4 - scanW;
+        button(g, font, scanX, y, scan, true, HudStyle.GREEN, () -> screen.send("zone_scan", new CompoundTag()));
+        CompoundTag report = report(zone);
         if (boxes.isEmpty()) {
             g.drawString(font, "No boxes yet.", px, y + 2, HudStyle.argb(255, HudStyle.WHITE), false);
-            hint(g, font, "Autoscan: the closed rooms around the core (or", px, y + ROW + 2);
-            hint(g, font, "you) + 3 blocks of wall; an open base gets a box.", px, y + 2 * ROW + 2);
-            hint(g, font, "Or New box, or two corners with a Zone Marker", px, y + 3 * ROW + 2);
-            hint(g, font, "(sneak + right-click adds it; without corners", px, y + 4 * ROW + 2);
-            hint(g, font, "sneak + right-click scans that room).", px, y + 5 * ROW + 2);
-            hint(g, font, "Reach: " + zone.getInt("reach") + " blocks from the core.", px, y + 7 * ROW + 2);
+            // De uitleg, afgebroken zodat hij in het venster past (hoofdstuk 116: hij liep er rechts een stukje uit).
+            int hy = y + ROW + 2;
+            String help = "Autoscan: the closed rooms around the core (or you) + " + zone.getInt("margin")
+                    + " blocks of wall; an open base gets a box. Or New box, or two corners with a Zone Marker (sneak +"
+                    + " right-click adds it; without corners sneak + right-click scans that room).";
+            for (String line : OsDraw.wrap(font, help, right - px, 7)) {
+                hint(g, font, line, px, hy);
+                hy += 10;
+            }
+            for (String line : OsDraw.wrap(font, "Reach: " + zone.getInt("reach") + " blocks from the core.", right - px, 2)) {
+                hint(g, font, line, px, hy + 4);
+                hy += 10;
+            }
+            // Hoofdstuk 116: wat je laatste Autoscan zag, onder de uitleg, met de knoppen eronder.
+            int ry = hy + 12;
+            if (report != null) {
+                ry += renderReport(g, font, report, px, right, ry) + 1;
+            }
+            reportButtons(g, font, zone, report, px, ry);
             return;
         }
         String which = "Box " + (selected + 1) + " of " + boxes.size();
+        // Past het niet voor de knop Autoscan (box 10 of meer), dan korter: anders lag ">" over Autoscan heen.
+        int arrows = OsDraw.buttonWidth(font, "<") + 2 + OsDraw.buttonWidth(font, ">");
+        if (px + font.width(which) + 5 + arrows > scanX - 4) {
+            which = (selected + 1) + "/" + boxes.size();
+        }
         g.drawString(font, which, px, y + 2, HudStyle.argb(255, HudStyle.CYAN), false);
         int bx = px + font.width(which) + 5;
         bx += button(g, font, bx, y, "<", boxes.size() > 1, HudStyle.CYAN, () -> select(selected - 1, boxes.size())) + 2;
@@ -193,17 +215,105 @@ final class ZoneApp {
             }
             y += ROW;
         }
-        hint(g, font, "+ moves a side 1 block out, - in.", px, y + 1);
-        hint(g, font, "Or type the numbers and press Enter.", px, y + 11);
-        y += 23;
+        // Hoofdstuk 116: heeft je laatste Autoscan iets te melden, dan staat dat hier in plaats van de uitleg over + en -.
+        if (report == null) {
+            hint(g, font, "+ moves a side 1 block out, - in.", px, y + 1);
+            hint(g, font, "Or type the numbers and press Enter.", px, y + 11);
+            y += 23;
+        } else {
+            y += 2 + renderReport(g, font, report, px, right, y + 1);
+        }
         String delete = asking("delete:" + selected) ? "Sure?" : "Delete box";
-        button(g, font, px, y, delete, true, HudStyle.RED, () -> {
+        int deleteW = button(g, font, px, y, delete, true, HudStyle.RED, () -> {
             if (confirm("delete:" + selected)) {
                 CompoundTag args = new CompoundTag();
                 args.putInt("i", selected);
                 screen.send("zone_delete", args);
             }
         });
+        reportButtons(g, font, zone, report, px + deleteW + 4, y);
+    }
+
+    // ================================================================ Wat de Autoscan zag (hoofdstuk 116)
+
+    /** Het verslag van je laatste Autoscan (van de server), of null als er geen is of je het wegklikte. */
+    private @Nullable CompoundTag report(CompoundTag zone) {
+        if (!zone.contains("scan")) {
+            return null;
+        }
+        CompoundTag scan = zone.getCompound("scan");
+        return scan.getLong("id") == dismissedReport ? null : scan;
+    }
+
+    /** De pings uit het verslag: elk vier getallen (x, y, z, en wat voor ping, zie ZoneScan.Kind). */
+    private static List<int[]> marks(@Nullable CompoundTag report) {
+        List<int[]> marks = new ArrayList<>();
+        if (report != null) {
+            for (Tag tag : report.getList("marks", Tag.TAG_INT_ARRAY)) {
+                int[] numbers = ((IntArrayTag) tag).getAsIntArray();
+                if (numbers.length == 4) {
+                    marks.add(numbers);
+                }
+            }
+        }
+        return marks;
+    }
+
+    /** De kleur van een ping, net als in de wereld: roze = grot, rood = naar buiten, paars = de uitgang van een grot. */
+    private static int markColour(int kind) {
+        com.senne.imttech.security.zone.ZoneScan.Kind[] kinds = com.senne.imttech.security.zone.ZoneScan.Kind.values();
+        return com.senne.imttech.client.zone.ZoneScanMarkRenderer.colour(kinds[Math.max(0, Math.min(kinds.length - 1, kind))]);
+    }
+
+    /**
+     * Wat je laatste Autoscan zag (jouw notitie: de tekst van de Autoscan kwam buiten het venster): een kopje in de kleur
+     * van de ping, daarnaast waar de opening is, en de uitleg over hooguit twee regels die altijd binnen het venster
+     * blijven. Het kruisje rechts haalt het weg. Geeft terug hoe hoog het werd (de knoppen zet de app er zelf bij, zie
+     * {@link #reportButtons}).
+     */
+    private int renderReport(GuiGraphics g, Font font, CompoundTag report, int px, int right, int y) {
+        List<int[]> marks = marks(report);
+        List<String> lines = OsDraw.wrap(font, report.getString("text"), right - px, 2);
+        int colour = marks.isEmpty() ? HudStyle.ORANGE : markColour(marks.getFirst()[3]);
+        String title = report.getString("title").isEmpty() ? "AUTOSCAN" : report.getString("title");
+        int closeX = right - 8;
+        g.drawString(font, OsDraw.fitRight(font, title, closeX - 4 - px), px, y, HudStyle.argb(255, colour), false);
+        if (!marks.isEmpty()) {
+            // Waar de (eerste) opening is, zonder komma's: zo past het ook met grote getallen naast het kopje.
+            int[] first = marks.getFirst();
+            int wx = px + font.width(title) + 6;
+            String where = OsDraw.fitRight(font, first[0] + " " + first[1] + " " + first[2], closeX - 6 - wx);
+            if (closeX - 6 - wx > 10) {
+                g.drawString(font, where, wx, y, HudStyle.argb(255, OsDraw.GREY), false);
+            }
+        }
+        g.drawString(font, "x", closeX + 1, y, HudStyle.argb(255, HudStyle.RED), false);
+        long id = report.getLong("id");
+        hits.add(new Hit(closeX - 1, y - 2, 9, 11, () -> dismissedReport = id));
+        for (int i = 0; i < lines.size(); i++) {
+            g.drawString(font, lines.get(i), px, y + 11 + i * 10, HudStyle.argb(255, HudStyle.WHITE), false);
+        }
+        return 11 + lines.size() * 10;
+    }
+
+    /**
+     * De knoppen van de Autoscan op een rij vanaf {@code x}: "Include cave" (jouw wens: "bevestigen dat cave er bij moet":
+     * dezelfde scan, met de grot erbij) of "Scan bigger" als het verslag dat aanbiedt, en Undo (je laatste Autoscan
+     * terugdraaien) zolang dat kan. Naast "Delete box" is er net plaats voor beide.
+     */
+    private void reportButtons(GuiGraphics g, Font font, CompoundTag zone, @Nullable CompoundTag report, int x, int y) {
+        String offer = report == null ? "" : report.getString("offer");
+        if (!offer.isEmpty()) {
+            x += button(g, font, x, y, offer, true, HudStyle.ORANGE, () -> {
+                CompoundTag args = new CompoundTag();
+                args.putBoolean("cave", true);
+                screen.send("zone_scan", args);
+            }) + 4;
+        }
+        if (zone.getBoolean("undo")) {
+            button(g, font, x, y, offer.isEmpty() ? "Undo scan" : "Undo", true, HudStyle.CYAN,
+                    () -> screen.send("zone_undo", new CompoundTag()));
+        }
     }
 
     /** De kaart van bovenaf: de kern, de kubussen en jij (zie {@link #fitView} voor hoe ver hij kijkt). */
@@ -215,7 +325,8 @@ final class ZoneApp {
         if (low.length != 3 || high.length != 3 || core.length != 3) {
             return;
         }
-        int span = fitView(low, high, core, boxes, zone.getIntArray("player"));
+        List<int[]> marks = marks(report(zone));
+        int span = fitView(low, high, core, boxes, zone.getIntArray("player"), marks);
         scale = (mapSize - 4) / (float) span;
         g.enableScissor(mapX + 1, mapY + 1, mapX + mapSize - 1, mapY + mapSize - 1);
         // Een fijn raster: om de 10 blokken, of om de 50 als de kaart ver uitgezoomd is.
@@ -253,6 +364,17 @@ final class ZoneApp {
                 HudStyle.smallText(g, font, String.valueOf(i + 1), x0 + 4, z0 + 2, edge);
             }
         }
+        // Hoofdstuk 116: de pings van de Autoscan als klein kruisje dat zacht klopt (waar je kamers openliggen).
+        int beat = 150 + (int) (105 * Math.sin(Util.getMillis() / 160.0));
+        for (int[] mark : marks) {
+            int mx = mapPx(mark[0]) + Math.max(0, Math.round(scale / 2) - 1);
+            int mz = mapPz(mark[2]) + Math.max(0, Math.round(scale / 2) - 1);
+            int colour = HudStyle.argb(beat, markColour(mark[3]));
+            for (int k = -2; k <= 2; k++) {
+                g.fill(mx + k, mz + k, mx + k + 1, mz + k + 1, colour);
+                g.fill(mx + k, mz - k, mx + k + 1, mz - k + 1, colour);
+            }
+        }
         int cx = mapPx(core[0]);
         int cz = mapPz(core[2]);
         g.fill(cx - 1, cz - 1, cx + 2, cz + 2, HudStyle.argb(255, HudStyle.WHITE));
@@ -270,7 +392,7 @@ final class ZoneApp {
      * met MARGIN blokken rand, maar nooit verder dan de zone mag komen ({@code low} tot {@code high}).
      * Zet {@link #lowX} en {@link #lowZ} (de hoek linksboven) en geeft terug hoeveel blokken breed hij is.
      */
-    private int fitView(int[] low, int[] high, int[] core, List<int[]> boxes, int[] player) {
+    private int fitView(int[] low, int[] high, int[] core, List<int[]> boxes, int[] player, List<int[]> marks) {
         int x0 = core[0] - MIN_VIEW;
         int x1 = core[0] + MIN_VIEW;
         int z0 = core[2] - MIN_VIEW;
@@ -280,6 +402,13 @@ final class ZoneApp {
             x1 = Math.max(x1, box[3] + MARGIN);
             z0 = Math.min(z0, box[2] - MARGIN);
             z1 = Math.max(z1, box[5] + MARGIN);
+        }
+        // De pings van de Autoscan horen ook op de kaart (hoofdstuk 116).
+        for (int[] mark : marks) {
+            x0 = Math.min(x0, mark[0] - MARGIN);
+            x1 = Math.max(x1, mark[0] + MARGIN);
+            z0 = Math.min(z0, mark[2] - MARGIN);
+            z1 = Math.max(z1, mark[2] + MARGIN);
         }
         if (player.length == 3) {
             x0 = Math.min(x0, player[0] - MARGIN);

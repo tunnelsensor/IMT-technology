@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 625 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 630 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -9114,6 +9114,80 @@ Jouw antwoorden op mijn vier vragen:
   melding en `car.blocked` in plaats van een fout in de code (je kunt de arm er later nog op zetten); plaatsen boven en
   onder zich (`place_up`, `place_down`) kan nog zonder arm, want je vroeg het voor minen; Arm off alleen van dichtbij,
   en dan stopt de auto; bestaande auto's houden hun arm. Versie **2.16**.
+
+### 116. De Autoscan: een ping bij de opening, de grot erbij nemen, en geen tekst meer buiten je scherm (15 november)
+
+Jouw wens: "de autoscan zegt dat er een moglijkse cave is, deze tekst komt uit de GUI dus dat moet gefixt worden, ook wil
+ik dat je een ping krijgt van waar die autoscan dat ziet. De 'er is een cave dus autoscan werkt niet' moet je kunnen
+overriden door te zeggen bevestigen dat cave er bij moet of zo. Als dit lag zou veroorzaken door dat het een giga cave is
+mag het toch niet"
+
+Wat ik vond:
+- De melding van de server staat onderaan de desktop, rechts tegen Shut down aan, en werd nooit afgebroken. "Autoscan:
+  This is not a closed room (close the doors, or click a block of your building)" is 440 pixels breed; bij GUI-schaal 4
+  op 1080p is je scherm 480 breed en begint Shut down op 418, dus de zin begon 30 pixels links buiten je scherm. Ook de
+  uitleg in de app Zone zelf liep er rechts 20 tot 45 pixels uit.
+- "Close the doors" klopte niet eens: een deur (ook een open deur) houdt de scan tegen; een gat, een open hek of een
+  fakkel in een gat niet.
+- De scan laadde stukken wereld als hij er tegenaan liep (`ServerLevel.getBlockState` laadt een stuk, of maakt het zelfs),
+  en het samenvoegen van kubussen duurde met duizenden kubussen (een grillige grot) minutenlang. Een grot erbij nemen zou
+  de server dus laten vastlopen.
+
+- [x] **De tekst past** (`SecurityOsScreen.renderNotice`, `OsDraw.wrap`): een melding die niet in de taakbalk past, staat
+      in een kader óver de taakbalk, over hooguit drie regels; dat geldt voor alle apps. De zinnen van de Autoscan zijn
+      korter ("Autoscan (rooms): 2 boxes added · zone: 3 boxes, 1,234 blocks"), zodat ze ook in de actiebalk van de Zone
+      Marker passen. De uitleg in de app Zone wordt afgebroken, en bij box 10 of meer staat er "10/14", zodat ">" niet meer
+      over de knop Autoscan ligt.
+- [x] **De ping** (`ZoneScan.leak`, `ZoneScanMarkRenderer`): is de kamer niet dicht, dan volgt de scan de kortste weg van
+      het begin naar waar het vullen ophield, en kijkt per blok of het nog "binnen" is: in minstens vier van de zes
+      richtingen eerst een gebouwd blok. Natuursteen, aarde en erts tellen niet als muur; obsidiaan, stammen, glowstone,
+      terracotta en zandsteen wel (de nieuwe tag `imttech:terrain`). De opening is het laatste blok binnen, vlak voor de
+      weg echt naar buiten gaat (een gat in je muur heeft muur aan vier kanten; het eerste blok van de grot erachter niet).
+      Daar komt een ping: een tekstje dat je door muren heen ziet ("Opening: cave · 12 m"), dichtbij een dun kader dat
+      zacht klopt, en een stippellijn van de weg die de scan nam (zo zie je ook waar het lek heen gaat als de scan de
+      opening niet precies vond). Roze = een grot, rood = naar buiten, paars = waar een grot zelf de open lucht raakt. Ook
+      zonder bril, 5 minuten lang (`zoneScanPingSeconds`), en in de app Zone als kruisje op de kaart met onderaan een vakje
+      dat zegt wat er is.
+- [x] **De grot erbij nemen** (jouw "bevestigen dat cave er bij moet"): komt de opening in een grot uit, dan staat in de
+      app de knop **Include cave**; met de Zone Marker **kijk je naar de ping** (of klik je ernaast) en doe je nog eens
+      sluipen + rechtsklik. Dat is dezelfde scan vanaf hetzelfde begin, met een hogere grens (`zoneScanCaveMax`, 150.000
+      blokken), waarbij de open lucht en de rand van het bereik van je kern gewoon de grens van de grot zijn. Zijn je
+      kamers gewoon heel groot (meer dan 60.000 blokken, zonder grot), dan heet de knop **Scan bigger**.
+- [x] **Een giga cave mag niet**: meer dan 150.000 blokken, of een scan die langer dan 0,1 seconde zou duren
+      (`zoneScanCaveMillis`): dan zegt hij "The cave is too big" en blijft de ping staan, zodat je de opening kunt
+      dichtmaken. Het vullen laadt nooit meer een stuk wereld (`ZoneScan.Reader`, met `getChunkNow`) en stopt meteen bij
+      de open lucht; kubussen maken gaat bij veel blokken op een grover raster, en het samenvoegen is snel (elke kubus
+      onthoudt zijn goedkoopste partner). Een "Include cave" kan maar één keer per aanbod, en niet twee keer binnen 2
+      seconden.
+- [x] **Undo scan**: 5 minuten lang zet de app je zone terug zoals hij voor je laatste Autoscan was (zolang je de zone
+      daarna niet zelf veranderde). Een grote grot erbij nemen is anders lastig terug te draaien.
+- [x] **Wat bleef zoals het was**: sta je bij je gebouw (een gebouwd blok naast je) en is de kamer niet dicht, dan krijg je
+      zoals vroeger meteen een doos om het gebouw; de ping en de knop voor de grot komen erbij. Een open basis (ook in de
+      Nether, waar de open lucht nooit te zien is) krijgt dus nog steeds zijn doos.
+- [x] Op verzoek van hoofdstuk 117 (kernen dicht bij elkaar): raakt een gevonden kubus de zone van een ander, dan probeert
+      de scan de halve marge en daarna geen marge, en samenvoegen maakt nooit een kubus die een andere zone raakt.
+- [x] **Tests** (5 nieuw, in de bestaande batch "zones"): `autoscan_points_at_the_hole_into_a_cave` (een bunker met een
+      gat naar een grot: de ping staat precies op het gat; met de grot erbij 1278 blokken; boven de grens "too big"; gat
+      dicht = een gewone bunker), `autoscan_shows_the_door_to_the_open_sky` (een huisje zonder dak erboven: de rode ping in
+      de deuropening; vanaf de vloer de doos om het huisje), `autoscan_cave_on_the_desktop_and_with_the_marker` (de knoppen
+      Autoscan, Include cave en Undo; met de marker het aanbod, een ingehouden klik telt niet, een klik bij de ping wel),
+      `autoscan_never_loads_the_world` (een scan ver weg zegt "not loaded" en laadt niets) en
+      `zone_boxes_stay_quick_for_a_big_cave` (een grillige grot van 150.000 blokken wordt hooguit 48 kubussen die alles
+      dekken). De bestaande autoscan-test is ongewijzigd groen.
+- [x] Showcase: nieuw onderdeel **Zone autoscan cave**; de rondleiding maakt `zs03` tot `zs06` (de ping, het vakje in de
+      app, na Include cave, de zone om bunker en grot). LEESMIJ (Autoscan) en de tooltip van de Zone Marker.
+
+Mijn invulling (verander ik op jouw woord):
+- **Bevestigen met de Zone Marker** is "kijk naar de ping en doe sluipen + rechtsklik", niet zomaar "nog eens klikken": een
+  klik die je iets te lang inhoudt, is na 0,2 seconde vanzelf een tweede klik, en dan kreeg je per ongeluk een hele grot
+  erbij. Een andere klik is gewoon een nieuwe scan.
+- De grenzen: **150.000 blokken** en **0,1 seconde** voor een giga cave, **5 minuten** voor de ping, het aanbod en Undo
+  (lang genoeg om van de desktop naar het gat te lopen en terug). Alles staat onder `[security]`.
+- De ping zie je **zonder bril** (zoals de oranje doos van de marker) en **door muren heen** (anders vind je een gat
+  achter een muur niet).
+- Via **SSH** (of de telefoon) ziet de scan alleen wat geladen is, het stuk rond je kern; vroeger laadde hij de rest erbij,
+  met kans op haperen. Dan zegt hij dat een deel niet geladen is.
+- **Versie 2.17** (nieuw gedrag van de Autoscan; netwerkversie 45, dus spelers hebben de nieuwe jar nodig).
 
 ## Nog nooit in het spel bekeken
 

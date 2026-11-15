@@ -374,6 +374,17 @@ public final class ClientPayloadHandlers {
         com.senne.imttech.client.zone.ZoneClientState.set(payload.zones());
     }
 
+    /**
+     * Hoofdstuk 116: de pings van jouw Autoscan (waar je kamers openliggen) en de weg die de scan nam, een paar minuten in
+     * de wereld te zien, ook zonder bril. Een lege lijst haalt de oude weg. Bij nieuwe pings klinkt het ping-geluidje.
+     */
+    public static void onZoneScanMarks(com.senne.imttech.network.ZoneScanMarksPayload payload, IPayloadContext context) {
+        com.senne.imttech.client.zone.ZoneClientState.setScanMarks(payload);
+        if (!payload.marks().isEmpty()) {
+            ImtClientEvents.playUi(ModSounds.COMMS_PING.get(), 1.2f);
+        }
+    }
+
     /** Hoofdstuk 99: van wie je de naam niet ziet (ze staan in een zone waar jij niet mag bouwen). */
     public static void onHiddenNames(com.senne.imttech.network.HiddenNamesPayload payload, IPayloadContext context) {
         com.senne.imttech.client.zone.HiddenNames.set(payload.players());
