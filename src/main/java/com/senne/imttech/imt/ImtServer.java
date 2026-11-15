@@ -491,6 +491,9 @@ public final class ImtServer {
     private static void datacenterSecond(ServerPlayer player, ItemStack glasses) {
         if (!DatacenterGlasses.linked(player)) {
             stopWhatNeedsTheDatacenter(player);
+            // Hoofdstuk 122: ook het brein rekent daar niet meer (een antwoord dat nog liep, telde anders tot het klaar was
+            // mee op het datacenter waar je net je toegang verloor).
+            com.senne.imttech.logic.DatacenterBrain.forget(player.getUUID());
         }
         reportStanding(player, glasses);
     }
@@ -528,7 +531,8 @@ public final class ImtServer {
 
     /**
      * Hoofdstuk 106: je datacenter is weg of draait niet meer. Wat erop doorliep, stopt: je navigatie, je hacks en je
-     * spionagedrone. (De scans blijven "aan" staan in je bril, maar tonen niets tot je datacenter er weer is.)
+     * spionagedrone. (De scans blijven "aan" staan in je bril, maar tonen niets tot je datacenter er weer is.) Sinds
+     * hoofdstuk 122 ook als je je bril loskoppelde, of als je op die kern niet meer de eigenaar bent of vertrouwd.
      */
     private static void stopWhatNeedsTheDatacenter(ServerPlayer player) {
         boolean stopped = false;
@@ -1318,6 +1322,8 @@ public final class ImtServer {
             }
             threatIds.addAll(ImtThreats.incomingProjectiles(player, radius));
         }
+        // Hoofdstuk 122: met welke kern je bril verbonden is (voor het G-menu, de HUD en het scherm Datacenter).
+        String[] uplink = DatacenterGlasses.uplinkLabel(player);
         ModNetwork.sendTo(player, new ImtStatusPayload(
                 swarm, guards,
                 cooldowns,
@@ -1329,7 +1335,9 @@ public final class ImtServer {
                 com.senne.imttech.logic.DatacenterBrain.delayFor(player),
                 com.senne.imttech.logic.DatacenterBrain.sourceFor(player),
                 link.ordinal(),
-                DatacenterGlasses.loadPercent(player)));
+                DatacenterGlasses.loadPercent(player),
+                uplink[0],
+                uplink[1]));
     }
 
     public static void send(ServerPlayer player, Component message, ImtMessagePayload.Level level) {

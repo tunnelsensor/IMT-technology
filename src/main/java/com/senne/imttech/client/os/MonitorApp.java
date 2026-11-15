@@ -558,6 +558,17 @@ final class MonitorApp {
         int py = cy + 42;
         g.drawString(font, "RUNNING", x, py, HudStyle.argb(255, HudStyle.CYAN), false);
         py += 12;
+        // Hoofdstuk 122: wiens bril aan deze serverruimte hangt (verbonden met het IP en het wachtwoord van deze kern, en
+        // de eigenaar of vertrouwd). Ook als de server niet draait: dan weet je wie er nu zonder zit.
+        List<String> linked = new ArrayList<>();
+        for (Tag element : server.getList("glassesLinked", Tag.TAG_STRING)) {
+            linked.add(element.getAsString());
+        }
+        if (!linked.isEmpty()) {
+            small(g, font, OsDraw.fitRight(font, "Glasses: " + String.join(", ", linked), (int) (w / 0.75f)), x, py,
+                    HudStyle.argb(255, BRAIN));
+            py += 9;
+        }
         if (!online) {
             small(g, font, server.getString("problem"), x, py, HudStyle.argb(255, HudStyle.ORANGE));
             return;

@@ -28,10 +28,14 @@ import net.minecraft.world.phys.Vec3;
  * @param link         hoofdstuk 106: hoe de bril met zijn datacenter verbonden is (het nummer van
  *                     DatacenterGlasses.Link: 0 = geen nodig, 1 = verbonden, 2 = geen datacenter, 3 = het draait niet)
  * @param linkLoad     hoofdstuk 106: hoeveel procent van de rekenkracht van dat datacenter de brillen nu gebruiken
+ * @param uplinkHost   hoofdstuk 122: de naam van de kern waarmee je je bril verbond ("" = met geen enkele); sinds dan ook
+ *                     link 4 = niet verbonden en 5 = geen toegang (je bent daar niet meer de eigenaar of vertrouwd)
+ * @param uplinkIp     hoofdstuk 122: het IP van die kern ("" = met geen enkele)
  */
 public record ImtStatusPayload(int swarmDrones, int guardDrones, List<Integer> cooldowns, List<Integer> marked,
                                  Optional<Vec3> strikeTarget, int strikeTicks, int hackedCount,
-                                 List<Integer> threats, int brainDelay, String brainSource, int link, int linkLoad)
+                                 List<Integer> threats, int brainDelay, String brainSource, int link, int linkLoad,
+                                 String uplinkHost, String uplinkIp)
         implements CustomPacketPayload {
     public static final Type<ImtStatusPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "imt_status"));
 
@@ -55,6 +59,8 @@ public record ImtStatusPayload(int swarmDrones, int guardDrones, List<Integer> c
                     ByteBufCodecs.stringUtf8(64).encode(buffer, payload.brainSource());
                     ByteBufCodecs.VAR_INT.encode(buffer, payload.link());
                     ByteBufCodecs.VAR_INT.encode(buffer, payload.linkLoad());
+                    ByteBufCodecs.stringUtf8(64).encode(buffer, payload.uplinkHost());
+                    ByteBufCodecs.stringUtf8(32).encode(buffer, payload.uplinkIp());
                 }
 
                 @Override
@@ -71,8 +77,10 @@ public record ImtStatusPayload(int swarmDrones, int guardDrones, List<Integer> c
                     String brainSource = ByteBufCodecs.stringUtf8(64).decode(buffer);
                     int link = ByteBufCodecs.VAR_INT.decode(buffer);
                     int linkLoad = ByteBufCodecs.VAR_INT.decode(buffer);
+                    String uplinkHost = ByteBufCodecs.stringUtf8(64).decode(buffer);
+                    String uplinkIp = ByteBufCodecs.stringUtf8(32).decode(buffer);
                     return new ImtStatusPayload(swarm, guards, cooldowns, marked, strikeTarget, strikeTicks,
-                            hacked, threats, brainDelay, brainSource, link, linkLoad);
+                            hacked, threats, brainDelay, brainSource, link, linkLoad, uplinkHost, uplinkIp);
                 }
             };
 

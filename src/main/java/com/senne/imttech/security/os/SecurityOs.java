@@ -383,12 +383,13 @@ public final class SecurityOs {
     }
 
     /**
-     * Het IP en het wachtwoord nakijken, voor de laptop en (hoofdstuk 50) de telefoon: de kern met dat IP opzoeken (in
-     * dezelfde dimensie, met stroom en een wachtwoord), de wachttijd na te veel foute wachtwoorden, en het wachtwoord
-     * zelf (fout: tellen, de eigenaar waarschuwen, en na [security] passwordAttempts even wachten). Geeft de kern, of
-     * null nadat {@code reply} zei waarom niet.
+     * Het IP en het wachtwoord nakijken, voor de laptop, (hoofdstuk 50) de telefoon en (hoofdstuk 122) de I.M.T-bril die
+     * je met een datacenter verbindt (logic/GlassesUplink): de kern met dat IP opzoeken (in dezelfde dimensie, met stroom
+     * en een wachtwoord), de wachttijd na te veel foute wachtwoorden, en het wachtwoord zelf (fout: tellen, de eigenaar
+     * waarschuwen, en na [security] passwordAttempts even wachten). Geeft de kern, of null nadat {@code reply} zei waarom
+     * niet.
      */
-    static @Nullable SecurityCoreBlockEntity connect(ServerPlayer player, String ip, String password, java.util.function.Consumer<String> reply) {
+    public static @Nullable SecurityCoreBlockEntity connect(ServerPlayer player, String ip, String password, java.util.function.Consumer<String> reply) {
         ServerLevel here = player.serverLevel();
         String address = ip.strip();
         long now = here.getGameTime();

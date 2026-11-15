@@ -1016,6 +1016,66 @@ public final class VisualCheck {
             }
             t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.COMBAT);
             t.close(0);
+            // Hoofdstuk 122: je bril verbinden met een kern. Een kern met een rack (een CPU, RAM en een SSD), op stroom en
+            // met een wachtwoord. Eerst het G-menu (Tech: Datacenter, CONNECT), dan het scherm: een fout wachtwoord, dan het
+            // goede; daarna staat de naam van de kern onder Datacenter, en in het scherm "On ... : online".
+            BlockPos uplinkCore = new BlockPos(8, -60, 4);
+            BlockPos uplinkRack = new BlockPos(10, -60, 4);
+            String[] uplinkIp = {""};
+            t.onServer(0, player -> {
+                ServerLevel level = player.serverLevel();
+                level.setBlockAndUpdate(uplinkCore, ModBlocks.SECURITY_CORE.get().defaultBlockState());
+                if (level.getBlockEntity(uplinkCore) instanceof com.senne.imttech.security.SecurityCoreBlockEntity be) {
+                    be.setOwner(player);
+                    be.ensureSystem(level);
+                    be.setPassword("bitech1", level.random);
+                    uplinkIp[0] = be.ip();
+                }
+                for (BlockPos generator : new BlockPos[] {uplinkCore.below(), uplinkRack.below()}) {
+                    level.setBlockAndUpdate(generator, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+                    if (level.getBlockEntity(generator) instanceof com.senne.imttech.station.ChargerBlockEntity charger) {
+                        charger.fill(200_000);
+                    }
+                }
+                level.setBlockAndUpdate(uplinkRack, ModBlocks.SERVER_RACK.get().defaultBlockState()
+                        .setValue(com.senne.imttech.logic.ServerRackBlock.FACING, Direction.SOUTH));
+                if (level.getBlockEntity(uplinkRack) instanceof com.senne.imttech.logic.ServerRackBlockEntity be) {
+                    be.insert(new ItemStack(ModItems.SERVER_CPU.get()));
+                    be.insert(new ItemStack(ModItems.SERVER_RAM.get()));
+                    be.insert(new ItemStack(ModItems.SERVER_SSD.get()));
+                    be.insert(new ItemStack(ModItems.SERVER_FAN.get()));
+                }
+            });
+            t.open(60, ImtMenuScreen::new);
+            t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.TECH);
+            t.shot(10, "ul09_menu_tech_connect");
+            t.close(0);
+            t.open(10, () -> new com.senne.imttech.client.os.OsLoginScreen(com.senne.imttech.client.os.OsLoginScreen.Mode.GLASSES, ""));
+            t.shot(10, "ul10_connect_screen");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.OsLoginScreen login) {
+                    login.tourType(uplinkIp[0], "wrong1");
+                    login.tourConnect();
+                }
+            });
+            t.shot(20, "ul11_wrong_password");
+            t.step(0, () -> {
+                if (Minecraft.getInstance().screen instanceof com.senne.imttech.client.os.OsLoginScreen login) {
+                    login.tourType(uplinkIp[0], "bitech1");
+                    login.tourConnect();
+                }
+            });
+            t.waitUntil(100, () -> com.senne.imttech.client.ImtClientState.datacenterLink == 1);
+            t.shot(10, "ul12_connected_hud");
+            t.open(10, ImtMenuScreen::new);
+            t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.TECH);
+            t.shot(10, "ul13_menu_tech_connected");
+            t.step(0, () -> com.senne.imttech.client.ImtClientState.menuTab = com.senne.imttech.client.MenuTab.COMBAT);
+            t.close(0);
+            t.open(10, () -> new com.senne.imttech.client.os.OsLoginScreen(com.senne.imttech.client.os.OsLoginScreen.Mode.GLASSES,
+                    com.senne.imttech.client.ImtClientState.uplinkIp));
+            t.shot(10, "ul14_connect_screen_connected");
+            t.close(0);
             // Naar de Nether (bovenop het dak van bedrock, daar is ruimte): vier drones hangen in je baan, niets kwam mee.
             t.onServer(10, player -> {
                 com.senne.imttech.logic.DatacenterGlasses.overrideRequired(false);

@@ -109,12 +109,16 @@ public class BrainScreen extends Screen {
         proactiveButton.setMessage(proactiveLabel());
     }
 
-    /** "Datacenter: dev-lab (+2.0 s)", "Creative: no datacenter needed", of "No datacenter: no brain". */
+    /**
+     * "Datacenter: dev-lab (+2.0 s)", "Creative: no datacenter needed", of "No datacenter: no brain". Hoofdstuk 122: het
+     * brein draait op het datacenter waar je bril aan hangt; hangt hij nergens aan, dan zegt deze regel hoe je verbindt.
+     */
     private static Component datacenterLine() {
         String source = ImtClientState.brainSource;
         int delay = ImtClientState.brainDelayTicks;
         if (delay < 0) {
-            return Component.translatable("screen.imttech.brain.datacenter.none");
+            return Component.translatable(ImtClientState.uplinkIp.isEmpty()
+                    ? "screen.imttech.brain.datacenter.not_connected" : "screen.imttech.brain.datacenter.none");
         }
         if ("creative".equals(source)) {
             return Component.translatable("screen.imttech.brain.datacenter.creative");

@@ -257,6 +257,12 @@ public final class ImtClientState {
      */
     public static int datacenterLink;
     public static int datacenterLoad;
+    /**
+     * Hoofdstuk 122: de naam en het IP van de kern waarmee je je bril verbond ("" = met geen enkele). Sindsdien ook
+     * datacenterLink 4 = niet verbonden, en 5 = geen toegang (je bent daar niet meer de eigenaar of vertrouwd).
+     */
+    public static String uplinkHost = "";
+    public static String uplinkIp = "";
 
     /** Hoofdstuk 106: kan je bril nu nadenken en bewaren (hij heeft geen datacenter nodig, of het draait)? */
     public static boolean datacenterWorks() {
@@ -308,5 +314,7 @@ public final class ImtClientState {
         brainSource = "";
         datacenterLink = 0;
         datacenterLoad = 0;
+        uplinkHost = "";
+        uplinkIp = "";
     }
 }

@@ -118,12 +118,19 @@ public class ImtMenuScreen extends Screen {
             action(ImtAction.ILLUSION_CLOAK),
             action(ImtAction.ILLUSION_STOP));
 
-    /** Tabblad Tech: dingen in je wereld aansturen. */
+    /**
+     * Tabblad Tech: dingen in je wereld aansturen. Sinds hoofdstuk 122 ook je datacenter: met welke kern je bril verbonden
+     * is (het scherm vraagt het IP en het wachtwoord van die kern). Hier en niet op Systems: daar past geen achtste optie
+     * (zie Information).
+     */
     private static final List<Option> TECH = List.of(
             open("screen.imttech.menu.redstone", HudStyle.ORANGE, RelayListScreen::new),
             open("screen.imttech.menu.music", HudStyle.GREEN, MusicScreen::new),
             action(ImtAction.HACK_PLAYER),
-            action(ImtAction.HACK_STOP));
+            action(ImtAction.HACK_STOP),
+            new Option(Component.translatable("screen.imttech.menu.datacenter"), glasses -> datacenterStatus(),
+                    () -> ImtClientEvents.openIfAuthorized(Minecraft.getInstance(), new com.senne.imttech.client.os.OsLoginScreen(
+                            com.senne.imttech.client.os.OsLoginScreen.Mode.GLASSES, ImtClientState.uplinkIp))));
 
     /** Tabblad Transport: laat je vervoeren of stuur spullen weg. */
     private static final List<Option> TRANSPORT = List.of(
@@ -229,6 +236,24 @@ public class ImtMenuScreen extends Screen {
     /** Stem of spraakbesturing: eerst installeren (downloaden), daarna aan/uit zetten. */
     private static Option voice(VoiceFeature feature) {
         return new Option(feature.menuLabel(), glasses -> voiceStatus(feature), () -> VoiceControl.choose(feature));
+    }
+
+    /**
+     * Hoofdstuk 122: wat er onder de optie Datacenter staat: de naam van de kern waar je bril aan hangt (groen als het
+     * draait), of waarom het niet werkt (rood), of CONNECT als hij nergens aan hangt.
+     */
+    private static Status datacenterStatus() {
+        String host = ImtClientState.uplinkHost;
+        return switch (ImtClientState.datacenterLink) {
+            case 1 -> new Status(Component.literal(host), HudStyle.GREEN);
+            case 2 -> new Status(Component.translatable("screen.imttech.no_datacenter"), HudStyle.RED);
+            case 3 -> new Status(Component.translatable("screen.imttech.datacenter_offline"), HudStyle.RED);
+            case 4 -> new Status(Component.translatable("screen.imttech.menu.connect"), HudStyle.CYAN);
+            case 5 -> new Status(Component.translatable("screen.imttech.no_access"), HudStyle.RED);
+            // Creative, of de regel staat uit: je bril heeft er geen nodig (maar kan wel verbonden zijn, voor het brein).
+            default -> host.isEmpty() ? new Status(Component.translatable("screen.imttech.menu.connect"), GREY)
+                    : new Status(Component.literal(host), HudStyle.CYAN);
+        };
     }
 
     /** Welk brein ze gebruikt (of hoe ver de download van het lokale brein is). */
@@ -390,8 +415,13 @@ public class ImtMenuScreen extends Screen {
             return new Status(Component.translatable("screen.imttech.out_of_reach"), HudStyle.RED);
         }
         if (!ImtClientState.datacenterWorks() && needsDatacenter(action, glasses)) {
-            return new Status(Component.translatable(ImtClientState.datacenterLink == 3
-                    ? "screen.imttech.datacenter_offline" : "screen.imttech.no_datacenter"), HudStyle.RED);
+            // Hoofdstuk 122: ook "niet verbonden" en "geen toegang" (je bent op die kern niet meer de eigenaar of vertrouwd).
+            return new Status(Component.translatable(switch (ImtClientState.datacenterLink) {
+                case 3 -> "screen.imttech.datacenter_offline";
+                case 4 -> "screen.imttech.not_connected";
+                case 5 -> "screen.imttech.no_access";
+                default -> "screen.imttech.no_datacenter";
+            }), HudStyle.RED);
         }
         if (takesDrone(action) && noDroneHere()) {
             return new Status(Component.translatable("screen.imttech.no_drones_here"), HudStyle.RED);

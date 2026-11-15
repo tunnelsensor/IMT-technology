@@ -162,6 +162,13 @@ public final class TowerHack {
             return;
         }
         core.setOwner(player);
+        // Een overname wist de toegang: de vertrouwde spelers van de vorige eigenaar en zijn wachtwoord zijn weg, en de
+        // apparaten staan weer zoals bij een nieuwe kern (jouw ontwerp van 28 september: "de nieuwe eigenaar zet een nieuw
+        // wachtwoord, de vertrouwde lijst wordt leeggemaakt"; de mappen en notities blijven). Dat stond al in
+        // resetAccessForNewOwner, maar de echte hack riep het nooit aan. Gevonden door de nalezing van hoofdstuk 122: zonder
+        // dit bleven de vrienden van de vorige eigenaar hun bril op het datacenter van de hacker draaien, en werkte het
+        // oude wachtwoord nog (ook met de laptop van op afstand).
+        core.resetAccessForNewOwner();
         // Biebia's drones (hoofdstuk 25) zijn nu van jou.
         com.senne.imttech.robot.TowerDrones.handOver(level, core, player);
         com.senne.imttech.robot.TowerRobots.handOver(level, core, player); // en zijn bewakersrobots (hoofdstuk 60)

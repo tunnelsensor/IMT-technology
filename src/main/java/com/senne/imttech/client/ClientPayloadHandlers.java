@@ -176,6 +176,23 @@ public final class ClientPayloadHandlers {
         }
     }
 
+    /**
+     * Hoofdstuk 122: het antwoord op "verbind mijn bril" (of "koppel hem los"). Gelukt: het scherm Datacenter gaat dicht
+     * (I.M.T zegt het zelf, in de HUD). Niet gelukt: in het rood waarom.
+     */
+    public static void onUplinkReply(com.senne.imttech.network.UplinkReplyPayload payload, IPayloadContext context) {
+        Minecraft mc = Minecraft.getInstance();
+        if (!(mc.screen instanceof com.senne.imttech.client.os.OsLoginScreen login)
+                || login.mode() != com.senne.imttech.client.os.OsLoginScreen.Mode.GLASSES) {
+            return;
+        }
+        if (payload.done()) {
+            login.onClose();
+        } else {
+            login.reply(payload.message());
+        }
+    }
+
     /** Hoofdstuk 40: het codescherm van een Computer openen, of het antwoord van de server laten zien. */
     public static void onComputerCodePrompt(com.senne.imttech.network.ComputerCodePromptPayload payload, IPayloadContext context) {
         Minecraft mc = Minecraft.getInstance();
@@ -461,6 +478,8 @@ public final class ClientPayloadHandlers {
         ImtClientState.brainSource = payload.brainSource();
         ImtClientState.datacenterLink = payload.link();
         ImtClientState.datacenterLoad = payload.linkLoad();
+        ImtClientState.uplinkHost = payload.uplinkHost();
+        ImtClientState.uplinkIp = payload.uplinkIp();
     }
 
     public static void onPing(PingMarkerPayload payload, IPayloadContext context) {

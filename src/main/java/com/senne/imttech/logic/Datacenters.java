@@ -69,6 +69,20 @@ public final class Datacenters extends SavedData {
      */
     private final Map<UUID, Double> glassesData = new HashMap<>();
 
+    /**
+     * Hoofdstuk 122 (jouw wens van 15 november: "zorg dat het datacenter voor je bril afhankelijk is van de security core
+     * waar je aanhangt, of owner of trusted; je moet je bril connecten via het ip van je security core met password voor
+     * dat die bril aan de serverroom hangt"): met welke kern de bril van een speler verbonden is.
+     *
+     * @param ip         het IP van die kern (zo vinden we hem terug, ook als hij is verhuisd: een kern houdt zijn IP)
+     * @param host       de naam van de kern toen je verbond ("dev-lab"), voor de meldingen als hij niet meer antwoordt
+     * @param playerName de naam van de speler (voor een scoreboard-team, als de config dat als vriend telt)
+     */
+    public record Uplink(String ip, String host, String playerName) {}
+
+    /** Per speler: met welke kern zijn bril verbonden is (zie {@link Uplink}). Wie er niet in staat, is niet verbonden. */
+    private final Map<UUID, Uplink> uplinks = new HashMap<>();
+
     public static Datacenters get(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(
                 new SavedData.Factory<>(Datacenters::new, Datacenters::load), NAME);
@@ -144,6 +158,32 @@ public final class Datacenters extends SavedData {
             glassesData.put(owner, mb);
         }
         setDirty();
+    }
+
+    // ================================================================ Met welke kern de bril verbonden is (hoofdstuk 122)
+
+    /** Met welke kern de bril van deze speler verbonden is, of null als hij met geen enkele verbonden is. */
+    public @Nullable Uplink uplink(@Nullable UUID player) {
+        return player == null ? null : uplinks.get(player);
+    }
+
+    /** De bril van deze speler is nu met deze kern verbonden (een vorige verbinding valt weg). */
+    public void setUplink(UUID player, Uplink uplink) {
+        if (!uplink.equals(uplinks.put(player, uplink))) {
+            setDirty();
+        }
+    }
+
+    /** De bril van deze speler is met geen enkele kern meer verbonden. */
+    public void removeUplink(UUID player) {
+        if (uplinks.remove(player) != null) {
+            setDirty();
+        }
+    }
+
+    /** Alle verbonden brillen: van welke speler, en met welke kern. */
+    public Map<UUID, Uplink> uplinks() {
+        return Map.copyOf(uplinks);
     }
 
     // ================================================================ Backups
@@ -329,6 +369,17 @@ public final class Datacenters extends SavedData {
             glasses.add(item);
         }
         tag.put("Glasses", glasses);
+        // Hoofdstuk 122: met welke kern elke bril verbonden is.
+        ListTag links = new ListTag();
+        for (Map.Entry<UUID, Uplink> entry : uplinks.entrySet()) {
+            CompoundTag item = new CompoundTag();
+            item.putUUID("Player", entry.getKey());
+            item.putString("Ip", entry.getValue().ip());
+            item.putString("Host", entry.getValue().host());
+            item.putString("Name", entry.getValue().playerName());
+            links.add(item);
+        }
+        tag.put("Uplinks", links);
         ListTag backupList = new ListTag();
         for (Backup backup : backups) {
             backupList.add(saveBackup(backup));
@@ -384,6 +435,15 @@ public final class Datacenters extends SavedData {
             CompoundTag item = (CompoundTag) element;
             if (item.hasUUID("Owner") && item.getDouble("Mb") > 0) {
                 data.glassesData.put(item.getUUID("Owner"), item.getDouble("Mb"));
+            }
+        }
+        // Hoofdstuk 122: een wereld van daarvoor heeft geen "Uplinks": dan is nog geen enkele bril verbonden (jouw wens:
+        // je moet je bril eerst verbinden met het IP en het wachtwoord van een kern).
+        for (Tag element : tag.getList("Uplinks", Tag.TAG_COMPOUND)) {
+            CompoundTag item = (CompoundTag) element;
+            if (item.hasUUID("Player") && !item.getString("Ip").isEmpty()) {
+                data.uplinks.put(item.getUUID("Player"), new Uplink(item.getString("Ip"), item.getString("Host"),
+                        item.getString("Name")));
             }
         }
         for (Tag element : tag.getList("Backups", Tag.TAG_COMPOUND)) {

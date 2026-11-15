@@ -33,7 +33,9 @@ import org.jetbrains.annotations.Nullable;
  *
  * Hetzelfde scherm vraagt ook de code van een Computer (hoofdstuk 40, een rechtsklik op zijn monitor): dan staat er
  * alleen het vak voor de code, met de naam van de computer bovenaan. En sinds hoofdstuk 50 de schermen van de I.M.T
- * Phone: verbinden (IP + wachtwoord), een PIN kiezen, en de PIN intypen (zie {@link Mode}).
+ * Phone: verbinden (IP + wachtwoord), een PIN kiezen, en de PIN intypen (zie {@link Mode}). En sinds hoofdstuk 122 het
+ * scherm Datacenter van de I.M.T-bril (G-menu, tabblad Tech): het IP en het wachtwoord van de kern waar je bril aan moet
+ * hangen, met eronder waar hij nu aan hangt, en een knop Disconnect.
  */
 public class OsLoginScreen extends Screen {
     /** Wat dit scherm vraagt. */
@@ -47,11 +49,18 @@ public class OsLoginScreen extends Screen {
         /** De telefoon openen: de PIN van vier cijfers. */
         PHONE_PIN,
         /** De telefoon net verbonden: een PIN kiezen. */
-        PHONE_SET_PIN
+        PHONE_SET_PIN,
+        /** Hoofdstuk 122: de I.M.T-bril verbinden met het datacenter van een kern (IP en wachtwoord). */
+        GLASSES
     }
 
     private static final int PANEL_W = 250;
     private static final int PANEL_H = 150;
+    /**
+     * Hoofdstuk 122: het scherm van de bril is 10 pixels hoger, zodat een antwoord van drie regels boven de knoppen past
+     * (er staat links onderaan ook een knop Disconnect). Gevonden door de nalezing: de derde regel liep over de knoppen.
+     */
+    private static final int GLASSES_EXTRA_H = 10;
     private static final int MARGIN = 10;
     private static final int BUTTON_W = 70;
     /** Een IP is hooguit 15 tekens (255.255.255.255). */
@@ -64,6 +73,8 @@ public class OsLoginScreen extends Screen {
     private @Nullable EditBox ipBox;
     private @Nullable EditBox passwordBox;
     private @Nullable Button connectButton;
+    /** Hoofdstuk 122: loskoppelen (alleen in het scherm van de bril, en alleen als hij verbonden is). */
+    private @Nullable Button disconnectButton;
     private int left;
     private int top;
     /** Wat de server terugzei (waarom het niet lukte), of "Connecting..." terwijl we wachten. */
@@ -90,9 +101,10 @@ public class OsLoginScreen extends Screen {
             case PHONE_LOGIN -> "I.M.T Phone: connect to a system";
             case PHONE_PIN -> "I.M.T Phone: " + label;
             case PHONE_SET_PIN -> "I.M.T Phone: choose a PIN for " + label;
+            case GLASSES -> "I.M.T glasses: connect to a datacenter";
         }));
         this.mode = mode;
-        this.startIp = mode == Mode.LAPTOP || mode == Mode.PHONE_LOGIN ? label : "";
+        this.startIp = mode == Mode.LAPTOP || mode == Mode.PHONE_LOGIN || mode == Mode.GLASSES ? label : "";
         this.monitor = null;
     }
 
@@ -100,9 +112,14 @@ public class OsLoginScreen extends Screen {
         return mode;
     }
 
-    /** Vraagt dit scherm een IP en een wachtwoord (de laptop, of de telefoon de eerste keer)? */
+    /** Hoe hoog het paneel is (het scherm van de bril is iets hoger, zie GLASSES_EXTRA_H). */
+    private int panelH() {
+        return PANEL_H + (mode == Mode.GLASSES ? GLASSES_EXTRA_H : 0);
+    }
+
+    /** Vraagt dit scherm een IP en een wachtwoord (de laptop, de telefoon de eerste keer, of de bril)? */
     private boolean asksIp() {
-        return mode == Mode.LAPTOP || mode == Mode.PHONE_LOGIN;
+        return mode == Mode.LAPTOP || mode == Mode.PHONE_LOGIN || mode == Mode.GLASSES;
     }
 
     /** Vraagt dit scherm een PIN van vier cijfers? */
@@ -118,7 +135,7 @@ public class OsLoginScreen extends Screen {
     @Override
     protected void init() {
         left = (width - PANEL_W) / 2;
-        top = Math.max(6, (height - PANEL_H) / 2);
+        top = Math.max(6, (height - panelH()) / 2);
 
         // De vakjes houden wat je al typte als het scherm opnieuw opbouwt (een andere venstergrootte).
         String ip = ipBox == null ? startIp : ipBox.getValue();
@@ -147,10 +164,10 @@ public class OsLoginScreen extends Screen {
         passwordBox.setValue(password);
         addRenderableWidget(passwordBox);
 
-        int buttons = top + PANEL_H - 28;
+        int buttons = top + panelH() - 28;
         int connectX = left + PANEL_W - MARGIN - BUTTON_W;
         String label = switch (mode) {
-            case LAPTOP, PHONE_LOGIN -> "Connect";
+            case LAPTOP, PHONE_LOGIN, GLASSES -> "Connect";
             case COMPUTER -> "Connect";
             case PHONE_PIN -> "Unlock";
             case PHONE_SET_PIN -> "Set PIN";
@@ -159,6 +176,12 @@ public class OsLoginScreen extends Screen {
                 .bounds(connectX, buttons, BUTTON_W, 20).build());
         addRenderableWidget(Button.builder(Component.translatable("gui.cancel"), b -> onClose())
                 .bounds(connectX - 6 - BUTTON_W, buttons, BUTTON_W, 20).build());
+        if (mode == Mode.GLASSES) {
+            // Links onderaan: loskoppelen. Alleen te zien zolang je bril ergens aan hangt (dat kan veranderen terwijl het
+            // scherm openstaat, zie refreshConnect).
+            disconnectButton = addRenderableWidget(Button.builder(Component.literal("Disconnect"), b -> disconnect())
+                    .bounds(left + MARGIN, buttons, BUTTON_W, 20).build());
+        }
         // Staat het IP er al, dan typ je meteen het wachtwoord.
         setInitialFocus(asksIp() && ip.isEmpty() ? ipBox : passwordBox);
         refreshConnect();
@@ -181,6 +204,21 @@ public class OsLoginScreen extends Screen {
             boolean complete = asksPin() ? password().length() == 4 : !password().isEmpty();
             connectButton.active = !waiting && !ip().isEmpty() && complete;
         }
+        if (disconnectButton != null) {
+            disconnectButton.visible = !com.senne.imttech.client.ImtClientState.uplinkIp.isEmpty();
+            disconnectButton.active = !waiting;
+        }
+    }
+
+    /** Hoofdstuk 122: de bril loskoppelen (de server antwoordt; lukt het, dan gaat dit scherm dicht). */
+    private void disconnect() {
+        if (waiting) {
+            return;
+        }
+        waiting = true;
+        message = "Disconnecting...";
+        PacketDistributor.sendToServer(com.senne.imttech.network.UplinkPayload.disconnect());
+        refreshConnect();
     }
 
     private void connect() {
@@ -200,6 +238,10 @@ public class OsLoginScreen extends Screen {
             case PHONE_LOGIN -> {
                 message = "Connecting to " + ip() + "...";
                 PacketDistributor.sendToServer(new com.senne.imttech.network.PhoneLoginPayload(ip(), password()));
+            }
+            case GLASSES -> {
+                message = "Connecting to " + ip() + "...";
+                PacketDistributor.sendToServer(new com.senne.imttech.network.UplinkPayload(ip(), password()));
             }
             case PHONE_PIN, PHONE_SET_PIN -> {
                 message = mode == Mode.PHONE_PIN ? "Checking the PIN..." : "Saving the PIN...";
@@ -246,8 +288,8 @@ public class OsLoginScreen extends Screen {
     @Override
     public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float a) {
         HudStyle.dim(g, width, height);
-        g.fill(left - 4, top - 4, left + PANEL_W + 4, top + PANEL_H, HudStyle.argb(215, 0x08121A));
-        HudStyle.brackets(g, left - 4, top - 4, left + PANEL_W + 4, top + PANEL_H, 8, HudStyle.argb(220, HudStyle.CYAN));
+        g.fill(left - 4, top - 4, left + PANEL_W + 4, top + panelH(), HudStyle.argb(215, 0x08121A));
+        HudStyle.brackets(g, left - 4, top - 4, left + PANEL_W + 4, top + panelH(), 8, HudStyle.argb(220, HudStyle.CYAN));
     }
 
     @Override
@@ -267,6 +309,12 @@ public class OsLoginScreen extends Screen {
                 g.drawString(font, "New PIN", left + MARGIN, top + 56, HudStyle.argb(200, HudStyle.WHITE), false);
                 hint(g, "Four digits. You type it every time you open the phone.", top + 30);
             }
+            case GLASSES -> {
+                g.drawString(font, "IP address", left + MARGIN, top + 24, HudStyle.argb(200, HudStyle.WHITE), false);
+                g.drawString(font, "Password", left + MARGIN, top + 56, HudStyle.argb(200, HudStyle.WHITE), false);
+                // Hoofdstuk 122: waar je bril nu aan hangt (of dat hij nergens aan hangt), op één regel.
+                glassesState(g, top + 88);
+            }
             default -> {
                 g.drawString(font, "IP address", left + MARGIN, top + 24, HudStyle.argb(200, HudStyle.WHITE), false);
                 g.drawString(font, "Password", left + MARGIN, top + 56, HudStyle.argb(200, HudStyle.WHITE), false);
@@ -278,11 +326,66 @@ public class OsLoginScreen extends Screen {
         if (!message.isEmpty()) {
             int colour = waiting ? HudStyle.CYAN : HudStyle.RED;
             int y = top + 101;
+            // In het scherm van de bril nooit over de knoppen (daar passen drie regels); de andere schermen zoals altijd.
+            int lastY = mode == Mode.GLASSES ? top + panelH() - 28 - 9 : Integer.MAX_VALUE;
             for (FormattedCharSequence line : font.split(Component.literal(message), PANEL_W - 2 * MARGIN)) {
+                if (y > lastY) {
+                    break;
+                }
                 g.drawString(font, line, left + MARGIN, y, HudStyle.argb(255, colour), false);
                 y += 10;
             }
         }
+    }
+
+    /**
+     * Hoofdstuk 122: één regel onder het wachtwoord in het scherm van de bril: met welke kern hij nu verbonden is en hoe het
+     * ervoor staat ("On dev-lab (10.1.2.3): online", in het groen), of dat hij nergens aan hangt. Te lang voor het paneel:
+     * dan valt het einde weg (met "...").
+     */
+    private void glassesState(GuiGraphics g, int y) {
+        String host = com.senne.imttech.client.ImtClientState.uplinkHost;
+        String ip = com.senne.imttech.client.ImtClientState.uplinkIp;
+        String text;
+        int colour;
+        if (ip.isEmpty()) {
+            // Kort genoeg voor het paneel (de nalezing mat het: met "yet" erbij viel "Status" eraf).
+            g.drawString(font, "Not connected: your core's IP is in Status.", left + MARGIN, y,
+                    HudStyle.argb(150, HudStyle.WHITE), false);
+            return;
+        } else {
+            String state;
+            int rgb;
+            switch (com.senne.imttech.client.ImtClientState.datacenterLink) {
+                case 1 -> {
+                    state = ": online";
+                    rgb = HudStyle.GREEN;
+                }
+                case 2 -> {
+                    state = ": no answer";
+                    rgb = HudStyle.RED;
+                }
+                case 3 -> {
+                    state = ": offline";
+                    rgb = HudStyle.RED;
+                }
+                case 5 -> {
+                    state = ": no access";
+                    rgb = HudStyle.RED;
+                }
+                default -> { // creative, of de regel staat uit in de config: je bril heeft er dan geen nodig
+                    state = "";
+                    rgb = HudStyle.WHITE;
+                }
+            }
+            text = "On " + host + " (" + ip + ")" + state;
+            colour = HudStyle.argb(230, rgb);
+        }
+        int width = PANEL_W - 2 * MARGIN;
+        if (font.width(text) > width) {
+            text = font.plainSubstrByWidth(text, width - font.width("...")) + "...";
+        }
+        g.drawString(font, text, left + MARGIN, y, colour, false);
     }
 
     /**

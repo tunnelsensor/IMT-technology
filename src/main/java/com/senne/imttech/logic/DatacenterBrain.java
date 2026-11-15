@@ -18,8 +18,9 @@ import org.jetbrains.annotations.Nullable;
  * <ul>
  *   <li>Zonder datacenter werkt er géén brein, ook het woordenboek niet: dan is het gewoon een
  *       mooie bril. In creative heb je geen datacenter nodig (en is er geen vertraging).</li>
- *   <li>Het brein draait op het sterkste datacenter van jezelf dat draait (de kortste vertraging),
- *       waar het ook staat: zie Datacenters.</li>
+ *   <li>Het brein draait op het datacenter waar je bril aan hangt (hoofdstuk 122: de kern waarmee je je
+ *       bril verbond, met zijn IP en wachtwoord, zie {@link #best}), waar het ook staat. Tot hoofdstuk 122
+ *       was dat je sterkste eigen datacenter.</li>
  *   <li>Het model zelf (het woordenboek, het lokale model of Claude) werkt zoals altijd op jouw pc;
  *       het datacenter zet er alleen een vertraging bij zolang het nog niet sterk is (zie
  *       LogicStats.brainDelayTicks). Die vertraging stuurt de server twee keer per seconde naar je
@@ -39,16 +40,32 @@ public final class DatacenterBrain {
 
     private static final Map<UUID, Thinking> THINKING = new HashMap<>();
 
-    /** Het sterkste datacenter van deze speler dat draait (de kortste vertraging), of null als hij er geen heeft. */
+    /**
+     * Op welk datacenter het brein van deze speler draait, of null als nergens.
+     *
+     * Hoofdstuk 122 (jouw wens: "zorg dat het datacenter voor je bril afhankelijk is van de security core waar je
+     * aanhangt"): het brein zit in de bril, dus het draait op het datacenter van de kern waarmee je je bril verbond (met
+     * zijn IP en wachtwoord), zolang je daar de eigenaar bent of vertrouwd en het draait (zie DatacenterGlasses). Staat de
+     * regel van de bril uit in de config ({@code [uplink] required = false}) en is je bril nergens mee verbonden, dan
+     * zoals vroeger: je sterkste eigen datacenter.
+     */
     public static @Nullable Map.Entry<GlobalPos, Datacenters.Summary> best(ServerPlayer player) {
-        return best(player.server, player.getUUID());
+        Map.Entry<GlobalPos, Datacenters.Summary> linked = DatacenterGlasses.linkedDatacenter(player);
+        // Alleen als je bril nergens mee verbonden is: hangt hij aan een kern waar het nu niet werkt (geen toegang meer,
+        // offline, weg), dan geen brein, en niet stilletjes een ander datacenter. (Gevonden door de nalezing: zo zeiden het
+        // G-menu en het Brain-scherm twee verschillende datacenters.)
+        if (linked != null || DatacenterGlasses.required()
+                || Datacenters.get(player.server).uplink(player.getUUID()) != null) {
+            return linked;
+        }
+        return strongestOwned(player.server, player.getUUID());
     }
 
     /**
-     * Hetzelfde, voor een speler die misschien niet online is (hoofdstuk 106: op dit datacenter draait ook zijn bril, zie
-     * DatacenterGlasses, en wat die bewaart telt mee op de SSD's, ook als hij weg is).
+     * Het sterkste datacenter van deze speler dat draait (de kortste vertraging), of null als hij er geen heeft. Tot
+     * hoofdstuk 122 draaiden het brein en de bril altijd daarop; nu alleen nog als de regel van de bril uit staat.
      */
-    public static @Nullable Map.Entry<GlobalPos, Datacenters.Summary> best(net.minecraft.server.MinecraftServer server, UUID owner) {
+    private static @Nullable Map.Entry<GlobalPos, Datacenters.Summary> strongestOwned(net.minecraft.server.MinecraftServer server, UUID owner) {
         Map.Entry<GlobalPos, Datacenters.Summary> best = null;
         for (Map.Entry<GlobalPos, Datacenters.Summary> entry : Datacenters.get(server).ownedBy(owner)) {
             Datacenters.Summary summary = entry.getValue();

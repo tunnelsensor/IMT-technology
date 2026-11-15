@@ -115,6 +115,9 @@ Alles testen dat op de server gebeurt: `gradlew runGameTestServer` (445 automati
   Alleen wie de laptop neerzette, kan hem gebruiken. Is de toren van jou, dan klap je de laptop
   dicht en zit hij weer in je rugzak; breek je hem eerder af, dan krijg je hem ook terug (maar
   begin je opnieuw).
+  Sinds 15 november wist een overname ook echt de toegang: de spelers die de vorige eigenaar vertrouwde en zijn
+  wachtwoord zijn weg (zet zelf een nieuw wachtwoord in Settings), en de mappen en notities blijven staan. Hun bril hangt
+  dus ook niet meer aan dit datacenter.
 - De laptop is ook je **laptop voor op afstand**: rechtsklik ermee in de lucht en log met het IP en
   het wachtwoord in op de desktop van een kern, waar je ook bent (zie "Je desktop van overal" in
   hoofdstuk 5).
@@ -262,8 +265,9 @@ Nether en het End hangt niets, dus daar kun je geen drone oproepen. Wat wel kan:
 - Uitzetten: `drones.noOrbitInNetherAndEnd = false` (dan is het zoals vroeger; een satellietaanval heeft dan nog
   altijd open lucht boven het doel nodig, en die is er daar niet).
 
-**3. De bril heeft je datacenter nodig.** Alles wat de bril **uitrekent** of **bewaart**, draait op je eigen
-datacenter: het sterkste dat draait, waar het ook staat (hetzelfde als waar het brein op draait).
+**3. De bril heeft een datacenter nodig.** Alles wat de bril **uitrekent** of **bewaart**, draait op een datacenter,
+waar het ook staat (hetzelfde als waar het brein op draait). Sinds 15 november is dat het datacenter van de kern waarmee
+je je bril **verbond**, met zijn IP en wachtwoord (zie "Je bril verbinden met een security core" hieronder).
 - **Zonder datacenter** (of als het niet draait) staat er **NO DATACENTER** (of **DATACENTER OFFLINE**) in je HUD, en
   werkt alleen nog wat de bril en het harnas zelf doen: het beeld, nachtzicht, je schild, de laser cannon en de
   raketten, de camera van een drone waar je al door kijkt, berichten en pings. Stoppen kan altijd: uitzetten,
@@ -294,8 +298,34 @@ datacenter: het sterkste dat draait, waar het ook staat (hetzelfde als waar het 
   dreigingsscan en de doelwit-analyse blijven aan staan in je bril, maar tonen niets tot je datacenter er weer is.
 - **In de app Monitor** zie je het: de tegel BRAIN telt mee wat de brillen vragen, RAM en SSD ook, en in de lijst
   RUNNING staat wat er loopt ("I.M.T satellite strike (jouw naam)"). Het maakt je racks ook warmer.
-- **Creative** heeft geen datacenter nodig. Alleen **jouw eigen** datacenter telt (dat van een vriend niet).
+- **Creative** heeft geen datacenter nodig. Sinds 15 november kan het ook het datacenter van een vriend zijn die jou
+  vertrouwt (zie hieronder).
 - Alle getallen staan onder `[uplink]` in `config/imttech.toml`; `uplink.required = false` zet de hele regel uit.
+
+### Je bril verbinden met een security core (sinds 15 november)
+Je bril hangt niet meer vanzelf aan je sterkste datacenter: je **verbindt** hem met een security core, en dan draait alles
+wat de bril uitrekent of bewaart, en ook het brein, op het datacenter van **die** kern.
+- **Verbinden**: G-menu, tabblad **Tech**, **Datacenter**. Typ het **IP** van de kern (dat staat in zijn app Status) en
+  zijn **wachtwoord**, en klik **Connect**. Het gaat zoals met de Hacking Laptop: de kern moet in dezelfde dimensie staan,
+  stroom hebben en een wachtwoord (zet er een in Settings); een fout wachtwoord staat in zijn logboek, de eigenaar hoort
+  het, en na 5 keer moet je even wachten.
+- **Owner of trusted**: het goede wachtwoord is niet genoeg. Je moet op die kern de **eigenaar** zijn, of in zijn lijst
+  **Access** staan (vertrouwd). Kent iemand anders het wachtwoord, dan verbindt zijn bril niet, en krijgt de eigenaar een
+  alarm van I.M.T.
+- **Daarna** werkt het waar je ook bent (ook in de Nether, als je kern in de gewone wereld staat), zolang je daar de
+  eigenaar bent of vertrouwd. Haalt de eigenaar je uit Access, of neemt iemand de kern over, dan heeft je bril **meteen**
+  geen datacenter meer: in je HUD staat **NO ACCESS TO DATACENTER**. Is de kern weg, dan **NO DATACENTER**.
+- Een vriend die je vertrouwt, kan zijn bril dus aan **jouw** serverruimte hangen. Wat hij vraagt, neemt rekenkracht en RAM
+  van jouw datacenter, en zijn waypoints staan op jouw SSD's. In de app **Monitor** zie je onder RUNNING wiens bril eraan
+  hangt ("Glasses: Lotte, Senne").
+- **Niet verbonden**: in je HUD staat **DATACENTER NOT CONNECTED**, onder de acties in het G-menu **NOT CONNECTED**, en
+  I.M.T zegt hoe je verbindt. Ook wie al een datacenter had, verbindt zijn bril één keer.
+- **Loskoppelen**: de knop **Disconnect** in hetzelfde scherm. Een ander IP verbinden vervangt de vorige verbinding. Een
+  nieuw wachtwoord op de kern koppelt niemand los: wie verbonden is, blijft dat zolang hij eigenaar of vertrouwd is.
+- Onder de optie Datacenter in het G-menu staat de naam van je kern (groen als het draait, **CONNECT** als je bril nergens
+  aan hangt), en in het scherm zelf "On dev-lab (10.x.x.x): online".
+- **Creative** heeft nog altijd geen datacenter nodig. Met `uplink.required = false` staat de regel uit (dan draait het
+  brein, als je bril nergens mee verbonden is, op je sterkste eigen datacenter, zoals vroeger).
 
 ### Het drone-arsenaal
 Drones komen niet meer uit het niets: je moet ze **bouwen**. Craft een **drone**
@@ -1369,7 +1399,8 @@ sterk" bovenaan dit hoofdstuk.
   **Automatic** elke 5, 15 of 60 minuten. Een backup neemt plek op de SSD's van dat andere
   datacenter (daar blijven de laatste 3). Na een brand zet **Restore** je diagrammen en keycards
   terug (twee keer klikken). Brandt het andere datacenter af, dan zijn de backups daar ook weg.
-- **Het brein van I.M.T** draait op je sterkste datacenter, waar het ook staat. **Zonder
+- **Het brein van I.M.T** draait op het datacenter waar je bril aan hangt, waar het ook staat (sinds 15 november: de
+  kern waarmee je je bril verbond, zie "Je bril verbinden met een security core"). **Zonder
   datacenter werkt er geen enkel brein**, ook het woordenboek niet: dan is het gewoon een mooie
   bril (in creative hoeft het niet). Met een datacenter duurt een antwoord de tijd van het model
   plus een vertraging zolang je datacenter nog niet sterk is: met bijna niets 12 seconden, elke CPU
@@ -3636,8 +3667,9 @@ Praat I.M.T terwijl jij begint te praten, dan zwijgt ze meteen. In **G > Systems
 Voice text** zet je aan of uit of je in de HUD ziet wat je zei en wat zij antwoordt.
 Alle zinnen kun je zelf aanpassen in **G > Systems > Commands** (of in
 `config/imttech-voice.json`).
-Let op: I.M.T kan alleen nadenken met een **datacenter** (server racks bij je
-beveiligingskern, zie "Het datacenter"); zonder luistert ze niet. In creative hoeft het niet.
+Let op: I.M.T kan alleen nadenken met een **datacenter** (server racks bij een
+beveiligingskern waarmee je je bril verbond, zie "Het datacenter" en "Je bril verbinden met een security core"); zonder
+luistert ze niet. In creative hoeft het niet.
 
 ---
 

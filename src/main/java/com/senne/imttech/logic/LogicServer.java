@@ -295,11 +295,12 @@ public final class LogicServer {
         tag.putDouble("ramNeedMb", stats.ramNeededMb());
         tag.putDouble("fed", stats.fed());
         int[] busy = LogicRunner.load(level, core);
-        // Hoofdstuk 106: wat de brillen hier vragen neemt ook RAM, en wat de bril van de eigenaar bewaart (zijn waypoints)
-        // staat op de SSD's (zie DatacenterGlasses). Nooit meer dan er is.
+        // Hoofdstuk 106: wat de brillen hier vragen neemt ook RAM, en wat de brillen bewaren (waypoints) staat op de SSD's
+        // (zie DatacenterGlasses). Hoofdstuk 122: van iedereen wiens bril met deze kern verbonden is (de eigenaar en wie
+        // hij vertrouwt). Nooit meer dan er is.
         GlobalPos here = GlobalPos.of(level.dimension(), core.getBlockPos());
         double glassesRam = stats.online() ? DatacenterGlasses.usedRamMb(level.getServer(), here) : 0.0;
-        double glassesSsd = DatacenterGlasses.storedMb(level.getServer(), here, core.ownerId());
+        double glassesSsd = DatacenterGlasses.storedMb(level.getServer(), here);
         tag.putDouble("ramUsedMb", Math.min(stats.ramMb(), Datacenter.ramUsedMb(stats, busy[0],
                 Math.max(core.datacenter().cpuLoad(), core.datacenter().brainLoad())) + glassesRam));
         tag.putDouble("ssdUsedMb", Math.min(stats.ssdMb(), Datacenter.ssdUsedMb(stats, core.logic().blocks(),
@@ -359,6 +360,13 @@ public final class LogicServer {
             }
         }
         tag.put("glassesProcs", glasses);
+        // Hoofdstuk 122: wie zijn bril met deze kern verbond (en erop mag), op naam: zo ziet de eigenaar wie er aan zijn
+        // serverruimte hangt.
+        net.minecraft.nbt.ListTag linked = new net.minecraft.nbt.ListTag();
+        for (String name : DatacenterGlasses.connectedNames(level.getServer(), here)) {
+            linked.add(net.minecraft.nbt.StringTag.valueOf(name));
+        }
+        tag.put("glassesLinked", linked);
         // Elk rack van de server: waar, of het meedraait, wat erin zit (en hoe versleten), hoe warm, en brand.
         net.minecraft.nbt.ListTag racks = new net.minecraft.nbt.ListTag();
         java.util.List<BlockPos> sorted = new java.util.ArrayList<>(stats.cluster());

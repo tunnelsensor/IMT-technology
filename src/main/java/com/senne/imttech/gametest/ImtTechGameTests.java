@@ -658,6 +658,9 @@ public final class ImtTechGameTests {
         // De beveiliging schiet tijdens de hack echt op je; in deze test overleeft de hacker dat.
         hacker.getAbilities().invulnerable = true;
         hacker.getAbilities().instabuild = false; // anders blijft de laptop (zoals in creative) in je hand
+        // Hoofdstuk 122: wat de vorige eigenaar instelde (een wachtwoord, een vertrouwde speler) is na de overname weg.
+        core.setPassword("biebia1", helper.getLevel().random);
+        core.addTrusted(UUID.randomUUID(), "old-friend");
         ItemStack laptopItem = new ItemStack(ModItems.HACKING_LAPTOP.get());
         if (!com.senne.imttech.security.TowerHack.placeLaptop(hacker, helper.absolutePos(pos), laptopItem)) {
             throw new GameTestAssertException("De laptop ging niet op de kern");
@@ -671,6 +674,10 @@ public final class ImtTechGameTests {
             typeOnLaptop(hacker, helper.absolutePos(pos.above()), hackSolution(laptop));
             if (!hacker.getUUID().equals(core.ownerId())) {
                 throw new GameTestAssertException("Na de hack is de toren niet van de hacker");
+            }
+            if (!core.trustedNames().isEmpty() || core.hasPassword()) {
+                throw new GameTestAssertException("Na de overname staan de vertrouwde spelers of het wachtwoord van de vorige"
+                        + " eigenaar er nog: " + core.trustedNames() + ", wachtwoord " + core.hasPassword());
             }
             helper.assertBlockProperty(pos, com.senne.imttech.security.SecurityCoreBlock.CLAIMED, true);
             helper.assertBlockNotPresent(ModBlocks.HACKING_LAPTOP.get(), pos.above());

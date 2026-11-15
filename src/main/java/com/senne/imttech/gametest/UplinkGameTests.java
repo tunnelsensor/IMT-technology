@@ -12,8 +12,10 @@ import com.senne.imttech.imt.ImtCooldown;
 import com.senne.imttech.imt.ImtData;
 import com.senne.imttech.imt.ImtFeature;
 import com.senne.imttech.imt.ImtServer;
+import com.senne.imttech.logic.DatacenterBrain;
 import com.senne.imttech.logic.DatacenterGlasses;
 import com.senne.imttech.logic.Datacenters;
+import com.senne.imttech.logic.GlassesUplink;
 import com.senne.imttech.logic.LogicServer;
 import com.senne.imttech.logic.LogicStats;
 import com.senne.imttech.nav.ImtNavigation;
@@ -23,6 +25,8 @@ import com.senne.imttech.network.WaypointActionPayload;
 import com.senne.imttech.registry.ModAttachments;
 import com.senne.imttech.registry.ModEntities;
 import com.senne.imttech.security.SecurityCoreBlockEntity;
+import com.senne.imttech.security.net.CoreNetworkData;
+import com.senne.imttech.security.os.EventLog;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -56,7 +60,9 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
  * - zonder datacenter doet de bril niets dat nadenkt of iets nieuws bewaart (wat je al bewaarde, blijft); in creative
  *   heb je er geen nodig;
  * - met een datacenter gebruikt elk verzoek er een stuk van (rekenkracht, RAM, SSD), en is het vol, dan wordt een
- *   nieuw verzoek geweigerd zonder dat het iets kost.
+ *   nieuw verzoek geweigerd zonder dat het iets kost;
+ * - hoofdstuk 122: de bril hangt pas aan een datacenter als je hem verbindt met het IP en het wachtwoord van een kern,
+ *   en alleen zolang je daar de eigenaar bent of vertrouwd.
  */
 @GameTestHolder(ImtTech.MODID)
 @PrefixGameTestTemplate(false)
@@ -362,15 +368,16 @@ public final class UplinkGameTests {
      *
      * Zonder datacenter: een scan, een markering, een nieuw waypoint en navigeren worden geweigerd, en dat kost niets (geen
      * energie, geen wachttijd). Een waypoint dat je al had, blijft staan; je kunt het nog hernoemen en weghalen. In
-     * creative heb je geen datacenter nodig.
+     * creative heb je geen datacenter nodig. (Sinds hoofdstuk 122 is een bril zonder datacenter een bril die met geen
+     * enkele kern verbonden is.)
      */
     @GameTest(template = ARENA, timeoutTicks = 40, batch = "uplink")
     public static void glasses_without_a_datacenter_think_and_store_nothing(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         ServerPlayer player = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(1, 3, 1), "uplink-nobody");
         ItemStack glasses = ImtData.getWornGlasses(player);
-        check(DatacenterGlasses.link(player) == DatacenterGlasses.Link.NONE,
-                "Zonder datacenter is de bril " + DatacenterGlasses.link(player));
+        check(DatacenterGlasses.link(player) == DatacenterGlasses.Link.NOT_CONNECTED,
+                "Zonder verbinding is de bril " + DatacenterGlasses.link(player));
         double full = ImtData.getExactEnergy(glasses);
 
         // Nadenken: geweigerd, en het kost niets.
@@ -434,7 +441,8 @@ public final class UplinkGameTests {
      * (rekenkracht en RAM, te zien in de app Monitor); er past nog een satellietaanval bij, en daarna is het vol: een
      * volgend verzoek wordt geweigerd en kost niets. Een waypoint staat op de SSD, en een tweede past er niet meer bij als
      * de SSD vol is. Zijn de verzoeken klaar, dan kun je navigeren (dat neemt rekenkracht zolang het loopt), en valt het
-     * datacenter uit, dan stopt de navigatie.
+     * datacenter uit, dan stopt de navigatie. (Hoofdstuk 122: eerst verbindt de eigenaar zijn bril met het IP en het
+     * wachtwoord van zijn kern.)
      */
     @GameTest(template = ARENA, timeoutTicks = 100, batch = "uplink")
     public static void glasses_use_the_cpu_ram_and_ssd_of_your_datacenter(GameTestHelper helper) {
@@ -454,6 +462,10 @@ public final class UplinkGameTests {
         helper.runAfterDelay(3, () -> {
             ImtTechGameTests.startServer(helper, setup.rack(), core);
             DatacenterGameTests.settle(level, core, 1);
+            // Hoofdstuk 122: de bril hangt pas aan het datacenter als je hem verbindt (IP en wachtwoord van de kern).
+            core.ensureSystem(level);
+            core.setPassword("uplink2", level.random);
+            GlassesUplink.connect(owner, core.ip(), "uplink2");
             check(DatacenterGlasses.link(owner) == DatacenterGlasses.Link.OK, "Met een datacenter is de bril " + DatacenterGlasses.link(owner));
             double power = com.senne.imttech.logic.Datacenter.glassesPower(LogicServer.stats(level, core));
             check(scan + strike <= power + 1.0e-6 && scan + strike + DatacenterGlasses.Kind.ORDER.power() > power + 1.0e-6,
@@ -543,6 +555,116 @@ public final class UplinkGameTests {
             check(waypoints(owner).active() == ImtWaypoints.NONE, "De navigatie liep door zonder datacenter");
             check(waypoints(owner).waypoints().size() == 1, "Het waypoint verdween toen het datacenter uitviel");
             check(same(DatacenterGlasses.usedPower(server, here), 0.0), "Een datacenter dat niet draait, rekent nog");
+            helper.succeed();
+        });
+    }
+
+    // ================================================================ Verbinden met een kern (hoofdstuk 122)
+
+    /**
+     * Hoofdstuk 122, jouw wens: "zorg dat het datacenter voor je bril afhankelijk is van de security core waar je aanhangt,
+     * of owner of trusted; je moet je bril connecten via het ip van je security core met password voor dat die bril aan de
+     * serverroom hangt".
+     *
+     * Een kern met een datacenter, zijn eigenaar, een vriend en een vreemde, elk met een bril:
+     * - niet verbonden: de bril denkt niets (ook geen brein), ook al heeft de eigenaar een datacenter;
+     * - een kern zonder wachtwoord neemt geen bril aan, en een fout wachtwoord staat in zijn logboek;
+     * - het goede wachtwoord: de bril en het brein draaien op dit datacenter;
+     * - een vreemde die het wachtwoord kent, verbindt niet (hij is daar niemand), en dat staat in het logboek;
+     * - een vertrouwde vriend verbindt wel, en zijn waypoint telt mee op de SSD van dit datacenter;
+     * - haalt de eigenaar hem uit Access, dan heeft zijn bril meteen geen datacenter meer (zijn waypoint blijft bij hem);
+     * - loskoppelen kan altijd, en is de kern weg (zijn IP vrij), dan antwoordt er niets meer.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "uplink")
+    public static void glasses_connect_with_the_ip_and_password_of_a_core(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        MinecraftServer server = level.getServer();
+        DatacenterGameTests.Setup setup = DatacenterGameTests.datacenter(helper);
+        SecurityCoreBlockEntity core = setup.core();
+        ServerPlayer owner = setup.owner();
+        ServerPlayer friend = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(1, 3, 1), "uplink-friend");
+        ServerPlayer stranger = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(1, 3, 3), "uplink-stranger");
+        GlobalPos here = GlobalPos.of(level.dimension(), core.getBlockPos());
+        Datacenters datacenters = Datacenters.get(level);
+
+        helper.runAfterDelay(3, () -> {
+            ImtTechGameTests.startServer(helper, setup.rack(), core);
+            DatacenterGameTests.settle(level, core, 1);
+            core.ensureSystem(level);
+            String ip = core.ip();
+            Datacenters.Summary summary = datacenters.summary(here);
+            check(summary != null && summary.online(), "Het datacenter van deze test draait niet");
+
+            // Niet verbonden: de bril denkt niets, en er is geen brein, ook al heeft de eigenaar een datacenter.
+            check(DatacenterGlasses.link(owner) == DatacenterGlasses.Link.NOT_CONNECTED,
+                    "Een bril die nergens mee verbonden is: " + DatacenterGlasses.link(owner));
+            check(!DatacenterGlasses.ready(owner, DatacenterGlasses.Kind.ORDER), "Zonder verbinding mocht een opdracht toch");
+            check(DatacenterBrain.delayFor(owner) == -1, "Zonder verbinding heeft het brein toch een datacenter");
+
+            // Een kern zonder wachtwoord neemt geen bril aan, ook die van zijn eigenaar niet.
+            GlassesUplink.connect(owner, ip, "uplink1");
+            check(datacenters.uplink(owner.getUUID()) == null, "Een kern zonder wachtwoord nam een bril aan");
+            core.setPassword("uplink1", level.random);
+
+            // Een fout wachtwoord: niet verbonden, en het staat in het logboek.
+            GlassesUplink.connect(owner, ip, "wrong12");
+            check(datacenters.uplink(owner.getUUID()) == null, "Een fout wachtwoord verbond de bril");
+            check(DatacenterGameTests.logged(core, EventLog.Type.LOGIN_FAIL, owner.getGameProfile().getName()),
+                    "Het foute wachtwoord staat niet in het logboek van de kern");
+
+            // Het goede wachtwoord: de bril en het brein draaien op dit datacenter.
+            GlassesUplink.connect(owner, ip, "uplink1");
+            Datacenters.Uplink uplink = datacenters.uplink(owner.getUUID());
+            check(uplink != null && uplink.ip().equals(ip) && uplink.host().equals(core.hostname()),
+                    "Met het goede wachtwoord hangt de bril aan " + uplink);
+            check(DatacenterGlasses.link(owner) == DatacenterGlasses.Link.OK, "Verbonden, maar de bril is " + DatacenterGlasses.link(owner));
+            check(DatacenterBrain.delayFor(owner) == summary.brainDelay() && DatacenterBrain.sourceFor(owner).equals(core.hostname()),
+                    "Het brein draait niet op het verbonden datacenter: " + DatacenterBrain.sourceFor(owner));
+            check(DatacenterGameTests.logged(core, EventLog.Type.LOGIN, "connected I.M.T glasses"),
+                    "Het logboek zegt niet wie zijn bril verbond");
+
+            // Een vreemde die het wachtwoord kent: hij is hier niemand, dus zijn bril verbindt niet.
+            GlassesUplink.connect(stranger, ip, "uplink1");
+            check(datacenters.uplink(stranger.getUUID()) == null
+                            && DatacenterGlasses.link(stranger) == DatacenterGlasses.Link.NOT_CONNECTED,
+                    "Een vreemde met het goede wachtwoord verbond toch zijn bril");
+            check(DatacenterGameTests.logged(core, EventLog.Type.LOGIN_FAIL, "uplink-stranger"),
+                    "Het logboek zegt niet dat een vreemde met het goede wachtwoord zijn bril wou verbinden");
+
+            // Een vertrouwde vriend: hij verbindt wel, en zijn waypoint staat op de SSD van dit datacenter.
+            core.addTrusted(friend.getUUID(), friend.getGameProfile().getName());
+            GlassesUplink.connect(friend, ip, "uplink1");
+            check(DatacenterGlasses.link(friend) == DatacenterGlasses.Link.OK, "Een vertrouwde speler: " + DatacenterGlasses.link(friend));
+            waypoint(friend, WaypointActionPayload.Op.ADD, 0, "Friend base");
+            check(waypoints(friend).waypoints().size() == 1, "De vriend kon geen waypoint bewaren");
+            ImtServer.reportToDatacenter(friend);
+            check(same(DatacenterGlasses.storedMb(server, here), DatacenterGlasses.waypointsMb(1)),
+                    "Het waypoint van de vriend telt niet mee op de SSD: " + DatacenterGlasses.storedMb(server, here) + " MB");
+            check(LogicServer.snapshot(level, core).getList("glassesLinked", Tag.TAG_STRING).size() == 2,
+                    "De app Monitor toont niet dat er twee brillen aan dit datacenter hangen");
+
+            // De eigenaar haalt hem uit Access: meteen geen datacenter meer. Zijn waypoint blijft bij hem, maar telt hier niet.
+            core.removeTrusted(friend.getGameProfile().getName());
+            check(DatacenterGlasses.link(friend) == DatacenterGlasses.Link.NO_ACCESS,
+                    "Uit Access gehaald, maar de bril is " + DatacenterGlasses.link(friend));
+            check(!DatacenterGlasses.ready(friend, DatacenterGlasses.Kind.ORDER), "Zonder toegang mocht een opdracht toch");
+            ImtServer.reportToDatacenter(friend);
+            check(waypoints(friend).waypoints().size() == 1, "Het waypoint van de vriend verdween");
+            check(same(DatacenterGlasses.storedMb(server, here), 0.0),
+                    "Zonder toegang telt zijn waypoint nog mee op de SSD: " + DatacenterGlasses.storedMb(server, here) + " MB");
+
+            // Loskoppelen kan altijd.
+            GlassesUplink.disconnect(owner);
+            check(datacenters.uplink(owner.getUUID()) == null && DatacenterGlasses.link(owner) == DatacenterGlasses.Link.NOT_CONNECTED
+                    && DatacenterBrain.delayFor(owner) == -1, "Losgekoppeld, maar de bril is " + DatacenterGlasses.link(owner));
+
+            // De kern is weg (zijn IP is weer vrij): er antwoordt niets meer op dat IP.
+            GlassesUplink.connect(owner, ip, "uplink1");
+            check(DatacenterGlasses.link(owner) == DatacenterGlasses.Link.OK, "Opnieuw verbinden lukte niet");
+            CoreNetworkData.get(level).release(here);
+            check(DatacenterGlasses.link(owner) == DatacenterGlasses.Link.NONE,
+                    "Een kern die weg is: de bril is " + DatacenterGlasses.link(owner));
+            CoreNetworkData.get(level).allocate(here, ip); // terug, zodat de kern in de testwereld blijft werken
             helper.succeed();
         });
     }

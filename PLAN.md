@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 634 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 635 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -9501,11 +9501,96 @@ uitminen".
   (5 x 3 x 5) bleef zoals het was; in LEESMIJ staat hoe je hem hoger maakt. Geen nieuwe versie: het is een aanpassing van
   iets dat er al was (het patchnummer telt vanzelf).
 
+### 122. Je bril verbinden met een security core: zijn datacenter, als je er eigenaar of vertrouwd bent (15 november)
+
+Jouw wens: "zorg dat het datacenter voor je bril afhankelijk is van de security core waar je aanhangt, of owner of trusted,
+je moet je bril connecten via het ip van je securitycore met password voor dat die bril aan de serverroom hangt"
+
+- [x] **Verbinden** (`logic/GlassesUplink`, `network/UplinkPayload` en `UplinkReplyPayload`): in het G-menu, tabblad
+      **Tech**, de nieuwe optie **Datacenter**. Die opent het inlogscherm van de laptop in een eigen vorm
+      (`OsLoginScreen.Mode.GLASSES`): IP en wachtwoord, Connect en Cancel, en **Disconnect** zolang je bril ergens aan
+      hangt; onder het wachtwoord staat waar hij nu aan hangt ("On dev-lab (10.x.x.x): online", of offline, no access, no
+      answer). De server kijkt het na met dezelfde regels als de Hacking Laptop (`SecurityOs.connect`, nu public): de kern
+      in dezelfde dimensie, met stroom en een wachtwoord; een fout wachtwoord staat in zijn logboek, de eigenaar hoort het,
+      en na 5 keer moet je even wachten.
+- [x] **Owner of trusted** (`DatacenterGlasses.mayConnect` en `hasAccess`): het goede wachtwoord is niet genoeg. Alleen de
+      eigenaar, de spelers in zijn Access, en zijn scoreboard-team als `[rules] teamsAreFriends` aan staat. Iemand anders
+      met het goede wachtwoord: geweigerd, een LOGIN_FAIL in het logboek, een bericht in Messages en een alarm van I.M.T
+      voor de eigenaar ("... knows the password of ..., but is not trusted there").
+- [x] **Welk datacenter** (`DatacenterGlasses.resolve`): de verbinding staat in de wereld (`Datacenters.uplinks`, per
+      speler: het IP van de kern, zijn naam en de naam van de speler). Elke keer kijken we opnieuw: staat er een kern op dat
+      IP (CoreNetworkData), heeft hij een datacenter, mag deze speler erop (in ZoneData: de eigenaar en Access, ook als de
+      kern niet geladen is), en draait het. Twee nieuwe toestanden naast NONE en OFFLINE: **NOT_CONNECTED** en
+      **NO_ACCESS**. Haalt de eigenaar je uit Access, of neemt iemand de kern over, dan heeft je bril meteen geen datacenter
+      meer (je navigatie, hacks en spion stoppen bij de volgende seconde).
+- [x] **Het brein** (`DatacenterBrain.best`): draait op hetzelfde datacenter als de bril. Met `[uplink] required = false`
+      en een bril die nergens aan hangt: je sterkste eigen datacenter, zoals vroeger (zo blijven ook de tests van het brein
+      werken, die zonder de regel draaien).
+- [x] **Bewaren** (`DatacenterGlasses.storedMb` en `freeSsdMb`): op de SSD's staan de waypoints van iedereen die met die
+      kern verbonden is en erop mag, ook als hij offline is; een nieuw waypoint telt die van de anderen mee.
+- [x] **De app Monitor**: onder RUNNING staat wiens bril eraan hangt ("Glasses: Lotte, Senne", `glassesLinked` in de
+      momentopname), ook als de server niet draait.
+- [x] **HUD, G-menu en het Brain-scherm**: in de HUD **DATACENTER NOT CONNECTED** of **NO ACCESS TO DATACENTER**; onder de
+      acties in het G-menu **NOT CONNECTED** of **NO ACCESS**; onder de optie Datacenter de naam van de kern (groen als het
+      draait) of **CONNECT**; in het Brain-scherm "Not connected: G menu, Tech, Datacenter". De status van de bril stuurt
+      nu ook de naam en het IP van de kern mee (`ImtStatusPayload`, protocol 47).
+- [x] **Teksten**: de meldingen van I.M.T (niet verbonden, geen toegang, verbonden, losgekoppeld, het alarm), de uitleg
+      bij `uplink.required` in de config, How it works (Glasses: een tweede tekst over het verbinden), LEESMIJ (een nieuwe
+      sectie "Je bril verbinden met een security core", en de oude teksten over "je sterkste datacenter").
+- [x] **Tests** (batch uplink, geen nieuwe batchnaam): nieuw `glasses_connect_with_the_ip_and_password_of_a_core` (niet
+      verbonden: niets en geen brein; geen wachtwoord, fout wachtwoord, het goede; een vreemde met het goede wachtwoord;
+      een vertrouwde vriend en zijn waypoint op de SSD; uit Access gehaald; loskoppelen; de kern weg). De twee bestaande
+      uplink-tests verbinden eerst.
+- [x] **Review**: drie aparte lezers (misbruik en toegang, regressies en de telling, het scherm en de teksten), met per
+      lezer een controleur die elke vondst tegen de code nakeek (6 agents, zo'n 1,3 miljoen tokens). Bevestigd en opgelost:
+      (1) een overname met de Hacking Laptop (`TowerHack.finish`) wiste de toegang niet: de vrienden van de vorige eigenaar
+      bleven vertrouwd en zijn wachtwoord werkte nog, dus hun bril bleef op het datacenter van de hacker draaien. Nu roept de
+      hack `resetAccessForNewOwner` aan, zoals jouw ontwerp van 28 september het wou (de vertrouwde lijst leeg, de nieuwe
+      eigenaar zet een nieuw wachtwoord, de mappen blijven); (2) met `uplink.required = false` viel het brein ook terug op je
+      eigen datacenter als je bril wel verbonden was maar daar geen toegang meer had (twee schermen noemden dan twee
+      datacenters): nu alleen als hij nergens mee verbonden is; (3) de uitleg in het verbindscherm werd afgeknipt ("is in
+      Stat..."); (4) een antwoord van drie regels liep over de knoppen: het scherm van de bril is nu 10 pixels hoger, en het
+      antwoord "Access denied" korter. Ook gedaan (de controleur vond het klein): verlies je je toegang, dan telt een antwoord
+      van het brein dat nog liep niet meer op dat datacenter. Niet overgenomen: wie het wachtwoord kent, kan met de laptop van
+      op afstand inloggen en zichzelf in Access zetten. Dat is het bestaande ontwerp van de desktop (wie het wachtwoord kent,
+      mag alles, ook het wachtwoord veranderen), niet iets van dit hoofdstuk; de eigenaar ziet het wel (een alarm bij het
+      inloggen, het logboek, en de naam in de app Monitor).
+- [x] **Volledige ronde**: 635 tests (634 + mijn nieuwe), allemaal groen in de laatste ronde (op hoofdstuk 120 en 121,
+      met de oplossingen van de review); de ronde ervoor (633 tests, nog op hoofdstuk 116) was ook groen. De test van de
+      toren-hack (`laptop_hack_takes_the_tower`) kijkt nu ook dat de vertrouwde spelers en het wachtwoord na de overname weg
+      zijn. Nog altijd 192 batchnamen.
+
+Mijn invulling (verander ik op jouw woord):
+- **De optie staat op Tech**, niet op Systems: daar past geen achtste optie (de vakjes lagen dan over de hint, zie
+  hoofdstuk 66).
+- **De verbinding hoort bij de speler**, niet bij het item: je waypoints horen ook bij jou. Geef je je bril door (Authorize
+  transfer), dan verbindt de nieuwe eigenaar hem zelf.
+- **Na het verbinden werkt het overal**, ook in de Nether: alleen het verbinden zelf moet in dezelfde dimensie (zoals SSH).
+- **Een nieuw wachtwoord koppelt niemand los**: wie verbonden is, blijft dat zolang hij eigenaar of vertrouwd is. Wil je
+  iemand eraf, haal hem uit Access.
+- **Bestaande werelden**: niemand is verbonden, ook wie al een datacenter had (jouw "je moet je bril connecten"). I.M.T zegt
+  hoe het moet zodra je iets vraagt dat een datacenter nodig heeft.
+- **Een oefening** (hoofdstuk 27) neemt de toegang niet weg: je bril blijft werken.
+- **Het brein volgt de bril**: één datacenter voor alles wat de bril doet.
+- **Versie 2.20**: iets nieuws (een nieuw systeem met een eigen scherm).
+
+Nog niet gedaan:
+- Niet in het spel bekeken, en geen screenshots: de rondleiding (`gradlew runVisualCheck -Ponly=uplink`, nieuwe foto's
+  ul09 tot ul14: het G-menu, het verbindscherm leeg, met een fout wachtwoord, verbonden) heb ik niet gedraaid, omdat jij op
+  dat moment Minecraft speelde (een tweede spelvenster steelt je focus). Nooit met een tweede speler (zie "Nog nooit in het
+  spel bekeken").
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **Je bril verbinden met een security core (hoofdstuk 122)**: alleen met tests gecontroleerd, geen screenshots.
+      Probeer: (1) G-menu, tabblad Tech, Datacenter: typ het IP (de app Status van je kern) en je wachtwoord. Staat er daarna
+      onder de optie Datacenter de naam van je kern in het groen, en is de rode regel in je HUD weg? (2) Een fout wachtwoord:
+      staat de rode melding netjes boven de knoppen? (3) Laat een vriend verbinden die je in Access zette: zie je in de app
+      Monitor onder RUNNING "Glasses: ..."? Haal hem uit Access: staat er bij hem meteen NO ACCESS TO DATACENTER? (4) Het
+      Brain-scherm zonder verbinding: past "Not connected: G menu, Tech, Datacenter" naast de titel?
 - [ ] **De arm tot vijf hoog (hoofdstuk 121)**: met tests en screenshots gecontroleerd, niet gespeeld. Probeer: (1) laat
       de auto een kamer of gang van 5 of 6 hoog uitminen met de `dig` uit LEESMIJ; (2) kijk van dichtbij omhoog naar de
       boor: blijft de auto zichtbaar? (3) ziet de mast er goed uit op vijf hoog, ook terwijl hij schuift?

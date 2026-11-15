@@ -28,7 +28,7 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Verhoog dit getal als je de berichten verandert, zodat oude en nieuwe versies niet door elkaar lopen. */
-    private static final String PROTOCOL_VERSION = "46";
+    private static final String PROTOCOL_VERSION = "47";
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -163,6 +163,12 @@ public final class ModNetwork {
                 com.senne.imttech.security.os.SecurityOs.login(player, payload.ip(), payload.password());
             }
         });
+        // Hoofdstuk 122: de I.M.T-bril verbinden met het datacenter van een kern (IP + wachtwoord), of loskoppelen.
+        registrar.playToServer(UplinkPayload.TYPE, UplinkPayload.STREAM_CODEC, (payload, context) -> {
+            if (context.player() instanceof ServerPlayer player) {
+                com.senne.imttech.logic.GlassesUplink.handle(player, payload.ip(), payload.password());
+            }
+        });
         // Hoofdstuk 50: de I.M.T Phone verbinden, en zijn PIN.
         registrar.playToServer(PhoneLoginPayload.TYPE, PhoneLoginPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) {
@@ -287,6 +293,8 @@ public final class ModNetwork {
                 (payload, context) -> ClientPayloadHandlers.onOsLoginPrompt(payload, context));
         registrar.playToClient(PhonePromptPayload.TYPE, PhonePromptPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onPhonePrompt(payload, context));
+        registrar.playToClient(UplinkReplyPayload.TYPE, UplinkReplyPayload.STREAM_CODEC,
+                (payload, context) -> ClientPayloadHandlers.onUplinkReply(payload, context));
         registrar.playToClient(ComputerCodePromptPayload.TYPE, ComputerCodePromptPayload.STREAM_CODEC,
                 (payload, context) -> ClientPayloadHandlers.onComputerCodePrompt(payload, context));
         registrar.playToClient(DomeOpenPayload.TYPE, DomeOpenPayload.STREAM_CODEC,
