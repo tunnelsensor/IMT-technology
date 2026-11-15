@@ -156,10 +156,16 @@ public final class StorageGameTests {
         expectProblem("when started:\n    say(order.item)\n", ProgramKind.CAR, "order.item only works inside when ordered(...)");
         check(problem("when ordered(\"store\"):\n    take(order.item, order.count)\n", ProgramKind.CAR).isEmpty(),
                 "when ordered(\"store\") klopt niet in een autoprogramma");
-        // In een autoprogramma zijn de nieuwe woorden bezet...
-        expectProblem("def check():\n    stop()\n", ProgramKind.CAR, "\"check\" is already a word of the language");
-        expectProblem("def a():\n    take = 3\n", ProgramKind.CAR, "\"take\" is already a word of the language");
-        // ...maar elders blijven het gewone namen (een diagram van vóór hoofdstuk 113 blijft kloppen).
+        // De nieuwe woorden zijn nergens bezet: een programma van vóór hoofdstuk 113 mag ze als eigen naam hebben, ook een
+        // autoprogramma (dat bestaat sinds hoofdstuk 108). Zijn eigen def gaat dan vóór het woord van de taal; dat de auto
+        // die def ook echt draait, test rc_car_arm_reaches_three_high. (Gevonden bij de nalezing.)
+        String oldCar = "take = 0\ndef check():\n    take = take + 1\n\ndef lane(put: int):\n    for arm_up in range(put):\n"
+                + "        check()\n";
+        check(problem(oldCar, ProgramKind.CAR).isEmpty(), "Een autoprogramma van vóór de update met de namen take, check, put en"
+                + " arm_up klopt niet meer: " + problem(oldCar, ProgramKind.CAR));
+        // mine_down(2) bestaat niet meer, en de uitleg wijst niet naar de arm (die kan niet naar beneden).
+        expectProblem("def a():\n    mine_down(2)\n", ProgramKind.CAR, "To dig deeper, repeat it");
+        // ...en elders blijven het gewone namen (een diagram van vóór hoofdstuk 113 blijft kloppen).
         check(problem("""
                 item = 0
                 when every(5):
@@ -197,6 +203,9 @@ public final class StorageGameTests {
         RcCarEntity car = car(helper, start, """
                 stones = 0
                 top = false
+                take = 0
+                def put():
+                    take = take + 1
                 def tower():
                     for i in range(3):
                         if block() == "stone":
@@ -209,6 +218,7 @@ public final class StorageGameTests {
                     arm_down()
                     place("cobblestone")
                     arm_down(2)
+                    put()
                 """);
         check(car.arm() == 0, "Een nieuwe auto heeft zijn arm niet beneden");
         check(car.brain().startFunction("tower"), "De functie tower begon niet");
@@ -224,6 +234,9 @@ public final class StorageGameTests {
             check(car.trunk().countItem(Items.COBBLESTONE) == 1, "In de kofferbak ligt " + car.trunk().countItem(Items.COBBLESTONE)
                     + " cobblestone in plaats van 1 (twee gebroken, één geplaatst)");
             check(car.arm() == 0, "Zijn arm staat niet weer beneden: " + car.arm());
+            // Een programma van vóór de update met een eigen def put(): put() draait die def, niet het put van de taal.
+            check(Double.valueOf(1).equals(car.brain().global("take")), "put() draaide niet de eigen def put() van het programma: take = "
+                    + car.brain().global("take"));
             // arm_down(2) vanaf 1: hij kwam maar één blok lager, dus car.blocked.
             check(car.body().blocked(), "arm_down(2) vanaf stand 1 gaf geen car.blocked");
         });
@@ -240,12 +253,28 @@ public final class StorageGameTests {
     public static void rc_car_takes_and_puts(GameTestHelper helper) {
         BlockPos start = new BlockPos(7, 2, 10);
         Container low = barrel(helper, start.north(), new ItemStack(Items.IRON_INGOT, 20), new ItemStack(Items.DIAMOND, 5));
+        low.setItem(10, new ItemStack(Items.SHULKER_BOX)); // die past niet in zijn kofferbak
         Container high = barrel(helper, start.north().above());
+        // Een dubbele kist verderop (hier komt de auto pas aan het eind): de rechterhelft met een slot en twee smaragden.
+        BlockPos leftHalf = start.north().east(4);
+        helper.setBlock(leftHalf, Blocks.CHEST.defaultBlockState().setValue(net.minecraft.world.level.block.ChestBlock.FACING, Direction.SOUTH)
+                .setValue(net.minecraft.world.level.block.ChestBlock.TYPE, net.minecraft.world.level.block.state.properties.ChestType.LEFT));
+        helper.setBlock(leftHalf.west(), Blocks.CHEST.defaultBlockState().setValue(net.minecraft.world.level.block.ChestBlock.FACING, Direction.SOUTH)
+                .setValue(net.minecraft.world.level.block.ChestBlock.TYPE, net.minecraft.world.level.block.state.properties.ChestType.RIGHT));
+        BaseContainerBlockEntity rightHalf = (BaseContainerBlockEntity) helper.getBlockEntity(leftHalf.west());
+        rightHalf.setItem(0, new ItemStack(Items.EMERALD, 2));
+        CompoundTag lockTag = rightHalf.saveWithoutMetadata(helper.getLevel().registryAccess());
+        lockTag.putString("Lock", "secret");
+        rightHalf.loadWithComponents(lockTag, helper.getLevel().registryAccess());
         RcCarEntity car = car(helper, start, """
                 seen = 0
                 free = 0
                 missing = false
+                nothing = ""
+                blank = false
                 def work():
+                    take(nothing)
+                    blank = item(nothing) in chest() or trunk.count(nothing) > 0 or chest.count(nothing) > 0
                     if item("Iron Ingot") in chest() and not item("gold_ingot") in chest():
                         seen = chest.count("iron_ingot")
                     take("iron_ingot", 8)
@@ -274,6 +303,14 @@ public final class StorageGameTests {
                     + " in plaats van 25 (27 vakjes, twee bezet)");
             check(car.cellPercent() < before, "Nemen en leggen kostte geen stroom");
             check(!car.body().blocked(), "car.blocked is waar na check() bij een ton");
+            // Een lege naam (zoals order.item buiten een bestelling) is niets, niet alles (gevonden bij de nalezing).
+            check(Boolean.FALSE.equals(car.brain().global("blank")), "Een lege naam telde als elk item");
+            // Een shulkerdoos past niet in zijn kofferbak: "in chest()" zegt dan nee, en take zegt waarom.
+            check(com.senne.imttech.car.CarWork.countInChest(helper.getLevel(), car, "shulker_box") == 0,
+                    "chest.count telt een shulkerdoos die de auto niet kan meenemen");
+            check(com.senne.imttech.car.CarWork.take(helper.getLevel(), car, "shulker_box", -1) == com.senne.imttech.car.CarWork.Result.REFUSED
+                    && car.note().contains("cannot carry") && count(low, Items.SHULKER_BOX) == 1,
+                    "take van een shulkerdoos zegt niet dat hij die niet kan dragen: " + car.note());
             // Een kist met een slot: hij opent hem niet, en zegt waarom.
             BaseContainerBlockEntity locked = (BaseContainerBlockEntity) low;
             CompoundTag tag = locked.saveWithoutMetadata(helper.getLevel().registryAccess());
@@ -281,6 +318,13 @@ public final class StorageGameTests {
             locked.loadWithComponents(tag, helper.getLevel().registryAccess());
             check(com.senne.imttech.car.CarWork.take(helper.getLevel(), car, "iron_ingot", -1) == com.senne.imttech.car.CarWork.Result.REFUSED
                     && count(low, Items.IRON_INGOT) == 12 && car.note().contains("locked"), "De auto opende een kist met een slot: " + car.note());
+            // Een dubbele kist met een slot op de andere helft: Minecraft opent dan geen van beide, de auto ook niet
+            // (gevonden bij de nalezing: hij bereikte via de open helft ook de vakjes van de helft met het slot).
+            net.minecraft.world.phys.Vec3 there = net.minecraft.world.phys.Vec3.atBottomCenterOf(helper.absolutePos(leftHalf.south()));
+            car.moveTo(there.x, there.y, there.z);
+            check(com.senne.imttech.car.CarWork.take(helper.getLevel(), car, "", -1) == com.senne.imttech.car.CarWork.Result.REFUSED
+                    && rightHalf.countItem(Items.EMERALD) == 2 && car.note().contains("locked"),
+                    "De auto nam uit een dubbele kist met een slot op de andere helft: " + car.note());
         });
     }
 
@@ -404,13 +448,27 @@ public final class StorageGameTests {
         // Een Chest Sensor op de ton met de 10 ijzer (aan de achterkant), met een netwerkkabel naar de interface.
         BlockPos sensor = barrelAt(2, 1).north();
         helper.setBlock(sensor, StorageRegistry.CHEST_SENSOR.get().defaultBlockState().setValue(ChestSensorBlock.FACING, Direction.NORTH));
+        // In het spel is een sensor van wie hem neerzet. (Zonder eigenaar telt hij alleen op vrije grond, en in de testwereld
+        // ligt dit stuk soms in het gebied van de kern van een test ernaast.)
+        ((com.senne.imttech.storage.ChestSensorBlockEntity) helper.getBlockEntity(sensor)).setOwner(owner);
         for (BlockPos cable : List.of(STATION.north(), STATION.north().east(), STATION.north().east(2), sensor.below())) {
             Cables.add(CableKind.NETWORK, level, helper.absolutePos(cable));
         }
+        // Een sensor van een vreemde op een ton met goud, aan dezelfde kabel: die leest de interface niet (gevonden bij de
+        // nalezing: een netwerk houdt zich niet aan eigenaars, en zo las een vreemde jouw kisten).
+        ServerPlayer stranger = ImtTechGameTests.makeSurvivalOwner(helper, HOME.south(4), "storage-stranger");
+        barrelIn(helper, 3, 1).setItem(0, new ItemStack(Items.GOLD_INGOT, 5));
+        BlockPos strangerSensor = barrelAt(3, 1).north();
+        helper.setBlock(strangerSensor, StorageRegistry.CHEST_SENSOR.get().defaultBlockState().setValue(ChestSensorBlock.FACING, Direction.NORTH));
+        ((com.senne.imttech.storage.ChestSensorBlockEntity) helper.getBlockEntity(strangerSensor)).setOwner(stranger);
+        Cables.add(CableKind.NETWORK, level, helper.absolutePos(strangerSensor.below()));
+        ItemKind gold = ItemKind.of(new ItemStack(Items.GOLD_INGOT));
         helper.runAfterDelay(12, () -> {
             StorageInterfaceBlockEntity.Stock stock = station.stock(level);
             check(stock.sensors() == 1 && stock.count(iron) == 10 && stock.storages() == 1, "Met één sensor ziet de interface "
                     + stock.count(iron) + " ijzer in " + stock.storages() + " kisten (" + stock.sensors() + " sensors)");
+            check(stock.count(gold) == 0, "De interface leest de sensor van een vreemde");
+            check(Storages.stationOf(level, helper.absolutePos(strangerSensor)) == null, "De sensor van een vreemde zegt dat de interface hem leest");
             check(Storages.stationOf(level, helper.absolutePos(sensor)) == station, "De sensor zegt niet aan welke interface hij hangt");
             check(car.brain().startFunction("scan"), "De functie scan begon niet");
         });
@@ -445,6 +503,11 @@ public final class StorageGameTests {
                     check(count(barrelIn(helper, 2, 1), Items.IRON_INGOT) == 0 && count(barrelIn(helper, 4, 2), Items.IRON_INGOT) == 4,
                             "De tonnen hebben niet 0 en 4 ijzer over");
                     check(car.trunk().isEmpty() && !car.brain().busy() && car.arm() == 0, "De auto is niet leeg en klaar na de bestelling");
+                    // Bij de interface: chest.slots en chest.free gaan over PICK-UP (daar legt put() in), chest.items over de
+                    // vakjes om op te bergen (daar neemt take() uit). Gevonden bij de nalezing.
+                    int[] numbers = com.senne.imttech.car.CarWork.chestNumbers(level, car);
+                    check(numbers[0] == 9 && numbers[1] == 8 && numbers[2] == 0, "Bij de interface zeggen chest.slots, chest.free en"
+                            + " chest.items " + numbers[0] + ", " + numbers[1] + " en " + numbers[2] + " in plaats van 9, 8 en 0");
                     check(car.blockPosition().equals(helper.absolutePos(HOME)) && car.body().facing() == Direction.NORTH,
                             "De auto staat niet weer thuis met zijn neus naar de interface");
                     check(station.stock(level).count(iron) == 4, "De interface denkt dat er nog " + station.stock(level).count(iron) + " ijzer ligt");
@@ -564,6 +627,36 @@ public final class StorageGameTests {
                 helper.absolutePos(barrelAt(1, 0)), null), level.getGameTime());
         Storages.handleAction(alice, station, StorageActionPayload.fetch(new ItemStack(Items.IRON_INGOT), 99));
         check(station.orders().size() == 1 && station.orders().getFirst().count == 9, "Bestellen via het scherm gaf niet 9 ijzer (wat er ligt)");
+        // Waarom de bestelling wacht (gevonden bij de nalezing). Geen cel, of een restje van 1%: te leeg.
+        StorageOrder waiting = station.orders().getFirst();
+        station.tickOrders(level);
+        check(waiting.state == StorageOrder.State.WAITING && waiting.note.contains("almost empty"), "Een auto zonder cel: "
+                + waiting.state + " \"" + waiting.note + "\"");
+        car.swapCell(EnergyCellItem.withCharge(1.0f));
+        station.tickOrders(level);
+        check(waiting.state == StorageOrder.State.WAITING && waiting.note.contains("almost empty"), "Een auto met 1% in zijn cel kreeg"
+                + " de bestelling: " + waiting.state + " \"" + waiting.note + "\"");
+        // Een volle cel, maar hij staat een blok naast zijn thuisplek: wachten (zijn programma is voor die plek geschreven).
+        car.swapCell(EnergyCellItem.withCharge(EnergyCellItem.FULL));
+        car.moveTo(car.getX() + 1, car.getY(), car.getZ());
+        station.tickOrders(level);
+        check(waiting.state == StorageOrder.State.WAITING && waiting.note.contains("home spot") && !car.brain().busy(),
+                "Een auto naast zijn thuisplek kreeg de bestelling: " + waiting.state + " \"" + waiting.note + "\"");
+        car.moveTo(car.getX() - 1, car.getY(), car.getZ());
+        check(station.atHome(car), "Terug op zijn plek staat de auto niet thuis");
+        // Losmaken terwijl hij bezig is: de bestelling wacht weer op een auto (ze mislukt niet).
+        waiting.state = StorageOrder.State.RUNNING;
+        waiting.car = car.link();
+        Storages.handleAction(alice, station, StorageActionPayload.link(car.link(), false));
+        check(waiting.state == StorageOrder.State.WAITING && waiting.car == null, "Na losmaken wacht de bestelling niet weer: " + waiting.state);
+        Storages.handleAction(alice, station, StorageActionPayload.link(car.link(), true));
+        check(station.linked(car.link()), "Alice kon haar auto niet opnieuw koppelen");
+        // De auto is intussen van Bob (opgepakt in diens zone en weer neergezet): de bestelling van Alice draait nooit het
+        // programma van Bob met de rechten van Alice.
+        car.setOwner(bob);
+        station.tickOrders(level);
+        check(waiting.state == StorageOrder.State.WAITING && waiting.note.contains("may not control") && !car.brain().busy(),
+                "De auto van een ander kreeg de bestelling: " + waiting.state + " \"" + waiting.note + "\"");
         state = Storages.state(alice, station);
         check(state.stock().size() == 1 && state.stock().getFirst().count() == 9 && state.orders().size() == 1,
                 "Het scherm toont niet de 9 ijzer en de bestelling");

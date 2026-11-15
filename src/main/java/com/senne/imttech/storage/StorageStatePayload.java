@@ -16,7 +16,10 @@ import net.minecraft.world.item.ItemStack;
  * als je het scherm opent, en daarna telkens als er iets verandert (hooguit twee keer per seconde): wat er in de opslag
  * zit, de bestellingen, en de auto's.
  *
- * @param name     de naam van de interface
+ * @param name      de naam van de interface
+ * @param withStock zit de lijst van de opslag erin (sensors, storages, stock, more)? Zo niet, dan veranderde die niet, en
+ *                  houdt het scherm de vorige (zie {@link #withStockOf}). De lijst kan groot zijn; de bestellingen en de
+ *                  auto's zijn klein en gaan elke tick mee als ze veranderen. (Gevonden bij de nalezing.)
  * @param sensors  hoeveel Chest Sensors hij via zijn netwerk ziet
  * @param storages hoeveel kisten hij kent (met een sensor, of gezien door een auto)
  * @param stock    wat er in de opslag zit, per soort
@@ -24,10 +27,15 @@ import net.minecraft.world.item.ItemStack;
  * @param orders   de bestellingen, de oudste eerst
  * @param cars     de gekoppelde auto's, en de auto's in de buurt die je kunt koppelen
  */
-public record StorageStatePayload(String name, int sensors, int storages, List<Entry> stock, int more, List<Order> orders,
-                                  List<Car> cars) implements CustomPacketPayload {
+public record StorageStatePayload(String name, boolean withStock, int sensors, int storages, List<Entry> stock, int more,
+                                  List<Order> orders, List<Car> cars) implements CustomPacketPayload {
     /** Een leeg scherm (tot het eerste bericht er is). */
-    public static final StorageStatePayload EMPTY = new StorageStatePayload("", 0, 0, List.of(), 0, List.of(), List.of());
+    public static final StorageStatePayload EMPTY = new StorageStatePayload("", true, 0, 0, List.of(), 0, List.of(), List.of());
+
+    /** Dit bericht, met de lijst van de opslag uit {@code old} als die er zelf niet in zit. */
+    public StorageStatePayload withStockOf(StorageStatePayload old) {
+        return withStock ? this : new StorageStatePayload(name, true, old.sensors(), old.storages(), old.stock(), old.more(), orders, cars);
+    }
 
     /** Zoveel soorten, bestellingen en auto's passen er hooguit in één bericht. */
     public static final int MAX_STOCK = 2048;
@@ -94,6 +102,8 @@ public record StorageStatePayload(String name, int sensors, int storages, List<E
     public static final int CAR_AWAY = 2;
     public static final int CAR_NO_POWER = 3;
     public static final int CAR_JAMMED = 4;
+    /** Gekoppeld, maar hij staat niet op zijn thuisplek (zie StorageInterfaceBlockEntity.Home). */
+    public static final int CAR_NOT_HOME = 5;
 
     /**
      * Eén auto.
@@ -143,17 +153,25 @@ public record StorageStatePayload(String name, int sensors, int storages, List<E
 
         @Override
         public StorageStatePayload decode(RegistryFriendlyByteBuf buffer) {
-            return new StorageStatePayload(buffer.readUtf(64), buffer.readVarInt(), buffer.readVarInt(), stockCodec.decode(buffer),
-                    buffer.readVarInt(), orderCodec.decode(buffer), carCodec.decode(buffer));
+            String name = buffer.readUtf(64);
+            boolean withStock = buffer.readBoolean();
+            int sensors = withStock ? buffer.readVarInt() : 0;
+            int storages = withStock ? buffer.readVarInt() : 0;
+            List<Entry> stock = withStock ? stockCodec.decode(buffer) : List.of();
+            int more = withStock ? buffer.readVarInt() : 0;
+            return new StorageStatePayload(name, withStock, sensors, storages, stock, more, orderCodec.decode(buffer), carCodec.decode(buffer));
         }
 
         @Override
         public void encode(RegistryFriendlyByteBuf buffer, StorageStatePayload state) {
             buffer.writeUtf(clip(state.name(), 64), 64);
-            buffer.writeVarInt(state.sensors());
-            buffer.writeVarInt(state.storages());
-            stockCodec.encode(buffer, state.stock());
-            buffer.writeVarInt(state.more());
+            buffer.writeBoolean(state.withStock());
+            if (state.withStock()) {
+                buffer.writeVarInt(state.sensors());
+                buffer.writeVarInt(state.storages());
+                stockCodec.encode(buffer, state.stock());
+                buffer.writeVarInt(state.more());
+            }
             orderCodec.encode(buffer, state.orders());
             carCodec.encode(buffer, state.cars());
         }

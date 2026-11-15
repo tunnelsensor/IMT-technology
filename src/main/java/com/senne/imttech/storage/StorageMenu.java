@@ -2,6 +2,7 @@ package com.senne.imttech.storage;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
@@ -55,8 +56,16 @@ public class StorageMenu extends AbstractContainerMenu {
     private int tab = TAB_ORDER;
     /** In jouw spel: wat de server het laatst stuurde. */
     private StorageStatePayload state = StorageStatePayload.EMPTY;
-    /** Op de server: wat we het laatst stuurden. */
-    private long sentSignature = Long.MIN_VALUE;
+    /**
+     * Zo vaak (ticks) kijken we of de lijst van de opslag veranderde: vier keer per seconde (bij een heel grote opslag één
+     * keer per seconde). De bestellingen en de auto's kijken we elke tick na.
+     */
+    private static final int STOCK_TICKS = 5;
+    private static final int BIG_STOCK_TICKS = 20;
+    /** Op de server: de vingerafdrukken van wat we het laatst stuurden, en over hoeveel ticks we de opslag weer nakijken. */
+    private long sentRest = Long.MIN_VALUE;
+    private long sentStock = Long.MIN_VALUE;
+    private int untilStock;
 
     /** In jouw spel. */
     public StorageMenu(int containerId, Inventory inventory, RegistryFriendlyByteBuf extra) {
@@ -111,8 +120,9 @@ public class StorageMenu extends AbstractContainerMenu {
         return state;
     }
 
+    /** In jouw spel: het nieuwe bericht (zat de lijst van de opslag er niet in, dan blijft de vorige). */
     public void setState(StorageStatePayload state) {
-        this.state = state;
+        this.state = state.withStockOf(this.state);
     }
 
     /** Een IN-vakje: alleen op het tabblad Store te zien. Wat je erin legt, bergt een auto op. */
@@ -140,19 +150,28 @@ public class StorageMenu extends AbstractContainerMenu {
     }
 
     /**
-     * Elke tick op de server (zolang het scherm open staat): veranderde er iets aan de opslag, de bestellingen of de
-     * auto's, dan krijgt het scherm een nieuw bericht.
+     * Elke tick op de server (zolang het scherm open staat): veranderden de bestellingen of de auto's, dan krijgt het
+     * scherm een nieuw bericht; de lijst van de opslag zit er alleen in als die veranderde, en die kijken we vier keer per
+     * seconde na. (Gevonden bij de nalezing: eerst ging bij elke verandering de hele lijst mee, ook als alleen de cel van
+     * een auto een procent voller werd.)
      */
     @Override
     public void broadcastChanges() {
         super.broadcastChanges();
-        if (station == null || !(player instanceof ServerPlayer serverPlayer)) {
+        if (station == null || !(player instanceof ServerPlayer serverPlayer) || !(station.getLevel() instanceof ServerLevel level)) {
             return;
         }
-        long signature = Storages.signature(serverPlayer, station);
-        if (signature != sentSignature) {
-            sentSignature = signature;
-            Storages.send(serverPlayer, station);
+        boolean stockChanged = false;
+        if (--untilStock <= 0) {
+            StorageInterfaceBlockEntity.Shown shown = station.shown(level);
+            untilStock = shown.entries().size() > 500 ? BIG_STOCK_TICKS : STOCK_TICKS;
+            stockChanged = shown.signature() != sentStock;
+            sentStock = shown.signature();
+        }
+        long rest = Storages.restSignature(serverPlayer, station);
+        if (stockChanged || rest != sentRest) {
+            sentRest = rest;
+            Storages.send(serverPlayer, station, stockChanged);
         }
     }
 
@@ -169,7 +188,9 @@ public class StorageMenu extends AbstractContainerMenu {
             return true;
         }
         BlockPos pos = station.getBlockPos();
-        return !station.isRemoved() && player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) <= 64.0;
+        // Ook in dezelfde wereld (gevonden bij de nalezing: na een teleport naar een andere wereld bleef het scherm geldig).
+        return !station.isRemoved() && player.level() == station.getLevel()
+                && player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) <= 64.0;
     }
 
     /**

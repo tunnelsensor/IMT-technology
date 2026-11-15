@@ -470,14 +470,17 @@ public enum Op {
     }
 
     /**
-     * Is dit woord in elke soort programma bezet (je mag er geen def of naam zo noemen)? Voor bijna alles: ja, zo was het
-     * altijd. De woorden van hoofdstuk 113 ({@code take}, {@code put}, {@code check}, {@code arm_up}, {@code arm_down})
-     * zijn alleen bezet in het programma van een RC Car: het zijn gewone woorden, en een serverdiagram met
-     * {@code def check():} van vóór deze update moet blijven werken.
+     * Is dit woord bezet (je mag er geen def of naam zo noemen)? Voor bijna alles: ja, zo was het altijd. De woorden van
+     * hoofdstuk 113 ({@code take}, {@code put}, {@code check}, {@code arm_up}, {@code arm_down}) zijn nergens bezet: het
+     * zijn gewone woorden, en een programma van vóór die update mag ze als eigen naam gebruiken. Dat geldt voor een
+     * serverdiagram of robotprogramma, maar ook voor het programma van een RC Car (die bestaat sinds hoofdstuk 108): een
+     * eigen {@code def check():} gaat dan vóór het woord van de taal ({@code check()} roept die def aan), en een naam
+     * {@code take = 0} botst nergens mee. (Gevonden bij de nalezing: eerst waren ze in een autoprogramma bezet, en dan
+     * had een auto met zo'n oud programma na de update geen programma meer.)
      */
     public boolean reservedIn(@Nullable ProgramKind kind) {
         return switch (this) {
-            case TAKE, PUT, CHECK, ARM_UP, ARM_DOWN -> kind == ProgramKind.CAR;
+            case TAKE, PUT, CHECK, ARM_UP, ARM_DOWN -> false;
             default -> true;
         };
     }

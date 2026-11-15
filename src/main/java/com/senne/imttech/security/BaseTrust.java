@@ -102,6 +102,39 @@ public final class BaseTrust {
         return core != null && SecurityCores.isFriend(level, core, player);
     }
 
+    /**
+     * Zoals {@link #trustedHere(ServerLevel, BlockPos, Player)}, op nummer en naam: de speler hoeft niet online te zijn.
+     * Voor de regels van het opslagsysteem (hoofdstuk 113): wie iets bestelde bij een Storage Interface, de eigenaar van
+     * de interface, van een Chest Sensor of van een RC Car. Null = niemand.
+     */
+    public static boolean trustedHere(ServerLevel level, BlockPos pos, @Nullable UUID id, String name) {
+        if (id == null) {
+            return false;
+        }
+        ZoneData.Zone zone = ZoneData.get(level).at(level.dimension(), pos);
+        if (zone != null && zone.isBuilder(level, id, name)) {
+            return true;
+        }
+        SecurityCoreBlockEntity core = SecurityCores.coreAt(level, pos);
+        if (core == null || core.ownerId() == null
+                || com.senne.imttech.training.Training.isDrillTrainee(level, core.getBlockPos(), id)) {
+            return false;
+        }
+        return core.ownerId().equals(id) || core.isTrusted(id) || TeamFriends.allied(level, core.ownerName(), name);
+    }
+
+    /** Zoals {@link #wouldAllow(ServerPlayer, Placed)}, op nummer en naam (zie hierboven): er verandert niets. */
+    public static boolean wouldAllow(ServerLevel level, Placed device, @Nullable UUID id, String name) {
+        BlockPos pos = device.getBlockPos();
+        if (id != null && com.senne.imttech.training.Training.isDrillTraineeAt(level, pos, id)) {
+            return false;
+        }
+        if (id != null && id.equals(device.owner()) || trustedHere(level, pos, id, name)) {
+            return true;
+        }
+        return device.owner() == null && baseOwnerAt(level, pos) == null && !inBuilding(level, pos);
+    }
+
     /** De naam van de basis waar deze plek in ligt ("" als die van niemand is), of null als hij nergens in ligt. */
     public static @Nullable String baseOwnerAt(ServerLevel level, BlockPos pos) {
         ZoneData.Zone zone = ZoneData.get(level).at(level.dimension(), pos);

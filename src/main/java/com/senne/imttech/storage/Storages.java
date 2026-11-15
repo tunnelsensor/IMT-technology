@@ -130,7 +130,8 @@ public final class Storages {
             return;
         }
         StorageInterfaceBlockEntity station = stationOfCar(level, car);
-        if (station != null) {
+        // Alleen als wie de auto nu bestuurt die interface mag gebruiken (anders vulde de auto van een ander jouw lijst).
+        if (station != null && BaseTrust.wouldAllow(level, station, car.actorId(), car.actorName())) {
             station.saw(canonical(level, chest.pos()), chest.slots(), level.getGameTime());
         }
     }
@@ -148,10 +149,17 @@ public final class Storages {
         return null;
     }
 
-    /** De Storage Interface in hetzelfde net als dit blok (een Chest Sensor), of null. */
-    public static @Nullable StorageInterfaceBlockEntity stationOf(ServerLevel level, BlockPos device) {
-        for (BlockPos pos : LanGrid.networkOf(level, device)) {
-            if (level.isLoaded(pos) && level.getBlockEntity(pos) instanceof StorageInterfaceBlockEntity station) {
+    /**
+     * De Storage Interface in hetzelfde net als deze Chest Sensor die hem leest (zie StorageInterfaceBlockEntity.mayRead),
+     * of null.
+     */
+    public static @Nullable StorageInterfaceBlockEntity stationOf(ServerLevel level, BlockPos sensorPos) {
+        if (!(level.getBlockEntity(sensorPos) instanceof ChestSensorBlockEntity sensor)) {
+            return null;
+        }
+        for (BlockPos pos : LanGrid.networkOf(level, sensorPos)) {
+            if (level.isLoaded(pos) && level.getBlockEntity(pos) instanceof StorageInterfaceBlockEntity station
+                    && station.mayRead(level, sensor)) {
                 return station;
             }
         }
@@ -172,20 +180,23 @@ public final class Storages {
         player.serverLevel().playSound(null, station.getBlockPos(), SoundEvents.STONE_BUTTON_CLICK_ON, SoundSource.BLOCKS, 0.4f, 1.5f);
     }
 
-    /** Wat het scherm van deze interface aan deze speler toont. */
+    /** Wat het scherm van deze interface aan deze speler toont, met de lijst van de opslag. */
     public static StorageStatePayload state(ServerPlayer player, StorageInterfaceBlockEntity station) {
-        ServerLevel level = player.serverLevel();
-        StorageInterfaceBlockEntity.Stock stock = station.liveStock(level);
-        List<StorageStatePayload.Entry> entries = new ArrayList<>();
-        stock.totals().forEach((kind, count) -> entries.add(new StorageStatePayload.Entry(kind.stack(1), count,
-                stock.places().getOrDefault(kind, List.of()).size())));
-        // Op naam, zodat de vakjes niet verspringen als een aantal verandert.
-        entries.sort(Comparator.comparing((StorageStatePayload.Entry entry) -> entry.stack().getHoverName().getString(),
-                String.CASE_INSENSITIVE_ORDER).thenComparing(entry -> CarWork.itemName(entry.stack())));
-        // Niet meer dan er in één bericht past: de rest telt het scherm als "nog zoveel soorten".
-        int fits = fitting(entries, level.registryAccess(), MAX_STOCK_BYTES);
-        int more = entries.size() - fits;
-        entries.subList(fits, entries.size()).clear();
+        return state(player, station, true);
+    }
+
+    /** De wereld van de interface (niet die van de speler: die kan intussen ergens anders zijn). */
+    private static ServerLevel levelOf(ServerPlayer player, StorageInterfaceBlockEntity station) {
+        return station.getLevel() instanceof ServerLevel level ? level : player.serverLevel();
+    }
+
+    /**
+     * Wat het scherm van deze interface aan deze speler toont. Zonder {@code withStock} zonder de lijst van de opslag (die
+     * veranderde niet; zie StorageMenu.broadcastChanges).
+     */
+    public static StorageStatePayload state(ServerPlayer player, StorageInterfaceBlockEntity station, boolean withStock) {
+        ServerLevel level = levelOf(player, station);
+        StorageInterfaceBlockEntity.Shown shown = withStock ? station.shown(level) : null;
         List<StorageStatePayload.Order> orders = new ArrayList<>();
         for (StorageOrder order : station.orders()) {
             orders.add(new StorageStatePayload.Order(order.id, order.kind == StorageOrder.Kind.STORE, order.item.stack(1),
@@ -196,20 +207,68 @@ public final class Storages {
             RcCarEntity car = RcCars.find(link);
             cars.add(car == null || car.level() != level
                     ? new StorageStatePayload.Car(link, station.carName(link), true, StorageStatePayload.CAR_AWAY, -1, false, false)
-                    : car(car, true));
+                    : car(station, car, true));
         }
-        // Auto's in de buurt die je kunt koppelen: alleen die je mag besturen (zo neemt niemand jouw auto in dienst).
-        double range = LINK_RANGE;
-        for (RcCarEntity car : level.getEntitiesOfClass(RcCarEntity.class,
-                new net.minecraft.world.phys.AABB(station.getBlockPos()).inflate(range), RcCarEntity::isAlive)) {
+        for (RcCarEntity car : nearbyCars(player, station, level)) {
             if (cars.size() >= StorageStatePayload.MAX_CARS) {
                 break;
             }
+            cars.add(car(station, car, false));
+        }
+        return shown == null
+                ? new StorageStatePayload(station.title(), false, 0, 0, List.of(), 0, orders, cars)
+                : new StorageStatePayload(station.title(), true, shown.sensors(), shown.storages(), shown.entries(), shown.more(), orders, cars);
+    }
+
+    /**
+     * Auto's in de buurt die deze speler kan koppelen: alleen die hij mag besturen (zo neemt niemand jouw auto in dienst),
+     * op naam (zodat de lijst niet verspringt).
+     */
+    private static List<RcCarEntity> nearbyCars(ServerPlayer player, StorageInterfaceBlockEntity station, ServerLevel level) {
+        List<RcCarEntity> nearby = new ArrayList<>();
+        for (RcCarEntity car : level.getEntitiesOfClass(RcCarEntity.class,
+                new net.minecraft.world.phys.AABB(station.getBlockPos()).inflate(LINK_RANGE), RcCarEntity::isAlive)) {
             if (!station.linked(car.link()) && RcCars.wouldControl(player, car)) {
-                cars.add(car(car, false));
+                nearby.add(car);
             }
         }
-        return new StorageStatePayload(station.title(), stock.sensors(), stock.storages(), entries, more, orders, cars);
+        nearby.sort(Comparator.comparing(RcCarEntity::displayName).thenComparing(car -> car.link().toString()));
+        return nearby;
+    }
+
+    /**
+     * De lijst van de opslag voor het scherm, één keer per stand van de opslag (zie StorageInterfaceBlockEntity.shown): op
+     * naam gesorteerd (elke naam één keer opgezocht), zodat de vakjes niet verspringen als een aantal verandert; afgekapt op
+     * wat in één bericht past (de rest telt het scherm als "nog zoveel soorten"); en een vingerafdruk van alles wat het
+     * scherm ervan toont, in die volgorde. (Gevonden bij de nalezing: elke kijker sorteerde de hele lijst opnieuw bij elke
+     * verandering, en de vingerafdruk zag sommige veranderingen niet.)
+     */
+    static StorageInterfaceBlockEntity.Shown buildShown(ServerLevel level, StorageInterfaceBlockEntity.Stock stock) {
+        record Named(String name, String id, StorageStatePayload.Entry entry) {}
+        List<Named> named = new ArrayList<>(stock.totals().size());
+        stock.totals().forEach((kind, count) -> {
+            ItemStack one = kind.stack(1);
+            named.add(new Named(one.getHoverName().getString(), CarWork.itemName(one),
+                    new StorageStatePayload.Entry(one, count, stock.places().getOrDefault(kind, List.of()).size())));
+        });
+        named.sort(Comparator.comparing(Named::name, String.CASE_INSENSITIVE_ORDER).thenComparing(Named::id));
+        List<StorageStatePayload.Entry> entries = new ArrayList<>(named.size());
+        for (Named entry : named) {
+            entries.add(entry.entry());
+        }
+        int fits = fitting(entries, level.registryAccess(), MAX_STOCK_BYTES);
+        int more = entries.size() - fits;
+        List<StorageStatePayload.Entry> kept = List.copyOf(entries.subList(0, fits));
+        long signature = 17L;
+        signature = signature * 31L + stock.sensors();
+        signature = signature * 31L + stock.storages();
+        signature = signature * 31L + more;
+        for (StorageStatePayload.Entry entry : kept) {
+            signature = signature * 31L + ItemStack.hashItemAndComponents(entry.stack());
+            signature = signature * 31L + entry.count();
+            signature = signature * 31L + entry.places();
+        }
+        return new StorageInterfaceBlockEntity.Shown(kept, more, stock.sensors(), stock.storages(), signature);
     }
 
     /**
@@ -237,30 +296,30 @@ public final class Storages {
         }
     }
 
-    private static StorageStatePayload.Car car(RcCarEntity car, boolean linked) {
+    private static StorageStatePayload.Car car(StorageInterfaceBlockEntity station, RcCarEntity car, boolean linked) {
         int status = car.isJammed() ? StorageStatePayload.CAR_JAMMED
-                : !car.hasCell() || car.cellPercent() <= 0 ? StorageStatePayload.CAR_NO_POWER
-                : car.brain().busy() ? StorageStatePayload.CAR_BUSY : StorageStatePayload.CAR_READY;
+                : !StorageInterfaceBlockEntity.charged(car) ? StorageStatePayload.CAR_NO_POWER
+                : car.brain().busy() ? StorageStatePayload.CAR_BUSY
+                : linked && !station.atHome(car) ? StorageStatePayload.CAR_NOT_HOME : StorageStatePayload.CAR_READY;
         return new StorageStatePayload.Car(car.link(), car.displayName(), linked, status,
                 car.hasCell() ? Math.round(car.cellPercent()) : -1,
                 car.brain().handles(StorageOrder.Kind.FETCH.code()), car.brain().handles(StorageOrder.Kind.STORE.code()));
     }
 
     /**
-     * Een getal dat verandert zodra het scherm iets anders moet tonen: zo sturen we het bericht alleen als er iets
-     * veranderd is (zie StorageMenu).
+     * Een getal dat verandert zodra het scherm iets anders moet tonen, behalve de lijst van de opslag (die heeft zijn eigen
+     * vingerafdruk, zie buildShown): de bestellingen (de revisie van de interface), en alles wat het van de auto's toont.
+     * Zo sturen we het bericht alleen als er iets veranderd is (zie StorageMenu).
      */
-    public static long signature(ServerPlayer player, StorageInterfaceBlockEntity station) {
-        ServerLevel level = player.serverLevel();
-        station.refreshProgress();
-        long signature = station.revision() * 31L + station.liveStock(level).totals().hashCode();
+    public static long restSignature(ServerPlayer player, StorageInterfaceBlockEntity station) {
+        ServerLevel level = levelOf(player, station);
+        long signature = station.revision();
         for (UUID link : station.cars()) {
             RcCarEntity car = RcCars.find(link);
-            signature = signature * 31L + (car == null ? 7 : car(car, true).hashCode());
+            signature = signature * 31L + (car == null || car.level() != level ? link.hashCode() : car(station, car, true).hashCode());
         }
-        for (RcCarEntity car : level.getEntitiesOfClass(RcCarEntity.class,
-                new net.minecraft.world.phys.AABB(station.getBlockPos()).inflate(LINK_RANGE), RcCarEntity::isAlive)) {
-            signature = signature * 31L + car.link().hashCode();
+        for (RcCarEntity car : nearbyCars(player, station, level)) {
+            signature = signature * 31L + car(station, car, false).hashCode();
         }
         return signature;
     }
@@ -315,23 +374,31 @@ public final class Storages {
         }
     }
 
-    /** Maakt een auto los; was hij met een bestelling van deze interface bezig, dan stopt hij. */
+    /**
+     * Maakt een auto los. Was hij met een bestelling van déze interface bezig, dan stopt hij, en die bestelling wacht weer
+     * op een auto (zie StorageInterfaceBlockEntity.unlink). Een bestelling van een andere interface laat hij met rust.
+     * (Gevonden bij de nalezing: eerst mislukte de bestelling, en kon losmaken ook de bestelling van een andere interface
+     * stoppen.)
+     */
     private static void unlink(ServerLevel level, StorageInterfaceBlockEntity station, UUID link) {
         if (!station.unlink(link)) {
             return;
         }
         RcCarEntity car = RcCars.find(link);
-        if (car != null) {
-            if (car.brain().orderId() != 0) {
-                car.brain().stop();
+        if (car != null && car.level() == level) {
+            if (station.getBlockPos().equals(car.brain().orderStation())) {
+                car.brain().stop("it was unlinked from " + station.title());
             }
-            car.setStation(null);
+            GlobalPos where = car.station();
+            if (where != null && where.dimension() == level.dimension() && where.pos().equals(station.getBlockPos())) {
+                car.setStation(null);
+            }
         }
         level.playSound(null, station.getBlockPos(), SoundEvents.LEVER_CLICK, SoundSource.BLOCKS, 0.3f, 1.2f);
     }
 
-    /** Stuurt de stand naar wie het scherm open heeft. */
-    static void send(ServerPlayer player, StorageInterfaceBlockEntity station) {
-        ModNetwork.sendTo(player, state(player, station));
+    /** Stuurt de stand naar wie het scherm open heeft (met of zonder de lijst van de opslag). */
+    static void send(ServerPlayer player, StorageInterfaceBlockEntity station, boolean withStock) {
+        ModNetwork.sendTo(player, state(player, station, withStock));
     }
 }

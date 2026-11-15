@@ -1458,7 +1458,7 @@
   "screen.imttech.storage.link": "Link",
   "screen.imttech.storage.unlink": "Unlink",
   "screen.imttech.storage.no_cars_near": "No RC Car of yours within 32 blocks. Place one near this Storage Interface.",
-  "screen.imttech.storage.cars_help": "A linked car gets the orders. F and S: its program has when ordered(\"fetch\"): and when ordered(\"store\"):. Green dot: ready.",
+  "screen.imttech.storage.cars_help": "A linked car gets the orders, and starts each one from the spot where you linked it. F and S: its program has when ordered(\"fetch\"): and when ordered(\"store\"):. Green dot: ready.",
   "screen.imttech.storage.orders": "ORDERS",
   "screen.imttech.storage.no_orders": "no orders yet",
   "screen.imttech.storage.state.waiting": "waiting",

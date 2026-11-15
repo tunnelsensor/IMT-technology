@@ -372,9 +372,11 @@ public final class ScriptParser {
             throw new LogicException(line.number(), ScriptChecker.wrongKind(op.code() + "()", kind, op::allowedIn));
         }
         if ((op == Op.MINE || op == Op.MINE_UP || op == Op.MINE_DOWN) && !call.args().isEmpty()) {
-            // Tot hoofdstuk 113 bestond mine(2) en mine_up(2): nu reikt de boor verder met de arm.
-            throw new LogicException(line.number(), op.code() + "() breaks one block now, without a number. To break higher, raise "
-                    + "the arm: arm_up() and then mine()");
+            // Tot hoofdstuk 113 bestonden mine(2), mine_up(2) en mine_down(2): nu reikt de boor hoger met de arm. Naar
+            // beneden kan de arm niet: daar herhaal je mine_down() (na elke keer zakt de auto in het gat).
+            throw new LogicException(line.number(), op == Op.MINE_DOWN
+                    ? "mine_down() breaks one block now, without a number. To dig deeper, repeat it: for i in range(2): mine_down()"
+                    : op.code() + "() breaks one block now, without a number. To break higher, raise the arm: arm_up() and then mine()");
         }
         if (op.textArg() == Op.Arg.VALUES) {
             // goto(x, y, z), write(pin, true), order("Guard 1", "attack"): een rijtje waarden, als code bewaard.

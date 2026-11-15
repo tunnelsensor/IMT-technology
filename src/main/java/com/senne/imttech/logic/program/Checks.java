@@ -393,9 +393,10 @@ public final class Checks {
     }
 
     /**
-     * Is dit in deze soort programma al een woord van de taal? Hoofdstuk 113: de nieuwe woorden van de RC Car zijn alleen
-     * in een autoprogramma bezet (zie Op.reservedIn), zodat een serverdiagram of robotprogramma van vóór deze update met
-     * {@code def check():} of een naam {@code item} blijft kloppen. {@code kind} null = alleen wat overal bezet is.
+     * Is dit in deze soort programma al een woord van de taal? Hoofdstuk 113: de nieuwe woorden van de RC Car zijn nergens
+     * bezet (zie Op.reservedIn), zodat een programma van vóór die update met {@code def check():} of een naam {@code item}
+     * blijft kloppen, ook het programma van een auto. {@code kind} blijft erbij voor woorden die maar in één soort bezet
+     * zouden zijn; null = alleen wat overal bezet is.
      */
     public static boolean isWord(String name, @Nullable ProgramKind kind) {
         if (RESERVED.contains(name)) {

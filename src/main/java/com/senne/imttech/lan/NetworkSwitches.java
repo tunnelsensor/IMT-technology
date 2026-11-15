@@ -31,23 +31,32 @@ public final class NetworkSwitches {
 
     /** Rechtsklik op de switch: staat de speler dichtbij genoeg, dan opent zijn spel het scherm. */
     public static void open(ServerPlayer player, BlockPos pos) {
-        if (!(player.serverLevel().getBlockEntity(pos) instanceof NetworkSwitchBlockEntity entity)
-                || player.distanceToSqr(pos.getCenter()) > REACH * REACH) {
+        if (player.distanceToSqr(pos.getCenter()) > REACH * REACH || !player.serverLevel().isLoaded(pos)
+                || !(player.serverLevel().getBlockEntity(pos) instanceof NetworkSwitchBlockEntity entity)) {
             return;
         }
         ModNetwork.sendTo(player, new SwitchOpenPayload(pos, entity.name()));
         player.serverLevel().playSound(null, pos, SoundEvents.IRON_TRAPDOOR_OPEN, SoundSource.BLOCKS, 0.5f, 1.4f);
     }
 
-    /** Een knop uit het scherm: de poort aan één kant omzetten (wie ervoor staat, mag dat). */
+    /**
+     * Een knop uit het scherm: de poort aan één kant omzetten (wie ervoor staat, mag dat). Eerst de afstand, dan pas de
+     * wereld: de plek komt uit een bericht van het spel van de speler, en een blok lezen in een stuk wereld dat niet
+     * geladen is, laat de server dat stuk laden (gevonden bij hoofdstuk 113; dezelfde fout zat in het scherm van de
+     * Router, hoofdstuk 112).
+     */
     public static void handleAction(ServerPlayer player, SwitchActionPayload payload) {
         ServerLevel level = player.serverLevel();
-        BlockState state = level.getBlockState(payload.pos());
-        if (!(state.getBlock() instanceof NetworkSwitchBlock) || player.distanceToSqr(payload.pos().getCenter()) > REACH * REACH) {
+        BlockPos pos = payload.pos();
+        if (player.distanceToSqr(pos.getCenter()) > REACH * REACH || !level.isLoaded(pos)) {
+            return;
+        }
+        BlockState state = level.getBlockState(pos);
+        if (!(state.getBlock() instanceof NetworkSwitchBlock)) {
             return;
         }
         Direction side = Direction.from3DDataValue(payload.side());
-        setPort(level, payload.pos(), side, !NetworkSwitchBlock.isOn(state, side));
+        setPort(level, pos, side, !NetworkSwitchBlock.isOn(state, side));
     }
 
     /** Zet de poort aan één kant aan of uit (vanaf het deurtje of de desktop). Het netwerk loopt daarna anders. */

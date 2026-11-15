@@ -122,6 +122,25 @@ public final class RcCars {
     }
 
     /**
+     * Zoals {@link #wouldControl(ServerPlayer, RcCarEntity)}, op nummer en naam: wie iets bestelde bij een Storage
+     * Interface hoeft niet online te zijn (hoofdstuk 113). De auto is van hem; of hij is vertrouwd waar de auto staat, en de
+     * eigenaar van de auto hoort daar ook bij. De interface kijkt dit na bij elke bestelling die hij start: een auto die
+     * intussen van een ander is (opgepakt in diens zone en weer neergezet), of van iemand die niet meer bij de basis hoort,
+     * krijgt zo geen bestellingen meer, en draait dus nooit het programma van een ander met jouw rechten. (Gevonden bij de
+     * nalezing.)
+     */
+    public static boolean wouldControl(ServerLevel level, @Nullable UUID id, String name, RcCarEntity car) {
+        UUID owner = car.owner();
+        if (owner == null) {
+            return BaseTrust.wouldAllow(level, car, id, name);
+        }
+        if (owner.equals(id)) {
+            return true;
+        }
+        return BaseTrust.trustedHere(level, car.blockPosition(), id, name) && ownerBelongsHere(level, car);
+    }
+
+    /**
      * Hoort de eigenaar van de auto bij de basis waar de auto nu staat? Dezelfde regel als BaseTrust.trustedHere, maar op
      * nummer en naam: de eigenaar hoeft niet op de server te zijn.
      */

@@ -769,6 +769,16 @@ public final class NetworkGameTests {
             }
             check(row != null && row.getList("ports", net.minecraft.nbt.Tag.TAG_COMPOUND).size() == 6,
                     "Devices toont de switch niet met zes poorten: " + row);
+            // Het deurtje van de switch: een knop voor de switch zelf (je staat ervoor) zet de poort weer aan; een knop met
+            // een plek heel ver weg doet niets en laadt geen stuk wereld (gevonden bij hoofdstuk 113).
+            com.senne.imttech.lan.NetworkSwitches.handleAction(owner,
+                    new com.senne.imttech.network.SwitchActionPayload(swAbs, Direction.UP.get3DDataValue()));
+            check(com.senne.imttech.lan.NetworkSwitchBlock.isOn(level.getBlockState(swAbs), Direction.UP),
+                    "De knop van het deurtje zette de poort niet weer aan");
+            BlockPos farAway = swAbs.offset(20_000, 0, 20_000);
+            com.senne.imttech.lan.NetworkSwitches.handleAction(owner,
+                    new com.senne.imttech.network.SwitchActionPayload(farAway, Direction.UP.get3DDataValue()));
+            check(!level.isLoaded(farAway), "Een knop van het switchscherm laadde een stuk wereld ver weg");
             helper.succeed();
         });
     }

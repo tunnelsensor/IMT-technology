@@ -8846,8 +8846,7 @@ Jouw antwoorden op mijn vragen (twee rondes):
 - [x] LEESMIJ (nieuw "Het opslagsysteem", en bij de RC Car de arm, de kisten en de nieuwe kamer) en
       `publish/description.md`.
 
-Bij mijn eigen nalezing (ik heb de code van dit hoofdstuk zelf nagelezen; een nalezing door aparte lezers volgt na de
-commit, zie "Nog niet gedaan"):
+Bij mijn eigen nalezing (vóór de commit):
 - [x] Een bestelling kon beëindigd worden door een **auto die er niet meer mee bezig was** (een auto die je aan een andere
       interface koppelde terwijl hij reed): nu telt alleen de auto van de bestelling, en een auto die je ergens anders
       koppelt, stopt eerst.
@@ -8860,6 +8859,63 @@ commit, zie "Nog niet gedaan"):
 - [x] Het voorbeeld liet wat het **niet kwijt kon** (alles vol) in de kofferbak van de auto liggen; nu brengt het dat
       terug naar PICK-UP.
 - [x] Een telfout in `take` in een geval dat niet hoort voor te komen (de kofferbak neemt minder aan dan hij zei).
+
+De onafhankelijke nalezing (na de commit `c3431b4`, 15 november). Vier lezers, elk met één invalshoek (de kisten en de
+rechten, de bestellingen en de auto, de taal, het scherm en het netwerk), en per invalshoek een scepticus die elke vondst
+probeerde te weerleggen: 8 agents, geen fouten, ongeveer 2,3 miljoen tokens, 36 minuten. Van de 16 vondsten waren er 14
+echt (de sceptici en ik keken ze allebei na in de code). Alle 14 zijn hersteld, en voor elk staat er een controle in een
+test die zonder de herstelling faalt:
+- [x] **Een auto die van een ander werd** (opgepakt in diens zone en weer neergezet) bleef aan jouw interface hangen, en
+      jouw bestellingen draaiden dan zijn programma met jouw rechten: door je muren boren, je kisten leeghalen. Hetzelfde
+      met de auto van iemand die je uit Access haalde. Nu kijkt de interface bij elke bestelling of wie bestelde de auto
+      mag besturen (`RcCars.wouldControl`, op nummer en naam, ook als die speler offline is), en komt een auto alleen in
+      de vakjes van een interface als wie hem bestuurt die interface mag gebruiken.
+- [x] **De sensors van een ander**: de interface las elke Chest Sensor in zijn netwerk, en een kabel trek je overal; zo
+      las een vreemde jouw kisten door een kabel tot aan jouw netwerk te trekken. Nu alleen sensors van de eigenaar van de
+      interface, of uit een basis waar hij vertrouwd is (`StorageInterfaceBlockEntity.mayRead`).
+- [x] **De spawnbescherming en de wereldrand** golden niet voor kisten: de auto van een speler zonder op opende kisten
+      bij de spawn van een server, die hij te voet niet mocht openen. Nu wel, net als voor breken en plaatsen.
+- [x] **Een dubbele kist** met een slot op één helft: de auto bereikte via de andere helft alle 54 vakjes. Nu tellen
+      allebei de helften (het slot en de zone), zoals Minecraft dat bij een speler doet.
+- [x] **Oude autoprogramma's**: in een autoprogramma waren `take`, `put`, `check`, `arm_up` en `arm_down` bezet, dus een
+      auto met een programma van vóór de update met bijvoorbeeld `def check():` had daarna geen programma meer. Nu zijn ze
+      nergens bezet: een eigen def gaat vóór het woord van de taal, en een naam `take = 0` mag gewoon.
+- [x] **Een lege naam** (`order.item` buiten een bestelling, via een knop van de auto) gold als "alles":
+      `take(order.item)` haalde de hele kist leeg. Nu is een lege naam niets, en een aantal dat geen getal is ook.
+- [x] **Wat hij niet kan dragen** (een shulkerdoos, een volle Ammo Box): `in chest()` zei ja, `take` nam het nooit, en een
+      lus daarop draaide eeuwig. Nu telt het niet mee, en zegt take waarom.
+- [x] **`chest.items` bij de interface** telde ook de PICK-UP-vakjes, waar take() niet bij kan: een lus
+      `while chest.items > 0: take()` hield nooit op. Nu gaan `chest.slots` en `chest.free` daar over PICK-UP en
+      `chest.items` over de vakjes om op te bergen.
+- [x] **Een bijna lege cel** (een restje van een paar FE) telde als klaar: die auto kreeg elke bestelling en liet ze
+      allemaal mislukken. Nu moet de cel minstens 2% vol zijn.
+- [x] **De thuisplek**: een bestelling die na een herstart opnieuw begon, liet de auto rijden vanaf de plek waar hij
+      toevallig stond (met het voorbeeld: hij legde het ijzer terug in een ton). Nu start een bestelling alleen als de auto
+      thuis staat: waar je hem koppelde, zijn neus die kant op, zijn arm beneden. En hoe ver een bestelling is, staat nu
+      meteen in de bestelling (eerst om de halve seconde: werd de wereld vlak na de laatste levering bewaard, dan haalde
+      hij na een herstart alles nog een keer).
+- [x] **Losmaken** van een auto die bezig was, liet zijn bestelling mislukken (de code beloofde dat ze weer zou wachten),
+      en kon de bestelling van een andere interface stoppen. Nu wacht ze weer op een auto, en stopt alleen een bestelling
+      van die interface.
+- [x] **Het scherm stuurde te veel**: bij elke verandering (een auto die oplaadt: elke 4 ticks een procent) ging de hele
+      lijst van de opslag opnieuw gesorteerd mee, voor elke kijker. Nu gaan de bestellingen en de auto's elke tick mee als
+      ze veranderen, en de lijst van de opslag alleen als die veranderde, hooguit vier keer per seconde, en één keer
+      gesorteerd voor iedereen die kijkt.
+- [x] **Het scherm zag sommige veranderingen niet** (een sensor erbij, iets dat van kist naar kist ging, de cel van een
+      auto die nog niet gekoppeld is, en twee veranderingen die in een som tegen elkaar wegvielen): nu een vingerafdruk
+      van alles wat je ziet, in de volgorde waarin je het ziet.
+- [x] **Na een teleport naar een andere wereld** bleef het scherm geldig, en telde de interface even in die andere wereld
+      (waarbij hij kisten vergat). Nu moet je in dezelfde wereld zijn, en telt hij altijd in zijn eigen wereld.
+
+Niet veranderd, omdat de sceptici het geen fout vonden: dat `mine_down(2)` niet meer bestaat (net als `mine(2)`; wel wees
+de uitleg in de editor dan naar de arm, die niet naar beneden kan: nu zegt hij dat je `mine_down()` herhaalt), en een
+limiet op hoe vaak je op de knoppen van de interface drukt (de Router heeft er een, maar hier doet een knop zo weinig dat
+het niemand schaadt; gewone Minecraft laat hetzelfde toe met een hendel).
+
+- [x] Ook gevonden en hersteld, in de **Network Switch** (hoofdstuk 39): een knop van zijn scherm las de wereld vóór hij
+      keek of je ervoor stond, dus een gemaakt bericht liet de server een stuk wereld ver weg laden (dezelfde fout als bij
+      de Router in hoofdstuk 112). De test `desktop_switches_switch_ports` controleert het nu.
+- [x] Testrondes na de nalezing: drie volledige rondes van 620. In de eerste viel een test van mij om (de sensor in de halen-test had geen eigenaar; zo een sensor telt alleen op vrije grond, en in de testwereld lag dat stuk in het gebied van de kern van een test ernaast; nu krijgt hij een eigenaar, zoals in het spel) en `raid_starts_outside_a_base`; in de tweede alleen `raven_soldier_shoots` (het willekeurige wapen van de soldaat); de derde had alle 620 groen. Daarvoor, met alleen de herstelde switch, viel `a_guard_who_sees_a_body_calls_it_in` een keer om. Die drie wisselen vaker en raken deze herstellingen niet. Ook gezien met de rondleiding (`-Ponly=storage`): halen, opbergen en het tabblad Cars met de nieuwe uitleg.
 
 Mijn invulling (verander ik op jouw woord):
 - **De auto start met `when ordered("fetch"):` en `when ordered("store"):`**, hetzelfde woord als de opdrachten van een
@@ -8882,11 +8938,14 @@ Mijn invulling (verander ik op jouw woord):
 - **De arm** kost 5 FE per blok en duurt 0,3 seconde; nemen en leggen 5 FE en 0,4 seconde. De laadplaat 50 FE per tick.
 - **Een oude auto met `mine(2)`** doet niets tot je de regel aanpast (in plaats van stil één blok te breken): zo merk je
   het meteen.
+- **De thuisplek** is waar de auto stond toen je hem koppelde (na de nalezing). Elders neergezet? Koppel hem daar
+  opnieuw. Een auto heeft minstens 2% in zijn cel nodig voor een bestelling.
+- **Het scherm**: de bestellingen en de auto's elke tick, de lijst van de opslag vier keer per seconde (bij meer dan 500
+  soorten één keer per seconde).
 - De recepten, het tabblad Robots, en versie 2.15 (iets nieuws: drie blokken).
 
 Nog niet gedaan:
-- **Geen onafhankelijke nalezing** bij deze commit: alleen mijn eigen. Die start ik meteen hierna (aparte lezers, elk met
-  een eigen invalshoek, en een scepticus die hun vondsten probeert te weerleggen); wat ze vindt, schrijf ik hier bij.
+- De spawnbescherming heeft geen test: een test draait niet op een echte server.
 - De showcase-functies "Storage system" en "RC Car" heb ik zelf niet afgespeeld (de rondleiding met dezelfde stappen
   wel; de nieuwe kamer van de showcase van de RC Car heb ik alleen uitgerekend, niet gezien).
 - Niet met de muis gespeeld en nooit met een tweede speler (zie "Nog nooit in het spel bekeken").

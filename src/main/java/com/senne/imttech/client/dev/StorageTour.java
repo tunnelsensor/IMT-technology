@@ -120,6 +120,13 @@ final class StorageTour {
         return -1;
     }
 
+    /** De sensor op deze plek is van deze speler (zoals in het spel: van wie hem neerzet; de interface leest alleen die van jou). */
+    private static void sensorOf(ServerLevel level, BlockPos pos, ServerPlayer player) {
+        if (level.getBlockEntity(pos) instanceof com.senne.imttech.storage.ChestSensorBlockEntity sensor) {
+            sensor.setOwner(player);
+        }
+    }
+
     /** Een volle warmtegenerator op deze plek. */
     private static void generator(ServerLevel level, BlockPos pos) {
         level.setBlockAndUpdate(pos, ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
@@ -184,12 +191,14 @@ final class StorageTour {
         }
         // De sensor met een netwerkkabel: achter de tonnen langs, van de interface omhoog naar de sensor.
         level.setBlockAndUpdate(CABLE_SENSOR, StorageRegistry.CHEST_SENSOR.get().defaultBlockState().setValue(ChestSensorBlock.FACING, Direction.UP));
+        sensorOf(level, CABLE_SENSOR, player);
         for (BlockPos cable : new BlockPos[] {STATION.north(), STATION.north().east(), STATION.north().east(2),
                 STATION.north().east(2).above(), STATION.north().east(2).above(2), STATION.north().east(2).above(3)}) {
             Cables.add(CableKind.NETWORK, level, cable, player.getUUID());
         }
         // De sensor aan een Router: de router (met een generator ernaast) hangt zelf draadloos aan de interface.
         level.setBlockAndUpdate(ROUTER_SENSOR, StorageRegistry.CHEST_SENSOR.get().defaultBlockState().setValue(ChestSensorBlock.FACING, Direction.UP));
+        sensorOf(level, ROUTER_SENSOR, player);
         generator(level, ROUTER.east());
         level.setBlockAndUpdate(ROUTER, ModBlocks.ROUTER.get().defaultBlockState().setValue(RouterBlock.FACING, Direction.SOUTH));
         if (level.getBlockEntity(ROUTER) instanceof RouterBlockEntity router) {

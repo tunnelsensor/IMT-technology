@@ -2041,9 +2041,12 @@ def room():
   voor de auto, dus drie blokken hoog. Alles wat de auto **voor zich** doet, doet hij op de hoogte van zijn arm:
   `mine()`, `place()`, `block()`, `unload()` en de kisten hieronder. Je ziet de arm langs een mast omhoog schuiven.
   `car.arm` zegt hoe hoog hij staat (0, 1 of 2); wil je hoger dan 2 of lager dan 0, dan is `car.blocked` waar. De arm
-  een blok bewegen kost 5 FE. **`mine(2)` en `mine_up(2)` bestaan niet meer** (jouw keuze: de arm is er nu voor alles
-  wat verder dan één blok reikt): schrijf `arm_up()` en dan `mine()`. De editor zegt het als je het oude nog typt. Een
+  een blok bewegen kost 5 FE. **`mine(2)`, `mine_up(2)` en `mine_down(2)` bestaan niet meer** (jouw keuze: de arm is
+  er nu voor alles wat verder dan één blok reikt): schrijf `arm_up()` en dan `mine()`. Naar beneden kan de arm niet:
+  herhaal daar `mine_down()` (na elke keer zakt de auto in het gat). De editor zegt het als je het oude nog typt. Een
   auto die het oude nog in zijn programma heeft, doet niets tot je die regel aanpast: op zijn scherm staat welke.
+  De nieuwe woorden (`arm_up`, `arm_down`, `take`, `put`, `check`) mag je ook als eigen naam gebruiken, zoals vóór deze
+  versie: heeft je programma een eigen `def check():`, dan roept `check()` die aan.
 - **Kisten** (sinds versie 2.15; samen met de Storage Interface hieronder is dat je opslagsysteem): de kist, de ton, de
   trechter of de shulkerdoos **voor zijn arm**.
   - `take("iron_ingot", 8)` neemt er 8 uit in zijn kofferbak; `take("iron_ingot")` alles van die soort; `take()` alles.
@@ -2051,13 +2054,18 @@ def room():
   - `if item("iron_ingot") in chest():` kijkt of het erin ligt (zo vroeg je het). `in trunk()` kijkt in zijn eigen
     kofferbak. `chest.count("iron_ingot")` en `trunk.count("iron_ingot")` tellen.
   - `chest.slots`, `chest.free` (lege vakjes) en `chest.items` (hoeveel voorwerpen): `chest.slots` is 0 als daar geen
-    kist staat.
+    kist staat. Bij een Storage Interface gaan `chest.slots` en `chest.free` over de PICK-UP-vakjes (daar legt `put()`
+    in) en `chest.items` over de vakjes om op te bergen (daar neemt `take()` uit).
   - `check()` kijkt alleen: zijn Storage Interface onthoudt dan wat erin zit. Dat gebeurt ook bij elk ander woord
     hierboven.
   - De naam is die van Minecraft (`"iron_ingot"`; met F3+H zie je hem onder elk voorwerp), hoofdletters en spaties mogen
-    (`"Iron Ingot"`), en van een mod met zijn voorvoegsel (`"imttech:polymer"`). Lukt het niet (geen kist, niets van
-    die soort, de kist of de kofferbak vol), dan is `car.blocked` waar en staat op zijn scherm waarom. Nemen of leggen
-    kost 5 FE.
+    (`"Iron Ingot"`), en van een mod met zijn voorvoegsel (`"imttech:polymer"`). Een naam die leeg is (bijvoorbeeld
+    `order.item` buiten een bestelling) is niets, niet "alles": `take(order.item)` doet dan niets. Lukt het niet (geen
+    kist, niets van die soort, de kist of de kofferbak vol), dan is `car.blocked` waar en staat op zijn scherm waarom.
+    Nemen of leggen kost 5 FE. Wat niet in zijn kofferbak past (een shulkerdoos, een volle Ammo Box of pouch) neemt hij
+    niet, en `in chest()` en `chest.count(...)` tellen het niet mee.
+  - Net als jij te voet opent hij geen kist buiten de wereldrand of in de spawnbescherming van een server, en bij een
+    dubbele kist tellen allebei de helften (een slot of een zone op de ene helft geldt ook voor de andere).
 - **Plaatsen**: `place()` (voor hem), `place_up()` (boven hem), `place_down()` (onder hem: hij komt zelf een blok
   hoger te staan, zoals jij een pilaar bouwt). Hij neemt het eerste blok uit zijn kofferbak, of het soort dat je
   zegt: `place("cobblestone")`. Alleen gewone blokken van één blok, op een vrije plek: geen kist, oven, bed,
@@ -2118,7 +2126,9 @@ Alles staat op het tabblad **Robots**.
    **netwerk** zitten als de interface: met een **netwerkkabel**, of draadloos aan een **Router** (zet je hem neer bij
    een router van jou met een vrije plek, dan verbindt hij vanzelf). Een router heeft tien plekken: verbind een rij
    sensors onderling met een netwerkkabel en de hele rij kost maar één plek. Rechtsklik op een sensor en hij zegt wat
-   hij ziet en welke interface dat leest. Haal je de kist weg, dan valt de sensor eraf.
+   hij ziet en welke interface dat leest. Haal je de kist weg, dan valt de sensor eraf. Een interface leest alleen
+   sensors van zijn eigenaar, of uit een basis waar die eigenaar vertrouwd is: trekt een ander een kabel tot aan jouw
+   netwerk, dan ziet hij je kisten niet.
 2. **Een auto keek erin.** Elke keer dat een gekoppelde auto in een kist kijkt (`check()`, `take`, `put`, `in chest()`,
    `chest.count(...)`), onthoudt de interface wat erin zit: tot hij er weer in kijkt. Hij onthoudt zo 128 kisten.
 
@@ -2132,10 +2142,11 @@ er in je kisten ligt). Drie tabbladen rechtsboven:
   **Order**. In één keer bestel je hooguit wat er in de negen afhaalvakjes past (negen stapels).
 - **Store**: negen vakjes om spullen in te leggen (shift-klik werkt hier ook), en de knop **Store**. Elke soort wordt
   één bestelling.
-- **Cars**: de auto's van jou binnen 32 blokken, elk met **Link** of **Unlink**. Het bolletje is grijs als hij nog niet
-  gekoppeld is, groen als hij klaar staat, blauw als hij bezig is en oranje als er iets is (geen cel, weg). De letters **F** en **S** branden als zijn
-  programma `when ordered("fetch"):` en `when ordered("store"):` heeft. Hooguit acht auto's per interface, en een auto
-  werkt voor één interface.
+- **Cars**: de auto's van jou binnen 32 blokken, elk met **Link** of **Unlink**. Waar de auto staat als je op Link
+  drukt, is zijn **thuisplek**: daar begint hij elke bestelling (zie hieronder). Het bolletje is grijs als hij nog niet
+  gekoppeld is, groen als hij klaar staat, blauw als hij bezig is en oranje als er iets is (zijn cel is bijna leeg, hij
+  staat niet thuis, hij is weg). De letters **F** en **S** branden als zijn programma `when ordered("fetch"):` en
+  `when ordered("store"):` heeft. Hooguit acht auto's per interface, en een auto werkt voor één interface.
 
 Op elk tabblad staan onderaan de **PICK-UP**-vakjes (wat een auto bracht: daar pak je het) en je inventaris, en rechts
 de lijst **ORDERS**: `waiting`, hoe ver hij is (`3/12`), `done`, of in oranje of rood als het niet (helemaal) lukte.
@@ -2144,7 +2155,12 @@ haalt een bestelling weg die wacht of klaar is; een lopende stop je op de auto z
 werkbalk hoe het afliep.
 
 **Het programma van de auto.** De interface start het stuk `when ordered("fetch"):` (halen) of `when ordered("store"):`
-(opbergen) van een vrije gekoppelde auto. In dat stuk weet de auto:
+(opbergen) van een vrije gekoppelde auto die **thuis** staat: op zijn thuisplek, met zijn neus dezelfde kant op als toen
+je hem koppelde, en met zijn arm beneden. Je programma is voor die plek geschreven; staat hij ergens anders (hij reed weg
+met een functie, of de wereld werd bewaard terwijl hij onderweg was), dan wacht de bestelling, en zegt ze waarom. Rijd hem
+dan terug (de pijltjes op zijn scherm), of koppel hem opnieuw waar hij nu staat. Zijn cel moet minstens 2% vol zijn
+(anders valt hij halverwege stil), en wie bestelde moet hem mogen besturen: een auto die intussen van een ander is (of
+van iemand die niet meer bij je basis hoort), krijgt geen bestellingen meer. In dat stuk weet de auto:
 - `order.item` (wat, als tekst: `"iron_ingot"`), `order.count` (hoeveel) en `order.left`: hoeveel hij er nog moet
   vinden (halen) of nog moet opbergen.
 - `order.known`: weet de interface een kist waar dit ligt? Dan zijn `order.x`, `order.y` en `order.z` de plek van de
@@ -2157,8 +2173,9 @@ Loopt het programma af, dan is de bestelling `done` als alles gebracht of opgebo
 wel. De auto werkt **namens wie bestelde** (in een beschermde zone opent hij alleen kisten als die speler daar mag
 bouwen). Elke auto doet één bestelling tegelijk; met meer auto's lopen er meer tegelijk. Stopt een auto halverwege
 (de knop Stop, een lege cel, een EMP), dan eindigt de bestelling daar: in de lijst staat hoeveel hij bracht en waarom hij
-stopte, en wat hij al bij zich had ligt nog in zijn kofferbak. Verdwijnt de auto (hij rijdt een stuk wereld in dat niet
-geladen is), dan wacht de bestelling op een volgende auto, en wat al gebracht was telt nog.
+stopte, en wat hij al bij zich had ligt nog in zijn kofferbak. Maak je hem los (Unlink), of verdwijnt hij (hij rijdt een
+stuk wereld in dat niet geladen is), dan wacht de bestelling op een volgende auto die thuis staat, en wat al gebracht was
+telt nog.
 
 **Een voorbeeld om over te typen** (het staat ook in How it works, **W** op de interface). De auto staat **thuis** met
 zijn neus naar de interface. Rechts van hem loopt een gang, met links van die gang vier stapels kisten van drie hoog
@@ -2265,6 +2282,8 @@ hem op de plek waar je auto thuis staat: dan is zijn cel nooit leeg.
 - Bij een oven of een ander blok met kanten ziet de auto alleen de vakjes van de kant waar hij voor staat (bij een oven
   van opzij: de brandstof), net als een trechter. Een sensor telt alles.
 - Er kunnen 16 bestellingen tegelijk wachten of lopen; de laatste zes die klaar zijn blijven in de lijst staan.
+- Het scherm: de bestellingen en de auto's verversen elke tick, de lijst van wat er in je opslag zit vier keer per
+  seconde (bij een opslag van meer dan 500 soorten één keer per seconde).
 - De getallen staan in `config/imttech.toml` onder `[rcCar]`: `chestCost` (5), `armCost` (5), `padRate` (50) en
   `mayUseChests`.
 

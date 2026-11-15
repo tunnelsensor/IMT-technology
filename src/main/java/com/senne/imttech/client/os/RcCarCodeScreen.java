@@ -205,7 +205,8 @@ public class RcCarCodeScreen extends Screen {
                 0xFF79C6));
         lines.add(header("STORAGE INTERFACE"));
         lines.add(new HelpLine("when ordered(\"fetch\"):", "when ordered(\"fetch\"):\n    ",
-                "Someone ordered an item at the Storage Interface of this car: order.item, order.count, order.left", HudStyle.CYAN));
+                "Someone ordered an item at the Storage Interface of this car: order.item, order.count, order.left. It starts from"
+                        + " the spot where you linked the car, so end every order there", HudStyle.CYAN));
         lines.add(new HelpLine("when ordered(\"store\"):", "when ordered(\"store\"):\n    ",
                 "Someone put items into the Storage Interface to store them: take them there, and put them away", HudStyle.CYAN));
         lines.add(header("REPEAT AND CHECK"));

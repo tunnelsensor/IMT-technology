@@ -9,9 +9,11 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.core.component.DataComponents;
@@ -45,7 +47,8 @@ import org.jetbrains.annotations.Nullable;
  *       zag toen hij in een kist keek (jouw wens: "de interface weet de dingen door de sensors of doordat de robot dit
  *       gecheckt heeft"). Zit er een sensor op een kist, dan telt alleen de sensor.</li>
  *   <li><b>De bestellingen</b> ({@link StorageOrder}): halen (fetch) en opbergen (store). Om de halve seconde kijkt hij of
- *       er een gekoppelde auto vrij is met het juiste stuk programma, en start die.</li>
+ *       er een gekoppelde auto vrij is, thuis staat ({@link Home}), genoeg stroom heeft en het juiste stuk programma, en
+ *       of wie bestelde hem mag besturen; dan start hij die.</li>
  *   <li><b>De gekoppelde auto's</b>: hooguit {@link #MAX_CARS}. Alleen een gekoppelde auto mag in zijn vakjes.</li>
  *   <li><b>Twee rijen vakjes</b>: IN (wat jij inlegt om op te bergen: daar haalt de auto het) en OUT (wat de auto brengt:
  *       daar pak jij het).</li>
@@ -67,6 +70,12 @@ public class StorageInterfaceBlockEntity extends BlockEntity implements BaseTrus
     private static final int REFRESH_TICKS = 10;
     /** Zoveel van één soort kun je in één keer bestellen: wat er in zijn negen afhaalvakjes past. */
     public static final int MAX_ORDER_STACKS = OUT_SLOTS;
+    /**
+     * Zo vol (procent) moet de cel van een auto minstens zijn om een bestelling te krijgen: een auto die bijna leeg is,
+     * zou halverwege stilvallen. (Gevonden bij de nalezing: een auto met een restje stroom kreeg elke bestelling en liet ze
+     * allemaal mislukken.) Op een Charging Pad is hij in een paar ticks weer zo ver.
+     */
+    public static final float MIN_CELL_PERCENT = 2.0f;
 
     private String name = "";
     private @Nullable UUID owner;
@@ -76,6 +85,11 @@ public class StorageInterfaceBlockEntity extends BlockEntity implements BaseTrus
     private final List<UUID> cars = new ArrayList<>();
     /** De naam die een gekoppelde auto het laatst had (voor het scherm, als hij niet in de buurt is). */
     private final Map<UUID, String> carNames = new HashMap<>();
+    /** Waar elke gekoppelde auto thuis staat (zie {@link Home}). */
+    private final Map<UUID, Home> homes = new HashMap<>();
+    /** Wat het scherm van de opslag toont (zie {@link #shown}), en voor welke stand van de opslag. */
+    private @Nullable Shown shown;
+    private @Nullable Stock shownFor;
     private final List<StorageOrder> orders = new ArrayList<>();
     private long nextOrder = 1;
     /** Per kist (zijn vaste plek, zie Storages.canonical): wat een auto erin zag, en wanneer. */
@@ -106,6 +120,24 @@ public class StorageInterfaceBlockEntity extends BlockEntity implements BaseTrus
 
     /** Wat een auto in één kist zag: per soort hoeveel, en op welke speltijd. */
     private record Seen(long time, Map<ItemKind, Integer> items) {}
+
+    /**
+     * De thuisplek van een gekoppelde auto: het blok waar hij stond, en de kant waar zijn neus naar wees, toen je hem
+     * koppelde. Een bestelling start alleen als hij daar staat, met zijn neus die kant op en zijn arm beneden: zijn
+     * programma is voor die plek geschreven. (Gevonden bij de nalezing: een bestelling die na een herstart opnieuw begon,
+     * liet de auto vanaf de plek rijden waar hij toevallig stond.) Elders neergezet? Koppel hem daar opnieuw.
+     */
+    public record Home(BlockPos cell, Direction facing) {
+        static Home of(RcCarEntity car) {
+            return new Home(car.body().cell().immutable(), car.body().facing());
+        }
+    }
+
+    /**
+     * Wat het scherm van de opslag toont: de soorten op naam (wat in één bericht past), hoeveel soorten er niet in pasten,
+     * de sensors en de kisten, en een vingerafdruk van dat alles (verandert er iets wat je ziet, dan verandert die).
+     */
+    public record Shown(List<StorageStatePayload.Entry> entries, int more, int sensors, int storages, long signature) {}
 
     /** Eén plek waar een soort ligt: de kist, hoeveel, en of een sensor het nu ziet ({@code live}) of een auto het zag. */
     public record Place(BlockPos pos, int count, boolean live) {}
@@ -226,7 +258,8 @@ public class StorageInterfaceBlockEntity extends BlockEntity implements BaseTrus
         Map<BlockPos, Map<ItemKind, Integer>> live = new LinkedHashMap<>();
         int sensors = 0;
         for (BlockPos pos : LanGrid.networkOf(level, worldPosition)) {
-            if (!level.isLoaded(pos) || !(level.getBlockState(pos).getBlock() instanceof ChestSensorBlock)) {
+            if (!level.isLoaded(pos) || !(level.getBlockEntity(pos) instanceof ChestSensorBlockEntity sensor)
+                    || !(level.getBlockState(pos).getBlock() instanceof ChestSensorBlock) || !mayRead(level, sensor)) {
                 continue;
             }
             sensors++;
@@ -252,6 +285,34 @@ public class StorageInterfaceBlockEntity extends BlockEntity implements BaseTrus
             }
         }
         return new Stock(totals, places, sensors, live.size() + remembered);
+    }
+
+    /**
+     * Mag deze interface tonen wat deze Chest Sensor ziet? Als de sensor van dezelfde speler is, of als de eigenaar van de
+     * interface hem mag instellen (hij is vertrouwd in de basis waar de sensor staat; een sensor van niemand alleen op vrije
+     * grond: de regel van BaseTrust). Een netwerk houdt zich niet aan eigenaars en kabels trek je overal, dus zonder dit las
+     * iemand jouw kisten door een kabel tot aan jouw netwerk te trekken. (Gevonden bij de nalezing.)
+     */
+    public boolean mayRead(ServerLevel level, ChestSensorBlockEntity sensor) {
+        return Objects.equals(owner, sensor.owner()) || BaseTrust.wouldAllow(level, sensor, owner, ownerName);
+    }
+
+    /**
+     * Wat het scherm van de opslag toont, één keer uitgerekend per stand van de opslag en gedeeld door iedereen die kijkt
+     * (zie Storages.buildShown). Blijft de opslag hetzelfde, dan blijft ook dit hetzelfde.
+     */
+    public Shown shown(ServerLevel level) {
+        Stock now = liveStock(level);
+        if (shown == null || shownFor != now && !sameStock(shownFor, now)) {
+            shown = Storages.buildShown(level, now);
+        }
+        shownFor = now;
+        return shown;
+    }
+
+    private static boolean sameStock(@Nullable Stock a, Stock b) {
+        return a != null && a.sensors() == b.sensors() && a.storages() == b.storages() && a.totals().equals(b.totals())
+                && a.places().equals(b.places());
     }
 
     private static void add(Map<ItemKind, Integer> totals, Map<ItemKind, List<Place>> places, BlockPos pos,
@@ -315,34 +376,68 @@ public class StorageInterfaceBlockEntity extends BlockEntity implements BaseTrus
         return carNames.getOrDefault(car, "RC Car");
     }
 
-    /** Koppelt een auto. Geeft false als hij al gekoppeld is of als er al {@link #MAX_CARS} zijn. */
+    /**
+     * Koppelt een auto, met de plek waar hij nu staat als zijn thuis ({@link Home}). Geeft false als hij al gekoppeld is
+     * of als er al {@link #MAX_CARS} zijn.
+     */
     public boolean link(RcCarEntity car) {
         if (cars.contains(car.link()) || cars.size() >= MAX_CARS) {
             return false;
         }
         cars.add(car.link());
         carNames.put(car.link(), car.displayName());
-        changed();
-        return true;
-    }
-
-    /** Maakt een auto los; een bestelling waar hij mee bezig was, wacht weer op een auto. */
-    public boolean unlink(UUID car) {
-        if (!cars.remove(car)) {
-            return false;
-        }
-        carNames.remove(car);
+        homes.put(car.link(), Home.of(car));
         changed();
         return true;
     }
 
     /**
-     * De vakjes zoals een auto ze ziet (zie CarWork.chestAt), of null als deze auto hier niet gekoppeld is. Uit de
-     * IN-vakjes mag hij nemen (wat iemand inlegde om op te bergen), in de OUT-vakjes mag hij leggen (wat besteld is).
-     * Wat hij in de OUT-vakjes legt, telt mee voor zijn bestelling.
+     * Maakt een auto los. Een bestelling waar hij mee bezig was, wacht weer op een auto (wat hij al bracht, telt nog).
+     * (Gevonden bij de nalezing: eerst mislukte die bestelling dan.)
+     */
+    public boolean unlink(UUID car) {
+        if (!cars.remove(car)) {
+            return false;
+        }
+        carNames.remove(car);
+        homes.remove(car);
+        for (StorageOrder order : orders) {
+            if (order.state == StorageOrder.State.RUNNING && car.equals(order.car)) {
+                order.state = StorageOrder.State.WAITING;
+                order.car = null;
+                order.note = "interrupted: waiting for an RC Car again";
+            }
+        }
+        changed();
+        return true;
+    }
+
+    /** De thuisplek van deze gekoppelde auto, of null. */
+    public @Nullable Home home(UUID car) {
+        return homes.get(car);
+    }
+
+    /** Staat deze gekoppelde auto thuis, klaar voor een bestelling: op zijn plek, zijn neus de goede kant op, zijn arm beneden? */
+    public boolean atHome(RcCarEntity car) {
+        Home home = homes.get(car.link());
+        return home != null && car.body().cell().equals(home.cell()) && car.body().facing() == home.facing() && car.arm() == 0;
+    }
+
+    /** Heeft deze auto genoeg in zijn cel voor een bestelling (zie {@link #MIN_CELL_PERCENT})? */
+    public static boolean charged(RcCarEntity car) {
+        return car.hasCell() && car.cellPercent() >= MIN_CELL_PERCENT;
+    }
+
+    /**
+     * De vakjes zoals een auto ze ziet (zie CarWork.chestAt), of null als deze auto hier niet gekoppeld is, of als wie hem
+     * nu bestuurt (wie zijn klus startte) deze interface niet mag gebruiken: dezelfde regel als voor het scherm. (Gevonden
+     * bij de nalezing: eerst was gekoppeld genoeg, ook als de auto intussen van een ander was.) Uit de IN-vakjes mag hij
+     * nemen (wat iemand inlegde om op te bergen), in de OUT-vakjes mag hij leggen (wat besteld is). Wat hij in de
+     * OUT-vakjes legt, telt mee voor zijn bestelling.
      */
     public @Nullable IItemHandler carSlots(RcCarEntity car) {
-        if (!cars.contains(car.link())) {
+        if (!cars.contains(car.link()) || !(level instanceof ServerLevel serverLevel)
+                || !BaseTrust.wouldAllow(serverLevel, this, car.actorId(), car.actorName())) {
             return null;
         }
         return new IItemHandler() {
@@ -542,6 +637,19 @@ public class StorageInterfaceBlockEntity extends BlockEntity implements BaseTrus
         }
     }
 
+    /**
+     * De auto die deze bestelling doet, bracht of borg er net iets van op ({@code moved} in totaal): dat staat meteen in de
+     * bestelling, en wordt zo ook bewaard. (Gevonden bij de nalezing: eerst gebeurde dat om de halve seconde; werd de
+     * wereld vlak na de laatste levering bewaard, dan haalde de auto na een herstart alles nog een keer.)
+     */
+    public void progress(long id, UUID car, int moved) {
+        StorageOrder order = order(id);
+        if (order != null && order.state == StorageOrder.State.RUNNING && car.equals(order.car) && moved > order.moved) {
+            order.moved = moved;
+            changed();
+        }
+    }
+
     /** Afgelopen bestellingen: alleen de laatste paar blijven staan. */
     private void prune() {
         int ended = 0;
@@ -572,6 +680,14 @@ public class StorageInterfaceBlockEntity extends BlockEntity implements BaseTrus
         if ((level.getGameTime() + worldPosition.hashCode()) % REFRESH_TICKS != 0) {
             return;
         }
+        tickOrders(level);
+    }
+
+    /**
+     * Wat de interface om de halve seconde doet (de tests roepen dit ook rechtstreeks aan): de lopende bestellingen
+     * nakijken, de gekoppelde auto's bijhouden, en wachtende bestellingen aan een auto geven.
+     */
+    public void tickOrders(ServerLevel level) {
         // Een lopende bestelling waarvan de auto er niet meer mee bezig is (de wereld laadde opnieuw, de auto reed een stuk
         // wereld in dat niet geladen is, of hij is weg): die wacht weer op een auto. Wat al gebracht was, telt nog.
         boolean ended = false;
@@ -598,14 +714,9 @@ public class StorageInterfaceBlockEntity extends BlockEntity implements BaseTrus
         if (ended) {
             prune();
         }
-        refreshProgress();
-        for (StorageOrder order : List.copyOf(orders)) {
-            if (order.state == StorageOrder.State.WAITING) {
-                dispatch(level, order);
-            }
-        }
         // De gekoppelde auto's: een auto die net (weer) is neergezet, hoort wie zijn interface is; een auto die intussen
-        // aan een andere interface hangt, gaat hier van de lijst; en we houden hun namen bij.
+        // aan een andere interface hangt, gaat hier van de lijst (zijn bestelling hier wacht weer); en we houden hun namen
+        // bij.
         net.minecraft.core.GlobalPos here = net.minecraft.core.GlobalPos.of(level.dimension(), worldPosition);
         for (UUID link : List.copyOf(cars)) {
             RcCarEntity car = RcCars.find(link);
@@ -615,21 +726,29 @@ public class StorageInterfaceBlockEntity extends BlockEntity implements BaseTrus
             if (car.station() == null) {
                 car.setStation(here);
             } else if (!car.station().equals(here)) {
-                cars.remove(link);
-                carNames.remove(link);
-                changed();
+                unlink(link);
                 continue;
+            }
+            if (!homes.containsKey(link) && !car.brain().busy()) {
+                homes.put(link, Home.of(car)); // gekoppeld in een wereld van vóór de thuisplek: waar hij nu staat
+                changed();
             }
             if (!car.displayName().equals(carNames.get(link))) {
                 carNames.put(link, car.displayName());
                 changed();
             }
         }
+        refreshProgress();
+        for (StorageOrder order : List.copyOf(orders)) {
+            if (order.state == StorageOrder.State.WAITING) {
+                dispatch(level, order);
+            }
+        }
     }
 
     /**
-     * Hoe ver de auto's met hun lopende bestellingen zijn: elke halve seconde, en elke tick zolang iemand het scherm open
-     * heeft (dan loopt het getal in het scherm mee).
+     * Hoe ver de auto's met hun lopende bestellingen zijn. Een auto zegt dat zelf meteen (zie {@link #progress}); dit
+     * kijkt om de halve seconde nog eens na.
      */
     public void refreshProgress() {
         for (StorageOrder order : orders) {
@@ -644,7 +763,13 @@ public class StorageInterfaceBlockEntity extends BlockEntity implements BaseTrus
         }
     }
 
-    /** Zoekt een vrije gekoppelde auto met het juiste stuk programma en start hem; anders zegt de bestelling waarom hij wacht. */
+    /**
+     * Zoekt een gekoppelde auto voor deze bestelling en start hem; anders zegt de bestelling waarom hij wacht. De auto moet
+     * het juiste stuk programma hebben, vrij zijn, genoeg stroom hebben ({@link #MIN_CELL_PERCENT}), thuis staan
+     * ({@link Home}), en wie bestelde moet hem mogen besturen (RcCars.wouldControl, elke keer opnieuw: een auto die
+     * intussen van een ander is, of van iemand die niet meer bij de basis hoort, draait nooit zijn programma met jouw
+     * rechten). Die laatste drie: gevonden bij de nalezing.
+     */
     private void dispatch(ServerLevel level, StorageOrder order) {
         String note;
         if (cars.isEmpty()) {
@@ -652,6 +777,9 @@ public class StorageInterfaceBlockEntity extends BlockEntity implements BaseTrus
         } else {
             boolean near = false;
             boolean program = false;
+            String empty = null;
+            String foreign = null;
+            String away = null;
             for (UUID link : cars) {
                 RcCarEntity car = RcCars.find(link);
                 if (car == null || car.level() != level) {
@@ -662,7 +790,19 @@ public class StorageInterfaceBlockEntity extends BlockEntity implements BaseTrus
                     continue;
                 }
                 program = true;
-                if (car.brain().busy() || car.isJammed() || !car.hasCell() || car.cellPercent() <= 0) {
+                if (car.brain().busy() || car.isJammed()) {
+                    continue;
+                }
+                if (!charged(car)) {
+                    empty = empty == null ? car.displayName() : empty;
+                    continue;
+                }
+                if (!RcCars.wouldControl(level, order.by, order.byName, car)) {
+                    foreign = foreign == null ? car.displayName() : foreign;
+                    continue;
+                }
+                if (!atHome(car)) {
+                    away = away == null ? car.displayName() : away;
                     continue;
                 }
                 if (car.brain().startOrder(this, order)) {
@@ -676,7 +816,11 @@ public class StorageInterfaceBlockEntity extends BlockEntity implements BaseTrus
             }
             note = !near ? "its RC Car is not nearby"
                     : !program ? "no linked car has when ordered(\"" + order.kind.code() + "\"):"
-                    : "waiting for a free RC Car (busy, or its cell is empty)";
+                    : away != null ? away + " is not at its home spot (where you linked it, nose that way, arm down): drive it"
+                            + " back, or link it again"
+                    : foreign != null ? "who ordered this may not control " + foreign + " (it belongs to someone else now)"
+                    : empty != null ? "the Energy Cell of " + empty + " is almost empty (a Charging Pad charges it)"
+                    : "waiting for a free RC Car (it is busy)";
         }
         if (!note.equals(order.note)) {
             order.note = note;
@@ -701,6 +845,11 @@ public class StorageInterfaceBlockEntity extends BlockEntity implements BaseTrus
             CompoundTag item = new CompoundTag();
             item.putUUID("Link", car);
             item.putString("Name", carName(car));
+            Home home = homes.get(car);
+            if (home != null) {
+                item.put("Home", NbtUtils.writeBlockPos(home.cell()));
+                item.putByte("Facing", (byte) home.facing().get2DDataValue());
+            }
             carList.add(item);
         }
         tag.put("Cars", carList);
@@ -740,11 +889,17 @@ public class StorageInterfaceBlockEntity extends BlockEntity implements BaseTrus
         ContainerHelper.loadAllItems(tag.getCompound("Out"), out.getItems(), registries);
         cars.clear();
         carNames.clear();
+        homes.clear();
         for (Tag element : tag.getList("Cars", Tag.TAG_COMPOUND)) {
             CompoundTag item = (CompoundTag) element;
             if (item.hasUUID("Link")) {
-                cars.add(item.getUUID("Link"));
-                carNames.put(item.getUUID("Link"), item.getString("Name"));
+                UUID link = item.getUUID("Link");
+                cars.add(link);
+                carNames.put(link, item.getString("Name"));
+                BlockPos home = NbtUtils.readBlockPos(item, "Home").orElse(null);
+                if (home != null) {
+                    homes.put(link, new Home(home, Direction.from2DDataValue(item.getByte("Facing"))));
+                }
             }
         }
         orders.clear();
@@ -772,6 +927,7 @@ public class StorageInterfaceBlockEntity extends BlockEntity implements BaseTrus
             seen.put(pos, new Seen(item.getLong("Time"), items));
         }
         stock = null;
+        shown = null;
     }
 
     /** Breek je hem af, dan krijgt het item zijn naam mee (zie de loot table: copy_components). */

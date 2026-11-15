@@ -242,7 +242,7 @@ public final class CarBrain {
     }
 
     /** Zoals {@link #stop()}; {@code why} leest wie iets bestelde bij een Storage Interface, als die bestelling niet af is. */
-    private void stop(String why) {
+    public void stop(String why) {
         run = null;
         pending.clear();
         job = "";
@@ -300,10 +300,24 @@ public final class CarBrain {
         return order == null ? 0 : order.moved;
     }
 
+    /** De plek van de Storage Interface van de bestelling waar hij mee bezig is, of null. */
+    public @Nullable BlockPos orderStation() {
+        return order == null ? null : order.station;
+    }
+
+    /** Zijn Storage Interface hoort meteen hoeveel hij al bracht of opborg (zie StorageInterfaceBlockEntity.progress). */
+    private void notifyProgress() {
+        if (order != null && car.level() instanceof ServerLevel level && level.isLoaded(order.station)
+                && level.getBlockEntity(order.station) instanceof com.senne.imttech.storage.StorageInterfaceBlockEntity station) {
+            station.progress(order.id, car.link(), order.moved);
+        }
+    }
+
     /** Hij legde iets in de afhaalvakjes van zijn Storage Interface: bij een bestelling "fetch" van die soort telt dat. */
     public void orderDelivered(ItemStack stack, int count) {
         if (order != null && order.kind == com.senne.imttech.storage.StorageOrder.Kind.FETCH && order.item.is(stack)) {
             order.moved += count;
+            notifyProgress();
         }
     }
 
@@ -311,6 +325,7 @@ public final class CarBrain {
     public void orderStored(ItemStack stack, int count) {
         if (order != null && order.kind == com.senne.imttech.storage.StorageOrder.Kind.STORE && order.item.is(stack)) {
             order.moved += count;
+            notifyProgress();
         }
     }
 
@@ -432,11 +447,18 @@ public final class CarBrain {
                 move(run, new CarMove.Arm(node.op == Op.ARM_UP ? levels : -levels));
             }
             case TAKE, PUT -> {
-                // take("iron_ingot", 8): de naam (of niets: alles) en het aantal (of niets: zoveel als er is).
+                // take("iron_ingot", 8): de naam en het aantal. take() zonder iets: alles; take("iron_ingot"): alles van die
+                // soort. Een naam die leeg uitkomt (order.item buiten een bestelling) of een aantal dat geen getal is: niets.
+                // (Gevonden bij de nalezing: een lege naam gold als "alles", en take(order.item) via een knop haalde zo de
+                // hele kist leeg.)
                 List<Object> values = values(run, node);
-                String item = values.isEmpty() ? "" : Expr.text(values.getFirst());
-                int count = values.size() > 1 && values.get(1) instanceof Double number ? (int) Math.max(0, Math.round(number)) : -1;
-                if (count != 0) { // take(order.item, order.left) met niets meer te doen: dan gebeurt er niets
+                String item = values.isEmpty() ? "" : Expr.itemName(Expr.text(values.getFirst()));
+                int count = values.size() < 2 ? -1
+                        : values.get(1) instanceof Double number ? (int) Math.max(0, Math.round(number)) : 0;
+                if (!values.isEmpty() && item.isEmpty()) {
+                    report(node.op.code() + "(): the name of the item is empty (order.item only has a name during an order), so"
+                            + " it did nothing");
+                } else if (count != 0) { // take(order.item, order.left) met niets meer te doen: dan gebeurt er niets
                     move(run, new CarMove.Chest(node.op == Op.TAKE ? CarMove.ChestJob.TAKE : CarMove.ChestJob.PUT, item, count));
                 }
             }
@@ -573,6 +595,9 @@ public final class CarBrain {
             /** {@code item("x") in chest()}, {@code chest.count("x")}, {@code in trunk()} en {@code trunk.count("x")} (hoofdstuk 113). */
             @Override
             public int count(boolean trunk, String item) {
+                if (item.isBlank()) {
+                    return 0; // een lege naam (order.item buiten een bestelling) telt niets, niet alles
+                }
                 if (trunk) {
                     return CarWork.countInTrunk(car.trunk(), item, orderVariant(item));
                 }

@@ -304,7 +304,10 @@ public final class CarWork {
      *
      * Wie mag wat: een kist in een beschermde zone opent hij alleen als wie zijn klus startte daar mag bouwen (dezelfde
      * regel als bij breken en plaatsen), en een kist met een slot erop (een sleutelnaam) opent hij nooit: hij heeft geen
-     * sleutel. Zo is een RC Car geen manier om bij iemand anders in de kisten te kijken of er iets uit te halen.
+     * sleutel. Net als een speler opent hij niets buiten de wereldrand of in de spawnbescherming van een server, en bij een
+     * dubbele kist tellen allebei de helften (hij bereikt via de ene helft ook de andere). Zo is een RC Car geen manier om
+     * bij iemand anders in de kisten te kijken of er iets uit te halen. (De wereldrand, de spawn en de tweede helft: gevonden
+     * bij de nalezing van hoofdstuk 113.)
      */
     public static @Nullable Chest chestAt(ServerLevel level, RcCarEntity car, boolean tell) {
         BlockPos pos = car.body().front();
@@ -319,14 +322,19 @@ public final class CarWork {
             slots = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, null);
         }
         String why = null;
+        BlockPos other = otherHalf(level, pos);
         if (slots == null) {
-            why = station ? "that Storage Interface does not know this car: link it there first (tab Cars)"
-                    : "there is no chest in front of its arm";
+            why = station ? "that Storage Interface does not know this car (link it there first, tab Cars), or the one who"
+                    + " drives it may not use that interface" : "there is no chest in front of its arm";
         } else if (!ImtConfig.RcCar.MAY_USE_CHESTS) {
             why = "opening chests is switched off on this server";
-        } else if (!builderHere(level, car, pos)) {
+        } else if (!level.getWorldBorder().isWithinBounds(pos)) {
+            why = "that chest is outside the world border";
+        } else if (spawnProtected(level, car, pos)) {
+            why = "it may not open chests at the spawn of this server (spawn protection)";
+        } else if (!builderHere(level, car, pos) || other != null && !builderHere(level, car, other)) {
             why = "it may not open chests in this protected zone";
-        } else if (locked(level, car, entity)) {
+        } else if (locked(level, car, entity) || other != null && locked(level, car, level.getBlockEntity(other))) {
             why = "that chest is locked";
         }
         if (why != null) {
@@ -336,6 +344,22 @@ public final class CarWork {
             return null;
         }
         return new Chest(pos.immutable(), slots, station);
+    }
+
+    /**
+     * De andere helft van een dubbele kist vóór de auto, of null (geen dubbele kist, of die helft ligt in een stuk wereld
+     * dat niet geladen is). De vakjes van een dubbele kist zijn die van allebei de helften samen; Minecraft opent zo'n kist
+     * alleen als je allebei de helften mag openen.
+     */
+    private static @Nullable BlockPos otherHalf(ServerLevel level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        if (state.getBlock() instanceof net.minecraft.world.level.block.ChestBlock
+                && state.getValue(net.minecraft.world.level.block.ChestBlock.TYPE)
+                        != net.minecraft.world.level.block.state.properties.ChestType.SINGLE) {
+            BlockPos other = pos.relative(net.minecraft.world.level.block.ChestBlock.getConnectedDirection(state));
+            return level.isLoaded(other) ? other : null;
+        }
+        return null;
     }
 
     /**
@@ -378,12 +402,16 @@ public final class CarWork {
         return isItem(stack, name) && (exact == null || ItemStack.isSameItemSameComponents(stack, exact));
     }
 
-    /** Hoeveel er van dit item in deze vakjes liggen. */
+    /**
+     * Hoeveel er van dit item in deze vakjes liggen, dat de auto kan meenemen. Een shulkerdoos of een volle Ammo Box past
+     * niet in zijn kofferbak: die telt niet mee, anders zei {@code item("shulker_box") in chest()} ja terwijl
+     * {@code take} hem nooit kan nemen (en een lus daarop bleef eeuwig draaien; gevonden bij de nalezing).
+     */
     public static int count(IItemHandler slots, String name, @Nullable ItemStack exact) {
         int count = 0;
         for (int slot = 0; slot < slots.getSlots(); slot++) {
             ItemStack stack = slots.getStackInSlot(slot);
-            if (wanted(stack, name, exact)) {
+            if (wanted(stack, name, exact) && RcCarEntity.fitsInTrunk(stack)) {
                 count += stack.getCount();
             }
         }
@@ -438,9 +466,14 @@ public final class CarWork {
         int moved = 0;
         boolean found = false;
         boolean full = false;
+        boolean unfit = false;
         for (int slot = 0; slot < slots.getSlots() && left > 0; slot++) {
             ItemStack there = slots.getStackInSlot(slot);
-            if (!wanted(there, name, exact) || !RcCarEntity.fitsInTrunk(there)) {
+            if (!wanted(there, name, exact)) {
+                continue;
+            }
+            if (!RcCarEntity.fitsInTrunk(there)) {
+                unfit = true; // een shulkerdoos, een volle Ammo Box: die past niet in zijn kofferbak
                 continue;
             }
             found = true;
@@ -467,6 +500,7 @@ public final class CarWork {
         com.senne.imttech.storage.Storages.carLooked(level, car, chest);
         if (moved <= 0) {
             car.brain().report(full ? "its trunk is full" : found ? "it could not take anything out of that chest"
+                    : unfit ? "it cannot carry that in its trunk (shulker boxes and full boxes or pouches do not fit)"
                     : name.isEmpty() ? "that chest is empty" : "there is no \"" + name + "\" in that chest");
             return Result.REFUSED;
         }
@@ -539,11 +573,32 @@ public final class CarWork {
         return Result.OK;
     }
 
-    /** Wat {@code chest.slots}, {@code chest.free} en {@code chest.items} zeggen: {vakjes, lege vakjes, voorwerpen}; nullen zonder kist. */
+    /**
+     * Wat {@code chest.slots}, {@code chest.free} en {@code chest.items} zeggen: {vakjes, lege vakjes, voorwerpen}; nullen
+     * zonder kist. Bij zijn Storage Interface: wat {@code put()} en {@code take()} daar bereiken. De vakjes en de lege
+     * vakjes zijn die van PICK-UP (daar legt hij in), de voorwerpen die in de vakjes om op te bergen (daar neemt hij uit).
+     * Anders telde een lus {@code while chest.items > 0: take()} ook wat er nog in PICK-UP lag, en hield hij nooit op
+     * (gevonden bij de nalezing).
+     */
     public static int[] chestNumbers(ServerLevel level, RcCarEntity car) {
         Chest chest = chestAt(level, car, false);
         if (chest == null) {
             return new int[] {0, 0, 0};
+        }
+        if (chest.station()) {
+            int in = com.senne.imttech.storage.StorageInterfaceBlockEntity.IN_SLOTS;
+            int out = com.senne.imttech.storage.StorageInterfaceBlockEntity.OUT_SLOTS;
+            int waiting = 0;
+            int empty = 0;
+            for (int slot = 0; slot < in; slot++) {
+                waiting += chest.slots().getStackInSlot(slot).getCount();
+            }
+            for (int slot = in; slot < in + out; slot++) {
+                if (chest.slots().getStackInSlot(slot).isEmpty()) {
+                    empty++;
+                }
+            }
+            return new int[] {out, empty, waiting};
         }
         int free = 0;
         int items = 0;
@@ -572,7 +627,7 @@ public final class CarWork {
             ItemStack exact = car.brain().orderVariant(name);
             for (int slot = 0; slot < com.senne.imttech.storage.StorageInterfaceBlockEntity.IN_SLOTS; slot++) {
                 ItemStack stack = chest.slots().getStackInSlot(slot);
-                if (wanted(stack, name, exact)) {
+                if (wanted(stack, name, exact) && RcCarEntity.fitsInTrunk(stack)) {
                     waiting += stack.getCount();
                 }
             }
