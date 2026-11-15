@@ -1399,16 +1399,33 @@ was dat C4).
 
 **Een zone tekenen.** Een zone hoort bij je **beveiligingskern** en bestaat uit één of meer
 **kubussen**, tot op het blok precies (een L-vorm, een toren die hoger is dan de rest...). Ze mogen
-tot **200 blokken** van je kern liggen (opzij, omhoog en omlaag; het bereik van je kern, zie
-hieronder); hooguit 48 (tot 4 november 16). Niet over de zone van een ander.
+tot **500 blokken** van je kern liggen (opzij, omhoog en omlaag; tot 15 november 200); hooguit 48
+(tot 4 november 16). Niet over de zone van een andere kern, en niet om een andere kern heen.
 
-**Het bereik van een kern.** Alles van je beveiliging werkt tot **200 blokken** van je kern, in elke
-richting: je zone, en al je apparaten (torentjes, camera's, keycard-lezers, codepanelen,
-serverkasten, laserwanden); zijn drones jagen ook zo ver. Dat is één getal in
-`config/imttech.toml`: `zoneReach` onder `[security]`. Maak je het groter of kleiner, dan
-past alles zich meteen aan, ook terwijl het spel draait. Twee kernen mogen niet in elkaars bereik
-staan: met 200 moet een nieuwe kern dus meer dan 400 blokken van een andere kern staan ("Too close to
-another security network").
+**Het bereik van een kern** (sinds 15 november). **Je zone bepaalt hoe ver je kern reikt**: wat bij
+je kern hoort omdat het in zijn gebied staat (je robots en drones en hun verbinding, hun docks, de
+training, je laserwanden: wie erdoor mag, en wie er vertrouwd is), hoort erbij zolang het **in je zone**
+staat, tot 500 blokken ver. Apparaten aan een netwerkkabel of een Router (torentjes, camera's,
+keycard-lezers, codepanelen, serverkasten) horen zoals altijd bij de kern aan het andere eind, waar ze
+ook staan. Heeft je kern (nog) **geen zone**, dan reikt hij **200 blokken** ver, zoals vroeger; staat
+er een andere kern zonder zone dichterbij, dan hoort die plek bij die kern. Teken dus een zone (met
+Autoscan gaat dat snel) om je basis echt van jou te maken.
+- **Kernen vlak bij elkaar** mag nu (tot 15 november moesten ze meer dan 400 blokken uit elkaar): zo
+  bouwen twee vrienden hun basis naast elkaar.
+- **Nooit in de zone van een andere kern**, ook niet als die zone **geen stroom** heeft ("This is inside
+  the protected zone of ..."): anders haalde je de stroom weg en zette je je eigen kern in zijn basis.
+  Ook niet in de zone van je eigen andere kern.
+- **Nooit in een gebouw van Biebia's** (een toren, een bunker, een wrak: "This is inside a building of
+  Biebia's Industries"). De toren en de bunker horen bij hun eigen kern, ook als je die gehackt hebt, en
+  ook als jouw zone eroverheen ligt; een zone mag er niet overheen (duikt zo'n gebouw later op onder je
+  zone, dan gaan die kubussen weg). Vlak ernaast mag alles: tot 15 november hield elke kern, ook die van de
+  bunkers in de bergen, 400 blokken vrij.
+- Een zone mag **niet om een andere kern heen** (dan kon die zijn eigen kern niet eens meer
+  weghakken). Wie het eerst een zone tekent, heeft die plek.
+- De getallen staan in `config/imttech.toml` onder `[security]`: `zoneRange` (500: hoe ver een zone mag
+  liggen, ook voor de Autoscan) en `reachWithoutZone` (200: hoe ver een kern zonder zone reikt). Tot
+  15 november was dat één getal, `zoneReach` (200). Maak je ze groter
+  of kleiner, dan past alles zich meteen aan, ook terwijl het spel draait.
 - Met de **Zone Marker** (recept: een redstonefakkel, een computerchip en een stok onder elkaar):
   **linksklik** op een blok = hoek 1, **rechtsklik** = hoek 2 (je ziet een oranje doos en hoe groot hij
   is), **sluipen + rechtsklik** = die doos wordt een kubus van je zone. **Sluipen + linksklik** in een
@@ -1420,7 +1437,8 @@ another security network").
 - **Autoscan** (sinds 4 november; de ping en de grot erbij sinds 15 november, hoofdstuk 116): de knop **Autoscan** in de
   app scant vanaf de kern (of vanaf waar jij staat, als je bij de kern bent); met de Zone Marker doe je **sluipen +
   rechtsklik zonder hoeken** om vanuit die kamer te scannen. Een **dichte bunker** wordt alle kamers die open met elkaar
-  verbonden zijn, **plus 3 blokken muur** eromheen (zo zit verborgen redstone er ook in), als een stel kubussen. Een
+  verbonden zijn, **plus 10 blokken** eromheen (de muren, de vloer, het plafond en wat erachter ligt, zo zit verborgen
+  redstone er ook in; tot 15 november 3), als een stel kubussen. Een
   deur (ook een open deur), tapijt of een halve plaat houdt de scan tegen; een gat, een open hek, of een fakkel, bordje
   of knop in een gat niet.
   - **Is de kamer niet dicht**, dan zoekt de scan **waar** hij openligt en zet daar een **ping**: een tekstje boven het
@@ -1437,7 +1455,7 @@ another security network").
     Zijn je kamers gewoon heel groot (meer dan 60.000 blokken, zonder grot), dan heet de knop **Scan bigger**.
   - **Sta je bij je gebouw** (een gebouwd blok naast je) en is de kamer niet dicht, dan krijg je zoals vroeger meteen
     **één doos** om alle aaneengesloten **gebouwde** blokken (alles wat geen natuur is: geen steen, aarde, zand, erts,
-    bomen) met 3 blokken marge; de ping en de knop voor de grot komen erbij. Met de Zone Marker klik je daarvoor een blok
+    bomen) met 10 blokken marge; de ping en de knop voor de grot komen erbij. Met de Zone Marker klik je daarvoor een blok
     van je gebouw aan.
   - **Undo** (of **Undo scan**) in de app zet je zone terug zoals hij voor je laatste Autoscan was: 5 minuten lang, en
     alleen als je de zone daarna niet zelf veranderde.
@@ -1445,8 +1463,9 @@ another security network").
     Een zone heeft hooguit 48 kubussen; vindt de scan er meer, dan voegt hij ze samen, maar nooit tot een kubus die de
     zone van een ander raakt. De scan **laadt nooit een stuk wereld** (dat laat de server haperen): wat niet geladen is,
     ziet hij niet, en dan zegt hij dat (via SSH van ver ziet hij alleen het stuk rond je kern). De getallen
-    (`zoneScanWall`, `zoneScanMax`, `zoneScanCaveMax`, `zoneScanCaveMillis`, `zoneScanPingSeconds`) staan onder
-    `[security]`.
+    (`zoneScanMargin`, tot 15 november `zoneScanWall`; `zoneScanMax`, `zoneScanCaveMax`, `zoneScanCaveMillis`,
+    `zoneScanPingSeconds`) staan onder `[security]`. De scan reikt even ver als je zone mag liggen: 500 blokken van je
+    kern (`zoneRange`).
 - Een **lange melding** onderaan de desktop staat sinds hoofdstuk 116 in een kader over de taakbalk, over hooguit drie
   regels, in plaats van links van je scherm af te lopen.
 

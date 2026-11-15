@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 630 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 631 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -9189,11 +9189,98 @@ Mijn invulling (verander ik op jouw woord):
   met kans op haperen. Dan zegt hij dat een deel niet geladen is.
 - **Versie 2.17** (nieuw gedrag van de Autoscan; netwerkversie 45, dus spelers hebben de nieuwe jar nodig).
 
+### 117. Kernen vlak bij elkaar, de zone is het bereik van je kern, en een zone tot 500 blokken (15 november)
+
+Jouw wens: "Zorg dat je base security core's altijd vlak bij elkaar kunt zetten als er geen protected zone is, het kan ook
+niet geplaats worden in een zone zonder power ander kun je simpel de power weg doen en dan de base claimen. De protected
+zone bepaald dus hoe ver je range van security core is zoals nu de range van 200 dat doet. Zorg dat autoscan een range van
+500 blokken heeft in al de richten vanaf de securiy core." En even later: "de zone bij autoscan gaat nu 3 blokken naar de
+rand maak dit 10 blokken".
+
+- [x] **Kernen vlak bij elkaar** (`SecurityCores.placementProblem`): een kern mag overal staan, ook vlak naast een andere
+      (tot nu moesten twee kernen meer dan 400 blokken uit elkaar). Nooit in de zone van een andere kern, ook niet als die
+      zone geen stroom heeft of de kern niet geladen is ("This is inside the protected zone of ..."), en nooit in een gebouw
+      van Biebia's ("This is inside a building of Biebia's Industries").
+- [x] **De zone is het bereik** (`SecurityCores.coreAt`, `inArea`, `ownedBy`, `SecurityCoreBlockEntity.area`): een kern
+      met een zone reikt precies zo ver als zijn zone. Dat geldt voor alles wat bij een kern hoort door waar het staat:
+      robots en drones (hun verbinding), docks, de training, laserwanden (wie erdoor mag), wie er vertrouwd is, de oude
+      patrouilledrones. Een plek in een toren of bunker van Biebia's hoort altijd bij de kern van dat gebouw, en een plek in
+      een zone bij de kern van die zone. Een kern zonder zone reikt 200 blokken
+      (`reachWithoutZone`), maar nooit in de zone van een ander; reiken twee kernen zonder zone tot dezelfde plek, dan telt
+      de dichtstbijzijnde (dat deed de code al). Apparaten aan een netwerkkabel of Router horen zoals altijd bij de kern
+      aan het andere eind.
+- [x] **Een zone tot 500 blokken** (`zoneRange`, was `zoneReach` met 200): met de Zone Marker, in de app Zone, en de
+      Autoscan zoekt even ver. Door de nieuwe naam krijgt ook een bestaand configbestand de 500.
+- [x] **Wat een zone in de weg zit** (`SecurityCores.zoneBlocked`, `zoneObstacles`): de zone van een andere kern (zoals
+      altijd), een andere kern zelf (een zone slokt nooit de kern van een ander op), en een toren of bunker van Biebia's.
+      Het stuk rond een kern zonder zone telt niet meer: wie het eerst een zone tekent, heeft die plek.
+- [x] **Gebouwen van Biebia's** (`SecurityCores.buildingOf`, `freeBuilding`): de stukken van een Biebia's Industries Tower
+      of een bunker van Biebia's horen altijd bij de kern in dat gebouw (ook als je hem gehackt hebt): daarin komt geen
+      andere kern en geen nieuwe zone, en het gebouw gaat voor op een zone. Duikt zo'n gebouw pas later op onder de zone van
+      een ander (net gegenereerd, of nooit eerder geladen), dan gaan bij zijn eerste tick de kubussen weg die het raken (in
+      het logboek van die kern: "a Biebia's Industries building stands there"). Rond het gebouw reikt de kern van een toren
+      of bunker zoals elke kern zonder zone (200 blokken, voor zijn drones en robots die buiten vliegen of lopen), maar vlak
+      naast het gebouw mag je gewoon bouwen, een kern zetten en een zone tekenen (die gaat daar voor). Vroeger hield elke
+      kern, ook die van de bunkers in de bergen, 400 blokken in het rond vrij.
+- [x] **Autoscan 10 blokken rand** (`zoneScanMargin`, was `zoneScanWall` met 3): de scan zelf maakte superheromod-97 in
+      hoofdstuk 116 zo dat de rand niets extra kost (met de oude scan was 10 blokken zo'n 27 keer trager geweest).
+- [x] **Een zone tellen gaat snel** (`ZoneData.unionVolume`, gemeld door superheromod-97): het aantal blokken van een zone
+      met veel kubussen rekenen we nu in plakken uit, een paar ms in plaats van tot 145 ms bij elke klik in de app Zone
+      (met 48 kubussen die niet netjes op een rij liggen, en die komen er met 10 blokken rand en 500 blokken bereik
+      sneller).
+- [x] **Raven-soldaten en laserwanden** (`LaserWallBlock`): een soldaat loopt door een wand zonder kern alleen nog in een
+      gebouw van deze mod (de bunker heeft geen kern). Vroeger gold elke plek zonder kern als "van Biebia", en nu reikt een
+      kern met een zone niet meer tot buiten die zone: zonder dit liepen ze door jouw wanden buiten je zone.
+- [x] **Teksten**: de app Zone ("Reach: 500 blocks", de Autoscan-hint met het getal uit de config), de Zone Marker, How it
+      works (Zones: "up to 500 blocks"), het Training Start-blok ("in the zone of a security core"), LEESMIJ.
+- [x] **Tests**: `security_core_placed_by_a_player` (een tweede kern ernaast mag nu, in een zone zonder stroom niet),
+      `zone_range_and_reach_follow_the_config` (was `zone_and_devices_reach_follow_the_config`: de range in de config, de
+      zone als bereik, niet om een andere kern heen), `autoscan_finds_rooms_and_buildings` (de rand uit de config), en
+      nieuw `cores_stand_close_and_the_zone_is_the_reach` (twee kernen naast elkaar: welke kern is waar de baas, plaatsen,
+      gelijke afstand, een gebouw van Biebia's onder een oude zone). `withReach` in de tests zet nu beide getallen.
+- [x] **Review**: twee onafhankelijke lezers (misbruik, en regressies bij alles wat `coreAt` gebruikt), met per lezer een
+      controleur die elke vondst tegen de code nakeek (4 agents). Bevestigd en opgelost: (1) een toren of bunker die pas na
+      je zone ontstond, hoorde helemaal bij jouw zone (geen robots en drones voor de toren, jij door zijn laserwanden, zijn
+      kasten van jou); (2) mijn eerste toren-regel gaf elke kern in een gebouw van deze mod (ook een eigen kern in een wrak)
+      400 blokken vrije ruimte: nu telt alleen een toren of bunker, en alleen het gebouw zelf; (3) twee kernen op precies
+      even grote afstand: `coreAt` en `ownedBy` kozen niet dezelfde; (4) een Training Goal van de buurman telde mee voor
+      jouw training. Niet overgenomen: oude patrouilledrones (die bestaan in geen enkele wereld van deze mod meer), en
+      torentjes buiten je zone met `[network] required = false` (zie mijn invulling).
+- [x] **Volledige ronde**: 631 tests, in de laatste ronde (op hoofdstuk 115, 116 en 118) allemaal groen. In de rondes ervoor waren rood: vier zone-tests door mijn eerste toren-regel (elke kern zonder eigenaar telde als toren, en de testwereld staat er vol mee), daarna de Autoscan-tests die nog 3 blokken rand verwachtten (ook twee nieuwe van hoofdstuk 116), en een keer guard_searches_where_he_lost_you (die wisselt vaker).
+
+Mijn invulling (verander ik op jouw woord):
+- **Een kern zonder zone reikt 200 blokken**, zoals vroeger: anders werkten je robots, docks en training pas na het tekenen
+  van een zone (en in een bestaande wereld zonder zone niet meer). Staat er een andere kern zonder zone dichterbij, dan
+  hoort die plek bij die kern.
+- **Met een zone reikt een kern alleen nog tot zijn zone**: een robot die je zone uit loopt, verliest zijn verbinding met de
+  server, en een Training Start buiten je zone werkt niet. Teken je zone ruim genoeg (de Autoscan doet nu 10 blokken rand).
+- **De Zone Marker en de app gaan ook tot 500**, niet alleen de Autoscan: één getal voor "hoe ver mag een zone liggen".
+- **Gebouwen van Biebia's** (de toren, de bunkers, en ook een wrak van een satelliet): geen eigen kern erin. De toren en de
+  bunker horen bij hun eigen kern, ook gehackt; rond het gebouw reikt die kern zoals elke kern zonder zone. Geen 400
+  blokken vrije ruimte meer eromheen.
+- **Met `[network] required = false`** (een oude wereld zonder netwerkkabels) hoort een apparaat bij de kern in wiens gebied
+  het staat: een torentje buiten je zone hoort dan bij geen kern, en schiet op iedereen. Zet ze in je zone (met
+  netwerkkabels, de standaard, maakt het niet uit waar ze staan).
+- **Een zone mag niet om een andere kern heen**, ook niet om die van een vriend of om je eigen tweede kern; en in je eigen
+  zone mag ook geen tweede kern van jezelf.
+- **Een grotere zone kost meer stroom** (`zoneBlocksPerPower`): met 10 blokken rand wordt een kamer van 20 x 4 x 20 een
+  zone van 40 x 24 x 40 = 38.400 blokken, 192 FE per 2 seconden (met 3 blokken rand was het 34).
+- Geen nieuwe versie: bestaande regels zijn veranderd, geen nieuw blok of systeem (het laatste getal telt vanzelf).
+
+Nog niet gedaan:
+- Niet in het spel bekeken, en nooit met een tweede speler (zie "Nog nooit in het spel bekeken").
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **Kernen vlak bij elkaar en de zone als bereik (hoofdstuk 117)**: alleen met tests gecontroleerd, niet gespeeld en
+      nooit met een tweede speler. Probeer: (1) zet twee kernen vlak naast elkaar zonder zone: lukt het? (2) Laat een vriend
+      (of een tweede account) een kern in jouw zone zetten, ook terwijl je generator uit staat: zegt het spel "This is inside
+      the protected zone of ..."? (3) Doe een Autoscan: ligt de rand nu 10 blokken van je kamers, en kun je een kubus tot
+      500 blokken van je kern tekenen? (4) Laat een robot je zone uit lopen: verliest hij zijn verbinding, en voelt dat goed,
+      of moet een kern met een zone toch ook buiten zijn zone reiken?
 - [ ] **Het opslagsysteem (hoofdstuk 113)**: met tests gecontroleerd en gezien op screenshots (`-Ponly=storage`), maar niet
       met de muis gespeeld en nooit met een tweede speler. Probeer: (1) bouw een kleine kistenkamer zoals het voorbeeld
       in de LEESMIJ (de interface, de auto ervoor met zijn neus ernaartoe, rechts een gang langs stapels van drie

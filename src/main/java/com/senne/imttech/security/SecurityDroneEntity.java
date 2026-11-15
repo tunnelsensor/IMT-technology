@@ -181,14 +181,14 @@ public class SecurityDroneEntity extends PathfinderMob implements com.senne.imtt
     private boolean stillATarget(ServerLevel level, @Nullable SecurityCoreBlockEntity core, LivingEntity target) {
         double range = ImtConfig.Security.DRONE_RANGE * 1.5;
         return target.distanceToSqr(this) <= range * range && SecurityCores.isIntruder(level, core, target)
-                && (home == null || SecurityCores.inArea(home, target.blockPosition()));
+                && (home == null || SecurityCores.inArea(level, home, target.blockPosition()));
     }
 
     /** De dichtstbijzijnde indringer die hij kan zien. */
     private @Nullable LivingEntity findTarget(ServerLevel level, @Nullable SecurityCoreBlockEntity core) {
         return level.getEntitiesOfClass(LivingEntity.class, new AABB(blockPosition()).inflate(ImtConfig.Security.DRONE_RANGE),
                         entity -> entity != this && SecurityCores.isIntruder(level, core, entity)
-                                && (home == null || SecurityCores.inArea(home, entity.blockPosition()))
+                                && (home == null || SecurityCores.inArea(level, home, entity.blockPosition()))
                                 && getSensing().hasLineOfSight(entity))
                 .stream()
                 .min(Comparator.comparingDouble(this::distanceToSqr))

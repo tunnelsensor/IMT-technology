@@ -33,14 +33,17 @@ public final class TrainingGoals {
         }
     }
 
-    /** Staat er een Goal-blok in het gebied van deze kern? */
+    /**
+     * Staat er een Goal-blok in het gebied van deze kern? Met dezelfde regel als het blok zelf (TrainingBlocks.goal): sinds
+     * hoofdstuk 117 kunnen kernen vlak bij elkaar staan, en een Goal-blok van de buurman telt niet.
+     */
     public static boolean anyNear(ServerLevel level, BlockPos core) {
         Set<BlockPos> set = LOADED.get(level.dimension());
-        if (set == null) {
+        if (set == null || !(level.getBlockEntity(core) instanceof com.senne.imttech.security.SecurityCoreBlockEntity coreEntity)) {
             return false;
         }
         for (BlockPos goal : List.copyOf(set)) {
-            if (SecurityCores.inArea(core, goal)) {
+            if (SecurityCores.ownedBy(level, coreEntity, goal)) {
                 return true;
             }
         }

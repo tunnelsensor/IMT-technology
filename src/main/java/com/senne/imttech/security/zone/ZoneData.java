@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -92,6 +93,11 @@ public final class ZoneData extends SavedData {
             return volume;
         }
 
+        /** De kleinste doos om alle kubussen heen (niet afgeknipt op ZONE_RANGE), of null zonder kubussen. */
+        public @Nullable ZoneBox bounds() {
+            return bounds;
+        }
+
         /**
          * Beschermt de zone nu? Dat kan alleen als de kern van iemand is, er kubussen zijn, en de kern
          * genoeg stroom heeft. (De Biebia's Industries Tower is van niemand tot je hem hackt: die heeft dus nooit een zone.)
@@ -101,12 +107,12 @@ public final class ZoneData extends SavedData {
         }
 
         /**
-         * Het stuk van deze kubus binnen het bereik van de kern nu (null als er niets overblijft). Maak
-         * je ZONE_REACH in de config kleiner, dan beschermt de zone meteen alleen nog tot daar; de
-         * getekende kubussen blijven bewaard, dus maak je hem weer groter, dan is alles terug.
+         * Het stuk van deze kubus dat nu mag beschermen: binnen ZONE_RANGE van de kern (null als er niets overblijft). Maak
+         * je ZONE_RANGE in de config kleiner, dan beschermt de zone meteen alleen nog tot daar; de getekende kubussen
+         * blijven bewaard, dus maak je hem weer groter, dan is alles terug.
          */
         private @Nullable ZoneBox inReach(ZoneBox box) {
-            return box.overlap(com.senne.imttech.security.SecurityCores.areaOf(core.pos()));
+            return box.overlap(com.senne.imttech.security.SecurityCores.zoneRangeOf(core.pos()));
         }
 
         /** De kubussen zoals ze nu beschermen: afgeknipt op het bereik van de kern (zie {@link #inReach}). */
@@ -132,7 +138,7 @@ public final class ZoneData extends SavedData {
             if (pos.equals(core.pos())) {
                 return true;
             }
-            if (!bounds.contains(pos) || !com.senne.imttech.security.SecurityCores.inArea(core.pos(), pos)) {
+            if (!bounds.contains(pos) || !com.senne.imttech.security.SecurityCores.withinZoneRange(core.pos(), pos)) {
                 return false;
             }
             for (ZoneBox box : boxes) {
@@ -376,9 +382,11 @@ public final class ZoneData extends SavedData {
     // ================================================================ Rekenen
 
     /**
-     * Hoeveel blokken liggen er in deze kubussen samen? Kubussen mogen over elkaar liggen; wat dubbel
-     * ligt, telt één keer. We knippen de ruimte op langs alle randen van de kubussen in stukken
-     * (hooguit 31 x 31 x 31), en tellen elk stuk dat in een kubus ligt.
+     * Hoeveel blokken liggen er in deze kubussen samen? Kubussen mogen over elkaar liggen; wat dubbel ligt, telt één keer.
+     * We knippen de ruimte langs alle x-randen van de kubussen in plakken; elke plak langs de y-randen van de kubussen die
+     * erin liggen in stroken; en in elke strook voegen we de stukjes langs z van die kubussen samen en tellen hoe lang ze
+     * samen zijn. Hoofdstuk 117 (gemeld door superheromod-97): tot dan probeerden we elk stukje van een raster tot 95 x 95
+     * x 95 tegen elke kubus, en dat kostte met 48 kubussen tot 145 ms bij elke klik in de app Zone; zo is het een paar ms.
      */
     static long unionVolume(List<ZoneBox> boxes) {
         if (boxes.isEmpty()) {
@@ -387,35 +395,69 @@ public final class ZoneData extends SavedData {
         if (boxes.size() == 1) {
             return boxes.getFirst().volume();
         }
-        TreeSet<Integer> xs = new TreeSet<>();
-        TreeSet<Integer> ys = new TreeSet<>();
-        TreeSet<Integer> zs = new TreeSet<>();
-        for (ZoneBox box : boxes) {
-            xs.add(box.min().getX());
-            xs.add(box.max().getX() + 1);
-            ys.add(box.min().getY());
-            ys.add(box.max().getY() + 1);
-            zs.add(box.min().getZ());
-            zs.add(box.max().getZ() + 1);
-        }
-        Integer[] x = xs.toArray(new Integer[0]);
-        Integer[] y = ys.toArray(new Integer[0]);
-        Integer[] z = zs.toArray(new Integer[0]);
+        int[] xs = edges(boxes, Direction.Axis.X);
+        List<ZoneBox> slab = new ArrayList<>();
+        List<ZoneBox> strip = new ArrayList<>();
         long total = 0;
-        for (int i = 0; i + 1 < x.length; i++) {
-            for (int j = 0; j + 1 < y.length; j++) {
-                for (int k = 0; k + 1 < z.length; k++) {
-                    BlockPos probe = new BlockPos(x[i], y[j], z[k]);
-                    for (ZoneBox box : boxes) {
-                        if (box.contains(probe)) {
-                            total += (long) (x[i + 1] - x[i]) * (y[j + 1] - y[j]) * (z[k + 1] - z[k]);
-                            break;
-                        }
-                    }
+        for (int i = 0; i + 1 < xs.length; i++) {
+            slab.clear();
+            for (ZoneBox box : boxes) {
+                if (box.min().getX() <= xs[i] && box.max().getX() + 1 >= xs[i + 1]) {
+                    slab.add(box);
                 }
             }
+            if (slab.isEmpty()) {
+                continue;
+            }
+            int[] ys = edges(slab, Direction.Axis.Y);
+            long area = 0;
+            for (int j = 0; j + 1 < ys.length; j++) {
+                strip.clear();
+                for (ZoneBox box : slab) {
+                    if (box.min().getY() <= ys[j] && box.max().getY() + 1 >= ys[j + 1]) {
+                        strip.add(box);
+                    }
+                }
+                if (strip.isEmpty()) {
+                    continue;
+                }
+                // De stukjes langs z van deze strook, op volgorde, samengevoegd.
+                strip.sort(java.util.Comparator.comparingInt(box -> box.min().getZ()));
+                long length = 0;
+                int from = strip.getFirst().min().getZ();
+                int to = strip.getFirst().max().getZ() + 1;
+                for (ZoneBox box : strip) {
+                    int start = box.min().getZ();
+                    int end = box.max().getZ() + 1;
+                    if (start > to) {
+                        length += to - from;
+                        from = start;
+                        to = end;
+                    } else {
+                        to = Math.max(to, end);
+                    }
+                }
+                length += to - from;
+                area += length * (ys[j + 1] - ys[j]);
+            }
+            total += area * (xs[i + 1] - xs[i]);
         }
         return total;
+    }
+
+    /** Alle randen van deze kubussen langs één as (het begin, en één voorbij het eind), op volgorde en elk één keer. */
+    private static int[] edges(List<ZoneBox> boxes, Direction.Axis axis) {
+        TreeSet<Integer> edges = new TreeSet<>();
+        for (ZoneBox box : boxes) {
+            edges.add(box.min().get(axis));
+            edges.add(box.max().get(axis) + 1);
+        }
+        int[] sorted = new int[edges.size()];
+        int i = 0;
+        for (int edge : edges) {
+            sorted[i++] = edge;
+        }
+        return sorted;
     }
 
     // ================================================================ Opslaan

@@ -269,8 +269,8 @@ public final class ImtRaids {
 
     // ================================================================ Buiten de basis (hoofdstuk 54)
 
-    /** Zo ver rondom de speler kijken we naar kernen (een zone reikt tot ZONE_REACH van haar kern). */
-    private static final int NEARBY = 512;
+    /** Zo ver rondom de speler kijken we naar kernen, bovenop ZONE_RANGE (zo ver kan een zone van haar kern liggen). */
+    private static final int NEARBY = 64;
     /** Hooguit zo ver schuift de aankomst naar buiten, als een basis (of een rij basissen) in de weg ligt. */
     private static final double MAX_BASE_WALK = 512;
 
@@ -282,9 +282,10 @@ public final class ImtRaids {
     static List<ZoneBox> basesNear(ServerLevel level, BlockPos around) {
         List<ZoneBox> bases = new ArrayList<>();
         int size = Math.max(1, (int) Math.round(ImtConfig.Raids.BASE_SIZE));
+        int nearby = Math.round(ImtConfig.Security.ZONE_RANGE) + NEARBY;
         for (ZoneData.Zone zone : List.copyOf(ZoneData.get(level).in(level.dimension()))) {
             BlockPos core = zone.core().pos();
-            if (Math.abs(core.getX() - around.getX()) > NEARBY || Math.abs(core.getZ() - around.getZ()) > NEARBY) {
+            if (Math.abs(core.getX() - around.getX()) > nearby || Math.abs(core.getZ() - around.getZ()) > nearby) {
                 continue;
             }
             List<ZoneBox> boxes = zone.boxesInReach();

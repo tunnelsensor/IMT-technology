@@ -552,7 +552,7 @@ public final class Training {
             end(level, session, Result.DIED);
             return;
         }
-        if (!SecurityCores.inArea(core.getBlockPos(), trainee.blockPosition())) {
+        if (!SecurityCores.inArea(level, core.getBlockPos(), trainee.blockPosition())) {
             end(level, session, Result.LEFT);
             return;
         }

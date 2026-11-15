@@ -1303,7 +1303,7 @@ public final class SecurityOs {
         }
         // De beveiliging jaagt op hem.
         core.hunt(reader.getUUID(), until);
-        if (core.isOnline() && SecurityCores.inArea(core.getBlockPos(), reader.blockPosition())
+        if (core.isOnline() && SecurityCores.inArea(level, core.getBlockPos(), reader.blockPosition())
                 && SecurityCores.isIntruder(level, core, reader)) {
             for (SecurityDroneEntity drone : level.getEntitiesOfClass(SecurityDroneEntity.class, core.area(),
                     drone -> core.getBlockPos().equals(drone.home()))) {

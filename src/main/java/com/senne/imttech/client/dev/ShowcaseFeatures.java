@@ -1516,7 +1516,7 @@ final class ShowcaseFeatures {
 
         add("Zone autoscan", "Hoofdstuk 45: de Autoscan (in survival). Naast de basis staat een dichte bunker van stenen "
                 + "bakstenen. Je staat erin met een Zone Marker zonder hoeken en doet sluipen + rechtsklik: 'Autoscan "
-                + "(rooms): 1 box added', en de blauwe rand ligt om de kamer en " + Math.round(com.senne.imttech.config.ImtConfig.Security.ZONE_SCAN_WALL)
+                + "(rooms): 1 box added', en de blauwe rand ligt om de kamer en " + Math.round(com.senne.imttech.config.ImtConfig.Security.ZONE_SCAN_MARGIN)
                 + " blokken muur eromheen (de rand zie je met de marker in je hand). Dan naar de open basis (geen dak): de app "
                 + "Zone op de kern, knop Autoscan: 'Autoscan (building): 1 box added' en één doos om het hele gebouw.",
                 GameType.SURVIVAL, Vec3.atBottomCenterOf(ZONE_BASE.offset(-8, 0, 4)), 0, 10, s -> {

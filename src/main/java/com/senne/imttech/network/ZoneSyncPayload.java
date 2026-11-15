@@ -19,7 +19,10 @@ import net.minecraft.resources.ResourceLocation;
 public record ZoneSyncPayload(List<View> zones) implements CustomPacketPayload {
     public static final Type<ZoneSyncPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "zone_sync"));
 
-    /** Hooguit zoveel zones in één bericht (ruim: twee kernen staan minstens 2 x ZONE_REACH uit elkaar). */
+    /**
+     * Hooguit zoveel zones in één bericht. Ruim: je krijgt alleen je eigen zones en die van wie jou in Access zette (sinds
+     * hoofdstuk 117 mogen kernen vlak bij elkaar staan, maar zones liggen nooit over elkaar).
+     */
     public static final int MAX_ZONES = 64;
 
     /**

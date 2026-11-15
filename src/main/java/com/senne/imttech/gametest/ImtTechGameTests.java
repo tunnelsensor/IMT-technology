@@ -544,19 +544,22 @@ public final class ImtTechGameTests {
     }
 
     /**
-     * Doet {@code action} met een kleiner bereik van de kernen (ZONE_REACH even op {@code reach}) en
-     * zet het daarna terug, ook als het misgaat. Voor tests die een kern neerzetten zoals een speler:
-     * dan mag er binnen 2 x het bereik geen andere kern staan, en in de testwereld staan overal kernen
-     * van andere tests (ook uit vorige rondes). Met 200 blokken (ook omhoog en omlaag) is er altijd wel
-     * een te dichtbij. Alleen in een test die alleen in zijn batch staat (anders merken de andere het).
+     * Doet {@code action} met een kleiner bereik van de kernen en zet het daarna terug, ook als het misgaat: hoe ver een
+     * kern zonder zone reikt (REACH_WITHOUT_ZONE) en hoe ver een zone mag komen (ZONE_RANGE), allebei even op
+     * {@code reach}. In de testwereld staan overal kernen en Goal-blokken van andere tests (ook uit vorige rondes): met
+     * 200 blokken reikt er altijd wel een kern van een andere test tot hier. Alleen in een test die alleen in zijn batch
+     * staat, of die alles in dezelfde tick doet (anders merken de andere tests het).
      */
     static <T> T withReach(int reach, java.util.function.Supplier<T> action) {
-        int old = Math.round(ImtConfig.Security.ZONE_REACH);
-        ImtConfig.Security.ZONE_REACH = reach;
+        float oldReach = ImtConfig.Security.REACH_WITHOUT_ZONE;
+        float oldRange = ImtConfig.Security.ZONE_RANGE;
+        ImtConfig.Security.REACH_WITHOUT_ZONE = reach;
+        ImtConfig.Security.ZONE_RANGE = reach;
         try {
             return action.get();
         } finally {
-            ImtConfig.Security.ZONE_REACH = old;
+            ImtConfig.Security.REACH_WITHOUT_ZONE = oldReach;
+            ImtConfig.Security.ZONE_RANGE = oldRange;
         }
     }
 
@@ -1078,14 +1081,14 @@ public final class ImtTechGameTests {
     }
 
     /**
-     * Zelf een kern neerzetten: hij is meteen van jou, met een IP en een eigen naam. Een tweede kern
-     * vlakbij (de gebieden zouden overlappen) lukt niet, en je houdt het item.
+     * Zelf een kern neerzetten: hij is meteen van jou, met een IP en een eigen naam. Hoofdstuk 117 (jouw wens: "zorg dat je
+     * base security core's altijd vlak bij elkaar kunt zetten als er geen protected zone is; het kan ook niet geplaatst
+     * worden in een zone zonder power"): een tweede kern 8 blokken naast de eerste (die nog geen zone heeft) mag nu. Maar in
+     * de zone van een andere kern niet, ook niet als die zone geen stroom heeft; dan houd je het item.
      *
-     * De kernen staan 210 blokken boven de testvloer, in de lucht, met het bereik even op 30 (zie
-     * {@link #withReach}): de testwereld wordt hergebruikt, en de kernen van andere tests (ook uit
-     * eerdere rondes, en een Biebia's Industries Tower uit de gebouwtest) blijven staan. Met het echte bereik (200,
-     * ook omhoog en omlaag) zou ook de eerste kern terecht geweigerd worden; met 30 valt 210 blokken
-     * hoog buiten elk ander gebied.
+     * De kernen staan 210 blokken boven de testvloer, in de lucht: de testwereld wordt hergebruikt, en de kernen en zones
+     * van andere tests (ook uit eerdere rondes) blijven staan. In een zone van een andere test mag je ook hier geen kern
+     * neerzetten; zo hoog ligt er geen.
      */
     @GameTest(template = ARENA, timeoutTicks = 20, batch = "security_place")
     public static void security_core_placed_by_a_player(GameTestHelper helper) {
@@ -1093,33 +1096,45 @@ public final class ImtTechGameTests {
         ServerPlayer player = makeSurvivalOwner(helper, new BlockPos(5, 3, 5));
         player.getAbilities().instabuild = false; // anders blijft het item (zoals in creative) in je hand
         var item = (net.minecraft.world.item.BlockItem) ModItems.SECURITY_CORE.get();
-        ItemStack stack = new ItemStack(item, 2);
+        ItemStack stack = new ItemStack(item, 3);
+        // Neerzetten zoals een rechtsklik in de lucht op die plek.
+        java.util.function.Function<BlockPos, net.minecraft.world.InteractionResult> placeAt = pos -> item.place(
+                new net.minecraft.world.item.context.BlockPlaceContext(level, player, net.minecraft.world.InteractionHand.MAIN_HAND,
+                        stack, new net.minecraft.world.phys.BlockHitResult(helper.absoluteVec(
+                                net.minecraft.world.phys.Vec3.atBottomCenterOf(pos)), Direction.UP, helper.absolutePos(pos), false)));
         BlockPos first = new BlockPos(8, 210, 8);
-        var result = withReach(30, () -> item.place(new net.minecraft.world.item.context.BlockPlaceContext(level, player,
-                net.minecraft.world.InteractionHand.MAIN_HAND, stack, new net.minecraft.world.phys.BlockHitResult(
-                        helper.absoluteVec(new net.minecraft.world.phys.Vec3(8.5, 210, 8.5)), Direction.UP,
-                        helper.absolutePos(first), false))));
+        var result = placeAt.apply(first);
         helper.assertBlockPresent(ModBlocks.SECURITY_CORE.get(), first);
         var core = (com.senne.imttech.security.SecurityCoreBlockEntity) helper.getBlockEntity(first);
         if (!result.consumesAction() || !player.getUUID().equals(core.ownerId()) || !core.hasSystem()
-                || !core.hostname().endsWith("-sec") || stack.getCount() != 1) {
+                || !core.hostname().endsWith("-sec") || stack.getCount() != 2) {
             throw new GameTestAssertException("Een zelf neergezette kern is niet van jou, of heeft geen systeem");
         }
         helper.assertBlockProperty(first, com.senne.imttech.security.SecurityCoreBlock.CLAIMED, true);
+        // Vlak ernaast, zolang er geen zone is: mag nu.
         BlockPos second = new BlockPos(8, 210, 16);
-        var refused = withReach(30, () -> item.place(new net.minecraft.world.item.context.BlockPlaceContext(level, player,
-                net.minecraft.world.InteractionHand.MAIN_HAND, stack, new net.minecraft.world.phys.BlockHitResult(
-                        helper.absoluteVec(new net.minecraft.world.phys.Vec3(8.5, 210, 16.5)), Direction.UP,
-                        helper.absolutePos(second), false))));
-        helper.assertBlockNotPresent(ModBlocks.SECURITY_CORE.get(), second);
-        if (refused.consumesAction() || stack.getCount() != 1) {
-            throw new GameTestAssertException("Een tweede kern vlak naast een ander netwerk kwam er toch");
+        var nextTo = placeAt.apply(second);
+        helper.assertBlockPresent(ModBlocks.SECURITY_CORE.get(), second);
+        if (!nextTo.consumesAction() || stack.getCount() != 1) {
+            throw new GameTestAssertException("Een tweede kern 8 blokken naast een kern zonder zone zou nu moeten mogen");
         }
-        if (withReach(30, () -> com.senne.imttech.security.SecurityCores.overlaps(level, helper.absolutePos(first).offset(500, 0, 0)))) {
-            throw new GameTestAssertException("Een kern ver weg zou ook te dichtbij zijn");
+        // De eerste krijgt een zone (zonder de tweede erin), en die zone heeft geen stroom: daarin mag toch geen kern.
+        BlockPos firstAbs = helper.absolutePos(first);
+        core.setZoneBoxes(List.of(com.senne.imttech.security.zone.ZoneBox.of(firstAbs.offset(-6, -3, -6), firstAbs.offset(6, 3, 4))));
+        com.senne.imttech.security.zone.ZoneData.get(level).setPowered(
+                net.minecraft.core.GlobalPos.of(level.dimension(), firstAbs), false);
+        BlockPos inside = new BlockPos(12, 210, 8);
+        var refused = placeAt.apply(inside);
+        helper.assertBlockNotPresent(ModBlocks.SECURITY_CORE.get(), inside);
+        if (refused.consumesAction() || stack.getCount() != 1) {
+            throw new GameTestAssertException("Een kern in de zone van een andere kern (zonder stroom) kwam er toch");
+        }
+        if (!com.senne.imttech.security.SecurityCores.mayPlace(level, firstAbs.offset(500, 0, 0))) {
+            throw new GameTestAssertException("Een kern ver weg zou moeten mogen");
         }
         // Opruimen: de tests van CoreConfigGameTests zetten later ook kernen op deze hoogte neer.
         helper.setBlock(first, net.minecraft.world.level.block.Blocks.AIR);
+        helper.setBlock(second, net.minecraft.world.level.block.Blocks.AIR);
         helper.succeed();
     }
 

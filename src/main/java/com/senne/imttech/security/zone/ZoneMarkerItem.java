@@ -38,8 +38,8 @@ import org.jetbrains.annotations.Nullable;
  *   <li><b>Linksklik</b> op een blok: hoek 1. <b>Rechtsklik</b> op een blok: hoek 2. Je ziet een
  *       oranje doos tussen de twee, en onderaan hoe groot hij is ("12 x 6 x 20").</li>
  *   <li><b>Sluipen + rechtsklik</b> (op een blok of in de lucht): die doos wordt een kubus van je
- *       zone. Hij hoort bij je dichtstbijzijnde beveiligingskern tot ZONE_REACH (200) blokken ver
- *       (het gebied van die kern).</li>
+ *       zone. Hij hoort bij je dichtstbijzijnde beveiligingskern tot ZONE_RANGE (500) blokken ver
+ *       (zo ver mag een zone van haar kern liggen).</li>
  *   <li><b>Sluipen + linksklik</b> op een blok in een kubus van je zone: die kubus weghalen (twee
  *       keer klikken, zodat je het niet per ongeluk doet).</li>
  * </ul>
@@ -251,8 +251,8 @@ public class ZoneMarkerItem extends Item {
 
     /**
      * De gekozen doos wordt een kubus van je zone (zie {@link #ownCoreFor} voor welke kern). Steekt
-     * hij verder dan ZONE_REACH van de kern, dan valt dat stuk eraf. Raakt hij de zone of het gebied
-     * van een andere kern, dan mag het niet.
+     * hij verder dan ZONE_RANGE van de kern, dan valt dat stuk eraf. Zit hij een ander in de weg (de
+     * zone van een andere kern, een andere kern zelf, een toren), dan mag het niet.
      */
     static void addSelection(ServerLevel level, ServerPlayer player, ItemStack stack) {
         ZoneBox box = selection(stack).box();
@@ -273,7 +273,7 @@ public class ZoneMarkerItem extends Item {
         }
         ZoneBox fittedBox = box.clamp(core.zoneLow(), core.zoneHigh());
         if (fittedBox == null) {
-            tell(player, Component.translatable("zone.imttech.marker.no_core", Math.round(ImtConfig.Security.ZONE_REACH)), true);
+            tell(player, Component.translatable("zone.imttech.marker.no_core", Math.round(ImtConfig.Security.ZONE_RANGE)), true);
             return;
         }
         if (core.zoneBoxBlocked(fittedBox)) {
@@ -286,7 +286,7 @@ public class ZoneMarkerItem extends Item {
         core.logEvent(EventLog.Type.ZONE, "Zone: box " + fitted.size() + " added (" + added.size() + ")");
         tell(player, added.equals(box)
                 ? Component.translatable("zone.imttech.marker.added", fitted.size(), added.size(), added.volume())
-                : Component.translatable("zone.imttech.marker.added_cut", fitted.size(), Math.round(ImtConfig.Security.ZONE_REACH),
+                : Component.translatable("zone.imttech.marker.added_cut", fitted.size(), Math.round(ImtConfig.Security.ZONE_RANGE),
                         added.size(), added.volume()), false);
         stack.set(ModDataComponents.ZONE_SELECTION.get(), ZoneSelection.EMPTY);
         player.playNotifySound(ModSounds.IMT_NOTIFY.get(), SoundSource.PLAYERS, 0.6f, 1.2f);
@@ -297,7 +297,7 @@ public class ZoneMarkerItem extends Item {
      * klik binnen drie seconden haalt hem weg. Liggen er twee kubussen over dit blok, dan de laatste.
      */
     static void removeBoxAt(ServerLevel level, ServerPlayer player, BlockPos pos) {
-        // De zone waar dit blok in ligt (die kan tot ZONE_REACH van zijn kern liggen).
+        // De zone waar dit blok in ligt (die kan tot ZONE_RANGE van zijn kern liggen).
         ZoneData.Zone zone = ZoneData.get(level).at(level.dimension(), pos);
         if (zone == null) {
             tell(player, Component.translatable("zone.imttech.marker.not_in_box"), true);
@@ -345,14 +345,15 @@ public class ZoneMarkerItem extends Item {
 
     /**
      * De beveiligingskern van deze speler die een kubus op deze plek krijgt: je dichtstbijzijnde kern
-     * tot ZONE_REACH blokken ver. Die zoeken we in ZoneData, zodat hij ook gevonden wordt als zijn stuk
-     * wereld niet geladen is. Geen eigen kern zo dichtbij: ligt de plek in het gebied van de kern van
-     * een ander, dan zegt hij dat; anders dat er geen kern van jou in de buurt is (en geeft hij null).
+     * tot ZONE_RANGE blokken ver (zo ver mag een zone van zijn kern liggen). Die zoeken we in ZoneData,
+     * zodat hij ook gevonden wordt als zijn stuk wereld niet geladen is. Geen eigen kern zo dichtbij:
+     * ligt de plek in het gebied van de kern van een ander, dan zegt hij dat; anders dat er geen kern
+     * van jou in de buurt is (en geeft hij null).
      */
     private static @Nullable SecurityCoreBlockEntity ownCoreFor(ServerLevel level, ServerPlayer player, BlockPos pos) {
         List<BlockPos> mine = new ArrayList<>();
         for (ZoneData.Zone zone : ZoneData.get(level).owned(level.dimension())) {
-            if (player.getUUID().equals(zone.owner()) && SecurityCores.inArea(zone.core().pos(), pos)) {
+            if (player.getUUID().equals(zone.owner()) && SecurityCores.withinZoneRange(zone.core().pos(), pos)) {
                 mine.add(zone.core().pos());
             }
         }
@@ -372,7 +373,7 @@ public class ZoneMarkerItem extends Item {
         if (here != null && here.ownerId() != null) {
             tell(player, Component.translatable("zone.imttech.marker.not_yours", here.ownerName()), true);
         } else {
-            tell(player, Component.translatable("zone.imttech.marker.no_core", Math.round(ImtConfig.Security.ZONE_REACH)), true);
+            tell(player, Component.translatable("zone.imttech.marker.no_core", Math.round(ImtConfig.Security.ZONE_RANGE)), true);
         }
         return null;
     }

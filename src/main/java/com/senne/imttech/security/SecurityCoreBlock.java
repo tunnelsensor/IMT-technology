@@ -69,16 +69,17 @@ public class SecurityCoreBlock extends BaseEntityBlock implements com.senne.imtt
     }
 
     /**
-     * Neerzetten. Overlapt het gebied van deze kern dat van een ander beveiligingsnetwerk, dan lukt
-     * het niet: je krijgt een melding en houdt het item (dat controleert alleen de server, die alle
-     * kernen van de wereld kent).
+     * Neerzetten. Vlak naast een andere kern mag (hoofdstuk 117); in de zone van een andere kern (ook zonder stroom) of
+     * vlak bij een Biebia's Industries Tower lukt het niet (zie SecurityCores.placementProblem): je krijgt een melding en
+     * houdt het item. Dat controleert alleen de server, die alle kernen en zones van de wereld kent.
      */
     @Override
     public @Nullable BlockState getStateForPlacement(BlockPlaceContext context) {
-        if (context.getLevel() instanceof ServerLevel level && SecurityCores.overlaps(level, context.getClickedPos())) {
+        Component problem = context.getLevel() instanceof ServerLevel level
+                ? SecurityCores.placementProblem(level, context.getClickedPos()) : null;
+        if (problem != null) {
             if (context.getPlayer() instanceof ServerPlayer player) {
-                player.displayClientMessage(Component.translatable("security.imttech.msg.too_close")
-                        .withStyle(ChatFormatting.RED), true);
+                player.displayClientMessage(problem.copy().withStyle(ChatFormatting.RED), true);
                 // Je spel dacht al dat het item weg was: laat het weer zien.
                 player.inventoryMenu.sendAllDataToRemote();
             }

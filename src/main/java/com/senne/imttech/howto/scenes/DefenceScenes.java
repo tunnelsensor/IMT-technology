@@ -251,7 +251,7 @@ public final class DefenceScenes {
         s.outline(260, a, b, HowToSceneBuilder.CYAN);
         s.sound(ModSounds.IMT_CONFIRM.get(), 0.4f, 1.0f);
         s.text(90, HowToSceneBuilder.top(b), Side.RIGHT,
-                "Sneak + right-click: the box becomes part of your zone. A zone can be several boxes, up to 200 blocks from"
+                "Sneak + right-click: the box becomes part of your zone. A zone can be several boxes, up to 500 blocks from"
                         + " your *Security Core*.");
         s.idle(95);
 

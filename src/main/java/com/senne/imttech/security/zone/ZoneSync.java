@@ -32,8 +32,8 @@ public final class ZoneSync {
     /** Om de zoveel ticks kijken we opnieuw. */
     private static final int EVERY = 10;
     /**
-     * Zones waarvan de kern verder weg staat dan dit (blokken) plus ZONE_REACH, sturen we niet. (Een
-     * zone kan tot ZONE_REACH van zijn kern liggen: dan sta je soms aan zijn rand, ver van de kern.)
+     * Zones waarvan de kern verder weg staat dan dit (blokken) plus ZONE_RANGE, sturen we niet. (Een
+     * zone kan tot ZONE_RANGE van zijn kern liggen: dan sta je soms aan zijn rand, ver van de kern.)
      */
     private static final double RANGE = 256.0;
 
@@ -65,7 +65,7 @@ public final class ZoneSync {
     public static List<ZoneSyncPayload.View> visibleTo(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
         List<ZoneSyncPayload.View> views = new ArrayList<>();
-        double range = RANGE + Math.round(ImtConfig.Security.ZONE_REACH);
+        double range = RANGE + Math.round(ImtConfig.Security.ZONE_RANGE);
         for (ZoneData.Zone zone : ZoneData.get(level).in(level.dimension())) {
             if (views.size() >= ZoneSyncPayload.MAX_ZONES) {
                 break;

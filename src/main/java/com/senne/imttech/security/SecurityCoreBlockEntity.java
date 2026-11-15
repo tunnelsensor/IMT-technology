@@ -524,9 +524,9 @@ public class SecurityCoreBlockEntity extends BlockEntity {
      *   <li>De eigenaar blijft de eigenaar, ook als iemand anders hem neerzet: met de kern gaan ook
      *       zijn wachtwoord en bestanden mee, dus een gestolen kern moet je nog steeds hacken.</li>
      *   <li>Het IP krijgt hij terug als het nog vrij is (keycards horen bij het IP).</li>
-     *   <li>De zone krijgt hij terug voor zover die binnen ZONE_REACH van de nieuwe plek past (staat
-     *       hij weer op dezelfde plek, dan is het dezelfde zone). Een kubus die nu de zone of het
-     *       gebied van een andere kern raakt, valt weg.</li>
+     *   <li>De zone krijgt hij terug voor zover die binnen ZONE_RANGE van de nieuwe plek past (staat
+     *       hij weer op dezelfde plek, dan is het dezelfde zone). Een kubus die nu een ander in de weg
+     *       zit (de zone van een andere kern, een andere kern zelf, een toren), valt weg.</li>
      *   <li>De backups die op dit datacenter stonden, staan er weer op.</li>
      * </ul>
      */
@@ -570,32 +570,32 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     }
 
     /**
-     * De kleinste hoek waar de zone van deze kern mag komen: de rand van zijn gebied, ZONE_REACH blokken
-     * naar het westen, naar beneden en naar het noorden (maar niet onder de wereld).
+     * De kleinste hoek waar de zone van deze kern mag komen: ZONE_RANGE blokken (hoofdstuk 117: 500, was 200) naar het
+     * westen, naar beneden en naar het noorden (maar niet onder de wereld). Ook de Autoscan zoekt niet verder.
      */
     public BlockPos zoneLow() {
         int bottom = level == null ? Integer.MIN_VALUE : level.getMinBuildHeight();
-        int reach = Math.round(ImtConfig.Security.ZONE_REACH);
-        return new BlockPos(worldPosition.getX() - reach, Math.max(bottom, worldPosition.getY() - reach), worldPosition.getZ() - reach);
+        int range = Math.round(ImtConfig.Security.ZONE_RANGE);
+        return new BlockPos(worldPosition.getX() - range, Math.max(bottom, worldPosition.getY() - range), worldPosition.getZ() - range);
     }
 
     /** De grootste hoek waar de zone mag komen (maar niet boven de wereld). */
     public BlockPos zoneHigh() {
         int top = level == null ? Integer.MAX_VALUE : level.getMaxBuildHeight() - 1;
-        int reach = Math.round(ImtConfig.Security.ZONE_REACH);
-        return new BlockPos(worldPosition.getX() + reach, Math.min(top, worldPosition.getY() + reach), worldPosition.getZ() + reach);
+        int range = Math.round(ImtConfig.Security.ZONE_RANGE);
+        return new BlockPos(worldPosition.getX() + range, Math.min(top, worldPosition.getY() + range), worldPosition.getZ() + range);
     }
 
     /**
-     * Zit deze kubus een ander in de weg (de zone of het gebied van een andere kern, zie
-     * SecurityCores.zoneBlocked)? Dan mag hij niet in de zone.
+     * Zit deze kubus een ander in de weg (de zone van een andere kern, een andere kern zelf, of het stuk rond een Biebia's
+     * Industries Tower: zie SecurityCores.zoneBlocked)? Dan mag hij niet in de zone.
      */
     public boolean zoneBoxBlocked(ZoneBox box) {
         return level instanceof ServerLevel server && SecurityCores.zoneBlocked(server, worldPosition, box);
     }
 
     /**
-     * Nieuwe kubussen voor de zone. Wat verder dan ZONE_REACH van de kern steekt, valt eraf, en meer
+     * Nieuwe kubussen voor de zone. Wat verder dan ZONE_RANGE van de kern steekt, valt eraf, en meer
      * dan ZONE_MAX_BOXES kubussen kan niet. Geeft terug wat er echt in staat. (Of een kubus een ander
      * in de weg zit, kijkt wie hem toevoegt of groter maakt: zie {@link #zoneBoxBlocked}.)
      */
@@ -696,6 +696,8 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         if (!registered) {
             ensureSystem(level);
             syncZone();
+            // Hoofdstuk 117: een toren of bunker van Biebia's die nu pas opduikt in de zone van een ander, maakt zich vrij.
+            SecurityCores.freeBuilding(level, pos);
             registered = true;
         }
         // De server: diagrammen die bezig zijn, timers, de rij (zie LogicRunner).
@@ -873,9 +875,37 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         return List.copyOf(messages);
     }
 
-    /** Het gebied dat deze kern beschermt: ZONE_REACH blokken in elke richting (zie SecurityCores.inArea). */
+    /**
+     * Het gebied van deze kern als één doos, om naar wezens of apparaten te zoeken (zie SecurityCores.inArea voor de echte
+     * regel). Hoofdstuk 117: met een zone de doos om zijn kubussen (tot ZONE_RANGE ver) en de kern heen; zonder zone
+     * REACH_WITHOUT_ZONE blokken in elke richting. Staat hij in een toren of bunker van Biebia's, dan ook dat gebouw.
+     */
     public AABB area() {
-        return new AABB(worldPosition).inflate(Math.round(ImtConfig.Security.ZONE_REACH));
+        ZoneData.Zone zone = zone();
+        ZoneBox bounds = zone == null ? null : zone.bounds();
+        AABB area;
+        if (bounds == null) {
+            area = new AABB(worldPosition).inflate(Math.round(ImtConfig.Security.REACH_WITHOUT_ZONE));
+        } else {
+            area = new AABB(worldPosition);
+            ZoneBox fitted = bounds.overlap(SecurityCores.zoneRangeOf(worldPosition));
+            if (fitted != null) {
+                area = area.minmax(aabbOf(fitted));
+            }
+        }
+        java.util.List<ZoneBox> building = level instanceof ServerLevel server ? SecurityCores.buildingOf(server, worldPosition) : null;
+        if (building != null) {
+            for (ZoneBox piece : building) {
+                area = area.minmax(aabbOf(piece));
+            }
+        }
+        return area;
+    }
+
+    /** De doos om deze kubus, zoals Minecraft hem wil (tot en met het laatste blok). */
+    private static AABB aabbOf(ZoneBox box) {
+        return new AABB(box.min().getX(), box.min().getY(), box.min().getZ(), box.max().getX() + 1, box.max().getY() + 1,
+                box.max().getZ() + 1);
     }
 
     // ================================================================ Opslaan

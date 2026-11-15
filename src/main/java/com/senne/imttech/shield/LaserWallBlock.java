@@ -120,8 +120,10 @@ public class LaserWallBlock extends Block {
         var core = com.senne.imttech.security.SecurityCores.coreAt(level, pos);
         if (entity instanceof com.senne.imttech.raven.RavenSoldierEntity) {
             // Hoofdstuk 54: de bewakers van Biebia's lopen door de wanden van hun eigen toren of bunker (van niemand); in
-            // een gehackte toren (van jou) branden ze net als ieder ander.
-            return core == null || core.ownerId() == null;
+            // een gehackte toren (van jou) branden ze net als ieder ander. Hoofdstuk 117: een plek zonder kern is niet
+            // meer vanzelf van Biebia (een kern met een zone reikt alleen nog tot zijn zone): daar alleen in een gebouw
+            // van deze mod (waarvan de kern nu niet geladen is), anders branden ze ook aan jouw wand buiten je zone.
+            return core == null ? com.senne.imttech.security.BaseTrust.inBuilding(level, pos) : core.ownerId() == null;
         }
         if (!(entity instanceof net.minecraft.world.entity.player.Player player)) {
             return false;

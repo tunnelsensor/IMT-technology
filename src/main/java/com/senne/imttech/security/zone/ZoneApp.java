@@ -22,8 +22,9 @@ import org.jetbrains.annotations.Nullable;
  * In de app stel je je kubussen per blok bij: per kant een − en een + (die kant één blok naar
  * binnen of naar buiten), of je typt de getallen van de twee hoeken. "New box" zet een nieuwe kubus
  * van 7 x 5 x 7 waar je staat (of bij de kern, als je via SSH van ver werkt). Alles wat verder dan
- * ZONE_REACH (200 blokken) van de kern steekt, valt eraf (zie SecurityCoreBlockEntity.setZoneBoxes).
- * Een kubus die de zone of het gebied van een andere kern raakt, mag niet erbij (of niet groter).
+ * ZONE_RANGE (500 blokken) van de kern steekt, valt eraf (zie SecurityCoreBlockEntity.setZoneBoxes).
+ * Een kubus die een ander in de weg zit (de zone van een andere kern, een andere kern zelf, het stuk
+ * rond een Biebia's Industries Tower), mag niet erbij (of niet groter).
  */
 public final class ZoneApp {
     private ZoneApp() {}
@@ -58,7 +59,7 @@ public final class ZoneApp {
         data.putInt("upkeep", core.zoneUpkeep());
         data.putDouble("coreUpkeep", ImtConfig.Power.SECURITY_CORE_UPKEEP);
         data.putInt("max", ImtConfig.Security.ZONE_MAX_BOXES);
-        data.putInt("reach", Math.round(ImtConfig.Security.ZONE_REACH));
+        data.putInt("reach", Math.round(ImtConfig.Security.ZONE_RANGE));
         data.putInt("margin", ZoneScan.margin());
         if (viewer != null && !remote) {
             data.put("player", xyz(viewer.blockPosition()));
@@ -213,7 +214,7 @@ public final class ZoneApp {
         }
         ZoneBox fitted = grown.clamp(core.zoneLow(), core.zoneHigh());
         if (fitted == null || fitted.equals(old)) {
-            return new Result("Your zone can't reach further (" + Math.round(ImtConfig.Security.ZONE_REACH) + " blocks from the core)", true);
+            return new Result("Your zone can't reach further (" + Math.round(ImtConfig.Security.ZONE_RANGE) + " blocks from the core)", true);
         }
         // Kleiner maken mag altijd; groter alleen als hij dan niemand in de weg zit.
         if (by > 0 && core.zoneBoxBlocked(fitted)) {
@@ -225,8 +226,8 @@ public final class ZoneApp {
     }
 
     /**
-     * De getallen van de twee hoeken, zoals je ze typte. Wat verder dan ZONE_REACH van de kern ligt,
-     * valt eraf; raakt hij de zone of het gebied van een andere kern, dan blijft de oude kubus.
+     * De getallen van de twee hoeken, zoals je ze typte. Wat verder dan ZONE_RANGE van de kern ligt,
+     * valt eraf; zit hij een ander in de weg, dan blijft de oude kubus.
      */
     private static Result setBox(SecurityCoreBlockEntity core, List<ZoneBox> boxes, int index, int[] numbers) {
         ZoneBox wanted = ZoneBox.load(numbers);
@@ -235,7 +236,7 @@ public final class ZoneApp {
         }
         ZoneBox fitted = wanted.clamp(core.zoneLow(), core.zoneHigh());
         if (fitted == null) {
-            return new Result("That is too far: a zone reaches " + Math.round(ImtConfig.Security.ZONE_REACH) + " blocks from the core", true);
+            return new Result("That is too far: a zone reaches " + Math.round(ImtConfig.Security.ZONE_RANGE) + " blocks from the core", true);
         }
         if (!boxes.get(index).contains(fitted) && core.zoneBoxBlocked(fitted)) {
             return new Result(BLOCKED, true);
@@ -244,9 +245,9 @@ public final class ZoneApp {
         core.setZoneBoxes(boxes);
         boolean cut = !fitted.equals(wanted);
         return new Result("Box " + (index + 1) + ": " + fitted.size()
-                + (cut ? " (cut: a zone reaches " + Math.round(ImtConfig.Security.ZONE_REACH) + " blocks from the core)" : ""), cut);
+                + (cut ? " (cut: a zone reaches " + Math.round(ImtConfig.Security.ZONE_RANGE) + " blocks from the core)" : ""), cut);
     }
 
-    /** Wat de app zegt als een kubus een ander in de weg zou zitten. */
-    private static final String BLOCKED = "Too close to another security network or its zone";
+    /** Wat de app zegt als een kubus een ander in de weg zou zitten (zie SecurityCores.zoneBlocked). */
+    private static final String BLOCKED = "Another core is in the way: its zone, the core itself, or a Biebia tower";
 }

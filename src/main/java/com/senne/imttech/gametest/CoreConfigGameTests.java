@@ -106,7 +106,7 @@ public final class CoreConfigGameTests {
 
     /**
      * Zet de kern neer zoals een rechtsklik dat doet, met het bereik even op 30 (zie
-     * ImtTechGameTests.withReach: anders staat er altijd wel een kern van een andere test te dichtbij).
+     * ImtTechGameTests.withReach; sinds hoofdstuk 117 is dat niet meer nodig, kernen mogen vlak bij elkaar staan).
      * Geeft terug of het lukte.
      */
     private static boolean place(GameTestHelper helper, ServerPlayer player, ItemStack stack, BlockPos pos) {

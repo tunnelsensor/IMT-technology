@@ -174,7 +174,7 @@ public final class ZoneScan {
 
     /** Hoeveel blokken muur (en marge om een gebouw) er bij de zone komt. */
     public static int margin() {
-        return Math.max(0, Math.round(ImtConfig.Security.ZONE_SCAN_WALL));
+        return Math.max(0, Math.round(ImtConfig.Security.ZONE_SCAN_MARGIN));
     }
 
     /** Zoveel blokken mogen de kamers (of het gebouw) hooguit tellen bij een gewone scan. */

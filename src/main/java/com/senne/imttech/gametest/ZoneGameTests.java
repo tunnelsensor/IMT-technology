@@ -106,7 +106,8 @@ public final class ZoneGameTests {
      * Hoofdstuk 45: de Autoscan. Een dichte kamer van stenen bakstenen om de kern (0,2,0 tot 8,8,8): de scan vanaf de
      * kern vindt de kamer (244 blokken lucht) plus de muur eromheen, als een paar kubussen die de hele schil dekken; de
      * app zet ze in de zone. Een los kwartsbouwsel in de lucht: de scan vanaf zo'n blok is "open" en legt er een doos
-     * omheen met 3 blokken marge, en de Zone Marker voegt die toe. Een natuurlijk blok (steen) telt niet als gebouw.
+     * omheen met de marge uit de config (zoneScanMargin, sinds hoofdstuk 117 standaard 10), en de Zone Marker voegt die
+     * toe. Een natuurlijk blok (steen) telt niet als gebouw.
      */
     @GameTest(template = ARENA, timeoutTicks = 40, batch = "zones")
     public static void autoscan_finds_rooms_and_buildings(GameTestHelper helper) {
@@ -130,8 +131,11 @@ public final class ZoneGameTests {
                 throw new GameTestAssertException("De muur op " + corner + " zit niet in de scan: " + room.boxes());
             }
         }
-        if (com.senne.imttech.security.zone.ZoneShape.inAny(room.boxes(), helper.absolutePos(new BlockPos(12, 5, 12)))) {
-            throw new GameTestAssertException("De scan van de kamer ging te ver (12, 5, 12 hoort er niet bij)");
+        // Hoofdstuk 117: de rand komt uit de config (zoneScanMargin, standaard 10; tot dan vast 3).
+        int margin = Math.round(ImtConfig.Security.ZONE_SCAN_MARGIN);
+        BlockPos tooFar = new BlockPos(8 + margin + 2, 5, 8 + margin + 2);
+        if (com.senne.imttech.security.zone.ZoneShape.inAny(room.boxes(), helper.absolutePos(tooFar))) {
+            throw new GameTestAssertException("De scan van de kamer ging te ver (" + tooFar + " hoort er niet bij)");
         }
         // Via de app: de kubussen in de zone.
         com.senne.imttech.security.os.SecurityOs.open(owner, helper.absolutePos(CORE));
@@ -147,7 +151,9 @@ public final class ZoneGameTests {
         }
         com.senne.imttech.security.zone.ZoneScan.Result open = com.senne.imttech.security.zone.ZoneScan.scan(level,
                 helper.absolutePos(new BlockPos(14, 3, 14)), limit, 48);
-        ZoneBox expected = box(helper, new BlockPos(11, 0, 11), new BlockPos(19, 7, 19));
+        // De doos om het bouwsel (14..16, 3..4, 14..16) met de rand erbij, maar niet onder de wereld.
+        ZoneBox expected = box(helper, new BlockPos(14 - margin, 3 - margin, 14 - margin), new BlockPos(16 + margin, 4 + margin, 16 + margin))
+                .clamp(limit.min(), limit.max());
         if (!open.ok() || open.enclosed() || open.cells() != 18 || open.boxes().size() != 1 || !open.boxes().getFirst().equals(expected)) {
             throw new GameTestAssertException("De scan van het bouwsel klopt niet (verwachtte " + expected + "): " + open);
         }
@@ -375,7 +381,7 @@ public final class ZoneGameTests {
     }
 
     /**
-     * De kubussen: wat verder dan ZONE_REACH van de kern steekt valt eraf, een kubus helemaal erbuiten
+     * De kubussen: wat verder dan ZONE_RANGE van de kern steekt valt eraf, een kubus helemaal erbuiten
      * verdwijnt, meer dan ZONE_MAX_BOXES kan niet, kubussen die over elkaar liggen tellen één keer, en
      * na opslaan en laden is alles er nog.
      */
@@ -385,9 +391,9 @@ public final class ZoneGameTests {
         ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(3, 3, 7), "zone-owner");
         SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, CORE, owner);
         BlockPos coreAbs = helper.absolutePos(CORE);
-        int r = Math.round(ImtConfig.Security.ZONE_REACH);
+        int r = Math.round(ImtConfig.Security.ZONE_RANGE);
         List<ZoneBox> wanted = new ArrayList<>();
-        // Steekt 10 blokken uit naar het oosten: wordt afgeknipt op ZONE_REACH.
+        // Steekt 10 blokken uit naar het oosten: wordt afgeknipt op ZONE_RANGE.
         wanted.add(ZoneBox.of(coreAbs.offset(r - 5, 0, 0), coreAbs.offset(r + 10, 3, 4)));
         // Helemaal te ver: valt weg.
         wanted.add(ZoneBox.of(coreAbs.offset(r + 5, 0, 0), coreAbs.offset(r + 8, 2, 2)));
@@ -728,7 +734,7 @@ public final class ZoneGameTests {
     /**
      * De app Zone: New box zet een kubus van 7 x 5 x 7 waar je staat; een + schuift een kant een blok
      * naar buiten, een - naar binnen (maar nooit kleiner dan één blok); getypte getallen worden de
-     * hoeken (verder dan ZONE_REACH van de kern: nee); Delete haalt hem weg; meer dan 16 kan niet.
+     * hoeken (verder dan ZONE_RANGE van de kern: nee); Delete haalt hem weg; meer dan 16 kan niet.
      */
     @GameTest(template = ARENA, timeoutTicks = 40, batch = "zones")
     public static void zone_app_edits_boxes(GameTestHelper helper) {
@@ -770,7 +776,7 @@ public final class ZoneGameTests {
         if (!core.zoneBoxes().getFirst().equals(ZoneBox.of(a, b))) {
             throw new GameTestAssertException("De getypte hoeken zouden de kubus moeten worden: " + core.zoneBoxes());
         }
-        BlockPos far = helper.absolutePos(CORE).offset(Math.round(ImtConfig.Security.ZONE_REACH) + 5, 0, 0);
+        BlockPos far = helper.absolutePos(CORE).offset(Math.round(ImtConfig.Security.ZONE_RANGE) + 5, 0, 0);
         set.putIntArray("box", new int[] {far.getX(), far.getY(), far.getZ(), far.getX() + 3, far.getY() + 3, far.getZ() + 3});
         ZoneApp.Result outside = ZoneApp.handle(owner, core, "zone_set", set, false);
         if (!outside.error() || !core.zoneBoxes().getFirst().equals(ZoneBox.of(a, b))) {
@@ -795,33 +801,47 @@ public final class ZoneGameTests {
     }
 
     /**
-     * Jouw wensen (9 oktober): een zone tot ZONE_REACH (200) blokken van de kern, en alle apparaten
-     * even ver ("even grote range van de core als dat de zone groot kan"), met één getal in de config.
-     * Een kubus 150 blokken ver mag (getypt in de app, en met de Zone Marker 120 blokken ver) en
-     * beschermt; groter maken stopt op 200 blokken. Niet over de zone van een andere kern. Een plek 150
-     * blokken ver ligt in het gebied van de kern (een camera of lezer daar hoort bij hem), en een nieuwe
-     * kern moet meer dan 2 x 200 blokken verder staan. Zet je het bereik op 100, dan past dat meteen.
+     * Hoofdstuk 117 (was hoofdstuk 10, stap 13 en 14): een zone mag tot ZONE_RANGE blokken van de kern liggen (in deze test
+     * even 200, zodat hij niet verder hoeft te laden dan vroeger), en een kern met een zone reikt precies zo ver als die
+     * zone. Een kubus 150 blokken ver mag (getypt in de app, en met de Zone Marker 120 blokken ver) en beschermt; groter
+     * maken stopt op de rand. Niet over de zone van een andere kern, en niet om een andere kern heen. Een plek in de zone
+     * hoort bij de kern (een apparaat 150 blokken ver, ook voor zijn drones); een plek vlak naast de kern maar buiten zijn
+     * zone niet meer. Zet je de range op 100, dan beschermt de zone 150 blokken ver meteen niet meer; weer 200: wel weer.
      *
      * Een eigen batch, en alles naar het zuiden: de testserver ruimt oude arena's niet op en zet ze in
      * rijen naar het zuiden (8 naast elkaar, naar het oosten). Ten noorden en westen staan dus de kernen
      * van eerdere tests; ten zuiden staat nog niets.
      */
     @GameTest(template = ARENA, timeoutTicks = 40, batch = "zones_reach")
-    public static void zone_and_devices_reach_follow_the_config(GameTestHelper helper) {
+    public static void zone_range_and_reach_follow_the_config(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(8, 3, 8), "zone-owner");
         ServerPlayer neighbour = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(14, 3, 8), "zone-neighbour");
         SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, CORE, owner);
         BlockPos coreAbs = helper.absolutePos(CORE);
-        // Een tweede kern 150 blokken naar het zuiden en 150 naar het oosten (zo dichtbij kan alleen in
-        // een test: hun gebieden liggen over elkaar).
+        // Een tweede kern 150 blokken naar het zuiden en 150 naar het oosten, van een buurman.
         BlockPos otherPos = coreAbs.offset(150, 0, 150);
         level.setBlockAndUpdate(otherPos, com.senne.imttech.registry.ModBlocks.SECURITY_CORE.get().defaultBlockState());
         SecurityCoreBlockEntity other = (SecurityCoreBlockEntity) level.getBlockEntity(otherPos);
         other.setOwner(neighbour);
-        int reach = Math.round(ImtConfig.Security.ZONE_REACH);
         // Een kern meldt zich pas een tick na het neerzetten aan.
         helper.runAfterDelay(2, () -> {
+            float oldRange = ImtConfig.Security.ZONE_RANGE;
+            int reach = 200;
+            ImtConfig.Security.ZONE_RANGE = reach;
+            try {
+                zoneRangeChecks(helper, level, owner, core, other, coreAbs, otherPos, reach);
+            } finally {
+                ImtConfig.Security.ZONE_RANGE = oldRange;
+            }
+            finish(helper, core);
+        });
+    }
+
+    /** Het eigenlijke werk van {@link #zone_range_and_reach_follow_the_config}, met ZONE_RANGE op {@code reach}. */
+    private static void zoneRangeChecks(GameTestHelper helper, ServerLevel level, ServerPlayer owner, SecurityCoreBlockEntity core,
+            SecurityCoreBlockEntity other, BlockPos coreAbs, BlockPos otherPos, int reach) {
+        {
             // 150 blokken naar het zuiden, getypt in de app: mag, en beschermt.
             ZoneApp.handle(owner, core, "zone_new", new CompoundTag(), false);
             BlockPos far = coreAbs.offset(0, 0, 150);
@@ -836,7 +856,7 @@ public final class ZoneGameTests {
             if (Zones.activeAt(level, far) == null) {
                 throw new GameTestAssertException("De zone 150 blokken van de kern beschermt niet");
             }
-            // De zuidkant 60 blokken verder: hij stopt op 200 blokken van de kern, en verder kan niet.
+            // De zuidkant 60 blokken verder: hij stopt op de rand (200 blokken van de kern), en verder kan niet.
             CompoundTag grow = new CompoundTag();
             grow.putInt("i", 0);
             grow.putInt("side", 3);
@@ -849,7 +869,7 @@ public final class ZoneGameTests {
                 throw new GameTestAssertException("Verder dan " + reach + " blokken zou de app moeten weigeren");
             }
 
-            // Met de Zone Marker: een kubus 120 blokken naar het zuiden (je kern is ver weg, maar binnen 200).
+            // Met de Zone Marker: een kubus 120 blokken naar het zuiden (je kern is ver weg, maar binnen de range).
             BlockPos south = coreAbs.offset(0, 0, 120);
             ZoneBox southBox = ZoneBox.of(south, south.offset(4, 3, 4));
             ItemStack marker = new ItemStack(ModItems.ZONE_MARKER.get());
@@ -881,38 +901,121 @@ public final class ZoneGameTests {
             if (!ZoneApp.handle(owner, core, "zone_grow", grow, false).error() || !core.zoneBoxes().getLast().equals(beside)) {
                 throw new GameTestAssertException("Groeien tot in de zone van een ander zou niet mogen");
             }
+            // Om de andere kern heen (zonder zijn zone te raken): ook nee.
+            set.putIntArray("box", ZoneBox.of(otherPos.offset(-2, 0, -2), otherPos.offset(2, 2, 2)).save().getAsIntArray());
+            if (!ZoneApp.handle(owner, core, "zone_set", set, false).error() || !core.zoneBoxes().getLast().equals(beside)) {
+                throw new GameTestAssertException("Een kubus om de kern van een ander heen zou niet mogen");
+            }
             // De tweede kern weg (dan is zijn zone ook weg).
             level.setBlockAndUpdate(otherPos, Blocks.AIR.defaultBlockState());
 
-            // Even ver horen de apparaten bij de kern: een plek 150 blokken ver ligt in zijn gebied (ook
-            // voor zijn drones), en een nieuwe kern 350 blokken verder zou te dichtbij staan.
+            // De zone is het bereik: een plek in de zone, 150 blokken ver, hoort bij de kern (ook voor zijn drones)...
             BlockPos device = coreAbs.offset(0, 0, 150);
-            if (!SecurityCores.inArea(coreAbs, device) || !core.area().contains(Vec3.atCenterOf(device))) {
-                throw new GameTestAssertException("Een apparaat 150 blokken ver zou in het gebied van de kern moeten liggen");
+            if (!SecurityCores.inArea(level, coreAbs, device) || !core.area().contains(Vec3.atCenterOf(device))
+                    || SecurityCores.coreAt(level, device) != core) {
+                throw new GameTestAssertException("Een apparaat in de zone, 150 blokken ver, zou bij de kern moeten horen");
             }
-            if (!SecurityCores.overlaps(level, coreAbs.offset(0, 0, 350))) {
-                throw new GameTestAssertException("Een kern 350 blokken verder zou te dichtbij moeten zijn");
+            // ...en een plek vlak naast de kern, buiten zijn zone, niet meer.
+            BlockPos next = coreAbs.offset(3, 0, 0);
+            if (SecurityCores.inArea(level, coreAbs, next) || SecurityCores.coreAt(level, next) == core) {
+                throw new GameTestAssertException("Een plek naast de kern maar buiten zijn zone zou niet meer bij hem moeten horen");
             }
-            // Het bereik op 100 in de config: meteen ligt die plek erbuiten, beschermt de zone daar niet
-            // meer, en mag een kern 350 blokken verder.
-            ImtTechGameTests.withReach(100, () -> {
-                if (SecurityCores.inArea(coreAbs, device) || core.area().contains(Vec3.atCenterOf(device))) {
-                    throw new GameTestAssertException("Met een bereik van 100 zou 150 blokken ver buiten het gebied moeten liggen");
-                }
-                if (Zones.activeAt(level, far) != null) {
-                    throw new GameTestAssertException("Met een bereik van 100 zou de zone 150 blokken ver niet meer moeten beschermen");
-                }
-                if (SecurityCores.overlaps(level, coreAbs.offset(0, 0, 350))) {
-                    throw new GameTestAssertException("Met een bereik van 100 zou een kern 350 blokken verder moeten mogen");
-                }
+            // De range op 100 in de config: meteen ligt die plek erbuiten, en beschermt de zone daar niet meer.
+            ImtConfig.Security.ZONE_RANGE = 100;
+            if (SecurityCores.inArea(level, coreAbs, device) || Zones.activeAt(level, far) != null) {
+                throw new GameTestAssertException("Met een range van 100 zou de zone 150 blokken ver niet meer moeten tellen");
+            }
+            // Weer 200: de getekende kubus is er nog, dus de zone daar beschermt weer.
+            ImtConfig.Security.ZONE_RANGE = reach;
+            if (Zones.activeAt(level, far) == null) {
+                throw new GameTestAssertException("Met de range weer op 200 zou de zone 150 blokken ver weer moeten beschermen");
+            }
+        }
+    }
+
+    /**
+     * Hoofdstuk 117 (jouw wens: "zorg dat je base security core's altijd vlak bij elkaar kunt zetten als er geen protected
+     * zone is"): kern A heeft een zone, kern B van een buurman staat 6 blokken verder en heeft er geen.
+     * <ul>
+     *   <li>Een plek in de zone van A hoort bij A, ook vlak bij B; een plek naast A buiten zijn zone hoort bij B (de kern
+     *       zonder zone die daar reikt).</li>
+     *   <li>A mag zijn zone niet om B heen trekken; vlak ernaast wel.</li>
+     *   <li>In de zone van A mag geen kern, ook niet als die geen stroom heeft; naast B (zonder zone) wel.</li>
+     *   <li>Een toren of bunker van Biebia's hoort bij zijn eigen kern (ook gehackt), ook onder een oude zone van een ander:
+     *       daarin mag geen kern en geen nieuwe zone, vlak ernaast wel; en duikt hij op onder de zone van een ander, dan
+     *       gaan de kubussen die hem raken weg.</li>
+     * </ul>
+     * Met het bereik even klein (ImtTechGameTests.withReach), zodat de kernen van andere tests niet meetellen. Dat gebeurt
+     * in één tick, dus de andere test in deze batch merkt daar niets van.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "zones_reach")
+    public static void cores_stand_close_and_the_zone_is_the_reach(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(12, 3, 4), "reach-owner");
+        ServerPlayer neighbour = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(14, 3, 4), "reach-neighbour");
+        BlockPos aPos = new BlockPos(10, 3, 10);
+        BlockPos bPos = new BlockPos(16, 3, 10);
+        SecurityCoreBlockEntity a = ImtTechGameTests.placeCore(helper, aPos, owner);
+        SecurityCoreBlockEntity b = ImtTechGameTests.placeCore(helper, bPos, neighbour);
+        a.setZoneBoxes(List.of(box(helper, new BlockPos(6, 2, 6), new BlockPos(13, 8, 14))));
+        // Een kern meldt zich pas een tick na het neerzetten aan.
+        helper.runAfterDelay(2, () -> {
+            ImtTechGameTests.withReach(12, () -> {
+                BlockPos inZone = helper.absolutePos(new BlockPos(13, 3, 10)); // 3 blokken van B, maar in de zone van A
+                check(SecurityCores.coreAt(level, inZone) == a && SecurityCores.ownedBy(level, a, inZone)
+                        && !SecurityCores.ownedBy(level, b, inZone), "Een plek in de zone van A hoort niet bij A");
+                BlockPos outside = helper.absolutePos(new BlockPos(10, 3, 16)); // naast A, buiten zijn zone
+                check(SecurityCores.coreAt(level, outside) == b && !SecurityCores.inArea(level, a.getBlockPos(), outside)
+                        && !a.area().contains(Vec3.atCenterOf(outside)) && a.area().contains(Vec3.atCenterOf(inZone)),
+                        "Een plek naast A buiten zijn zone zou bij B moeten horen (de kern zonder zone)");
+                check(a.zoneBoxBlocked(box(helper, new BlockPos(14, 2, 8), new BlockPos(18, 6, 12))),
+                        "A mocht zijn zone om de kern van B heen trekken");
+                check(!a.zoneBoxBlocked(box(helper, new BlockPos(14, 2, 13), new BlockPos(18, 6, 16))),
+                        "Een kubus van A vlak naast B zou moeten mogen");
                 return null;
             });
-            // Weer 200: de getekende kubus is er nog, dus de zone daar beschermt weer.
-            if (Zones.activeAt(level, far) == null) {
-                throw new GameTestAssertException("Met het bereik weer op 200 zou de zone 150 blokken ver weer moeten beschermen");
+            ZoneData.get(level).setPowered(GlobalPos.of(level.dimension(), a.getBlockPos()), false);
+            check(SecurityCores.placementProblem(level, helper.absolutePos(new BlockPos(8, 3, 8))) != null,
+                    "Een kern in de zone van A (zonder stroom) zou niet mogen");
+            check(SecurityCores.placementProblem(level, helper.absolutePos(new BlockPos(18, 3, 13))) == null,
+                    "Een kern vlak naast B (zonder zone) zou moeten mogen");
+            // B staat nu (voor de test) in een gebouw van Biebia's: de stukken van x 14 tot 18 en z 8 tot 12 (een gehackte
+            // toren: hij heeft een eigenaar). A had daar al een kubus liggen, van voor het gebouw bekend was.
+            ZoneBox oldBox = box(helper, new BlockPos(14, 2, 11), new BlockPos(15, 4, 12));
+            a.setZoneBoxes(List.of(box(helper, new BlockPos(6, 2, 6), new BlockPos(13, 8, 14)), oldBox));
+            SecurityCores.pretendBuildingForTests(level, b.getBlockPos(),
+                    List.of(box(helper, new BlockPos(14, 2, 8), new BlockPos(18, 6, 12))));
+            try {
+                BlockPos building = helper.absolutePos(new BlockPos(14, 3, 11)); // in het gebouw, en in de oude kubus van A
+                check(SecurityCores.coreAt(level, building) == b && SecurityCores.ownedBy(level, b, building)
+                        && !SecurityCores.ownedBy(level, a, building),
+                        "Een gebouw van Biebia's zou bij zijn eigen kern moeten horen, ook onder de zone van een ander");
+                check(SecurityCores.placementProblem(level, helper.absolutePos(new BlockPos(17, 3, 9))) != null,
+                        "Een kern in een gebouw van Biebia's zou niet mogen");
+                check(SecurityCores.placementProblem(level, helper.absolutePos(new BlockPos(18, 3, 13))) == null,
+                        "Vlak naast een gebouw van Biebia's zou een kern moeten mogen");
+                check(a.zoneBoxBlocked(box(helper, new BlockPos(17, 2, 12), new BlockPos(18, 4, 13))),
+                        "Een nieuwe kubus over een gebouw van Biebia's zou niet mogen");
+                check(!a.zoneBoxBlocked(box(helper, new BlockPos(16, 2, 13), new BlockPos(17, 4, 14))),
+                        "Een kubus vlak naast een gebouw van Biebia's zou moeten mogen");
+                // Het gebouw maakt zich vrij: de oude kubus van A eroverheen gaat weg, de rest blijft.
+                SecurityCores.freeBuilding(level, b.getBlockPos());
+                check(a.zoneBoxes().size() == 1 && !a.zoneBoxes().contains(oldBox),
+                        "Het gebouw zou de kubus van A die erover lag, weg moeten halen: " + a.zoneBoxes());
+            } finally {
+                SecurityCores.pretendBuildingForTests(level, b.getBlockPos(), null);
             }
-            finish(helper, core);
+            // Opruimen.
+            helper.setBlock(bPos, Blocks.AIR);
+            helper.setBlock(aPos, Blocks.AIR);
+            helper.succeed();
         });
+    }
+
+    private static void check(boolean ok, String message) {
+        if (!ok) {
+            throw new GameTestAssertException(message);
+        }
     }
 
     // ================================================================ Stap 4: alleen frags komen erdoor
@@ -1201,7 +1304,9 @@ public final class ZoneGameTests {
         }
         com.senne.imttech.security.zone.ZoneScan.Result floor = com.senne.imttech.security.zone.ZoneScan.scan(level,
                 helper.absolutePos(new BlockPos(5, 4, 5)), limit, 48);
-        ZoneBox expected = box(helper, new BlockPos(2 - 3, 3 - 3, 2 - 3), new BlockPos(8 + 3, 8 + 3, 8 + 3));
+        // De marge uit de config (hoofdstuk 117: standaard 10, was 3), niet verder dan de grens van de scan.
+        int m = com.senne.imttech.security.zone.ZoneScan.margin();
+        ZoneBox expected = box(helper, new BlockPos(2 - m, 3 - m, 2 - m), new BlockPos(8 + m, 8 + m, 8 + m)).clamp(limit.min(), limit.max());
         if (!floor.ok() || floor.enclosed() || floor.boxes().size() != 1 || !floor.boxes().getFirst().equals(expected)
                 || floor.marks().isEmpty() || floor.headline() == null || floor.note() == null) {
             throw new GameTestAssertException("Vanaf de vloer: een doos om het huisje (" + expected + ") met de ping erbij verwacht: " + floor);
@@ -1223,7 +1328,9 @@ public final class ZoneGameTests {
         ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(4, 4, 4), "cave-owner");
         SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, CAVE_CORE, owner);
         BlockPos corePos = helper.absolutePos(CAVE_CORE);
-        BlockPos inCave = helper.absolutePos(new BlockPos(15, 7, 8));
+        // Een plek in de grot verder van de bunker (oostmuur op x = 7) dan de marge van de doos eromheen (hoofdstuk 117:
+        // standaard 10 blokken, was 3): die ligt pas in de zone als de grot erbij komt.
+        BlockPos inCave = helper.absolutePos(new BlockPos(Math.min(20, 7 + com.senne.imttech.security.zone.ZoneScan.margin() + 1), 7, 8));
         withRoomMax(1000, () -> {
             ZoneApp.Result said = ZoneApp.handle(owner, core, "zone_scan", new CompoundTag(), false);
             if (core.zoneBoxes().isEmpty() || core.zone().contains(inCave)

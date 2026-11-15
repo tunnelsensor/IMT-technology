@@ -45,7 +45,8 @@ public final class TrainingBlocks {
         }
         SecurityCoreBlockEntity core = SecurityCores.coreAt(level, pos);
         if (core == null) {
-            player.displayClientMessage(Component.literal("Put the Training Start block in the area of a security core"), true);
+            // Hoofdstuk 117: het gebied van een kern is zijn zone (of, zonder zone, tot REACH_WITHOUT_ZONE blokken ver).
+            player.displayClientMessage(Component.literal("Put the Training Start block in the zone of a security core"), true);
             return;
         }
         boolean trusted = BaseTrust.trustedHere(level, pos, player) || player.getUUID().equals(start.owner());

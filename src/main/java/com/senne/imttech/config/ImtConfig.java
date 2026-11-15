@@ -1209,20 +1209,40 @@ public final class ImtConfig {
 
     // =============================================================================================== Security
 
-    @Section("The security core (Biebia's Industries Tower or your own): its reach and zone, its drones and its computer system. "
+    @Section("The security core (Biebia's Industries Tower or your own): its zone and reach, its drones and its computer system. "
             + "Its power use is under [power]")
     public static final class Security {
         private Security() {}
 
-        /**
-         * Zover reikt een beveiligingskern, in elke richting (ook omhoog en omlaag): zo ver mag zijn zone
-         * liggen, en zo ver horen zijn apparaten bij hem (torentjes, camera's, lezers, codepanelen,
-         * serverkasten, laserwanden, het landingsplatform). Twee kernen staan minstens 2 x dit + 1 uit elkaar.
+        /*
+         * Hoofdstuk 115 (jouw wens van 15 november): "Zorg dat je base security core's altijd vlak bij elkaar kunt zetten
+         * als er geen protected zone is, het kan ook niet geplaatst worden in een zone zonder power, anders kun je simpel
+         * de power weg doen en dan de base claimen. De protected zone bepaalt dus hoe ver je range van security core is,
+         * zoals nu de range van 200 dat doet. Zorg dat autoscan een range van 500 blokken heeft in al de richtingen vanaf
+         * de security core."
+         *
+         * Tot dan reikte elke kern 200 blokken ver (zoneReach), en moesten twee kernen dus meer dan 400 blokken uit elkaar
+         * staan. Nu:
+         *   - een kern MET zone reikt precies zo ver als zijn zone (zijn robots, docks, drones, training, wie er vertrouwd
+         *     is); de zone mag tot ZONE_RANGE blokken van de kern liggen;
+         *   - een kern ZONDER zone reikt REACH_WITHOUT_ZONE blokken ver, zoals vroeger; staat er een andere kern dichterbij,
+         *     dan hoort die plek bij die kern;
+         *   - een kern mag overal staan, ook vlak naast een andere, behalve in de zone van een andere kern (ook als die zone
+         *     geen stroom heeft), en niet vlak bij een Biebia's Industries Tower (zie SecurityCores.placementProblem).
          */
-        @Tunable(value = "How far (blocks, in every direction) a security core reaches: its protected zone and all its devices "
-                + "(turrets, cameras, keycard readers, code panels, server racks, laser walls). "
-                + "Two cores must stand at least twice this far apart.", min = 1, max = 1_000)
-        public static float ZONE_REACH = 200.0f;
+        /** Zo ver mag de zone van een kern liggen, in elke richting (ook omhoog en omlaag). Was 200 en heette zoneReach. */
+        @Tunable(value = "How far (blocks, in every direction, also up and down) the protected zone of a security core may "
+                + "reach from the core: with Autoscan, the Zone Marker or the Zone app. A core with a zone reaches exactly as "
+                + "far as its zone (its robots, docks, drones, training and trusted players). Security cores may stand close "
+                + "together, but never in the zone of another core (also not when that zone has no power)", min = 1, max = 1_000)
+        public static float ZONE_RANGE = 500.0f;
+        /** Zo ver reikt een kern die (nog) geen zone heeft, zoals elke kern tot hoofdstuk 115. */
+        @Tunable(value = "How far (blocks, in every direction) a security core WITHOUT a zone reaches: its robots, docks, "
+                + "drones, training and trusted players, as every core did before zones decided it. Where another core "
+                + "without a zone stands closer, that core has the spot, and the zone of another core always belongs to that "
+                + "core. A Biebia's Industries Tower keeps twice this much room: no other core can be placed that close to it",
+                min = 1, max = 1_000)
+        public static float REACH_WITHOUT_ZONE = 200.0f;
 
         // ------------------------------------------------------------------------- Autorisatiecodes (hoofdstuk 49)
         // Per kern in te stellen in Settings op de desktop; dit zijn de standaardwaarden voor een nieuwe kern.
@@ -1288,9 +1308,16 @@ public final class ImtConfig {
         public static final int ZONE_MAX_BOXES = 48;
 
         // ------------------------------------------------------------------------- De Autoscan (hoofdstuk 45)
-        @Tunable("Autoscan: how many blocks of wall around the rooms of a bunker belong to the zone (so hidden redstone counts too),"
-                + " and the margin around an open building")
-        public static float ZONE_SCAN_WALL = 3.0f;
+        /**
+         * Zoveel blokken rond de kamers van een dichte bunker horen bij de zone (de muren, de vloer, het plafond en wat
+         * erachter ligt), en zoveel marge krijgt de doos om een open basis. Hoofdstuk 115 (jouw wens: "de zone bij autoscan
+         * gaat nu 3 blokken naar de rand, maak dit 10 blokken"): 10. Het heette zoneScanWall (3); met de nieuwe naam krijgt
+         * ook een bestaand configbestand de 10.
+         */
+        @Tunable(value = "Autoscan: how many blocks around the rooms of a closed bunker belong to the zone (its walls, floor and "
+                + "ceiling and what lies behind them, so hidden redstone counts too), and the margin around an open building",
+                max = 64)
+        public static float ZONE_SCAN_MARGIN = 10.0f;
         @Tunable("Autoscan: at most this many blocks of rooms (or of a building) are scanned; more is not a closed bunker")
         public static float ZONE_SCAN_MAX = 60_000.0f;
         /**
