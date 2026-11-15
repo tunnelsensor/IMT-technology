@@ -74,7 +74,9 @@ public final class LogicRunner {
 
     /**
      * Wat er gebeurde toen een run startte: welke trigger, welk apparaat (de lezer of het paneel),
-     * welke speler, en de kaart of code.
+     * welke speler, en de kaart of code. Bij een kaart weet de server niet wie het was (hoofdstuk 115): dan is
+     * {@code playerName} leeg en zijn {@code trusted} en {@code owner} false. Alleen {@code player} (de UUID) is er dan,
+     * zodat de beveiliging na een alarm op hem kan jagen.
      */
     public record Context(Op trigger, String source, @Nullable BlockPos sourcePos, @Nullable UUID player, String playerName,
                           boolean trusted, boolean owner, @Nullable KeycardData card, boolean cardValid, String code,
@@ -510,6 +512,9 @@ public final class LogicRunner {
         return new Expr.Facts() {
             @Override
             public Object value(String variable) {
+                if (variable.startsWith("player.") && context.trigger() == Op.KEYCARD) {
+                    return noPlayer(level, core, run, variable); // hoofdstuk 115: de lezer weet niet wie het was
+                }
                 return switch (variable) {
                     case "card.number" -> (double) (context.card() == null ? 0 : context.card().number());
                     case "card.valid" -> context.cardValid();
@@ -566,6 +571,18 @@ public final class LogicRunner {
                 return context.cardValid() && core.logic().isInsideAny(context.cardGroups(), group);
             }
         };
+    }
+
+    /**
+     * player.name, player.trusted of player.owner in een run die bij een keycardlezer begon (hoofdstuk 115): de lezer weet
+     * niet wie de kaart vasthoudt, dus er is geen naam ("") en niemand is vertrouwd of eigenaar (false). Een nieuw diagram
+     * kun je zo niet eens bewaren (de controle zegt het al); een diagram van vóór deze update draait nog, en dan zegt het
+     * logboek (hooguit één keer per minuut) waarom zijn check nu nee zegt.
+     */
+    private static Object noPlayer(ServerLevel level, SecurityCoreBlockEntity core, Run run, String variable) {
+        report(level, core, runtime(level, core), EventLog.Type.LOGIC, "\"" + run.program.name() + "\": " + variable
+                + " does not work after a keycard: the reader only knows the card, not who holds it");
+        return variable.equals("player.name") ? "" : false;
     }
 
     /** De eigen naam {@code name} van dit programma (een variabele), of {@code fallback} als het die niet heeft. */
@@ -704,9 +721,13 @@ public final class LogicRunner {
      * Alarm: een rode regel in het logboek, I.M.T waarschuwt de eigenaar (waar hij ook is), een
      * bel bij de kern, en de beveiliging jaagt een tijdje op de speler die het veroorzaakte (als dat
      * geen vriend is), ook als "attack players" uit staat.
+     *
+     * Na een kaart (hoofdstuk 115) weet de server niet wie het was: dan komt er geen naam achter het alarm, en is die speler
+     * voor de server niet vertrouwd. De beveiliging jaagt dan op wie er stond, maar een vriend van de kern is nooit een
+     * indringer (SecurityCores.isIntruder kijkt dat eerst na): op jou en je vertrouwde spelers schiet ze dus toch niet.
      */
     static void alarm(ServerLevel level, SecurityCoreBlockEntity core, Context context, String text) {
-        String who = context.player() != null ? " (" + context.playerName() + ")" : "";
+        String who = context.player() != null && !context.playerName().isEmpty() ? " (" + context.playerName() + ")" : "";
         core.logEvent(EventLog.Type.ALARM, text + who);
         core.addMessage(text + who, true);
         level.playSound(null, core.getBlockPos(), SoundEvents.BELL_BLOCK, SoundSource.BLOCKS, 2.0f, 0.6f);

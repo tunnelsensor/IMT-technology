@@ -102,6 +102,16 @@ public final class ScriptParser {
         return script;
     }
 
+    /**
+     * Leest de code zonder de controles over meerdere regels (ScriptChecker). Alleen om te kijken of bewaarde code nog bij
+     * de blokjes past (LogicApp.codeFor, LogicProgram.convertLoops): een diagram dat een latere regel niet meer haalt
+     * (hoofdstuk 115: player.trusted na een keycard), past daar nog wel bij, en dan blijft je commentaar staan. Een fout
+     * in een regel zelf (een tikfout) geeft nog altijd een LogicException.
+     */
+    public static Script parseUnchecked(String source, ProgramKind kind) {
+        return new ScriptParser(source, kind, Library.EMPTY).script();
+    }
+
     /** Is dit de naam van een def: een eigen def, of een uit een global script? */
     private boolean isDef(String name) {
         return functionNames.contains(name) || library.def(name) != null;

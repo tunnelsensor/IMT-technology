@@ -144,7 +144,7 @@ public final class LogicGameTests {
         check(printed.equals(code), "Knop en hendel terugschrijven gaf andere code:\n" + printed);
         expectError("when button(\"Doorbell\"):\n    if lever.on:\n        on(\"Lamp\")", 2, "lever.on only works inside when lever(...)");
         expectError("when button(\"Doorbell\"):\n    accept()", 2, "only works inside when keycard");
-        expectError("when every(5):\n    say(player.name)", 2, "button(...) or lever(...)");
+        expectError("when every(5):\n    say(player.name)", 2, "lever(...) or request(...)");
         expectError("when lever(Night):\n    on(\"Lamp\")", 1, "Put names between quotes");
         // Een oude def die lever heette.
         LogicGraph old = new LogicGraph();
@@ -1896,8 +1896,9 @@ public final class LogicGameTests {
         expectSuggestions("when |", List.of("keycard(\"...\"):", "every(10):"), List.of("accept()"));
         expectSuggestions("def open_lab():\n    pass\nwhen every(5):\n    |",
                 List.of("on(\"...\")", "pulse(\"...\", 3)", "if ...:", "open_lab()"), List.of("when keycard(...):"));
-        expectSuggestions("when keycard(\"Lab door\"):\n    if |", List.of("card.in_group(\"...\")", "card.valid", "player.trusted"),
-                List.of("code"));
+        // Hoofdstuk 115: na een keycard bestaat player.* niet (de lezer weet niet wie de kaart vasthoudt).
+        expectSuggestions("when keycard(\"Lab door\"):\n    if |", List.of("card.in_group(\"...\")", "card.valid"),
+                List.of("code", "player.trusted", "player.name", "player.owner"));
         expectSuggestions("when codepanel(\"Front door\"):\n    if |", List.of("code", "player.trusted"), List.of("card.valid", "card.in_group(\"...\")"));
         expectSuggestions("when every(5):\n    if |", List.of("is_night", "is_on(\"...\")"), List.of("card.valid", "card.in_group(\"...\")", "player.trusted"));
         expectSuggestions("when keycard(\"|", List.of("Lab door"), List.of("Front door", "Vault door"));
@@ -2035,6 +2036,151 @@ public final class LogicGameTests {
             }
             helper.succeed();
         });
+    }
+
+    /**
+     * Hoofdstuk 115 (jouw wens): bij een keycardlezer weet je diagram niet wie de kaart vasthoudt. player.name,
+     * player.trusted en player.owner geven na when keycard een fout die zegt waarom, ook via een def die zo'n when gebruikt,
+     * en Ctrl+Spatie stelt ze daar niet voor. Na een codepaneel, knop, hendel of verzoek weet de server het wel.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "logic_language")
+    public static void logic_keycard_knows_no_player(GameTestHelper helper) {
+        expectError("when keycard(\"Lab door\"):\n    if player.trusted:\n        accept()", 2,
+                "player.trusted does not work after a keycard");
+        expectError("when keycard(\"Lab door\"):\n    say(\"Hi \" + player.name)", 2, "player.name does not work after a keycard");
+        expectError("when keycard(\"Lab door\"):\n    if card.valid and player.owner:\n        accept()", 2,
+                "player.owner does not work after a keycard");
+        expectError("def greet():\n    say(player.name)\n\nwhen keycard(\"Lab door\"):\n    greet()", 5, "greet() uses player.name");
+        for (String code : List.of(
+                "when codepanel(\"Front door\"):\n    if code == \"4321\" and player.trusted:\n        accept()",
+                "when button(\"Doorbell\"):\n    say(player.name + \" is at the door\")",
+                "when lever(\"Night mode\"):\n    if player.owner:\n        on(\"Lamp\")",
+                "when request(\"Gate\"):\n    if not request.accepted:\n        say(player.name + \" may not come in\")")) {
+            try {
+                ScriptParser.parse(code);
+            } catch (LogicException e) {
+                throw new GameTestAssertException("Deze code zou moeten kloppen:\n" + code + "\nmaar gaf: " + e.describe());
+            }
+        }
+        expectSuggestions("when keycard(\"Lab door\"):\n    if |", List.of("card.valid"),
+                List.of("player.name", "player.trusted", "player.owner"));
+        expectSuggestions("when button(\"Doorbell\"):\n    if |", List.of("player.name", "player.trusted"), List.of("card.valid"));
+        // Een diagram van vóór hoofdstuk 115, met commentaar en player.owner na een kaart: de controle weigert het nu, maar
+        // het past nog bij zijn blokjes. Zo toont de app Logic (LogicApp.codeFor) je eigen code met je commentaar.
+        String old = "# master key for me\nwhen keycard(\"Lab door\"):\n    if player.owner or card.in_group(\"staff\"):\n        accept()\n";
+        expectError(old, 3, "player.owner does not work after a keycard");
+        Script oldScript = ScriptParser.parseUnchecked(old, ProgramKind.SERVER);
+        check(ScriptPrinter.print(oldScript).equals(ScriptPrinter.print(GraphConverter.toScript(GraphConverter.toGraph(oldScript, null)))),
+                "Een oud keycard-diagram past niet meer bij zijn eigen blokjes");
+        helper.succeed();
+    }
+
+    /**
+     * Hoofdstuk 115 (jouw wens): een keycardlezer logt niet wie de kaart gebruikte. Een dief met de kaart van de eigenaar
+     * komt gewoon binnen, en het logboek zegt "Someone used card #... at Lab door" (ook bij een nagemaakte kaart van de
+     * Bypass Kit). Een alarm na een kaart heeft geen naam erachter, maar de beveiliging jaagt toch op de vreemde die er
+     * stond; de eigenaar is nooit een indringer. Een oud diagram dat na een kaart nog player.name, player.trusted of
+     * player.owner leest, krijgt "" en false, en het logboek zegt waarom.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 120, batch = "logic_runner")
+    public static void logic_keycard_reader_is_anonymous(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        Setup setup = setup(helper);
+        ServerPlayer thief = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(7, 3, 9), "keycard-thief");
+        String ownerName = setup.owner().getGameProfile().getName();
+        BlockPos reader = new BlockPos(8, 3, 8);
+        helper.setBlock(reader, ModBlocks.KEYCARD_READER.get());
+        ((InputDeviceBlockEntity) helper.getBlockEntity(reader)).setName("Lab door");
+        BlockPos readerAbs = helper.absolutePos(reader);
+        KeycardData fake = new KeycardData("10.9.9.9", "other", 1001, 5, "Fake");
+        int[] number = new int[1];
+        helper.runAfterDelay(2, () -> {
+            ImtTechGameTests.startServer(helper, setup.rack(), setup.core());
+            SecurityOs.open(setup.owner(), setup.coreAbs());
+            save(setup, "Lab", """
+                    when keycard("Lab door"):
+                        if card.in_group("staff"):
+                            accept()
+                        else:
+                            deny()
+                            alarm("Wrong card at the lab")
+                    """);
+            check(setup.core().logic().program("Lab") != null, "Het diagram werd niet bewaard: " + lastLog(setup.core()));
+            // Een diagram van vóór hoofdstuk 115 (zonder controle bewaard): na een kaart leest het nog de speler.
+            LogicGraph old = new LogicGraph();
+            LogicGraph.Node when = old.add(Op.KEYCARD, 0, 0);
+            when.text = "Lab door";
+            LogicGraph.Node who = old.add(Op.LOG, 0, 40);
+            who.expr = "\"Old: \" + player.name";
+            when.next = who.id;
+            LogicGraph.Node test = old.add(Op.IF, 0, 80);
+            test.text = "player.trusted or player.owner";
+            who.next = test.id;
+            LogicGraph.Node friend = old.add(Op.LOG, 100, 80);
+            friend.text = "Old: a friend";
+            test.yes = friend.id;
+            setup.core().logic().put(null, new LogicProgram("Old", true, old, ""));
+            check(setup.core().logic().addGroup("staff", ""), "De groep maken lukte niet");
+            number[0] = setup.core().logic().issue("Staff card", 3, "test", "staff").number();
+            // De dief stal de kaart van de eigenaar: voor de lezer is dat gewoon die kaart.
+            LogicEvents.clear();
+            LogicEvents.keycard(level, readerAbs, thief, new KeycardData(setup.core().ip(), setup.core().hostname(), number[0], 3,
+                    "Staff card"));
+        });
+        helper.runAfterDelay(20, () -> {
+            helper.assertBlockProperty(reader, InputDeviceBlock.LIGHT, InputLight.OK);
+            check(hasLog(setup.core(), EventLog.Type.ENTRY, "Someone used card #" + number[0] + " (staff) at Lab door"),
+                    "De lezer schreef niet \"Someone used card ...\": " + lastLog(setup.core()));
+            check(hasLog(setup.core(), EventLog.Type.LOGIC, "Old: ") && !hasLog(setup.core(), EventLog.Type.LOGIC, "Old: a friend"),
+                    "Het oude diagram kende de speler nog: " + lastLog(setup.core()));
+            check(setup.core().log().entries().stream()
+                            .anyMatch(entry -> entry.text().contains("player.name does not work after a keycard")),
+                    "Het logboek zegt niet waarom player.name leeg is: " + lastLog(setup.core()));
+            // De Bypass Kit: een nagemaakte kaart, ook zonder naam.
+            LogicEvents.clear();
+            LogicEvents.forgedKeycard(level, readerAbs, thief, "staff");
+        });
+        helper.runAfterDelay(40, () -> {
+            check(setup.core().log().entries().stream().filter(entry -> entry.type() == EventLog.Type.ENTRY)
+                            .filter(entry -> entry.text().startsWith("Someone used card #")).count() == 2,
+                    "De nagemaakte kaart kwam niet (zonder naam) in het logboek: " + lastLog(setup.core()));
+            // Een kaart van een ander netwerk: rood, en een alarm zonder naam erachter.
+            LogicEvents.clear();
+            LogicEvents.keycard(level, readerAbs, thief, fake);
+        });
+        helper.runAfterDelay(60, () -> {
+            check(hasLog(setup.core(), EventLog.Type.ALARM, "Wrong card at the lab"),
+                    "Het alarm kwam er niet, of met een naam erachter: " + lastLog(setup.core()));
+            check(setup.core().isHunted(thief.getUUID()), "De beveiliging jaagt niet op de dief die er stond");
+            // De eigenaar met een verkeerde kaart: ook een alarm zonder naam, maar hij is nooit een indringer.
+            LogicEvents.clear();
+            LogicEvents.keycard(level, readerAbs, setup.owner(), fake);
+        });
+        helper.runAfterDelay(80, () -> {
+            check(setup.core().log().entries().stream()
+                            .filter(entry -> entry.type() == EventLog.Type.ALARM && entry.text().equals("Wrong card at the lab"))
+                            .count() == 2,
+                    "Het tweede alarm kwam er niet zonder naam: " + lastLog(setup.core()));
+            check(!com.senne.imttech.security.SecurityCores.isIntruder(level, setup.core(), setup.owner()),
+                    "Na een alarm bij zijn eigen lezer is de eigenaar een indringer");
+            // Nergens een naam: niet bij de lezer, niet in een alarm of een regel van een diagram, niet in de berichten.
+            for (EventLog.Entry entry : setup.core().log().entries()) {
+                boolean fromCards = entry.type() == EventLog.Type.ENTRY || entry.type() == EventLog.Type.ALARM
+                        || entry.type() == EventLog.Type.LOGIC;
+                check(!fromCards || !entry.text().contains("keycard-thief") && !entry.text().contains(ownerName),
+                        "Een naam in het logboek: " + entry.text());
+            }
+            for (SecurityCoreBlockEntity.Message message : setup.core().messages()) {
+                check(!message.text().contains("keycard-thief") && !message.text().contains(ownerName),
+                        "Een naam in de berichten: " + message.text());
+            }
+            helper.succeed();
+        });
+    }
+
+    /** Staat er een regel van deze soort met precies deze tekst in het logboek van de kern? */
+    private static boolean hasLog(SecurityCoreBlockEntity core, EventLog.Type type, String text) {
+        return core.log().entries().stream().anyMatch(entry -> entry.type() == type && entry.text().equals(text));
     }
 
     /**

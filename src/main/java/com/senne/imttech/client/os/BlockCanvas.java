@@ -920,6 +920,50 @@ final class BlockCanvas {
         };
     }
 
+    /**
+     * De suggesties in het paneel van dit blokje. Bij een if of while laten we de ideeën weg die niet passen bij de trigger
+     * bovenaan zijn tak (hoofdstuk 115): na een keycard geen player.trusted (de lezer weet niet wie de kaart vasthoudt) en
+     * geen code, na een codepaneel geen kaart. Zo stelt het hetzelfde voor als Ctrl+Spatie in de code. In een def (of een
+     * los blokje) weten we de trigger niet: dan alles.
+     */
+    private List<String> suggestions(LogicGraph.Node node) {
+        List<String> names = suggestions(node.op);
+        LogicGraph.Node root = node.op == Op.IF || node.op == Op.WHILE ? graph.rootOf(node.id) : null;
+        if (root == null || !root.op.isTrigger()) {
+            return names;
+        }
+        List<String> fitting = new ArrayList<>();
+        for (String name : names) {
+            if (fitsAfter(name, root.op)) {
+                fitting.add(name);
+            }
+        }
+        return fitting;
+    }
+
+    /** Mag elk gegeven en elke functie in deze voorwaarde na deze trigger (zoals Expr.Variable.allowedAfter)? */
+    private static boolean fitsAfter(String condition, Op trigger) {
+        Expr expr;
+        try {
+            expr = Expr.parseLenient(condition, true);
+        } catch (LogicException e) {
+            return true; // geen voorwaarde die we kunnen lezen: laten staan
+        }
+        for (String name : Expr.variables(expr)) {
+            for (Expr.Variable variable : Expr.Variable.values()) {
+                if (variable.code().equals(name) && !variable.allowedAfter(trigger)) {
+                    return false;
+                }
+            }
+        }
+        for (Expr.Function function : Expr.functions(expr)) {
+            if (!function.allowedAfter(trigger)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /** De namen die bij dit blokje passen: lezers, panelen, knoppen, hendels, of je apparaten. */
     private List<String> suggestions(Op op) {
         List<String> names = new ArrayList<>();
@@ -1083,7 +1127,7 @@ final class BlockCanvas {
             y += OsDraw.BUTTON_H + 3;
         }
         // Suggesties: klik om in te vullen.
-        List<String> names = suggestions(node.op);
+        List<String> names = suggestions(node);
         if (!names.isEmpty()) {
             boolean ideas = node.op == Op.IF || node.op == Op.WHILE;
             g.drawString(font, ideas ? "Ideas:" : "Yours:", x, y, HudStyle.argb(255, HudStyle.ORANGE), false);
@@ -1185,7 +1229,7 @@ final class BlockCanvas {
             }
             y += OsDraw.BUTTON_H + 3;
         }
-        List<String> names = suggestions(node.op);
+        List<String> names = suggestions(node);
         if (!names.isEmpty()) {
             y += 10;
             for (String name : names) {

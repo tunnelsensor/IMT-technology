@@ -7608,12 +7608,13 @@ public final class VisualCheck {
                 be.updateOn(level);
             }
         }
-        // Wie er vandaag binnenkwam (de app Logs, Show: entries), tussen een paar andere regels.
-        coreEntity.logEvent(com.senne.imttech.security.os.EventLog.Type.ENTRY, "Lotte used keycard #1001 at Front door");
+        // Wie er vandaag binnenkwam (de app Logs, Show: entries), tussen een paar andere regels. Een keycardlezer zegt niet
+        // wie het was (hoofdstuk 115), alleen welke kaart.
+        coreEntity.logEvent(com.senne.imttech.security.os.EventLog.Type.ENTRY, "Someone used card #1001 (staff) at Front door");
         coreEntity.logEvent(com.senne.imttech.security.os.EventLog.Type.DEVICE, "Senne set Cameras on Reception to view");
         coreEntity.logEvent(com.senne.imttech.security.os.EventLog.Type.ENTRY, "Senne entered a code at Front door");
         coreEntity.logEvent(com.senne.imttech.security.os.EventLog.Type.LOGIN, "Lotte logged in at Reception");
-        coreEntity.logEvent(com.senne.imttech.security.os.EventLog.Type.ENTRY, "Jonas used keycard #1002 at Front door");
+        coreEntity.logEvent(com.senne.imttech.security.os.EventLog.Type.ENTRY, "Someone used card #1002 (guests) at Front door");
     }
 
     private static void buildNetworkDesk(ServerPlayer player) {

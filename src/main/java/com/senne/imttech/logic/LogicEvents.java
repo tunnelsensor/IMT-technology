@@ -77,8 +77,14 @@ public final class LogicEvents {
     }
 
     /**
-     * De lezer heeft een kaart gelezen: oranje lampje, een regel in het logboek ("Senne used card #1001 (security,
-     * lab) at Lab door"), en de server aan het werk. {@code groups} zijn de groepen waar de kaart zelf in zit.
+     * De lezer heeft een kaart gelezen: oranje lampje, een regel in het logboek ("Someone used card #1001 (security, lab)
+     * at Lab door"), en de server aan het werk. {@code groups} zijn de groepen waar de kaart zelf in zit.
+     *
+     * Wie de kaart vasthoudt, weet de lezer niet (hoofdstuk 115). Jouw wens: "bij een keycard reader mag er niet gelogt
+     * worden wie die card gebruikt, ook mag je niet kunnen checken op een speler". Dus geen naam in het logboek, en in je
+     * diagram geen player.name, player.trusted of player.owner: zo werkt een gestolen kaart echt. Alleen wie er stond (zijn
+     * UUID) gaat mee, zodat de beveiliging op hem kan jagen als je diagram alarm() zegt (zie LogicRunner.alarm); die UUID
+     * komt nergens in het logboek, in een bericht of in je diagram.
      */
     private static void read(ServerLevel level, BlockPos reader, InputDeviceBlockEntity device, SecurityCoreBlockEntity core,
                              ServerPlayer player, @Nullable KeycardData card, boolean valid, List<String> groups) {
@@ -87,10 +93,10 @@ public final class LogicEvents {
         level.playSound(null, reader, ModSounds.IMT_BLIP.get(), SoundSource.BLOCKS, 0.5f, 1.4f);
         String what = card == null ? "a blank card"
                 : "card #" + card.number() + " (" + (!valid ? "not valid here" : groups.isEmpty() ? "no group" : String.join(", ", groups)) + ")";
-        core.logEvent(EventLog.Type.ENTRY, player.getGameProfile().getName() + " used " + what + " at " + device.name());
+        core.logEvent(EventLog.Type.ENTRY, "Someone used " + what + " at " + device.name());
+        // Geen naam (""), niet vertrouwd en geen eigenaar (false): de server weet het niet.
         LogicRunner.fire(level, core, Op.KEYCARD, device.name(), new LogicRunner.Context(Op.KEYCARD, device.name(),
-                reader.immutable(), player.getUUID(), player.getGameProfile().getName(),
-                SecurityCores.isFriend(level, core, player), isOwner(level, core, player), card, valid, "", null, groups));
+                reader.immutable(), player.getUUID(), "", false, false, card, valid, "", null, groups));
     }
 
     /** Een kaartnummer dat niet op de lijst van dit netwerk staat (#2000 tot #9999). */

@@ -996,8 +996,9 @@ bekijken of te zien wie er waar binnenkwam.
    De computer onthoudt zijn eigen vensters. Loop je meer dan 8 blokken weg, dan gaat hij dicht.
 
 **Wie kwam er binnen?** In de app **Logs** staat bovenaan **Show: all**. Klik erop voor **Show:
-entries**: dan zie je alleen wie welke keycardlezer, welk codepaneel, welke knop of hendel gebruikte,
-en wie waar inlogde ("Lotte logged in at Reception").
+entries**: dan zie je alleen welke kaart er bij welke keycardlezer gebruikt werd (niet wie: een lezer weet
+dat niet, zie **Keycards** hieronder), wie welk codepaneel, welke knop of hendel gebruikte, en wie waar
+inlogde ("Lotte logged in at Reception").
 
 ### De I.M.T Phone: je kern in je zak
 De **I.M.T Phone** (een zwart glaspaneel, een computerchip en een ijzerstaaf) is de laptop in het klein:
@@ -1123,6 +1124,15 @@ tegen de lezer, open dan de kluis 3 seconden; anders alarm". De server hangt aan
    nooit meer terug. Kaarten van vóór 25 oktober (met een niveau) houden hun kleur en komen in de groepen
    `level 1` tot `level 5`. Die zitten in elkaar, dus `card.in_group("level 3")` doet wat
    `card.level >= 3` vroeger deed.
+   **Een lezer weet niet wie de kaart vasthoudt** (15 november). In het logboek staat "Someone used
+   card #1001 (staff) at Lab door", nooit een naam, en na `when keycard(...)` bestaan `player.name`,
+   `player.trusted` en `player.owner` niet (Logic zegt het als je ze toch typt). Een diagram dat je eerder
+   bewaarde en dat dat nog doet, draait wel, maar krijgt nu een lege naam en `false`: keek je deur naar
+   `player.trusted`, dan blijft hij dicht, en het logboek zegt waarom. Wie jouw kaart steelt
+   (zakkenrollen, een lichaam doorzoeken), komt dus echt binnen, tot je die kaart blokkeert. Wil je weten
+   wie er binnenkomt, hang dan een camera bij de deur, of gebruik een codepaneel of een Auth Console: die
+   weten wel wie het was. Zegt je diagram na een kaart `alarm(...)`, dan staat er geen naam achter het
+   alarm, maar je beveiliging jaagt wel op wie er stond (nooit op jou of je vertrouwde spelers).
 4. **Programmeren**: de app **Logic** op de desktop. Links je diagrammen, rechts de code; de knop
    **Blocks** toont hetzelfde als blokjes met draadjes (en **Code** weer terug). **Check** zoekt
    fouten, **Save** zet het op de server, **Help** toont alles wat je kunt gebruiken (klik erop en
@@ -1148,13 +1158,14 @@ when keycard("Lab door"):
 - **Kies** met `if ...:`, `elif ...:` en `else:`, met `and`, `or`, `not` en `==`, `!=`, `<`, `>`,
   `<=`, `>=`. Je kunt kijken naar `card.in_group("...")`, `card.valid`, `card.number`, `card.name`,
   `code` (tekst: `code == "4321"`), `lever.on` (na `when lever`), `player.trusted`, `player.owner`,
-  `player.name`, `is_night`, `is_day` en `is_on("...")` (ook een netwerkhendel). `card.in_group("staff")` is waar als de kaart in de groep `staff` zit, of
+  `player.name` (wie het deed, na een codepaneel, knop, hendel of verzoek; **niet na een keycard**: de lezer weet niet wie de kaart vasthoudt), `is_night`, `is_day` en `is_on("...")` (ook een netwerkhendel). `card.in_group("staff")` is waar als de kaart in de groep `staff` zit, of
   in een groep die (ergens) in `staff` zit; alleen voor een geldige kaart (van jouw netwerk en niet
   geblokkeerd), dus `if card.in_group("staff"):` is op zichzelf al veilig. Hoofdletters maken niet uit,
   en `'staff'` mag ook.
 - **Doe** `on(...)`, `off(...)`, `toggle(...)`, `pulse("...", 3)`, `wait(2)`, `accept()` en `deny()`
   (groen of rood lampje op de lezer of het paneel), `say("...")` (I.M.T zegt het je),
-  `log("...")` en `alarm("...")` (alarm, en de beveiliging jaagt op wie het deed).
+  `log("...")` en `alarm("...")` (alarm, en de beveiliging jaagt op wie het deed; na een kaart staat er geen
+  naam achter).
 - **Eigen blokken** (functies): schrijf stappen één keer met `def naam():` (aan de linkerkant, de
   stappen eronder) en gebruik ze in zoveel whens als je wil met `naam()`. Zo laten een kaart en een
   code dezelfde deur opengaan:
@@ -1554,7 +1565,8 @@ naar **ACCEPT**. Raakt het een rood **ALARM**-punt, dan knippert alles rood en h
 stukje weg te draaien. Komt het signaal bij ACCEPT, dan wordt het pad groen en leest de lezer een
 **geldige kaart van de groep die je koos**. Wat er dan gebeurt, beslist het diagram van de eigenaar,
 zoals bij een echte kaart. Die kaart heeft wel een verzonnen nummer: de eigenaar ziet in zijn
-logboek een nummer dat niet in zijn app Keycards staat, en wie heel voorzichtig is, laat zijn diagram
+logboek een nummer dat niet in zijn app Keycards staat (niet wie het was: dat zegt een lezer nooit), en wie heel
+voorzichtig is, laat zijn diagram
 ook op `card.number` letten.
 
 **Een codepaneel: vingerafdrukken.** Houd de muisknop ingedrukt en veeg poeder over de toetsen. Op
@@ -1597,7 +1609,8 @@ elke beweging laat hem oplopen, snel slepen veel meer dan rustig; hou je even st
 Is hij vol, of draait de ander zich om en ziet hij je, dan ben je **betrapt**: hij krijgt een melding
 met je naam, en jij licht 10 seconden op. Loopt hij weg, dan houdt het gewoon op. Lukt het, dan merkt
 hij niets, tot hij in zijn rugzak kijkt. Bij dezelfde speler moet je daarna 30 seconden wachten. Een
-gestolen kaart blokkeert de eigenaar in de app Keycards. Op een server kan zakkenrollen uit:
+gestolen kaart blokkeert de eigenaar in de app Keycards; tot dan opent hij alles wat die kaart opent (een lezer
+weet niet wie de kaart vasthoudt). Op een server kan zakkenrollen uit:
 `rules.pickpocketAllowed = false` in `config/imttech.toml`. De tijden en het bereik staan in
 hetzelfde bestand onder `[bypass]`, net als het aantal draden en de tijd van een laserzender, hoe lang
 hij op slot gaat, de schok en hoeveel chips herstellen kost.

@@ -28,6 +28,11 @@ import net.minecraft.world.phys.BlockHitResult;
  * Ook een lege kaart of een kaart van een ander netwerk lees je: dan is {@code card.valid} false, en
  * kan je diagram bijvoorbeeld alarm slaan.
  *
+ * Wie de kaart vasthoudt, weet de lezer niet (hoofdstuk 115, jouw wens): in het logboek staat "Someone used card #1001
+ * (lab) at Lab door", en {@code player.name}, {@code player.trusted} en {@code player.owner} bestaan na
+ * {@code when keycard} niet. Zo heeft het zin om een kaart te stelen (zakkenrollen, een lichaam doorzoeken); een
+ * gestolen kaart blokkeer je in de app Keycards. Zie LogicEvents.read.
+ *
  * Een andere naam geven: sneak + rechtsklik met een lege hand (13 oktober), voor wie hem neerzette of wie
  * vertrouwd is in de basis (zie InputDevices). Of op de desktop, in de app Devices of Logic.
  */

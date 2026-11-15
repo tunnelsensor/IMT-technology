@@ -123,9 +123,10 @@ public sealed interface Expr {
         // Na when request(...) (hoofdstuk 49): het antwoord op het toegangsverzoek bij een Auth Console.
         REQUEST_ACCEPTED("request.accepted", Type.BOOL, "true if the request at the Auth Console was accepted (on the desktop, the laptop "
                 + "or the phone); false if it was denied or nobody answered in time", Op.REQUEST),
-        PLAYER_NAME("player.name", Type.TEXT, "the name of the player", null),
-        PLAYER_TRUSTED("player.trusted", Type.BOOL, "true for the owner, their team and trusted players", null),
-        PLAYER_OWNER("player.owner", Type.BOOL, "true if the player owns this network", null),
+        // Hoofdstuk 115: niet na een keycard (de lezer weet niet wie de kaart vasthoudt, zie Op.knowsPlayer).
+        PLAYER_NAME("player.name", Type.TEXT, "the name of the player (not after a keycard: a reader only knows the card)", null),
+        PLAYER_TRUSTED("player.trusted", Type.BOOL, "true for the owner, their team and trusted players (not after a keycard)", null),
+        PLAYER_OWNER("player.owner", Type.BOOL, "true if the player owns this network (not after a keycard)", null),
         IS_NIGHT("is_night", Type.BOOL, "true at night", null),
         IS_DAY("is_day", Type.BOOL, "true during the day", null),
         // Een robot (hoofdstuk 23): over zichzelf.
@@ -258,12 +259,12 @@ public sealed interface Expr {
         }
 
         /**
-         * Mag dit gegeven na deze trigger? (player.* alleen na een lezer, paneel, knop of hendel; trainee, lives en hits
-         * na elke trainingstrigger; null = in een def: alles.)
+         * Mag dit gegeven na deze trigger? (player.* alleen na een paneel, knop, hendel of verzoek, niet na een keycardlezer:
+         * zie Op.knowsPlayer; trainee, lives en hits na elke trainingstrigger; null = in een def: alles.)
          */
         public boolean allowedAfter(@Nullable Op trigger) {
             if (name.startsWith("player.")) {
-                return trigger == null || trigger.fromInput();
+                return trigger == null || trigger.knowsPlayer();
             }
             if (this == TRAINEE || this == LIVES || this == HITS) {
                 return trigger == null || trigger == Op.TRAINING_STARTED || trigger == Op.TRAINING_HIT || trigger == Op.TRAINING_ENDED
@@ -275,12 +276,25 @@ public sealed interface Expr {
         /** Waar dit gegeven wel werkt, voor de foutmeldingen: "when keycard(...)". Null = overal. */
         public @Nullable String where() {
             if (name.startsWith("player.")) {
-                return "when keycard(...), codepanel(...), button(...) or lever(...)";
+                return "when codepanel(...), button(...), lever(...) or request(...)";
             }
             if (this == TRAINEE || this == LIVES || this == HITS) {
                 return "when training_started(...), training_hit(...), training_ended(...) or (in a Training End block) when trainee_hit:";
             }
             return only == null ? null : "when " + only.code() + "(...)";
+        }
+
+        /**
+         * De foutmelding als dit gegeven na deze trigger niet mag, zonder het woord zelf ervoor: "only works inside when ...".
+         * Na een keycard zeggen we waarom player.* daar niet bestaat (hoofdstuk 115, jouw wens): de lezer weet niet wie de
+         * kaart vasthoudt, dus een gestolen kaart werkt net zo goed als de kaart van de eigenaar.
+         */
+        public String notAllowedAfter(@Nullable Op trigger) {
+            if (name.startsWith("player.") && trigger == Op.KEYCARD) {
+                return "does not work after a keycard: the reader only knows the card, not who holds it. Use card.in_group(\"...\")";
+            }
+            String where = where();
+            return "only works inside " + (where != null ? where : "when keycard(...) or when codepanel(...)");
         }
 
         static @Nullable Variable byName(String name) {
@@ -833,8 +847,7 @@ public sealed interface Expr {
                         : ". You can use: " + known()));
             }
             if (scope != null && !variable.allowedAfter(trigger)) {
-                String where = variable.where() != null ? variable.where() : "when keycard(...) or when codepanel(...)";
-                throw new LogicException(word + " only works inside " + where);
+                throw new LogicException(word + " " + variable.notAllowedAfter(trigger));
             }
             return new Var(word);
         }

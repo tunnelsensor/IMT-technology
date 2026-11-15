@@ -492,10 +492,20 @@ public enum Op {
 
     /**
      * Begint deze trigger bij een apparaat dat een speler gebruikt: een lezer, een paneel of (hoofdstuk 38) een
-     * netwerkknop of -hendel? Dan is de naam die van zo'n apparaat (niet van een relais), en weet je wie het deed
-     * ({@code player.name}).
+     * netwerkknop of -hendel? Dan is de naam die van zo'n apparaat (niet van een relais). Of je dan ook weet wie het
+     * deed ({@code player.name}), zegt {@link #knowsPlayer()}.
      */
     public boolean fromInput() {
         return this == KEYCARD || this == CODEPANEL || this == BUTTON || this == LEVER || this == REQUEST;
+    }
+
+    /**
+     * Weet de server bij deze trigger wie het deed ({@code player.name}, {@code player.trusted}, {@code player.owner})?
+     * Bij een codepaneel, een netwerkknop of -hendel en een toegangsverzoek wel. Bij een keycardlezer NIET (hoofdstuk 115,
+     * jouw wens): de lezer kent alleen de kaart, niet wie hem vasthoudt. Anders keek je diagram gewoon naar de speler, en
+     * had het geen zin om een kaart te stelen.
+     */
+    public boolean knowsPlayer() {
+        return this == CODEPANEL || this == BUTTON || this == LEVER || this == REQUEST;
     }
 }

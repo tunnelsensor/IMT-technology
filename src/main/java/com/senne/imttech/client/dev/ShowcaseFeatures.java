@@ -2743,7 +2743,8 @@ final class ShowcaseFeatures {
                 + "computer wie hem mag gebruiken, een code, en per app Off, View of Use. Dan rechtsklik op de monitor van "
                 + "Reception: bovenaan COMPUTER: Reception, en alleen Status, Cameras, Devices en Logs, om te kijken (\"view "
                 + "only\": geen pijltjes bij de camera's, geen knoppen in Devices). In Logs met Show: entries zie je wie er waar "
-                + "binnenkwam. Tot slot het codescherm van de tweede computer (Office).",
+                + "binnenkwam (bij een keycardlezer alleen welke kaart, niet wie). Tot slot het codescherm van de tweede computer "
+                + "(Office).",
                 new Vec3(pc.getX() + 3.5, pc.getY(), pc.getZ() + 4.5), 180, 20, s -> s
                 .onServer(0, player -> com.senne.imttech.lan.LanGrid.overrideRequired(true))
                 .onServer(0, player -> VisualCheck.buildComputerDesk(player, PC_DESK))

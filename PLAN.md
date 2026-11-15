@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 623 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 625 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -8999,6 +8999,72 @@ Mijn invulling (verander ik op jouw woord):
 Nog niet gedaan:
 - Niet in het spel bekeken: de editor en Ctrl+Spatie alleen in de tests, het omdraaien niet met een echte oude wereld
   (wel met hoe een oude wereld het bewaart).
+
+### 115. Een keycardlezer weet niet wie de kaart vasthoudt (15 november)
+
+Jouw wens: "bij een keycard reader mag er niet gelogt worden wie die card gebruikt, ook mag je niet kunnen checken op een
+speler anders help het stelen van een keycard ook niet als je gewoon checked op speler, trusted en playerowner mag je ook
+niet checken/loggen"
+
+Wat ik vond: de lezer schreef "Senne used card #1001 (staff) at Lab door" in het logboek, een diagram kon na
+`when keycard(...)` naar `player.name`, `player.trusted` en `player.owner` kijken, en `alarm(...)` zette de naam erachter.
+Een dief met jouw kaart werd zo meteen herkend, en een kaart stelen had weinig zin.
+
+- [x] **Het logboek zonder naam** (`LogicEvents.read`): "Someone used card #1001 (staff) at Lab door". Een nagemaakte
+      kaart van de Bypass Kit net zo. De server krijgt bij een kaart geen naam meer mee, en niemand is voor hem vertrouwd
+      of eigenaar.
+- [x] **Geen `player.*` na een keycard** (`Op.knowsPlayer`, `Expr.Variable`): de controle zegt "player.trusted does not
+      work after a keycard: the reader only knows the card, not who holds it. Use card.in_group(...)". Een def die
+      `player.name` gebruikt en die je in een `when keycard` aanroept, geeft "greet() uses player.name, which only works
+      inside when codepanel(...), button(...), lever(...) or request(...)". Ctrl+Spatie en de ideeën bij een if in de
+      blokjes (`BlockCanvas`) stellen ze na een keycard niet meer voor. Codepanelen, knoppen, hendels en de Auth Console
+      houden `player.*`.
+- [x] **Een oud diagram** (bewaard vóór deze update) draait nog. Daar is `player.name` na een kaart leeg en zijn
+      `player.trusted` en `player.owner` false; keek je deur daarnaar, dan blijft hij nu dicht. Het logboek zegt waarom
+      (hooguit één keer per minuut): "\"Lab\": player.trusted does not work after a keycard: the reader only knows the
+      card, not who holds it". Open het diagram in Logic: je ziet je eigen code met je commentaar en de fout eronder
+      (`ScriptParser.parseUnchecked` voor de vergelijking met de blokjes), en pas het aan.
+- [x] **Een alarm na een kaart heeft geen naam erachter** (`LogicRunner.alarm`). De beveiliging jaagt nog wel op wie er
+      stond; een vriend van de kern is nooit een indringer, dus op jou en je vertrouwde spelers schiet ze niet.
+- [x] Teksten: de hulp in Logic (`if player.trusted:`), How it works (Computers, "Who came in?"), de showcase (Computer and
+      monitor), de voorbeeldregels in het logboek van de rondleiding, LEESMIJ (Logs, Keycards, de taal, de Bypass Kit en
+      zakkenrollen).
+- [x] **Tests**: twee nieuwe, in bestaande batches (`logic_keycard_knows_no_player`: de fouten, ook via een def,
+      Ctrl+Spatie, en een oud diagram met commentaar dat nog bij zijn blokjes past;
+      `logic_keycard_reader_is_anonymous`: een dief met een gestolen kaart komt binnen zonder naam in het logboek, ook
+      met een nagemaakte kaart; een alarm zonder naam maar wel jagen op de dief; de eigenaar is geen indringer; een oud
+      diagram krijgt "" en false met uitleg in het logboek). Aangepast: `logic_buttons_and_levers` (de
+      tekst van de fout), `logic_ctrl_space` (geen `player.*` na een keycard) en de drill-test (de regel in het logboek).
+- [x] **Volledige rondes** (in een eigen worktree): de eerste twee keer alle 624 groen; met de herstellingen van de
+      nalezing een keer twee rood die vaker wisselen en niets met kaarten te maken hebben
+      (`guard_searches_where_he_lost_you`, en `raven_soldier_flanks_around_a_wall` met een AWP), daarna alle 624
+      groen; en op de nieuwe master (na hoofdstuk 118) alle 625 groen.
+- [x] **Nalezing** door drie aparte lezers (lekken, wat er stuk kan gaan, teksten), elk met een criticus die de vondsten
+      probeerde te weerleggen. Geen lek: wat de lekzoeker vond (de naam van wie een torentje beschiet in de app Devices,
+      computers met toegang "Keycard group", oude regels in het logboek) was er al of staat bij mijn invulling
+      hieronder. Drie kleine dingen waren echt en zijn hersteld: een oud diagram verloor zijn commentaar als je het in
+      Logic opende, de hulptekst bij `if player.trusted:` was te lang voor zijn twee regels (nu "owner, team, trusted;
+      never after a keycard"), en de ideeën bij een if in de blokjes stelden `player.trusted` nog voor na een keycard.
+
+Mijn invulling (verander ik op jouw woord):
+- **Codepanelen, knoppen, hendels en de Auth Console** zeggen nog wel wie het was (in het logboek en met `player.*`): je
+  vroeg het voor de keycardlezer. Zeg het als die ook geen naam meer mogen geven.
+- **Een computer met toegang "Keycard group"** schrijft nog "Lotte logged in at Reception" in het logboek: dat is
+  inloggen op een computer, geen lezer. Een gestolen kaart werkt daar wel al (de computer kijkt alleen naar de kaart).
+- **Een mislukte hack** van een lezer houdt de naam van de hacker in het alarm ("Someone is tampering with Lab door"
+  met zijn naam): hij werd betrapt toen hij aan de lezer zat, hij gebruikte geen kaart.
+- **Jagen na een alarm** blijft: de server weet niet wie het was, maar de beveiliging jaagt op wie er stond. Een torentje
+  dat hem dan beschiet, toont in de app Devices zijn doelwit (zoals elk doelwit, al van vroeger); een diagram kan dat niet
+  lezen.
+- **Regels die al in je logboek stonden** (van vóór deze update, met een naam) blijven staan tot ze er vanzelf uitschuiven:
+  het logboek houdt de laatste 64 regels.
+- Tijdens een **oefening** werken de kaarten die je bij het begin had nog altijd niet (hoofdstuk 27): dat is een regel van
+  de oefening, je diagram ziet er niets van.
+- Geen nieuwe versie: iets bestaands is veranderd, geen nieuw blok of systeem (het laatste getal telt vanzelf).
+
+Nog niet gedaan:
+- Niet in het spel bekeken: de foutmelding in de editor, de nieuwe hulptekst en de ideeën van de blokjes heb ik niet op
+  het scherm gezien (dat de hulptekst in zijn twee regels past, heb ik uitgerekend met de breedte van de letters).
 
 ### 118. De RC Robot Arm: zonder arm breekt de RC Car alleen het blok recht voor zich (15 november)
 

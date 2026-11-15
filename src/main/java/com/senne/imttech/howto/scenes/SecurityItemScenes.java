@@ -183,8 +183,9 @@ public final class SecurityItemScenes {
 
         s.chapter("Who came in?");
         s.text(110, HowToSceneBuilder.top(screen), Side.LEFT,
-                "In *Logs*, *Show: entries* lists only who used which reader, code panel, button or lever, and who logged in"
-                        + " where (\"Lotte logged in at Reception\"). Walk more than 8 blocks away and it closes.");
+                "In *Logs*, *Show: entries* lists only which card was used at which reader (never who), who used which code"
+                        + " panel, button or lever, and who logged in where (\"Lotte logged in at Reception\"). Walk more than 8"
+                        + " blocks away and it closes.");
         s.idle(115);
         return List.of(s.build());
     }

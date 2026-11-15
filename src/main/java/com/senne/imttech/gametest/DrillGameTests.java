@@ -128,8 +128,9 @@ public final class DrillGameTests {
             LogicEvents.keycard(level, readerAbs, owner, cards[0]);
             LogicEvents.clear();
             LogicEvents.keycard(level, readerAbs, owner, cards[1]);
-            String before = "drill-cards used card #" + cards[0].number() + " (not valid here) at Vault door";
-            String during = "drill-cards used card #" + cards[1].number() + " (no group) at Vault door";
+            // Hoofdstuk 115: de lezer zegt niet wie de kaart gebruikte.
+            String before = "Someone used card #" + cards[0].number() + " (not valid here) at Vault door";
+            String during = "Someone used card #" + cards[1].number() + " (no group) at Vault door";
             check(core.log().entries().stream().anyMatch(entry -> entry.text().equals(before)),
                     "De kaart van het begin werkte toch. Logboek: " + core.log().entries().getLast().text());
             check(core.log().entries().stream().anyMatch(entry -> entry.text().equals(during)),

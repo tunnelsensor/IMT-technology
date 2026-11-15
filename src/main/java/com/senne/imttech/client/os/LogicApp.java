@@ -217,7 +217,9 @@ final class LogicApp {
         String printed = ScriptPrinter.print(GraphConverter.toScript(graph));
         if (!source.isEmpty()) {
             try {
-                if (ScriptPrinter.print(ScriptParser.parse(source, kind)).equals(printed)) {
+                // Zonder de controle (hoofdstuk 115): een oud diagram met een fout van een latere regel (player.trusted na
+                // een keycard) past nog bij zijn blokjes. Dan zie je je eigen code met je commentaar, en de fout eronder.
+                if (ScriptPrinter.print(ScriptParser.parseUnchecked(source, kind)).equals(printed)) {
                     return source;
                 }
             } catch (LogicException e) {
@@ -884,7 +886,9 @@ final class LogicApp {
                 "a valid card in that keycard group, or in a group inside it (Keycards app)", HudStyle.WHITE, null));
         lines.add(new HelpLine("if card.valid:", "if card.valid:\n    pass", "written by this network and not blocked", HudStyle.WHITE, null));
         lines.add(new HelpLine("if code == \"1234\":", "if code == \"1234\":\n    pass", "the code typed on a code panel (between quotes)", HudStyle.WHITE, null));
-        lines.add(new HelpLine("if player.trusted:", "if player.trusted:\n    pass", "the owner, their team, and trusted players (Access)", HudStyle.WHITE, null));
+        // De tip onderaan heeft twee regels (hoofdstuk 115: kort, zodat "after a keycard" er nog op past).
+        lines.add(new HelpLine("if player.trusted:", "if player.trusted:\n    pass", "owner, team, trusted; never after a keycard",
+                HudStyle.WHITE, null));
         }
         lines.add(new HelpLine("if is_on(...):", "if is_on(\"" + device + "\"):\n    pass", "is that device switched on right now?", HudStyle.WHITE, null));
         lines.add(new HelpLine("if is_night:", "if is_night:\n    pass", server ? "also: is_day, player.owner, player.name, card.number, card.name"

@@ -107,7 +107,8 @@ public record LogicProgram(String name, boolean enabled, LogicGraph graph, Strin
         }
         String converted = out.toString();
         try {
-            return ScriptPrinter.print(ScriptParser.parse(converted, kind)).equals(printed) ? converted : null;
+            // Zonder de controle (hoofdstuk 115): ook code met een fout van een latere regel houdt zo zijn commentaar.
+            return ScriptPrinter.print(ScriptParser.parseUnchecked(converted, kind)).equals(printed) ? converted : null;
         } catch (LogicException e) {
             return null;
         }
