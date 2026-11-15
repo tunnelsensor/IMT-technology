@@ -35,8 +35,13 @@ public enum Op {
     EVERY(Kind.TRIGGER, "every", Arg.NONE, Arg.NUMBER, "Every so many seconds"),
     /** {@code when started:} (hoofdstuk 23): een robotprogramma begint. Zonder haakjes: er hoort niets bij. */
     STARTED(Kind.TRIGGER, "started", Arg.NONE, Arg.NONE, "The robot (or drone) is switched on (or gets this program). An RC car: you press Start"),
-    /** {@code when ordered("attack"):} (hoofdstuk 23): de server geeft deze robot een opdracht met order(...). */
-    ORDERED(Kind.TRIGGER, "ordered", Arg.TEXT, Arg.NONE, "The server gives this robot (or drone) an order with order(...)"),
+    /**
+     * {@code when ordered("attack"):} (hoofdstuk 23): de server geeft deze robot een opdracht met order(...). Bij een RC
+     * Car (hoofdstuk 113) komt de opdracht van zijn Storage Interface: {@code when ordered("fetch"):} (iemand bestelde
+     * iets) of {@code when ordered("store"):} (iemand legde iets in om op te bergen).
+     */
+    ORDERED(Kind.TRIGGER, "ordered", Arg.TEXT, Arg.NONE, "The server gives this robot (or drone) an order with order(...). An RC car: "
+            + "its Storage Interface asks it to fetch (when ordered(\"fetch\"):) or to store (when ordered(\"store\"):) an item"),
     /** Hoofdstuk 60: de zintuigen van een bewaker, voor je eigen robots en drones (zie bot/BotAlert). */
     HEARD(Kind.TRIGGER, "heard", Arg.NONE, Arg.NONE, "The robot (or drone) hears a noise: a shot, an explosion, a block, running, a door or a fall (sound.x/y/z, sound.kind)"),
     SPOTTED(Kind.TRIGGER, "spotted", Arg.NONE, Arg.NONE, "The robot (or drone) watched a player long enough to be sure: its meter is full (target.name, target.x/y/z)"),
@@ -107,15 +112,16 @@ public enum Op {
 
     // ---------------------------------------------------------------- Een RC Car (hoofdstuk 108)
     /**
-     * {@code mine()}: het blok vóór de auto breken (jouw wens: "breek voor jou, stap naar voor, breek boven jou").
-     * {@code mine(2)}: de twee blokken voor hem, het dichtste eerst (zijn boor reikt hooguit {@link #maxNumber} ver).
-     * Wat eruit valt, gaat in zijn kofferbak.
+     * {@code mine()}: het blok vóór de auto breken (jouw wens: "breek voor jou, stap naar voor, breek boven jou"), op de
+     * hoogte van zijn arm. Wat eruit valt, gaat in zijn kofferbak. Sinds hoofdstuk 113 zonder getal (jouw keuze: de arm
+     * "gebruik je vanaf nu ook voor het minen van 1+ block range"): hoger breken doe je met {@code arm_up()}, verder weg
+     * door ernaartoe te rijden.
      */
-    MINE(Kind.ACTION, "mine", Arg.NONE, Arg.OPTIONAL_NUMBER, "Break the block in front of the car: it goes into its trunk. mine(2): two blocks"),
-    /** {@code mine_up()}: het blok boven de auto; {@code mine_up(2)}: de twee blokken boven hem (een gang van 3 hoog). */
-    MINE_UP(Kind.ACTION, "mine_up", Arg.NONE, Arg.OPTIONAL_NUMBER, "Break the block above the car. mine_up(2): the two above it (a tunnel 3 high)"),
+    MINE(Kind.ACTION, "mine", Arg.NONE, Arg.NONE, "Break the block in front of the car, at the height of its arm: it goes into its trunk"),
+    /** {@code mine_up()}: het blok boven de auto. */
+    MINE_UP(Kind.ACTION, "mine_up", Arg.NONE, Arg.NONE, "Break the block above the car"),
     /** {@code mine_down()}: het blok onder de auto: hij zakt dan in het gat. */
-    MINE_DOWN(Kind.ACTION, "mine_down", Arg.NONE, Arg.OPTIONAL_NUMBER, "Break the block under the car: it drops into the hole"),
+    MINE_DOWN(Kind.ACTION, "mine_down", Arg.NONE, Arg.NONE, "Break the block under the car: it drops into the hole"),
     /**
      * {@code place()}: een blok uit zijn kofferbak vóór de auto zetten (het eerste dat hij vindt), of
      * {@code place("cobblestone")}: dat soort blok. De waarde staat in expr.
@@ -129,6 +135,30 @@ public enum Op {
     COLLECT(Kind.ACTION, "collect", Arg.NONE, Arg.NONE, "Pick up the items that lie around the car"),
     /** {@code unload()}: de kofferbak leegmaken in de kist vóór de auto (geen kist: op de grond voor hem). */
     UNLOAD(Kind.ACTION, "unload", Arg.NONE, Arg.NONE, "Empty the trunk into the chest in front of the car (no chest: onto the ground)"),
+    /**
+     * {@code arm_up()} (hoofdstuk 113, jouw keuze: een arm die je programmeert, "en deze gebruik je vanaf nu ook voor het
+     * minen van 1+ block range"): de arm met de boor gaat één blok omhoog (of {@code arm_up(2)}: twee). Alles wat de auto
+     * vóór zich doet ({@code mine()}, {@code place()}, {@code block()}, een kist) doet hij dan op die hoogte.
+     */
+    ARM_UP(Kind.ACTION, "arm_up", Arg.NONE, Arg.OPTIONAL_NUMBER, "Raise the arm of the car one block (arm_up(2): two). What the car does in front of it "
+            + "(mine, place, block(), a chest) happens at that height"),
+    /** {@code arm_down()}: de arm één blok omlaag (of {@code arm_down(2)}). */
+    ARM_DOWN(Kind.ACTION, "arm_down", Arg.NONE, Arg.OPTIONAL_NUMBER, "Lower the arm of the car one block (arm_down(2): two)"),
+    /**
+     * {@code take("iron_ingot", 8)} (hoofdstuk 113): uit de kist vóór de auto (op de hoogte van zijn arm) in zijn
+     * kofferbak. {@code take("iron_ingot")}: alles van dat soort; {@code take()}: alles wat erin zit. De waarden staan in
+     * expr.
+     */
+    TAKE(Kind.ACTION, "take", Arg.VALUES, Arg.NONE, "Take items out of the chest in front of the car into its trunk: take(\"iron_ingot\", 8). "
+            + "take(\"iron_ingot\") takes all of that kind, take() everything"),
+    /** {@code put("iron_ingot", 8)}: uit zijn kofferbak in de kist vóór de auto. {@code put()}: alles. */
+    PUT(Kind.ACTION, "put", Arg.VALUES, Arg.NONE, "Put items from the trunk into the chest in front of the car: put(\"iron_ingot\", 8). "
+            + "put(\"iron_ingot\") puts all of that kind, put() everything"),
+    /**
+     * {@code check()}: in de kist vóór de auto kijken. Zijn Storage Interface onthoudt dan wat erin zit (jouw wens: "de
+     * interface weet de dingen door de sensors of doordat de robot dit gecheckt heeft").
+     */
+    CHECK(Kind.ACTION, "check", Arg.NONE, Arg.NONE, "Look into the chest in front of the car: its Storage Interface remembers what is in it"),
 
     // ---------------------------------------------------------------- De server geeft robots opdrachten (hoofdstuk 23)
     /**
@@ -180,6 +210,8 @@ public enum Op {
 
     /** Zo lang mag een tekst (say, alarm, log) of een naam hooguit zijn. */
     public static final int MAX_TEXT = 80;
+    /** Zo hoog komt de arm van een RC Car hooguit (hoofdstuk 113): 0 = het blok vóór hem, 2 = twee blokken hoger. */
+    public static final int MAX_ARM = 2;
 
     private final Kind kind;
     private final String code;
@@ -250,10 +282,10 @@ public enum Op {
         }
     }
 
-    /** Wat het getal van dit blokje telt: "seconds" (wait, pulse, every), "blocks" (forward, back, up, down, mine) of "percent" (charge). */
+    /** Wat het getal van dit blokje telt: "seconds" (wait, pulse, every), "blocks" (forward, back, up, down, de arm) of "percent" (charge). */
     public String unit() {
         return switch (this) {
-            case FORWARD, BACK, UP, DOWN, MINE, MINE_UP, MINE_DOWN -> "blocks";
+            case FORWARD, BACK, UP, DOWN, ARM_UP, ARM_DOWN -> "blocks";
             case CHARGE -> "percent";
             default -> "seconds";
         };
@@ -262,7 +294,7 @@ public enum Op {
     /** Het kleinste en grootste getal dat dit blokje aanneemt. */
     public double minNumber() {
         return switch (this) {
-            case EVERY, FORWARD, BACK, UP, DOWN, CHARGE, MINE, MINE_UP, MINE_DOWN -> 1;
+            case EVERY, FORWARD, BACK, UP, DOWN, CHARGE, ARM_UP, ARM_DOWN -> 1;
             default -> 0.05;
         };
     }
@@ -272,8 +304,8 @@ public enum Op {
             case EVERY -> 3600;
             case WAIT -> 600;
             case FORWARD, BACK, UP, DOWN -> 64;
-            // Zo ver reikt de boor van een RC Car (hoofdstuk 108): mine_up(2) maakt een gang van 3 hoog.
-            case MINE, MINE_UP, MINE_DOWN -> 3;
+            // Zo hoog komt de arm van een RC Car (hoofdstuk 113): twee blokken boven het blok vóór hem, dus drie kisten hoog.
+            case ARM_UP, ARM_DOWN -> MAX_ARM;
             case CHARGE -> 100;
             default -> 60;
         };
@@ -330,8 +362,11 @@ public enum Op {
         if (this == ORDER) {
             return "order(\"|\", \"attack\")";
         }
-        if (this == MINE || this == MINE_UP || this == MINE_DOWN) {
-            return code + "()"; // meestal één blok: het getal (mine(2)) mag erbij
+        if (this == ARM_UP || this == ARM_DOWN) {
+            return code + "()"; // meestal één blok: het getal (arm_up(2)) mag erbij
+        }
+        if (this == TAKE || this == PUT) {
+            return code + "(\"|\")";
         }
         if (text == Arg.VALUES) {
             return code + "(|)";
@@ -356,6 +391,7 @@ public enum Op {
             case WRITE -> new String[] {"pin", "value"};
             case ORDER -> new String[] {"robot", "order", "x", "y", "z"};
             case PLACE, PLACE_UP, PLACE_DOWN -> new String[] {"block"};
+            case TAKE, PUT -> new String[] {"item", "count"};
             default -> new String[0];
         };
     }
@@ -367,17 +403,29 @@ public enum Op {
             case WRITE -> new Expr.Type[] {Expr.Type.NUMBER, Expr.Type.ANY};
             case ORDER -> new Expr.Type[] {Expr.Type.TEXT, Expr.Type.TEXT, Expr.Type.NUMBER, Expr.Type.NUMBER, Expr.Type.NUMBER};
             case PLACE, PLACE_UP, PLACE_DOWN -> new Expr.Type[] {Expr.Type.TEXT};
+            case TAKE, PUT -> new Expr.Type[] {Expr.Type.TEXT, Expr.Type.NUMBER};
             default -> new Expr.Type[0];
         };
     }
 
-    /** Hoeveel waarden er minstens moeten zijn; de rest mag weg (bij order: de plek; bij aim en place: alles). */
+    /** Hoeveel waarden er minstens moeten zijn; de rest mag weg (bij order: de plek; bij aim, place, take en put: alles). */
     public int requiredValues() {
         return switch (this) {
             case ORDER -> 2;
-            case AIM, PLACE, PLACE_UP, PLACE_DOWN -> 0;
+            case AIM, PLACE, PLACE_UP, PLACE_DOWN, TAKE, PUT -> 0;
             default -> valueNames().length;
         };
+    }
+
+    /**
+     * Mag dit blokje zoveel waarden hebben? Meestal alles of het minste ({@code order}: 2 of 5, {@code aim}: 0 of 3). Bij
+     * {@code take} en {@code put} (hoofdstuk 113) ook iets ertussenin: niets, alleen het item, of het item en een aantal.
+     */
+    public boolean acceptsValues(int count) {
+        if (this == TAKE || this == PUT) {
+            return count >= 0 && count <= valueNames().length;
+        }
+        return count == requiredValues() || count == valueNames().length;
     }
 
     /** Hoe je het schrijft, voor de foutmeldingen: {@code goto(10, 64, -20)}. */
@@ -388,6 +436,7 @@ public enum Op {
             case AIM -> "aim(10, 64, -20) or aim()";
             case ORDER -> "order(\"Guard 1\", \"attack\") or order(\"Guard 1\", \"attack\", 10, 64, -20)";
             case PLACE, PLACE_UP, PLACE_DOWN -> code + "() or " + code + "(\"cobblestone\")";
+            case TAKE, PUT -> code + "(), " + code + "(\"iron_ingot\") or " + code + "(\"iron_ingot\", 8)";
             default -> code + "()";
         };
     }
@@ -408,12 +457,27 @@ public enum Op {
             case HIT -> kind == ProgramKind.TRAINING_END;
             // Een Training End-blok doet alleen iets bij een treffer; een RC Car alleen wat jij start.
             case EVERY -> kind != ProgramKind.TRAINING_END && kind != ProgramKind.CAR;
-            case STARTED, FORWARD, BACK, TURN_LEFT, TURN_RIGHT, STOP -> kind.onBot() || kind == ProgramKind.CAR;
-            case ORDERED, HEARD, SPOTTED, BODY_SEEN, GOTO, CHARGE, WRITE, AIM, SEND -> kind.onBot();
+            // Hoofdstuk 113: een RC Car krijgt zijn opdrachten van een Storage Interface (when ordered("fetch"):).
+            case STARTED, FORWARD, BACK, TURN_LEFT, TURN_RIGHT, STOP, ORDERED -> kind.onBot() || kind == ProgramKind.CAR;
+            case HEARD, SPOTTED, BODY_SEEN, GOTO, CHARGE, WRITE, AIM, SEND -> kind.onBot();
             case UP, DOWN -> kind == ProgramKind.DRONE;
-            case MINE, MINE_UP, MINE_DOWN, PLACE, PLACE_UP, PLACE_DOWN, COLLECT, UNLOAD -> kind == ProgramKind.CAR;
+            case MINE, MINE_UP, MINE_DOWN, PLACE, PLACE_UP, PLACE_DOWN, COLLECT, UNLOAD, ARM_UP, ARM_DOWN, TAKE, PUT, CHECK ->
+                    kind == ProgramKind.CAR;
             // Wat via je server gaat (relais, het logboek, het alarm): een RC Car heeft geen server.
             case ON, OFF, TOGGLE, PULSE, ALARM, LOG -> kind != ProgramKind.CAR;
+            default -> true;
+        };
+    }
+
+    /**
+     * Is dit woord in elke soort programma bezet (je mag er geen def of naam zo noemen)? Voor bijna alles: ja, zo was het
+     * altijd. De woorden van hoofdstuk 113 ({@code take}, {@code put}, {@code check}, {@code arm_up}, {@code arm_down})
+     * zijn alleen bezet in het programma van een RC Car: het zijn gewone woorden, en een serverdiagram met
+     * {@code def check():} van vóór deze update moet blijven werken.
+     */
+    public boolean reservedIn(@Nullable ProgramKind kind) {
+        return switch (this) {
+            case TAKE, PUT, CHECK, ARM_UP, ARM_DOWN -> kind == ProgramKind.CAR;
             default -> true;
         };
     }

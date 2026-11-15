@@ -2066,6 +2066,20 @@ public final class ImtConfig {
         /** Zo ver rond zichzelf (blokken) raapt hij op met collect(). */
         @Tunable(value = "How far around itself an RC Car picks up items with collect() (blocks)", min = 0.5, max = 16)
         public static float COLLECT_RANGE = 2.5f;
+        /** Hoofdstuk 113: mag een RC Car kisten openen (take, put, check en "in chest()")? */
+        @Tunable("May RC Cars open chests (take(), put(), check() and \"in chest()\")? Set this to false on a server where cars "
+                + "must stay out of storage: they then only mine, build and drive.")
+        public static boolean MAY_USE_CHESTS = true;
+        /** Stroom voor één keer nemen uit of leggen in een kist. */
+        @Tunable(value = "Energy an RC Car uses for one take() or put() at a chest", max = 100_000, energy = true)
+        public static float CHEST_COST = 5.0f;
+        /** Stroom om de arm één blok omhoog of omlaag te doen. */
+        @Tunable(value = "Energy an RC Car uses to move its arm one block up or down", max = 100_000, energy = true)
+        public static float ARM_COST = 5.0f;
+        /** Hoeveel stroom (FE per tick) een Charging Pad in de energiecel van de auto erop laadt. */
+        @Tunable(value = "Grid energy per tick a Charging Pad puts into the Energy Cell of the RC Car that stands on it",
+                max = 100_000, energy = true)
+        public static float PAD_RATE = 50.0f;
     }
 
     // =============================================================================================== Raven

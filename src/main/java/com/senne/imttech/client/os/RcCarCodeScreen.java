@@ -184,6 +184,10 @@ public class RcCarCodeScreen extends Screen {
         lines.add(op(Op.MINE));
         lines.add(op(Op.MINE_UP));
         lines.add(op(Op.MINE_DOWN));
+        // Hoofdstuk 113: de arm (wat de auto vóór zich doet, doet hij op die hoogte).
+        lines.add(header("ARM"));
+        lines.add(op(Op.ARM_UP));
+        lines.add(op(Op.ARM_DOWN));
         lines.add(header("BUILD"));
         lines.add(new HelpLine("place()", "place()", Op.PLACE.help(), 0x9ED8FF));
         lines.add(new HelpLine("place_up()", "place_up()", Op.PLACE_UP.help(), 0x9ED8FF));
@@ -191,6 +195,19 @@ public class RcCarCodeScreen extends Screen {
         lines.add(header("TRUNK"));
         lines.add(op(Op.COLLECT));
         lines.add(op(Op.UNLOAD));
+        // Hoofdstuk 113: kisten, en de bestellingen van een Storage Interface.
+        lines.add(header("CHESTS"));
+        lines.add(new HelpLine("take(\"...\", 8)", "take(\"iron_ingot\", 8)", Op.TAKE.help(), 0x9ED8FF));
+        lines.add(new HelpLine("put(\"...\", 8)", "put(\"iron_ingot\", 8)", Op.PUT.help(), 0x9ED8FF));
+        lines.add(op(Op.CHECK));
+        lines.add(new HelpLine("if ... in chest():", "if item(\"iron_ingot\") in chest():\n    ",
+                "Is that item in the chest in front of the car (at the height of its arm)? in trunk() looks in its own trunk",
+                0xFF79C6));
+        lines.add(header("STORAGE INTERFACE"));
+        lines.add(new HelpLine("when ordered(\"fetch\"):", "when ordered(\"fetch\"):\n    ",
+                "Someone ordered an item at the Storage Interface of this car: order.item, order.count, order.left", HudStyle.CYAN));
+        lines.add(new HelpLine("when ordered(\"store\"):", "when ordered(\"store\"):\n    ",
+                "Someone put items into the Storage Interface to store them: take them there, and put them away", HudStyle.CYAN));
         lines.add(header("REPEAT AND CHECK"));
         lines.add(new HelpLine("for i in range(3):", "for i in range(3):\n    ", Op.FOR.help() + ". i is 0, 1, 2", 0xFF79C6));
         lines.add(new HelpLine("while ...:", "while car.battery > 10:\n    ", Op.WHILE.help(), 0xFF79C6));
@@ -200,7 +217,9 @@ public class RcCarCodeScreen extends Screen {
         lines.add(header("THE CAR KNOWS"));
         for (Expr.Function function : Expr.Function.values()) {
             if (function.allowedIn(ProgramKind.CAR)) {
-                lines.add(new HelpLine(function.code() + "()", function.code() + "()", function.help(), 0xF1E87C));
+                // item("..."), chest.count("...") en trunk.count("...") (hoofdstuk 113) nemen de naam van een item.
+                String call = function.code() + (function.takesItem() ? "(\"iron_ingot\")" : "()");
+                lines.add(new HelpLine(function.code() + (function.takesItem() ? "(\"...\")" : "()"), call, function.help(), 0xF1E87C));
             }
         }
         for (Expr.Variable variable : Expr.Variable.values()) {

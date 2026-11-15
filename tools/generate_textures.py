@@ -4386,6 +4386,16 @@ def rc_car_textures():
         px(tex, [(x + 1, y + 1), (x + 2, y + 1), (x + 1, y + 2), (x + 2, y + 2)], hub)
         px(tex, [(x, y), (x + 3, y), (x, y + 3), (x + 3, y + 3)], CLEAR)        # de hoekjes weg: een rond wiel
 
+    # De mast van de arm (2 x 16 x 2, hoofdstuk 113): donker staal met gele ringen, zoals een hefmast. Je ziet hem alleen
+    # als de arm omhoog staat: dan rekt het model hem uit tot de hoogte van de boor (zie RcCarModel).
+    mast = box_regions(0, 40, 2, 16, 2)
+    paint(mast, chassis, top=chassis_hi, bottom=chassis_dark)
+    for name in ("east", "front", "west", "back"):
+        x, y, w, h = mast[name]
+        for yy in range(y + 3, y + h, 4):
+            for xx in range(x, x + w):
+                tex.putpixel((xx, yy), yellow)
+
     # De boor: vier trapjes metaal, met schuine donkere strepen (de groef). Elke boorkop heeft zijn eigen kleur (kleur,
     # licht, donker), dus de auto heeft vier texturen: rc_car.png is de ijzeren kop van een nieuwe auto.
     heads = {

@@ -138,6 +138,12 @@ public class RcCarScreen extends Screen {
         step("Mine", "mine", padX, listY() + 64, third);
         step("Up", "mine_up", padX + third + 4, listY() + 64, third);
         step("Down", "mine_down", padX + 2 * (third + 4), listY() + 64, third);
+        // De arm (hoofdstuk 113): één blok omhoog of omlaag per klik, rechts op de regel van de boorkop.
+        int armX = left + PANEL_W - MARGIN - 44;
+        stepButtons.add(addRenderableWidget(Button.builder(Component.literal("\u25B2"), b -> send(RcCarActionPayload.Op.STEP, "arm_up"))
+                .bounds(armX, top + 58, 20, 16).build()));
+        stepButtons.add(addRenderableWidget(Button.builder(Component.literal("\u25BC"), b -> send(RcCarActionPayload.Op.STEP, "arm_down"))
+                .bounds(armX + 24, top + 58, 20, 16).build()));
 
         // De naam.
         nameBox = addRenderableWidget(new EditBox(font, left + VALUE_X, footerY() - 24, 130, 18, Component.literal("Name")));
@@ -298,7 +304,9 @@ public class RcCarScreen extends Screen {
             state = "NO SIGNAL";
             stateColour = HudStyle.RED;
         } else if (!job.isEmpty()) {
-            state = job.equals(CarBrain.MAIN) ? "RUNNING" : job.equals(CarBrain.MANUAL) ? "DRIVING" : "RUNNING " + job;
+            // Hoofdstuk 113: een bestelling van zijn Storage Interface.
+            state = job.equals(CarBrain.MAIN) ? "RUNNING" : job.equals(CarBrain.MANUAL) ? "DRIVING"
+                    : job.equals(CarBrain.FETCH) ? "FETCHING" : job.equals(CarBrain.STORE) ? "STORING" : "RUNNING " + job;
             stateColour = HudStyle.GREEN;
         } else if (battery < 0) {
             state = "NO CELL";
@@ -347,6 +355,9 @@ public class RcCarScreen extends Screen {
         g.drawString(font, head.displayName(), left + VALUE_X, top + 62, HudStyle.argb(255, head.colour()), false);
         g.drawString(font, "speed " + Math.round(head.speed() * 100) + "%", left + VALUE_X + font.width(head.displayName()) + 8,
                 top + 62, HudStyle.argb(170, HudStyle.WHITE), false);
+        // De arm (hoofdstuk 113): hoe hoog hij staat, links van zijn twee knoppen.
+        String arm = "Arm " + car.arm() + "/" + com.senne.imttech.logic.program.Op.MAX_ARM;
+        g.drawString(font, arm, left + PANEL_W - MARGIN - 50 - font.width(arm), top + 62, HudStyle.argb(210, HudStyle.WHITE), false);
 
         // De kopjes boven de functies en de pijltjes.
         String functions = shown.size() > ROWS

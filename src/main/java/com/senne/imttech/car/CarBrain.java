@@ -19,6 +19,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -49,6 +50,9 @@ public final class CarBrain {
      */
     public static final String MAIN = "#program";
     public static final String MANUAL = "#manual";
+    /** Hoofdstuk 113: de klus van een bestelling van zijn Storage Interface: halen ({@code when ordered("fetch"):}) of opbergen. */
+    public static final String FETCH = "#fetch";
+    public static final String STORE = "#store";
 
     private final RcCarEntity car;
     private final CarMove body;
@@ -66,6 +70,30 @@ public final class CarBrain {
     /** Meldingen die zijn eigenaar al kreeg (niet elke tick dezelfde), en wanneer we dat vergeten. */
     private final Set<String> reported = new HashSet<>();
     private long reportedReset;
+    /** De bestelling van zijn Storage Interface waar hij nu mee bezig is (hoofdstuk 113), of null. */
+    private @Nullable Job order;
+
+    /**
+     * Een bestelling waar de auto mee bezig is: wat (halen of opbergen), welke soort en hoeveel, bij welke interface, en
+     * hoeveel hij er al bracht (halen) of opborg (opbergen).
+     */
+    private static final class Job {
+        final long id;
+        final com.senne.imttech.storage.StorageOrder.Kind kind;
+        final com.senne.imttech.storage.ItemKind item;
+        final int count;
+        final BlockPos station;
+        int moved;
+
+        Job(com.senne.imttech.storage.StorageOrder order, BlockPos station) {
+            this.id = order.id;
+            this.kind = order.kind;
+            this.item = order.item;
+            this.count = order.count;
+            this.station = station.immutable();
+            this.moved = order.moved;
+        }
+    }
 
     public CarBrain(RcCarEntity car, CarMove body) {
         this.car = car;
@@ -210,11 +238,120 @@ public final class CarBrain {
 
     /** Alles stopt (de knop Stop, een nieuw programma, oppakken). */
     public void stop() {
+        stop("the car was stopped");
+    }
+
+    /** Zoals {@link #stop()}; {@code why} leest wie iets bestelde bij een Storage Interface, als die bestelling niet af is. */
+    private void stop(String why) {
         run = null;
         pending.clear();
         job = "";
         stopRequested = false;
         body.stop();
+        endOrder(why);
+    }
+
+    // ================================================================ Bestellingen (hoofdstuk 113)
+
+    /** Heeft zijn programma {@code when ordered("fetch"):} (of "store")? Alleen dan kan hij zo'n bestelling aan. */
+    public boolean handles(String kind) {
+        if (program == null) {
+            return false;
+        }
+        for (LogicGraph.Node node : program.graph().nodes()) {
+            if (node.op == Op.ORDERED && node.text.equals(kind)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Zijn Storage Interface geeft hem een bestelling: elke {@code when ordered("fetch"):} (of "store") van zijn programma
+     * loopt, na elkaar. Hij werkt namens wie bestelde. Geeft false als hij al bezig is of dat stuk programma niet heeft.
+     */
+    public boolean startOrder(com.senne.imttech.storage.StorageInterfaceBlockEntity station, com.senne.imttech.storage.StorageOrder order) {
+        if (busy() || program == null) {
+            return false;
+        }
+        List<LogicGraph.Node> nodes = new ArrayList<>(program.graph().nodes());
+        nodes.sort(java.util.Comparator.comparingInt(node -> node.id));
+        for (LogicGraph.Node node : nodes) {
+            if (node.op == Op.ORDERED && node.text.equals(order.kind.code())) {
+                pending.add(node.next);
+            }
+        }
+        if (pending.isEmpty()) {
+            return false;
+        }
+        begin(order.kind == com.senne.imttech.storage.StorageOrder.Kind.STORE ? STORE : FETCH, null);
+        car.setDriver(order.by, order.byName);
+        this.order = new Job(order, station.getBlockPos());
+        return true;
+    }
+
+    /** Het nummer van de bestelling waar hij mee bezig is, of 0. */
+    public long orderId() {
+        return order == null ? 0 : order.id;
+    }
+
+    /** Hoeveel hij voor die bestelling al bracht of opborg. */
+    public int orderMoved() {
+        return order == null ? 0 : order.moved;
+    }
+
+    /** Hij legde iets in de afhaalvakjes van zijn Storage Interface: bij een bestelling "fetch" van die soort telt dat. */
+    public void orderDelivered(ItemStack stack, int count) {
+        if (order != null && order.kind == com.senne.imttech.storage.StorageOrder.Kind.FETCH && order.item.is(stack)) {
+            order.moved += count;
+        }
+    }
+
+    /** Hij legde iets in een kist: bij een bestelling "store" van die soort telt dat als opgeborgen. */
+    public void orderStored(ItemStack stack, int count) {
+        if (order != null && order.kind == com.senne.imttech.storage.StorageOrder.Kind.STORE && order.item.is(stack)) {
+            order.moved += count;
+        }
+    }
+
+    /**
+     * Zoekt de auto voor zijn bestelling precies één soort (een betoverd boek, een drankje)? Dan is dit die soort, als
+     * {@code name} de naam van het bestelde item is; anders null (dan telt alleen de naam).
+     */
+    public @Nullable ItemStack orderVariant(String name) {
+        return order != null && !name.isEmpty() && (order.item.code().equals(name) || CarWork.isItem(order.item.stack(1), name))
+                ? order.item.stack(1) : null;
+    }
+
+    /** Hoeveel er voor zijn bestelling nog te doen is ({@code order.left}). */
+    private int orderLeft() {
+        if (order == null) {
+            return 0;
+        }
+        int done = order.moved;
+        if (order.kind == com.senne.imttech.storage.StorageOrder.Kind.FETCH) {
+            done += CarWork.countInTrunk(car.trunk(), "", order.item.stack(1)); // wat al in zijn kofferbak ligt, hoeft hij niet meer te zoeken
+        }
+        return Math.max(0, order.count - done);
+    }
+
+    /** De dichtstbijzijnde kist waar zijn Storage Interface het bestelde item weet ({@code order.x}...), of null. */
+    private com.senne.imttech.storage.StorageInterfaceBlockEntity.@Nullable Place orderPlace() {
+        if (order == null || !(car.level() instanceof ServerLevel level) || !level.isLoaded(order.station)
+                || !(level.getBlockEntity(order.station) instanceof com.senne.imttech.storage.StorageInterfaceBlockEntity station)) {
+            return null;
+        }
+        return station.nearest(level, order.item, body.cell());
+    }
+
+    /** De bestelling is voorbij (af, gestopt, cel leeg): zijn Storage Interface hoort hoeveel hij bracht of opborg. */
+    private void endOrder(String why) {
+        Job ended = order;
+        order = null;
+        if (ended != null && car.level() instanceof ServerLevel level && level.isLoaded(ended.station)
+                && level.getBlockEntity(ended.station) instanceof com.senne.imttech.storage.StorageInterfaceBlockEntity station) {
+            station.orderEnded(ended.id, car.link(), ended.moved, why);
+        }
     }
 
     // ================================================================ Elke tick
@@ -226,7 +363,7 @@ public final class CarBrain {
         if (body.takePowerOut()) {
             // Zijn cel is leeg: de klus stopt hier, en zijn eigenaar hoort het.
             String was = job;
-            stop();
+            stop(car.hasCell() ? "the Energy Cell of the car is empty" : "the car has no Energy Cell");
             car.tell(Component.translatable(car.hasCell() ? "message.imttech.rc_car.cell_empty" : "message.imttech.rc_car.no_cell",
                     car.displayName(), jobTitle(was)), false);
             return;
@@ -254,6 +391,7 @@ public final class CarBrain {
                 // De klus is af.
                 String done = job;
                 job = "";
+                endOrder("the program of the car ended before the order was complete");
                 car.tell(Component.translatable("message.imttech.rc_car.done", car.displayName(), jobTitle(done)), true);
                 return;
             }
@@ -269,13 +407,14 @@ public final class CarBrain {
             }
         }
         if (stopRequested) {
-            stop(); // stop() in zijn programma
+            stop("the program of the car said stop()");
         }
     }
 
     /** Hoe we een klus in een melding noemen: "strip_mine", of "its program". */
     private static String jobTitle(String job) {
-        return job.equals(MAIN) || job.isEmpty() ? "its program" : job.equals(MANUAL) ? "that step" : job;
+        return job.equals(MAIN) || job.isEmpty() ? "its program" : job.equals(MANUAL) ? "that step"
+                : job.equals(FETCH) ? "fetching" : job.equals(STORE) ? "storing" : job;
     }
 
     // ================================================================ Wat een blokje doet
@@ -287,10 +426,21 @@ public final class CarBrain {
                 move(run, new CarMove.Drive(node.op == Op.FORWARD ? blocks : -blocks));
             }
             case TURN_LEFT, TURN_RIGHT -> move(run, new CarMove.Turn(node.op == Op.TURN_RIGHT));
-            case MINE, MINE_UP, MINE_DOWN -> {
-                int count = (int) Math.round(Math.max(node.op.minNumber(), Math.min(node.op.maxNumber(), number(run, node))));
-                move(run, new CarMove.Mine(node.op == Op.MINE ? 0 : node.op == Op.MINE_UP ? 1 : -1, count));
+            case MINE, MINE_UP, MINE_DOWN -> move(run, new CarMove.Mine(node.op == Op.MINE ? 0 : node.op == Op.MINE_UP ? 1 : -1));
+            case ARM_UP, ARM_DOWN -> {
+                int levels = (int) Math.round(Math.max(node.op.minNumber(), Math.min(node.op.maxNumber(), number(run, node))));
+                move(run, new CarMove.Arm(node.op == Op.ARM_UP ? levels : -levels));
             }
+            case TAKE, PUT -> {
+                // take("iron_ingot", 8): de naam (of niets: alles) en het aantal (of niets: zoveel als er is).
+                List<Object> values = values(run, node);
+                String item = values.isEmpty() ? "" : Expr.text(values.getFirst());
+                int count = values.size() > 1 && values.get(1) instanceof Double number ? (int) Math.max(0, Math.round(number)) : -1;
+                if (count != 0) { // take(order.item, order.left) met niets meer te doen: dan gebeurt er niets
+                    move(run, new CarMove.Chest(node.op == Op.TAKE ? CarMove.ChestJob.TAKE : CarMove.ChestJob.PUT, item, count));
+                }
+            }
+            case CHECK -> move(run, new CarMove.Chest(CarMove.ChestJob.CHECK, "", -1));
             case PLACE, PLACE_UP, PLACE_DOWN -> {
                 List<Object> values = values(run, node);
                 String kind = values.isEmpty() ? "" : Expr.text(values.getFirst());
@@ -375,6 +525,21 @@ public final class CarBrain {
                     case "car.full" -> CarWork.full(car.trunk());
                     case "car.items" -> (double) CarWork.itemsIn(car.trunk());
                     case "car.blocks" -> (double) CarWork.blocksIn(car.trunk());
+                    // Hoofdstuk 113: zijn arm, de kist vóór hem, en de bestelling van zijn Storage Interface.
+                    case "car.arm" -> (double) car.arm();
+                    case "chest.slots" -> (double) chestNumber(0);
+                    case "chest.free" -> (double) chestNumber(1);
+                    case "chest.items" -> (double) chestNumber(2);
+                    case "order.name" -> order == null ? "" : order.kind.code();
+                    case "order.item" -> order == null ? "" : order.item.code();
+                    case "order.count" -> order == null ? 0.0 : (double) order.count;
+                    case "order.left" -> (double) orderLeft();
+                    case "order.known" -> orderPlace() != null;
+                    case "order.x", "order.y", "order.z" -> {
+                        com.senne.imttech.storage.StorageInterfaceBlockEntity.Place place = orderPlace();
+                        yield place == null ? 0.0 : (double) (variable.endsWith("x") ? place.pos().getX()
+                                : variable.endsWith("y") ? place.pos().getY() : place.pos().getZ());
+                    }
                     case "is_night" -> car.level().isNight();
                     case "is_day" -> !car.level().isNight();
                     default -> false;
@@ -392,16 +557,33 @@ public final class CarBrain {
                 return run == null ? globals.get(name) : run.machine.variable(name);
             }
 
-            /** {@code block()}, {@code block_up()}, {@code block_down()}: het blok voor, boven of onder hem. */
+            /**
+             * {@code block()}, {@code block_up()}, {@code block_down()}: het blok voor hem (op de hoogte van zijn arm,
+             * hoofdstuk 113), boven of onder hem.
+             */
             @Override
             public Object block(int direction) {
                 if (!(car.level() instanceof ServerLevel level)) {
                     return "air";
                 }
-                Direction way = direction == 0 ? body.facing() : direction > 0 ? Direction.UP : Direction.DOWN;
-                return CarWork.blockName(level, body.cell().relative(way));
+                return CarWork.blockName(level, direction == 0 ? body.front()
+                        : body.cell().relative(direction > 0 ? Direction.UP : Direction.DOWN));
+            }
+
+            /** {@code item("x") in chest()}, {@code chest.count("x")}, {@code in trunk()} en {@code trunk.count("x")} (hoofdstuk 113). */
+            @Override
+            public int count(boolean trunk, String item) {
+                if (trunk) {
+                    return CarWork.countInTrunk(car.trunk(), item, orderVariant(item));
+                }
+                return car.level() instanceof ServerLevel level ? CarWork.countInChest(level, car, item) : 0;
             }
         };
+    }
+
+    /** {@code chest.slots} (0), {@code chest.free} (1) of {@code chest.items} (2): 0 zonder kist. */
+    private int chestNumber(int which) {
+        return car.level() instanceof ServerLevel level ? CarWork.chestNumbers(level, car)[which] : 0;
     }
 
     /**

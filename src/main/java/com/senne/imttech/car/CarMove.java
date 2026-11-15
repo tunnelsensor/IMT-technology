@@ -23,12 +23,17 @@ import org.jetbrains.annotations.Nullable;
  *       één blok, of iets dat hem te lang tegenhoudt, en hij stopt: dan is {@code car.blocked} waar en gaat hij terug
  *       naar het midden van het blok waar hij was. Achteruit blijft hij dezelfde kant op kijken. Elk blok kost stroom.</li>
  *   <li><b>Turn</b> ({@code turn_left()}, {@code turn_right()}): een kwartslag, in een paar ticks.</li>
- *   <li><b>Mine</b> ({@code mine()}, {@code mine_up(2)}, {@code mine_down()}): de blokken vóór, boven of onder hem, het
- *       dichtste eerst. Hoe lang breken duurt, hangt af van zijn boorkop (met netherite zo lang als bij jou met ijzeren
- *       gereedschap, met de ijzeren kop vier keer zo lang). Valt er grind of zand in het gat,
+ *   <li><b>Mine</b> ({@code mine()}, {@code mine_up()}, {@code mine_down()}): het blok vóór hem (op de hoogte van zijn
+ *       arm), boven of onder hem. Hoe lang breken duurt, hangt af van zijn boorkop (met netherite zo lang als bij jou
+ *       met ijzeren gereedschap, met de ijzeren kop vier keer zo lang). Valt er grind of zand in het gat,
  *       dan wacht hij tot het ligt en breekt hij dat ook: na {@code mine()} is de plek dus echt vrij. Een blok dat hij
  *       niet mag of kan breken (bedrock, obsidiaan met een te zwakke kop, een beschermde zone): {@code car.blocked}.</li>
  *   <li><b>Place</b> ({@code place()}, {@code place_up()}, {@code place_down()}): een blok uit zijn kofferbak.</li>
+ *   <li><b>Arm</b> ({@code arm_up()}, {@code arm_down()}, hoofdstuk 113): zijn arm met de boor gaat een blok omhoog of
+ *       omlaag (hooguit twee blokken boven het blok vóór hem). Alles wat hij vóór zich doet (breken, plaatsen, kijken,
+ *       een kist) doet hij op die hoogte: zie {@link #front()}.</li>
+ *   <li><b>Chest</b> ({@code take()}, {@code put()}, {@code check()}, hoofdstuk 113): uit de kist vóór hem nemen, erin
+ *       leggen, of erin kijken. Dat duurt even (de arm reikt erin).</li>
  * </ul>
  * Vóór elk van die dingen wacht hij tot hij op de grond staat (na {@code mine_down()} valt hij eerst) en gaat hij precies
  * in het midden van zijn blok staan. Hij kijkt altijd recht een windrichting op ({@link #facing}): daar gaat "vooruit"
@@ -36,7 +41,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class CarMove {
     /** Wat zijn programma van zijn lijf vraagt. */
-    public sealed interface Plan permits Drive, Turn, Mine, Place {}
+    public sealed interface Plan permits Drive, Turn, Mine, Place, Arm, Chest {}
 
     /** {@code forward(n)} (blocks positief) of {@code back(n)} (negatief). */
     public record Drive(int blocks) implements Plan {}
@@ -44,10 +49,20 @@ public final class CarMove {
     /** Een kwartslag naar rechts ({@code right}) of links. */
     public record Turn(boolean right) implements Plan {}
 
+    /** Breken: {@code way} 0 = vóór hem (op de hoogte van zijn arm), 1 = boven hem, -1 = onder hem. */
+    public record Mine(int way) implements Plan {}
+
+    /** De arm zoveel blokken omhoog ({@code levels} positief) of omlaag (negatief). */
+    public record Arm(int levels) implements Plan {}
+
+    /** Wat hij bij een kist doet. */
+    public enum ChestJob { TAKE, PUT, CHECK }
+
     /**
-     * Breken: {@code way} 0 = vóór hem, 1 = boven hem, -1 = onder hem; {@code count} blokken ver (het dichtste eerst).
+     * Bij de kist vóór hem (op de hoogte van zijn arm): nemen, leggen of kijken. {@code item} is de naam van het item
+     * ("iron_ingot"), of leeg voor alles; {@code count} hoeveel, of -1 voor zoveel als er is.
      */
-    public record Mine(int way, int count) implements Plan {}
+    public record Chest(ChestJob job, String item, int count) implements Plan {}
 
     /**
      * Plaatsen: {@code way} 0 = vóór hem, 1 = boven hem, -1 = onder hem (dan komt hij zelf een blok hoger);
@@ -62,6 +77,9 @@ public final class CarMove {
     /** Zo lang (ticks) wachten we hooguit op grind of zand dat nog valt, en zo vaak kijken we hooguit opnieuw. */
     private static final int FALL_TICKS = 80;
     private static final int MAX_RESCANS = 64;
+    /** Zo lang (ticks) duurt het om de arm één blok te bewegen, en om iets uit een kist te nemen of erin te leggen. */
+    private static final int ARM_TICKS = 6;
+    private static final int CHEST_TICKS = 8;
 
     private final RcCarEntity car;
     private @Nullable Direction facing;
@@ -95,6 +113,8 @@ public final class CarMove {
     private int rescans;
     /** Boort hij nu (voor het model en het geluid in je spel)? */
     private boolean drilling;
+    /** De arm of een kist: zo lang (ticks) duurt dit plan nog te doen. */
+    private int waitTicks;
 
     public CarMove(RcCarEntity car) {
         this.car = car;
@@ -123,6 +143,15 @@ public final class CarMove {
      */
     public BlockPos cell() {
         return BlockPos.containing(car.getX(), car.getY() + 0.4999, car.getZ());
+    }
+
+    /**
+     * Het blok waar zijn arm bij kan (hoofdstuk 113): het blok vóór de auto, zoveel hoger als zijn arm staat (0, 1 of 2).
+     * Daar breekt hij met {@code mine()}, plaatst hij met {@code place()}, kijkt hij met {@code block()}, en daar staat
+     * de kist van {@code take()}, {@code put()}, {@code check()} en {@code in chest()}.
+     */
+    public BlockPos front() {
+        return cell().relative(facing()).above(car.arm());
     }
 
     /** Lukte zijn laatste stap, breken of plaatsen niet? ({@code car.blocked}) */
@@ -197,6 +226,8 @@ public final class CarMove {
             case Turn turn -> tickTurn();
             case Mine mine -> tickMine(level, mine);
             case Place place -> true;
+            case Arm arm -> ticks >= waitTicks;
+            case Chest chest -> ticks >= waitTicks;
         };
         return done && finish();
     }
@@ -235,11 +266,8 @@ public final class CarMove {
             }
             case Mine mine -> {
                 mineTargets.clear();
-                Direction way = way(mine.way());
-                BlockPos here = cell();
-                for (int i = 1; i <= Math.max(1, mine.count()); i++) {
-                    mineTargets.add(here.relative(way, i));
-                }
+                // Vóór hem: op de hoogte van zijn arm. Boven of onder hem: het blok tegen de auto zelf.
+                mineTargets.add(mine.way() == 0 ? front() : cell().relative(way(mine.way())));
                 mineIndex = 0;
                 mineProgress = 0;
                 mineTicks = 0;
@@ -251,6 +279,36 @@ public final class CarMove {
                 blocked = result != CarWork.Result.OK;
                 powerOut |= result == CarWork.Result.NO_POWER;
                 finished = true;
+            }
+            case Arm arm -> {
+                // Hooguit Op.MAX_ARM blokken omhoog, en niet lager dan het blok vóór hem. Elk blok kost wat stroom.
+                int to = Math.max(0, Math.min(com.senne.imttech.logic.program.Op.MAX_ARM, car.arm() + arm.levels()));
+                int moved = Math.abs(to - car.arm());
+                if (moved == 0) {
+                    blocked = true; // hij staat al helemaal boven (of beneden)
+                    finished = true;
+                } else if (!car.spend(ImtConfig.RcCar.ARM_COST * moved)) {
+                    powerOut = true;
+                    blocked = true;
+                    finished = true;
+                } else {
+                    blocked = moved < Math.abs(arm.levels()); // arm_up(2) vanaf 1: hij kwam maar één blok hoger
+                    car.setArm(to);
+                    car.playSound(com.senne.imttech.registry.ModSounds.ROBOT_STEP.get(), 0.2f, 1.2f);
+                    waitTicks = ARM_TICKS * moved;
+                }
+            }
+            case Chest chest -> {
+                CarWork.Result result = switch (chest.job()) {
+                    case TAKE -> CarWork.take(level, car, chest.item(), chest.count());
+                    case PUT -> CarWork.put(level, car, chest.item(), chest.count());
+                    case CHECK -> CarWork.check(level, car);
+                };
+                blocked = result != CarWork.Result.OK;
+                powerOut |= result == CarWork.Result.NO_POWER;
+                // Lukte het, dan duurt het even (de arm reikt in de kist); anders gaat zijn programma meteen verder.
+                finished = blocked;
+                waitTicks = CHEST_TICKS;
             }
             case null -> { }
         }

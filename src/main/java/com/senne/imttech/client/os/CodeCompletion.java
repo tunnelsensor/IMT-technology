@@ -204,10 +204,16 @@ public final class CodeCompletion {
                 boolean named = op.textArg() != Op.Arg.NONE;
                 String name = op == Op.KEYCARD ? reader : op == Op.CODEPANEL ? panel : op == Op.BUTTON ? button
                         : op == Op.LEVER ? lever : op == Op.REQUEST ? console
+                        // Hoofdstuk 113: een RC Car krijgt "fetch" en "store" van zijn Storage Interface.
+                        : op == Op.ORDERED && data.kind() == ProgramKind.CAR ? "fetch"
                         : op.textArg() == Op.Arg.TEXT ? op.textExample() : device;
                 String label = "when " + (named ? op.code() + "(...)" : op.example()) + ":";
                 String call = named ? op.code() + "(\"" + name + "\")" : op.example();
                 items.add(new Item(label, "when " + call + ":\n    ", -1, op.help(), TRIGGER));
+            }
+            if (data.kind() == ProgramKind.CAR) {
+                items.add(new Item("when ordered(\"store\"):", "when ordered(\"store\"):\n    ", -1,
+                        "Someone put items into the Storage Interface of this car to store them (order.item, order.count)", TRIGGER));
             }
         }
         // De naam is meteen geselecteerd: typen vervangt hem.
@@ -305,7 +311,8 @@ public final class CodeCompletion {
         // de aanhalingstekens, en dan komen meteen je groepen.
         for (Expr.Function function : Expr.Function.values()) {
             if (function.allowedIn(data.kind()) && function.allowedAfter(trigger)) {
-                if (function == Expr.Function.CARD_IN_GROUP) {
+                if (function == Expr.Function.CARD_IN_GROUP || function.takesItem()) {
+                    // Ook item("..."), chest.count("...") en trunk.count("...") (hoofdstuk 113): de naam van een item.
                     items.add(new Item(function.code() + "(\"...\")", function.code() + "(\"\")", function.code().length() + 2,
                             function.help(), VARIABLE));
                 } else if (function.withoutValues()) {
@@ -319,6 +326,12 @@ public final class CodeCompletion {
         }
         if (data.kind() != ProgramKind.CAR) { // een RC Car heeft geen server, dus geen apparaten (hoofdstuk 108)
             items.add(new Item("is_on(\"...\")", "is_on(\"\")", 7, "Is that device switched on right now?", VARIABLE));
+        } else {
+            // Hoofdstuk 113: ligt dat item in de kist vóór de auto, of in zijn kofferbak?
+            items.add(new Item("in chest()", "in chest()", -1,
+                    "Is that item in the chest in front of the car? Like: item(\"iron_ingot\") in chest()", KEYWORD));
+            items.add(new Item("in trunk()", "in trunk()", -1,
+                    "Is that item in the trunk of the car? Like: item(\"iron_ingot\") in trunk()", KEYWORD));
         }
         items.add(new Item("not", "not ", -1, "The opposite: not is_night", KEYWORD));
         items.add(new Item("and", "and ", -1, "Both must be true", KEYWORD));

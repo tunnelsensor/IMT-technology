@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "front": "imttech:block/storage_interface_front",
+    "side": "imttech:block/storage_interface_side",
+    "top": "imttech:block/storage_interface_top"
+  }
+}

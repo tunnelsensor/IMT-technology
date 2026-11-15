@@ -110,6 +110,18 @@ public final class RcCars {
     }
 
     /**
+     * Zoals {@link #mayControl}, maar zonder dat er iets verandert: een auto van niemand wordt hier niet van deze speler.
+     * Voor lijsten (de Storage Interface toont de auto's in de buurt die je kunt koppelen, hoofdstuk 113).
+     */
+    public static boolean wouldControl(ServerPlayer player, RcCarEntity car) {
+        if (!BaseTrust.wouldAllow(player, car)) {
+            return false;
+        }
+        UUID owner = car.owner();
+        return owner == null || owner.equals(player.getUUID()) || ownerBelongsHere(player.serverLevel(), car);
+    }
+
+    /**
      * Hoort de eigenaar van de auto bij de basis waar de auto nu staat? Dezelfde regel als BaseTrust.trustedHere, maar op
      * nummer en naam: de eigenaar hoeft niet op de server te zijn.
      */
@@ -401,9 +413,11 @@ public final class RcCars {
             case "back" -> new CarMove.Drive(-1);
             case "left" -> new CarMove.Turn(false);
             case "right" -> new CarMove.Turn(true);
-            case "mine" -> new CarMove.Mine(0, 1);
-            case "mine_up" -> new CarMove.Mine(1, 1);
-            case "mine_down" -> new CarMove.Mine(-1, 1);
+            case "mine" -> new CarMove.Mine(0);
+            case "mine_up" -> new CarMove.Mine(1);
+            case "mine_down" -> new CarMove.Mine(-1);
+            case "arm_up" -> new CarMove.Arm(1);
+            case "arm_down" -> new CarMove.Arm(-1);
             default -> null;
         };
     }

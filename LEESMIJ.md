@@ -204,7 +204,7 @@ Elk item dat meer doet dan in een recept gaan, krijgt een animatie die laat zien
   **wijs je een blok aan**, dan zie je hoe het heet. Heeft een item meer animaties, dan blader je met de
   pijltjes bovenaan. **Esc** brengt je terug naar je inventaris, met alles nog zoals het was. In je eigen
   wereld staat het spel stil terwijl je kijkt.
-- **Alles is er** (64 van de 64), per tabblad:
+- **Alles is er** (65 van de 65), per tabblad:
   - *Equipment*: de bril, het harnas (minder schade, vliegen, landen, de laser cannon), de mini-raketten, de
     drones van je arsenaal, de Illusion Jammer, de holster, de pouches en de slings, de militaire rugzakken, de
     MOLLE-pouches en de body armor.
@@ -223,8 +223,8 @@ Elk item dat meer doet dan in een recept gaan, krijgt een animatie die laat zien
     het codepaneel, autorisatiecodes en de Auth Console, de netwerkknop en -hendel, laserpoorten, de laserbrug, de
     schildkoepel, camera's en de schermmuur, torentjes, de Bypass Kit (lezers en panelen hacken, laserdraden
     knippen en zakkenrollen), de Hacking Laptop en de I.M.T Phone.
-  - *Robots*: een guard robot bouwen en programmeren, modules solderen en wat ze doen, security drones, de RC Car en
-    training.
+  - *Robots*: een guard robot bouwen en programmeren, modules solderen en wat ze doen, security drones, de RC Car, het
+    opslagsysteem (de Storage Interface, de Chest Sensor en de Charging Pad) en training.
   - *Datacenter*: serverracks en warmte en fans.
   In de animaties lopen ook wezens rond: jij (met je eigen skin, je holster en pouches, of in het harnas met
   blauwe straalvlammen onder je laarzen), een vreemde in je basis, een husk, een raiddrone, je eigen robots en
@@ -1976,7 +1976,8 @@ shulkerdoos (geen dozen in dozen).
 
 **Zijn scherm.** **Sneak + rechtsklik** op de auto met een lege hand (alleen jij; een ander alleen in een basis waar
 jullie allebei bij horen). Bovenaan wat hij doet (READY, RUNNING strip_mine, NO CELL...), zijn batterij, zijn kofferbak en zijn
-boorkop. Links zijn **functies**: klik er een aan en hij voert haar uit **vanaf de plek waar hij staat**. Rechts rijd
+boorkop, met ernaast de stand van zijn **arm** (Arm 0/2) en twee knopjes om hem een blok hoger of lager te zetten.
+Links zijn **functies**: klik er een aan en hij voert haar uit **vanaf de plek waar hij staat**. Rechts rijd
 je hem met de hand, één stap per klik (Forward, Back, Left, Right, Mine, Up, Down): zo zet je hem goed voor je een
 functie start. Onderaan: **Start** (zijn hoofdprogramma), **Stop**, **Program** (de code), **Cell out**, **Pick up**,
 en zijn naam. Rijdt hij van je weg terwijl het scherm open staat, dan blijven de knoppen werken tot 64 blokken ver;
@@ -1996,25 +1997,35 @@ def strip_mine():
 ```
 
 Dat is een gang van 2 hoog en 20 lang: breek voor je, stap naar voor, breek boven je. En een kamer van 5 breed, 3 hoog
-en 5 diep (zet de auto in een hoek, met de muur links van hem):
+en 5 diep. Zet de auto vóór de kamer (waar de deur komt): de kamer komt voor hem en rechts van hem, en hij eindigt weer
+waar hij begon. De functie `dig` breekt drie blokken hoog met zijn **arm** (zie hieronder):
 
 ```
+def dig():
+    mine()
+    arm_up()
+    mine()
+    arm_up()
+    mine()
+    arm_down(2)
+
 def room():
+    dig()
+    forward(1)
     for row in range(5):
-        mine_up(2)
         for step in range(4):
-            mine()
+            dig()
             forward(1)
-            mine_up(2)
         back(4)
         if row < 4:
             turn_right()
-            mine()
+            dig()
             forward(1)
             turn_left()
     turn_left()
     forward(4)
     turn_right()
+    back(1)
 ```
 
 - **Elke `def naam():`** (zonder iets tussen de haakjes) is een **functie**: een knop op zijn scherm en op de RC
@@ -2023,9 +2034,30 @@ def room():
 - **Rijden**: `forward(3)`, `back(1)` (hij blijft dezelfde kant op kijken), `turn_left()`, `turn_right()`. Hij rijdt
   één blok op of af. Een muur, of een gat van meer dan één blok: hij stopt, en `car.blocked` is waar.
 - **Breken**: `mine()` (het blok voor hem), `mine_up()` (boven hem), `mine_down()` (onder hem: hij zakt in het gat).
-  Met een getal tot 3: `mine_up(2)` breekt de twee blokken boven hem (een gang van 3 hoog). Het heet `mine` omdat
-  `break` al het woord is om uit een lus te stappen. Valt er **grind of zand** in het gat, dan wacht hij tot het ligt
-  en breekt hij dat ook: na `mine()` is de plek echt vrij.
+  Het heet `mine` omdat `break` al het woord is om uit een lus te stappen. Valt er **grind of zand** in het gat, dan
+  wacht hij tot het ligt en breekt hij dat ook: na `mine()` is de plek echt vrij.
+- **De arm** (sinds versie 2.15): de boor zit op een arm die je programmeert. `arm_up()` zet hem een blok hoger,
+  `arm_down()` een blok lager; met een getal twee tegelijk (`arm_down(2)`). Hij komt **twee blokken** boven het blok
+  voor de auto, dus drie blokken hoog. Alles wat de auto **voor zich** doet, doet hij op de hoogte van zijn arm:
+  `mine()`, `place()`, `block()`, `unload()` en de kisten hieronder. Je ziet de arm langs een mast omhoog schuiven.
+  `car.arm` zegt hoe hoog hij staat (0, 1 of 2); wil je hoger dan 2 of lager dan 0, dan is `car.blocked` waar. De arm
+  een blok bewegen kost 5 FE. **`mine(2)` en `mine_up(2)` bestaan niet meer** (jouw keuze: de arm is er nu voor alles
+  wat verder dan één blok reikt): schrijf `arm_up()` en dan `mine()`. De editor zegt het als je het oude nog typt. Een
+  auto die het oude nog in zijn programma heeft, doet niets tot je die regel aanpast: op zijn scherm staat welke.
+- **Kisten** (sinds versie 2.15; samen met de Storage Interface hieronder is dat je opslagsysteem): de kist, de ton, de
+  trechter of de shulkerdoos **voor zijn arm**.
+  - `take("iron_ingot", 8)` neemt er 8 uit in zijn kofferbak; `take("iron_ingot")` alles van die soort; `take()` alles.
+  - `put("iron_ingot", 8)` legt er 8 uit zijn kofferbak in; `put("iron_ingot")` alles van die soort; `put()` alles.
+  - `if item("iron_ingot") in chest():` kijkt of het erin ligt (zo vroeg je het). `in trunk()` kijkt in zijn eigen
+    kofferbak. `chest.count("iron_ingot")` en `trunk.count("iron_ingot")` tellen.
+  - `chest.slots`, `chest.free` (lege vakjes) en `chest.items` (hoeveel voorwerpen): `chest.slots` is 0 als daar geen
+    kist staat.
+  - `check()` kijkt alleen: zijn Storage Interface onthoudt dan wat erin zit. Dat gebeurt ook bij elk ander woord
+    hierboven.
+  - De naam is die van Minecraft (`"iron_ingot"`; met F3+H zie je hem onder elk voorwerp), hoofdletters en spaties mogen
+    (`"Iron Ingot"`), en van een mod met zijn voorvoegsel (`"imttech:polymer"`). Lukt het niet (geen kist, niets van
+    die soort, de kist of de kofferbak vol), dan is `car.blocked` waar en staat op zijn scherm waarom. Nemen of leggen
+    kost 5 FE.
 - **Plaatsen**: `place()` (voor hem), `place_up()` (boven hem), `place_down()` (onder hem: hij komt zelf een blok
   hoger te staan, zoals jij een pilaar bouwt). Hij neemt het eerste blok uit zijn kofferbak, of het soort dat je
   zegt: `place("cobblestone")`. Alleen gewone blokken van één blok, op een vrije plek: geen kist, oven, bed,
@@ -2035,7 +2067,7 @@ def room():
 - **Kijken**: `block()`, `block_up()` en `block_down()` zeggen welk blok er zit: `"stone"`, `"diamond_ore"`,
   `"air"`, `"water"`. Bijvoorbeeld `if block() == "diamond_ore":`.
 - **Wat hij weet**: `car.battery` (0 tot 100), `car.blocked`, `car.full` (de kofferbak is vol), `car.items`,
-  `car.blocks` (hoeveel blokken hij nog kan plaatsen), `car.x`, `car.y`, `car.z`, `car.facing`, `car.name`.
+  `car.blocks` (hoeveel blokken hij nog kan plaatsen), `car.arm`, `car.x`, `car.y`, `car.z`, `car.facing`, `car.name`.
 - **Verder**: `say("...")` (hij zegt het in je chat), `wait(2)`, `stop()` (zijn programma stopt hier), en alles van de
   taal: `for i in range(3):`, `while ...:`, `if ...:` met `else:`, `break`, en namen (`count = 0`).
 
@@ -2048,8 +2080,9 @@ De koppeling blijft als je de auto oppakt en ergens anders neerzet.
 **Goed om te weten.**
 - Hij doet **één klus tegelijk**: is hij bezig, druk dan eerst op Stop.
 - Hij breekt en plaatst met de rechten van **wie de klus startte**. In een **beschermde zone** dus alleen als die
-  speler daar mag bouwen (en uit zo'n zone raapt hij ook niets op); de spawnbescherming van een server geldt ook voor
-  hem. Een gebarsten blok blijft gebarsten, slopen in een Biebia's Industries Tower telt voor wie de klus startte, en
+  speler daar mag bouwen (en uit zo'n zone raapt hij ook niets op, en hij opent er geen kisten: hij neemt er niets
+  uit, legt er niets in en ziet niet wat erin zit); de spawnbescherming van een server geldt ook voor
+  hem. Een kist met een slot erop opent hij nooit. Een gebarsten blok blijft gebarsten, slopen in een Biebia's Industries Tower telt voor wie de klus startte, en
   bewakers horen hem boren.
 - **Andermans auto** bestuur je alleen in een basis waar jullie allebei bij horen. Staat hij in jouw beschermde zone,
   dan mag je hem stilzetten en oppakken (**sneak + slaan**): laat je auto dus niet achter in de zone van een ander.
@@ -2060,7 +2093,180 @@ De koppeling blijft als je de auto oppakt en ergens anders neerzet.
 - De getallen staan in `config/imttech.toml` onder `[rcCar]`: `speed`, `mineSpeed`, de snelheid van elke boorkop
   (`drillSpeedIron`, `drillSpeedSteel`, `drillSpeedTitanium`, `drillSpeedNetherite`), `moveCost`, `mineCost`,
   `placeCost`, `controlRange`, `collectRange`, en `mayChangeBlocks` (zet dat op `false` op een server waar spelers zelf
-  moeten mijnen: de auto's rijden dan alleen nog).
+  moeten mijnen: de auto's rijden dan alleen nog). Sinds versie 2.15 ook `armCost`, `chestCost`, `padRate` (de Charging
+  Pad) en `mayUseChests` (zet dat op `false` en geen auto opent nog een kist).
+
+### Het opslagsysteem: de Storage Interface, Chest Sensors en de Charging Pad (sinds 14 november)
+Je bestelt een voorwerp op een scherm, en een **RC Car** haalt het uit je kistenkamer: met het programma dat **jij**
+schreef. Elke stap en elke kist staat in je code. Dat is moeilijker dan een kant-en-klaar systeem, maar wie goed
+programmeert, bouwt er iets echt slims mee. Het kan ook andersom: spullen inleveren, en de auto bergt ze op.
+
+**Wat je nodig hebt.**
+- Een **Storage Interface**: ijzer, een glazen ruit en ijzer bovenaan; een Computer Chip, een kist en een Computer Chip in
+  het midden; ijzer, een netwerkkabel en ijzer onderaan. Hij heeft geen stroom nodig, onthoudt wie hem neerzette en
+  neemt de naam van het item over (een aambeeld).
+- Een **RC Car** met een programma (zie hierboven), die je aan de interface koppelt.
+- **Chest Sensors** als je wilt (vier per keer: redstone, een glazen ruit en redstone, met een netwerkkabel eronder).
+- Een **Charging Pad** als je wilt: ijzer, een zware drukplaat (de ijzeren) en ijzer, met eronder een Power Cable, een blok
+  redstone en een Power Cable.
+
+Alles staat op het tabblad **Robots**.
+
+**Wat de interface weet.** Hij toont alleen wat hij **weet**, op twee manieren:
+1. **Een Chest Sensor ziet het live.** Rechtsklik met de sensor op een kist, ton, trechter of shulkerdoos (op elke
+   kant; je hoeft niet te sneaken): hij zit erop. De sensor heeft **geen stroom** nodig, maar moet in hetzelfde
+   **netwerk** zitten als de interface: met een **netwerkkabel**, of draadloos aan een **Router** (zet je hem neer bij
+   een router van jou met een vrije plek, dan verbindt hij vanzelf). Een router heeft tien plekken: verbind een rij
+   sensors onderling met een netwerkkabel en de hele rij kost maar één plek. Rechtsklik op een sensor en hij zegt wat
+   hij ziet en welke interface dat leest. Haal je de kist weg, dan valt de sensor eraf.
+2. **Een auto keek erin.** Elke keer dat een gekoppelde auto in een kist kijkt (`check()`, `take`, `put`, `in chest()`,
+   `chest.count(...)`), onthoudt de interface wat erin zit: tot hij er weer in kijkt. Hij onthoudt zo 128 kisten.
+
+Zit er een sensor op een kist, dan telt alleen de sensor. Een dubbele kist telt één keer. Een nieuwe interface weet nog
+niets: laat je auto eerst een rondje `check()` doen, of plak sensors.
+
+**Het scherm** (rechtsklik; alleen wie de interface neerzette of wie vertrouwd is in die basis, want het toont alles wat
+er in je kisten ligt). Drie tabbladen rechtsboven:
+- **Order**: links wat er in je opslag zit, met een zoekvak. Klik een voorwerp aan: rechts staat hoeveel er ligt en in
+  hoeveel kisten. Kies het aantal met **−** en **+** (met shift: 16 tegelijk; het muiswiel werkt ook) en druk op
+  **Order**. In één keer bestel je hooguit wat er in de negen afhaalvakjes past (negen stapels).
+- **Store**: negen vakjes om spullen in te leggen (shift-klik werkt hier ook), en de knop **Store**. Elke soort wordt
+  één bestelling.
+- **Cars**: de auto's van jou binnen 32 blokken, elk met **Link** of **Unlink**. Het bolletje is grijs als hij nog niet
+  gekoppeld is, groen als hij klaar staat, blauw als hij bezig is en oranje als er iets is (geen cel, weg). De letters **F** en **S** branden als zijn
+  programma `when ordered("fetch"):` en `when ordered("store"):` heeft. Hooguit acht auto's per interface, en een auto
+  werkt voor één interface.
+
+Op elk tabblad staan onderaan de **PICK-UP**-vakjes (wat een auto bracht: daar pak je het) en je inventaris, en rechts
+de lijst **ORDERS**: `waiting`, hoe ver hij is (`3/12`), `done`, of in oranje of rood als het niet (helemaal) lukte.
+Houd je muis op een bestelling en je leest welke auto ermee bezig is en waarom hij wacht of wat er misging. Het kruisje
+haalt een bestelling weg die wacht of klaar is; een lopende stop je op de auto zelf. Wie bestelde, leest ook boven zijn
+werkbalk hoe het afliep.
+
+**Het programma van de auto.** De interface start het stuk `when ordered("fetch"):` (halen) of `when ordered("store"):`
+(opbergen) van een vrije gekoppelde auto. In dat stuk weet de auto:
+- `order.item` (wat, als tekst: `"iron_ingot"`), `order.count` (hoeveel) en `order.left`: hoeveel hij er nog moet
+  vinden (halen) of nog moet opbergen.
+- `order.known`: weet de interface een kist waar dit ligt? Dan zijn `order.x`, `order.y` en `order.z` de plek van de
+  dichtstbijzijnde. Je mag ze gebruiken, maar het hoeft niet: je kunt ook gewoon elke kist langsgaan.
+- De **interface zelf is voor de auto een kist**: staat hij ervoor, dan legt `put()` zijn kofferbak in de
+  PICK-UP-vakjes (bij "fetch" telt dat voor de bestelling), en neemt `take(order.item, order.count)` uit de vakjes van
+  Store. Bij "store" telt wat hij daarna in een kist legt.
+
+Loopt het programma af, dan is de bestelling `done` als alles gebracht of opgeborgen is, en anders staat erbij hoeveel
+wel. De auto werkt **namens wie bestelde** (in een beschermde zone opent hij alleen kisten als die speler daar mag
+bouwen). Elke auto doet één bestelling tegelijk; met meer auto's lopen er meer tegelijk. Stopt een auto halverwege
+(de knop Stop, een lege cel, een EMP), dan eindigt de bestelling daar: in de lijst staat hoeveel hij bracht en waarom hij
+stopte, en wat hij al bij zich had ligt nog in zijn kofferbak. Verdwijnt de auto (hij rijdt een stuk wereld in dat niet
+geladen is), dan wacht de bestelling op een volgende auto, en wat al gebracht was telt nog.
+
+**Een voorbeeld om over te typen** (het staat ook in How it works, **W** op de interface). De auto staat **thuis** met
+zijn neus naar de interface. Rechts van hem loopt een gang, met links van die gang vier stapels kisten van drie hoog
+(de eerste stapel naast de interface). Heb je er meer of minder, verander dan `chests = 4`.
+
+```
+chests = 4
+
+when ordered("fetch"):
+    turn_right()
+    steps = 0
+    while steps < chests and order.left > 0:
+        forward(1)
+        steps = steps + 1
+        turn_left()
+        look()
+        turn_right()
+    go_home(steps)
+    if car.items > 0:
+        put()
+
+when ordered("store"):
+    take(order.item, order.count)
+    turn_right()
+    steps = 0
+    while steps < chests and trunk.count(order.item) > 0:
+        forward(1)
+        steps = steps + 1
+        turn_left()
+        stow()
+        turn_right()
+    go_home(steps)
+    if car.items > 0:
+        put()
+
+def go_home(steps: int):
+    if steps > 0:
+        back(steps)
+    turn_left()
+
+def look():
+    grab()
+    arm_up()
+    grab()
+    arm_up()
+    grab()
+    arm_down(2)
+
+def grab():
+    if item(order.item) in chest():
+        take(order.item, order.left)
+
+def stow():
+    drop()
+    arm_up()
+    drop()
+    arm_up()
+    drop()
+    arm_down(2)
+
+def drop():
+    if trunk.count(order.item) > 0:
+        if item(order.item) in chest() or (not order.known and chest.items == 0):
+            put(order.item)
+```
+
+Halen: hij rijdt de gang in, kijkt bij elke stapel in de drie kisten (`look`), neemt wat hij nog mist, en stopt zodra
+hij genoeg heeft. Thuis legt hij het in de interface. Opbergen: hij legt het bij dezelfde soort, of, als die nog nergens
+ligt, in de eerste lege kist. Wat hij niet kwijt kan (alles vol), brengt hij terug naar de PICK-UP-vakjes.
+
+Zonder sensors weet een nieuwe interface nog niet wat er in je kisten ligt, en dan kun je niets bestellen. Zet deze
+functie erbij en je hebt een knop **scan** op het scherm van de auto: hij rijdt de gang af, kijkt in elke kist, en
+daarna weet de interface alles:
+
+```
+def scan():
+    turn_right()
+    for i in range(chests):
+        forward(1)
+        turn_left()
+        check()
+        arm_up()
+        check()
+        arm_up()
+        check()
+        arm_down(2)
+        turn_right()
+    back(chests)
+    turn_left()
+```
+
+Dit is maar één manier: met `order.x` rijd je recht naar de goede kist, en met twee auto's verdeel je de gang.
+
+**De Charging Pad.** Een platte plaat op de vloer die aan je **stroomnet** hangt (een Power Cable of een generator
+ernaast). Staat er een RC Car op, dan laadt hij zijn Energy Cell met 50 FE per tick, en gloeien zijn gele strepen. Zet
+hem op de plek waar je auto thuis staat: dan is zijn cel nooit leeg.
+
+**Goed om te weten.**
+- De interface en de sensors zijn **netwerkblokken**: een netwerkkabel sluit erop aan en ze kunnen aan een router. Staat
+  er ook een Security Core in dat netwerk, dan is dat geen probleem; nodig is het niet.
+- Een trechter haalt niets uit de interface en legt er niets in: alleen jij en je gekoppelde auto's.
+- Breek je de interface af, dan vallen de spullen uit zijn vakjes op de grond; zijn naam gaat mee in het item, de lijst
+  van wat hij wist niet.
+- Bij een oven of een ander blok met kanten ziet de auto alleen de vakjes van de kant waar hij voor staat (bij een oven
+  van opzij: de brandstof), net als een trechter. Een sensor telt alles.
+- Er kunnen 16 bestellingen tegelijk wachten of lopen; de laatste zes die klaar zijn blijven in de lijst staan.
+- De getallen staan in `config/imttech.toml` onder `[rcCar]`: `chestCost` (5), `armCost` (5), `padRate` (50) en
+  `mayUseChests`.
 
 ### Training zoals Rookie squad
 Zoals in een trainingskamp: je laat je eigen beveiliging op jezelf (of een vriend) schieten, met

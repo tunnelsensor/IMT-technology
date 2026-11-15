@@ -87,6 +87,8 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
     private static final EntityDataAccessor<Integer> ITEMS = SynchedEntityData.defineId(RcCarEntity.class, EntityDataSerializers.INT);
     /** Zijn boorkop (het nummer van de DrillHead), voor zijn model en zijn scherm. */
     private static final EntityDataAccessor<Integer> DRILL = SynchedEntityData.defineId(RcCarEntity.class, EntityDataSerializers.INT);
+    /** Hoe hoog zijn arm staat (hoofdstuk 113): 0 = het blok vóór hem, 1 of 2 blokken hoger. Voor zijn model. */
+    private static final EntityDataAccessor<Integer> ARM = SynchedEntityData.defineId(RcCarEntity.class, EntityDataSerializers.INT);
 
     private @Nullable UUID owner;
     private String ownerName = "";
@@ -115,6 +117,14 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
     private final CarBrain brain;
     /** Tot wanneer (speltijd) hij stilligt na een EMP-granaat; 0 = hij doet het. */
     private long jammedUntil;
+    /** De Storage Interface waar hij aan hangt (hoofdstuk 113), of null: die geeft hem zijn bestellingen. */
+    private @Nullable net.minecraft.core.GlobalPos station;
+    /**
+     * Alleen in je spel: hoe hoog zijn arm nu getekend wordt, en de vorige tick. Hij schuift vloeiend naar zijn stand
+     * ({@link #arm}), zodat je de arm ziet bewegen (zie RcCarModel).
+     */
+    public float armShown;
+    public float armShownO;
 
     public RcCarEntity(EntityType<? extends RcCarEntity> type, Level level) {
         super(type, level);
@@ -146,6 +156,7 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
         builder.define(DRILLING, false);
         builder.define(ITEMS, 0);
         builder.define(DRILL, DrillHead.IRON.ordinal());
+        builder.define(ARM, 0);
     }
 
     // ================================================================ Zijn programma
@@ -304,6 +315,35 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
         entityData.set(DRILL, head.ordinal());
     }
 
+    // ================================================================ Zijn arm (hoofdstuk 113)
+
+    /**
+     * Hoe hoog zijn arm staat: 0 = het blok vóór hem, 1 of 2 blokken hoger (jouw keuze: een arm die je programmeert, tot
+     * drie kisten hoog). Op die hoogte breekt, plaatst en kijkt hij, en opent hij een kist. (Ook in je spel: zijn model.)
+     */
+    public int arm() {
+        return entityData.get(ARM);
+    }
+
+    public void setArm(int level) {
+        entityData.set(ARM, Math.max(0, Math.min(com.senne.imttech.logic.program.Op.MAX_ARM, level)));
+    }
+
+    // ================================================================ Zijn Storage Interface (hoofdstuk 113)
+
+    /**
+     * De Storage Interface waar hij aan hangt, of null. Die interface onthoudt wat hij in de kisten ziet, en geeft hem
+     * zijn bestellingen. De interface zelf houdt de lijst van zijn auto's bij (op hun vaste nummer); zet je de auto
+     * opnieuw neer, dan zegt de interface hem binnen een halve seconde weer bij wie hij hoort.
+     */
+    public @Nullable net.minecraft.core.GlobalPos station() {
+        return station;
+    }
+
+    public void setStation(@Nullable net.minecraft.core.GlobalPos station) {
+        this.station = station;
+    }
+
     // ================================================================ Zijn kofferbak
 
     public SimpleContainer trunk() {
@@ -414,6 +454,15 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
     }
 
     /**
+     * Zoals hierboven, met het nummer en de naam van de speler: wie iets bestelde bij een Storage Interface (hoofdstuk
+     * 113) hoeft niet meer op de server te zijn als de auto eraan begint.
+     */
+    void setDriver(@Nullable UUID player, String name) {
+        driver = player;
+        driverName = player == null ? "" : name;
+    }
+
+    /**
      * Namens wie hij nu blokken breekt en plaatst: wie zijn klus startte, anders zijn eigenaar (null = niemand). Niet
      * altijd zijn eigenaar: wie op de knop drukt, is verantwoordelijk. Anders kon iemand die jouw auto mag besturen ermee
      * door de muur van jouw beschermde zone boren. (Gevonden door de review.)
@@ -445,6 +494,13 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
         super.tick();
         if (level() instanceof ServerLevel level) {
             serverTick(level);
+        } else {
+            // In je spel: de arm schuift naar zijn stand (een derde van de rest per tick).
+            armShownO = armShown;
+            armShown += (arm() - armShown) * 0.34f;
+            if (Math.abs(arm() - armShown) < 0.01f) {
+                armShown = arm();
+            }
         }
     }
 
@@ -657,6 +713,11 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
         tag.put("Trunk", ContainerHelper.saveAllItems(new CompoundTag(), trunk.getItems(), registryAccess()));
         tag.putByte("Facing", (byte) body.facing().get2DDataValue());
         tag.putString("DrillHead", drill().getSerializedName());
+        tag.putByte("Arm", (byte) arm());
+        if (station != null) {
+            net.minecraft.core.GlobalPos.CODEC.encodeStart(net.minecraft.nbt.NbtOps.INSTANCE, station)
+                    .result().ifPresent(where -> tag.put("Station", where));
+        }
     }
 
     @Override
@@ -671,6 +732,11 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
         trunk.clearContent();
         ContainerHelper.loadAllItems(tag.getCompound("Trunk"), trunk.getItems(), registryAccess());
         body.setFacing(tag.contains("Facing") ? Direction.from2DDataValue(tag.getByte("Facing")) : null);
+        setArm(tag.getByte("Arm"));
+        armShown = arm(); // net geladen (of een auto in een animatie van How it works): de arm staat er meteen
+        armShownO = armShown;
+        station = tag.contains("Station") ? net.minecraft.core.GlobalPos.CODEC.parse(net.minecraft.nbt.NbtOps.INSTANCE,
+                tag.get("Station")).result().orElse(null) : null;
         applyProgram();
         syncBattery();
         // Alleen voor de animaties van How it works (howto/scenes/CarScenes): een auto die boort. In de wereld zegt zijn

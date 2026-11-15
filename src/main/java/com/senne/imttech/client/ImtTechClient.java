@@ -72,6 +72,8 @@ public class ImtTechClient {
         com.senne.imttech.client.backpack.BackpackClient.register(modEventBus);
         // Hoofdstuk 109: de body armor (het scherm van het vest, het vest op je lijf, kleur en camo, de plates in beeld).
         com.senne.imttech.client.armor.ArmorClient.register(modEventBus);
+        // Hoofdstuk 113: het scherm van de Storage Interface.
+        com.senne.imttech.client.storage.StorageClient.register(modEventBus);
         modEventBus.addListener(com.senne.imttech.client.shield.PersonalShieldLayer::addLayers);
         // De gloeiende handpalm en reactor op spelers, en het 3D-model van het harnas.
         modEventBus.addListener(LaserCannonHand::addLayers);

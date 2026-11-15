@@ -132,7 +132,7 @@ public final class Checks {
     public static @Nullable String valuesProblem(Op op, java.util.List<Expr> values) {
         String[] names = op.valueNames();
         Expr.Type[] types = op.valueTypes();
-        if (values.size() != op.requiredValues() && values.size() != names.length) {
+        if (!op.acceptsValues(values.size())) {
             return op.code() + " needs " + valuesCount(op) + " between the brackets, like " + op.valuesExample();
         }
         for (int i = 0; i < values.size(); i++) {
@@ -147,6 +147,9 @@ public final class Checks {
     /** "3 values (x, y, z)", "2 or 5 values (robot, order, x, y, z)". */
     private static String valuesCount(Op op) {
         int all = op.valueNames().length;
+        if (op == Op.TAKE || op == Op.PUT) {
+            return "at most " + all + " values (" + String.join(", ", op.valueNames()) + ")"; // hoofdstuk 113: 0, 1 of 2
+        }
         String count = op.requiredValues() == all ? String.valueOf(all) : op.requiredValues() + " or " + all;
         return count + " values (" + String.join(", ", op.valueNames()) + ")";
     }
@@ -258,9 +261,15 @@ public final class Checks {
 
     /** Mogen deze parameters zo heten (zoals een naam), en staat er geen naam twee keer? Geeft de fout, of null. */
     public static @Nullable String paramsProblem(java.util.List<Script.Param> params, java.util.Collection<String> defNames) {
+        return paramsProblem(params, defNames, null);
+    }
+
+    /** Zoals hierboven, voor deze soort programma (zie {@link #isWord(String, ProgramKind)}). */
+    public static @Nullable String paramsProblem(java.util.List<Script.Param> params, java.util.Collection<String> defNames,
+                                                 @Nullable ProgramKind kind) {
         java.util.Set<String> seen = new java.util.HashSet<>();
         for (Script.Param param : params) {
-            String problem = variableProblem(param.name(), defNames);
+            String problem = variableProblem(param.name(), defNames, kind);
             if (problem != null) {
                 return problem;
             }
@@ -354,6 +363,11 @@ public final class Checks {
      * en niet een woord dat de taal zelf al gebruikt. Geeft de fout, of null.
      */
     public static @Nullable String nameProblem(@Nullable String name) {
+        return nameProblem(name, null);
+    }
+
+    /** Zoals hierboven, voor deze soort programma (zie {@link #isWord(String, ProgramKind)}). */
+    public static @Nullable String nameProblem(@Nullable String name, @Nullable ProgramKind kind) {
         if (name == null || name.isBlank()) {
             return "Your own block needs a name, like def open_door():";
         }
@@ -363,15 +377,36 @@ public final class Checks {
         if (!name.matches("[A-Za-z_][A-Za-z0-9_]*")) {
             return "\"" + name + "\": a name may only have letters, digits and _ (and must not start with a digit), like open_door";
         }
-        if (isWord(name)) {
+        if (isWord(name, kind)) {
             return "\"" + name + "\" is already a word of the language: pick another name, like my_" + name;
         }
         return null;
     }
 
-    /** Is dit al een woord van de taal: een sleutelwoord, een blokje ({@code forward}) of een functie ({@code read})? */
+    /**
+     * Is dit in elke soort programma al een woord van de taal: een sleutelwoord, een blokje ({@code forward}) of een functie
+     * ({@code read})? De woorden die alleen een RC Car kent ({@code take}, {@code put}, {@code check}..., hoofdstuk 113)
+     * tellen hier niet mee: zie {@link #isWord(String, ProgramKind)}.
+     */
     public static boolean isWord(String name) {
-        return RESERVED.contains(name) || Op.byCode(name) != null || Expr.Function.byName(name) != null;
+        return isWord(name, null);
+    }
+
+    /**
+     * Is dit in deze soort programma al een woord van de taal? Hoofdstuk 113: de nieuwe woorden van de RC Car zijn alleen
+     * in een autoprogramma bezet (zie Op.reservedIn), zodat een serverdiagram of robotprogramma van vóór deze update met
+     * {@code def check():} of een naam {@code item} blijft kloppen. {@code kind} null = alleen wat overal bezet is.
+     */
+    public static boolean isWord(String name, @Nullable ProgramKind kind) {
+        if (RESERVED.contains(name)) {
+            return true;
+        }
+        Op op = Op.byCode(name);
+        if (op != null && op.reservedIn(kind)) {
+            return true;
+        }
+        Expr.Function function = Expr.Function.byName(name);
+        return function != null && function.reserved();
     }
 
     /**
@@ -380,6 +415,12 @@ public final class Checks {
      * {@code card.number}), en niet de naam van een van je eigen blokken. Geeft de fout, of null.
      */
     public static @Nullable String variableProblem(@Nullable String name, java.util.Collection<String> defNames) {
+        return variableProblem(name, defNames, null);
+    }
+
+    /** Zoals hierboven, voor deze soort programma (zie {@link #isWord(String, ProgramKind)}). */
+    public static @Nullable String variableProblem(@Nullable String name, java.util.Collection<String> defNames,
+                                                   @Nullable ProgramKind kind) {
         if (name == null || name.isBlank()) {
             return "A name needs letters, like count";
         }
@@ -394,7 +435,7 @@ public final class Checks {
         if (!name.matches("[A-Za-z_][A-Za-z0-9_]*")) {
             return "\"" + name + "\": a name may only have letters, digits and _ (and must not start with a digit), like count";
         }
-        if (isWord(name) || Expr.Variable.byName(name) != null) {
+        if (isWord(name, kind) || Expr.Variable.byName(name) != null) {
             return "\"" + name + "\" is already a word of the language: pick another name, like my_" + name;
         }
         if (defNames.contains(name)) {

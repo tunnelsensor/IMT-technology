@@ -34,6 +34,8 @@ public record RouterOpenPayload(BlockPos pos, String name, boolean online, boole
     public static final int FREE = 3;
     public static final int OTHER_ROUTER = 4;
     public static final int WIRED = 5;
+    /** Een apparaat (of de kern) in de buurt dat al in het netwerk van deze router zit (met een kabel): verbinden hoeft niet. */
+    public static final int SAME_NET = 6;
 
     /**
      * Eén regel in het scherm.

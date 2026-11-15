@@ -234,6 +234,7 @@ public class RouterScreen extends Screen {
             case RouterOpenPayload.OUT_OF_RANGE -> "screen.imttech.router.status.out_of_range";
             case RouterOpenPayload.OTHER_ROUTER -> "screen.imttech.router.status.other_router";
             case RouterOpenPayload.WIRED -> "screen.imttech.router.status.wired";
+            case RouterOpenPayload.SAME_NET -> "screen.imttech.router.status.same_net";
             default -> "";
         };
         return key.isEmpty() ? "" : Component.translatable(key).getString();

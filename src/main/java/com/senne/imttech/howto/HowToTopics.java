@@ -179,6 +179,12 @@ public final class HowToTopics {
             topic("rc_car", "robots", "RC Car", com.senne.imttech.howto.scenes.CarScenes::rcCar, ModItems.RC_CAR,
                     ModItems.RC_CONTROLLER, ModItems.IRON_DRILL_HEAD, ModItems.STEEL_DRILL_HEAD, ModItems.TITANIUM_DRILL_HEAD,
                     ModItems.NETHERITE_DRILL_HEAD),
+            // Hoofdstuk 113: het opslagsysteem waar de RC Car voor werkt: de Storage Interface, de Chest Sensor en de
+            // Charging Pad.
+            topic("storage", "robots", "Storage system", com.senne.imttech.howto.scenes.StorageScenes::storage,
+                    com.senne.imttech.storage.StorageRegistry.STORAGE_INTERFACE_ITEM,
+                    com.senne.imttech.storage.StorageRegistry.CHEST_SENSOR_ITEM,
+                    com.senne.imttech.storage.StorageRegistry.CHARGING_PAD_ITEM),
             topic("training", "robots", "Training", TrainingScenes::training, ModItems.TRAINING_START, ModItems.TRAINING_END,
                     ModItems.TRAINING_GOAL),
             // ------------------------------------------------------------ Datacenter

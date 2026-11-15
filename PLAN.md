@@ -22,14 +22,14 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 610 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 620 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
 **Publiceren:** klaar voor CurseForge (17 oktober), onder **All Rights Reserved** (sinds 11 november, daarvoor
 MIT): de beschrijving, het logo, de changelog en een stappenplan staan in `publish/` (begin bij
 `publish/HOE-PUBLICEREN.md`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 137 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 138 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -8180,8 +8180,8 @@ Ik heb niets gevraagd en alles zelf ingevuld (zie onderaan): zeg het als je iets
 
 - [x] **De taal** (`logic/program`): een vierde soort programma naast server, robot en drone: het **RC Car program**
       (`ProgramKind.CAR`). Het is dezelfde taal (def, for, while, if, namen, rekenen), met de woorden van een auto:
-      rijden (`forward(3)`, `back(1)`, `turn_left()`, `turn_right()`), breken (`mine()`, `mine_up()`, `mine_down()`, met
-      een getal tot 3 erbij voor meer blokken: `mine_up(2)` is een gang van 3 hoog), plaatsen (`place()`, `place_up()`,
+      rijden (`forward(3)`, `back(1)`, `turn_left()`, `turn_right()`), breken (`mine()`, `mine_up()`, `mine_down()`; tot
+      hoofdstuk 113 met een getal tot 3 erbij voor meer blokken, sindsdien doet de arm dat: `arm_up()`), plaatsen (`place()`, `place_up()`,
       `place_down()`, of `place("cobblestone")` voor een soort), `collect()` (oprapen wat er ligt), `unload()` (de
       kofferbak leeg in de kist voor hem), `say(...)`, `wait(...)` en `stop()`. Wat hij weet: `car.battery`, `car.x/y/z`,
       `car.facing`, `car.name`, `car.blocked`, `car.full`, `car.items`, `car.blocks`, en `block()`, `block_up()` en
@@ -8661,9 +8661,8 @@ de Storage Interface, de Chest Sensors, de RC Car die haalt en opbergt) bouwt er
       van allebei de routers, de lichtjes van het relais naar de router, het scherm van een relais met en zonder
       netwerk, de tooltip, en de foto voor How it works. Wat ik daarbij verbeterde: de foto "geen stroom" toonde nog
       brandende lampjes (de router zette ze zelf weer aan: de rondleiding knipt nu echt zijn kabel door), de vonkjes
-      waren niet te zien (nu een rij lichtjes die even blijft hangen) en er stond een melding over het scherm. Deze
-      screenshots zijn van vóór de nalezing hieronder; daarna veranderde aan wat je ziet alleen de zin onderaan het
-      scherm (zie "Nog niet gedaan").
+      waren niet te zien (nu een rij lichtjes die even blijft hangen) en er stond een melding over het scherm. De
+      screenshots en de foto zijn na de nalezing hieronder opnieuw gemaakt (zie hoofdstuk 113).
 - [x] LEESMIJ (nieuw "De Router", bij het netwerk en bij de relais "Aan het netwerk", en de lijst van How it works) en
       `publish/description.md`.
 
@@ -8721,15 +8720,202 @@ Nog niet gedaan:
 - Het geval "het relais onthoudt zijn netwerk terwijl het stuk wereld van zijn kern niet geladen is" heeft geen test: een
   test kan geen stuk wereld ontladen.
 - De showcase-functie "Router" heb ik zelf niet afgespeeld (de rondleiding met dezelfde stappen wel).
-- **Opnieuw fotograferen** na de nalezing: de foto van het scherm in How it works toont onderaan nog de oude zin ("...
-  sparks ...", nu "... a line of lights ..."). Dat doe ik zodra jouw showcase dicht is: een tweede Minecraft-venster zou
-  er nu overheen springen.
+
+### 113. Het opslagsysteem: bestellen bij de Storage Interface, en je RC Car haalt en bergt op (14 november)
+
+Jouw wens: "Ik wil een storage system via de robots, je kunt een item orderen via een storage interface (GUI), deze
+interface activeert een robot die je hebt geprogrameert. De robots doorzoeken dan je hele chestroom, je moet elke stap/kist
+die de robot moet checken in je code programren, dat maak het moeilijk maar zorgt ook dat spelers die het coden goed kunnenn
+echt leuke/goeie dingen kunnen maken. Vragen, stel ze dan."
+
+Jouw antwoorden op mijn vragen (twee rondes):
+- Welke robot: "De RC Car".
+- Wat de interface toont: "Optie 1 en optie 2 maar bij optie 2 moet je een chest sensor hebben die je op elke storga
+  (hopper, barrel, chest...) kunt plaatsten om zo een live overzicht te hebben."
+- De taal: "Ik wil dat je interface de dingen gewoon weet of door de sensors of door dat de robot dit gechekt heeft. Kijken
+  of het item in die chest zit en het er uithalen doe je gewoon door if item("hetitem") in chest():"
+- Wat hij doet: "Halen en opbergen".
+- Hoe de sensors aan de interface hangen: de Router (hoofdstuk 112).
+- Mag je code gebruiken wat de interface weet: "Ja, de bestelling zegt waar".
+- Laden: "Laadplaat".
+- Hoog reiken: "Optie 1 en deze gebruik je vanaf nu ook voor het minden van 1+ block range" (de arm die je programmeert).
+
+- [x] **De taal** (`logic/program`: `Op`, `Expr`, `Checks`, `ScriptParser`, `ScriptChecker`): nieuwe woorden voor een
+      autoprogramma. Doen: `arm_up()`, `arm_down()` (met een getal: `arm_down(2)`), `take("iron_ingot", 8)`,
+      `put("iron_ingot", 8)` (allebei ook zonder aantal, of helemaal leeg: alles) en `check()`. Vragen: `if item("iron_ingot")
+      in chest():` (precies zoals jij het schreef) en `in trunk()`, `chest.count("...")`, `trunk.count("...")`,
+      `chest.slots`, `chest.free`, `chest.items` en `car.arm`. Een auto krijgt zijn opdrachten van een Storage Interface:
+      `when ordered("fetch"):` en `when ordered("store"):`, met daaronder `order.item`, `order.count`, `order.left`,
+      `order.known` en `order.x`, `order.y`, `order.z`. De naam van een item mag met hoofdletters en spaties ("Iron
+      Ingot") en met het voorvoegsel van een mod. De nieuwe woorden zijn alleen in een autoprogramma bezet: een
+      serverdiagram of robotprogramma van vóór deze update met een eigen `def check():` of een naam `item` blijft kloppen.
+- [x] **`mine(2)` en `mine_up(2)` bestaan niet meer** (jouw keuze: de arm is er nu voor alles wat verder reikt dan één
+      blok). De editor zegt wat je moet schrijven: "mine() breaks one block now, without a number. To break higher, raise
+      the arm: arm_up() and then mine()". Een auto die het oude nog in zijn programma heeft, doet niets tot je de regel
+      aanpast; zijn scherm zegt welke. Het voorbeeld van de kamer (How it works, LEESMIJ) is herschreven met een functie
+      `dig()` (breken, arm omhoog, breken, arm omhoog, breken, arm omlaag), en de auto begint nu vóór de kamer.
+- [x] **De arm** (`car/CarMove`, `RcCarEntity`, `client/car/RcCarModel`, `tools/generate_textures.py`): de boor zit op een
+      arm die langs een zwart-gele mast omhoog schuift, hooguit twee blokken boven het blok voor de auto (drie hoog). Alles
+      wat de auto vóór zich doet, doet hij op die hoogte: breken, plaatsen, `block()`, `unload()` en de kisten. Een blok
+      bewegen duurt 0,3 seconde en kost 5 FE; hoger dan 2 of lager dan 0 geeft `car.blocked`. De stand wordt bewaard (ook
+      in het item). Op zijn scherm staat "Arm 0/2" met twee knopjes.
+- [x] **Kisten** (`car/CarWork`): de auto neemt uit en legt in elk blok met vakjes voor zijn arm (kist, ton, trechter,
+      shulkerdoos, kasten van andere mods). Eerst vragen wat eruit kan en wat er in de kofferbak past, dan pas nemen: er
+      raakt niets kwijt en er komt niets bij. Lukt het niet, dan is `car.blocked` waar en staat op zijn scherm waarom
+      ("there is no "gold_ingot" in that chest", "its trunk is full", "that chest is full"). Nemen of leggen duurt 0,4
+      seconde en kost 5 FE.
+- [x] **De Storage Interface** (`storage/StorageInterfaceBlock`, `StorageInterfaceBlockEntity`, `StorageOrder`,
+      `ItemKind`): een stalen kast met een scherm. Hij houdt de bestellingen bij (halen en opbergen), start om de halve
+      seconde een vrije gekoppelde auto die het juiste stuk programma heeft, en telt wat die brengt. Een bestelling is
+      `waiting`, bezig (`3/12`), `done`, of niet (helemaal) gelukt, met de reden erbij ("no linked car has when
+      ordered("store"):", "waiting for a free RC Car (busy, or its cell is empty)", "the program of the car ended before
+      the order was complete"). Wie bestelde, leest boven zijn werkbalk hoe het afliep. Stopt de auto halverwege (de knop
+      Stop, een lege cel), dan eindigt de bestelling daar, met de reden erbij; verdwijnt de auto uit de geladen wereld, dan
+      wacht ze weer op een auto en telt wat al gebracht was. Twee rijen van negen vakjes: wat jij inlegt om op te
+      bergen, en PICK-UP (wat de auto bracht). Voor de auto is de interface zelf een kist: `put()` legt in PICK-UP,
+      `take()` neemt uit de inlegvakjes. Hij heeft geen stroom nodig, is een netwerkblok, en neemt de naam van zijn item
+      over. Recept: ijzer, een glazen ruit, ijzer / een Computer Chip, een kist, een Computer Chip / ijzer, een
+      netwerkkabel, ijzer.
+- [x] **Wat hij weet** (jouw woorden: "door de sensors of doordat de robot dit gecheckt heeft"): alles wat de Chest Sensors
+      in zijn netwerk nu zien (live), en wat een gekoppelde auto zag toen hij in een kist keek (bij `check()`, `take`,
+      `put`, `in chest()`, `chest.count`...). Zit er een sensor op een kist, dan telt alleen de sensor; een dubbele kist
+      telt één keer; een kist die weg is, vergeet hij. Hij onthoudt 128 kisten in het blok zelf (niet op een SSD).
+- [x] **De Chest Sensor** (`storage/ChestSensorBlock`, `ChestSensorBlockEntity`): een zwart kastje met een blauw lensje,
+      op elke kant van een blok met een binnenkant. Rechtsklik met de sensor op de kist plakt hem erop (zonder sneaken);
+      haal je de kist weg, dan valt hij eraf. Geen stroom (jouw wens), wel het netwerk: een netwerkkabel, of een Router
+      (hij verbindt vanzelf als je hem neerzet). Rechtsklik erop en hij zegt wat hij ziet en welke interface dat leest.
+      Recept (vier per keer): redstone, een glazen ruit, redstone, met een netwerkkabel eronder.
+- [x] **Het scherm** (`storage/StorageMenu`, `StorageStatePayload`, `StorageActionPayload`, `Storages`,
+      `client/storage/StorageScreen`): drie tabbladen. **Order**: wat er in je opslag zit (met een zoekvak), een voorwerp
+      aanklikken, het aantal en de knop Order. **Store**: de inlegvakjes en de knop Store (elke soort wordt één
+      bestelling). **Cars**: je auto's binnen 32 blokken koppelen en losmaken, met een bolletje (klaar, bezig, iets mis)
+      en de letters F en S (heeft zijn programma fetch en store?). Onderaan altijd PICK-UP en je inventaris, rechts de
+      bestellingen. Het scherm ververst elke tick zodra er iets verandert (jouw regel voor schermen met getallen).
+- [x] **De Charging Pad** (`storage/ChargingPadBlock`, `ChargingPadBlockEntity`): een plaat van twee pixels dik aan je
+      stroomnet. Hij laadt de Energy Cell van de RC Car die erop staat met 50 FE per tick (`[rcCar] padRate`), en zijn
+      gele strepen gloeien dan. Recept: ijzer, een zware drukplaat, ijzer / een Power Cable, een blok redstone, een Power
+      Cable.
+- [x] **Wie mag wat**: het scherm van een interface krijgt alleen wie hem mag instellen (wie hem neerzette, of wie
+      vertrouwd is in die basis): het toont alles wat er in je kisten ligt. Je koppelt alleen auto's die je mag besturen,
+      en de lijst toont alleen die. Tijdens een bestelling werkt de auto namens wie bestelde. In een beschermde zone opent
+      een auto alleen kisten als die speler daar mag bouwen (hij neemt er niets uit, legt er niets in en ziet niet wat
+      erin zit), en een kist met een slot opent hij nooit: een RC Car is zo geen manier om bij iemand in de kisten te
+      komen. Alleen een gekoppelde auto komt in de vakjes van een interface; een trechter niet.
+- [x] **Config**: `[rcCar] mayUseChests` (true; op false opent geen auto nog een kist), `chestCost` (5), `armCost` (5)
+      en `padRate` (50).
+- [x] **De editor en het scherm van de auto**: de hulp rechts in de editor heeft de kopjes ARM, CHESTS en STORAGE
+      INTERFACE, Ctrl+Spatie kent de nieuwe woorden (ook `in chest()` en de twee opdrachten), en het scherm zegt FETCHING
+      of STORING als hij voor een bestelling rijdt.
+- [x] **How it works**: een nieuw onderwerp **Storage system** op het tabblad Robots (`howto/scenes/StorageScenes`, zes
+      hoofdstukjes, met een foto van het echte scherm en van het voorbeeldprogramma in de editor); **W** op de interface,
+      de sensor of de laadplaat. Het onderwerp RC Car heeft de nieuwe kamer en het scherm met de arm. 65 van de 65
+      onderwerpen zijn klaar. Het voorbeeld staat alleen daar en in de LEESMIJ: een nieuwe auto heeft nog steeds geen
+      programma.
+- [x] **Showcase**: de functie "Storage system" (`client/dev/StorageTour.showcase`): het scherm, 12 ijzer bestellen,
+      Porter die de gang in rijdt en met zijn arm in de tonnen kijkt, het ijzer in PICK-UP, en dan opbergen. De functie
+      "RC Car" is aangepast aan de nieuwe kamer (de steen is een rij dieper, en hij krijgt meer tijd). 138 functies.
+- [x] **Tests** (tien nieuwe in `gametest/StorageGameTests`, geen nieuwe batchnaam): `storage_language` (de nieuwe
+      woorden, wat alleen in een autoprogramma mag, en dat oude diagrammen blijven kloppen), `rc_car_arm_reaches_three_high`,
+      `rc_car_takes_and_puts` (ook: een kist met een slot), `rc_car_leaves_chests_in_a_zone_alone`,
+      `storage_interface_fetches_with_a_car` (een sensor aan een kabel, de auto die twaalf tonnen leert kennen, 36 ijzer
+      uit twee tonnen, en dat een andere auto de bestelling niet kan beëindigen), `storage_interface_stores_with_a_car`,
+      `storage_interface_brings_back_what_does_not_fit`, `storage_interface_screen_and_rights`,
+      `chest_sensor_shows_a_chest_live` (via een Router, zonder kabel) en `charging_pad_charges_a_car`. De tests van de RC
+      Car zijn aangepast aan de arm (de kamer met `dig()`, en `mine(2)` geeft nu de uitleg).
+- [x] **Volledige ronde** 620 tests, vijf keer (in mijn eigen kopie van het project, met de standaardwaarden uit de
+      code). De eerste (toen nog 619) had één rode test van mij (mijn test vroeg een auto op zijn nummer vóór zijn eerste
+      tick; hersteld) en `guard_searches_where_he_lost_you`, die vaker wisselt. De tweede, na mijn nalezing, had alleen
+      `raven_soldier_flanks_around_a_wall` rood, en de melding zegt nu waarom: de soldaat had een **AWP**. Dat is het
+      vermoeden uit hoofdstuk 112 (een soldaat met een wapen voor ver weg komt niet om de hoek van de muur). Het is niet
+      van dit hoofdstuk en ik heb er niets aan veranderd: zie "Nog niet gedaan". De derde en de vierde hadden alleen
+      `raid_starts_outside_a_base` rood (die wisselt het vaakst; dit hoofdstuk raakt de raiddrones niet), en de vijfde
+      had alle 620 groen.
+- [x] **Gezien** (`gradlew runVisualCheck -Ponly=storage,howtopics:storage`, vier rondes): de opslagkamer, de sensors (één
+      aan een kabel, één aan de router), de auto met zijn arm omhoog, het scherm met een gekozen voorwerp, een lopende en
+      een afgeronde bestelling, de tabbladen Store en Cars, Porter die echt opbergt met zijn arm omhoog bij een stapel,
+      het scherm met drie bestellingen op done, het scherm van de auto, zijn programma, de laadplaat en de drie tooltips;
+      en van How it works elk hoofdstukje. Wat ik daarbij verbeterde: de tekst naast het zoekvak liep ertegenaan, er stond
+      "in 1 chests", de rondleiding fotografeerde te vroeg (ze wachtte niet echt op de auto), in het plaatje van de editor
+      stond het knipperstreepje door de eerste letter, en naast twee plaatjes stonden zoveel pijltjes met uitleg dat de
+      onderste over de knoppen van de animatie hing (nu kortere teksten, en de stipjes staan naast de code in plaats van
+      erop).
+- [x] **De Router, na de nalezing van hoofdstuk 112**: de foto van het scherm in How it works en de screenshots zijn
+      opnieuw gemaakt. Twee dingen die ik daarbij zag en verbeterde: de zin onderaan liep onder de knop Done door (nu
+      korter), en een apparaat dat al met een kabel in het netwerk van de router zat, stond onder IN RANGE zonder dat je
+      dat zag (nu staat er "in this network" bij).
+- [x] LEESMIJ (nieuw "Het opslagsysteem", en bij de RC Car de arm, de kisten en de nieuwe kamer) en
+      `publish/description.md`.
+
+Bij mijn eigen nalezing (ik heb de code van dit hoofdstuk zelf nagelezen; een nalezing door aparte lezers volgt na de
+commit, zie "Nog niet gedaan"):
+- [x] Een bestelling kon beëindigd worden door een **auto die er niet meer mee bezig was** (een auto die je aan een andere
+      interface koppelde terwijl hij reed): nu telt alleen de auto van de bestelling, en een auto die je ergens anders
+      koppelt, stopt eerst.
+- [x] Een bestelling waarvan alles al gebracht was maar waarvan de auto verdween vóór hij "klaar" kon melden, begon
+      **opnieuw**; nu is die gewoon klaar.
+- [x] Het scherm keek maar **twee keer per seconde**; nu elke tick.
+- [x] Een heel grote opslag (honderden gevulde shulkerdozen: elke doos is een eigen soort) kon een bericht geven dat
+      groter is dan Minecraft toelaat, en dan **verbreekt het spel de verbinding** zodra je het scherm opent. De lijst
+      wordt nu afgekapt op een halve megabyte, en het scherm zegt dan "first 800 of 1200 kinds".
+- [x] Het voorbeeld liet wat het **niet kwijt kon** (alles vol) in de kofferbak van de auto liggen; nu brengt het dat
+      terug naar PICK-UP.
+- [x] Een telfout in `take` in een geval dat niet hoort voor te komen (de kofferbak neemt minder aan dan hij zei).
+
+Mijn invulling (verander ik op jouw woord):
+- **De auto start met `when ordered("fetch"):` en `when ordered("store"):`**, hetzelfde woord als de opdrachten van een
+  robot. Zonder dat stuk in zijn programma krijgt een auto geen bestelling van die soort.
+- **De bestelling is klaar als het programma afloopt**: wat de auto in PICK-UP legde (halen) of in een kist legde
+  (opbergen) telt. Minder dan gevraagd heet `3/12` (oranje), niets heet `failed`.
+- **Eén bestelling per auto tegelijk**, hooguit acht auto's per interface, zestien bestellingen die wachten of lopen, en
+  per bestelling hooguit negen stapels (wat in PICK-UP past). Een auto werkt voor één interface.
+- **Koppelen in het scherm van de interface** (tabblad Cars), binnen 32 blokken. Niet met de RC Controller.
+- **De interface zelf is voor de auto een kist** (`put()` en `take()` ervoor): zo hoef je geen extra woorden te leren.
+- **`order.left`** telt bij halen ook wat al in zijn kofferbak ligt: zo stopt het voorbeeld met zoeken zodra hij genoeg
+  heeft.
+- **Wat een auto zag blijft staan tot hij weer kijkt**: pak je zelf iets uit een kist zonder sensor, dan klopt het getal
+  niet tot de auto er weer langs komt. Met een sensor klopt het altijd.
+- **De sensor heeft geen stroom nodig maar wel het netwerk**; elke sensor aan een router kost een van zijn tien plekken,
+  behalve als je sensors onderling met een netwerkkabel verbindt (dan kost de hele rij één plek, de regel van hoofdstuk
+  112).
+- **Kisten in een beschermde zone** opent een auto alleen als wie hem stuurt daar mag bouwen. Dat is strenger dan voor
+  een speler te voet (die mag in een zone wel kisten openen), omdat een auto door een gat van één blok past.
+- **De arm** kost 5 FE per blok en duurt 0,3 seconde; nemen en leggen 5 FE en 0,4 seconde. De laadplaat 50 FE per tick.
+- **Een oude auto met `mine(2)`** doet niets tot je de regel aanpast (in plaats van stil één blok te breken): zo merk je
+  het meteen.
+- De recepten, het tabblad Robots, en versie 2.15 (iets nieuws: drie blokken).
+
+Nog niet gedaan:
+- **Geen onafhankelijke nalezing** bij deze commit: alleen mijn eigen. Die start ik meteen hierna (aparte lezers, elk met
+  een eigen invalshoek, en een scepticus die hun vondsten probeert te weerleggen); wat ze vindt, schrijf ik hier bij.
+- De showcase-functies "Storage system" en "RC Car" heb ik zelf niet afgespeeld (de rondleiding met dezelfde stappen
+  wel; de nieuwe kamer van de showcase van de RC Car heb ik alleen uitgerekend, niet gezien).
+- Niet met de muis gespeeld en nooit met een tweede speler (zie "Nog nooit in het spel bekeken").
+- Geen test voor een auto die halverwege een bestelling uit de geladen wereld verdwijnt (een test kan geen stuk wereld
+  ontladen), en geen test met twee auto's tegelijk aan één interface.
+- De afkapping van een heel grote opslag is getest met een klein bericht, niet met een echte opslag van honderden
+  shulkerdozen. Wat is afgekapt zie je niet en kun je dus niet bestellen, ook niet met het zoekvak (de lijst komt
+  afgekapt van de server). Dat is een grens die je pas bij een heel grote opslag raakt.
+- Een auto ziet bij een oven alleen de vakjes van de kant waar hij voor staat (zoals een trechter); een sensor telt
+  alles. Die twee getallen kunnen dus verschillen.
+- De interface staat **niet in de app Devices** van de desktop, en je kunt niet van ver (bril, telefoon) bestellen.
+- **`raven_soldier_flanks_around_a_wall`** valt om als de soldaat een AWP krijgt (drie keer gezien, één keer met het
+  wapen in de melding). De vraag voor jou: moet een soldaat met een AWP om een muur heen lopen, of hoort een sluipschutter
+  juist op afstand te blijven? Tot dan blijft die test soms rood.
 
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **Het opslagsysteem (hoofdstuk 113)**: met tests gecontroleerd en gezien op screenshots (`-Ponly=storage`), maar niet
+      met de muis gespeeld en nooit met een tweede speler. Probeer: (1) bouw een kleine kistenkamer zoals het voorbeeld
+      in de LEESMIJ (de interface, de auto ervoor met zijn neus ernaartoe, rechts een gang langs stapels van drie
+      kisten), typ het voorbeeld en de functie `scan` over, koppel de auto op het tabblad Cars, druk op scan en bestel
+      dan iets. (2) Plak een Chest Sensor op een kist en verbind hem met een netwerkkabel of een router: verandert het
+      getal in het scherm meteen als je iets in de kist legt? (3) Leg spullen in op het tabblad Store. (4) Schrijf een
+      eigen programma, bijvoorbeeld een dat met `order.x` recht naar de goede kist rijdt. (5) Voelt het tempo goed (de arm
+      0,3 seconde per blok, nemen 0,4 seconde, de laadplaat 50 FE per tick: `[rcCar]`)? (6) Met een vriend op je server:
+      krijgt hij het scherm van jouw interface niet, en opent zijn auto geen kisten in jouw zone?
 - [ ] **De Router (hoofdstuk 112)**: met tests gecontroleerd en gezien op screenshots (`-Ponly=router`), maar niet met de
       muis gespeeld en nooit met een tweede speler. Probeer: (1) zet een router neer bij je kern (verbindt hij vanzelf,
       en pakt hij je losse apparaten?), zet er een relais bij en schakel het met je bril; haal dan de stroom van de

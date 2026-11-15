@@ -117,9 +117,9 @@ public final class RcCarGameTests {
      * De taal van een RC Car. Een nieuwe auto heeft geen programma (jouw wens: "ik wil dat je de rc car vanaf 0 moet
      * programmeren; er mag geen voorbestaande code zijn"): een leeg programma klopt, en heeft geen functies en geen
      * Start. De twee voorbeelden van How it works (strip_mine en room, uit jouw eerste wens) kloppen. De woorden van een
-     * auto werken alleen in een autoprogramma, en een auto kent geen relais, geen every en geen robot.*; mine neemt 1 tot
-     * 3 blokken; place neemt niets of een soort blok; block() geeft een waarde. Ctrl+Spatie stelt in een autoprogramma de
-     * woorden van de auto voor, en geen relais.
+     * auto werken alleen in een autoprogramma, en een auto kent geen relais, geen every en geen robot.*; mine neemt geen
+     * getal meer (hoofdstuk 113: daar is de arm voor); place neemt niets of een soort blok; block() geeft een waarde.
+     * Ctrl+Spatie stelt in een autoprogramma de woorden van de auto voor, en geen relais.
      */
     @GameTest(template = ARENA, timeoutTicks = 20, batch = "logic_language")
     public static void rc_car_language(GameTestHelper helper) {
@@ -129,8 +129,8 @@ public final class RcCarGameTests {
         check(CarProgram.functions(empty).isEmpty() && !CarProgram.hasMain(empty), "Een leeg programma heeft functies of een Start");
         check(CarProgram.problem("# only a note\n\n") == null, "Een programma met alleen uitleg geeft een fout");
         LogicProgram examples = CarProgram.compile(CarProgram.EXAMPLE_STRIP_MINE + "\n" + CarProgram.EXAMPLE_ROOM);
-        check(CarProgram.functions(examples).equals(List.of("strip_mine", "room")),
-                "De voorbeelden hebben niet de functies strip_mine en room, maar " + CarProgram.functions(examples));
+        check(CarProgram.functions(examples).equals(List.of("strip_mine", "dig", "room")),
+                "De voorbeelden hebben niet de functies strip_mine, dig en room, maar " + CarProgram.functions(examples));
         check(!CarProgram.hasMain(examples), "De voorbeelden hebben een when started, dat hoort niet");
 
         // Een def met parameters is een hulpje, geen functie op de controller; when started is het hoofdprogramma.
@@ -151,9 +151,12 @@ public final class RcCarGameTests {
         // Heen en terug: wat de printer schrijft, leest de parser weer precies zo.
         String code = """
                 def build():
-                    mine(2)
+                    mine()
                     mine_up()
-                    mine_down(3)
+                    mine_down()
+                    arm_up()
+                    arm_up(2)
+                    arm_down()
                     place()
                     place_up("cobblestone")
                     place_down()
@@ -182,8 +185,10 @@ public final class RcCarGameTests {
         expectProblem("def a():\n    if robot.blocked:\n        mine()\n", ProgramKind.CAR, "robot.blocked only works in a robot program");
         expectProblem("def a():\n    if read(1):\n        mine()\n", ProgramKind.CAR, "read(...) only works in");
         // De getallen en waarden.
-        expectProblem("def a():\n    mine(4)\n", ProgramKind.CAR, "mine takes 1 to 3 blocks, not 4");
-        expectProblem("def a():\n    mine_up(0)\n", ProgramKind.CAR, "mine_up takes 1 to 3 blocks");
+        expectProblem("def a():\n    mine(2)\n", ProgramKind.CAR, "mine() breaks one block now, without a number");
+        expectProblem("def a():\n    mine_up(2)\n", ProgramKind.CAR, "raise the arm: arm_up() and then mine()");
+        expectProblem("def a():\n    arm_up(3)\n", ProgramKind.CAR, "arm_up takes 1 to 2 blocks, not 3");
+        expectProblem("def a():\n    arm_down(0)\n", ProgramKind.CAR, "arm_down takes 1 to 2 blocks");
         expectProblem("def a():\n    place(3)\n", ProgramKind.CAR, "place: the block must be text");
         expectProblem("def a():\n    place(\"a\", \"b\")\n", ProgramKind.CAR, "place needs 0 or 1 values");
         expectProblem("def a():\n    block()\n", ProgramKind.CAR, "block(...) gives a value");
@@ -197,14 +202,16 @@ public final class RcCarGameTests {
         CodeCompletion.Data data = new CodeCompletion.Data(List.of("Lamp"), List.of(), List.of(), ProgramKind.CAR);
         List<String> labels = CodeCompletion.complete(List.of("def a():", "    "), 1, 4, data).items().stream()
                 .map(CodeCompletion.Item::label).toList();
-        for (String word : List.of("mine()", "mine_up()", "mine_down()", "place(...)", "collect()", "unload()", "forward(3)", "turn_left()")) {
+        for (String word : List.of("mine()", "mine_up()", "mine_down()", "place(...)", "collect()", "unload()", "forward(3)", "turn_left()",
+                "arm_up()", "arm_down()", "take(\"...\")", "put(\"...\")", "check()")) {
             check(labels.contains(word), "Ctrl+Spatie stelt " + word + " niet voor in een autoprogramma: " + labels);
         }
         check(labels.stream().noneMatch(label -> label.startsWith("on(") || label.startsWith("pulse(") || label.startsWith("goto(")),
                 "Ctrl+Spatie stelt in een autoprogramma een relais of goto voor: " + labels);
         List<String> values = CodeCompletion.complete(List.of("def a():", "    if "), 1, 7, data).items().stream()
                 .map(CodeCompletion.Item::label).toList();
-        for (String word : List.of("block()", "block_up()", "block_down()", "car.battery", "car.blocked", "car.full")) {
+        for (String word : List.of("block()", "block_up()", "block_down()", "car.battery", "car.blocked", "car.full", "car.arm",
+                "chest.free", "item(\"...\")", "chest.count(\"...\")", "trunk.count(\"...\")", "in chest()", "in trunk()")) {
             check(values.contains(word), "Ctrl+Spatie stelt " + word + " niet voor na if: " + values);
         }
         check(values.stream().noneMatch(label -> label.startsWith("is_on") || label.startsWith("robot.")),
@@ -256,28 +263,30 @@ public final class RcCarGameTests {
      * Jouw voorbeeld: "een functie die een kamer van 5x3x5 uithakt: als je die kiest, voert hij de code uit vanaf de plek
      * waar hij staat". De functie room zoals How it works hem als voorbeeld toont (CarProgram.EXAMPLE_ROOM), in een blok
      * steen: daarna is er een kamer van precies 5 breed, 3 hoog en 5 diep, de muren, de vloer en het plafond staan er nog,
-     * de 74 stenen liggen in de kofferbak, en de auto staat weer in zijn hoek met zijn neus dezelfde kant op.
+     * de 75 stenen liggen in de kofferbak, en de auto staat weer waar hij begon met zijn neus dezelfde kant op. Sinds
+     * hoofdstuk 113 begint hij vóór de kamer (in de deuropening) en breekt hij de drie blokken hoog met zijn arm.
      */
-    @GameTest(template = ARENA, timeoutTicks = 4000)
+    @GameTest(template = ARENA, timeoutTicks = 6000)
     public static void rc_car_carves_a_room(GameTestHelper helper) {
-        BlockPos start = new BlockPos(4, 2, 11);
+        BlockPos start = new BlockPos(4, 2, 12);
         fill(helper, new BlockPos(3, 2, 6), new BlockPos(9, 5, 12), Blocks.STONE);
         helper.setBlock(start, Blocks.AIR);
         RcCarEntity car = car(helper, start, CarProgram.EXAMPLE_ROOM);
-        check(car.functions().equals(List.of("room")), "De auto toont niet de functie room, maar " + car.functions());
+        check(car.functions().equals(List.of("dig", "room")), "De auto toont niet de functies dig en room, maar " + car.functions());
         check(car.brain().startFunction("room"), "De functie room begon niet");
         helper.succeedWhen(() -> {
             check(!car.brain().busy(), "De auto is nog bezig met de kamer");
             for (BlockPos pos : BlockPos.betweenClosed(new BlockPos(4, 2, 7), new BlockPos(8, 4, 11))) {
                 helper.assertBlockPresent(Blocks.AIR, pos);
             }
-            // De muren (links, rechts, voor, achter), het plafond en de vloer staan er nog.
+            // De muren (links, rechts, voor, achter), het plafond en de vloer staan er nog, ook boven de deuropening.
             for (BlockPos wall : List.of(new BlockPos(3, 3, 9), new BlockPos(9, 3, 9), new BlockPos(6, 3, 6), new BlockPos(6, 3, 12),
-                    new BlockPos(6, 5, 9), new BlockPos(4, 5, 7), new BlockPos(8, 5, 11))) {
+                    new BlockPos(6, 5, 9), new BlockPos(4, 5, 7), new BlockPos(8, 5, 11), new BlockPos(4, 3, 12), new BlockPos(5, 2, 12))) {
                 helper.assertBlockPresent(Blocks.STONE, wall);
             }
-            check(car.trunk().countItem(Items.COBBLESTONE) == 74, "In de kofferbak liggen " + car.trunk().countItem(Items.COBBLESTONE)
-                    + " cobblestone in plaats van 74 (75 blokken, min het blok waar hij al stond)");
+            check(car.trunk().countItem(Items.COBBLESTONE) == 75, "In de kofferbak liggen " + car.trunk().countItem(Items.COBBLESTONE)
+                    + " cobblestone in plaats van 75");
+            check(car.arm() == 0, "Zijn arm staat na de kamer niet weer beneden: " + car.arm());
             checkAt(helper, car, start, "Na de kamer");
             check(Math.abs(Mth.wrapDegrees(car.getYRot() - Direction.NORTH.toYRot())) < 1, "Hij kijkt niet weer naar het noorden");
             check(!car.body().blocked(), "car.blocked is waar na een kamer die gewoon lukte");

@@ -1,0 +1,27 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "imttech:block/chest_sensor"
+    },
+    "facing=east": {
+      "model": "imttech:block/chest_sensor",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "imttech:block/chest_sensor",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "imttech:block/chest_sensor",
+      "y": 270
+    },
+    "facing=up": {
+      "model": "imttech:block/chest_sensor",
+      "x": 270
+    },
+    "facing=down": {
+      "model": "imttech:block/chest_sensor",
+      "x": 90
+    }
+  }
+}

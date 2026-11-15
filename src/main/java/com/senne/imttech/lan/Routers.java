@@ -548,8 +548,17 @@ public final class Routers {
                 linked, nearby);
     }
 
-    /** Hoe een apparaat in de buurt ervoor staat: los, aan een andere router, of al aan een netwerk (een kabel). */
+    /**
+     * Hoe een apparaat in de buurt ervoor staat: los, aan een andere router, al aan een netwerk (een kabel), of al in het
+     * netwerk van deze router zelf.
+     */
     private static int nearbyStatus(ServerLevel level, RouterLinks links, BlockPos router, BlockPos other) {
+        // Zit het al in het netwerk van deze router (met een kabel, of via een andere router)? Dan hoeft verbinden niet:
+        // dat kost alleen een plek. (Gezien op de foto: de kern stond er met een knop Link, terwijl de router er met een
+        // kabel aan hing.)
+        if (LanGrid.networkOf(level, router).contains(other)) {
+            return RouterOpenPayload.SAME_NET;
+        }
         if (level.getBlockState(other).getBlock() instanceof SecurityCoreBlock) {
             return RouterOpenPayload.FREE; // de kern mag aan meer routers tegelijk hangen
         }

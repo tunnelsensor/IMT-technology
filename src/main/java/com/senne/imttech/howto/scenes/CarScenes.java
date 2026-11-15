@@ -97,8 +97,8 @@ public final class CarScenes {
         s.sneakRightClick(start.add(0, 0.4, 0), ItemStack.EMPTY);
         s.idle(20);
         s.picture(145, "rc_car_code", 427, 240,
-                s.arrow(0.19f, 0.16f, "An example. *def* makes a function: a button on the car"),
-                s.arrow(0.27f, 0.20f, "*for i in range(20):* does the steps under it 20 times"),
+                s.arrow(0.297f, 0.157f, "An example. *def* makes a function: a button on the car"),
+                s.arrow(0.355f, 0.199f, "*for i in range(20):* does the steps under it 20 times"),
                 s.arrow(0.73f, 0.33f, "Everything the car knows: click a line to put it in your code"),
                 s.arrow(0.78f, 0.89f, "*Check* looks for mistakes, *Save* puts it on the car"));
         s.idle(150);
@@ -137,11 +137,10 @@ public final class CarScenes {
         s.chapter("A bigger example: a room");
         s.actor("car", type, 175, 0, EAST, idle, at);
         s.picture(170, "rc_car_code_room", 427, 240,
-                s.arrow(0.17f, 0.16f, "*room* carves a room 5 wide, 3 high and 5 deep. Put the car in a corner, with the wall"
-                        + " on its left"),
-                s.arrow(0.24f, 0.24f, "*mine_up(2)* breaks the two blocks above the car: the room is 3 high"),
-                s.arrow(0.21f, 0.45f, "*back(4)* drives back to the start of the lane"),
-                s.arrow(0.23f, 0.49f, "After every lane but the last: one lane to the right"));
+                s.arrow(0.211f, 0.157f, "*dig()*: three blocks high, with the arm"),
+                s.arrow(0.288f, 0.407f, "*arm_down(2)* lowers the arm again"),
+                s.arrow(0.234f, 0.49f, "*room*: 5 wide, 3 high, 5 deep, ahead and to the right"),
+                s.arrow(0.266f, 0.782f, "*back(4)* drives back to the start of the lane"));
         s.idle(175);
 
         s.chapter("The RC Controller");

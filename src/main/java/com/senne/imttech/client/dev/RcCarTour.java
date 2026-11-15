@@ -155,16 +155,18 @@ final class RcCarTour {
     }
 
     /**
-     * Voor de showcase: een blok steen van 7 x 7 en 3 hoog met een glazen dak, en in de hoek ervan (een uitgehakt blokje)
-     * de auto "Miner" met de netherite boorkop en het programma dat je erop schreef. Zo zie je door het dak hoe hij de kamer
-     * van 5 x 3 x 5 uithakt.
+     * Voor de showcase: een blok steen van 7 breed, 8 diep en 3 hoog met een glazen dak, en in de rand ervan (een
+     * uitgehakt blokje: de deuropening) de auto "Miner" met de netherite boorkop en het programma dat je erop schreef. Zo
+     * zie je door het dak hoe hij de kamer van 5 x 3 x 5 uithakt. Sinds hoofdstuk 113 begint de auto vóór de kamer (de
+     * kamer komt voor hem en rechts van hem), dus de steen loopt een rij verder naar het noorden: achter de kamer blijft
+     * een muur staan.
      */
     private static void roomStage(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
-        for (BlockPos pos : BlockPos.betweenClosed(ROOM.offset(-1, 0, -5), ROOM.offset(5, 2, 1))) {
+        for (BlockPos pos : BlockPos.betweenClosed(ROOM.offset(-1, 0, -6), ROOM.offset(5, 2, 1))) {
             level.setBlockAndUpdate(pos, Blocks.STONE.defaultBlockState());
         }
-        for (BlockPos pos : BlockPos.betweenClosed(ROOM.offset(-1, 3, -5), ROOM.offset(5, 3, 1))) {
+        for (BlockPos pos : BlockPos.betweenClosed(ROOM.offset(-1, 3, -6), ROOM.offset(5, 3, 1))) {
             level.setBlockAndUpdate(pos, Blocks.GLASS.defaultBlockState());
         }
         level.setBlockAndUpdate(ROOM, Blocks.AIR.defaultBlockState());
@@ -341,7 +343,9 @@ final class RcCarTour {
         t.step(5, () -> send("Digger", RcCarActionPayload.Op.CODE, ""));
         t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof RcCarCodeScreen);
         t.step(5, () -> HowToTour.mouseTo(2, 2));
-        t.step(15, () -> {
+        t.pause(14);
+        t.waitUntil(40, HowToTour::caretHidden);
+        t.step(0, () -> {
             Minecraft mc = Minecraft.getInstance();
             if (mc.screen instanceof RcCarCodeScreen) {
                 HowToTour.capture(name, 0, 0, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
@@ -414,10 +418,11 @@ final class RcCarTour {
                 .step(0, () -> send("Miner", RcCarActionPayload.Op.RUN, "room"))
                 .pause(50)
                 .close(10)
-                // Van boven, door het glazen dak: de kamer van 5 x 3 x 5.
-                .view(0, ROOM.getX() + 2.5, YARD.getY() + 11.5, ROOM.getZ() + 3.5, 180, 62)
-                .pause(1500)
-                .view(0, ROOM.getX() + 2.5, YARD.getY() + 6.5, ROOM.getZ() + 4.5, 180, 50)
+                // Van boven, door het glazen dak: de kamer van 5 x 3 x 5. Met zijn arm (drie blokken hoog per stap) doet hij
+                // er zo'n 1700 ticks over.
+                .view(0, ROOM.getX() + 2.5, YARD.getY() + 11.5, ROOM.getZ() + 2.5, 180, 62)
+                .pause(1800)
+                .view(0, ROOM.getX() + 2.5, YARD.getY() + 6.5, ROOM.getZ() + 3.5, 180, 50)
                 .pause(120)
                 // Tot slot: Digger oppakken (de knop Pick up): hij zit in je rugzak, met alles erin.
                 .stand(0, x + 1.5, YARD.getY(), z - 2.5, 60, 25)

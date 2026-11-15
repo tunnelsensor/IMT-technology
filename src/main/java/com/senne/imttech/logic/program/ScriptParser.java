@@ -170,6 +170,11 @@ public final class ScriptParser {
             expectColon(line, call.end());
             Values values = values(line, trigger, call);
             check(line, trigger, values);
+            if (trigger == Op.ORDERED && kind == ProgramKind.CAR && !"fetch".equals(values.text()) && !"store".equals(values.text())) {
+                // Hoofdstuk 113: de opdrachten van een auto komen van zijn Storage Interface, en dat zijn er twee.
+                throw new LogicException(line.number(), "An RC car gets its orders from a Storage Interface: write when ordered(\"fetch\"): "
+                        + "(someone ordered an item) or when ordered(\"store\"): (someone put items in to store)");
+            }
             index++;
             List<Script.Stmt> body = block(line, trigger);
             items.add(new Script.Handler(trigger, values.text() == null ? "" : values.text(),
@@ -190,7 +195,7 @@ public final class ScriptParser {
         if (name.type() != Lexer.Type.NAME) {
             throw new LogicException(line.number(), "def needs a name, like: def open_door():");
         }
-        String problem = Checks.nameProblem(name.text());
+        String problem = Checks.nameProblem(name.text(), kind);
         if (problem != null) {
             throw new LogicException(line.number(), problem);
         }
@@ -238,7 +243,7 @@ public final class ScriptParser {
                         + "(door: string, times: int):");
             }
         }
-        problem = Checks.paramsProblem(params, functionNames);
+        problem = Checks.paramsProblem(params, functionNames, kind);
         if (problem != null) {
             throw new LogicException(line.number(), problem);
         }
@@ -366,6 +371,11 @@ public final class ScriptParser {
         if (!op.allowedIn(kind)) {
             throw new LogicException(line.number(), ScriptChecker.wrongKind(op.code() + "()", kind, op::allowedIn));
         }
+        if ((op == Op.MINE || op == Op.MINE_UP || op == Op.MINE_DOWN) && !call.args().isEmpty()) {
+            // Tot hoofdstuk 113 bestond mine(2) en mine_up(2): nu reikt de boor verder met de arm.
+            throw new LogicException(line.number(), op.code() + "() breaks one block now, without a number. To break higher, raise "
+                    + "the arm: arm_up() and then mine()");
+        }
         if (op.textArg() == Op.Arg.VALUES) {
             // goto(x, y, z), write(pin, true), order("Guard 1", "attack"): een rijtje waarden, als code bewaard.
             String problem = Checks.valuesProblem(op, call.args());
@@ -453,7 +463,7 @@ public final class ScriptParser {
             throw new LogicException(line.number(), "for needs a name that counts, " + example);
         }
         String name = tokens.get(1).text();
-        String problem = Checks.variableProblem(name, functionNames);
+        String problem = Checks.variableProblem(name, functionNames, kind);
         if (problem != null) {
             throw new LogicException(line.number(), problem);
         }
@@ -520,7 +530,7 @@ public final class ScriptParser {
      */
     private String[] assignment(Line line) {
         String name = line.first().text();
-        String problem = Checks.variableProblem(name, functionNames);
+        String problem = Checks.variableProblem(name, functionNames, kind);
         if (problem != null) {
             throw new LogicException(line.number(), problem);
         }

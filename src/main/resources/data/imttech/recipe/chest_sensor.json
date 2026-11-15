@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "R": {
+      "tag": "c:dusts/redstone"
+    },
+    "G": {
+      "tag": "c:glass_panes"
+    },
+    "N": {
+      "item": "imttech:network_cable"
+    }
+  },
+  "pattern": [
+    "RGR",
+    " N "
+  ],
+  "result": {
+    "id": "imttech:chest_sensor",
+    "count": 4
+  }
+}

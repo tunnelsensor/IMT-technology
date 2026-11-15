@@ -57,7 +57,11 @@ bunkers to raid.
   instead of health.
 - The RC Car: a little car with a drill and a trunk that mines and builds what you program, from
   scratch: `mine()`, `forward(1)`, `mine_up()` in a loop is a mining tunnel. Every function you write
-  is a button on its RC Controller. Four drill heads, from iron (slow) to netherite (fast).
+  is a button on its RC Controller. Four drill heads, from iron (slow) to netherite (fast), and an arm
+  you program (`arm_up()`) that reaches three blocks high.
+- A storage system you program yourself: order an item at the Storage Interface and your RC Car drives
+  through your chest room to fetch it (`if item("iron_ingot") in chest():`, `take(...)`, `put()`), or
+  puts away what you hand in. Chest Sensors show your chests live, and a Charging Pad keeps the car charged.
 
 **Weapons and gear**
 - Real firearms you build from six parts that wear and jam: the Glock 19, the MP5, the AK-47, the AWP (bolt

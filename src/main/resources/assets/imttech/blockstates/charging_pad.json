@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "charging=false": {
+      "model": "imttech:block/charging_pad"
+    },
+    "charging=true": {
+      "model": "imttech:block/charging_pad_on"
+    }
+  }
+}

@@ -2194,10 +2194,11 @@ final class ShowcaseFeatures {
 
         add("RC Car", "Hoofdstuk 108: de RC Car, een autootje dat je programmeert om te mijnen en te bouwen. Voor je staat "
                 + "Digger (geel, met een boor vooraan, een laadbak achterop en twee koplampen) voor een blok steen; rechts "
-                + "staat een blok steen met een glazen dak, met Miner in een hoek. Eerst het scherm van Digger (sneak + "
-                + "rechtsklik): READY, zijn batterij (een Energy Cell, 86%), zijn kofferbak (23 items), zijn boorkop (Iron Drill "
-                + "Head, speed 25%), links zijn functies strip_mine en room (die schreef je er zelf op: een nieuwe auto heeft "
-                + "geen programma), rechts de pijltjes om hem met de hand te rijden. Dan Program: de code-editor met zijn "
+                + "staat een blok steen met een glazen dak, met Miner in de rand ervan (de deuropening). Eerst het scherm van "
+                + "Digger (sneak + rechtsklik): READY, zijn batterij (een Energy Cell, 86%), zijn kofferbak (23 items), zijn "
+                + "boorkop (Iron Drill Head, speed 25%) met ernaast Arm 0/2 en twee knopjes, links zijn functies strip_mine, dig "
+                + "en room (die schreef je er zelf op: een nieuwe auto heeft geen programma), rechts de pijltjes om hem met de "
+                + "hand te rijden. Dan Program: de code-editor met zijn "
                 + "programma (elke def is een knop), rechts alles wat hij kent. Terug: met Forward rijdt hij een blok naar de "
                 + "steen, en dan klik je strip_mine aan: bovenaan staat RUNNING strip_mine, en hij boort een gang van 1 breed en "
                 + "2 hoog (zijn boor draait, het blok barst, hij rijdt erin en breekt het blok erboven). Met de ijzeren kop duurt "
@@ -2206,8 +2207,9 @@ final class ShowcaseFeatures {
                 + "stopt hem en kijkt in "
                 + "zijn kofferbak (rechtsklik): de cobblestone die hij brak. Dan heb je een RC Controller in je hand, gekoppeld "
                 + "met Miner: rechtsklik opent zijn scherm van ver ('via RC Controller'), je kiest room, en door het glazen dak "
-                + "zie je van boven hoe hij rij voor rij een kamer van 5 breed, 3 hoog en 5 diep uithakt en terugkeert naar zijn "
-                + "hoek (ruim een minuut; onderaan 'Miner: room is done'). Tot slot pak je Digger op met Pick up: hij zit in je "
+                + "zie je van boven hoe hij rij voor rij een kamer van 5 breed, 3 hoog en 5 diep uithakt (bij elk blok schuift "
+                + "zijn boor langs een mast twee blokken omhoog en weer omlaag) en terugkeert naar de deuropening (bijna "
+                + "anderhalve minuut; onderaan 'Miner: room is done'). Tot slot pak je Digger op met Pick up: hij zit in je "
                 + "rugzak, met zijn programma, zijn cel, zijn boorkop en zijn kofferbak.",
                 RcCarTour.SHOW_FROM, 143, 15, RcCarTour::showcase);
 
@@ -2650,6 +2652,22 @@ final class ShowcaseFeatures {
                 .pause(100)
                 .close(20));
 
+        add("Storage system", "Hoofdstuk 113: het opslagsysteem met de RC Car. Voor je staat een opslagkamer: links de Storage "
+                + "Interface (een stalen kast met een scherm) met de gele auto Porter ervoor op een Charging Pad, en rechts een "
+                + "gang langs vier stapels tonnen van drie hoog. Boven op twee stapels zit een Chest Sensor (een zwart kastje met "
+                + "een blauw lensje): de ene hangt met een witte netwerkkabel aan de interface, de andere draadloos aan de "
+                + "Router rechts. Eerst het scherm van de interface (rechtsklik): bovenaan Main storage en de tabbladen Order, "
+                + "Store en Cars; links wat er in de opslag zit (twaalf soorten, elk met een aantal), rechts ORDERS. Je kiest "
+                + "het ijzer: rechts staat Iron Ingot, In storage: 40, het aantal 12 en de knop Order. Na Order staat de "
+                + "bestelling onder ORDERS (eerst waiting, dan 0/12). Het scherm gaat dicht en je kijkt van schuin boven: "
+                + "Porter draait naar rechts, rijdt de gang in, draait bij elke stapel naar de tonnen, zijn arm met de boor "
+                + "schuift omhoog langs een mast (drie tonnen hoog) en weer omlaag; bij de tweede stapel neemt hij het ijzer. "
+                + "Dan rijdt hij achteruit terug en legt het in de interface; onderaan lees je 'Main storage: your 12 Iron "
+                + "Ingot are in the pick-up slots'. In het scherm ligt het ijzer nu onder PICK-UP en staat de bestelling op "
+                + "done. Daarna opbergen: op het tabblad Store liggen 32 cobblestone en 3 diamanten; na de knop Store komen er "
+                + "twee bestellingen bij (met een > ervoor). Porter haalt eerst de stenen bij de interface en legt ze in de ton "
+                + "waar al cobblestone ligt, dan de diamanten bij de diamanten. Tot slot het scherm: alles done, de vakjes leeg.",
+                StorageTour.SHOW_FROM, 180, 15, StorageTour::showcase);
         add("Router", "Hoofdstuk 112: de Router, het netwerk zonder kabel naar elk apparaat. Links staat een Security Core met "
                 + "één groene PoE-kabel naar een plat zwart kastje met twee antennes en vier lampjes: Router 1. Daaromheen staan, "
                 + "zonder kabels, een relais met een lamp (Front door), een camera en een keycardlezer op een pilaar (Lab door); "

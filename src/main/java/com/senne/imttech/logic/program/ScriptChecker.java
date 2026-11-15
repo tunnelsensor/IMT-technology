@@ -95,6 +95,11 @@ public final class ScriptChecker {
                     return;
                 }
             }
+            // Hoofdstuk 113: "... in chest()" en "... in trunk()" kent alleen een RC Car.
+            if (kind != ProgramKind.CAR && Expr.usesStorage(expr)) {
+                problems.add(new Problem(ref, wrongKind("in chest()", kind, other -> other == ProgramKind.CAR)));
+                return;
+            }
         }
     }
 
@@ -179,7 +184,7 @@ public final class ScriptChecker {
             } else {
                 functions.put(function.name(), function);
             }
-            String problem = Checks.paramsProblem(function.params(), functions.keySet());
+            String problem = Checks.paramsProblem(function.params(), functions.keySet(), kind);
             if (problem != null) {
                 problems.add(new Problem(function.ref(), problem));
             }
@@ -287,7 +292,7 @@ public final class ScriptChecker {
         // Eerst de gedeelde namen van de global scripts: die zijn er al.
         library.shared().forEach((name, shared) -> globals.put(name, shared.type().exprType(), shared.type()));
         for (Script.Global global : script.globals()) {
-            String problem = Checks.variableProblem(global.name(), defNames);
+            String problem = Checks.variableProblem(global.name(), defNames, kind);
             if (problem == null && library.sharedName(global.name()) != null && !script.global()) {
                 Library.Shared shared = library.sharedName(global.name());
                 problem = global.name() + " is a shared name from your global script " + shared.script()
@@ -466,7 +471,7 @@ public final class ScriptChecker {
      */
     private static @Nullable String forProblem(Script.Loop loop, @Nullable Op trigger, Scope globals, Scope locals,
                                                Set<String> defNames, ProgramKind kind) {
-        String problem = Checks.variableProblem(loop.var(), defNames);
+        String problem = Checks.variableProblem(loop.var(), defNames, kind);
         if (problem != null) {
             return problem;
         }
@@ -491,7 +496,7 @@ public final class ScriptChecker {
     private static @Nullable String assignProblem(Script.Assign assign, @Nullable Op trigger, Scope globals, Scope locals,
                                                   Set<String> defNames, ProgramKind kind) {
         String name = assign.name();
-        String problem = Checks.variableProblem(name, defNames);
+        String problem = Checks.variableProblem(name, defNames, kind);
         if (problem != null) {
             return problem;
         }

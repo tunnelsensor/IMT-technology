@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "imttech:block/storage_interface"
+    },
+    "facing=east": {
+      "model": "imttech:block/storage_interface",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "imttech:block/storage_interface",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "imttech:block/storage_interface",
+      "y": 270
+    }
+  }
+}

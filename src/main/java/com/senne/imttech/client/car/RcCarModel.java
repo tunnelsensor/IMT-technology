@@ -17,7 +17,8 @@ import net.minecraft.resources.ResourceLocation;
 /**
  * Het 3D-model van een RC Car (hoofdstuk 108): een laag onderstel op vier wielen, een motorkap met twee koplampen,
  * een open laadbak achterop (zijn kofferbak), een antenne, en vooraan een boor in vier trapjes. De wielen draaien als
- * hij rijdt, de boor draait als hij boort.
+ * hij rijdt, de boor draait als hij boort. Sinds hoofdstuk 113 zit de boor op een arm: staat die omhoog (arm_up()), dan
+ * schuift de boor een of twee blokken omhoog langs een mast die meegroeit.
  *
  * Maten zijn in pixels (16 pixels = 1 blok). Minecraft-modellen staan "op hun kop": y = 24 is de grond en kleinere y
  * is hoger; de neus wijst naar -z. De auto is 12 pixels breed (met wielen) en past dus in een gang van één blok. De
@@ -31,6 +32,7 @@ public class RcCarModel extends EntityModel<RcCarEntity> {
     private final ModelPart root;
     private final ModelPart[] wheels = new ModelPart[4];
     private final ModelPart drill;
+    private final ModelPart mast;
 
     public RcCarModel(ModelPart root) {
         this.root = root;
@@ -39,6 +41,7 @@ public class RcCarModel extends EntityModel<RcCarEntity> {
             wheels[i] = body.getChild("wheel_" + i);
         }
         drill = body.getChild("drill");
+        mast = body.getChild("mast");
     }
 
     public static LayerDefinition createBodyLayer() {
@@ -74,6 +77,12 @@ public class RcCarModel extends EntityModel<RcCarEntity> {
                         .texOffs(50, 26).addBox(-0.5f, -0.5f, -6, 1, 1, 1),
                 PartPose.offset(0, -3.5f, -4));
 
+        // De mast van de arm (hoofdstuk 113): een paal van één blok hoog achter de boor, die het model uitrekt tot waar
+        // de boor staat (zie setupAnim). Zijn draaipunt zit onderaan, op de hoogte van de boor als de arm beneden is.
+        body.addOrReplaceChild("mast",
+                CubeListBuilder.create().texOffs(0, 40).addBox(-1, -16, -1, 2, 16, 2),
+                PartPose.offset(0, -3.5f, -3));
+
         return LayerDefinition.create(mesh, 64, 64);
     }
 
@@ -87,6 +96,12 @@ public class RcCarModel extends EntityModel<RcCarEntity> {
             wheel.xRot = limbSwing * 2.0f;
         }
         drill.zRot = car.isDrilling() ? ageInTicks * 1.3f : 0.0f;
+        // De arm (hoofdstuk 113): de boor schuift vloeiend omhoog (16 pixels per blok; kleinere y is hoger), en de mast
+        // rekt mee. Met de arm beneden is de mast er niet.
+        float arm = net.minecraft.util.Mth.lerp(ageInTicks - car.tickCount, car.armShownO, car.armShown);
+        drill.y = -3.5f - 16.0f * arm;
+        mast.visible = arm > 0.02f;
+        mast.yScale = Math.max(0.001f, arm);
     }
 
     @Override

@@ -48,6 +48,9 @@
     "imttech:battery_casing",
     "imttech:battery_glass",
     "imttech:battery_cell",
-    "imttech:battery_port"
+    "imttech:battery_port",
+    "imttech:storage_interface",
+    "imttech:chest_sensor",
+    "imttech:charging_pad"
   ]
 }

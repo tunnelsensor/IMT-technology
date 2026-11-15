@@ -1235,6 +1235,16 @@ final class HowToTour {
         }
     }
 
+    /**
+     * Is het knipperende streepje van een tekstvak nu uit, en blijft dat nog even zo? Wacht hierop vlak voor een plaatje
+     * van de code-editor: anders staat het streepje soms door de eerste letter heen (CodeEditor: het streepje is aan in de
+     * eerste helft van elke seconde).
+     */
+    static boolean caretHidden() {
+        long phase = net.minecraft.Util.getMillis() % 1000;
+        return phase >= 600 && phase < 850;
+    }
+
     /** Een paneel in het midden van het scherm (een scherm met vakjes: {@code w} x {@code h}) als plaatje. */
     private static void captureCentered(String name, int w, int h) {
         Minecraft mc = Minecraft.getInstance();

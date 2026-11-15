@@ -5642,6 +5642,15 @@ public final class VisualCheck {
         if (ONLY.contains("howtopics:router")) {
             RouterTour.pictures(t);
         }
+        // --- Hoofdstuk 113: het opslagsysteem (-Ponly=storage): de opslagkamer, de sensors, de arm van de auto, het scherm
+        // van de Storage Interface met een bestelling, de laadplaat en de items. En de twee plaatjes voor How it works
+        // (-Ponly=howtopics:storage; dat verandert bestanden van de mod).
+        if (want("storage")) {
+            StorageTour.tour(t);
+        }
+        if (ONLY.contains("howtopics:storage")) {
+            StorageTour.pictures(t);
+        }
 
         // --- How it works (hoofdstuk 63): de plaatjes van echte schermen (alleen als je erom vraagt: dat verandert
         // bestanden van de mod), en W op een item, de animatie van de Power Battery, het knopje en het overzicht.

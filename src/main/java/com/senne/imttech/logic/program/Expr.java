@@ -68,6 +68,37 @@ public sealed interface Expr {
     record Template(List<Expr> parts) implements Expr {}
 
     /**
+     * {@code item("iron_ingot") in chest()} (hoofdstuk 113, jouw wens: "kijken of het item in die chest zit doe je
+     * gewoon door if item("hetitem") in chest():"): ligt er minstens één van dat item in de kist vóór de auto, of
+     * ({@code in trunk()}) in zijn kofferbak? Links staat de naam van het item (tekst).
+     */
+    record In(Expr item, Storage where) implements Expr {}
+
+    /** Waar {@link In} kijkt: de kist vóór de auto (op de hoogte van zijn arm), of zijn eigen kofferbak. */
+    enum Storage {
+        CHEST("chest"), TRUNK("trunk");
+
+        final String code;
+
+        Storage(String code) {
+            this.code = code;
+        }
+
+        public String code() {
+            return code;
+        }
+
+        static @Nullable Storage byCode(String code) {
+            for (Storage storage : values()) {
+                if (storage.code.equals(code)) {
+                    return storage;
+                }
+            }
+            return null;
+        }
+    }
+
+    /**
      * De soorten waarden: een getal, tekst, of waar/onwaar. ANY = "pas bij het uitvoeren bekend" (zoals
      * een variabele als we de code soepel lezen): die mag overal, de echte controle komt elders.
      */
@@ -127,11 +158,24 @@ public sealed interface Expr {
         CAR_FULL("car.full", Type.BOOL, "true if the trunk of the car has no empty slot left", null),
         CAR_ITEMS("car.items", Type.NUMBER, "how many items are in the trunk of the car", null),
         CAR_BLOCKS("car.blocks", Type.NUMBER, "how many blocks the car can still place (the blocks in its trunk)", null),
-        // Na when ordered(...): de opdracht van de server.
-        ORDER_NAME("order.name", Type.TEXT, "the order the server gave, like \"attack\"", Op.ORDERED),
-        ORDER_X("order.x", Type.NUMBER, "the place the server gave with the order: x", Op.ORDERED),
-        ORDER_Y("order.y", Type.NUMBER, "the place the server gave with the order: y", Op.ORDERED),
-        ORDER_Z("order.z", Type.NUMBER, "the place the server gave with the order: z", Op.ORDERED),
+        // Hoofdstuk 113: de arm van de auto, en de kist vóór hem (op de hoogte van zijn arm).
+        CAR_ARM("car.arm", Type.NUMBER, "how high the arm of the car is: 0 (the block in front of it), 1 or 2 blocks higher", null),
+        CHEST_SLOTS("chest.slots", Type.NUMBER, "how many slots the chest in front of the car has (0 = there is no chest there)", null),
+        CHEST_FREE("chest.free", Type.NUMBER, "how many slots of the chest in front of the car are empty", null),
+        CHEST_ITEMS("chest.items", Type.NUMBER, "how many items are in the chest in front of the car", null),
+        // Na when ordered(...): de opdracht van de server (een robot of drone), of van de Storage Interface (een RC Car).
+        ORDER_NAME("order.name", Type.TEXT, "the order that was given, like \"attack\" (an RC car: \"fetch\" or \"store\")", Op.ORDERED),
+        ORDER_X("order.x", Type.NUMBER, "the place that came with the order: x (an RC car: the nearest storage its Storage Interface "
+                + "knows with that item)", Op.ORDERED),
+        ORDER_Y("order.y", Type.NUMBER, "the place that came with the order: y", Op.ORDERED),
+        ORDER_Z("order.z", Type.NUMBER, "the place that came with the order: z", Op.ORDERED),
+        // Hoofdstuk 113: de bestelling van een Storage Interface (alleen een RC Car).
+        ORDER_ITEM("order.item", Type.TEXT, "the item to fetch or to store, as text: \"iron_ingot\"", Op.ORDERED),
+        ORDER_COUNT("order.count", Type.NUMBER, "how many of that item the order is for", Op.ORDERED),
+        ORDER_LEFT("order.left", Type.NUMBER, "how many are still to do: when fetching, how many are not in the trunk yet; when "
+                + "storing, how many are not put away yet", Op.ORDERED),
+        ORDER_KNOWN("order.known", Type.BOOL, "true if the Storage Interface knows a storage with that item (then order.x, order.y "
+                + "and order.z say where)", Op.ORDERED),
         // Hoofdstuk 60: de zintuigen van een bewaker (bot/BotAlert). Na when heard: het lawaai...
         SOUND_X("sound.x", Type.NUMBER, "where the noise came from: x", Op.HEARD),
         SOUND_Y("sound.y", Type.NUMBER, "where the noise came from: y", Op.HEARD),
@@ -192,10 +236,16 @@ public sealed interface Expr {
             if (name.startsWith("drone.")) {
                 return kind == ProgramKind.DRONE;
             }
-            if (name.startsWith("car.")) {
-                return kind == ProgramKind.CAR; // hoofdstuk 108
+            if (name.startsWith("car.") || name.startsWith("chest.")) {
+                return kind == ProgramKind.CAR; // hoofdstuk 108, en 113: de kist vóór hem
             }
-            if (name.startsWith("order.") || name.startsWith("sound.") || name.startsWith("target.") || name.startsWith("body.")) {
+            if (this == ORDER_ITEM || this == ORDER_COUNT || this == ORDER_LEFT || this == ORDER_KNOWN) {
+                return kind == ProgramKind.CAR; // hoofdstuk 113: de bestelling van een Storage Interface
+            }
+            if (name.startsWith("order.")) {
+                return kind.onBot() || kind == ProgramKind.CAR;
+            }
+            if (name.startsWith("sound.") || name.startsWith("target.") || name.startsWith("body.")) {
                 return kind.onBot();
             }
             if (this == TRAINEE || this == LIVES || this == HITS) {
@@ -269,7 +319,16 @@ public sealed interface Expr {
          */
         BLOCK("block", Type.TEXT, "the block in front of the car, as text: \"stone\", \"diamond_ore\", \"air\"...", null),
         BLOCK_UP("block_up", Type.TEXT, "the block above the car, as text (\"air\" if there is none)", null),
-        BLOCK_DOWN("block_down", Type.TEXT, "the block under the car, as text", null);
+        BLOCK_DOWN("block_down", Type.TEXT, "the block under the car, as text", null),
+        /**
+         * {@code item("iron_ingot")} (hoofdstuk 113, jouw wens: {@code if item("hetitem") in chest():}): de naam van een
+         * item, netjes geschreven ("Iron Ingot" wordt "iron_ingot"). Zo lees je meteen dat het om een item gaat.
+         */
+        ITEM("item", Type.TEXT, "the name of an item, like item(\"iron_ingot\"): use it with in chest() or in trunk()", null),
+        /** {@code chest.count("iron_ingot")}: hoeveel er daarvan in de kist vóór de auto liggen (op de hoogte van zijn arm). */
+        CHEST_COUNT("chest.count", Type.NUMBER, "how many of that item are in the chest in front of the car, like chest.count(\"iron_ingot\")", null),
+        /** {@code trunk.count("iron_ingot")}: hoeveel er daarvan in zijn kofferbak liggen. */
+        TRUNK_COUNT("trunk.count", Type.NUMBER, "how many of that item are in the trunk of the car, like trunk.count(\"iron_ingot\")", null);
 
         /** Zoveel pinnen heeft de printplaat van een robot (zoals BotBoard.PINS). */
         public static final int PINS = 8;
@@ -303,9 +362,23 @@ public sealed interface Expr {
             return switch (this) {
                 case ACTIVE -> kind == ProgramKind.SERVER || kind == ProgramKind.TRAINING_END;
                 case CARD_IN_GROUP -> kind == ProgramKind.SERVER;
-                case BLOCK, BLOCK_UP, BLOCK_DOWN -> kind == ProgramKind.CAR;
+                case BLOCK, BLOCK_UP, BLOCK_DOWN, ITEM, CHEST_COUNT, TRUNK_COUNT -> kind == ProgramKind.CAR;
                 default -> kind.onBot();
             };
+        }
+
+        /** Neemt deze functie de naam van een item tussen de haakjes ({@code item("iron_ingot")}, hoofdstuk 113)? */
+        public boolean takesItem() {
+            return this == ITEM || this == CHEST_COUNT || this == TRUNK_COUNT;
+        }
+
+        /**
+         * Is dit woord bezet als naam (je mag er geen def of eigen naam zo noemen)? {@code item} niet: het is een gewoon
+         * woord, en een diagram van vóór hoofdstuk 113 met een naam {@code item} moet blijven werken. Als functie herkennen
+         * we het aan het haakje erachter.
+         */
+        public boolean reserved() {
+            return this != ITEM;
         }
 
         /** Neemt deze functie niets tussen de haakjes ({@code block()})? */
@@ -321,6 +394,8 @@ public sealed interface Expr {
                 case ACTIVE -> "if active(\"Wave 1\") == 0:";
                 case CARD_IN_GROUP -> "if card.in_group(\"security\"):";
                 case BLOCK, BLOCK_UP, BLOCK_DOWN -> "if " + name + "() == \"stone\":";
+                case ITEM -> "if item(\"iron_ingot\") in chest():";
+                case CHEST_COUNT, TRUNK_COUNT -> "if " + name + "(\"iron_ingot\") >= 8:";
             };
         }
 
@@ -534,7 +609,31 @@ public sealed interface Expr {
                 checkCompare(left, token.text(), right);
                 return new Compare(left, token.text(), right);
             }
+            if (token.is("in")) {
+                next();
+                return in(left);
+            }
             return left;
+        }
+
+        /**
+         * {@code item("iron_ingot") in chest()} (hoofdstuk 113): na {@code in} komt {@code chest()} of {@code trunk()},
+         * en links staat de naam van een item (tekst).
+         */
+        private Expr in(Expr item) {
+            String hint = "After in comes chest() or trunk(), like if item(\"iron_ingot\") in chest():";
+            Lexer.Token where = next();
+            Storage storage = where.type() == Lexer.Type.NAME ? Storage.byCode(where.text()) : null;
+            if (storage == null) {
+                throw new LogicException(hint);
+            }
+            if (!next().is("(") || !next().is(")")) {
+                throw new LogicException(storage.code + " needs empty brackets here: in " + storage.code + "()");
+            }
+            if (typeOf(item) != Type.TEXT && typeOf(item) != Type.ANY) {
+                throw new LogicException("Before in comes the name of an item (text), like item(\"iron_ingot\") in " + storage.code + "()");
+            }
+            return new In(item, storage);
         }
 
         /** Optellen en aftrekken, van links naar rechts: {@code a + b - c}. Met + plak je ook tekst. */
@@ -696,7 +795,7 @@ public sealed interface Expr {
                     }
                     return new IsOn(device.text());
                 }
-                case "and", "or", "not" -> throw new LogicException("Something is missing before " + word);
+                case "and", "or", "not", "in" -> throw new LogicException("Something is missing before " + word);
                 default -> {
                 }
             }
@@ -707,6 +806,10 @@ public sealed interface Expr {
                         : "A card can be in more than one group: use card.in_group(\"security\")");
             }
             Function function = Function.byName(word);
+            // item is alleen een functie met een haakje erachter: zonder is het een van je eigen namen (zie Function.reserved).
+            if (function == Function.ITEM && !peek().is("(")) {
+                function = null;
+            }
             if (function != null) {
                 if (scope != null && !function.allowedAfter(trigger)) {
                     throw new LogicException(word + "(...) only works inside " + function.where());
@@ -777,6 +880,14 @@ public sealed interface Expr {
                     throw new LogicException(function.name + "() takes nothing between the brackets, like " + function.example());
                 }
                 return new Call(function, List.of());
+            }
+            if (function.takesItem()) {
+                // item("iron_ingot"), chest.count("iron_ingot"), trunk.count("iron_ingot") (hoofdstuk 113): één item (tekst).
+                if (args.size() != 1 || typeOf(args.getFirst()) != Type.TEXT && typeOf(args.getFirst()) != Type.ANY) {
+                    throw new LogicException(function.name + " needs the name of an item between quotes, like " + function.name
+                            + "(\"iron_ingot\")");
+                }
+                return new Call(function, List.copyOf(args));
             }
             String example = function == Function.PIN ? "pin(1)" : "read(scanPin)";
             if (args.size() != 1) {
@@ -895,6 +1006,7 @@ public sealed interface Expr {
             }
             case Call c -> c.args().forEach(arg -> collectVariables(arg, names));
             case Template t -> t.parts().forEach(part -> collectVariables(part, names));
+            case In i -> collectVariables(i.item(), names);
             default -> { }
         }
     }
@@ -938,6 +1050,7 @@ public sealed interface Expr {
             case And a -> 2;
             case Not n -> 3;
             case Compare c -> 4;
+            case In i -> 4;
             case Arith a -> a.op() == '+' || a.op() == '-' ? 5 : 6;
             case Neg n -> 7;
             default -> 8;
@@ -950,6 +1063,7 @@ public sealed interface Expr {
             case And a -> print(a.left(), 2) + " and " + print(a.right(), 3);
             case Not n -> "not " + print(n.inner(), 3);
             case Compare c -> print(c.left(), 5) + " " + c.op() + " " + print(c.right(), 5);
+            case In i -> print(i.item(), 5) + " in " + i.where().code + "()";
             // Van links naar rechts: rechts haakjes als hij even sterk bindt (a - (b - c)).
             case Arith a -> print(a.left(), strength(a)) + " " + a.op() + " " + print(a.right(), strength(a) + 1);
             case Neg n -> "-" + print(n.inner(), 7);
@@ -1041,6 +1155,41 @@ public sealed interface Expr {
         default Object block(int direction) {
             return "air";
         }
+
+        /**
+         * Hoeveel er van dit item liggen (hoofdstuk 113): in de kist vóór een RC Car (op de hoogte van zijn arm), of
+         * ({@code trunk}) in zijn kofferbak. {@code item} is de naam zoals {@link Expr#itemName} hem schrijft. Dat weet de
+         * auto; standaard: 0.
+         */
+        default int count(boolean trunk, String item) {
+            return 0;
+        }
+    }
+
+    /**
+     * De naam van een item zoals de taal hem schrijft (hoofdstuk 113): kleine letters, een _ waar een spatie stond, en
+     * zonder "minecraft:" ervoor. "Iron Ingot" wordt "iron_ingot"; een item van een mod houdt zijn voorvoegsel
+     * ("imttech:polymer"). Zo vergelijk je namen zonder op hoofdletters te letten.
+     */
+    public static String itemName(String name) {
+        String clean = name.strip().toLowerCase(Locale.ROOT).replace(' ', '_');
+        return clean.startsWith("minecraft:") ? clean.substring("minecraft:".length()) : clean;
+    }
+
+    /** Staat er ergens in deze uitdrukking {@code ... in chest()} of {@code ... in trunk()} (hoofdstuk 113)? */
+    static boolean usesStorage(Expr expr) {
+        return switch (expr) {
+            case In i -> true;
+            case Or o -> usesStorage(o.left()) || usesStorage(o.right());
+            case And a -> usesStorage(a.left()) || usesStorage(a.right());
+            case Not n -> usesStorage(n.inner());
+            case Compare c -> usesStorage(c.left()) || usesStorage(c.right());
+            case Neg n -> usesStorage(n.inner());
+            case Arith a -> usesStorage(a.left()) || usesStorage(a.right());
+            case Call c -> c.args().stream().anyMatch(Expr::usesStorage);
+            case Template t -> t.parts().stream().anyMatch(Expr::usesStorage);
+            default -> false;
+        };
     }
 
     /** De ingebouwde gegevens ({@code card.number}, {@code robot.battery}...) die in deze uitdrukking staan. */
@@ -1073,6 +1222,7 @@ public sealed interface Expr {
             case Var v -> names.add(v.name());
             case Call c -> c.args().forEach(arg -> collect(arg, names));
             case Template t -> t.parts().forEach(part -> collect(part, names));
+            case In i -> collect(i.item(), names);
             default -> { }
         }
     }
@@ -1109,6 +1259,7 @@ public sealed interface Expr {
                 c.args().forEach(arg -> collectFunctions(arg, found));
             }
             case Template t -> t.parts().forEach(part -> collectFunctions(part, found));
+            case In i -> collectFunctions(i.item(), found);
             default -> { }
         }
     }
@@ -1152,10 +1303,17 @@ public sealed interface Expr {
                     // block(), block_up(), block_down() (hoofdstuk 108): dat vraagt hij aan de auto.
                     yield facts.block(c.function() == Function.BLOCK ? 0 : c.function() == Function.BLOCK_UP ? 1 : -1);
                 }
+                if (c.function().takesItem()) {
+                    // item("Iron Ingot") is gewoon de naam, netjes geschreven; tellen vraagt hij aan de auto (hoofdstuk 113).
+                    String item = itemName(text(eval(c.args().getFirst(), facts)));
+                    yield c.function() == Function.ITEM ? (Object) item
+                            : (Object) (double) facts.count(c.function() == Function.TRUNK_COUNT, item);
+                }
                 // pin(1) is gewoon het getal; read(pin) vraagt het aan de robot.
                 double pin = Math.rint(toNumber(eval(c.args().getFirst(), facts)));
                 yield c.function() == Function.PIN ? (Object) pin : facts.read((int) pin);
             }
+            case In i -> facts.count(i.where() == Storage.TRUNK, itemName(text(eval(i.item(), facts)))) > 0;
             case Template t -> {
                 // Aan elkaar geplakt, zoals met +: een getal zonder overbodige nullen, true of false.
                 StringBuilder text = new StringBuilder();

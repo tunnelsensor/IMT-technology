@@ -19,7 +19,10 @@ import org.jetbrains.annotations.Nullable;
  * ({@link ProgramKind#CAR}) met eigen woorden: rijden ({@code forward(3)}, {@code back(1)}, {@code turn_left()},
  * {@code turn_right()}), breken ({@code mine()}, {@code mine_up()}, {@code mine_down()}), plaatsen ({@code place()},
  * {@code place_up()}, {@code place_down()}), oprapen en lossen ({@code collect()}, {@code unload()}), en wat de auto
- * weet ({@code car.battery}, {@code car.blocked}, {@code block()}...).
+ * weet ({@code car.battery}, {@code car.blocked}, {@code block()}...). Sinds hoofdstuk 113 ook zijn arm
+ * ({@code arm_up()}, {@code arm_down()}), kisten ({@code take("iron_ingot", 8)}, {@code put()}, {@code check()},
+ * {@code if item("iron_ingot") in chest():}) en de bestellingen van een Storage Interface
+ * ({@code when ordered("fetch"):}, {@code order.item}, {@code order.left}).
  *
  * Een programma bestaat uit twee soorten stukken:
  * <ul>
@@ -54,24 +57,108 @@ public final class CarProgram {
                     mine_up()
             """;
 
-    /** Een kamer van 5 breed, 3 hoog en 5 diep. De auto begint in een hoek, met de muur links van hem. */
+    /**
+     * Een kamer van 5 breed, 3 hoog en 5 diep. De auto begint vóór de kamer (in de deuropening): de kamer komt voor hem
+     * en rechts van hem, en hij eindigt weer waar hij begon. Sinds hoofdstuk 113 breekt hij de drie blokken hoog met zijn
+     * arm ({@code dig}: breken, arm omhoog, breken, arm omhoog, breken, arm weer omlaag), want {@code mine_up(2)} bestaat
+     * niet meer.
+     */
     public static final String EXAMPLE_ROOM = """
+            def dig():
+                mine()
+                arm_up()
+                mine()
+                arm_up()
+                mine()
+                arm_down(2)
+
             def room():
+                dig()
+                forward(1)
                 for row in range(5):
-                    mine_up(2)
                     for step in range(4):
-                        mine()
+                        dig()
                         forward(1)
-                        mine_up(2)
                     back(4)
                     if row < 4:
                         turn_right()
-                        mine()
+                        dig()
                         forward(1)
                         turn_left()
                 turn_left()
                 forward(4)
                 turn_right()
+                back(1)
+            """;
+
+    /**
+     * Het voorbeeld van hoofdstuk 113, ook alleen voor How it works en de tests: een auto die voor een Storage Interface
+     * werkt. Hij staat thuis met zijn neus naar de interface; rechts van hem loopt een gang, met links van die gang een
+     * rij kisten van drie hoog (hier vier stapels: {@code chests = 4}). Bij een bestelling rijdt hij de gang in, kijkt bij
+     * elke stapel met zijn arm in de drie kisten, neemt wat hij nodig heeft, rijdt achteruit terug en legt het in de
+     * interface. Opbergen gaat andersom: hij pakt het bij de interface en legt het in een kist waar dat item al ligt; weet
+     * de interface nergens zo'n kist ({@code order.known}), dan in de eerste lege kist. Wat nergens past, houdt hij in
+     * zijn kofferbak.
+     */
+    public static final String EXAMPLE_STORAGE = """
+            chests = 4
+
+            when ordered("fetch"):
+                turn_right()
+                steps = 0
+                while steps < chests and order.left > 0:
+                    forward(1)
+                    steps = steps + 1
+                    turn_left()
+                    look()
+                    turn_right()
+                go_home(steps)
+                if car.items > 0:
+                    put()
+
+            when ordered("store"):
+                take(order.item, order.count)
+                turn_right()
+                steps = 0
+                while steps < chests and trunk.count(order.item) > 0:
+                    forward(1)
+                    steps = steps + 1
+                    turn_left()
+                    stow()
+                    turn_right()
+                go_home(steps)
+                if car.items > 0:
+                    put()
+
+            def go_home(steps: int):
+                if steps > 0:
+                    back(steps)
+                turn_left()
+
+            def look():
+                grab()
+                arm_up()
+                grab()
+                arm_up()
+                grab()
+                arm_down(2)
+
+            def grab():
+                if item(order.item) in chest():
+                    take(order.item, order.left)
+
+            def stow():
+                drop()
+                arm_up()
+                drop()
+                arm_up()
+                drop()
+                arm_down(2)
+
+            def drop():
+                if trunk.count(order.item) > 0:
+                    if item(order.item) in chest() or (not order.known and chest.items == 0):
+                        put(order.item)
             """;
 
     /**

@@ -89,6 +89,9 @@ public class ImtTech {
         com.senne.imttech.backpack.Backpacks.register(modEventBus);
         // Hoofdstuk 109: de body armor, het vest met plates (eigen lijsten, bericht en schade, zie armor/Vests).
         com.senne.imttech.armor.Vests.register(modEventBus);
+        // Hoofdstuk 113: het opslagsysteem met de RC Car: de Storage Interface, de Chest Sensor en de Charging Pad (eigen
+        // lijsten en berichten, zie storage/Storages).
+        com.senne.imttech.storage.Storages.register(modEventBus);
 
         modEventBus.addListener(ModEntities::registerAttributes);
         // Een trechter kan raketten in een Biebia's Industries-torentje doen.

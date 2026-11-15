@@ -255,8 +255,10 @@ public final class CarWork {
      */
     public static Result unload(ServerLevel level, RcCarEntity car, Direction facing) {
         SimpleContainer trunk = car.trunk();
-        BlockPos front = car.body().cell().relative(facing);
-        IItemHandler chest = level.getCapability(Capabilities.ItemHandler.BLOCK, front, facing.getOpposite());
+        // De kist vóór hem, op de hoogte van zijn arm (hoofdstuk 113); mag hij die niet openen, dan legt hij het op de grond.
+        BlockPos front = car.body().front();
+        Chest target = chestAt(level, car, false);
+        IItemHandler chest = target == null ? null : target.slots();
         boolean left = false;
         for (int slot = 0; slot < trunk.getContainerSize(); slot++) {
             ItemStack stack = trunk.getItem(slot);
@@ -265,6 +267,9 @@ public final class CarWork {
             }
             if (chest != null) {
                 ItemStack rest = ItemHandlerHelper.insertItemStacked(chest, stack.copy(), false);
+                if (!target.station() && rest.getCount() < stack.getCount()) {
+                    car.brain().orderStored(stack, stack.getCount() - rest.getCount());
+                }
                 trunk.setItem(slot, rest);
                 left |= !rest.isEmpty();
             } else {
@@ -278,7 +283,302 @@ public final class CarWork {
                 trunk.setItem(slot, ItemStack.EMPTY);
             }
         }
+        if (target != null) {
+            com.senne.imttech.storage.Storages.carLooked(level, car, target);
+        }
         return left ? Result.REFUSED : Result.OK;
+    }
+
+    // ================================================================ Kisten (hoofdstuk 113)
+
+    /**
+     * Het blok met vakjes waar de arm van de auto bij kan: een kist, een ton, een trechter, een kast van een andere mod...
+     * {@code station} is de Storage Interface zelf (daar haalt de auto wat iemand inlegde, en brengt hij wat besteld is).
+     */
+    public record Chest(BlockPos pos, IItemHandler slots, boolean station) {}
+
+    /**
+     * De kist vóór de auto, op de hoogte van zijn arm (zie CarMove.front), of null als daar geen kist staat of als hij
+     * hem niet mag openen. Met {@code tell} zegt hij waarom niet (voor take, put en check); zonder is hij stil (voor
+     * {@code in chest()} en {@code chest.count(...)}: daar is het antwoord dan gewoon "nee" of 0).
+     *
+     * Wie mag wat: een kist in een beschermde zone opent hij alleen als wie zijn klus startte daar mag bouwen (dezelfde
+     * regel als bij breken en plaatsen), en een kist met een slot erop (een sleutelnaam) opent hij nooit: hij heeft geen
+     * sleutel. Zo is een RC Car geen manier om bij iemand anders in de kisten te kijken of er iets uit te halen.
+     */
+    public static @Nullable Chest chestAt(ServerLevel level, RcCarEntity car, boolean tell) {
+        BlockPos pos = car.body().front();
+        if (!level.isLoaded(pos) || level.isOutsideBuildHeight(pos)) {
+            return null;
+        }
+        BlockEntity entity = level.getBlockEntity(pos);
+        boolean station = entity instanceof com.senne.imttech.storage.StorageInterfaceBlockEntity;
+        IItemHandler slots = station ? ((com.senne.imttech.storage.StorageInterfaceBlockEntity) entity).carSlots(car)
+                : level.getCapability(Capabilities.ItemHandler.BLOCK, pos, car.body().facing().getOpposite());
+        if (slots == null && !station) {
+            slots = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, null);
+        }
+        String why = null;
+        if (slots == null) {
+            why = station ? "that Storage Interface does not know this car: link it there first (tab Cars)"
+                    : "there is no chest in front of its arm";
+        } else if (!ImtConfig.RcCar.MAY_USE_CHESTS) {
+            why = "opening chests is switched off on this server";
+        } else if (!builderHere(level, car, pos)) {
+            why = "it may not open chests in this protected zone";
+        } else if (locked(level, car, entity)) {
+            why = "that chest is locked";
+        }
+        if (why != null) {
+            if (tell) {
+                car.brain().report(why);
+            }
+            return null;
+        }
+        return new Chest(pos.immutable(), slots, station);
+    }
+
+    /**
+     * Zit er een slot op deze kist (de sleutelnaam van Minecraft, die je met een commando zet)? Dan opent alleen wie de
+     * sleutel in zijn hand heeft hem; een auto heeft geen handen. We vragen het Minecraft zelf, voor een "nepspeler" met
+     * lege handen.
+     */
+    private static boolean locked(ServerLevel level, RcCarEntity car, @Nullable BlockEntity entity) {
+        if (!(entity instanceof net.minecraft.world.level.block.entity.BaseContainerBlockEntity container)) {
+            return false;
+        }
+        Player nobody = net.neoforged.neoforge.common.util.FakePlayerFactory.get(level,
+                new com.mojang.authlib.GameProfile(UUID.nameUUIDFromBytes("imttech:rc_car".getBytes(java.nio.charset.StandardCharsets.UTF_8)), "RC Car"));
+        return !container.canOpen(nobody);
+    }
+
+    /** Is dit het item met deze naam ("iron_ingot", of met voorvoegsel "imttech:polymer")? Een lege naam past op alles. */
+    public static boolean isItem(ItemStack stack, String name) {
+        if (stack.isEmpty()) {
+            return false;
+        }
+        if (name.isEmpty()) {
+            return true;
+        }
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        return id.getPath().equals(name) || id.toString().equals(name);
+    }
+
+    /** De naam van dit item zoals de taal hem schrijft: "iron_ingot", en voor een item van een mod "imttech:polymer". */
+    public static String itemName(ItemStack stack) {
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        return id.getNamespace().equals(ResourceLocation.DEFAULT_NAMESPACE) ? id.getPath() : id.toString();
+    }
+
+    /**
+     * Past dit voorwerp bij wat de auto zoekt? De naam moet kloppen; en zoekt hij voor een bestelling precies één soort
+     * ({@code exact}: een betoverd boek, een drankje), dan ook alles wat erop zit.
+     */
+    private static boolean wanted(ItemStack stack, String name, @Nullable ItemStack exact) {
+        return isItem(stack, name) && (exact == null || ItemStack.isSameItemSameComponents(stack, exact));
+    }
+
+    /** Hoeveel er van dit item in deze vakjes liggen. */
+    public static int count(IItemHandler slots, String name, @Nullable ItemStack exact) {
+        int count = 0;
+        for (int slot = 0; slot < slots.getSlots(); slot++) {
+            ItemStack stack = slots.getStackInSlot(slot);
+            if (wanted(stack, name, exact)) {
+                count += stack.getCount();
+            }
+        }
+        return count;
+    }
+
+    /** Hoeveel er van dit item in de kofferbak liggen ({@code trunk.count("iron_ingot")}). */
+    public static int countInTrunk(SimpleContainer trunk, String name, @Nullable ItemStack exact) {
+        int count = 0;
+        for (int slot = 0; slot < trunk.getContainerSize(); slot++) {
+            ItemStack stack = trunk.getItem(slot);
+            if (wanted(stack, name, exact)) {
+                count += stack.getCount();
+            }
+        }
+        return count;
+    }
+
+    /** Hoeveel er van dit voorwerp nog in de kofferbak past (in lege vakjes en op stapels van hetzelfde). */
+    private static int room(SimpleContainer trunk, ItemStack stack) {
+        int limit = Math.min(trunk.getMaxStackSize(), stack.getMaxStackSize());
+        int room = 0;
+        for (int slot = 0; slot < trunk.getContainerSize(); slot++) {
+            ItemStack there = trunk.getItem(slot);
+            if (there.isEmpty()) {
+                room += limit;
+            } else if (ItemStack.isSameItemSameComponents(there, stack)) {
+                room += Math.max(0, limit - there.getCount());
+            }
+        }
+        return room;
+    }
+
+    /**
+     * {@code take("iron_ingot", 8)}: uit de kist vóór de auto in zijn kofferbak. Een lege naam = elk item; {@code count}
+     * -1 = zoveel als er is. Geeft OK als hij iets meenam (ook als het minder was dan gevraagd: dat zie je aan
+     * {@code trunk.count(...)}), REFUSED als hij niets kon nemen (geen kist, niets van dat soort, kofferbak vol).
+     */
+    public static Result take(ServerLevel level, RcCarEntity car, String item, int count) {
+        Chest chest = chestAt(level, car, true);
+        if (chest == null) {
+            return Result.REFUSED;
+        }
+        if (!car.hasEnergy(ImtConfig.RcCar.CHEST_COST)) {
+            return Result.NO_POWER;
+        }
+        String name = com.senne.imttech.logic.program.Expr.itemName(item);
+        ItemStack exact = car.brain().orderVariant(name);
+        SimpleContainer trunk = car.trunk();
+        IItemHandler slots = chest.slots();
+        int left = count < 0 ? Integer.MAX_VALUE : count;
+        int moved = 0;
+        boolean found = false;
+        boolean full = false;
+        for (int slot = 0; slot < slots.getSlots() && left > 0; slot++) {
+            ItemStack there = slots.getStackInSlot(slot);
+            if (!wanted(there, name, exact) || !RcCarEntity.fitsInTrunk(there)) {
+                continue;
+            }
+            found = true;
+            // Eerst vragen wat eruit kan (en wat er in de kofferbak past), dan pas echt nemen: zo raakt er niets kwijt.
+            ItemStack offered = slots.extractItem(slot, Math.min(left, there.getCount()), true);
+            int fits = offered.isEmpty() ? 0 : Math.min(offered.getCount(), room(trunk, offered));
+            if (fits <= 0) {
+                full |= !offered.isEmpty();
+                continue;
+            }
+            ItemStack taken = slots.extractItem(slot, fits, false);
+            ItemStack rest = trunk.addItem(taken);
+            int got = taken.getCount() - rest.getCount(); // wat echt in de kofferbak kwam
+            if (!rest.isEmpty()) {
+                rest = ItemHandlerHelper.insertItemStacked(slots, rest, false); // paste toch niet: terug in de kist
+                if (!rest.isEmpty()) {
+                    car.spawnAtLocation(rest);
+                }
+            }
+            moved += got;
+            left -= got;
+        }
+        trunk.setChanged();
+        com.senne.imttech.storage.Storages.carLooked(level, car, chest);
+        if (moved <= 0) {
+            car.brain().report(full ? "its trunk is full" : found ? "it could not take anything out of that chest"
+                    : name.isEmpty() ? "that chest is empty" : "there is no \"" + name + "\" in that chest");
+            return Result.REFUSED;
+        }
+        car.spend(ImtConfig.RcCar.CHEST_COST);
+        level.playSound(null, chest.pos(), net.minecraft.sounds.SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 0.25f, 1.3f);
+        return Result.OK;
+    }
+
+    /**
+     * {@code put("iron_ingot", 8)}: uit zijn kofferbak in de kist vóór de auto. Een lege naam = alles; {@code count} -1 =
+     * zoveel als hij heeft. Geeft OK als er iets in ging, REFUSED als er niets in kon (geen kist, niets van dat soort in
+     * de kofferbak, de kist vol).
+     */
+    public static Result put(ServerLevel level, RcCarEntity car, String item, int count) {
+        Chest chest = chestAt(level, car, true);
+        if (chest == null) {
+            return Result.REFUSED;
+        }
+        if (!car.hasEnergy(ImtConfig.RcCar.CHEST_COST)) {
+            return Result.NO_POWER;
+        }
+        String name = com.senne.imttech.logic.program.Expr.itemName(item);
+        ItemStack exact = car.brain().orderVariant(name);
+        SimpleContainer trunk = car.trunk();
+        int left = count < 0 ? Integer.MAX_VALUE : count;
+        int moved = 0;
+        boolean found = false;
+        for (int slot = 0; slot < trunk.getContainerSize() && left > 0; slot++) {
+            ItemStack stack = trunk.getItem(slot);
+            if (!wanted(stack, name, exact)) {
+                continue;
+            }
+            found = true;
+            int offer = Math.min(left, stack.getCount());
+            ItemStack rest = ItemHandlerHelper.insertItemStacked(chest.slots(), stack.copyWithCount(offer), false);
+            int went = offer - rest.getCount();
+            if (went > 0) {
+                if (!chest.station()) {
+                    car.brain().orderStored(stack, went); // voor een bestelling "store": dit is opgeborgen
+                }
+                stack.shrink(went);
+                if (stack.isEmpty()) {
+                    trunk.setItem(slot, ItemStack.EMPTY);
+                }
+                moved += went;
+                left -= went;
+            }
+        }
+        trunk.setChanged();
+        com.senne.imttech.storage.Storages.carLooked(level, car, chest);
+        if (moved <= 0) {
+            car.brain().report(!found ? (name.isEmpty() ? "its trunk is empty" : "there is no \"" + name + "\" in its trunk")
+                    : "that chest is full");
+            return Result.REFUSED;
+        }
+        car.spend(ImtConfig.RcCar.CHEST_COST);
+        level.playSound(null, chest.pos(), net.minecraft.sounds.SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 0.25f, 0.9f);
+        return Result.OK;
+    }
+
+    /** {@code check()}: in de kist vóór de auto kijken, zodat zijn Storage Interface weet wat erin zit. REFUSED = geen kist. */
+    public static Result check(ServerLevel level, RcCarEntity car) {
+        Chest chest = chestAt(level, car, true);
+        if (chest == null) {
+            return Result.REFUSED;
+        }
+        // Zijn Storage Interface onthoudt wat erin zit (jouw wens: "de interface weet de dingen door de sensors of doordat
+        // de robot dit gecheckt heeft"). Dat gebeurt ook bij take, put, "in chest()" en chest.count(...).
+        com.senne.imttech.storage.Storages.carLooked(level, car, chest);
+        return Result.OK;
+    }
+
+    /** Wat {@code chest.slots}, {@code chest.free} en {@code chest.items} zeggen: {vakjes, lege vakjes, voorwerpen}; nullen zonder kist. */
+    public static int[] chestNumbers(ServerLevel level, RcCarEntity car) {
+        Chest chest = chestAt(level, car, false);
+        if (chest == null) {
+            return new int[] {0, 0, 0};
+        }
+        int free = 0;
+        int items = 0;
+        for (int slot = 0; slot < chest.slots().getSlots(); slot++) {
+            ItemStack stack = chest.slots().getStackInSlot(slot);
+            if (stack.isEmpty()) {
+                free++;
+            } else {
+                items += stack.getCount();
+            }
+        }
+        com.senne.imttech.storage.Storages.carLooked(level, car, chest);
+        return new int[] {chest.slots().getSlots(), free, items};
+    }
+
+    /** {@code item("x") in chest()} en {@code chest.count("x")}: hoeveel er van dit item in de kist vóór de auto liggen (0 zonder kist). */
+    public static int countInChest(ServerLevel level, RcCarEntity car, String name) {
+        Chest chest = chestAt(level, car, false);
+        if (chest == null) {
+            return 0;
+        }
+        com.senne.imttech.storage.Storages.carLooked(level, car, chest);
+        if (chest.station()) {
+            // Bij zijn Storage Interface: wat er nog ligt om op te bergen (de IN-vakjes), niet wat hij al bracht.
+            int waiting = 0;
+            ItemStack exact = car.brain().orderVariant(name);
+            for (int slot = 0; slot < com.senne.imttech.storage.StorageInterfaceBlockEntity.IN_SLOTS; slot++) {
+                ItemStack stack = chest.slots().getStackInSlot(slot);
+                if (wanted(stack, name, exact)) {
+                    waiting += stack.getCount();
+                }
+            }
+            return waiting;
+        }
+        return count(chest.slots(), name, car.brain().orderVariant(name));
     }
 
     // ================================================================ Plaatsen
@@ -306,7 +606,8 @@ public final class CarWork {
         ItemStack stack = trunk.getItem(slot);
         BlockItem item = (BlockItem) stack.getItem();
         BlockPos here = car.body().cell();
-        BlockPos pos = way < 0 ? here : here.relative(direction);
+        // Vóór hem: op de hoogte van zijn arm (hoofdstuk 113). Boven hem: het blok boven de auto; onder hem: waar hij staat.
+        BlockPos pos = way < 0 ? here : way == 0 ? car.body().front() : here.relative(direction);
         String why = whyNot(level, car, pos, item.getBlock().defaultBlockState());
         if (why != null) {
             car.brain().report("it may not place blocks " + why);
