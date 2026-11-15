@@ -277,6 +277,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.STEEL_DRILL_HEAD.get());
                 output.accept(ModItems.TITANIUM_DRILL_HEAD.get());
                 output.accept(ModItems.NETHERITE_DRILL_HEAD.get());
+                output.accept(ModItems.RC_ROBOT_ARM.get()); // hoofdstuk 118
                 // Hoofdstuk 113: het opslagsysteem waar de RC Car voor werkt.
                 output.accept(com.senne.imttech.storage.StorageRegistry.STORAGE_INTERFACE_ITEM.get());
                 output.accept(com.senne.imttech.storage.StorageRegistry.CHEST_SENSOR_ITEM.get());

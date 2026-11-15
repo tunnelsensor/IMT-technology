@@ -27,11 +27,12 @@ import org.jetbrains.annotations.Nullable;
  *       arm), boven of onder hem. Hoe lang breken duurt, hangt af van zijn boorkop (met netherite zo lang als bij jou
  *       met ijzeren gereedschap, met de ijzeren kop vier keer zo lang). Valt er grind of zand in het gat,
  *       dan wacht hij tot het ligt en breekt hij dat ook: na {@code mine()} is de plek dus echt vrij. Een blok dat hij
- *       niet mag of kan breken (bedrock, obsidiaan met een te zwakke kop, een beschermde zone): {@code car.blocked}.</li>
+ *       niet mag of kan breken (bedrock, obsidiaan met een te zwakke kop, een beschermde zone): {@code car.blocked}.
+ *       Boven en onder zich boort hij alleen met een RC Robot Arm (hoofdstuk 118); zonder arm: {@code car.blocked}.</li>
  *   <li><b>Place</b> ({@code place()}, {@code place_up()}, {@code place_down()}): een blok uit zijn kofferbak.</li>
  *   <li><b>Arm</b> ({@code arm_up()}, {@code arm_down()}, hoofdstuk 113): zijn arm met de boor gaat een blok omhoog of
  *       omlaag (hooguit twee blokken boven het blok vóór hem). Alles wat hij vóór zich doet (breken, plaatsen, kijken,
- *       een kist) doet hij op die hoogte: zie {@link #front()}.</li>
+ *       een kist) doet hij op die hoogte: zie {@link #front()}. Alleen met een RC Robot Arm (hoofdstuk 118).</li>
  *   <li><b>Chest</b> ({@code take()}, {@code put()}, {@code check()}, hoofdstuk 113): uit de kist vóór hem nemen, erin
  *       leggen, of erin kijken. Dat duurt even (de arm reikt erin).</li>
  * </ul>
@@ -170,6 +171,14 @@ public final class CarMove {
     }
 
     /**
+     * Waar zijn boor nu naar wijst (hoofdstuk 118): 1 als hij het blok boven zich wegboort, -1 onder zich, anders 0. Met
+     * de RC Robot Arm kantelt zijn boor dan in je spel naar boven of onder (zie RcCarModel).
+     */
+    public int drillWay() {
+        return drilling && plan instanceof Mine mine ? mine.way() : 0;
+    }
+
+    /**
      * Was zijn energiecel leeg toen hij iets wilde doen? Het brein vraagt dit één keer (daarna is het weer onwaar) en
      * stopt dan het programma.
      */
@@ -264,6 +273,14 @@ public final class CarMove {
                 facing = turn.right() ? facing().getClockWise() : facing().getCounterClockWise();
                 turnTo = turnFrom + (turn.right() ? 90 : -90);
             }
+            case Mine mine when mine.way() != 0 && !car.hasRobotArm() -> {
+                // Hoofdstuk 118 (jouw wens): boven of onder zich minen kan alleen met een RC Robot Arm. Zonder arm zit
+                // zijn boor vast op zijn neus. Net als een blok dat te hard is: car.blocked, en zijn scherm zegt waarom.
+                car.brain().report(mine.way() > 0 ? "it needs an RC Robot Arm to mine above itself"
+                        : "it needs an RC Robot Arm to mine below itself");
+                blocked = true;
+                finished = true;
+            }
             case Mine mine -> {
                 mineTargets.clear();
                 // Vóór hem: op de hoogte van zijn arm. Boven of onder hem: het blok tegen de auto zelf.
@@ -278,6 +295,12 @@ public final class CarMove {
                 CarWork.Result result = CarWork.place(level, car, place.way(), way(place.way()), place.kind());
                 blocked = result != CarWork.Result.OK;
                 powerOut |= result == CarWork.Result.NO_POWER;
+                finished = true;
+            }
+            case Arm arm when !car.hasRobotArm() -> {
+                // Hoofdstuk 118: zonder RC Robot Arm heeft hij geen arm om op te tillen.
+                car.brain().report("it has no RC Robot Arm to raise or lower");
+                blocked = true;
                 finished = true;
             }
             case Arm arm -> {

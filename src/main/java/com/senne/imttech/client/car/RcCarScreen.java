@@ -31,6 +31,7 @@ import org.jetbrains.annotations.Nullable;
  *  Battery [##########--------]  56%
  *  Trunk   23 items
  *  Drill   Iron Drill Head  speed 25%
+ *  Arm     RC Robot Arm  height 1 of 2          [^] [v] [Arm off]
  *  FUNCTIONS                        DRIVE BY HAND
  *  [ strip_mine            ]            [Forward]
  *  [ room                  ]        [Left]    [Right]
@@ -45,6 +46,9 @@ import org.jetbrains.annotations.Nullable;
  * hem met de hand, één stap per klik: zo zet je hem goed voor je een functie start.
  *
  * Drill is zijn boorkop en hoe snel die is (een betere kop zet je erop met rechtsklik op de auto, zie car/DrillHead).
+ * Arm is zijn RC Robot Arm (hoofdstuk 118): hoe hoog die staat, twee pijltjes om hem met de hand te bewegen, en Arm off
+ * (van dichtbij) om hem eraf te halen. Zonder arm staat er hoe je er een opzet, en kunnen Up en Down (boven en onder
+ * zich boren) niet.
  *
  * Wat er nu is (naam, wat hij doet, batterij, kofferbak, boorkop, zijn functies) leest het scherm elke keer van de auto zelf:
  * dat kent jouw spel al, dus je ziet het meteen veranderen. Rijdt hij van je weg, dan blijven de knoppen werken tot
@@ -52,7 +56,11 @@ import org.jetbrains.annotations.Nullable;
  */
 public class RcCarScreen extends Screen {
     private static final int PANEL_W = 330;
+    /** Zo hoog is het paneel: het past in een venster van 240 pixels hoog (GUI-schaal 3 op 1280 x 720). */
     private static final int PANEL_H = 234;
+    /** Zoveel pixels tussen twee regels bovenaan, en tussen twee knoppen in de lijsten. */
+    private static final int LINE = 13;
+    private static final int ROW_STEP = 19;
     private static final int MARGIN = 8;
     private static final int VALUE_X = 58;
     /** Zoveel functies passen er onder elkaar; de rest met het muiswiel. */
@@ -69,6 +77,12 @@ public class RcCarScreen extends Screen {
     private @Nullable Button stopButton;
     private @Nullable Button cellButton;
     private @Nullable Button pickUpButton;
+    /** De arm (hoofdstuk 118): omhoog, omlaag, eraf; en boren boven en onder hem (dat kan alleen met de arm). */
+    private @Nullable Button armUpButton;
+    private @Nullable Button armDownButton;
+    private @Nullable Button armOffButton;
+    private @Nullable Button mineUpButton;
+    private @Nullable Button mineDownButton;
     /** De functies waar nu knoppen voor staan, en die knoppen zelf (van boven naar beneden). */
     private List<String> shown = List.of();
     private final List<Button> functionButtons = new ArrayList<>();
@@ -100,8 +114,18 @@ public class RcCarScreen extends Screen {
         return top + PANEL_H - 26;
     }
 
+    /** De regels bovenaan: 0 = Battery, 1 = Trunk, 2 = Drill, 3 = Arm (hoofdstuk 118). */
+    private int lineY(int line) {
+        return top + 31 + line * LINE;
+    }
+
     private int listY() {
-        return top + 88;
+        return top + 95;
+    }
+
+    /** De regel van de arm (hoofdstuk 118), onder die van de boorkop. */
+    private int armY() {
+        return lineY(3);
     }
 
     @Override
@@ -123,7 +147,7 @@ public class RcCarScreen extends Screen {
             String name = shown.get(scroll + row);
             functionButtons.add(addRenderableWidget(Button.builder(Component.literal(name),
                             b -> send(RcCarActionPayload.Op.RUN, name))
-                    .bounds(left + MARGIN, listY() + row * 20, LIST_W, 18).build()));
+                    .bounds(left + MARGIN, listY() + row * ROW_STEP, LIST_W, ROW_STEP - 2).build()));
         }
 
         // Met de hand: één stap per klik.
@@ -132,18 +156,23 @@ public class RcCarScreen extends Screen {
         int half = (padW - 4) / 2;
         int third = (padW - 8) / 3;
         step("Forward", "forward", padX + (padW - half) / 2, listY(), half);
-        step("Left", "left", padX, listY() + 20, half);
-        step("Right", "right", padX + half + 4, listY() + 20, half);
-        step("Back", "back", padX + (padW - half) / 2, listY() + 40, half);
-        step("Mine", "mine", padX, listY() + 64, third);
-        step("Up", "mine_up", padX + third + 4, listY() + 64, third);
-        step("Down", "mine_down", padX + 2 * (third + 4), listY() + 64, third);
-        // De arm (hoofdstuk 113): één blok omhoog of omlaag per klik, rechts op de regel van de boorkop.
-        int armX = left + PANEL_W - MARGIN - 44;
-        stepButtons.add(addRenderableWidget(Button.builder(Component.literal("\u25B2"), b -> send(RcCarActionPayload.Op.STEP, "arm_up"))
-                .bounds(armX, top + 58, 20, 16).build()));
-        stepButtons.add(addRenderableWidget(Button.builder(Component.literal("\u25BC"), b -> send(RcCarActionPayload.Op.STEP, "arm_down"))
-                .bounds(armX + 24, top + 58, 20, 16).build()));
+        step("Left", "left", padX, listY() + 18, half);
+        step("Right", "right", padX + half + 4, listY() + 18, half);
+        step("Back", "back", padX + (padW - half) / 2, listY() + 36, half);
+        step("Mine", "mine", padX, listY() + 56, third);
+        mineUpButton = step("Up", "mine_up", padX + third + 4, listY() + 56, third);
+        mineDownButton = step("Down", "mine_down", padX + 2 * (third + 4), listY() + 56, third);
+        // De arm (hoofdstuk 113, 118): één blok omhoog of omlaag per klik, en Arm off, rechts op de regel van de arm.
+        int offW = 50;
+        int armX = left + PANEL_W - MARGIN - offW - 4 - 44;
+        armUpButton = addRenderableWidget(Button.builder(Component.literal("\u25B2"), b -> send(RcCarActionPayload.Op.STEP, "arm_up"))
+                .bounds(armX, armY() - 3, 20, 14).build());
+        armDownButton = addRenderableWidget(Button.builder(Component.literal("\u25BC"), b -> send(RcCarActionPayload.Op.STEP, "arm_down"))
+                .bounds(armX + 24, armY() - 3, 20, 14).build());
+        stepButtons.add(armUpButton);
+        stepButtons.add(armDownButton);
+        armOffButton = addRenderableWidget(Button.builder(Component.literal("Arm off"), b -> send(RcCarActionPayload.Op.ARM_OFF, ""))
+                .bounds(left + PANEL_W - MARGIN - offW, armY() - 3, offW, 14).build());
 
         // De naam.
         nameBox = addRenderableWidget(new EditBox(font, left + VALUE_X, footerY() - 24, 130, 18, Component.literal("Name")));
@@ -171,9 +200,11 @@ public class RcCarScreen extends Screen {
         refresh(car);
     }
 
-    private void step(String label, String what, int x, int y, int w) {
-        stepButtons.add(addRenderableWidget(Button.builder(Component.literal(label), b -> send(RcCarActionPayload.Op.STEP, what))
-                .bounds(x, y, w, 18).build()));
+    private Button step(String label, String what, int x, int y, int w) {
+        Button button = addRenderableWidget(Button.builder(Component.literal(label), b -> send(RcCarActionPayload.Op.STEP, what))
+                .bounds(x, y, w, 16).build());
+        stepButtons.add(button);
+        return button;
     }
 
     private void send(RcCarActionPayload.Op op, String text) {
@@ -217,6 +248,20 @@ public class RcCarScreen extends Screen {
         for (Button button : stepButtons) {
             button.active = canStart;
         }
+        // Hoofdstuk 118: boven en onder zich boren en de arm bewegen kan alleen met een RC Robot Arm.
+        boolean arm = car.hasRobotArm();
+        Tooltip needsArm = arm ? null : Tooltip.create(Component.literal("Needs an RC Robot Arm (right-click the car with one)"));
+        for (Button button : new Button[] {mineUpButton, mineDownButton}) {
+            if (button != null) {
+                button.active = canStart && arm;
+                button.setTooltip(needsArm);
+            }
+        }
+        for (Button button : new Button[] {armUpButton, armDownButton, armOffButton}) {
+            if (button != null) {
+                button.visible = arm;
+            }
+        }
         if (startButton != null) {
             startButton.active = canStart && car.hasMain();
         }
@@ -232,6 +277,10 @@ public class RcCarScreen extends Screen {
         if (pickUpButton != null) {
             pickUpButton.active = near;
             pickUpButton.setTooltip(walk);
+        }
+        if (armOffButton != null) {
+            armOffButton.active = near;
+            armOffButton.setTooltip(walk);
         }
     }
 
@@ -264,7 +313,7 @@ public class RcCarScreen extends Screen {
     /** Het muiswiel boven de functies: door de lijst scrollen als ze er niet allemaal op passen. */
     @Override
     public boolean mouseScrolled(double mx, double my, double scrollX, double scrollY) {
-        if (shown.size() > ROWS && mx >= left && mx < left + MARGIN + LIST_W + 8 && my >= listY() - 12 && my < listY() + ROWS * 20) {
+        if (shown.size() > ROWS && mx >= left && mx < left + MARGIN + LIST_W + 8 && my >= listY() - 12 && my < listY() + ROWS * ROW_STEP) {
             int next = Math.max(0, Math.min(shown.size() - ROWS, scroll - (int) Math.signum(scrollY)));
             if (next != scroll) {
                 scroll = next;
@@ -328,36 +377,44 @@ public class RcCarScreen extends Screen {
         }
 
         // De batterij (zijn energiecel): een balk, groen, oranje onder 30%, rood onder 10%.
-        label(g, "Battery", top + 34);
+        label(g, "Battery", lineY(0));
         if (battery < 0) {
-            g.drawString(font, "No Energy Cell: right-click the car with one", left + VALUE_X, top + 34,
+            g.drawString(font, "No Energy Cell: right-click the car with one", left + VALUE_X, lineY(0),
                     HudStyle.argb(230, HudStyle.RED), false);
         } else {
             int colour = battery < 0.1f ? HudStyle.RED : battery < 0.3f ? HudStyle.ORANGE : HudStyle.GREEN;
             int barX = left + VALUE_X;
             int barW = PANEL_W - VALUE_X - MARGIN - 34;
-            g.fill(barX, top + 34, barX + barW, top + 42, HudStyle.argb(255, 0x1E2128));
-            g.fill(barX, top + 34, barX + Math.round(barW * Math.min(1.0f, battery)), top + 42, HudStyle.argb(255, colour));
-            g.renderOutline(barX - 1, top + 33, barW + 2, 10, HudStyle.argb(180, 0x465460));
+            g.fill(barX, lineY(0), barX + barW, lineY(0) + 8, HudStyle.argb(255, 0x1E2128));
+            g.fill(barX, lineY(0), barX + Math.round(barW * Math.min(1.0f, battery)), lineY(0) + 8, HudStyle.argb(255, colour));
+            g.renderOutline(barX - 1, lineY(0) - 1, barW + 2, 10, HudStyle.argb(180, 0x465460));
             String value = Math.round(battery * 100) + "%";
-            g.drawString(font, value, left + PANEL_W - MARGIN - font.width(value), top + 34, HudStyle.argb(230, HudStyle.WHITE), false);
+            g.drawString(font, value, left + PANEL_W - MARGIN - font.width(value), lineY(0), HudStyle.argb(230, HudStyle.WHITE), false);
         }
 
         // De kofferbak.
-        label(g, "Trunk", top + 48);
+        label(g, "Trunk", lineY(1));
         int items = car.trunkItems();
         g.drawString(font, items == 0 ? "Empty (right-click the car to open it)" : items + (items == 1 ? " item" : " items"),
-                left + VALUE_X, top + 48, HudStyle.argb(items == 0 ? 170 : 230, HudStyle.WHITE), false);
+                left + VALUE_X, lineY(1), HudStyle.argb(items == 0 ? 170 : 230, HudStyle.WHITE), false);
 
         // De boorkop: zijn naam in de kleur van het materiaal, en hoe snel hij is.
-        label(g, "Drill", top + 62);
+        label(g, "Drill", lineY(2));
         DrillHead head = car.drill();
-        g.drawString(font, head.displayName(), left + VALUE_X, top + 62, HudStyle.argb(255, head.colour()), false);
+        g.drawString(font, head.displayName(), left + VALUE_X, lineY(2), HudStyle.argb(255, head.colour()), false);
         g.drawString(font, "speed " + Math.round(head.speed() * 100) + "%", left + VALUE_X + font.width(head.displayName()) + 8,
-                top + 62, HudStyle.argb(170, HudStyle.WHITE), false);
-        // De arm (hoofdstuk 113): hoe hoog hij staat, links van zijn twee knoppen.
-        String arm = "Arm " + car.arm() + "/" + com.senne.imttech.logic.program.Op.MAX_ARM;
-        g.drawString(font, arm, left + PANEL_W - MARGIN - 50 - font.width(arm), top + 62, HudStyle.argb(210, HudStyle.WHITE), false);
+                lineY(2), HudStyle.argb(170, HudStyle.WHITE), false);
+
+        // De arm (hoofdstuk 113, 118): of hij er een heeft, en hoe hoog die staat (links van zijn knoppen).
+        label(g, "Arm", armY());
+        if (car.hasRobotArm()) {
+            g.drawString(font, "RC Robot Arm", left + VALUE_X, armY(), HudStyle.argb(230, HudStyle.WHITE), false);
+            g.drawString(font, "height " + car.arm() + " of " + com.senne.imttech.logic.program.Op.MAX_ARM,
+                    left + VALUE_X + font.width("RC Robot Arm") + 8, armY(), HudStyle.argb(170, HudStyle.WHITE), false);
+        } else {
+            g.drawString(font, fit("None (right-click the car with an RC Robot Arm)", PANEL_W - VALUE_X - MARGIN),
+                    left + VALUE_X, armY(), HudStyle.argb(170, 0x9FC9D6), false);
+        }
 
         // De kopjes boven de functies en de pijltjes.
         String functions = shown.size() > ROWS

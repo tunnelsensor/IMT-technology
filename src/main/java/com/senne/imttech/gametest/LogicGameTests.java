@@ -392,7 +392,8 @@ public final class LogicGameTests {
             throw new GameTestAssertException("De RC Car werd niet omgezet: " + car.source() + " / functies " + car.functions());
         }
         com.senne.imttech.car.RcCarData data = com.senne.imttech.car.RcCarData.DEFAULT;
-        car.applyData(new com.senne.imttech.car.RcCarData("", oldCar, java.util.Optional.empty(), data.cell(), data.trunk(), data.drill()));
+        car.applyData(new com.senne.imttech.car.RcCarData("", oldCar, java.util.Optional.empty(), data.cell(), data.trunk(), data.drill(),
+                data.robotArm()));
         if (!car.source().equals(newCar) || !car.functions().equals(List.of("home"))) {
             throw new GameTestAssertException("Een RC Car uit een oud item werd niet omgezet: " + car.source());
         }

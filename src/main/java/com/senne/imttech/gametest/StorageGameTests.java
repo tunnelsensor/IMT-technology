@@ -64,10 +64,14 @@ public final class StorageGameTests {
         }
     }
 
-    /** Een auto met een volle cel en de netherite boorkop, die naar het noorden kijkt, met dit programma. */
+    /**
+     * Een auto met een volle cel, de netherite boorkop en een RC Robot Arm (hoofdstuk 118: zonder arm komt hij niet bij
+     * kisten hoger dan het blok vóór hem), die naar het noorden kijkt, met dit programma.
+     */
     private static RcCarEntity car(GameTestHelper helper, BlockPos pos, String code) {
         RcCarEntity car = helper.spawn(ModEntities.RC_CAR.get(), pos);
         car.setDrill(DrillHead.NETHERITE);
+        car.setRobotArm(true);
         car.body().setFacing(Direction.NORTH);
         car.swapCell(EnergyCellItem.withCharge(EnergyCellItem.FULL));
         String problem = car.setSource(code);

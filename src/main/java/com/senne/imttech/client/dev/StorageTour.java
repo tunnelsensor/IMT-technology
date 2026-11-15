@@ -221,6 +221,7 @@ final class StorageTour {
             car.setCustomName(Component.literal("Porter"));
             car.swapCell(EnergyCellItem.withCharge(72.0f));
             car.setDrill(DrillHead.IRON);
+            car.setRobotArm(true); // hoofdstuk 118: zonder arm komt hij niet bij de kisten hoger dan het blok vóór hem
             String problem = car.setSource(WRITTEN);
             if (problem != null) {
                 ImtTech.LOGGER.warn("[visual check] het programma van Porter klopt niet: {}", problem);

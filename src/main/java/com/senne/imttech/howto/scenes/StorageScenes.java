@@ -44,7 +44,8 @@ public final class StorageScenes {
 
     /** De auto van de animatie, met zijn arm op deze hoogte (0, 1 of 2) en een cel die zo vol is (0 tot 100). */
     private static CompoundTag car(int arm, float cell) {
-        CompoundTag tag = CarScenes.car(cell, false, DrillHead.IRON);
+        // Hoofdstuk 118: om bij kisten hoger dan het blok vóór hem te komen, heeft hij een RC Robot Arm.
+        CompoundTag tag = CarScenes.car(cell, false, DrillHead.IRON, true);
         tag.putByte("Arm", (byte) arm);
         return tag;
     }

@@ -65,10 +65,13 @@ public final class RcCarGameTests {
     /**
      * Een auto met een volle energiecel, die naar het noorden kijkt, met dit programma (de code moet kloppen). Hij heeft
      * de netherite boorkop (de volle snelheid), tenzij een test hem een andere geeft: zo duren de tests niet onnodig lang.
+     * En hij heeft een RC Robot Arm (hoofdstuk 118): de meeste tests boren ook boven of onder zich. De test van de arm
+     * zelf haalt hem eraf.
      */
     private static RcCarEntity car(GameTestHelper helper, BlockPos pos, String code) {
         RcCarEntity car = helper.spawn(ModEntities.RC_CAR.get(), pos);
         car.setDrill(DrillHead.NETHERITE);
+        car.setRobotArm(true);
         car.body().setFacing(Direction.NORTH);
         car.swapCell(EnergyCellItem.withCharge(EnergyCellItem.FULL));
         String problem = car.setSource(code);
@@ -697,6 +700,7 @@ public final class RcCarGameTests {
                 "Een nieuwe auto heeft al een programma: " + car.functions() + " / " + car.source());
         check(!car.hasCell(), "Een nieuwe auto heeft al een energiecel");
         check(car.drill() == DrillHead.IRON, "Een nieuwe auto heeft niet de ijzeren boorkop maar " + car.drill());
+        check(!car.hasRobotArm(), "Een nieuwe auto heeft al een RC Robot Arm");
         RcLink link = RcControllerItem.link(player.getInventory().getItem(5));
         check(link != null && link.car().equals(car.link()), "De vrije RC Controller koppelde niet vanzelf met de nieuwe auto");
         check(RcCars.find(car.link()) == car, "RcCars vindt de auto niet op zijn nummer");
@@ -811,6 +815,138 @@ public final class RcCarGameTests {
         List<RcCarEntity> cars = helper.getLevel().getEntitiesOfClass(RcCarEntity.class, new AABB(abs.above()));
         check(cars.size() == 1, "Er staan " + cars.size() + " auto's op het blok in plaats van 1");
         return cars.getFirst();
+    }
+
+    // ================================================================ De RC Robot Arm (hoofdstuk 118)
+
+    /**
+     * Jouw wens: "als die hoger dan 1 block wil minen, dus boven of onder zich, heeft die een robotarm met drill nodig".
+     * Een auto zonder RC Robot Arm breekt het blok recht voor zich, maar niet boven of onder zich, en zijn arm gaat niet
+     * omhoog: dan is car.blocked waar, staan de blokken er nog, en zegt zijn scherm waarom. Zonder arm reikt hij ook alleen
+     * tot het blok (en de kist) recht voor zich. Met de arm erop (rechtsklik met de arm, zoals een boorkop) lukt het wel.
+     * De arm gaat mee als je de auto oppakt, en Arm off op zijn scherm geeft hem terug. Een auto (of een item) van vóór
+     * deze update had een arm, en houdt die.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 400)
+    public static void rc_car_needs_a_robot_arm(GameTestHelper helper) {
+        ServerPlayer player = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(7, 2, 11), "car-arm-owner");
+        player.getAbilities().instabuild = false;
+        BlockPos bareStart = new BlockPos(4, 2, 8);
+        BlockPos armStart = new BlockPos(10, 2, 8);
+        for (BlockPos start : List.of(bareStart, armStart)) {
+            helper.setBlock(start.north(), Blocks.STONE);
+            helper.setBlock(start.above(), Blocks.STONE);
+        }
+        RcCarEntity bare = car(helper, bareStart, """
+                hit_front = true
+                hit_up = false
+                hit_down = false
+                hit_arm = false
+                done = false
+                def dig():
+                    mine()
+                    hit_front = car.blocked
+                    mine_up()
+                    hit_up = car.blocked
+                    mine_down()
+                    hit_down = car.blocked
+                    arm_up()
+                    hit_arm = car.blocked
+                    done = true
+                """);
+        bare.setRobotArm(false);
+        bare.setOwner(player);
+        // Zonder arm blijft de arm beneden, wat je ook vraagt, en reikt hij alleen tot het blok recht voor zich.
+        bare.setArm(2);
+        check(bare.arm() == 0, "Een auto zonder arm heeft zijn arm toch omhoog: " + bare.arm());
+        check(bare.body().front().equals(helper.absolutePos(bareStart.north())),
+                "Zonder arm reikt de auto niet tot het blok recht voor zich, maar tot " + rel(helper, bare.body().front()));
+
+        RcCarEntity armed = car(helper, armStart, """
+                hit_front = true
+                hit_up = true
+                hit_arm = true
+                raised = -1
+                done = false
+                def dig():
+                    mine()
+                    hit_front = car.blocked
+                    mine_up()
+                    hit_up = car.blocked
+                    arm_up()
+                    hit_arm = car.blocked
+                    raised = car.arm
+                    arm_down()
+                    done = true
+                """);
+        armed.setRobotArm(false);
+        armed.setOwner(player);
+        // De arm erop zoals een speler dat doet: rechtsklik met de arm in je hand. Nog eens: hij heeft er al een.
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(ModItems.RC_ROBOT_ARM.get(), 2));
+        RcCars.putArmOn(player, armed, InteractionHand.MAIN_HAND);
+        check(armed.hasRobotArm() && player.getMainHandItem().getCount() == 1, "Rechtsklik met de arm zette hem er niet op");
+        RcCars.putArmOn(player, armed, InteractionHand.MAIN_HAND);
+        check(player.getMainHandItem().getCount() == 1, "Een tweede arm erop zetten kostte een arm");
+        player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+        check(bare.brain().startFunction("dig") && armed.brain().startFunction("dig"), "De functie dig begon niet");
+
+        boolean[] after = {false};
+        helper.succeedWhen(() -> {
+            check(Boolean.TRUE.equals(bare.brain().global("done")) && Boolean.TRUE.equals(armed.brain().global("done")),
+                    "Een auto is nog niet klaar met dig");
+            // Zonder arm: het blok voor hem wel, de rest niet.
+            check(Boolean.FALSE.equals(bare.brain().global("hit_front")), "Zonder arm brak de auto het blok voor zich niet");
+            helper.assertBlockPresent(Blocks.AIR, bareStart.north());
+            check(Boolean.TRUE.equals(bare.brain().global("hit_up")), "Zonder arm gaf mine_up() geen car.blocked");
+            helper.assertBlockPresent(Blocks.STONE, bareStart.above());
+            check(Boolean.TRUE.equals(bare.brain().global("hit_down")), "Zonder arm gaf mine_down() geen car.blocked");
+            check(!helper.getBlockState(bareStart.below()).isAir(), "Zonder arm brak de auto het blok onder zich");
+            check(Boolean.TRUE.equals(bare.brain().global("hit_arm")) && bare.arm() == 0, "Zonder arm ging zijn arm toch omhoog");
+            check(bare.note().contains("RC Robot Arm"), "Zijn scherm zegt niet dat hij een RC Robot Arm nodig heeft: " + bare.note());
+            // Met arm: alles lukt.
+            check(Boolean.FALSE.equals(armed.brain().global("hit_front")), "Met arm brak de auto het blok voor zich niet");
+            check(Boolean.FALSE.equals(armed.brain().global("hit_up")), "Met arm gaf mine_up() car.blocked");
+            helper.assertBlockPresent(Blocks.AIR, armStart.above());
+            check(Boolean.FALSE.equals(armed.brain().global("hit_arm")) && Double.valueOf(1).equals(armed.brain().global("raised")),
+                    "Met arm ging zijn arm niet een blok omhoog: " + armed.brain().global("raised"));
+            check(armed.arm() == 0, "arm_down() zette zijn arm niet terug");
+
+            if (!after[0]) {
+                after[0] = true;
+                // De arm gaat mee in het item, en weer neergezet heeft hij hem nog.
+                RcCars.pickUp(player, armed);
+                ItemStack stack = ItemStack.EMPTY;
+                for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
+                    if (player.getInventory().getItem(slot).getItem() instanceof RcCarItem) {
+                        stack = player.getInventory().removeItemNoUpdate(slot);
+                    }
+                }
+                check(!stack.isEmpty() && RcCarItem.data(stack).robotArm(), "De arm zit niet in het item van de auto");
+                RcCarEntity again = placeCar(helper, player, stack, new BlockPos(13, 1, 12));
+                check(again.hasRobotArm(), "Weer neergezet heeft de auto zijn arm niet meer");
+                // Arm off (van dichtbij): de arm is eraf en je krijgt hem terug.
+                RcCars.handleAction(player, new com.senne.imttech.network.RcCarActionPayload(again.getId(),
+                        com.senne.imttech.network.RcCarActionPayload.Op.ARM_OFF, ""));
+                check(!again.hasRobotArm() && again.arm() == 0, "Arm off haalde de arm er niet af");
+                check(player.getInventory().countItem(ModItems.RC_ROBOT_ARM.get()) == 1, "Na Arm off kreeg je de arm niet terug");
+                again.discard();
+
+                // Een nieuwe auto heeft geen arm; een item van vóór deze update (zonder dat gegeven) wel, net als een auto die
+                // bewaard werd vóór deze update.
+                check(!RcCarData.DEFAULT.robotArm(), "Een nieuwe auto (van de werkbank) heeft al een arm");
+                RcCarData oldItem = RcCarData.CODEC.parse(net.minecraft.nbt.NbtOps.INSTANCE, new net.minecraft.nbt.CompoundTag())
+                        .getOrThrow();
+                check(oldItem.robotArm(), "Een item van vóór deze update raakte zijn arm kwijt");
+                RcCarEntity saved = ModEntities.RC_CAR.get().create(helper.getLevel());
+                check(saved != null, "Er kwam geen auto");
+                saved.readAdditionalSaveData(new net.minecraft.nbt.CompoundTag());
+                check(saved.hasRobotArm(), "Een auto die bewaard werd vóór deze update raakte zijn arm kwijt");
+                net.minecraft.nbt.CompoundTag none = new net.minecraft.nbt.CompoundTag();
+                none.putBoolean("RobotArm", false);
+                saved.readAdditionalSaveData(none);
+                check(!saved.hasRobotArm(), "Een auto die zonder arm bewaard werd, heeft er na het laden toch een");
+            }
+        });
     }
 
     // ================================================================ Zijn scherm van ver, en gebarsten blokken

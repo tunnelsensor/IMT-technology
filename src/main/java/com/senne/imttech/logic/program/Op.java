@@ -119,9 +119,9 @@ public enum Op {
      */
     MINE(Kind.ACTION, "mine", Arg.NONE, Arg.NONE, "Break the block in front of the car, at the height of its arm: it goes into its trunk"),
     /** {@code mine_up()}: het blok boven de auto. */
-    MINE_UP(Kind.ACTION, "mine_up", Arg.NONE, Arg.NONE, "Break the block above the car"),
-    /** {@code mine_down()}: het blok onder de auto: hij zakt dan in het gat. */
-    MINE_DOWN(Kind.ACTION, "mine_down", Arg.NONE, Arg.NONE, "Break the block under the car: it drops into the hole"),
+    MINE_UP(Kind.ACTION, "mine_up", Arg.NONE, Arg.NONE, "Break the block above the car (needs an RC Robot Arm)"),
+    /** {@code mine_down()}: het blok onder de auto: hij zakt dan in het gat. Alleen met een RC Robot Arm (hoofdstuk 118). */
+    MINE_DOWN(Kind.ACTION, "mine_down", Arg.NONE, Arg.NONE, "Break the block under the car: it drops into the hole (needs an RC Robot Arm)"),
     /**
      * {@code place()}: een blok uit zijn kofferbak vóór de auto zetten (het eerste dat hij vindt), of
      * {@code place("cobblestone")}: dat soort blok. De waarde staat in expr.
@@ -141,9 +141,9 @@ public enum Op {
      * vóór zich doet ({@code mine()}, {@code place()}, {@code block()}, een kist) doet hij dan op die hoogte.
      */
     ARM_UP(Kind.ACTION, "arm_up", Arg.NONE, Arg.OPTIONAL_NUMBER, "Raise the arm of the car one block (arm_up(2): two). What the car does in front of it "
-            + "(mine, place, block(), a chest) happens at that height"),
-    /** {@code arm_down()}: de arm één blok omlaag (of {@code arm_down(2)}). */
-    ARM_DOWN(Kind.ACTION, "arm_down", Arg.NONE, Arg.OPTIONAL_NUMBER, "Lower the arm of the car one block (arm_down(2): two)"),
+            + "(mine, place, block(), a chest) happens at that height. Needs an RC Robot Arm"),
+    /** {@code arm_down()}: de arm één blok omlaag (of {@code arm_down(2)}). Alleen met een RC Robot Arm (hoofdstuk 118). */
+    ARM_DOWN(Kind.ACTION, "arm_down", Arg.NONE, Arg.OPTIONAL_NUMBER, "Lower the arm of the car one block (arm_down(2): two). Needs an RC Robot Arm"),
     /**
      * {@code take("iron_ingot", 8)} (hoofdstuk 113): uit de kist vóór de auto (op de hoogte van zijn arm) in zijn
      * kofferbak. {@code take("iron_ingot")}: alles van dat soort; {@code take()}: alles wat erin zit. De waarden staan in

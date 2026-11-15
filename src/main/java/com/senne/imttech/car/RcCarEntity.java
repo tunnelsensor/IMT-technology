@@ -56,6 +56,10 @@ import org.jetbrains.annotations.Nullable;
  *   <li><b>Boorkop</b> (jouw wens: "zorg dat je de drill head kunt upgraden"): een nieuwe auto heeft de ijzeren kop, en
  *       die is traag. Rechtsklik op de auto met een betere kop (steel, titanium, netherite): die zit erop, en de oude
  *       krijg je terug. Zie {@link DrillHead}.</li>
+ *   <li><b>RC Robot Arm</b> (hoofdstuk 118, jouw wens: "als die hoger dan 1 block wil minen, dus boven of onder zich,
+ *       heeft die een robotarm met drill nodig"): een nieuwe auto heeft alleen de boor op zijn neus en breekt het blok
+ *       recht voor zich. Rechtsklik met een RC Robot Arm: dan zit zijn boor op een arm, en kan hij ook hoger, boven en
+ *       onder zich minen en kisten tot twee blokken hoger bereiken. De knop Arm off op zijn scherm haalt hem eraf.</li>
  *   <li><b>Kofferbak</b>: 18 vakjes. Wat hij breekt gaat erin; wat hij plaatst komt eruit. Rechtsklik op de auto:
  *       de kofferbak gaat open (voor iedereen, zoals een kist).</li>
  *   <li><b>Oppakken</b> (jouw wens: "je kunt deze rc car ook oppakken en in je inventory zetten"): de knop Pick up in
@@ -89,6 +93,13 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
     private static final EntityDataAccessor<Integer> DRILL = SynchedEntityData.defineId(RcCarEntity.class, EntityDataSerializers.INT);
     /** Hoe hoog zijn arm staat (hoofdstuk 113): 0 = het blok vóór hem, 1 of 2 blokken hoger. Voor zijn model. */
     private static final EntityDataAccessor<Integer> ARM = SynchedEntityData.defineId(RcCarEntity.class, EntityDataSerializers.INT);
+    /** Heeft hij een RC Robot Arm (hoofdstuk 118)? Voor zijn model en zijn scherm. */
+    private static final EntityDataAccessor<Boolean> ROBOT_ARM = SynchedEntityData.defineId(RcCarEntity.class, EntityDataSerializers.BOOLEAN);
+    /**
+     * Waar zijn boor nu naar wijst terwijl hij boort (hoofdstuk 118): 0 = vooruit, 1 = omhoog (mine_up), -1 = omlaag
+     * (mine_down). Voor zijn model: met de arm kantelt de boor naar het blok boven of onder hem.
+     */
+    private static final EntityDataAccessor<Integer> DRILL_WAY = SynchedEntityData.defineId(RcCarEntity.class, EntityDataSerializers.INT);
 
     private @Nullable UUID owner;
     private String ownerName = "";
@@ -125,6 +136,9 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
      */
     public float armShown;
     public float armShownO;
+    /** Alleen in je spel: hoe ver de boor nu gekanteld getekend wordt (-1 = omlaag, 0 = vooruit, 1 = omhoog), en de vorige tick. */
+    public float tiltShown;
+    public float tiltShownO;
 
     public RcCarEntity(EntityType<? extends RcCarEntity> type, Level level) {
         super(type, level);
@@ -157,6 +171,8 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
         builder.define(ITEMS, 0);
         builder.define(DRILL, DrillHead.IRON.ordinal());
         builder.define(ARM, 0);
+        builder.define(ROBOT_ARM, false);
+        builder.define(DRILL_WAY, 0);
     }
 
     // ================================================================ Zijn programma
@@ -326,7 +342,30 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
     }
 
     public void setArm(int level) {
-        entityData.set(ARM, Math.max(0, Math.min(com.senne.imttech.logic.program.Op.MAX_ARM, level)));
+        entityData.set(ARM, hasRobotArm() ? Math.max(0, Math.min(com.senne.imttech.logic.program.Op.MAX_ARM, level)) : 0);
+    }
+
+    // ================================================================ Zijn RC Robot Arm (hoofdstuk 118)
+
+    /**
+     * Heeft hij een RC Robot Arm? Zonder arm zit zijn boor vast op zijn neus: hij breekt alleen het blok recht voor zich
+     * en bereikt alleen de kist recht voor zich. (Ook in je spel: zijn model en zijn scherm.)
+     */
+    public boolean hasRobotArm() {
+        return entityData.get(ROBOT_ARM);
+    }
+
+    /** Een arm erop, of eraf. Eraf: de boor zakt terug naar zijn neus. */
+    public void setRobotArm(boolean robotArm) {
+        entityData.set(ROBOT_ARM, robotArm);
+        if (!robotArm) {
+            entityData.set(ARM, 0);
+        }
+    }
+
+    /** Waar zijn boor naar wijst terwijl hij boort: 0 = vooruit, 1 = omhoog, -1 = omlaag. (Ook in je spel: zijn model.) */
+    public int drillWay() {
+        return entityData.get(DRILL_WAY);
     }
 
     // ================================================================ Zijn Storage Interface (hoofdstuk 113)
@@ -368,9 +407,10 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
 
     // ================================================================ Het item (oppakken en neerzetten)
 
-    /** Neem over wat er in een RC Car-item zit: naam, programma, cel, kofferbak en boorkop. */
+    /** Neem over wat er in een RC Car-item zit: naam, programma, cel, kofferbak, boorkop en arm. */
     public void applyData(RcCarData data) {
         setCustomName(data.name().isEmpty() ? null : Component.literal(data.name()));
+        setRobotArm(data.robotArm());
         source = com.senne.imttech.logic.program.CodeUpgrade.source(data.source()); // een item van vóór hoofdstuk 114 (zie readAdditionalSaveData)
         setDrill(data.drill());
         link = data.link().orElseGet(UUID::randomUUID);
@@ -384,7 +424,7 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
     public RcCarData toData() {
         return new RcCarData(hasCustomName() ? getCustomName().getString() : "", source, java.util.Optional.of(link),
                 cell.isEmpty() ? RcCarData.NO_CELL : EnergyCellItem.charge(cell), ItemContainerContents.fromItems(trunk.getItems()),
-                drill());
+                drill(), hasRobotArm());
     }
 
     /** Het item waarin hij verandert als je hem oppakt (met alles erin). */
@@ -501,6 +541,13 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
             if (Math.abs(arm() - armShown) < 0.01f) {
                 armShown = arm();
             }
+            // En de boor kantelt naar boven of onder als hij daar boort (hoofdstuk 118), net zo vloeiend.
+            float tilt = isDrilling() ? drillWay() : 0;
+            tiltShownO = tiltShown;
+            tiltShown += (tilt - tiltShown) * 0.34f;
+            if (Math.abs(tilt - tiltShown) < 0.01f) {
+                tiltShown = tilt;
+            }
         }
     }
 
@@ -522,6 +569,9 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
         }
         if (entityData.get(DRILLING) != body.drilling()) {
             entityData.set(DRILLING, body.drilling());
+        }
+        if (entityData.get(DRILL_WAY) != body.drillWay()) {
+            entityData.set(DRILL_WAY, body.drillWay());
         }
         syncBattery();
         if (tickCount % 10 == 0) {
@@ -560,8 +610,9 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
     // ================================================================ Klikken
 
     /**
-     * Rechtsklik met een RC Controller: koppelen. Met een Energy Cell: de cel erin. Met een boorkop: die erop. Sneak +
-     * rechtsklik met een lege hand: zijn scherm (als je hem mag instellen). Anders: de kofferbak gaat open.
+     * Rechtsklik met een RC Controller: koppelen. Met een Energy Cell: de cel erin. Met een boorkop: die erop. Met een RC
+     * Robot Arm: die erop (hoofdstuk 118). Sneak + rechtsklik met een lege hand: zijn scherm (als je hem mag instellen).
+     * Anders: de kofferbak gaat open.
      */
     @Override
     protected InteractionResult mobInteract(Player player, InteractionHand hand) {
@@ -581,6 +632,12 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
         if (held.getItem() instanceof DrillHeadItem && !player.isSecondaryUseActive()) {
             if (player instanceof ServerPlayer serverPlayer) {
                 RcCars.swapDrill(serverPlayer, this, hand);
+            }
+            return InteractionResult.sidedSuccess(level().isClientSide);
+        }
+        if (held.getItem() instanceof RcRobotArmItem && !player.isSecondaryUseActive()) {
+            if (player instanceof ServerPlayer serverPlayer) {
+                RcCars.putArmOn(serverPlayer, this, hand);
             }
             return InteractionResult.sidedSuccess(level().isClientSide);
         }
@@ -713,6 +770,7 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
         tag.put("Trunk", ContainerHelper.saveAllItems(new CompoundTag(), trunk.getItems(), registryAccess()));
         tag.putByte("Facing", (byte) body.facing().get2DDataValue());
         tag.putString("DrillHead", drill().getSerializedName());
+        tag.putBoolean("RobotArm", hasRobotArm());
         tag.putByte("Arm", (byte) arm());
         if (station != null) {
             net.minecraft.core.GlobalPos.CODEC.encodeStart(net.minecraft.nbt.NbtOps.INSTANCE, station)
@@ -733,6 +791,9 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
         trunk.clearContent();
         ContainerHelper.loadAllItems(tag.getCompound("Trunk"), trunk.getItems(), registryAccess());
         body.setFacing(tag.contains("Facing") ? Direction.from2DDataValue(tag.getByte("Facing")) : null);
+        // Hoofdstuk 118: een auto die bewaard werd vóór er een losse arm was, had een arm. Die houdt hij (jouw regel van
+        // hoofdstuk 106: wat er al is, blijft). Een auto van nu bewaart altijd of hij er een heeft.
+        setRobotArm(!tag.contains("RobotArm") || tag.getBoolean("RobotArm"));
         setArm(tag.getByte("Arm"));
         armShown = arm(); // net geladen (of een auto in een animatie van How it works): de arm staat er meteen
         armShownO = armShown;
@@ -744,6 +805,11 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
         // lijf dat elke tick zelf (zie serverTick).
         if (tag.contains("Drilling")) {
             entityData.set(DRILLING, tag.getBoolean("Drilling"));
+        }
+        if (tag.contains("DrillWay")) {
+            entityData.set(DRILL_WAY, (int) tag.getByte("DrillWay"));
+            tiltShown = tag.getBoolean("Drilling") ? tag.getByte("DrillWay") : 0; // in een animatie: meteen gekanteld
+            tiltShownO = tiltShown;
         }
     }
 }

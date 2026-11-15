@@ -1951,8 +1951,8 @@ plastic onderaan. De boorkop staat hieronder. Alles staat op het tabblad **Robot
 
 **Neerzetten en oppakken.** Rechtsklik met de auto op een blok: hij staat daar, met zijn neus de kant op waar jij
 kijkt (dat is "vooruit"), en hij is van jou. Oppakken: **Pick up** op zijn scherm, of **sneak + slaan**. Zijn naam,
-programma, energiecel, boorkop en kofferbak zitten in het item, dus zet je hem ergens anders neer, dan is het dezelfde
-auto.
+programma, energiecel, boorkop, arm en kofferbak zitten in het item, dus zet je hem ergens anders neer, dan is het
+dezelfde auto.
 
 **Stroom.** Hij rijdt op een **Energy Cell** (dezelfde als van de lasergeweren; je laadt hem in het **Charging
 Station**). **Rechtsklik op de auto met een cel**: die gaat erin, en de cel die erin zat krijg je terug. Rijden kost 10
@@ -1974,6 +1974,15 @@ netherite. **Rechtsklik op de auto met een boorkop**: die zit erop, en de kop di
 de auto krijgt de kleur van zijn kop, en zijn scherm zegt welke hij heeft. **Bedrock** breekt geen enkele kop. Probeert
 hij iets wat zijn kop niet aankan, dan is `car.blocked` waar en staat op zijn scherm welke kop hij nodig heeft.
 
+**De RC Robot Arm** (sinds versie 2.16). Een nieuwe auto heeft alleen de boor op zijn neus: hij breekt enkel het blok
+**recht voor zich**, en hij komt alleen bij de kist recht voor zich. Om **boven of onder zich** te minen (`mine_up()`,
+`mine_down()`), zijn boor hoger te zetten (`arm_up()`) of een kist hoger te bereiken, heeft hij een **RC Robot Arm**
+nodig. Maken: 2 ijzer en een zuiger bovenaan (de arm), plastic, een Computer Chip en plastic onderaan (de voet).
+**Rechtsklik op de auto met de arm**: hij zit erop, en zijn boor zit voortaan op die arm (met dezelfde boorkop). Je ziet
+het aan de gele behuizing achter zijn boor. Eraf halen: **Arm off** op zijn scherm (van dichtbij); je krijgt de arm terug.
+Zonder arm geven `mine_up()`, `mine_down()`, `arm_up()` en `arm_down()` `car.blocked`, en op zijn scherm staat waarom.
+Een auto die je al had vóór deze versie, heeft zijn arm gehouden.
+
 **De kofferbak.** **Rechtsklik op de auto**: zijn kofferbak gaat open (18 vakjes; dat mag iedereen, zoals bij een
 kist). Wat hij breekt gaat erin; is hij vol, dan blijft het op de grond liggen. Wat hij plaatst komt eruit. Een RC Car,
 een shulkerdoos en een volle Ammo Box of pouch passen er niet in, en de auto zelf past niet in een rugzak of
@@ -1981,12 +1990,14 @@ shulkerdoos (geen dozen in dozen).
 
 **Zijn scherm.** **Sneak + rechtsklik** op de auto met een lege hand (alleen jij; een ander alleen in een basis waar
 jullie allebei bij horen). Bovenaan wat hij doet (READY, RUNNING strip_mine, NO CELL...), zijn batterij, zijn kofferbak en zijn
-boorkop, met ernaast de stand van zijn **arm** (Arm 0/2) en twee knopjes om hem een blok hoger of lager te zetten.
+boorkop, en de regel **Arm**: heeft hij een RC Robot Arm, dan hoe hoog die staat (height 0 of 2), twee knopjes om hem
+een blok hoger of lager te zetten, en **Arm off**.
 Links zijn **functies**: klik er een aan en hij voert haar uit **vanaf de plek waar hij staat**. Rechts rijd
 je hem met de hand, één stap per klik (Forward, Back, Left, Right, Mine, Up, Down): zo zet je hem goed voor je een
 functie start. Onderaan: **Start** (zijn hoofdprogramma), **Stop**, **Program** (de code), **Cell out**, **Pick up**,
 en zijn naam. Rijdt hij van je weg terwijl het scherm open staat, dan blijven de knoppen werken tot 64 blokken ver;
-alleen oppakken en de cel eruit halen moet van dichtbij (8 blokken).
+alleen oppakken, de cel eruit halen en de arm eraf halen moet van dichtbij (8 blokken). Zonder arm staan Up en Down
+(boven en onder hem boren) uit.
 
 **Zijn programma.** De knop **Program** opent de code-editor (dezelfde als in de app Logic: kleuren, **Ctrl+Spatie**
 toont wat je kunt typen, **Check** kijkt het na, **Save** zet het op de auto). Rechts staat alles wat de auto kent:
@@ -2001,7 +2012,8 @@ def strip_mine():
         mine_up()
 ```
 
-Dat is een gang van 2 hoog en 20 lang: breek voor je, stap naar voor, breek boven je. En een kamer van 5 breed, 3 hoog
+Dat is een gang van 2 hoog en 20 lang: breek voor je, stap naar voor, breek boven je (dat laatste kan alleen met een
+RC Robot Arm; zonder arm wordt het een gang van 1 hoog, waar de auto net in past). En een kamer van 5 breed, 3 hoog
 en 5 diep. Zet de auto vóór de kamer (waar de deur komt): de kamer komt voor hem en rechts van hem, en hij eindigt weer
 waar hij begon. De functie `dig` breekt drie blokken hoog met zijn **arm** (zie hieronder):
 
@@ -2039,9 +2051,11 @@ def room():
 - **Rijden**: `forward(3)`, `back(1)` (hij blijft dezelfde kant op kijken), `turn_left()`, `turn_right()`. Hij rijdt
   één blok op of af. Een muur, of een gat van meer dan één blok: hij stopt, en `car.blocked` is waar.
 - **Breken**: `mine()` (het blok voor hem), `mine_up()` (boven hem), `mine_down()` (onder hem: hij zakt in het gat).
+  Boven en onder hem alleen met een **RC Robot Arm**.
   Het heet `mine` omdat `break` al het woord is om uit een lus te stappen. Valt er **grind of zand** in het gat, dan
   wacht hij tot het ligt en breekt hij dat ook: na `mine()` is de plek echt vrij.
-- **De arm** (sinds versie 2.15): de boor zit op een arm die je programmeert. `arm_up()` zet hem een blok hoger,
+- **De arm** (sinds versie 2.15; sinds versie 2.16 alleen met een **RC Robot Arm**): de boor zit op een arm die je
+  programmeert. `arm_up()` zet hem een blok hoger,
   `arm_down()` een blok lager; met een getal twee tegelijk (`arm_down(2)`). Hij komt **twee blokken** boven het blok
   voor de auto, dus drie blokken hoog. Alles wat de auto **voor zich** doet, doet hij op de hoogte van zijn arm:
   `mine()`, `place()`, `block()`, `unload()` en de kisten hieronder. Je ziet de arm langs een mast omhoog schuiven.
@@ -2053,7 +2067,7 @@ def room():
   De nieuwe woorden (`arm_up`, `arm_down`, `take`, `put`, `check`) mag je ook als eigen naam gebruiken, zoals vóór deze
   versie: heeft je programma een eigen `def check():`, dan roept `check()` die aan.
 - **Kisten** (sinds versie 2.15; samen met de Storage Interface hieronder is dat je opslagsysteem): de kist, de ton, de
-  trechter of de shulkerdoos **voor zijn arm**.
+  trechter of de shulkerdoos **voor zijn arm**. Zonder RC Robot Arm is dat de kist recht voor hem, op zijn eigen hoogte.
   - `take("iron_ingot", 8)` neemt er 8 uit in zijn kofferbak; `take("iron_ingot")` alles van die soort; `take()` alles.
   - `put("iron_ingot", 8)` legt er 8 uit zijn kofferbak in; `put("iron_ingot")` alles van die soort; `put()` alles.
   - `if item("iron_ingot") in chest():` kijkt of het erin ligt (zo vroeg je het). `in trunk()` kijkt in zijn eigen
@@ -2087,7 +2101,7 @@ def room():
 **De RC Controller.** **Rechtsklik op een auto** met de controller in je hand: gekoppeld. (Zet je een auto neer terwijl
 je een controller bij je hebt die nog nergens mee gekoppeld is, dan koppelt die vanzelf.) Daarna opent **rechtsklik**
 (in de lucht of op een blok) het scherm van die auto, tot 64 blokken ver: een functie kiezen, Start, Stop, de pijltjes
-en zijn programma. Alleen oppakken en de cel eruit halen kan niet van ver. Te ver, of de auto is opgepakt: "No signal".
+en zijn programma. Alleen oppakken, de cel eruit halen en de arm eraf halen kan niet van ver. Te ver, of de auto is opgepakt: "No signal".
 De koppeling blijft als je de auto oppakt en ergens anders neerzet.
 
 **Goed om te weten.**

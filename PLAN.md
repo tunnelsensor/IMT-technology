@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 622 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 623 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -8999,6 +8999,55 @@ Mijn invulling (verander ik op jouw woord):
 Nog niet gedaan:
 - Niet in het spel bekeken: de editor en Ctrl+Spatie alleen in de tests, het omdraaien niet met een echte oude wereld
   (wel met hoe een oude wereld het bewaart).
+
+### 118. De RC Robot Arm: zonder arm breekt de RC Car alleen het blok recht voor zich (15 november)
+
+Jouw wens: "Zorg dat tijdens het minen met de rc car als die hoger dan 1 block wil minen dus boven of onder zich heeft die
+een robotarm met drill nodig, vragen stel ze dan".
+
+Jouw antwoorden op mijn vier vragen:
+- de arm wordt een **upgrade**: een nieuwe auto heeft alleen de boor op zijn neus en breekt enkel het blok recht voor
+  zich; met een RC Robot Arm kan hij ook hoger (`arm_up`), boven (`mine_up`) en onder zich (`mine_down`) minen;
+- **kisten**: zonder arm alleen de kist recht voor hem, op zijn eigen hoogte; met de arm ook kisten 1 en 2 blokken hoger
+  (één onderdeel voor alles);
+- **erop zetten**: rechtsklik op de auto met de arm, zoals een boorkop; hij gaat mee als je de auto oppakt; eraf met een
+  knop op het scherm van de auto, en je krijgt hem terug;
+- **de boor op de arm** is dezelfde boorkop als vooraan.
+
+- [x] **De RC Robot Arm** (`car/RcRobotArmItem`, tabblad Robots): 2 ijzer en een zuiger (de arm) bovenaan, plastic, een
+      Computer Chip en plastic onderaan (de voet). Rechtsklik op de auto met de arm: hij zit erop. Heeft hij er al een,
+      dan gebeurt er niets en lees je dat. De naam is "RC Robot Arm": "Robot Arm" alleen leek op de armen van je guard
+      robots (Battle Arms en zo).
+- [x] **Zonder arm**: `mine_up()`, `mine_down()`, `arm_up()` en `arm_down()` geven `car.blocked`, en zijn scherm en je
+      chat zeggen waarom ("it needs an RC Robot Arm to mine above itself"). `mine()` breekt het blok recht voor hem, en
+      de kisten (`take`, `put`, `check`, `in chest()`) zijn alleen die recht voor hem: zijn arm kan niet omhoog. De
+      knoppen Up en Down op zijn scherm (boven en onder boren met de hand) staan dan uit, met als uitleg "Needs an RC
+      Robot Arm".
+- [x] **Met arm**: alles zoals in versie 2.15: de arm tot twee blokken hoog, boven en onder zich boren, en kisten op
+      elke hoogte.
+- [x] **Zijn scherm**: een nieuwe regel **Arm**: "RC Robot Arm, height 1 of 2", de twee pijltjes om hem met de hand te
+      bewegen, en de knop **Arm off**. Die werkt alleen van dichtbij (8 blokken, zoals Cell out): de auto stopt wat hij
+      deed, zijn arm zakt, en je krijgt de arm terug. Zonder arm staat er hoe je er een opzet.
+- [x] **Het model**: met de arm staat er een gele behuizing achter de boor, zodat je van ver ziet of een auto een arm
+      heeft; als de arm omhoog gaat, groeit de mast eruit. Boort hij boven of onder zich, dan kantelt de boor die kant
+      op (naar boven schuift hij ook een stukje mee tot zijn punt het blok raakt). Zonder arm zit de boor vast op zijn
+      neus. Het icoon van de arm: een gele arm met een gewricht en een boor aan het eind.
+- [x] **Mee in het item**: de arm gaat mee als je de auto oppakt, en de tooltip van het item zegt of hij er een heeft.
+- [x] **Bestaande auto's houden hun arm**: tot nu had elke auto een arm. Een auto die al bestond (neergezet, of opgepakt
+      met zijn gegevens) houdt hem; jouw regel van hoofdstuk 106: wat er al is, blijft. Een nieuwe auto van de werkbank
+      heeft er geen.
+- [x] **How it works**: een nieuw hoofdstukje "The RC Robot Arm" in de animatie van de RC Car (de auto zonder arm,
+      rechtsklik met de arm, de behuizing); in de gang die hij mijnt kantelt zijn boor omhoog voor het blok erboven; op
+      het plaatje van zijn scherm wijst een pijltje naar de regel Arm. De RC Robot Arm hoort bij dat onderwerp (W op de
+      arm). In de animatie van het opslagsysteem heeft de auto een arm.
+- [x] **Tests**: één nieuwe, `rc_car_needs_a_robot_arm`: zonder arm worden boven, onder en de arm geweigerd en breekt hij
+      het blok voor zich wel; met arm (erop gezet zoals een speler dat doet) lukt alles; de arm gaat mee in het item;
+      Arm off geeft hem terug; een auto en een item van vóór deze update houden hun arm. De andere tests van de auto en
+      van het opslagsysteem geven hun auto een arm. Samen 623.
+- **Mijn invullingen**: de naam RC Robot Arm; het recept; de gele behuizing en het kantelen van de boor; zonder arm een
+  melding en `car.blocked` in plaats van een fout in de code (je kunt de arm er later nog op zetten); plaatsen boven en
+  onder zich (`place_up`, `place_down`) kan nog zonder arm, want je vroeg het voor minen; Arm off alleen van dichtbij,
+  en dan stopt de auto; bestaande auto's houden hun arm. Versie **2.16**.
 
 ## Nog nooit in het spel bekeken
 

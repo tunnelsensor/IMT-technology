@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "P": {
+      "item": "minecraft:piston"
+    },
+    "C": {
+      "item": "imttech:computer_chip"
+    },
+    "L": {
+      "item": "imttech:plastic"
+    }
+  },
+  "pattern": [
+    " IP",
+    " I ",
+    "LCL"
+  ],
+  "result": {
+    "id": "imttech:rc_robot_arm",
+    "count": 1
+  }
+}

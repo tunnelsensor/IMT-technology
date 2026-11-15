@@ -4306,7 +4306,8 @@ def rc_car_textures():
     (zijn kofferbak), een gele motorkap, zwarte wielen met een grijze naaf, een antenne, twee koplampen en een boor in
     vier trapjes. De boor heeft de kleur van zijn boorkop (zie car/DrillHead): ijzer, steel, titanium of netherite, elk
     een eigen textuur. Plus de lichtlaag (de koplampen en het lampje op de antenne) en de iconen in je rugzak: de auto
-    van opzij, de RC Controller, en de vier boorkoppen.
+    van opzij, de RC Controller, de vier boorkoppen, en de RC Robot Arm (hoofdstuk 118; met zijn gele behuizing op de
+    auto zelf).
     """
     yellow, yellow_hi, yellow_dark = (232, 176, 40, 255), (250, 206, 84, 255), (176, 124, 22, 255)
     chassis, chassis_hi, chassis_dark = (52, 56, 64, 255), (74, 80, 92, 255), (30, 33, 38, 255)
@@ -4396,6 +4397,21 @@ def rc_car_textures():
             for xx in range(x, x + w):
                 tex.putpixel((xx, yy), yellow)
 
+    # De behuizing van de RC Robot Arm (4 x 6 x 3, hoofdstuk 118): geel, met een donkere band onderaan, een lichte rand
+    # bovenaan en een donkere sleuf bovenop waar de mast uit komt. Je ziet hem alleen als de auto een arm heeft.
+    arm_base = box_regions(12, 40, 4, 6, 3)
+    paint(arm_base, yellow, top=yellow_hi, bottom=yellow_dark)
+    for name in ("east", "front", "west", "back"):
+        x, y, w, h = arm_base[name]
+        for i in range(w):
+            tex.putpixel((x + i, y), yellow_hi)
+            tex.putpixel((x + i, y + h - 2), chassis_dark)
+            tex.putpixel((x + i, y + h - 1), chassis)
+    x, y, w, h = arm_base["front"]
+    px(tex, [(x + 1, y + 2), (x + 2, y + 2)], chassis_dark)                   # twee boutjes
+    x, y, w, h = arm_base["top"]
+    px(tex, [(x + 1, y + 1), (x + 2, y + 1)], chassis_dark)                   # de sleuf voor de mast
+
     # De boor: vier trapjes metaal, met schuine donkere strepen (de groef). Elke boorkop heeft zijn eigen kleur (kleur,
     # licht, donker), dus de auto heeft vier texturen: rc_car.png is de ijzeren kop van een nieuwe auto.
     heads = {
@@ -4460,6 +4476,26 @@ def rc_car_textures():
         d.ellipse([cx - 2, 10, cx + 2, 14], fill=tyre, outline=tyre_hi)
         px(im, [(cx, 12)], hub)
     save(im, "item/rc_car.png")
+
+    # Het icoon van de RC Robot Arm (hoofdstuk 118): een arm als een L. Een donkere voet, een gele onderarm omhoog, een
+    # donker ellebooggewricht, een gele bovenarm naar rechts, een donkere houder, en een stalen boor die naar rechts wijst.
+    im = img(16, 16)
+    d = ImageDraw.Draw(im)
+    d.rectangle([1, 13, 7, 14], fill=chassis_dark)                   # de voet
+    d.rectangle([2, 12, 6, 12], fill=chassis)
+    d.rectangle([3, 6, 5, 11], fill=yellow)                          # de onderarm
+    d.line([3, 6, 3, 11], fill=yellow_hi)
+    d.line([5, 6, 5, 11], fill=yellow_dark)
+    d.rectangle([6, 4, 10, 6], fill=yellow)                          # de bovenarm
+    d.line([6, 4, 10, 4], fill=yellow_hi)
+    d.line([6, 6, 10, 6], fill=yellow_dark)
+    d.rectangle([2, 3, 6, 7], fill=chassis, outline=chassis_dark)    # de elleboog
+    px(im, [(4, 5)], hub)
+    d.rectangle([10, 3, 11, 7], fill=chassis, outline=chassis_dark)  # de houder
+    d.polygon([(12, 3), (12, 7), (15, 5)], fill=steel)               # de boor
+    px(im, [(12, 4), (13, 5)], steel_hi)
+    px(im, [(12, 6), (14, 5)], steel_dark)
+    save(im, "item/rc_robot_arm.png")
 
     # Het icoon van de RC Controller: een grijs kastje met twee handvatten, een antenne, een kruisje en twee knoppen.
     im = img(16, 16)

@@ -38,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  * energiecel, oppakken, en de RC Controller. Het scherm zelf staat in client/car/RcCarScreen.
  *
  * <b>Wie mag wat.</b> De kofferbak mag iedereen openen (zoals een kist: "als je binnen bent kun je alles opendoen").
- * Al de rest (zijn scherm, een functie starten, zijn programma, zijn naam, de cel, de boorkop) mag wie hem mag
+ * Al de rest (zijn scherm, een functie starten, zijn programma, zijn naam, de cel, de boorkop, de arm) mag wie hem mag
  * <b>besturen</b> ({@link #mayControl}): wie hem neerzette, en wie vertrouwd is in de basis waar hij staat als zijn
  * eigenaar daar zelf ook bij hoort. Stilzetten en oppakken mag bovendien wie mag bouwen in de beschermde zone waar hij
  * in staat ({@link #mayRemove}). Een auto van niemand wordt van wie hem als eerste opent, behalve in iemands basis.
@@ -46,8 +46,8 @@ import org.jetbrains.annotations.Nullable;
  *
  * <b>Van hoe ver.</b> Zijn scherm open je op de auto zelf (sneak + rechtsklik), of van ver met een RC Controller die
  * met deze auto gekoppeld is. Staat het scherm eenmaal open, dan werken de knoppen tot {@code controlRange} blokken ver
- * (64), in dezelfde wereld: de auto rijdt van je weg terwijl je kijkt, en dan moet Stop het nog doen. Alleen oppakken
- * en de cel eruit halen moet van dichtbij (8 blokken).
+ * (64), in dezelfde wereld: de auto rijdt van je weg terwijl je kijkt, en dan moet Stop het nog doen. Alleen oppakken,
+ * de cel eruit halen en de arm eraf halen moet van dichtbij (8 blokken).
  */
 public final class RcCars {
     private RcCars() {}
@@ -296,6 +296,42 @@ public final class RcCars {
                 fresh.displayName(), Math.round(fresh.speed() * 100)), true);
     }
 
+    // ================================================================ De RC Robot Arm (hoofdstuk 118)
+
+    /**
+     * Rechtsklik op de auto met een RC Robot Arm (jouw keuze: "rechtsklik, zoals een boorkop"): de arm zit erop, en zijn
+     * boor zit voortaan op die arm. Dan kan hij ook hoger, boven en onder zich minen en kisten tot twee blokken hoger
+     * bereiken. Heeft hij er al een, dan gebeurt er niets (en lees je dat).
+     */
+    public static void putArmOn(ServerPlayer player, RcCarEntity car, InteractionHand hand) {
+        if (!mayEdit(player, car)) {
+            return;
+        }
+        if (car.hasRobotArm()) {
+            player.displayClientMessage(Component.translatable("message.imttech.rc_car.arm_same", car.displayName()), true);
+            return;
+        }
+        player.getItemInHand(hand).consume(1, player);
+        car.setRobotArm(true);
+        car.playSound(SoundEvents.ANVIL_USE, 0.35f, 1.4f);
+        player.displayClientMessage(Component.translatable("message.imttech.rc_car.arm_on", car.displayName()), true);
+    }
+
+    /**
+     * De knop Arm off op zijn scherm (jouw keuze: "eraf halen met een knop op het scherm, je krijgt hem terug"). Alleen van
+     * dichtbij, net als de cel eruit halen. Wat hij deed, stopt: zijn programma rekende misschien op de arm.
+     */
+    private static void takeArmOff(ServerPlayer player, RcCarEntity car) {
+        if (!car.hasRobotArm()) {
+            return;
+        }
+        car.brain().stop();
+        car.setRobotArm(false);
+        give(player, new ItemStack(com.senne.imttech.registry.ModItems.RC_ROBOT_ARM.get()));
+        car.playSound(SoundEvents.ARMOR_EQUIP_IRON.value(), 0.7f, 0.9f);
+        player.displayClientMessage(Component.translatable("message.imttech.rc_car.arm_off", car.displayName()), true);
+    }
+
     // ================================================================ De RC Controller
 
     /** Rechtsklik op de auto met een RC Controller: koppelen. Was hij al met deze auto gekoppeld, dan opent zijn scherm. */
@@ -398,6 +434,13 @@ public final class RcCars {
                     car.brain().stop();
                     give(player, car.swapCell(ItemStack.EMPTY));
                     car.playSound(SoundEvents.ARMOR_EQUIP_IRON.value(), 0.7f, 1.1f);
+                }
+            }
+            case ARM_OFF -> {
+                if (near) {
+                    takeArmOff(player, car);
+                } else {
+                    player.displayClientMessage(Component.translatable("message.imttech.rc_car.too_far", name), true);
                 }
             }
             case CODE -> ModNetwork.sendTo(player, new RcCarOpenPayload(car.getId(), car.ownerName(), !near, true, car.source()));

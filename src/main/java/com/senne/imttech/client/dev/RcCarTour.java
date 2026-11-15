@@ -85,11 +85,11 @@ final class RcCarTour {
     private static final String WRITTEN = CarProgram.EXAMPLE_STRIP_MINE + "\n" + CarProgram.EXAMPLE_ROOM;
 
     /**
-     * Een nieuwe auto op deze plek, met zijn neus naar het noorden, van deze speler, met een cel, deze boorkop en dit
-     * programma.
+     * Een nieuwe auto op deze plek, met zijn neus naar het noorden, van deze speler, met een cel, deze boorkop, met of
+     * zonder RC Robot Arm (hoofdstuk 118), en dit programma.
      */
     private static @Nullable RcCarEntity spawn(ServerPlayer player, BlockPos pos, String name, float cell, DrillHead head,
-                                               String source) {
+                                               boolean arm, String source) {
         ServerLevel level = player.serverLevel();
         RcCarEntity car = ModEntities.RC_CAR.get().create(level);
         if (car == null) {
@@ -104,6 +104,7 @@ final class RcCarTour {
         car.setCustomName(Component.literal(name));
         car.swapCell(EnergyCellItem.withCharge(cell));
         car.setDrill(head);
+        car.setRobotArm(arm);
         String problem = car.setSource(source);
         if (problem != null) {
             ImtTech.LOGGER.warn("[visual check] het programma van {} klopt niet: {}", name, problem);
@@ -115,8 +116,9 @@ final class RcCarTour {
 
     /**
      * Zet het toneel klaar: een vlakke plek, een blok steen van 3 breed, 3 hoog en 6 diep ten noorden van de auto, en de
-     * auto zelf ("Digger", van jou, met een cel van 86%, de ijzeren boorkop van een nieuwe auto, wat cobblestone in zijn
-     * kofferbak, en een programma: de twee voorbeelden plus een hoofdprogramma).
+     * auto zelf ("Digger", van jou, met een cel van 86%, de ijzeren boorkop van een nieuwe auto, een RC Robot Arm (zijn
+     * strip_mine boort ook boven zich), wat cobblestone in zijn kofferbak, en een programma: de twee voorbeelden plus een
+     * hoofdprogramma).
      */
     private static void stage(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
@@ -129,7 +131,7 @@ final class RcCarTour {
         for (BlockPos pos : BlockPos.betweenClosed(YARD.offset(-1, 0, -7), YARD.offset(1, 2, -2))) {
             level.setBlockAndUpdate(pos, Blocks.STONE.defaultBlockState());
         }
-        RcCarEntity car = spawn(player, YARD, "Digger", 86.0f, DrillHead.IRON, WRITTEN + """
+        RcCarEntity car = spawn(player, YARD, "Digger", 86.0f, DrillHead.IRON, true, WRITTEN + """
 
                 # Runs when you press Start.
                 when started:
@@ -142,17 +144,25 @@ final class RcCarTour {
     }
 
     /**
-     * Alleen voor de rondleiding met screenshots: vier auto's op een rij met elk een andere boorkop, en "Rookie": een
-     * nieuwe auto, zonder programma en met de ijzeren kop.
+     * Alleen voor de rondleiding met screenshots: vier auto's op een rij met elk een andere boorkop, "Rookie": een nieuwe
+     * auto, zonder programma, met de ijzeren kop en zonder arm, en naast hem "Armed": dezelfde auto met een RC Robot Arm
+     * (hoofdstuk 118), onder een blok steen.
      */
     private static void extras(ServerPlayer player) {
         for (DrillHead head : DrillHead.values()) {
             // De camera kijkt naar het zuiden: het oosten is dan links. IJzer hoort links te staan, dus het meest oostelijk.
             spawn(player, HEADS.offset(DrillHead.values().length - 1 - head.ordinal(), 0, 0), head.label(), 100.0f, head,
-                    CarProgram.EMPTY);
+                    false, CarProgram.EMPTY);
         }
-        spawn(player, YARD.offset(-4, 0, 3), "Rookie", 100.0f, DrillHead.IRON, CarProgram.EMPTY);
+        spawn(player, YARD.offset(-4, 0, 3), "Rookie", 100.0f, DrillHead.IRON, false, CarProgram.EMPTY);
+        // Armed: twee blokken naast Rookie, met een blok steen boven zich (om omhoog te boren) en twee blokken ervoor.
+        BlockPos armed = ARMED;
+        player.serverLevel().setBlockAndUpdate(armed.above(), Blocks.STONE.defaultBlockState());
+        spawn(player, armed, "Armed", 100.0f, DrillHead.IRON, true, CarProgram.EMPTY);
     }
+
+    /** Waar "Armed" staat: twee blokken ten westen van Rookie. */
+    private static final BlockPos ARMED = YARD.offset(-6, 0, 3);
 
     /**
      * Voor de showcase: een blok steen van 7 breed, 8 diep en 3 hoog met een glazen dak, en in de rand ervan (een
@@ -170,7 +180,7 @@ final class RcCarTour {
             level.setBlockAndUpdate(pos, Blocks.GLASS.defaultBlockState());
         }
         level.setBlockAndUpdate(ROOM, Blocks.AIR.defaultBlockState());
-        spawn(player, ROOM, "Miner", 100.0f, DrillHead.NETHERITE, WRITTEN);
+        spawn(player, ROOM, "Miner", 100.0f, DrillHead.NETHERITE, true, WRITTEN);
     }
 
     static void tour(DevScript t) {
@@ -254,7 +264,8 @@ final class RcCarTour {
             player.getInventory().setItem(1, controller);
             player.getInventory().setItem(2, new ItemStack(ModItems.IRON_DRILL_HEAD.get()));
             player.getInventory().setItem(3, new ItemStack(ModItems.NETHERITE_DRILL_HEAD.get()));
-            player.getInventory().selected = 4;
+            player.getInventory().setItem(4, new ItemStack(ModItems.RC_ROBOT_ARM.get()));
+            player.getInventory().selected = 5;
         });
         t.open(10, () -> new InventoryScreen(Minecraft.getInstance().player));
         t.step(5, () -> inventory(screen -> HowToTour.mouseTo(screen.getGuiLeft() + 16, screen.getGuiTop() + 150)));
@@ -265,9 +276,11 @@ final class RcCarTour {
         t.shot(5, "rc16_item_iron_head_tooltip");
         t.step(0, () -> inventory(screen -> HowToTour.mouseTo(screen.getGuiLeft() + 70, screen.getGuiTop() + 150)));
         t.shot(5, "rc17_item_netherite_head_tooltip");
+        t.step(0, () -> inventory(screen -> HowToTour.mouseTo(screen.getGuiLeft() + 88, screen.getGuiTop() + 150)));
+        t.shot(5, "rc21_item_robot_arm_tooltip");
         t.close(5);
         t.onServer(0, player -> {
-            for (int slot = 0; slot < 4; slot++) {
+            for (int slot = 0; slot < 5; slot++) {
                 player.getInventory().setItem(slot, ItemStack.EMPTY);
             }
         });
@@ -294,6 +307,38 @@ final class RcCarTour {
         t.step(5, () -> HowToTour.mouseTo(2, 2));
         t.shot(10, "rc20_empty_editor");
         t.close(5);
+        t.close(5);
+        // Hoofdstuk 118: Rookie zonder arm en Armed met arm naast elkaar, van schuin voor (de gele behuizing achter de boor).
+        double ax = ARMED.getX() + 0.5;
+        double az = ARMED.getZ() + 0.5;
+        t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
+        t.step(0, () -> zoom(true));
+        t.stand(0, ax + 3.0, YARD.getY(), az - 4.2, 30, 14);
+        t.shot(20, "rc22_no_arm_and_arm");
+        // Zonder arm boort hij niet boven zich: Rookie weigert (op zijn scherm staat waarom); Armed kantelt zijn boor omhoog.
+        t.onServer(0, player -> on(player, "Rookie", car -> car.brain().startManual(new CarMove.Mine(1), player)));
+        t.onServer(0, player -> on(player, "Armed", car -> car.brain().startManual(new CarMove.Mine(1), player)));
+        t.stand(0, ax + 2.4, YARD.getY(), az + 1.6, 124, 8);
+        t.shot(14, "rc23_arm_mining_up");
+        // De arm een blok omhoog: de boor schuift langs de mast omhoog.
+        t.onServer(30, player -> on(player, "Armed", car -> car.brain().startManual(new CarMove.Arm(1), player)));
+        t.shot(30, "rc24_arm_raised");
+        t.step(0, () -> zoom(false));
+        t.step(0, () -> Minecraft.getInstance().options.hideGui = false);
+        // Het scherm van Armed: de regel Arm, met zijn hoogte, de pijltjes en Arm off.
+        t.onServer(0, player -> on(player, "Armed", car -> {
+            player.teleportTo(car.getX(), car.getY(), car.getZ() + 2.0);
+            RcCars.open(player, car, false);
+        }));
+        t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof RcCarScreen);
+        t.step(5, () -> HowToTour.mouseTo(2, 2));
+        t.shot(15, "rc25_screen_with_arm");
+        t.close(5);
+        // En Rookie, die net weigerde: zijn scherm zegt waarom.
+        t.onServer(0, player -> on(player, "Rookie", car -> RcCars.open(player, car, false)));
+        t.waitUntil(60, () -> Minecraft.getInstance().screen instanceof RcCarScreen);
+        t.step(5, () -> HowToTour.mouseTo(2, 2));
+        t.shot(15, "rc26_screen_no_arm");
         t.close(5);
     }
 

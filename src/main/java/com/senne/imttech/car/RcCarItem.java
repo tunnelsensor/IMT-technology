@@ -100,9 +100,7 @@ public class RcCarItem extends Item {
         if (!stack.isEmpty()) {
             // In creative blijft het item in je hand. Dat item vergeet zijn nummer: zo krijgt de volgende auto eruit een
             // nieuw nummer, en houdt de auto die er nu staat het zijne (je RC Controller blijft dus werken).
-            RcCarData data = data(stack);
-            stack.set(ModDataComponents.RC_CAR_DATA.get(), new RcCarData(data.name(), data.source(), java.util.Optional.empty(),
-                    data.cell(), data.trunk(), data.drill()));
+            stack.set(ModDataComponents.RC_CAR_DATA.get(), data(stack).withoutLink());
         }
         return InteractionResult.CONSUME;
     }
@@ -118,6 +116,9 @@ public class RcCarItem extends Item {
                 : Component.translatable("tooltip.imttech.rc_car.no_cell").withStyle(ChatFormatting.RED));
         tooltip.add(Component.translatable("tooltip.imttech.rc_car.drill", data.drill().displayName(),
                 Math.round(data.drill().speed() * 100)).withStyle(ChatFormatting.GRAY));
+        // Hoofdstuk 118: met of zonder arm (zonder breekt hij alleen het blok recht voor zich).
+        tooltip.add(Component.translatable(data.robotArm() ? "tooltip.imttech.rc_car.arm" : "tooltip.imttech.rc_car.no_arm")
+                .withStyle(ChatFormatting.GRAY));
         int items = data.items();
         if (items > 0) {
             tooltip.add(Component.translatable("tooltip.imttech.rc_car.trunk", items).withStyle(ChatFormatting.GRAY));

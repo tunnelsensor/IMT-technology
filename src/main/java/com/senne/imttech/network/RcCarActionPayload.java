@@ -40,7 +40,9 @@ public record RcCarActionPayload(int entityId, Op op, String text) implements Cu
         /** Geef me de code: de server stuurt haar terug en dan opent de editor. */
         CODE,
         /** De code uit de editor bewaren (de server kijkt haar nog eens na). */
-        SAVE
+        SAVE,
+        /** De RC Robot Arm eraf (hoofdstuk 118): je krijgt hem terug. Alleen van dichtbij. */
+        ARM_OFF
     }
 
     public static final StreamCodec<ByteBuf, RcCarActionPayload> STREAM_CODEC = StreamCodec.composite(

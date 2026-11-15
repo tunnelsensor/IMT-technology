@@ -21,18 +21,18 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * De animatie van How it works voor de RC Car, de RC Controller en de boorkoppen (hoofdstuk 108): wat hij is, zijn
- * energiecel, zijn programma (dat je zelf schrijft), een gang mijnen (jouw voorbeeld: "breek voor jou, stap naar voor,
- * breek boven jou"), een kamer van 5x3x5 (jouw tweede voorbeeld), de controller, een betere boorkop, en de kofferbak
- * en oppakken.
+ * De animatie van How it works voor de RC Car, de RC Controller, de boorkoppen en de RC Robot Arm (hoofdstuk 108,
+ * 118): wat hij is, zijn energiecel, zijn programma (dat je zelf schrijft), de RC Robot Arm (zonder arm breekt hij alleen
+ * het blok recht voor zich), een gang mijnen (jouw voorbeeld: "breek voor jou, stap naar voor, breek boven jou"), een
+ * kamer van 5x3x5 (jouw tweede voorbeeld), de controller, een betere boorkop, en de kofferbak en oppakken.
  *
  * Een nieuwe auto heeft geen programma (jouw wens: "ik wil dat je de rc car vanaf 0 moet programmeren; in de how it
  * works kun je dit wel als voorbeeld geven"). De twee voorbeelden staan daarom hier: als plaatje van de echte editor met
  * die code erin (de rondleiding maakt ze: {@code gradlew runVisualCheck -Ponly=howtopics:car}).
  *
  * De auto in de animatie is een echte RC Car met de gegevens zoals het spel ze bewaart ({@link #car}): met of zonder
- * cel (dan branden zijn lichtjes wel of niet), boren of niet (dan draait zijn boor), en met een boorkop (de kleur van
- * zijn boor).
+ * cel (dan branden zijn lichtjes wel of niet), boren of niet (dan draait zijn boor), met een boorkop (de kleur van zijn
+ * boor), en met of zonder RC Robot Arm (de gele behuizing achter zijn boor).
  */
 public final class CarScenes {
     private CarScenes() {}
@@ -45,32 +45,45 @@ public final class CarScenes {
 
     /**
      * Een RC Car zoals het spel hem bewaart: {@code cell} = hoe vol zijn energiecel is (0 tot 100; kleiner dan 0 = geen
-     * cel, dan zijn zijn lichtjes uit), {@code drilling} = of zijn boor draait, {@code head} = zijn boorkop.
+     * cel, dan zijn zijn lichtjes uit), {@code drilling} = of zijn boor draait, {@code head} = zijn boorkop, {@code arm} =
+     * of hij een RC Robot Arm heeft (hoofdstuk 118).
      */
-    static CompoundTag car(float cell, boolean drilling, DrillHead head) {
+    static CompoundTag car(float cell, boolean drilling, DrillHead head, boolean arm) {
         CompoundTag tag = new CompoundTag();
         if (cell >= 0) {
             tag.putFloat("Cell", cell);
         }
         tag.putBoolean("Drilling", drilling);
         tag.putString("DrillHead", head.getSerializedName());
+        tag.putBoolean("RobotArm", arm);
         return tag;
+    }
+
+    /** Dezelfde auto, die met zijn arm het blok boven zich wegboort (zijn boor wijst omhoog). */
+    private static CompoundTag drillingUp(CompoundTag tag) {
+        CompoundTag up = tag.copy();
+        up.putBoolean("Drilling", true);
+        up.putByte("DrillWay", (byte) 1);
+        return up;
     }
 
     public static List<HowToScene> rcCar() {
         // Je kijkt op de zuid- en de westkant: de auto rijdt naar het oosten langs de zuidkant van de steen, zodat je hem
         // blijft zien (een gang met de voorkant open).
         HowToSceneBuilder s = new HowToSceneBuilder("rc_car", "RC Car").plate(8, 4).height(4);
-        CompoundTag off = car(-1, false, DrillHead.IRON);
-        CompoundTag idle = car(100, false, DrillHead.IRON);
-        CompoundTag drill = car(100, true, DrillHead.IRON);
+        // Een nieuwe auto: zonder cel, en zonder arm. Pas in het hoofdstuk van de arm krijgt hij er een.
+        CompoundTag off = car(-1, false, DrillHead.IRON, false);
+        CompoundTag bare = car(100, false, DrillHead.IRON, false);
+        CompoundTag idle = car(100, false, DrillHead.IRON, true);
+        CompoundTag drill = car(100, true, DrillHead.IRON, true);
+        CompoundTag drillUp = drillingUp(idle);
         Vec3 start = new Vec3(1.5, 1, 2.5);
         var type = ModEntities.RC_CAR.get();
 
         s.idle(6);
         s.chapter("A car you program");
         Vec3 show = new Vec3(4.0, 2.2, 2.0);
-        s.actor("show", type, 120, 0, 35.0f, idle, show);
+        s.actor("show", type, 120, 0, 35.0f, bare, show);
         s.text(115, show.add(0, 0.7, 0), Side.RIGHT,
                 "The *RC Car* is a little car with a drill and a trunk. It does nothing by itself, and a new one has *no"
                         + " program*: you *write it yourself*. Then it mines and builds for you.");
@@ -86,14 +99,14 @@ public final class CarScenes {
         s.rightClick(start.add(0, 0.4, 0), EnergyCellItem.withCharge(EnergyCellItem.FULL));
         s.idle(26);
         s.sound(SoundEvents.ARMOR_EQUIP_IRON.value(), 0.6f, 1.5f);
-        s.actor("car", type, 80, 0, EAST, idle, start);
+        s.actor("car", type, 80, 0, EAST, bare, start);
         s.meter(70, start.add(0, 1.3, 0), "ENERGY CELL", 1.0f, 1.0f, HowToSceneBuilder.GREEN);
         s.idle(80);
 
         // Jouw eerste voorbeeld, als plaatje van de editor: zo typ je het zelf. De pijltjes staan van boven naar beneden
         // (dan kruisen hun lijntjes niet).
         s.chapter("You write its program");
-        s.actor("car", type, 170, 0, EAST, idle, start);
+        s.actor("car", type, 170, 0, EAST, bare, start);
         s.sneakRightClick(start.add(0, 0.4, 0), ItemStack.EMPTY);
         s.idle(20);
         s.picture(145, "rc_car_code", 427, 240,
@@ -102,6 +115,20 @@ public final class CarScenes {
                 s.arrow(0.73f, 0.33f, "Everything the car knows: click a line to put it in your code"),
                 s.arrow(0.78f, 0.89f, "*Check* looks for mistakes, *Save* puts it on the car"));
         s.idle(150);
+
+        // Hoofdstuk 118 (jouw wens): boven of onder zich minen kan alleen met een RC Robot Arm.
+        s.chapter("The RC Robot Arm");
+        s.actor("car", type, 40, 0, EAST, bare, start);
+        s.text(125, start.add(0, 0.9, 0), Side.RIGHT,
+                "A new car only breaks the block *straight in front of it*. To mine above or below itself (*mine_up()*,"
+                        + " *mine_down()*), to raise its drill (*arm_up()*) or to reach a chest higher up, it needs an *RC Robot"
+                        + " Arm*. [Right Button] the car with it; *Arm off* on its screen takes it off again.");
+        s.idle(16);
+        s.rightClick(start.add(0, 0.4, 0), new ItemStack(ModItems.RC_ROBOT_ARM.get()));
+        s.idle(24);
+        s.sound(SoundEvents.ANVIL_USE, 0.3f, 1.4f);
+        s.actor("car", type, 90, 0, EAST, idle, start);
+        s.idle(90);
 
         s.chapter("A mining tunnel");
         // Een blok steen van 4 lang, 2 breed en 2 hoog voor de auto: de rij waar hij doorheen boort, en een rij erachter.
@@ -113,8 +140,8 @@ public final class CarScenes {
         s.actor("car", type, DRIVE, DRIVE, EAST, idle, start, at);
         s.idle(DRIVE);
         s.text(150, new Vec3(4.5, 3.2, 1.5), Side.RIGHT,
-                "*mine()* breaks the block in front, *forward(1)* drives into the gap, *mine_up()* breaks the block above."
-                        + " In a loop that is a mining tunnel. What it breaks goes into its *trunk*.");
+                "*mine()* breaks the block in front, *forward(1)* drives into the gap, *mine_up()* breaks the block above"
+                        + " (with its arm). In a loop that is a mining tunnel. What it breaks goes into its *trunk*.");
         for (int step = 0; step < 4; step++) {
             BlockPos front = new BlockPos(3 + step, 1, 2);
             // mine(): de barstjes groeien, dan is het blok weg.
@@ -126,8 +153,8 @@ public final class CarScenes {
             s.actor("car", type, DRIVE, DRIVE, EAST, idle, at, next);
             s.idle(DRIVE);
             at = next;
-            // mine_up(): het blok erboven.
-            s.actor("car", type, DRILL, 0, EAST, drill, at);
+            // mine_up(): het blok erboven, met de boor op de arm omhoog gekanteld.
+            s.actor("car", type, DRILL, 0, EAST, drillUp, at);
             drill(s, front.above());
         }
         s.actor("car", type, 60, 0, EAST, idle, at);
@@ -155,10 +182,10 @@ public final class CarScenes {
         s.signal(20, HowToSceneBuilder.CYAN, you.add(0, 1.2, 0), at.add(0, 0.6, 0));
         s.idle(20);
         s.picture(95, "rc_car_screen", 338, 238,
-                s.arrow(0.92f, 0.06f, "What it is doing now"),
-                s.arrow(0.30f, 0.42f, "The functions you wrote: click one to run it"),
-                s.arrow(0.78f, 0.51f, "Drive it by hand, one step per click"),
-                s.arrow(0.17f, 0.93f, "*Start* runs *when started:*, *Stop* stops what it does"));
+                s.arrow(0.40f, 0.33f, "Its *RC Robot Arm*: how high it is, and *Arm off*"),
+                s.arrow(0.30f, 0.45f, "The functions you wrote: click one to run it"),
+                s.arrow(0.78f, 0.525f, "Drive it by hand, one step per click"),
+                s.arrow(0.17f, 0.933f, "*Start* runs *when started:*, *Stop* stops what it does"));
         s.idle(100);
 
         // De boorkop: de ijzeren kop van een nieuwe auto is traag; met rechtsklik zet je er een betere op.
@@ -174,17 +201,17 @@ public final class CarScenes {
         s.idle(50);
         DrillHead before = DrillHead.IRON;
         for (DrillHead head : List.of(DrillHead.STEEL, DrillHead.TITANIUM, DrillHead.NETHERITE)) {
-            s.actor("car", type, HowToSceneBuilder.CLICK, 0, EAST, car(100, false, before), at);
+            s.actor("car", type, HowToSceneBuilder.CLICK, 0, EAST, car(100, false, before, true), at);
             s.rightClick(at.add(0, 0.4, 0), new ItemStack(head.item()));
             s.idle(HowToSceneBuilder.CLICK);
             s.sound(SoundEvents.ANVIL_USE, 0.3f, 1.6f);
             int stay = head == DrillHead.NETHERITE ? 70 : 38;
-            s.actor("car", type, stay, 0, EAST, car(100, false, head), at);
+            s.actor("car", type, stay, 0, EAST, car(100, false, head, true), at);
             s.meter(stay, meterAt, head.displayName().toUpperCase(Locale.ROOT), before.speed(), head.speed(), head.colour());
             s.idle(stay);
             before = head;
         }
-        CompoundTag best = car(100, false, DrillHead.NETHERITE);
+        CompoundTag best = car(100, false, DrillHead.NETHERITE, true);
 
         s.chapter("Trunk and pick up");
         s.actor("car", type, HowToSceneBuilder.UNTIL_END, 0, EAST, best, at);
@@ -192,7 +219,7 @@ public final class CarScenes {
         s.text(130, at.add(0, 1.6, 0), Side.LEFT,
                 "[Right Button] the car: its trunk opens. *unload()* empties it into a chest in front of it, *place()* builds"
                         + " with the blocks in it. *Pick up* on its screen puts the car in your inventory, with its program, its"
-                        + " cell, its drill head and its trunk.");
+                        + " cell, its drill head, its arm and its trunk.");
         s.idle(140);
         return List.of(s.build());
     }

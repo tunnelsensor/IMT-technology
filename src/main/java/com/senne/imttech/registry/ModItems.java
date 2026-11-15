@@ -393,6 +393,13 @@ public final class ModItems {
     }
 
     /**
+     * Hoofdstuk 118: de RC Robot Arm. Zonder arm breekt een RC Car alleen het blok recht voor zich; met deze arm (rechtsklik
+     * op de auto) ook hoger, boven en onder zich, en bereikt hij kisten tot twee blokken hoger.
+     */
+    public static final DeferredItem<com.senne.imttech.car.RcRobotArmItem> RC_ROBOT_ARM = ITEMS.registerItem(
+            "rc_robot_arm", com.senne.imttech.car.RcRobotArmItem::new, new Item.Properties().stacksTo(16));
+
+    /**
      * Hoofdstuk 22: de modules die je op de printplaat soldeert ("scan_module" tot "camera_module"), en de
      * verbrande module die overblijft na een kortsluiting ("burnt_module").
      */
