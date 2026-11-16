@@ -48,11 +48,17 @@ public final class ModAttachments {
     public static final Supplier<AttachmentType<com.senne.imttech.energy.CableCells>> POE_CABLES = ATTACHMENTS.register("poe_cables",
             ModAttachments::cableCells);
 
-    /** Een lijst kabels per chunk: opgeslagen met de chunk (leeg niet), en naar iedereen die de chunk ziet. */
+    /**
+     * Een lijst kabels per chunk: opgeslagen met de chunk (leeg niet), en naar iedereen die de chunk ziet.
+     *
+     * Hoofdstuk 134: niet terwijl Cables.store() de lijst neerzet. NeoForge zou dan bij elk stukje kabel meteen de hele
+     * lijst sturen, ook naar wie de chunk nog niet heeft; Cables.syncChanged stuurt hem aan het eind van de tik één keer.
+     * Met de chunk zelf (als hij naar een speler gaat) gaat de lijst altijd mee: dan zet niemand iets neer.
+     */
     private static AttachmentType<com.senne.imttech.energy.CableCells> cableCells() {
         return AttachmentType.builder(() -> com.senne.imttech.energy.CableCells.EMPTY)
                 .serialize(com.senne.imttech.energy.CableCells.CODEC, cells -> !cells.isEmpty())
-                .sync((holder, player) -> player.connection != null
+                .sync((holder, player) -> !com.senne.imttech.energy.Cables.storing() && player.connection != null
                         && player.connection.hasChannel(SyncAttachmentsPayload.TYPE), com.senne.imttech.energy.CableCells.STREAM_CODEC)
                 .build();
     }

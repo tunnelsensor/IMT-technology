@@ -43,6 +43,16 @@ public final class CableTraffic {
     private static final Map<ResourceKey<Level>, Map<BlockPos, Route>> ROUTES = new HashMap<>();
     /** Zo lang (ticks) gebruiken we een gevonden weg opnieuw, zolang er aan het netwerk niets veranderde. */
     private static final int ROUTE_TICKS = 40;
+
+    /**
+     * Hoofdstuk 134: de weg van de stroom per apparaat (zie {@link #powerRoute}), net zo onthouden. Elk apparaat dat stroom
+     * haalde, zocht om de twee seconden opnieuw tot 512 stukjes kabel af als er een speler in de buurt was, ook als er niets
+     * veranderd was: met veertig apparaten in een basis twintig zoektochten per seconde. Een lege weg betekent: hier valt
+     * niets te tekenen (geen leverancier, of geen stroomkabel tussen hen in).
+     */
+    private static final Map<ResourceKey<Level>, Map<BlockPos, Route>> POWER_ROUTES = new HashMap<>();
+    /** Na zo veel ticks zoeken we de stroomweg sowieso opnieuw (een generator erbij geeft niet altijd een nieuwe versie). */
+    private static final int POWER_ROUTE_TICKS = 200;
     /** Hooguit zo veel plekken krijgt een speler van een lange weg (zie part). */
     private static final int PART_MAX = 100;
     /** Je spel tekent een weg alleen als zijn midden zo dichtbij is (blokken; zie RANGE in client/CableTraffic). */
@@ -93,8 +103,8 @@ public final class CableTraffic {
         if (!anyoneNear(level, device, range)) {
             return;
         }
-        List<BlockPos> path = PowerGrid.path(level, device);
-        if (path.size() < 2 || path.stream().noneMatch(pos -> Cables.carriesPower(level, pos))) {
+        List<BlockPos> path = powerRoute(level, device);
+        if (path.size() < 2) {
             return;
         }
         // Wat langer dan de tijd tot het volgende pakketje: zo lopen de streepjes zonder haperen door.
@@ -116,6 +126,29 @@ public final class CableTraffic {
                 perLevel.clear(); // apparaten waar al lang geen signaal meer van kwam
             }
             route = new Route(LanGrid.version(), now, List.copyOf(LanGrid.path(level, device)));
+            perLevel.put(device.immutable(), route);
+        }
+        return route.path();
+    }
+
+    /**
+     * Hoofdstuk 134: de weg van de stroom van de leverancier naar dit apparaat (zie PowerGrid.path), even onthouden zolang er
+     * aan de kabels niets verandert (elke PowerGrid.changed verhoogt ook LanGrid.version). Leeg als er niets te tekenen valt.
+     */
+    private static List<BlockPos> powerRoute(ServerLevel level, BlockPos device) {
+        Map<BlockPos, Route> perLevel = POWER_ROUTES.computeIfAbsent(level.dimension(), key -> new HashMap<>());
+        long now = level.getGameTime();
+        Route route = perLevel.get(device);
+        if (route == null || route.version() != LanGrid.version() || now - route.gameTime() > POWER_ROUTE_TICKS
+                || now < route.gameTime()) {
+            if (perLevel.size() > 4096) {
+                perLevel.clear(); // apparaten die al lang geen stroom meer haalden
+            }
+            List<BlockPos> path = PowerGrid.path(level, device);
+            if (path.size() < 2 || path.stream().noneMatch(pos -> Cables.carriesPower(level, pos))) {
+                path = List.of();
+            }
+            route = new Route(LanGrid.version(), now, List.copyOf(path));
             perLevel.put(device.immutable(), route);
         }
         return route.path();
@@ -179,5 +212,6 @@ public final class CableTraffic {
     public static void clear() {
         LAST_FLOW.clear();
         ROUTES.clear();
+        POWER_ROUTES.clear();
     }
 }

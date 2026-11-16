@@ -1304,6 +1304,10 @@ public final class ImtServer {
         int guards = ImtDrones.find(player, DroneEntity.Mode.GUARD).size();
         // Hoofdstuk 97: alle markeringen, ook die ver weg (je HUD telt ze; markeren kan je spel alleen wat het kent).
         List<Integer> markedIds = allMarkedTargets(player).stream().map(Entity::getId).toList();
+        // Hoofdstuk 134: hooguit zoveel als er in het bericht past (de nieuwste), anders kan het niet verstuurd worden.
+        if (markedIds.size() > ImtStatusPayload.MAX_MARKED) {
+            markedIds = List.copyOf(markedIds.subList(markedIds.size() - ImtStatusPayload.MAX_MARKED, markedIds.size()));
+        }
         SatelliteStrikes.Strike strike = SatelliteStrikes.pendingFor(player.getUUID());
         List<Integer> cooldowns = new ArrayList<>(ImtCooldown.COUNT);
         for (ImtCooldown cooldown : ImtCooldown.values()) {
@@ -1316,11 +1320,12 @@ public final class ImtServer {
         DatacenterGlasses.Link link = DatacenterGlasses.link(player);
         if (ImtData.isEnabled(worn, ImtFeature.THREAT_SCAN) && link.works()) {
             int radius = ImtData.getThreatRadius(worn);
-            threatIds = new ArrayList<>();
+            List<Integer> creatures = new ArrayList<>();
             for (LivingEntity threat : ImtThreats.of(player, radius)) {
-                threatIds.add(threat.getId());
+                creatures.add(threat.getId());
             }
-            threatIds.addAll(ImtThreats.incomingProjectiles(player, radius));
+            // Hoofdstuk 134: hooguit 32 (de dichtstbijzijnde wezens eerst); meer paste niet en gooide je van de server.
+            threatIds = ImtThreats.forHud(creatures, ImtThreats.incomingProjectiles(player, radius), ImtStatusPayload.MAX_THREATS);
         }
         // Hoofdstuk 122: met welke kern je bril verbonden is (voor het G-menu, de HUD en het scherm Datacenter).
         String[] uplink = DatacenterGlasses.uplinkLabel(player);

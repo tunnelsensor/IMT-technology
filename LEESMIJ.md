@@ -1154,6 +1154,11 @@ spawnen er niet.
   niet. Hang hem met een stroomkabel aan een generator, of zet hem er direct tegenaan. Op niveau 100
   gebruikt hij 2 stroom per tick zolang hij brandt (een volle warmtegenerator houdt hem ruim acht
   minuten aan).
+- Kan het net hem niet bijhouden (te weinig generatoren, 's nachts op zonnepanelen), dan gaat hij uit, en
+  probeert hij het pas na **30 seconden** opnieuw (`[power] arcLampRetryTicks`, 600 ticks; 0 = meteen),
+  tenzij er aan het net iets verandert: een schakelaar, een kabel, een generator erbij. Vul je alleen een
+  generator bij, dan wacht hij die 30 seconden wel. Zo knippert hij niet meer elke paar seconden aan en
+  uit (elke keer rekende de server zijn licht tot 85 blokken ver opnieuw uit: lag op een server).
 - De eerste keer duurt het een halve seconde voor het veld licht is: de lamp meet hoe ver zijn licht
   komt. Daarna gaat hij met de schakelaar meteen aan en uit. Bouw je in zijn licht (of doe je een deur
   open of dicht), dan meet hij na een ogenblik opnieuw: in een dichte ruimte wordt het dan donker.
@@ -3843,6 +3848,25 @@ weggooien.
 Een nieuw getal instelbaar maken (voor jezelf als modder): zet het in `ImtConfig.java` in het
 juiste hoofdstuk, zonder `final`, met `@Tunable("Engelse uitleg")` erboven. Het staat dan vanzelf in
 `imttech.toml`.
+
+**Lag op een server?** (hoofdstuk 134) "Can't keep up!" in de console komt pas als de server meer dan
+2 seconden achterloopt; een server die elke tick net te traag is, of een verbinding die vol zit, merk je wel
+maar ziet de console niet. Zo zoek je het uit:
+- **Meten op de server**: zet de mod **spark** (alleen op de server nodig) erbij en typ tijdens de lag
+  `/spark profiler start --timeout 120`. Na 2 minuten krijg je een link met precies wat de server bezighoudt.
+  `/spark tps` laat zien hoe lang een tick duurt (onder 50 ms is goed).
+- **In je eigen spel**: F3 + 2 is de grafiek van je beelden (frametijd), F3 + 3 die van ping en bandbreedte.
+  Pieken in de bandbreedte wijzen naar de server of de verbinding, pieken in de frametijd naar je eigen pc.
+- **Je eigen instellingen**: een render distance van 32 laat je pc 4 keer zoveel tekenen als 16 (en als de
+  server het toelaat, laat het de server ook veel meer laden en sturen). Op een server is 12 tot 16 genoeg;
+  zet entity distance op 100% en biome blend op 2 of 3.
+- **De server zelf**: `view-distance` 10 tot 12 en `simulation-distance` 6 tot 8 in `server.properties`.
+- **Knoppen in `imttech.toml`** om te proberen: `[security] zoneChunkLoading = false` (zones blijven dan niet
+  meer geladen als niemand in de buurt is), `[network] flowSeconds = 0` (geen stroomstreepjes meer over de
+  kabels), `[network] cameraFeedMax` lager (minder camerabeeld tegelijk), `[power] arcLampRetryTicks` hoger.
+- **Uit de server gegooid met "Connection reset"?** Kijk in de console of `logs/latest.log` van de server op
+  dat tijdstip naar de regel `<naam> lost connection: ...` (en wat erboven staat), of de server opnieuw
+  opstartte ("Starting minecraft server"), en in de map `crash-reports`.
 
 ---
 

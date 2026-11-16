@@ -48,6 +48,13 @@ public class ArcLampBlockEntity extends BlockEntity {
     private double owed;
     /** In je eigen spel: wat we ArcLampLight het laatst vertelden. */
     private boolean clientLit;
+    /**
+     * Hoofdstuk 134: ging hij uit door een tekort, dan probeert hij het pas weer vanaf deze tick (zie
+     * {@link ImtConfig.Power#ARC_LAMP_RETRY_TICKS}), tenzij het net intussen veranderde ({@link #retryVersion}). Niet
+     * opgeslagen: na het laden mag hij het meteen proberen.
+     */
+    private long retryAt;
+    private int retryVersion;
 
     public ArcLampBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.ARC_LAMP.get(), pos, state);
@@ -90,7 +97,17 @@ public class ArcLampBlockEntity extends BlockEntity {
         double perTick = powerPerTick(lightLevel);
         int keepOn = Math.max(1, (int) Math.ceil(perTick));
         int start = Math.max(1, (int) Math.ceil(perTick * ImtConfig.Power.ARC_LAMP_START_TICKS));
-        boolean on = PowerGrid.available(level, pos) >= (lit ? keepOn : start);
+        long now = level.getGameTime();
+        // Hoofdstuk 134: net uitgegaan door een tekort en aan het net veranderde niets? Dan nog even niet proberen.
+        boolean waiting = !lit && now < retryAt && now >= retryAt - Math.round(ImtConfig.Power.ARC_LAMP_RETRY_TICKS)
+                && PowerGrid.version() == retryVersion;
+        boolean on = !waiting && PowerGrid.available(level, pos) >= (lit ? keepOn : start);
+        if (lit && !on) {
+            // Hij gaat uit. Kwam dat door een schakelaar of een script, dan verandert het net (en mag hij straks meteen weer);
+            // anders was het een tekort, en wacht hij een poos voor hij het opnieuw probeert.
+            retryAt = now + Math.round(ImtConfig.Power.ARC_LAMP_RETRY_TICKS);
+            retryVersion = PowerGrid.version();
+        }
         if (!on) {
             PowerGrid.missed(level, pos, perTick); // hij wil branden maar kan niet: tekort op het net
         }

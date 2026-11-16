@@ -116,6 +116,24 @@ public final class CableRenderer {
     /** Een kabel die we met de bril door alles heen tekenen: waar, welke soort, en of hij in een muur zit (anders ligt hij open). */
     private record Hidden(BlockPos cell, CableKind kind, boolean inWall) {}
 
+    /**
+     * Hoofdstuk 134: ligt deze chunk (zijn hele kolom, plus 2 blokken speling voor een kabel die uitsteekt) helemaal achter de
+     * camera? Dan zie je er niets van, en slaan we hem over: dat scheelt ongeveer de helft van het rekenwerk per beeld (alle
+     * kabels werden elk beeld opnieuw uitgerekend, ook die achter je). Bewust grof, zodat er nooit een kabel verdwijnt die je
+     * wel zou zien. We rekenen het zelf uit in plaats van met de "frustum" van Minecraft: Sodium (dat jij gebruikt) doet de
+     * zichtbaarheid op zijn eigen manier.
+     */
+    static boolean behind(Vec3 cam, org.joml.Vector3f look, int chunkX, int chunkZ, int minY, int maxY) {
+        double best = Double.NEGATIVE_INFINITY;
+        for (int corner = 0; corner < 8; corner++) {
+            double x = ((corner & 1) == 0 ? (chunkX << 4) : (chunkX << 4) + 16) - cam.x;
+            double y = ((corner & 2) == 0 ? minY : maxY) - cam.y;
+            double z = ((corner & 4) == 0 ? (chunkZ << 4) : (chunkZ << 4) + 16) - cam.z;
+            best = Math.max(best, x * look.x() + y * look.y() + z * look.z());
+        }
+        return best < -2.0;
+    }
+
     public static void onRenderLevel(RenderLevelStageEvent event) {
         // Na de wezens: in deze fase draait de camera al mee in de PoseStack (net als bij de illusies).
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_ENTITIES) {
@@ -141,8 +159,12 @@ public final class CableRenderer {
         List<Hidden> hidden = new ArrayList<>();
 
         ChunkPos centre = new ChunkPos(BlockPos.containing(cam));
+        org.joml.Vector3f look = event.getCamera().getLookVector();
         for (int cx = centre.x - RANGE_CHUNKS; cx <= centre.x + RANGE_CHUNKS; cx++) {
             for (int cz = centre.z - RANGE_CHUNKS; cz <= centre.z + RANGE_CHUNKS; cz++) {
+                if (behind(cam, look, cx, cz, level.getMinBuildHeight(), level.getMaxBuildHeight())) {
+                    continue;
+                }
                 LevelChunk chunk = level.getChunkSource().getChunk(cx, cz, false);
                 if (chunk == null) {
                     continue;

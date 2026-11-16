@@ -35,6 +35,21 @@ public final class Cables {
     private static final Object LOCK = new Object();
     private static final Set<Pending> TO_SYNC = new LinkedHashSet<>();
 
+    /**
+     * Hoofdstuk 134: waar terwijl store() de nieuwe lijst in de chunk zet. NeoForge stuurt bij elke setData en removeData
+     * meteen de HELE lijst van die chunk naar iedereen die de chunk in zijn zicht heeft, ook naar wie hem nog niet heeft
+     * gekregen ("Received synced attachments from unknown chunk" bij die spelers). Een Biebia-gebouw legt honderden kabels
+     * tegelijk, dus dat werden honderden steeds langere lijsten in één tik (jouw 1120 meldingen van 16 november). Zolang
+     * dit waar is, zegt de sync van de kabels "naar niemand" (zie ModAttachments.cableCells); syncChanged stuurt de lijst
+     * daarna één keer per chunk en soort.
+     */
+    private static final ThreadLocal<Boolean> STORING = ThreadLocal.withInitial(() -> false);
+
+    /** Zit store() nu een lijst in een chunk te zetten (op deze thread)? Dan nog niets versturen. */
+    public static boolean storing() {
+        return STORING.get();
+    }
+
     // ================================================================ Opvragen
 
     /** Ligt hier een kabel van deze soort? (Een chunk die niet geladen is: nee.) */
@@ -131,10 +146,15 @@ public final class Cables {
     }
 
     private static void store(CableKind kind, LevelChunk chunk, CableCells cells) {
-        if (cells.isEmpty()) {
-            chunk.removeData(kind.attachment());
-        } else {
-            chunk.setData(kind.attachment(), cells);
+        STORING.set(true);
+        try {
+            if (cells.isEmpty()) {
+                chunk.removeData(kind.attachment());
+            } else {
+                chunk.setData(kind.attachment(), cells);
+            }
+        } finally {
+            STORING.set(false);
         }
         chunk.setUnsaved(true);
         // Naar iedereen die deze chunk ziet, zodat ze de kabel zien verschijnen of verdwijnen. Dat doen we aan het eind
@@ -173,14 +193,21 @@ public final class Cables {
     }
 
     /**
-     * Heeft een speler deze chunk al binnen? Een chunk die net gemaakt is (met een gebouw erin) staat meestal nog in de
-     * wachtrij om verstuurd te worden: die krijgt de kabels vanzelf mee als hij aankomt. Stuur je ze eerder, dan gooit de
-     * speler ze weg ("unknown chunk").
+     * Heeft een speler deze chunk al binnen? Een chunk die net gemaakt is (met een gebouw erin) is vaak nog niet klaar om
+     * verstuurd te worden: die krijgt de kabels vanzelf mee als hij aankomt (NeoForge stuurt de lijsten mee met de chunk).
+     * Stuur je ze eerder, dan gooit de speler ze weg ("unknown chunk").
+     *
+     * Hoofdstuk 134: "niet in de wachtrij" was niet genoeg. Een chunk die in je zicht ligt maar nog laadt (of alleen op een
+     * laag niveau geladen is), staat ook niet in de wachtrij, en NeoForge stuurde hem dan toch. Nu vragen we of de chunk al
+     * verstuurd mag worden (getChunkToSend): pas dan heeft elke speler die hem ziet en niet meer op hem wacht hem echt.
      */
     private static boolean anyoneHas(ServerLevel level, LevelChunk chunk) {
         ChunkPos pos = chunk.getPos();
         if (level.getChunkSource().getChunkNow(pos.x, pos.z) != chunk) {
             return false; // al weer uit het geheugen
+        }
+        if (level.getChunkSource().chunkMap.getChunkToSend(pos.toLong()) != chunk) {
+            return false; // nog niet klaar om te versturen: niemand heeft hem, de kabels gaan straks mee met de chunk
         }
         for (ServerPlayer player : level.getChunkSource().chunkMap.getPlayers(pos, false)) {
             if (player.connection != null && !player.connection.chunkSender.isPending(pos.toLong())) {

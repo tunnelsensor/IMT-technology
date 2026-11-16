@@ -98,6 +98,11 @@ public final class PowerGrid {
         com.senne.imttech.lan.LanGrid.changed();
     }
 
+    /** Hoofdstuk 134: de stand van de teller hierboven (een Arc Lamp die op stroom wacht, kijkt of er iets veranderde). */
+    public static int version() {
+        return version;
+    }
+
     /** Alle leveranciers die met dit apparaat verbonden zijn. */
     public static List<EnergySource> sources(Level level, BlockPos device) {
         List<EnergySource> result = new ArrayList<>();
@@ -255,7 +260,10 @@ public final class PowerGrid {
         Map<BlockPos, Found> perLevel = CACHE.computeIfAbsent(level.dimension(), key -> new HashMap<>());
         Found found = perLevel.get(device);
         long now = level.getGameTime();
-        if (found == null || found.version != version || now - found.gameTime > CACHE_TICKS) {
+        // Hoofdstuk 134: elk apparaat wacht een eigen stukje langer (0 tot 63 ticks, vast per plek). Na een verandering vulden
+        // alle apparaten hun geheugen in dezelfde tick, en dan zochten ze om de tien seconden ook allemaal in dezelfde tick
+        // opnieuw: één tik met al dat zoekwerk tegelijk, telkens weer.
+        if (found == null || found.version != version || now - found.gameTime > CACHE_TICKS + Math.floorMod(device.hashCode(), 64)) {
             found = new Found(version, now, search(level, device));
             perLevel.put(device.immutable(), found);
         }

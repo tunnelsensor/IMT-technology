@@ -171,7 +171,8 @@ public final class ImtConfig {
         @Tunable("How far away you can analyse and mark targets (blocks)")
         public static double TARGET_RANGE = 64.0;
         /** Hoeveel doelwitten je tegelijk kunt markeren. */
-        @Tunable("How many targets you can mark at once")
+        // Hoofdstuk 134: hooguit 16, zoveel markeringen passen in het statusbericht naar je bril (ImtStatusPayload.MAX_MARKED).
+        @Tunable(value = "How many targets you can mark at once", min = 1, max = 16)
         public static float MAX_MARKED_TARGETS = 10.0f;
         /** Hoeveel keer de bril inzoomt (bij het richten van de satelliet dubbel zoveel). */
         @Tunable(value = "How many times the glasses zoom in (twice this while aiming the satellite)", min = 1, max = 16)
@@ -401,6 +402,15 @@ public final class ImtConfig {
         @Tunable("An Arc Lamp that is off only turns on when the grid has had power for this many ticks "
                 + "(so it doesn't flicker on a weak generator)")
         public static float ARC_LAMP_START_TICKS = 100.0f;
+        /**
+         * Hoofdstuk 134: ging een lamp uit omdat het net hem niet kon bijhouden, dan probeert hij het pas na zoveel ticks opnieuw
+         * (600 = 30 seconden), tenzij er aan het net iets verandert (een schakelaar, een kabel, een generator erbij). Op een te
+         * zwak net ging hij anders elke tien seconden aan en uit, en elke keer rekende de server het licht tot 85 blokken ver
+         * opnieuw uit en stuurde hij dat naar iedereen: lag. 0 = meteen opnieuw proberen, zoals vroeger.
+         */
+        @Tunable(value = "After an Arc Lamp went out because the grid could not keep up, it waits this many ticks before "
+                + "trying again (unless something on the grid changes); 0 = try again at once", max = 72_000)
+        public static float ARC_LAMP_RETRY_TICKS = 600.0f;
 
         // ------------------------------------------------------------------------- Forge Energy (hoofdstuk 46)
         @Tunable(value = "The energy units this file uses: 1 = before 4 November 2026 (every energy number was ten times"
@@ -895,7 +905,8 @@ public final class ImtConfig {
         private Relays() {}
 
         /** Hoeveel relais en schakelbare apparaten één speler kan aanmelden. */
-        @Tunable("How many relays and switchable devices one player can register")
+        // Hoofdstuk 134: hooguit 256, zoveel passen in de lijst die naar je spel gaat (ImtRelays.STREAM_CODEC).
+        @Tunable(value = "How many relays and switchable devices one player can register", min = 1, max = 256)
         public static float MAX_RELAYS = 64.0f;
         /** Hoe lang de naam van een relais (en van een groep) mag zijn. */
         @Tunable(value = "Longest name of a relay or relay group (letters)", min = 1, max = 64)
@@ -944,7 +955,8 @@ public final class ImtConfig {
         private Navigation() {}
 
         /** Hoeveel waypoints je kunt opslaan. */
-        @Tunable("How many waypoints one player can save")
+        // Hoofdstuk 134: hooguit 64, zoveel passen in de lijst die naar je spel gaat (ImtWaypoints.STREAM_CODEC).
+        @Tunable(value = "How many waypoints one player can save", min = 1, max = 64)
         public static float MAX_WAYPOINTS = 20.0f;
         /** Hoe lang de naam van een waypoint mag zijn. */
         @Tunable(value = "Longest waypoint name (letters)", min = 1, max = 64)

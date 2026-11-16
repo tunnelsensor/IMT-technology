@@ -45,6 +45,12 @@ public class RavenCombatGoal extends Goal {
     private static final double[] POST_PARTS = {0.5, 0.72, 0.89};
     /** Zo vaak (ticks) kijkt hij opnieuw waar hij heen moet als hij je niet ziet. */
     private static final int REPLAN_TICKS = 25;
+    /**
+     * Hoofdstuk 134: zo lang (ticks) wacht hij minstens tussen twee keer plannen, ook als hij er al is of er geen weg was.
+     * Zonder dit plande een soldaat die je niet kon bereiken (jij op een dak, in een dichte kamer, in de lucht) elke tick
+     * opnieuw: 21 plekken bekijken en tot 7 routes zoeken, per soldaat, twintig keer per seconde.
+     */
+    private static final int MIN_REPLAN_TICKS = 8;
     /** Hoe ver de ploeg reikt: soldaten die zo dichtbij zijn en hetzelfde doelwit hebben. */
     private static final double SQUAD_RANGE = 32.0;
     /** Hoe ver een waarschuwing reikt. */
@@ -137,7 +143,8 @@ public class RavenCombatGoal extends Goal {
                     soldier.throwGrenade(lastSeen);
                 }
             }
-            if (--replanCooldown <= 0 || soldier.getNavigation().isDone()) {
+            if (--replanCooldown <= 0
+                    || soldier.getNavigation().isDone() && replanCooldown <= REPLAN_TICKS - MIN_REPLAN_TICKS) {
                 replanCooldown = REPLAN_TICKS;
                 moveToBetterPlace(target);
             }

@@ -106,6 +106,24 @@ public final class ImtThreats {
         return ids;
     }
 
+    /**
+     * Hoofdstuk 134: de nummers voor je HUD, hooguit {@code max} (ImtStatusPayload.MAX_THREATS): eerst de wezens (de
+     * dichtstbijzijnde eerst, zie {@link #of}), daarna wat er op je af vliegt. Meer past niet in het statusbericht; zonder deze
+     * grens gooide de server je eruit zodra er tijdens een raid meer dan 32 dingen tegelijk op je af kwamen.
+     */
+    public static List<Integer> forHud(List<Integer> creatures, List<Integer> projectiles, int max) {
+        List<Integer> ids = new ArrayList<>(Math.min(max, creatures.size() + projectiles.size()));
+        for (List<Integer> part : List.of(creatures, projectiles)) {
+            for (Integer id : part) {
+                if (ids.size() >= max) {
+                    return ids;
+                }
+                ids.add(id);
+            }
+        }
+        return ids;
+    }
+
     public static void forget(ServerPlayer player) {
         RECENT_ATTACKERS.remove(player.getUUID());
     }

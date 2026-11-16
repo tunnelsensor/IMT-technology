@@ -72,10 +72,13 @@ public record IllusionScene(Kind kind, List<BlockElement> blocks, List<MobElemen
             ByteBufCodecs.FLOAT, MobElement::yaw,
             MobElement::new);
 
+    /** Hoofdstuk 134: zoveel blokken passen in het bericht van een scène (zie {@link #wall}). */
+    public static final int MAX_BLOCKS = 1024;
+
     public static final StreamCodec<RegistryFriendlyByteBuf, IllusionScene> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.VAR_INT.map(i -> Kind.values()[Math.floorMod(i, Kind.values().length)], Kind::ordinal),
             IllusionScene::kind,
-            BLOCK_CODEC.apply(ByteBufCodecs.list(1024)), IllusionScene::blocks,
+            BLOCK_CODEC.apply(ByteBufCodecs.list(MAX_BLOCKS)), IllusionScene::blocks,
             MOB_CODEC.apply(ByteBufCodecs.list(64)), IllusionScene::mobs,
             IllusionScene::new);
 
@@ -91,8 +94,16 @@ public record IllusionScene(Kind kind, List<BlockElement> blocks, List<MobElemen
 
     // ---------------------------------------------------------------- Scènes maken
 
-    /** Een valse muur: breed x hoog, van één bloksoort, van oost naar west op de grond. */
+    /**
+     * Een valse muur: breed x hoog, van één bloksoort, van oost naar west op de grond.
+     *
+     * Hoofdstuk 134: hooguit {@link #MAX_BLOCKS} blokken, zoveel passen in het bericht naar de spelers. Een muur van 64 bij 64
+     * (de grootste die de config toelaat) is dus lager dan gevraagd; anders kon de server het beeld niet versturen en gooide
+     * hij iedereen in de buurt van de server.
+     */
     public static IllusionScene wall(BlockState state, int width, int height) {
+        int columns = 2 * (width / 2) + 1;
+        height = Math.max(1, Math.min(height, MAX_BLOCKS / Math.max(1, columns)));
         List<BlockElement> blocks = new ArrayList<>();
         for (int x = -width / 2; x <= width / 2; x++) {
             for (int y = 0; y < height; y++) {

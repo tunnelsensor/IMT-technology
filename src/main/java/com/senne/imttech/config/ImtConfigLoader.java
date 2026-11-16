@@ -229,6 +229,14 @@ public final class ImtConfigLoader {
      */
     @SuppressWarnings("unchecked")
     private static void migrateEnergyUnits(net.neoforged.fml.config.ModConfig config) {
+        // Hoofdstuk 134: alleen een echt bestand ombouwen. Op een server stuurt NeoForge het bestand als tekst naar elke
+        // speler die binnenkomt; die kopie heeft geen pad, en getFullPath() gooit dan een fout. Die fout stopte onLoad
+        // voordat de getallen erin gingen, dus op een server rekende jouw spel met de standaardwaarden in plaats van met die
+        // van de server. De server bouwt zijn eigen bestand al om voordat hij het stuurt, dus de kopie hoeft het nooit.
+        java.nio.file.Path file = fileOf(config);
+        if (file == null) {
+            return;
+        }
         Entry version = null;
         for (Entry entry : ENTRIES) {
             if (entry.field().getName().equals("ENERGY_UNITS")) {
@@ -243,8 +251,7 @@ public final class ImtConfigLoader {
             // Een bestand van voor 4 november heeft de regel energyUnits helemaal niet, en NeoForge vult dan stilletjes de
             // standaard (2) in. Dus kijken we in het bestand zelf: staat de regel er niet, dan is het een oud bestand.
             try {
-                java.nio.file.Path path = config.getFullPath();
-                oldFile = path != null && java.nio.file.Files.exists(path) && !java.nio.file.Files.readString(path).contains("energyUnits");
+                oldFile = java.nio.file.Files.exists(file) && !java.nio.file.Files.readString(file).contains("energyUnits");
             } catch (java.io.IOException e) {
                 oldFile = false;
             }
@@ -276,6 +283,18 @@ public final class ImtConfigLoader {
         ((ModConfigSpec.ConfigValue<Object>) version.value()).set(2);
         SPEC.save();
         ImtTech.LOGGER.info("[config] {} converted to Forge Energy: {} energy numbers multiplied by ten", FILE_NAME, changed);
+    }
+
+    /**
+     * Het bestand op schijf achter deze config, of null als er geen is: de kopie die de server naar je spel stuurt (en de
+     * lege standaardconfig) staat alleen in het geheugen.
+     */
+    static @org.jetbrains.annotations.Nullable java.nio.file.Path fileOf(net.neoforged.fml.config.ModConfig config) {
+        try {
+            return config.getFullPath();
+        } catch (IllegalStateException e) {
+            return null;
+        }
     }
 
     private static Number scaled(Object value, double factor, boolean whole) {

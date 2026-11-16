@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 659 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 661 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -10291,11 +10291,131 @@ bedoel."
 - **Geen nieuwe versie** (een reparatie: 2.23, het laatste getal telt vanzelf op) en geen nieuw netwerkprotocol. De
   reparatie zit in de server: op je gehoste server moet de nieuwe jar, anders trekt de rol daar nog rechte lijnen.
 
+### 134. Lag op de server en "Connection reset" (16 november)
+
+Jouw melding: "kun je eens uitzoeken waarom er lag is, de server meld zelf niets maar ik merk het wel in de server, ik ben ook
+net gecrased en uit de game gestuurd" (met het rapport `disconnect-2026-11-16_16.17.28-client.txt`:
+`java.net.SocketException: Connection reset`).
+
+- [x] **Wat je logboeken lieten zien** (je spel met 2.22.1, profiel IMT Technology): om 16:17:28 verbrak de server de
+      verbinding zonder reden (een "reset": er kwam geen bericht met een reden binnen). Zeven seconden ervoor klikte je
+      door de tabbladen van het G-menu; dat stuurt niets naar de server (alleen `menuTab` in `imttech-client.toml`). Toen je
+      om 16:19:50 terugkwam, was er een raid op je basis bezig ("The raid drones got what they came for", "vaporized by
+      Raid Drone"). Om 16:04:06 kreeg je spel in 1,1 seconde **1120 keer** "Received synced attachments from unknown
+      chunk". En bij **elke** keer joinen gaf de mod een fout bij het ontvangen van de serverconfig ("Cannot call
+      getFullPath() on non-file config"). "Can't keep up!" zegt de server pas als hij meer dan 2 seconden achterloopt: lag
+      van een te trage tick of een volle verbinding merk je wel, maar de console zwijgt.
+- [x] **Een kick bij meer dan 32 dreigingen** (`ImtServer.sendStatus`, `ImtStatusPayload`): het statusbericht naar je
+      bril (twee keer per seconde) heeft plaats voor 32 dreigingen, maar de server telde zonder grens alles wat op je af
+      kwam: drones en mobs die je zoeken of je raakten, en elke kogel, pijl of granaat die jouw kant op vliegt (met Threat
+      Scan aan). Bij de 33e kon de server het bericht niet inpakken, en dan gooit NeoForge je meteen van de server. Raid
+      drones blijven tot je doodgaat, dus na een paar raids, met mobs en een vuurgevecht erbij, kan dat. Nu krijgt de HUD
+      er hooguit 32 (eerst de wezens, dichtstbij eerst, dan wat er aan komt vliegen; `ImtThreats.forHud`), en hooguit 16
+      markeringen (de nieuwste).
+- [x] **Een vangnet voor alle berichten** (`ModNetwork.encodes`): elk bericht van de server naar een speler wordt eerst op
+      proef ingepakt. Lukt dat niet (een lijst langer dan erin past, een te lange tekst), dan sturen we het niet en staat in
+      het logboek van de server welk bericht het was ("Did not send ... it cannot be encoded"), één keer per soort. De
+      speler blijft gewoon in het spel. Vroeger gebeurde dat inpakken pas later op de netwerkdraad, en daar kickt een fout.
+- [x] **Ook in de config begrensd**, zodat een hoger getal geen kick meer kan geven: `maxMarkedTargets` hooguit 16,
+      `maxRelays` hooguit 256, `maxWaypoints` hooguit 64 (zoveel passen in hun bericht), en een **valse muur** heeft
+      hooguit 1024 blokken (64 bij 64 uit de config werd 4160 blokken: dan wordt hij lager; de gewone 9 bij 5 blijft).
+- [x] **De serverconfig kwam nooit aan in je spel** (`ImtConfigLoader.migrateEnergyUnits`, al sinds 4 november): op een
+      server stuurt NeoForge `imttech.toml` naar elke speler die binnenkomt, als tekst zonder bestand. De omrekening naar
+      Forge Energy vroeg het pad van dat bestand op, en dat gaf een fout voordat de getallen erin gingen. Je spel rekende
+      op een server dus met de standaardwaarden uit de code, niet met die van de server. Bij jou scheelde dat (nu) weinig:
+      het laadstation toonde "/300k" in plaats van 32k, en de draden van een laserpoort (alleen op de server gebruikt).
+      Maar elk getal dat de server anders zet (vliegsnelheid, wapens), zou je spel negeren. Nu bouwt alleen een echt
+      bestand om; in je logboek staat bij het joinen "[config] ... numbers from imttech.toml loaded".
+- [x] **De kabels van een Biebia-gebouw** (`Cables.store`, `ModAttachments.cableCells`): NeoForge stuurt bij elke
+      `setData` meteen de **hele** kabellijst van een chunk naar iedereen die die chunk in zijn zicht heeft, ook naar wie
+      hem nog niet heeft gekregen. Een toren heeft honderden markers, elk met een stroom- én een netwerkkabel: samen zo'n 800 tot
+      1100 keer `setData`. Bij het ontstaan van een toren aan de rand van je zicht kreeg je ruim 1000 steeds langere lijsten in
+      één tik (0,6 tot 1,1 MB), en je spel gooide ze allemaal weg. Dat waren jouw 1120 meldingen van 16:04. Nu stuurt
+      `store` niets meer; aan het eind van de tik gaat de lijst één keer per chunk en soort weg, en alleen als de chunk al
+      verstuurd mag worden (`getChunkToSend`). Anders gaat hij mee met de chunk zelf. Dezelfde winst bij kabel trekken in
+      een drukke basis: elk stukje stuurde de hele lijst van zijn chunk naar iedereen in de buurt.
+- [x] **Een Arc Lamp op een te zwak net** (`ArcLampBlockEntity`, `[power] arcLampRetryTicks`): hij brandde tot het net
+      leeg was, en ging weer aan zodra er genoeg was voor 5 seconden: met twee zonnepanelen elke ~10 seconden aan en uit.
+      Elke keer rekent de server zijn licht tot 85 blokken ver opnieuw uit (tot honderdduizenden plekken) en stuurt hij
+      dat (megabytes bij een lamp buiten) naar iedereen die die chunks heeft. Nu wacht een lamp die uitging door een
+      tekort **30 seconden** (600 ticks; 0 = zoals vroeger) voor hij het opnieuw probeert, tenzij er aan het net iets
+      verandert (een schakelaar, een script, een kabel, een generator erbij): een lichtschakelaar werkt dus meteen zoals
+      altijd. Alleen een generator bijvullen telt niet als verandering.
+- [x] **De stroomstreepjes** (`CableTraffic.powerRoute`): elk apparaat dat stroom haalde, zocht om de twee seconden de weg
+      naar zijn leverancier opnieuw af (tot 512 kabelstukjes) als er een speler binnen 48 blokken was, ook als er niets
+      veranderd was: met veertig apparaten in een basis twintig zoektochten per seconde. Nu onthouden we die weg tot er
+      iets aan het net verandert (hooguit 10 seconden).
+- [x] **Het geheugen van het stroomnet verspreid** (`PowerGrid.sourcePositions`): na elke verandering vulden alle
+      apparaten hun geheugen in dezelfde tick, en dan zochten ze om de tien seconden ook allemaal in dezelfde tick opnieuw.
+      Nu wacht elk apparaat een eigen stukje langer (0 tot 63 ticks, vast per plek).
+- [x] **Raven-soldaten die je niet kunnen bereiken** (`RavenCombatGoal`): ze sloegen hun wachttijd van 25 ticks over zodra
+      ze geen weg hadden, en planden dan elke tick opnieuw (21 plekken bekijken, tot 7 routes zoeken, per soldaat). Nu
+      minstens 8 ticks tussen twee keer plannen: ze reageren nog binnen 0,4 seconde.
+- [x] **Kabels tekenen in je eigen spel** (`CableRenderer.behind`): elk beeld rekende je spel alle kabels in 9 bij 9
+      chunks opnieuw uit, ook die achter je. Chunks die helemaal achter de camera liggen, slaan we nu over (ongeveer de
+      helft van het werk). Bewust grof, en zelf uitgerekend: Sodium (dat jij gebruikt) doet de zichtbaarheid op zijn eigen
+      manier, en dan kunnen we niet op die van Minecraft rekenen.
+- [ ] **Gevonden, maar niet veranderd** (een keuze voor jou, of eerst meten met spark):
+      - Je zone blijft geladen (hoofdstuk 120, jouw wens), ook als niemand online is: tot 256 chunks per zone, met alles
+        wat erin tikt (je apparaten, maar ook dieren, dorpelingen, trechters). Met vier spelers met elk een zone is dat
+        alsof er altijd vier extra spelers rondlopen. Proberen: `[security] zoneChunkLoading = false`, of
+        `zoneChunkLoadingMax` lager.
+      - Elke geladen kern zoekt om de 2 seconden zijn hele netwerk af (tot 8192 kabelstukjes), ook als er niets veranderde.
+      - Na elke verandering aan een stroomnet (één kabelstukje, een schakelaar, een EMP) zoekt elk apparaat van de hele
+        server opnieuw, niet alleen dat van dat net (één teller voor alles).
+      - Camerabeeld gaat continu naar wie een camerawand in beeld heeft (10 keer per seconde, met alle wezens), en een
+        verandering in een stuk wereld stuurt dat hele stuk opnieuw. `[network] cameraFeedMax` lager helpt.
+      - De desktop (ook laptop en telefoon) stuurt twee keer per seconde de hele toestand van je basis (logboek, apparaten,
+        camera's...), 20 tot 60 KB per seconde per open desktop.
+      - De stroomstreepjes gaan naar iedereen binnen 48 blokken, ook als die ze uit heeft staan (G > Information > Power
+        flow): dat weet de server niet. Daarvoor moet je spel het aan de server vertellen (een nieuw bericht, dus een nieuw
+        netwerkprotocol). `[network] flowSeconds = 0` zet ze voor iedereen uit.
+      - De dump pouch raapt tijdens het schieten om de 4 ticks hulzen op en stuurt dan je hele uitrusting (met de inhoud
+        van je rugzak) naar jou en wie je ziet.
+      - Waar de server een stuk wereld leest terwijl het nog laadt (`isLoaded` is dan al waar), wacht hij erop
+        (`PowerGrid.look`, `Cables.has`, `DevicePower.payUpkeep`); een relais ver weg aanzetten laadt zijn chunk even in.
+- [ ] **Wat de disconnect zelf was, weten we niet zeker**: de server stuurde geen reden mee. Twee kandidaten: (1) de server
+      stopte plots (geheugen vol en gekilld door de host, of een herstart): dan staat in het paneel een herstart, "killed"
+      of exit code 137, en hebben je vrienden er op hetzelfde moment ook uit gelegen; (2) een kick waarvan de reden
+      verloren ging omdat er veel berichten in de wachtrij stonden: de enige kick die we tijdens een raid konden vinden, is
+      die van de 32 dreigingen (opgelost). In `logs/latest.log` van de server rond 16:17:28 staat welke het was:
+      "tunnelsensor lost connection: ..." met de reden, of "Exception caught in connection".
+- [x] **Je eigen instellingen** (`options.txt`): render distance 32, simulation distance 32, entity distance 500%, biome
+      blend 7 en vsync aan. Op een server is render distance 12 tot 16 genoeg (32 is 4 keer zoveel tekenen als 16), entity
+      distance 100%, biome blend 2 of 3. Staat `view-distance` in `server.properties` van de server hoog, dan moet de server
+      voor jou ook 4225 chunks laden en sturen in plaats van 441.
+- [x] **Teksten**: LEESMIJ (de Arc Lamp, en "Lag op een server?" bij de instellingen: spark, F3 + 2 en F3 + 3, de knoppen
+      in `imttech.toml`, waar je kijkt na een "Connection reset").
+- [x] **Tests** (geen nieuwe batchnamen): `status_and_illusion_messages_always_fit` (batch cables: 40 wezens en 10 kogels
+      worden 32 dreigingen, eerst de wezens; een bericht met 33 kan niet ingepakt worden en wordt niet verstuurd, met 32
+      wel; een valse muur van 64 bij 64 past) en `arc_lamp_waits_after_running_out` (batch arc_lamp: na een tekort blijft
+      de lamp uit, ook met een volle generator, tot hij gewacht heeft; na een verandering aan het net gaat hij meteen weer
+      aan). 661 tests, in de eerste ronde
+      allemaal groen.
+- [x] **Onderzoek**: vier lezers met elk een eigen invalshoek (wat de server naar spelers stuurt, werk per servertik, wat een
+      verbinding kan verbreken, en wat er aan jouw kant gebeurt), samen zo'n 1,9 miljoen tokens. Hun vier controleurs vielen
+      twee keer uit door netwerkfouten van de API (verbinding verbroken, daarna "API niet bereikbaar"): er is dus **geen
+      nalezing** door aparte lezers gebeurd. Wat ik hierboven heb opgelost, heb ik zelf nagelopen in de code en in de
+      bronnen van Minecraft 1.21.1 en NeoForge 21.1.251/21.1.265; de getallen bij "gevonden, maar niet veranderd" zijn
+      schattingen van de lezers, niet gemeten.
+- **Geen nieuwe versie** (reparaties: 2.23, het laatste getal telt vanzelf op) en **geen nieuw netwerkprotocol** (nog
+  steeds 50: de berichten zijn precies hetzelfde gebleven). Maar je server draait 2.22.1 (protocol 49): op de server
+  **en** bij al je vrienden moet de nieuwe jar.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **Lag en de kick tijdens een raid (hoofdstuk 134)**: met tests gecontroleerd, niet met een echte server en een
+      echt spel. Probeer op je server met de nieuwe jar: (1) staat in het logboek van je spel bij het joinen
+      "[config] ... numbers from imttech.toml loaded" (en niet meer "Cannot call getFullPath()")? (2) Vlieg naar een plek
+      waar nog geen wereld is: komen er nog "Received synced attachments from unknown chunk"-meldingen als er een
+      Biebia-toren of -bunker ontstaat? En zie je de kabels in zo'n gebouw wel gewoon liggen? (3) Kabels trekken en
+      weghalen in je basis: verschijnen en verdwijnen ze bij een vriend die ernaast staat? (4) Kabels achter je: kijk
+      snel om (ook in F5), verdwijnt er nergens een kabel die je zou moeten zien? (5) Een Arc Lamp aan te weinig
+      zonnepanelen: knippert hij nog maar zelden? En een lichtschakelaar werkt toch meteen? (6) Een raid met Threat Scan
+      aan en veel drones, mobs en kogels om je heen: blijf je in het spel?
 - [ ] **De melding "New cable line" (hoofdstuk 132)**: in de tests gecontroleerd, niet in het spel gezien. Houd met
       een kabelrol de knop vast, kijk even in de lucht en loop zo'n 30 blokken door, kijk dan naar de vloer: begint daar
       een nieuwe lijn (zonder kabel door de muur), en zie je de melding boven je werkbalk?

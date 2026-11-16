@@ -507,8 +507,52 @@ public final class ModNetwork {
      * controle zou de server crashen.)
      */
     public static void sendTo(ServerPlayer player, CustomPacketPayload payload) {
-        if (player.connection != null && player.connection.hasChannel(payload)) {
+        if (player.connection != null && player.connection.hasChannel(payload) && encodes(player, payload)) {
             PacketDistributor.sendToPlayer(player, payload);
+        }
+    }
+
+    /** Berichten waarvan we al eens in het logboek schreven dat ze niet in te pakken waren (één keer per soort is genoeg). */
+    private static final java.util.Set<net.minecraft.resources.ResourceLocation> UNSENDABLE =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /**
+     * Hoofdstuk 134: kan dit bericht ingepakt worden? We proberen het hier eerst. Het echte inpakken gebeurt pas later, op de
+     * netwerkdraad, en daar gooit een fout (een lijst langer dan in het bericht past, een te lange tekst) de speler meteen van de
+     * server. Zonder reden in zijn spel: hij ziet alleen "Connection reset". Nu slaan we zo'n bericht over en schrijven we in het
+     * logboek welk bericht het was; de speler blijft gewoon in het spel. Public voor de tests.
+     */
+    @SuppressWarnings("unchecked")
+    public static boolean encodes(ServerPlayer player, CustomPacketPayload payload) {
+        net.minecraft.network.codec.StreamCodec<? super net.minecraft.network.FriendlyByteBuf, ? extends CustomPacketPayload> codec;
+        try {
+            codec = net.neoforged.neoforge.network.registration.NetworkRegistry.getCodec(payload.type().id(),
+                    net.minecraft.network.ConnectionProtocol.PLAY, net.minecraft.network.protocol.PacketFlow.CLIENTBOUND);
+        } catch (RuntimeException e) {
+            return true; // niet na te kijken: gewoon versturen, zoals vroeger
+        }
+        if (codec == null) {
+            return true;
+        }
+        net.minecraft.network.RegistryFriendlyByteBuf buffer = new net.minecraft.network.RegistryFriendlyByteBuf(
+                io.netty.buffer.Unpooled.buffer(), player.registryAccess(),
+                player.connection != null ? player.connection.getConnectionType()
+                        : net.neoforged.neoforge.network.connection.ConnectionType.NEOFORGE);
+        try {
+            ((net.minecraft.network.codec.StreamCodec<net.minecraft.network.FriendlyByteBuf, CustomPacketPayload>) codec)
+                    .encode(buffer, payload);
+            return true;
+        } catch (RuntimeException e) {
+            if (UNSENDABLE.add(payload.type().id())) {
+                com.senne.imttech.ImtTech.LOGGER.error("Did not send {} to {}: it cannot be encoded (it would have kicked the player)",
+                        payload.type().id(), player.getGameProfile().getName(), e);
+            } else {
+                com.senne.imttech.ImtTech.LOGGER.debug("Did not send {} to {}: {}", payload.type().id(),
+                        player.getGameProfile().getName(), e.toString());
+            }
+            return false;
+        } finally {
+            buffer.release();
         }
     }
 

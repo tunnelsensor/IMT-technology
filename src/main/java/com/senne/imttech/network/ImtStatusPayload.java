@@ -42,6 +42,14 @@ public record ImtStatusPayload(int swarmDrones, int guardDrones, List<Integer> c
     public static final Type<ImtStatusPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "imt_status"));
 
     /**
+     * Hoofdstuk 134: zoveel markeringen en dreigingen passen in dit bericht. Stuurde de server er meer (tijdens een raid met
+     * Threat Scan aan: drones, mobs, kogels en granaten die op je af komen), dan kon hij het bericht niet inpakken en gooide
+     * hij je van de server. Wie de lijsten vult (ImtServer.sendStatus), houdt zich nu aan deze getallen.
+     */
+    public static final int MAX_MARKED = 16;
+    public static final int MAX_THREATS = 32;
+
+    /**
      * Zelf in- en uitpakken. (StreamCodec.composite kan in 1.21.1 maximaal zes onderdelen
      * aan elkaar plakken, en dit bericht heeft er meer.)
      */
@@ -52,11 +60,11 @@ public record ImtStatusPayload(int swarmDrones, int guardDrones, List<Integer> c
                     ByteBufCodecs.VAR_INT.encode(buffer, payload.swarmDrones());
                     ByteBufCodecs.VAR_INT.encode(buffer, payload.guardDrones());
                     ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(64)).encode(buffer, payload.cooldowns());
-                    ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(16)).encode(buffer, payload.marked());
+                    ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(MAX_MARKED)).encode(buffer, payload.marked());
                     ByteBufCodecs.optional(ModCodecs.VEC3).encode(buffer, payload.strikeTarget());
                     ByteBufCodecs.VAR_INT.encode(buffer, payload.strikeTicks());
                     ByteBufCodecs.VAR_INT.encode(buffer, payload.hackedCount());
-                    ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(32)).encode(buffer, payload.threats());
+                    ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(MAX_THREATS)).encode(buffer, payload.threats());
                     ByteBufCodecs.VAR_INT.encode(buffer, payload.brainDelay() + 1); // +1: -1 wordt 0 (klein over het netwerk)
                     ByteBufCodecs.stringUtf8(64).encode(buffer, payload.brainSource());
                     ByteBufCodecs.VAR_INT.encode(buffer, payload.link());
@@ -71,11 +79,11 @@ public record ImtStatusPayload(int swarmDrones, int guardDrones, List<Integer> c
                     int swarm = ByteBufCodecs.VAR_INT.decode(buffer);
                     int guards = ByteBufCodecs.VAR_INT.decode(buffer);
                     List<Integer> cooldowns = ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(64)).decode(buffer);
-                    List<Integer> marked = ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(16)).decode(buffer);
+                    List<Integer> marked = ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(MAX_MARKED)).decode(buffer);
                     Optional<Vec3> strikeTarget = ByteBufCodecs.optional(ModCodecs.VEC3).decode(buffer);
                     int strikeTicks = ByteBufCodecs.VAR_INT.decode(buffer);
                     int hacked = ByteBufCodecs.VAR_INT.decode(buffer);
-                    List<Integer> threats = ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(32)).decode(buffer);
+                    List<Integer> threats = ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(MAX_THREATS)).decode(buffer);
                     int brainDelay = ByteBufCodecs.VAR_INT.decode(buffer) - 1;
                     String brainSource = ByteBufCodecs.stringUtf8(64).decode(buffer);
                     int link = ByteBufCodecs.VAR_INT.decode(buffer);
