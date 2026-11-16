@@ -109,7 +109,15 @@ public final class ScriptParser {
      * in een regel zelf (een tikfout) geeft nog altijd een LogicException.
      */
     public static Script parseUnchecked(String source, ProgramKind kind) {
-        return new ScriptParser(source, kind, Library.EMPTY).script();
+        return parseUnchecked(source, kind, Library.EMPTY);
+    }
+
+    /**
+     * Zoals hierboven, met de defs en gedeelde namen van je global scripts erbij (hoofdstuk 131): zonder die las een
+     * programma dat er een gebruikt niet, en dan toonde de app Logic de code uit de blokjes (zonder je commentaar).
+     */
+    public static Script parseUnchecked(String source, ProgramKind kind, Library library) {
+        return new ScriptParser(source, kind, library).script();
     }
 
     /** Is dit de naam van een def: een eigen def, of een uit een global script? */

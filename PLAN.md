@@ -10105,28 +10105,76 @@ range(3): on("gate" + i) of met string interpolation: for i in range(3): on(f"ga
       `for i in range(3): on("gate " + i)` werkte dus al; alleen de schrijfwijze van Python, `f"..."`, kende de taal niet.
 - [x] **`f"..."` is nu hetzelfde als `$"..."`** (ook `F"..."`, en met enkele aanhalingstekens). De Lexer leest een `f`
       vlak voor een aanhalingsteken als een `$`, dus alles van hoofdstuk 31 geldt: `{{` en `}}`, tekst en berekeningen
-      tussen `{` en `}`, de foutmeldingen. Een naam die op f eindigt (`elif"..."`, `self"..."`) telt niet: de f moet aan
-      het begin van een woord staan. Bewaar je het programma als blokjes en komt de code terug (via de blokjes), dan
-      staat er `$"..."`: dat doet precies hetzelfde.
+      tussen `{` en `}`, de foutmeldingen. Een naam die op f eindigt (`elif"..."`) telt niet: de f moet aan het begin van
+      een woord staan. Komt de code terug uit de blokjes (na het wisselen naar de blokjes, of als je code niet meer bij
+      de blokjes past), dan staat er `$"..."`: dat doet precies hetzelfde.
 - [x] **De editor** kleurt `f"gate {i}"` zoals `$"..."` (de code tussen `{` en `}` in de kleuren van code), en het
-      aanvullen met Tab werkt binnen de `{ }` van een f-tekst, net als bij `$"..."`.
-- [x] **Uitleg**: in de app Logic (Help) een nieuwe regel `for i in range(3): on(f"gate {i}")` ("this switches on gate 0,
-      gate 1 and gate 2"), en de regel over `$"..."` noemt de `f`. In LEESMIJ ("Tekst met namen erin") het voorbeeld met de
-      lus, `range(1, 4)` voor 1 tot 3, en de spatie: `"gate" + i` geeft "gate0". De oude zin "niet als naam van een
-      apparaat" klopte al sinds hoofdstuk 43 niet meer en is weg.
-- [x] **Tests**: in `logic_text_with_names` vier gevallen erbij (`f"gate {count}"`, `F'gate {count + 1}'`,
-      `"gate " + count`, `"gate" + (count + 1)` geeft "gate3") en de lus met `on(f"gate {i}")` en `on("gate" + i)` wordt
-      gelezen. `logic_text_with_names_run` zet in het spel echt drie relais aan: `for i in range(2): on(f"gate {i}")` en
-      `on("gate " + rounds)` zetten "gate 0", "gate 1" en "gate 2" aan. Nog altijd 651 tests, alle groen (volledige ronde).
-- **Geen nieuwe versie**: een kleine aanvulling op de taal die er al was (2.22, het laatste getal telt vanzelf op). Het
-  netwerkprotocol is niet veranderd.
-- **Nog niet in het spel bekeken**: de kleuren van `f"..."` in de editor (gebouwd zoals die van `$"..."`).
+      aanvullen met Ctrl+Spatie werkt binnen de `{ }` van een f-tekst, net als bij `$"..."`.
+- [x] **`is_on` ook met een berekende naam** (uit de nalezing): `if is_on(f"gate {i}"):`, `is_on("gate " + i)`,
+      `is_on(door)` met een parameter. Eerst nam `is_on` alleen een vaste naam: bij `is_on(f"gate {i}")` zei Check "needs
+      the name of a device between quotes" (terwijl er aanhalingstekens stonden), en bij `is_on("gate " + i)` "is missing
+      its closing )". `Expr.IsOn` houdt nu een uitdrukking die bij het uitvoeren tekst wordt, zoals bij `on(...)`.
+      `is_on(Lamp)` zonder aanhalingstekens zegt "Put names between quotes: is_on("Lamp")", en `is_on(3)` dat er een
+      naam (tekst) moet staan. Alleen een `when`-regel heeft nog een vaste naam nodig (`when turned_on("gate 1"):`): die
+      moet al weten op welk apparaat hij wacht voor er iets draait.
+- [x] **Geen rode melding meer bij Save** (uit de nalezing): bij het bewaren van precies deze lus zei de desktop in het
+      rood "Saved Diagram 1, but there is no device called "" (yet)", terwijl alles werkte. `SecurityOs.unknownDevice`
+      keek naar de vaste naam van elk apparaat-blokje, en die is leeg bij een berekende naam. Een berekende naam
+      (`f"..."`, `+`, een parameter) slaat hij nu over: welke namen eruit komen, weten we pas tijdens het draaien. Dat zat
+      er al sinds hoofdstuk 43 in (`pulse(door)` in een def gaf het ook).
+- [x] **Je commentaar en je `f"..."` blijven staan als je een global def gebruikt** (uit de nalezing): de app Logic
+      toont je eigen code zolang die bij de blokjes past (`LogicApp.codeFor`), maar las die code zonder je global
+      scripts. Gebruikte je programma een def uit een global script, dan lukte dat lezen niet, en zag je na het openen
+      (en na Save) de code uit de blokjes: zonder je commentaar, en met `$"..."` waar jij `f"..."` schreef. Bij de
+      volgende Save was je commentaar dan echt weg. Ook dat zat er al sinds hoofdstuk 43 in. Nu leest codeFor met
+      dezelfde global scripts als Check (`ScriptParser.parseUnchecked(source, kind, library)`); een RC program kent geen
+      global scripts en blijft zoals het was.
+- [x] **Uitleg**: in de app Logic (Help) de regel `on(f"gate {i}") in a loop` (een klik zet de hele lus
+      `for i in range(3): on(f"gate {i}")` in je code; uitleg "Switches on gate 0, 1 and 2. on("gate " + i) works too."),
+      de regel over `$"..."` noemt de `f`, en de uitleg bij `if is_on(...):` zegt "Also: is_on(f"gate {i}")". Label en
+      uitleg passen in het paneel van 152 pixels: eerst viel "for" eraf en stopte de uitleg na "gate 0, gate 1" (dat vond
+      de nalezing, gemeten met het echte lettertype; een uitleg krijgt maar twee regels). In LEESMIJ ("Tekst met namen
+      erin" en "Parameters") het voorbeeld met de lus, `range(1, 4)` voor 1 tot 3, de spatie (`"gate" + i` geeft
+      "gate0"), `is_on`, en dat een `when`-regel een vaste naam nodig heeft. De oude zin "niet als naam van een apparaat"
+      is weg: hij klopte sinds hoofdstuk 43 niet meer voor on/off/pulse, en nu ook niet meer voor is_on.
+- [x] **Tests**: `logic_text_with_names`: `f"gate {count}"`, `F'gate {count + 1}'`, `"gate " + count` en
+      `"gate" + (count + 1)` (geeft "gate3"); de lus met `on(f"gate {i}")` en `on("gate" + i)` wordt gelezen; `is_on` met
+      `$"..."` en `+` komt ongewijzigd terug uit de code; `is_on(Lamp)`, `is_on(3)` en `is_on()` geven een begrijpelijke
+      fout; en code met een global def, een commentaar en een `f"..."` past (gelezen met de global scripts) bij zijn
+      blokjes. `logic_text_with_names_run`, echt in het spel: `for i in range(2): on(f"gate {i}")` en
+      `on("gate " + rounds)` zetten "gate 0", "gate 1" en "gate 2" aan; een seconde later ziet `is_on(f"gate {i}")` in een
+      lus van vier dat 0 tot 2 aan staan en "gate 3" (die er niet is) niet; en `SecurityOs.unknownDevice` (nu public
+      voor deze test) vindt bij het bewaren geen onbekend apparaat. Nog altijd 651 tests.
+- [x] **Volledige ronde**: na de oplossingen van de nalezing 650 van de 651 groen: alleen `raid_drones_come_for_you` viel om, de
+      bekende wiebeltest met een drone die te hoog begint (die viel vandaag ook op een schone master om, zie
+      hoofdstuk 128). In de rondes daarvoor viel telkens een andere bekende wiebeltest om
+      (`raven_soldier_flanks_around_a_wall`, de AWP-soldaat aan de muur); alle Logic-tests waren elke keer groen. De
+      ronde voor de nalezing: alle 651 groen.
+- [x] **Nalezing**: vier lezers (de taal zelf, bewaren en opnieuw openen, de editor, uitleg en tests), elk met een
+      controleur die de vondsten probeerde te weerleggen: 13 vondsten, 7 echt, samen de drie dingen hierboven (is_on, de
+      rode melding, de Help-regel). Afgewezen, maar het vermelden waard: (1) foutmeldingen over een f-tekst noemen hem
+      `$"..."` ("A { in $"..." is missing its }"): het klopt wel, en de Help zegt dat f en $ hetzelfde zijn; (2) wat
+      Python nog meer kent tussen `{ }` (`{t:.1f}`, `{x!r}`, `{x=}`) kan niet, en dat kon met `$"..."` ook nooit; een
+      getal komt er al zonder overbodige nullen in; (3) een `when`-regel met `f"..."` zegt "needs a name between quotes"
+      (een when heeft een vaste naam nodig); (4) er is geen test voor Ctrl+Spatie binnen de `{ }` van een f-tekst (de
+      code is nagelopen: het werkt). De vijfde afgewezen vondst (global defs) kwam niet door dit hoofdstuk, maar was wel
+      echt: die heb ik toch opgelost (hierboven).
+- **Geen nieuwe versie**: een aanvulling op de taal die er al was (2.22, het laatste getal telt vanzelf op). Het
+  netwerkprotocol is in dit hoofdstuk niet veranderd.
+- **Nog niet in het spel bekeken**: de kleuren van `f"..."` in de editor en de Help-regels (zie "Nog nooit in het spel
+  bekeken").
 
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **Namen met een getal (hoofdstuk 131)**: met tests gecontroleerd, maar niet in het spel gezien. Probeer: (1) zet drie
+      relais "gate 0", "gate 1" en "gate 2" neer en typ `for i in range(3):` met daaronder `on(f"gate {i}")`: kleurt
+      `f"gate {i}"` zoals `$"..."` (de `{i}` in de kleur van code), en zegt Save groen "Saved ..." zonder "no device
+      called"? (2) Help > NAMES: staat `on(f"gate {i}") in a loop` er helemaal, en past de uitleg eronder op twee regels?
+      (3) Een programma met een def uit een global script en een commentaar: staat je commentaar er nog na het sluiten en
+      opnieuw openen van de desktop?
 - [ ] **Het alarm met je eigen geluid (hoofdstuk 126)**: met tests en de rondleiding gecontroleerd (al01 tot al09), maar
       nooit echt gehoord. Probeer: (1) upload een echte mp4 van je gsm of een YouTube-download (Choose file, of sleep hem
       op het venster): klinkt hij goed, ook de eerste seconde, en zonder kraken? (2) Met een vriend op je server: hoort hij

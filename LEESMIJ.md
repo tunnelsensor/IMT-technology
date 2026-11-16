@@ -1296,7 +1296,9 @@ when keycard("Lab door"):
   ```
 
   zet "gate 0", "gate 1" en "gate 2" aan (`range(3)` telt vanaf 0; wil je 1 tot 3, schrijf dan `range(1, 4)`).
-  Met `+` gaat het ook: `on("gate " + i)`. Let op de spatie: `"gate" + i` geeft "gate0".
+  Met `+` gaat het ook: `on("gate " + i)`. Let op de spatie: `"gate" + i` geeft "gate0". Ook `is_on` kan het:
+  `if is_on(f"gate {i}"):`. Alleen een `when`-regel heeft een vaste naam nodig (`when turned_on("gate 1"):`),
+  want die moet al weten op welk apparaat hij wacht voor er iets draait.
 - **Namen** (variabelen): `count = 0` helemaal links is een naam voor het hele programma; hij houdt
   zijn waarde tussen de runs (tot je het programma opnieuw bewaart). `count = count + 1` in een when of
   def geeft hem een nieuwe waarde. Een naam die je pas in een when maakt, bestaat alleen in die run; een
@@ -1345,8 +1347,9 @@ when keycard("Lab door"):
   Binnen de def is `door` een gewone naam, ook als **apparaat**:
   `pulse(door, secs)`. Zo typ je minder: één def die accepteert, logt en de deur opent, voor elke deur.
   Check kijkt na of je er genoeg waarden bij zet, en van de goede soort. Een apparaat mag daardoor
-  overal een naam of berekening zijn: `on(door)`, `on("Lamp " + i)`; met iets dat geen waarde heeft
-  (`on(Lamp)`) zegt Check dat je het tussen aanhalingstekens moet zetten.
+  overal een naam of berekening zijn: `on(door)`, `on("Lamp " + i)`, en sinds 16 november ook `is_on(door)`
+  (alleen in een `when`-regel niet: daar staat een vaste naam); met iets dat geen waarde heeft
+  (`on(Lamp)`, `is_on(Lamp)`) zegt Check dat je het tussen aanhalingstekens moet zetten.
   ```
   def open_door(string door):
       accept()

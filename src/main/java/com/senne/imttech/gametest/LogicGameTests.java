@@ -798,12 +798,35 @@ public final class LogicGameTests {
         expectError("when every(5):\n    say($\"Open)", 2, "missing its closing quote");
         // Een rijtje poorten met een lus (16 november, jouw wens).
         ScriptParser.parse("when every(5):\n    for i in range(3):\n        on(f\"gate {i}\")\n        on(\"gate\" + i)\n");
+        // is_on mag sinds hoofdstuk 131 ook een berekende naam hebben, en komt zo ook weer terug uit de code.
+        String isOnLoop = "when every(5):\n    for i in range(3):\n        if is_on($\"gate {i}\") or is_on(\"gate \" + i):\n"
+                + "            off($\"gate {i}\")\n";
+        String isOnPrinted = ScriptPrinter.print(ScriptParser.parse(isOnLoop));
+        if (!isOnPrinted.equals(isOnLoop)) {
+            throw new GameTestAssertException("is_on met een berekende naam kwam anders terug: " + isOnPrinted);
+        }
+        expectError("when every(5):\n    if is_on(Lamp):\n        pass\n", 2, "Put names between quotes: is_on(\"Lamp\")");
+        expectError("when every(5):\n    if is_on(3):\n        pass\n", 2, "is_on needs the name of a device (text)");
+        expectError("when every(5):\n    if is_on():\n        pass\n", 2, "is_on needs the name of a device between quotes");
+        // Een programma dat een def uit een global script gebruikt, past (gelezen met die global scripts) bij zijn blokjes:
+        // dan toont de app Logic na het openen je eigen code, met je commentaar en je f"...", niet de code uit de blokjes.
+        var globalGraph = GraphConverter.toGraph(
+                ScriptParser.parse("global\n\ndef lights_off():\n    off(\"Lamp\")\n"), null);
+        var globalLibrary = com.senne.imttech.logic.program.Library.of(List.of(new com.senne.imttech.logic.program.LogicProgram(
+                "Global 1", true, globalGraph, "", ProgramKind.SERVER)), null);
+        String withGlobal = "when every(5):\n    lights_off()  # alles uit\n    for i in range(3):\n        on(f\"gate {i}\")\n";
+        var userGraph = GraphConverter.toGraph(
+                ScriptParser.parse(withGlobal, ProgramKind.SERVER, globalLibrary), null);
+        String fromBlocks = ScriptPrinter.print(GraphConverter.toScript(userGraph));
+        String fromSource = ScriptPrinter.print(ScriptParser.parseUnchecked(withGlobal, ProgramKind.SERVER, globalLibrary));
+        check(fromSource.equals(fromBlocks), "Code met een global def paste niet bij zijn blokjes:\n" + fromSource + "\n" + fromBlocks);
         helper.succeed();
     }
 
     /**
      * Tekst met namen erin tijdens het uitvoeren: in het logboek staan de waarden zelf. Sinds 16 november (hoofdstuk 131)
-     * ook een rijtje apparaten met een lus: f"gate {i}" en "gate " + i zetten "gate 0", "gate 1" en "gate 2" aan.
+     * ook een rijtje apparaten met een lus: f"gate {i}" en "gate " + rounds zetten "gate 0", "gate 1" en "gate 2" aan,
+     * is_on(f"gate {i}") ziet welke aan staan, en bij het bewaren zegt hij niet dat er een apparaat "" ontbreekt.
      */
     @GameTest(template = ARENA, timeoutTicks = 200, batch = "logic_runner_text")
     public static void logic_text_with_names_run(GameTestHelper helper) {
@@ -825,16 +848,31 @@ public final class LogicGameTests {
                             for i in range(2):
                                 on(f"gate {i}")
                             on("gate " + rounds)
+                        if rounds == 3:
+                            for i in range(4):
+                                if is_on(f"gate {i}"):
+                                    log(f"gate {i} is on")
+                                else:
+                                    log("gate " + i + " is off")
                     """);
-            check(setup.core().logic().program("Template") != null, "Het diagram werd niet bewaard: " + lastLog(setup.core()));
+            var program = setup.core().logic().program("Template");
+            check(program != null, "Het diagram werd niet bewaard: " + lastLog(setup.core()));
+            String unknown = SecurityOs.unknownDevice(level, setup.core(), program.graph());
+            check(unknown == null, "Bij het bewaren zei hij: no device called \"" + unknown + "\" (een berekende naam)");
         });
-        helper.runAfterDelay(80, () -> {
+        helper.runAfterDelay(120, () -> {
             // (Dag of nacht hangt af van de tijd in de testwereld: allebei goed, als het maar ingevuld is.)
             check(logged(setup.core(), "Round 2: 6 points, night true") || logged(setup.core(), "Round 2: 6 points, night false"),
                     "De ingevulde tekst staat niet in het logboek: " + lastLog(setup.core()));
             check(level.getBlockState(gate0).getValue(RelayBlock.POWERED), "on(f\"gate {i}\") zette gate 0 niet aan");
             check(level.getBlockState(gate1).getValue(RelayBlock.POWERED), "on(f\"gate {i}\") zette gate 1 niet aan");
             check(level.getBlockState(gate2).getValue(RelayBlock.POWERED), "on(\"gate \" + 2) zette gate 2 niet aan");
+            for (int i = 0; i < 3; i++) {
+                check(logged(setup.core(), "gate " + i + " is on"), "is_on(f\"gate {i}\") zag gate " + i + " niet aan staan: "
+                        + lastLog(setup.core()));
+            }
+            check(logged(setup.core(), "gate 3 is off"), "is_on(f\"gate {i}\") zag gate 3 (die er niet is) niet uit staan: "
+                    + lastLog(setup.core()));
             helper.succeed();
         });
     }

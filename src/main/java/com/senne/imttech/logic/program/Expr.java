@@ -37,8 +37,11 @@ public sealed interface Expr {
     /** Een gegeven van wat er gebeurde: {@code card.number}, {@code code}, {@code is_night}... */
     record Var(String name) implements Expr {}
 
-    /** {@code is_on("Lamp")}: staat dat apparaat nu aan? */
-    record IsOn(String device) implements Expr {}
+    /**
+     * {@code is_on("Lamp")}: staat dat apparaat nu aan? Sinds hoofdstuk 131 mag de naam ook berekend zijn, net als bij
+     * {@code on(...)}: {@code is_on(f"gate {i}")}, {@code is_on("gate " + i)}, {@code is_on(door)} met een parameter.
+     */
+    record IsOn(Expr device) implements Expr {}
 
     /** {@code -card.number}: het tegengestelde getal. (Een los getal zoals -20 wordt meteen een Num.) */
     record Neg(Expr inner) implements Expr {}
@@ -800,14 +803,26 @@ public sealed interface Expr {
                     if (!next().is("(")) {
                         throw new LogicException("is_on needs a device between brackets, like is_on(\"Lamp\")");
                     }
-                    Lexer.Token device = next();
-                    if (device.type() != Lexer.Type.STRING) {
+                    Lexer.Token first = peek();
+                    if (first.is(")")) {
                         throw new LogicException("is_on needs the name of a device between quotes, like is_on(\"Lamp\")");
                     }
+                    // Een losse naam die nergens een waarde heeft, is bijna zeker een apparaat zonder aanhalingstekens.
+                    // (Soepel gelezen weten we de namen nog niet: dan zegt ScriptChecker het, met deze zelfde zin.)
+                    if (scope != null && first.type() == Lexer.Type.NAME && !scope.containsKey(first.text())
+                            && Variable.byName(first.text()) == null && Function.byName(first.text()) == null
+                            && tokens.get(Math.min(pos + 1, tokens.size() - 1)).is(")")) {
+                        throw new LogicException("Put names between quotes: is_on(\"" + first.text() + "\")");
+                    }
+                    // Hoofdstuk 131: de naam mag ook berekend zijn, zoals bij on(...): is_on(f"gate {i}").
+                    Expr device = or();
                     if (!next().is(")")) {
                         throw new LogicException("is_on(...) is missing its closing )");
                     }
-                    return new IsOn(device.text());
+                    if (typeOf(device) != Type.TEXT && typeOf(device) != Type.ANY) {
+                        throw new LogicException("is_on needs the name of a device (text), like is_on(\"Lamp\") or is_on(f\"gate {i}\")");
+                    }
+                    return new IsOn(device);
                 }
                 case "and", "or", "not", "in" -> throw new LogicException("Something is missing before " + word);
                 default -> {
@@ -1023,6 +1038,7 @@ public sealed interface Expr {
             case Call c -> c.args().forEach(arg -> collectVariables(arg, names));
             case Template t -> t.parts().forEach(part -> collectVariables(part, names));
             case In i -> collectVariables(i.item(), names);
+            case IsOn i -> collectVariables(i.device(), names);
             default -> { }
         }
     }
@@ -1088,7 +1104,7 @@ public sealed interface Expr {
             case Bool b -> b.value() ? "true" : "false";
             case Var v -> v.name();
             case Ref r -> r.name();
-            case IsOn i -> "is_on(" + quote(i.device()) + ")";
+            case IsOn i -> "is_on(" + print(i.device()) + ")";
             case Call c -> c.function().name + "(" + printList(c.args()) + ")";
             case Template t -> template(t);
         };
@@ -1204,6 +1220,7 @@ public sealed interface Expr {
             case Arith a -> usesStorage(a.left()) || usesStorage(a.right());
             case Call c -> c.args().stream().anyMatch(Expr::usesStorage);
             case Template t -> t.parts().stream().anyMatch(Expr::usesStorage);
+            case IsOn i -> usesStorage(i.device());
             default -> false;
         };
     }
@@ -1239,6 +1256,7 @@ public sealed interface Expr {
             case Call c -> c.args().forEach(arg -> collect(arg, names));
             case Template t -> t.parts().forEach(part -> collect(part, names));
             case In i -> collect(i.item(), names);
+            case IsOn i -> collect(i.device(), names);
             default -> { }
         }
     }
@@ -1276,6 +1294,7 @@ public sealed interface Expr {
             }
             case Template t -> t.parts().forEach(part -> collectFunctions(part, found));
             case In i -> collectFunctions(i.item(), found);
+            case IsOn i -> collectFunctions(i.device(), found);
             default -> { }
         }
     }
@@ -1300,7 +1319,7 @@ public sealed interface Expr {
             case Str s -> s.value();
             case Bool b -> b.value();
             case Var v -> facts.value(v.name());
-            case IsOn i -> facts.isOn(i.device());
+            case IsOn i -> facts.isOn(text(eval(i.device(), facts)));
             case Neg n -> -toNumber(eval(n.inner(), facts));
             case Arith a -> arith(eval(a.left(), facts), a.op(), eval(a.right(), facts));
             case Ref r -> {

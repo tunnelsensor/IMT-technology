@@ -255,12 +255,21 @@ final class LogicApp {
     }
 
     static String codeFor(LogicGraph graph, String source, ProgramKind kind) {
+        return codeFor(graph, source, kind, com.senne.imttech.logic.program.Library.EMPTY);
+    }
+
+    /**
+     * {@code library}: de defs uit je global scripts (hoofdstuk 43). Zonder die las een programma dat er een gebruikt niet,
+     * en dan zag je na het openen (en na Save) de code uit de blokjes: zonder je commentaar, en met $"..." waar jij
+     * f"..." schreef. Sinds hoofdstuk 131 lezen we je code met dezelfde global scripts als Check.
+     */
+    static String codeFor(LogicGraph graph, String source, ProgramKind kind, com.senne.imttech.logic.program.Library library) {
         String printed = ScriptPrinter.print(GraphConverter.toScript(graph));
         if (!source.isEmpty()) {
             try {
                 // Zonder de controle (hoofdstuk 115): een oud diagram met een fout van een latere regel (player.trusted na
                 // een keycard) past nog bij zijn blokjes. Dan zie je je eigen code met je commentaar, en de fout eronder.
-                if (ScriptPrinter.print(ScriptParser.parseUnchecked(source, kind)).equals(printed)) {
+                if (ScriptPrinter.print(ScriptParser.parseUnchecked(source, kind, library)).equals(printed)) {
                     return source;
                 }
             } catch (LogicException e) {
@@ -270,8 +279,8 @@ final class LogicApp {
         return printed;
     }
 
-    private static String codeFor(Entry entry) {
-        return codeFor(entry.graph(), entry.source(), entry.kind());
+    private String codeFor(Entry entry) {
+        return codeFor(entry.graph(), entry.source(), entry.kind(), library()); // current en kind staan al op dit diagram
     }
 
     /** Een ander soort programma open: het palet en Ctrl+Spatie gaan mee. */
@@ -1013,7 +1022,9 @@ final class LogicApp {
         lines.add(new HelpLine("if player.trusted:", "if player.trusted:\n    pass", "owner, team, trusted; never after a keycard",
                 HudStyle.WHITE, null));
         }
-        lines.add(new HelpLine("if is_on(...):", "if is_on(\"" + device + "\"):\n    pass", "is that device switched on right now?", HudStyle.WHITE, null));
+        // Hoofdstuk 131: de naam mag ook berekend zijn. De uitleg past op de twee regels onder het paneel.
+        lines.add(new HelpLine("if is_on(...):", "if is_on(\"" + device + "\"):\n    pass",
+                "is that device on right now? Also: is_on(f\"gate {i}\")", HudStyle.WHITE, null));
         lines.add(new HelpLine("if is_night:", "if is_night:\n    pass", server ? "also: is_day, player.owner, player.name, card.number, card.name"
                 : "also: is_day", HudStyle.WHITE, null));
         lines.add(new HelpLine("if count * 2 - 1 >= 5:", "if count * 2 - 1 >= 5:\n    pass",
@@ -1037,10 +1048,10 @@ final class LogicApp {
         lines.add(new HelpLine("say($\"This is test {count}\")", "say($\"This is test {count}\")",
                 "Text with a $ (or an f) in front: what is between { and } is filled in, a name or a sum: $\"{count + 1} left\". "
                         + "Write {{ or }} for a bracket in the text.", 0x6BE88B, null));
-        // 16 november (hoofdstuk 131): een rijtje apparaten met dezelfde naam en een ander getal.
-        lines.add(new HelpLine("for i in range(3): on(f\"gate {i}\")", "for i in range(3):\n    on(f\"gate {i}\")",
-                "Names with a number: this switches on gate 0, gate 1 and gate 2. \"gate \" + i does the same.",
-                0x6BE88B, null));
+        // 16 november (hoofdstuk 131): een rijtje apparaten met dezelfde naam en een ander getal. Het label (116 px) en de
+        // uitleg (twee regels) passen in het paneel van 152 px; een klik zet de hele lus in je code.
+        lines.add(new HelpLine("on(f\"gate {i}\") in a loop", "for i in range(3):\n    on(f\"gate {i}\")",
+                "Switches on gate 0, 1 and 2. on(\"gate \" + i) works too.", 0x6BE88B, null));
         lines.add(header("LOOPS (again and again)"));
         lines.add(new HelpLine("for i in range(3):", "for i in range(3):\n    pulse(\"" + device + "\", 0.5)\n    wait(1)",
                 "Do the steps inside 3 times; i is 0, then 1, then 2. The range may be a name or a sum: range(count + 1)",

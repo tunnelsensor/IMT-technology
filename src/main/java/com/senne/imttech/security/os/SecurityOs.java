@@ -941,9 +941,14 @@ public final class SecurityOs {
                 : "Saved " + name + ", but there is no device called \"" + unknown + "\" (yet)", unknown != null);
     }
 
-    /** De eerste naam van een apparaat in dit diagram die de server (nog) niet kent, of null. */
-    private static @Nullable String unknownDevice(ServerLevel level, SecurityCoreBlockEntity core,
-                                                  com.senne.imttech.logic.program.LogicGraph graph) {
+    /**
+     * De eerste naam van een apparaat in dit diagram die de server (nog) niet kent, of null. Een naam die pas tijdens het
+     * draaien uitgerekend wordt ({@code on(f"gate {i}")}, {@code on("gate " + i)}, {@code pulse(door)} met een
+     * parameter) telt niet: die kennen we bij het bewaren nog niet (hoofdstuk 131; eerst kreeg je dan de rode melding
+     * no device called ""). Public voor de test logic_text_with_names_run.
+     */
+    public static @Nullable String unknownDevice(ServerLevel level, SecurityCoreBlockEntity core,
+                                                 com.senne.imttech.logic.program.LogicGraph graph) {
         // Per trigger (keycard, codepanel, button, lever) de namen van de apparaten die hem starten.
         java.util.Set<String> inputs = new java.util.HashSet<>();
         for (var input : com.senne.imttech.logic.LogicDevices.inputs(level, core)) {
@@ -951,7 +956,8 @@ public final class SecurityOs {
         }
         java.util.Set<Integer> reachable = graph.reachable();
         for (var node : graph.nodes()) {
-            if (!reachable.contains(node.id) || node.op.textArg() != com.senne.imttech.logic.program.Op.Arg.DEVICE) {
+            if (!reachable.contains(node.id) || node.op.textArg() != com.senne.imttech.logic.program.Op.Arg.DEVICE
+                    || !node.textExpr.isBlank()) {
                 continue;
             }
             boolean known = node.op.fromInput()
