@@ -1,0 +1,184 @@
+{
+  "variants": {
+    "face=wall,facing=north,online=false,sounding=false": {
+      "model": "imttech:block/alarm_speaker_wall"
+    },
+    "face=wall,facing=north,online=false,sounding=true": {
+      "model": "imttech:block/alarm_speaker_wall_sounding"
+    },
+    "face=wall,facing=north,online=true,sounding=false": {
+      "model": "imttech:block/alarm_speaker_wall_online"
+    },
+    "face=wall,facing=north,online=true,sounding=true": {
+      "model": "imttech:block/alarm_speaker_wall_sounding"
+    },
+    "face=wall,facing=east,online=false,sounding=false": {
+      "model": "imttech:block/alarm_speaker_wall",
+      "y": 90
+    },
+    "face=wall,facing=east,online=false,sounding=true": {
+      "model": "imttech:block/alarm_speaker_wall_sounding",
+      "y": 90
+    },
+    "face=wall,facing=east,online=true,sounding=false": {
+      "model": "imttech:block/alarm_speaker_wall_online",
+      "y": 90
+    },
+    "face=wall,facing=east,online=true,sounding=true": {
+      "model": "imttech:block/alarm_speaker_wall_sounding",
+      "y": 90
+    },
+    "face=wall,facing=south,online=false,sounding=false": {
+      "model": "imttech:block/alarm_speaker_wall",
+      "y": 180
+    },
+    "face=wall,facing=south,online=false,sounding=true": {
+      "model": "imttech:block/alarm_speaker_wall_sounding",
+      "y": 180
+    },
+    "face=wall,facing=south,online=true,sounding=false": {
+      "model": "imttech:block/alarm_speaker_wall_online",
+      "y": 180
+    },
+    "face=wall,facing=south,online=true,sounding=true": {
+      "model": "imttech:block/alarm_speaker_wall_sounding",
+      "y": 180
+    },
+    "face=wall,facing=west,online=false,sounding=false": {
+      "model": "imttech:block/alarm_speaker_wall",
+      "y": 270
+    },
+    "face=wall,facing=west,online=false,sounding=true": {
+      "model": "imttech:block/alarm_speaker_wall_sounding",
+      "y": 270
+    },
+    "face=wall,facing=west,online=true,sounding=false": {
+      "model": "imttech:block/alarm_speaker_wall_online",
+      "y": 270
+    },
+    "face=wall,facing=west,online=true,sounding=true": {
+      "model": "imttech:block/alarm_speaker_wall_sounding",
+      "y": 270
+    },
+    "face=ceiling,facing=north,online=false,sounding=false": {
+      "model": "imttech:block/alarm_speaker_ceiling",
+      "y": 180
+    },
+    "face=ceiling,facing=north,online=false,sounding=true": {
+      "model": "imttech:block/alarm_speaker_ceiling_sounding",
+      "y": 180
+    },
+    "face=ceiling,facing=north,online=true,sounding=false": {
+      "model": "imttech:block/alarm_speaker_ceiling_online",
+      "y": 180
+    },
+    "face=ceiling,facing=north,online=true,sounding=true": {
+      "model": "imttech:block/alarm_speaker_ceiling_sounding",
+      "y": 180
+    },
+    "face=ceiling,facing=east,online=false,sounding=false": {
+      "model": "imttech:block/alarm_speaker_ceiling",
+      "y": 270
+    },
+    "face=ceiling,facing=east,online=false,sounding=true": {
+      "model": "imttech:block/alarm_speaker_ceiling_sounding",
+      "y": 270
+    },
+    "face=ceiling,facing=east,online=true,sounding=false": {
+      "model": "imttech:block/alarm_speaker_ceiling_online",
+      "y": 270
+    },
+    "face=ceiling,facing=east,online=true,sounding=true": {
+      "model": "imttech:block/alarm_speaker_ceiling_sounding",
+      "y": 270
+    },
+    "face=ceiling,facing=south,online=false,sounding=false": {
+      "model": "imttech:block/alarm_speaker_ceiling"
+    },
+    "face=ceiling,facing=south,online=false,sounding=true": {
+      "model": "imttech:block/alarm_speaker_ceiling_sounding"
+    },
+    "face=ceiling,facing=south,online=true,sounding=false": {
+      "model": "imttech:block/alarm_speaker_ceiling_online"
+    },
+    "face=ceiling,facing=south,online=true,sounding=true": {
+      "model": "imttech:block/alarm_speaker_ceiling_sounding"
+    },
+    "face=ceiling,facing=west,online=false,sounding=false": {
+      "model": "imttech:block/alarm_speaker_ceiling",
+      "y": 90
+    },
+    "face=ceiling,facing=west,online=false,sounding=true": {
+      "model": "imttech:block/alarm_speaker_ceiling_sounding",
+      "y": 90
+    },
+    "face=ceiling,facing=west,online=true,sounding=false": {
+      "model": "imttech:block/alarm_speaker_ceiling_online",
+      "y": 90
+    },
+    "face=ceiling,facing=west,online=true,sounding=true": {
+      "model": "imttech:block/alarm_speaker_ceiling_sounding",
+      "y": 90
+    },
+    "face=floor,facing=north,online=false,sounding=false": {
+      "model": "imttech:block/alarm_speaker_floor",
+      "y": 180
+    },
+    "face=floor,facing=north,online=false,sounding=true": {
+      "model": "imttech:block/alarm_speaker_floor_sounding",
+      "y": 180
+    },
+    "face=floor,facing=north,online=true,sounding=false": {
+      "model": "imttech:block/alarm_speaker_floor_online",
+      "y": 180
+    },
+    "face=floor,facing=north,online=true,sounding=true": {
+      "model": "imttech:block/alarm_speaker_floor_sounding",
+      "y": 180
+    },
+    "face=floor,facing=east,online=false,sounding=false": {
+      "model": "imttech:block/alarm_speaker_floor",
+      "y": 270
+    },
+    "face=floor,facing=east,online=false,sounding=true": {
+      "model": "imttech:block/alarm_speaker_floor_sounding",
+      "y": 270
+    },
+    "face=floor,facing=east,online=true,sounding=false": {
+      "model": "imttech:block/alarm_speaker_floor_online",
+      "y": 270
+    },
+    "face=floor,facing=east,online=true,sounding=true": {
+      "model": "imttech:block/alarm_speaker_floor_sounding",
+      "y": 270
+    },
+    "face=floor,facing=south,online=false,sounding=false": {
+      "model": "imttech:block/alarm_speaker_floor"
+    },
+    "face=floor,facing=south,online=false,sounding=true": {
+      "model": "imttech:block/alarm_speaker_floor_sounding"
+    },
+    "face=floor,facing=south,online=true,sounding=false": {
+      "model": "imttech:block/alarm_speaker_floor_online"
+    },
+    "face=floor,facing=south,online=true,sounding=true": {
+      "model": "imttech:block/alarm_speaker_floor_sounding"
+    },
+    "face=floor,facing=west,online=false,sounding=false": {
+      "model": "imttech:block/alarm_speaker_floor",
+      "y": 90
+    },
+    "face=floor,facing=west,online=false,sounding=true": {
+      "model": "imttech:block/alarm_speaker_floor_sounding",
+      "y": 90
+    },
+    "face=floor,facing=west,online=true,sounding=false": {
+      "model": "imttech:block/alarm_speaker_floor_online",
+      "y": 90
+    },
+    "face=floor,facing=west,online=true,sounding=true": {
+      "model": "imttech:block/alarm_speaker_floor_sounding",
+      "y": 90
+    }
+  }
+}

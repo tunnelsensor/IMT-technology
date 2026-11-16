@@ -22,14 +22,14 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 644 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 651 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
 **Publiceren:** klaar voor CurseForge (17 oktober), onder **All Rights Reserved** (sinds 11 november, daarvoor
 MIT): de beschrijving, het logo, de changelog en een stappenplan staan in `publish/` (begin bij
 `publish/HOE-PUBLICEREN.md`).
-Alles zelf bekijken: `python tools/showcase.py` laat alle 138 functies één voor één zien (of een
+Alles zelf bekijken: `python tools/showcase.py` laat alle 139 functies één voor één zien (of een
 stukje: `--vanaf 30 --tot 34`), met een
 pauze tussen elke functie om notities te maken (zie LEESMIJ.md, hoofdstuk 7).
 Wat je moet *zien*, controleer ik met `gradlew runVisualCheck`: het spel start zelf, bouwt een
@@ -9837,6 +9837,137 @@ Mijn invulling (verander ik op jouw woord):
 Nog niet gedaan:
 - Niet zelf met de muis gespeeld (zie "Nog nooit in het spel bekeken").
 
+### 126. Het alarm: een speaker met je eigen geluid (16 november)
+
+Jouw wens: "Voeg een nieuwe blok toe namelijk een alarm waar je zelf een mp4 bestand naar kunt uploaden zodat je custom
+alarmen kunt hebben."
+
+- [x] **Het blok** (`alarm/AlarmSpeakerBlock`, `AlarmSpeakerBlockEntity`): de **Alarm Speaker**, een stalen kastje met een
+      luidsprekerrooster, een klein groen lampje en een rood zwaailicht (een bewegend plaatje: het draait als hij afgaat),
+      aan de muur, aan het plafond of op de vloer, net als de camera. Hij hoort bij de Security Core aan het andere eind van
+      zijn netwerkkabel (of PoE, of draadloos via een Router) en betaalt zelf een beetje stroom (`[power] alarmSpeakerUpkeep`,
+      10 per twee seconden). Zonder kern, zonder stroom of in een EMP-puls blijft hij stil; het groene lampje zegt of hij
+      klaar is. Recept: 4 ijzer, een redstone-lamp, een nootblok, 2 redstone en een netwerkkabel. Afgebroken houdt het item
+      zijn naam, zijn geluid en zijn instellingen (`AlarmSettings`, net zoals een kern zijn instellingen houdt).
+- [x] **Afgaan**: alles wat de kern als ALARM in zijn logboek schrijft, laat elke speaker van zijn netwerk afgaan (één regel
+      in `SecurityCoreBlockEntity.logEvent`): `alarm()` in een diagram of van een robot, iemand die aan een lezer, paneel of
+      laserpoort prutst, een ontploffing of een Remote Frag in je zone, een brand in de serverruimte. Zo lang als ingesteld
+      (standaard 30 seconden; 10 s, 30 s, 1 min, 2 min, 5 min of tot je hem uitzet); een tweede alarm schuift de eindtijd
+      op. De eindtijd wordt bewaard (een herstart midden in een alarm laat hem niet eeuwig loeien). Een speaker van een
+      vreemde die op jouw kabel hangt, gaat niet af.
+- [x] **Op zijn naam**: wie hem neerzet, heeft hem in zijn I.M.T-lijst ("Alarm 1"): `on("Alarm 1")`, `off`, `toggle`,
+      `pulse("Alarm 1", 10)`, je bril, je stem. In **Devices** een nieuwe groep ALARM SPEAKERS (Turn on/off, Rename; de
+      toestand "sounding", "ready" of "no power"). Ook stilletjes rechtgezet: Devices schreef bij een camera "switched the
+      laser gate" in het logboek.
+- [x] **Je eigen geluid** (`client/alarm/AlarmSpeakerScreen`, sneak + rechtsklik met een lege hand, voor wie hem neerzette of
+      vertrouwd is in de basis): **Choose file** opent het gewone "bestand openen"-venster van je computer (LWJGL
+      TinyFileDialogs, op een eigen draad zodat het spel niet bevriest), of je **sleept** een bestand op het Minecraft-venster.
+      mp4 (ook een filmpje: alleen het geluid), m4a, mov, aac, mp3, wav en ogg. Je spel leest het zelf in
+      (`alarm/audio/AlarmAudio`): de eerste 30 seconden (`[alarms] maxSoundSeconds`), stilte vooraan eraf, naar mono (zodat
+      je hoort waar hij hangt), omgerekend naar 22 050 per seconde, even hard gemaakt, en klein gemaakt (IMA ADPCM, zo'n 11
+      kB per seconde). Pas **Save** stuurt het in stukjes van 24 kB naar de server (met een balkje). **Preview** laat alleen
+      jou het horen. Verder: volume, bereik (8 tot 64 blokken), hoe lang, **Test** (5 seconden echt), **Stop**, **Built-in
+      siren** en **Use on all speakers** (hetzelfde geluid op elke speaker van het netwerk die je mag instellen).
+- [x] **Op de server** (`alarm/AlarmUploads`, `AlarmSounds`): het eerste stukje begint een upload als je de speaker mag
+      instellen en ernaast staat; daarna moet elk stukje op zijn beurt komen en precies passen; één upload tegelijk, 5
+      seconden wachten tussen twee uploads. De server rekent zelf de vingerafdruk (SHA-1) uit en bewaart het geluid als
+      bestand in de wereldmap (`imttech_alarm_sounds/`), naast de server-thread (een trage schijf laat het spel niet haperen).
+      Nooit het mp4-bestand zelf: geen server en geen andere speler leest ooit een vreemd bestand. Hetzelfde geluid twee keer
+      is één bestand. Meer dan 300 geluiden of 200 MB: het langst ongebruikte gaat weg (een speaker zonder zijn geluid speelt
+      de sirene).
+- [x] **Afspelen** (`client/alarm/AlarmSpeakerSounds`): je spel haalt het geluid op zodra je in de buurt komt (de server
+      stuurt het alleen als er echt zo'n speaker staat, en hooguit zes geluiden per tien seconden per speler), kijkt na of het
+      bij zijn vingerafdruk past, en speelt het door de gewone geluidsmotor van Minecraft (een eigen "stroom" via NeoForge's
+      `SoundInstance.getStream`): zachter als je verder weg staat, uit de richting van de speaker, de schuif Blocks, stil in
+      het pauzemenu. Hooguit drie tegelijk (Minecraft heeft maar een paar kanalen voor lange geluiden, gedeeld met muziek);
+      speakers met hetzelfde geluid vlak bij elkaar klinken als één. Zonder eigen geluid: een nieuwe ingebouwde sirene
+      (`alarm_siren.ogg`, `tools/generate_sounds.py alarm_siren`, een lus van 2 seconden zonder naad). In
+      `imttech-client.toml`: `alarmSpeakerVolume` (0 = uit) en `customAlarmSounds` (false = altijd de ingebouwde sirene).
+- [x] **mp4 lezen was het moeilijkste stuk.** De AAC-decoder van JAAD (publiek domein) bleek onaf: de mp4-lezer struikelde
+      over het `udta/meta`-doosje dat ffmpeg, gsm's en downloadsites achteraan zetten, en **TNS** (Temporal Noise Shaping,
+      dat bijna elke encoder gebruikt) was een lege TODO, zodat het geluid vervormd uit de decoder kwam (66 Hz in plaats van
+      900). Ook was het ruisdeel (PNS) stuk (zijn toevalsgetal werd na een paar tientallen keer 0, en dan deelde het door
+      nul). Daarom: een eigen mp4-lezer (`alarm/audio/Mp4Demuxer`: alleen het geluidsspoor, ook gefragmenteerde m4a zoals van
+      YouTube, QuickTime-.mov en mp3 in een mp4), en de decoder van JAAD als broncode in de mod (`com.senne.imttech.lib.jaad`,
+      andere pakketnaam zodat hij nooit botst met een andere mod) met TNS volgens de AAC-norm (ISO/IEC 14496-3, 4.6.9),
+      pulse data en een echte toevalsgenerator. JavaMP3 (MIT) leest mp3 en zit als jar in de mod (jarJar). Beide staan in
+      THIRD-PARTY-LICENSES.txt.
+- [x] **Nalezing** (drie lezers: de server, je spel en het inlezen; per gevonden ding een controleur die het probeerde te
+      weerleggen): 18 dingen gevonden, 15 echt, alle 15 opgelost.
+      - *Server.* Een upload legde het hele geluid al in het geheugen vast vóór de controle, en een vals spel kon dat
+        eindeloos opnieuw laten doen: nu eerst alles nakijken (ook of het eerste stukje echt zo groot is als het hoort), en
+        hooguit één begin per seconde per speler. Een speaker in een stuk wereld dat wel geladen is maar niet "leeft" (aan
+        het eind van een lange kabel, hoofdstuk 124) bleef na een alarm eeuwig loeien, want zijn eindtijd werd daar nooit
+        nagekeken: nu kijkt de server die elke seconde zelf na. Twee uploads tegelijk, of een upload en het opruimen, konden
+        elkaar op de schijf in de weg zitten: nu al het schijfwerk op één draad na elkaar, een eigen tijdelijke naam per
+        keer, en het opruimen gooit eerst geluiden weg die geen geladen speaker heeft (en een geluid in gebruik wordt elk
+        uur ververst in plaats van één keer per serversessie).
+      - *Je spel.* Een geluid dat Minecraft niet startte (volume 0, geen vrij kanaal) bleef voor altijd "bezig", en die
+        speaker zweeg dan tot je opnieuw inlogde; met de schuif Blocks op 0 liep een sirene onhoorbaar door; van twee
+        speakers met hetzelfde geluid verstomde soms de verkeerde; een verre speaker die eerst begon, hield een kanaal bezet
+        terwijl die vlak naast je stil bleef (nu altijd de drie dichtstbijzijnde); je spel vroeg meer geluiden dan de server
+        wil sturen en wachtte dan 15 seconden in stilte (nu vraagt het nooit te veel, en de server zegt "even niet" in
+        plaats van niets); het bestandsvenster en het inlezen deelden één draad (een gesleept bestand wachtte tot je het
+        venster sloot, en een tweede klik opende een tweede venster); het scherm bleef open tot 8 blokken, maar Save werkte
+        maar tot 6; de status rechtsboven en de knoppen Test en Stop volgden de speaker niet als die begon te loeien of
+        uitviel.
+      - *Inlezen.* HE-AAC (AAC met SBR, muziek in een klein bestand) las de decoder fout: nu alleen het gewone AAC-deel, dat
+        bij 44,1 kHz precies 22 050 per seconde is, en zo bewaart een alarm het toch. Een mp3 met een lage snelheid (22 kHz
+        of minder, MPEG-2: dat kent JavaMP3 niet) gaf "kapot": nu een duidelijke zin met wat je wel kunt doen. Een te vroeg
+        afgebroken AAC-stukje kon de snelheid van alles op 0 zetten: nu overslaan. Een .aac met een ID3-label ervoor werd als
+        mp3 gelezen: nu naar de AAC-lezer.
+      - *Zelf erbij gevonden.* In JAAD telde een fill-element met "dynamic range"-info 4 bits verkeerd, zodat elk zo'n
+        stukje verloren ging (dat komt voor bij sommige omroep- en gsm-opnames), en sloeg het bij overgebleven bits het
+        verkeerde aantal over (`lib/jaad/aac/syntax/FIL`). En het item stuurde zijn geluidsnaam met een krappe grens over het
+        netwerk: een te lange naam (bijvoorbeeld via /give) zou een speler eruit gooien.
+- [x] **How it works**: een nieuw onderwerp **Alarm Speaker** op het tabblad Security (`DefenceScenes.alarm`, vier
+      hoofdstukjes, met een foto van het echte scherm). 66 van de 66 onderwerpen zijn klaar.
+- [x] **Showcase**: een nieuw onderdeel "Alarm Speaker" (`AlarmTour.showcase`).
+- [x] **Tests** (7 nieuwe, in de bestaande batch "lan", dus nog altijd 192 batchnamen; `gametest/AlarmSpeakerGameTests`):
+      `alarm_speaker_needs_a_network_and_power` (Alarm 1 in de lijst, zonder kabel niet online, met PoE online en in Devices
+      als ready), `alarm_speaker_sounds_when_its_core_raises_an_alarm` (af na een ALARM in het logboek, een speaker van een
+      andere kern blijft stil, de eindtijd, een tweede alarm verlengt, het alarm één keer in het logboek, stopt vanzelf),
+      `alarm_speaker_switches_by_name` (on/off/toggle/pulse, tot je hem uitzet, de kern kent de naam, Devices zet hem aan en
+      uit en hernoemt hem, zonder kabel kan hij niet aan), `alarm_upload_in_chunks_only_for_whoever_may_edit` (een vreemde
+      niet, een stukje buiten zijn beurt stopt de upload, te lang mag niet beginnen, een goede upload staat op de speaker en
+      als bestand bij de wereld, Save houdt alles binnen de grenzen), `alarm_speaker_keeps_its_sound_when_mined`,
+      `alarm_audio_reads_every_format` (echte testbestanden van `tools/generate_alarm_test_audio.py`: een mp4 met beeld en een
+      meta-doosje, m4a, gefragmenteerde m4a, mov, mp3 met een ID3-label, wav, wav met kommagetallen, een los .aac en een .aac
+      met een ID3-label; per bestand de lengte, de luidheid, de toonhoogte, geen stille gaten en hoe zuiver de toon is: 0,985
+      tot 0,999; plus een tekstbestand, stilte, een geluid van 40 seconden dat 30 wordt, een mp3 van 22 kHz die netjes
+      `mp3_low_rate` zegt, en de beschrijving van HE-AAC die gewone AAC van 22 050 wordt) en
+      `alarm_sound_requests_are_limited` (alleen een geluid van een speaker in de buurt, hooguit zes per tien seconden, de
+      stukjes samen zijn weer het geluid, een te groot stukje kan niet weg). De upload-test kijkt sinds de nalezing ook na
+      dat een tweede begin binnen een seconde en een leeg eerste stukje niets beginnen.
+- [x] **Volledige ronde**: 651 tests, alle groen (1,7 minuten), ook na de oplossingen van de nalezing. Hoe zuiver de toon per testbestand
+      uit het inlezen komt: mp4 0,995, m4a 0,999, gefragmenteerde m4a 0,986, mov 0,995, mp3 0,985, aac 0,995, aac met
+      ID3-label 0,995, wav met kommagetallen 0,998 (de gewone wav van 0,2 s: 0,871, te kort voor een scherpere meting).
+- [x] **Gezien** (`gradlew runVisualCheck -Ponly=alarm,howtopics:alarm`, al01 tot al09): het blok aan de muur (klaar, en loeiend met het rode
+      licht), het overzicht met de kern en twee speakers aan één kabel, de statusregel bij een gewone rechtsklik, het
+      scherm met een geluid, met een gekozen bestand, tijdens het uploaden (57 % met een balkje; Choose file, Built-in
+      siren, Use on all en Save staan dan uit) en erna, en de tooltip van het item met zijn geluid. Daarna nog bijgesteld en
+      niet opnieuw gezien: de camera van al01 tot al03 (de speaker stond half onder de rand, het overzicht was te ver weg)
+      en het korte "- new" achter een gekozen bestand (er stond "- not sa...", afgekapt).
+- [x] LEESMIJ (een nieuw stuk "Het alarm: een speaker met je eigen geluid", en bij het netwerk, de apparaten en de
+      instellingen), CurseForge-beschrijving, versie 2.22.0.
+
+Mijn invullingen (zeg het als je iets anders wil): naast mp4 ook m4a, mov, aac, mp3, wav en ogg (dan werkt het ook als je
+eigenlijk mp3 bedoelde); hooguit 30 seconden, vanaf het begin (stilte vooraan eraf; een stuk kiezen kan niet); mono;
+instellen en uploaden mag wie hem neerzette of vertrouwd is in de basis (dezelfde regel als bij camera en lezer); bereik
+standaard 32 en hooguit 64 blokken; standaard 30 seconden per alarm; een ingebouwde sirene als er (nog) geen eigen geluid
+is; geen redstone (apparaten schakel je sinds hoofdstuk 39 op hun naam); elk ALARM in het logboek telt (ook brand en
+een ontplofte Remote Frag); de server bewaart hooguit 300 geluiden of 200 MB; spelers kunnen de geluiden van anderen
+uitzetten (`customAlarmSounds`).
+
+Nog niet gedaan: al01 tot al03 en al06 opnieuw bekijken na die laatste bijstellingen (je speelde toen, en een tweede
+spelvenster had je spel gestoord: `gradlew runVisualCheck -Ponly=alarm,howtopics:alarm`); de groep ALARM SPEAKERS in
+Devices staat op geen enkele foto; geen echt filmpje van een gsm of een download geprobeerd (alleen testbestanden van
+ffmpeg); HE-AAC alleen nagekeken aan zijn beschrijving, niet met een echt HE-AAC-bestand (dat kan ffmpeg hier niet
+maken); ogg niet in de tests (dat leest alleen je spel, met de decoder van Minecraft); het geluid niet echt beluisterd
+(de tests meten lengte, toonhoogte en zuiverheid); niet geprobeerd met twee echte spelers op een server; het
+bestandsvenster in volledig scherm niet geprobeerd. Een mp3 onder 32 kHz kan niet (JavaMP3 kent alleen MPEG-1): het
+scherm zegt dan wat je kunt doen; wil je die toch, dan kan er een tweede mp3-decoder bij (JLayer, LGPL).
+
 ### 127. Tab vult geen voorbeeldgetal meer in: de cursor staat tussen de haakjes (16 november)
 
 Jouw wens: "kun je zorgen dat bij het gebruiken van tab bij aanvullen van code wil ik dat overal waar een voorbeel getal
@@ -9880,6 +10011,13 @@ wait(x)".
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **Het alarm met je eigen geluid (hoofdstuk 126)**: met tests en de rondleiding gecontroleerd (al01 tot al09), maar
+      nooit echt gehoord. Probeer: (1) upload een echte mp4 van je gsm of een YouTube-download (Choose file, of sleep hem
+      op het venster): klinkt hij goed, ook de eerste seconde, en zonder kraken? (2) Met een vriend op je server: hoort hij
+      jouw geluid (na een seconde ophalen), uit de goede richting en tot zo'n 32 blokken ver? (3) In volledig scherm: komt
+      het bestandsvenster vóór Minecraft, of moet je slepen? (4) Een echt alarm van je kern (een foute kaart en
+      `alarm()` in je diagram): gaan al je speakers af, en stoppen ze na 30 seconden? (5) `customAlarmSounds = false` in
+      imttech-client.toml: hoor je dan de ingebouwde sirene? (6) Staan je speakers in Devices onder ALARM SPEAKERS?
 - [ ] **Lege nieuwe programma's en templates (hoofdstuk 125)**: met tests gecontroleerd en gezien op screenshots
       (`-Ponly=templates`, tp01 tot tp08), maar niet met de muis gespeeld. Probeer: (1) + > Robot program: is het leeg, met
       grijze uitleg eronder? (2) Schrijf iets, klik links onder je diagrammen op Templates, typ een naam en Save as

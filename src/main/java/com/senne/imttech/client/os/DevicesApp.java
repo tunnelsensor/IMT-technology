@@ -77,7 +77,8 @@ final class DevicesApp {
     private List<Row> rows() {
         List<Row> rows = new ArrayList<>();
         String[][] kinds = {{"turret", "TURRETS"}, {"drone", "DRONES"}, {"laser", "LASER GATES"}, {"bridge", "LASER BRIDGES"},
-                {"camera", "CAMERAS"}, {"monitor", "CAMERA WALLS"}, {"reader", "KEYCARD READERS"}, {"panel", "CODE PANELS"}, {"button", "BUTTONS"},
+                {"camera", "CAMERAS"}, {"monitor", "CAMERA WALLS"}, {"alarm", "ALARM SPEAKERS"}, {"reader", "KEYCARD READERS"},
+                {"panel", "CODE PANELS"}, {"button", "BUTTONS"},
                 {"lever", "LEVERS"}, {"console", "AUTH CONSOLES"}, {"switch", "NETWORK SWITCHES"}};
         List<Tag> devices = screen.data().getList("devices", Tag.TAG_COMPOUND);
         for (String[] kind : kinds) {
@@ -133,12 +134,12 @@ final class DevicesApp {
     }
 
     /**
-     * Een torentje, of (hoofdstuk 39) een laserpoort, laserbrug of camera: die hebben een knop Turn off / Turn on, en
-     * Rename (de naam in je I.M.T-lijst).
+     * Een torentje, of (hoofdstuk 39) een laserpoort, laserbrug of camera, of (hoofdstuk 126) een Alarm Speaker: die hebben
+     * een knop Turn off / Turn on, en Rename (de naam in je I.M.T-lijst).
      */
     private static boolean switchable(CompoundTag device) {
         String kind = device.getString("k");
-        return kind.equals("turret") || kind.equals("laser") || kind.equals("bridge") || kind.equals("camera");
+        return kind.equals("turret") || kind.equals("laser") || kind.equals("bridge") || kind.equals("camera") || kind.equals("alarm");
     }
 
     private int buttonColour(CompoundTag device) {
@@ -348,7 +349,7 @@ final class DevicesApp {
         String status = device.getString("st");
         int colour = switch (status) {
             case "online", "patrolling", "active", "ready" -> HudStyle.GREEN;
-            case "attacking", "standby" -> HudStyle.ORANGE;
+            case "attacking", "standby", "sounding" -> HudStyle.ORANGE;
             case "open", "retracted" -> HudStyle.CYAN;
             default -> HudStyle.RED;
         };

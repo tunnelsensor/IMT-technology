@@ -1,0 +1,182 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "particle": "imttech:block/alarm_speaker_body",
+    "body": "imttech:block/alarm_speaker_body",
+    "grille": "imttech:block/alarm_speaker_grille",
+    "plate": "imttech:block/alarm_speaker_plate",
+    "lamp": "imttech:block/alarm_speaker_lamp",
+    "lamp_on": "imttech:block/alarm_speaker_lamp_on",
+    "led": "imttech:block/alarm_speaker_led_off",
+    "led_on": "imttech:block/alarm_speaker_led_on"
+  },
+  "elements": [
+    {
+      "from": [
+        2,
+        2,
+        15.0
+      ],
+      "to": [
+        14,
+        14,
+        16.0
+      ],
+      "faces": {
+        "north": {
+          "texture": "#plate"
+        },
+        "south": {
+          "texture": "#plate",
+          "cullface": "south"
+        },
+        "east": {
+          "texture": "#plate"
+        },
+        "west": {
+          "texture": "#plate"
+        },
+        "up": {
+          "texture": "#plate"
+        },
+        "down": {
+          "texture": "#plate"
+        }
+      }
+    },
+    {
+      "from": [
+        3,
+        3,
+        11.0
+      ],
+      "to": [
+        13,
+        12,
+        15.0
+      ],
+      "faces": {
+        "north": {
+          "texture": "#grille"
+        },
+        "south": {
+          "texture": "#body"
+        },
+        "east": {
+          "texture": "#body"
+        },
+        "west": {
+          "texture": "#body"
+        },
+        "up": {
+          "texture": "#body"
+        },
+        "down": {
+          "texture": "#body"
+        }
+      }
+    },
+    {
+      "from": [
+        5.5,
+        12,
+        11.5
+      ],
+      "to": [
+        10.5,
+        13,
+        14.5
+      ],
+      "faces": {
+        "north": {
+          "texture": "#body"
+        },
+        "south": {
+          "texture": "#body"
+        },
+        "east": {
+          "texture": "#body"
+        },
+        "west": {
+          "texture": "#body"
+        },
+        "up": {
+          "texture": "#body"
+        },
+        "down": {
+          "texture": "#body"
+        }
+      }
+    },
+    {
+      "from": [
+        6,
+        13,
+        12.0
+      ],
+      "to": [
+        10,
+        15,
+        14.0
+      ],
+      "faces": {
+        "north": {
+          "texture": "#lamp"
+        },
+        "south": {
+          "texture": "#lamp"
+        },
+        "east": {
+          "texture": "#lamp"
+        },
+        "west": {
+          "texture": "#lamp"
+        },
+        "up": {
+          "texture": "#lamp"
+        },
+        "down": {
+          "texture": "#lamp"
+        }
+      }
+    },
+    {
+      "from": [
+        11,
+        4,
+        10.5
+      ],
+      "to": [
+        12,
+        5,
+        11.0
+      ],
+      "faces": {
+        "north": {
+          "texture": "#led_on"
+        },
+        "south": {
+          "texture": "#led_on"
+        },
+        "east": {
+          "texture": "#led_on"
+        },
+        "west": {
+          "texture": "#led_on"
+        },
+        "up": {
+          "texture": "#led_on"
+        },
+        "down": {
+          "texture": "#led_on"
+        }
+      },
+      "shade": false,
+      "neoforge_data": {
+        "block_light": 15,
+        "sky_light": 15,
+        "ambient_occlusion": false
+      }
+    }
+  ]
+}

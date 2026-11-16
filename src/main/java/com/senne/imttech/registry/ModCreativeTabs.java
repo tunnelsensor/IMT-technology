@@ -241,6 +241,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.DOME_GENERATOR.get());
                 output.accept(ModItems.SECURITY_CAMERA.get());
                 output.accept(ModItems.CAMERA_MONITOR.get());
+                output.accept(ModItems.ALARM_SPEAKER.get()); // hoofdstuk 126
                 output.accept(ModItems.SECURITY_TURRET.get());
                 output.accept(ModItems.ROCKET_TURRET.get());
                 output.accept(ModItems.ROCKET_AMMO.get());

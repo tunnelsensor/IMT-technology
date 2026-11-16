@@ -130,6 +130,12 @@ public final class ModBlockEntities {
                     () -> new BlockEntityType<>(com.senne.imttech.security.CameraBlockEntity::new,
                             java.util.Set.of(ModBlocks.SECURITY_CAMERA.get()), null));
 
+    /** Hoofdstuk 126: de Alarm Speaker (naam, eigenaar, welk geluid, hoe hard, hoe ver en hoe lang). */
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.alarm.AlarmSpeakerBlockEntity>> ALARM_SPEAKER =
+            BLOCK_ENTITIES.register("alarm_speaker",
+                    () -> new BlockEntityType<>(com.senne.imttech.alarm.AlarmSpeakerBlockEntity::new,
+                            java.util.Set.of(ModBlocks.ALARM_SPEAKER.get()), null));
+
     /** Het serverrack: zijn vier vakjes (CPU, RAM, SSD) en of hij meedraait. */
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<com.senne.imttech.logic.ServerRackBlockEntity>> SERVER_RACK =
             BLOCK_ENTITIES.register("server_rack",

@@ -155,6 +155,8 @@ public final class HowToTopics {
             topic("handcuffs", "security", "Handcuffs", SecurityItemScenes::handcuffs, ModItems.HANDCUFFS, ModItems.HANDCUFF_KEY),
             topic("keycards", "security", "Keycards and readers", SecurityScenes::keycards, ModItems.KEYCARD, ModItems.KEYCARD_READER),
             topic("code_panel", "security", "Code panel", SecurityScenes::codePanel, ModItems.CODE_PANEL),
+            // Hoofdstuk 126: de sirene met je eigen geluid.
+            topic("alarm_speaker", "security", "Alarm Speaker", DefenceScenes::alarm, ModItems.ALARM_SPEAKER),
             topic("auth_console", "security", "Auth codes and the Auth Console", SecurityItemScenes::auth, ModItems.AUTH_CONSOLE),
             topic("network_controls", "security", "Network button and lever", DefenceScenes::networkControls, ModItems.NETWORK_BUTTON, ModItems.NETWORK_LEVER),
             topic("laser_emitter", "security", "Laser gates", SecurityScenes::laserGate, ModItems.LASER_EMITTER),

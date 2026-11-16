@@ -79,6 +79,7 @@ package com.senne.imttech.config;
  *   Turrets ...... torentjes (raket, Raven, beveiliging)
  *   Security ..... de beveiligingskern: zone, drones, systeem
  *   Network ...... netwerkkabels: welke apparaten er een nodig hebben (hoofdstuk 38)
+ *   Alarms ....... de Alarm Speaker: eigen geluiden uploaden, hoe lang, hoe ver (hoofdstuk 126)
  *   Logic ........ serverkasten en het datacenter: snelheid, warmte, brand, backups
  *   Breach ....... hoe sterk blokken zijn tegen frags, en TNT en de satelliet tegen een beschermde zone
  *   Repair ....... barsten herstellen (Crusher, Compactor, Repair Paste)
@@ -332,6 +333,9 @@ public final class ImtConfig {
         /** Stroom die een bewakingscamera elke twee seconden haalt (zonder: "NO SIGNAL"). */
         @Tunable(value = "Grid energy a security camera uses every two seconds (without it, it shows NO SIGNAL)", energy = true)
         public static float CAMERA_UPKEEP = 20.0f;
+        /** Hoofdstuk 126: stroom die een Alarm Speaker elke twee seconden haalt (zonder stroom blijft hij stil). */
+        @Tunable(value = "Grid energy an Alarm Speaker uses every two seconds (without it, it stays silent)", energy = true)
+        public static float ALARM_SPEAKER_UPKEEP = 10.0f;
         /**
          * Hoofdstuk 38: stroom die een keycardlezer elke twee seconden haalt (de kern waar hij met een netwerkkabel aan
          * hangt, betaalt dat van het stroomnet van de lezer). Zonder stroom leest hij geen kaarten.
@@ -1429,6 +1433,36 @@ public final class ImtConfig {
                 + "switched from a distance? false = those old relays keep working without one. Relays placed from now on "
                 + "always need a network (unless required is false)")
         public static boolean OLD_RELAYS_NEED_NETWORK = false;
+    }
+
+    // =============================================================================================== Alarms
+
+    @Section("The Alarm Speaker (chapter 126): a speaker on a security core's network that sounds when its core raises an "
+            + "alarm, with a sound file players upload themselves (mp4, m4a, mp3, wav, ogg). Its power use is under [power]")
+    public static final class Alarms {
+        private Alarms() {}
+
+        /** Mogen spelers eigen geluiden uploaden? Uit: elke speaker speelt de ingebouwde sirene. */
+        @Tunable("May players upload their own sounds to Alarm Speakers? false = every speaker plays the built-in siren")
+        public static boolean UPLOADS_ALLOWED = true;
+        /** Zoveel seconden van een bestand neemt de speaker hooguit (het begin; stilte vooraan telt niet mee). */
+        @Tunable(value = "Longest sound (seconds) players may upload to an Alarm Speaker; longer files are cut", min = 1, max = 120)
+        public static float MAX_SOUND_SECONDS = 30.0f;
+        /** Wachttijd na een upload, tegen spam. */
+        @Tunable(value = "Seconds a player waits after an upload before the next one", max = 3600)
+        public static float UPLOAD_COOLDOWN_SECONDS = 5.0f;
+        /** Zoveel geüploade geluiden bewaart de server hooguit; daarboven gaat het langst ongebruikte weg. */
+        @Tunable(value = "How many uploaded sounds the server keeps at most (the longest unused one goes first)", min = 1, max = 100000)
+        public static float MAX_STORED_SOUNDS = 300.0f;
+        /** Samen hooguit zoveel megabyte aan geüploade geluiden (30 seconden is ongeveer 0,33 MB). */
+        @Tunable(value = "How much space (megabytes) all uploaded sounds may use together (30 seconds is about 0.33 MB)", min = 1, max = 100000)
+        public static float MAX_STORAGE_MB = 200.0f;
+        /** Tot hoe ver je een speaker hooguit kunt laten klinken. */
+        @Tunable(value = "Farthest (blocks) players can set an Alarm Speaker to be heard", min = 8, max = 256)
+        public static float MAX_RANGE = 64.0f;
+        /** Hoe lang een speaker hooguit afgaat na een alarm van zijn kern (behalve "tot je hem uitzet"). */
+        @Tunable(value = "Longest time (seconds) players can set an Alarm Speaker to sound after an alarm (0 = until switched off is always allowed)", min = 5, max = 3600)
+        public static float MAX_ALARM_SECONDS = 300.0f;
     }
 
     // =============================================================================================== Logic

@@ -2758,6 +2758,15 @@ final class ShowcaseFeatures {
                 + "is Router 1), en van boven gaat ook de lamp bij Router 2 aan: twee sprongen door de lucht naar de kern.",
                 RouterTour.SHOW_FROM, 180, 20, RouterTour::showcase);
 
+        add("Alarm Speaker", "Hoofdstuk 126: het alarm met je eigen geluid. Links een Security Core met een groene PoE-kabel "
+                + "naar twee speakers: Alarm 1 aan een muurtje (met een eigen geluid, een sirene die op en neer gaat) en Alarm 2 "
+                + "op de vloer (de ingebouwde sirene). De kern slaat alarm ('Intruder at Front door'): allebei gaan ze af, hun "
+                + "rode licht draait en je HOORT ze (de eigen sirene en de ingebouwde door elkaar). Na tien seconden zet de "
+                + "showcase ze uit. Dan het scherm van Alarm 1 (sneak + rechtsklik): naam, het geluid erop (air_raid_siren.mp4), "
+                + "Choose file, Folder, Preview, volume, bereik en hoe lang. Tot slot pulse(\"Alarm 1\", 3): drie seconden aan "
+                + "op zijn naam, zoals een diagram dat doet.",
+                AlarmTour.SHOW_FROM, 180, 20, AlarmTour::showcase);
+
         add("Network button and lever", "Hoofdstuk 38. Een netwerkhendel en een netwerkknop op de vloer, met een PoE-kabel "
                 + "naar de desktop, en een diagram op de server: when lever(\"Night mode\") en when button(\"Doorbell\"). De "
                 + "hendel gaat om: een vakje loopt over de kabel naar de kern en I.M.T zegt \"Night mode on\" (lever.on). "

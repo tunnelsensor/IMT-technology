@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "L": {
+      "item": "minecraft:redstone_lamp"
+    },
+    "N": {
+      "item": "minecraft:note_block"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    },
+    "K": {
+      "item": "imttech:network_cable"
+    }
+  },
+  "pattern": [
+    "ILI",
+    "RNR",
+    "IKI"
+  ],
+  "result": {
+    "id": "imttech:alarm_speaker"
+  }
+}

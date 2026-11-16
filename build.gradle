@@ -189,6 +189,15 @@ dependencies {
         }
     }
 
+    // Hoofdstuk 126 (de Alarm Speaker): JavaMP3 leest de mp3-bestanden die je uploadt, in je spel (MIT-licentie, gewone
+    // Java zonder andere bibliotheken). jarJar stopt hem in de mod-jar (zie THIRD-PARTY-LICENSES.txt),
+    // additionalRuntimeClasspath zet hem klaar in de ontwikkelomgeving. (De AAC-decoder voor mp4 zit als broncode in de mod:
+    // com.senne.imttech.lib.jaad, omdat we stukken moesten afmaken die in JAAD ontbraken.)
+    jarJar(implementation('fr.delthas:javamp3:[1.0.1,2.0)')) {
+        version { prefer '1.0.1' }
+    }
+    additionalRuntimeClasspath('fr.delthas:javamp3:1.0.1')
+
     // Curios (hoofdstuk 52, stap 2): alleen om tegen te compileren (de API-jar in libs/); de mod werkt ook zonder Curios.
     // Wil je het met Curios testen, zet dan de echte Curios-jar (9.5.1+1.21.1) in run/mods.
     compileOnly files('libs/curios-neoforge-9.5.1+1.21.1-api.jar')

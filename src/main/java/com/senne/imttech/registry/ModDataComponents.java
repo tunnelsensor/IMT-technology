@@ -320,4 +320,10 @@ public final class ModDataComponents {
             COMPONENTS.registerComponentType("gear_contents", builder -> builder
                     .persistent(com.senne.imttech.guns.GearContents.CODEC)
                     .networkSynchronized(com.senne.imttech.guns.GearContents.STREAM_CODEC));
+
+    /** Hoofdstuk 126: het geluid en de instellingen van een afgebroken Alarm Speaker (nooit het geluid zelf, alleen zijn naam). */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.imttech.alarm.AlarmSettings>> ALARM_SETTINGS =
+            COMPONENTS.registerComponentType("alarm_settings", builder -> builder
+                    .persistent(com.senne.imttech.alarm.AlarmSettings.CODEC)
+                    .networkSynchronized(com.senne.imttech.alarm.AlarmSettings.STREAM_CODEC));
 }

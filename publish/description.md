@@ -46,6 +46,8 @@ bunkers to raid.
   levers start your diagrams, and you can watch signals and power run along the cables.
 - Rayshields (laser gates in six colours), shield domes, rocket and laser turrets, security
   cameras, remote frags you set off from afar (defuse them with shears), cracks that stay until you repair them.
+- An Alarm Speaker that plays your own sound (upload an mp4, m4a, mp3, wav or ogg; a video works too) when your
+  Security Core raises an alarm, or when a diagram switches it on by name.
 - Server racks with CPU, RAM, SSD, GPU and fans: program your base with redstone diagrams or a
   small Python-like language. Racks heat up, so give every rack a fan.
 - Break-ins: hack keycard readers and code panels with the Bypass Kit, or pickpocket a keycard.

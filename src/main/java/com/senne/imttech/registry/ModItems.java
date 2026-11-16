@@ -191,6 +191,9 @@ public final class ModItems {
             ModBlocks.SECURITY_TURRET, new Item.Properties().rarity(Rarity.RARE));
     public static final DeferredItem<BlockItem> SECURITY_CAMERA = ITEMS.registerSimpleBlockItem("security_camera",
             ModBlocks.SECURITY_CAMERA, new Item.Properties().rarity(Rarity.UNCOMMON));
+    /** Hoofdstuk 126: de Alarm Speaker (afgebroken houdt hij zijn naam, zijn geluid en zijn instellingen). */
+    public static final DeferredItem<BlockItem> ALARM_SPEAKER = ITEMS.registerSimpleBlockItem("alarm_speaker",
+            ModBlocks.ALARM_SPEAKER, new Item.Properties().rarity(Rarity.UNCOMMON));
     /** De beveiligingskern: weggehakt houdt hij al zijn instellingen (zie SecurityCoreItem). */
     public static final DeferredItem<com.senne.imttech.security.SecurityCoreItem> SECURITY_CORE = ITEMS.registerItem("security_core",
             properties -> new com.senne.imttech.security.SecurityCoreItem(ModBlocks.SECURITY_CORE.get(), properties),

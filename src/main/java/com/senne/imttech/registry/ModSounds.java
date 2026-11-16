@@ -173,6 +173,12 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> HOLSTER_DRAW = register("holster.draw");
     /** Hoofdstuk 72: een rugzak openritsen (de rits duurt 1,5 s, zie backpack/BackpackZip). */
     public static final DeferredHolder<SoundEvent, SoundEvent> BACKPACK_ZIP = register("backpack.zip");
+    /**
+     * Hoofdstuk 126: de ingebouwde sirene van de Alarm Speaker (een lus, als niemand een eigen geluid uploadde). Je spel
+     * speelt hem af via client/alarm/AlarmSoundInstance, met het bereik van de speaker; ook een geüpload geluid draagt deze
+     * naam (voor de ondertitel).
+     */
+    public static final DeferredHolder<SoundEvent, SoundEvent> ALARM_SIREN = register("alarm_speaker.siren");
 
     private static DeferredHolder<SoundEvent, SoundEvent> register(String name) {
         return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, name)));

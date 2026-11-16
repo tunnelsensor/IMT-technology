@@ -473,6 +473,10 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     public void logEvent(EventLog.Type type, String text) {
         log.add(level == null ? 0 : level.getGameTime(), type, text);
         setChanged();
+        // Hoofdstuk 126: een echt alarm laat de Alarm Speakers van deze kern afgaan (alleen op de server).
+        if (type == EventLog.Type.ALARM && level instanceof ServerLevel server && !isRemoved()) {
+            com.senne.imttech.alarm.AlarmSpeakers.coreAlarm(server, this);
+        }
     }
 
     /** De kern is afgebroken: zijn IP is weer vrij. */

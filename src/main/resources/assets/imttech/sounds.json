@@ -807,5 +807,14 @@
         "name": "imttech:backpack_zip"
       }
     ]
+  },
+  "alarm_speaker.siren": {
+    "subtitle": "subtitles.imttech.alarm_speaker",
+    "sounds": [
+      {
+        "name": "imttech:alarm_siren",
+        "stream": true
+      }
+    ]
   }
 }

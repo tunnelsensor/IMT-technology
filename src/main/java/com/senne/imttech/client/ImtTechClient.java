@@ -123,6 +123,11 @@ public class ImtTechClient {
         NeoForge.EVENT_BUS.addListener(IllusionRenderer::onClientTick);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.shield.RayshieldHum::onClientTick);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.robot.RobotChargeHum::onClientTick);
+        // Hoofdstuk 126: de Alarm Speaker. Geluiden afspelen en ophalen, uploads versturen; en ogg lezen met Minecraft's eigen lezer.
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.alarm.AlarmClient::onClientTick);
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent.LoggingOut event) ->
+                com.senne.imttech.client.alarm.AlarmClient.clear());
+        com.senne.imttech.client.alarm.AlarmClient.init();
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.client.robot.DroneRotorSound::onClientTick);
         NeoForge.EVENT_BUS.addListener(DroneCamera::onRenderHand);
         NeoForge.EVENT_BUS.addListener(DroneCamera::onInteraction);

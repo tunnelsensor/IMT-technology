@@ -92,6 +92,8 @@ public class ImtTech {
         // Hoofdstuk 113: het opslagsysteem met de RC Car: de Storage Interface, de Chest Sensor en de Charging Pad (eigen
         // lijsten en berichten, zie storage/Storages).
         com.senne.imttech.storage.Storages.register(modEventBus);
+        // Hoofdstuk 126: de Alarm Speaker (eigen berichten, uploads en wie er geladen is).
+        com.senne.imttech.alarm.AlarmSpeakers.register(modEventBus);
 
         modEventBus.addListener(ModEntities::registerAttributes);
         // Een trechter kan raketten in een Biebia's Industries-torentje doen.

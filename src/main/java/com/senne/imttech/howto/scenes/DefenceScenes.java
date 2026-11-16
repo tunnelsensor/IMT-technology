@@ -204,6 +204,87 @@ public final class DefenceScenes {
         return List.of(s.build());
     }
 
+    // ================================================================ Alarm Speaker (hoofdstuk 126)
+
+    /**
+     * De Alarm Speaker: een kabel naar je kern, afgaan als de kern alarm slaat, je eigen geluid kiezen (met een foto van het
+     * echte scherm, gemaakt door de rondleiding: -Ponly=howtopics:alarm), en schakelen op zijn naam.
+     */
+    public static List<HowToScene> alarm() {
+        HowToSceneBuilder s = new HowToSceneBuilder("alarm_speaker", "Alarm Speaker").plate(7, 6);
+        BlockPos speaker = new BlockPos(4, 2, 1);
+        s.idle(8);
+        s.chapter("A speaker on your network");
+        s.place(SecurityScenes.CORE, SecurityScenes.core(Direction.SOUTH, true));
+        s.idle(4);
+        s.place(SecurityScenes.CORE_GEN, SecurityScenes.heat(Direction.WEST));
+        s.idle(4);
+        Map<BlockPos, BlockState> wall = new LinkedHashMap<>();
+        for (int y = 1; y <= 3; y++) {
+            for (int x = 3; x <= 5; x++) {
+                wall.put(new BlockPos(x, y, 0), Blocks.STONE_BRICKS.defaultBlockState());
+            }
+        }
+        s.layers(wall, 6);
+        s.idle(6);
+        s.place(speaker, alarmSpeaker(false, false));
+        s.idle(10);
+        Vec3[] cable = {new Vec3(2.5, 1.05, 2.0), new Vec3(2.5, 1.05, 1.12), new Vec3(4.5, 1.05, 1.12), new Vec3(4.5, 2.1, 1.12)};
+        s.holdRight(26, new ItemStack(ModItems.POE_CABLE.get()), cable);
+        s.cable(CableKind.POE, 26, cable);
+        s.idle(28);
+        s.change(speaker, alarmSpeaker(true, false));
+        s.text(90, HowToSceneBuilder.top(speaker), Side.RIGHT,
+                "An *Alarm Speaker* needs a cable to your *Security Core* (a PoE cable brings power too). Its small green light"
+                        + " shows it is ready.");
+        s.idle(95);
+
+        s.chapter("When your core raises an alarm");
+        s.change(speaker, alarmSpeaker(true, true));
+        s.sound(ModSounds.ALARM_SIREN.get(), 0.4f, 1.0f);
+        s.pulse(40, Vec3.atCenterOf(speaker), 3.0f, HowToSceneBuilder.RED);
+        s.text(100, HowToSceneBuilder.top(speaker), Side.RIGHT,
+                "When your core raises an alarm (*alarm()* in a diagram, someone tampering with a reader, a blast in your zone,"
+                        + " a fire in your server room), every speaker on its network sounds: *%s seconds*, or as long as you set.",
+                com.senne.imttech.alarm.AlarmSpeakerBlockEntity.DEFAULT_ALARM_SECONDS);
+        s.idle(105);
+        s.change(speaker, alarmSpeaker(true, false));
+
+        s.chapter("Your own sound");
+        s.sneakRightClick(HowToSceneBuilder.face(speaker, Direction.SOUTH), ItemStack.EMPTY);
+        s.text(80, HowToSceneBuilder.face(speaker, Direction.SOUTH), Side.LEFT,
+                "Sneak + right-click with an empty hand: choose a sound file from your computer (mp4, m4a, mp3, wav or ogg)."
+                        + " A video works too: only its sound is used.");
+        s.idle(85);
+        // De foto van het echte scherm (300 x 226, net als AlarmSpeakerScreen; hier vast getypt: deze code draait ook op een
+        // server, die het scherm niet kent). De pijlen van boven naar beneden.
+        s.picture(170, "alarm_screen", 300, 226,
+                s.arrow(0.62f, 0.13f, "Its name: on(\"Alarm 1\")"),
+                s.arrow(0.16f, 0.30f, "Your own sound file"),
+                s.arrow(0.58f, 0.30f, "Hear it first"),
+                s.arrow(0.50f, 0.515f, "How loud and how far"),
+                s.arrow(0.13f, 0.83f, "Test: 5 seconds for real"));
+        s.idle(175);
+
+        s.chapter("Switch it by name");
+        s.change(speaker, alarmSpeaker(true, true));
+        s.text(90, HowToSceneBuilder.top(speaker), Side.RIGHT,
+                "It is in your I.M.T list as *Alarm 1*: a diagram switches it with *on(\"Alarm 1\")*, *off*, *toggle* or"
+                        + " *pulse(\"Alarm 1\", 10)*. Your glasses, your voice and *Devices* can too.");
+        s.idle(95);
+        s.change(speaker, alarmSpeaker(true, false));
+        return List.of(s.build());
+    }
+
+    /** Een Alarm Speaker aan de muur (de muur aan de noordkant, de voorkant naar het zuiden): uit, klaar of afgaand. */
+    private static BlockState alarmSpeaker(boolean online, boolean sounding) {
+        return ModBlocks.ALARM_SPEAKER.get().defaultBlockState()
+                .setValue(com.senne.imttech.alarm.AlarmSpeakerBlock.FACE, AttachFace.WALL)
+                .setValue(com.senne.imttech.alarm.AlarmSpeakerBlock.FACING, Direction.SOUTH)
+                .setValue(com.senne.imttech.alarm.AlarmSpeakerBlock.ONLINE, online)
+                .setValue(com.senne.imttech.alarm.AlarmSpeakerBlock.SOUNDING, sounding);
+    }
+
     // ================================================================ Zones
 
     /** Zones: twee hoeken met de Zone Marker, sneak + rechtsklik maakt er een kubus van, en dan bouwt alleen jij daar. */

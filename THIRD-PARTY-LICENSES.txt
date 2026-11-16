@@ -2,9 +2,10 @@ I.M.T Technology - third-party licenses
 =======================================
 
 The I.M.T Technology mod jar (imttech-*.jar) includes these libraries by other authors in
-META-INF/jarjar/. They are used for the optional Claude brain (G > Systems > AI Brain) and
-are unchanged, apart from an Automatic-Module-Name added to the manifest of the jars that
-lacked one. Each keeps its own license:
+META-INF/jarjar/. They are used for the optional Claude brain (G > Systems > AI Brain) and,
+since version 2.22, for reading the mp3 files players upload to an Alarm Speaker (JavaMP3).
+They are unchanged, apart from an Automatic-Module-Name added to the manifest of the jars
+that lacked one. Each keeps its own license:
 
   Library                                   Version   License
   ----------------------------------------  --------  ---------------------------
@@ -26,6 +27,14 @@ lacked one. Each keeps its own license:
     jackson and swagger-2 modules)          4.38.0    Apache License 2.0
   Swagger annotations                       2.2.31    Apache License 2.0
   FasterXML ClassMate                       1.7.0     Apache License 2.0
+  JavaMP3 (fr.delthas)                      1.0.1     MIT (text 5 below)
+
+Since version 2.22 the mod also contains the AAC decoder of JAAD as source code (classes in
+com/senne/imttech/lib/jaad, renamed from net.sourceforge.jaad), to read the sound of mp4,
+m4a and aac files players upload to an Alarm Speaker. JAAD 0.8.7 (the fork by DV8FromTheWorld
+and Stephan Fuhrmann of in-somnia's JAAD) is in the public domain (text 4 below). Changed for
+this mod: Temporal Noise Shaping was implemented, pulse data is applied, and the noise
+generator of PNS was fixed.
 
 The voice and local-AI parts (Piper, its Lessac voice, llama.cpp and the Qwen models) are
 NOT included in the jar: the mod downloads them from their official GitHub and Hugging Face
@@ -274,3 +283,42 @@ THE SOFTWARE.
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+
+------------------------------------------------------------------------------
+4. Public domain - JAAD
+------------------------------------------------------------------------------
+
+JAAD (https://sourceforge.net/projects/jaadec/, forked at
+https://github.com/DV8FromTheWorld/JAADec and https://github.com/sfuhrm/JAADec):
+
+The person or persons who have associated work with this document (the "Dedicator" or "Certifier") hereby either (a) certifies that, to the best of his knowledge, the work of authorship identified is in the public domain of the country from which the work is published, or (b) hereby dedicates whatever copyright the dedicators holds in the work of authorship identified below (the "Work") to the public domain. A certifier, moreover, dedicates any copyright interest he may have in the associated work, and for these purposes, is described as a "dedicator" below.
+
+A certifier has taken reasonable steps to verify the copyright status of this work. Certifier recognizes that his good faith efforts may not shield him from liability if in fact the work certified is not in the public domain.
+
+Dedicator makes this dedication for the benefit of the public at large and to the detriment of the Dedicator's heirs and successors. Dedicator intends this dedication to be an overt act of relinquishment in perpetuity of all present and future rights under copyright law, whether vested or contingent, in the Work. Dedicator understands that such relinquishment of all rights includes the relinquishment of all rights to enforce (by lawsuit or otherwise) those copyrights in the Work.
+
+Dedicator recognizes that, once placed in the public domain, the Work may be freely reproduced, distributed, transmitted, used, modified, built upon, or otherwise exploited by anyone for any purpose, commercial or non-commercial, and in any way, including by methods that have not yet been invented or conceived.
+
+------------------------------------------------------------------------------
+5. MIT License - JavaMP3
+------------------------------------------------------------------------------
+
+Copyright (c) 2017 delthas
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

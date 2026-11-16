@@ -588,6 +588,34 @@ def rayshield_hum():
     return (loop / np.max(np.abs(loop)) * 0.4).astype(np.float32)
 
 
+def alarm_siren():
+    """
+    De ingebouwde sirene van de Alarm Speaker (hoofdstuk 126): wat hij laat horen zolang niemand een eigen geluid uploadde.
+    Een elektronische "wail": de toon glijdt in 0,85 s van 650 naar 1400 Hz omhoog en valt in 0,15 s terug, twee keer
+    in een lus van 2 seconden. Een blokgolf (oneven boventonen) met de scherpste randjes eraf, zoals een echte sirene.
+
+    Het spel speelt hem als lus. Geen naad: we schuiven de toonhoogte een heel klein beetje zodat er precies een heel
+    aantal golven in de lus past; dan sluit het einde van de golf naadloos aan op het begin.
+    """
+    length = 2.0
+    t = seconds(length)
+    part = (t % 1.0)
+    rise = np.clip(part / 0.85, 0.0, 1.0)
+    fall = np.clip((part - 0.85) / 0.15, 0.0, 1.0)
+    shape = np.where(part < 0.85, np.sin(rise * np.pi / 2) ** 1.5, np.cos(fall * np.pi / 2) ** 2)
+    freq = 650.0 + 750.0 * shape
+    cycles = np.sum(freq) / RATE
+    freq *= np.round(cycles) / cycles  # precies een heel aantal golven in de lus
+    phase = 2 * np.pi * np.cumsum(freq) / RATE
+    phase -= phase[0]
+    tone = np.sin(phase) + 0.33 * np.sin(3 * phase) + 0.2 * np.sin(5 * phase) + 0.12 * np.sin(7 * phase)
+    # Het filter "onthoudt" wat ervoor kwam: filter drie lussen achter elkaar en houd de middelste, dan klopt ook de naad.
+    n = len(tone)
+    tone = lowpass(np.tile(tone, 3), 4500, order=2)[n:2 * n]
+    tone = np.tanh(tone * 1.2)
+    return (tone / np.max(np.abs(tone)) * 0.8).astype(np.float32)
+
+
 def rayshield_on():
     """
     Het schild gaat aan: "vwoem". Een knetter, dan schiet de zoemtoon van heel laag omhoog naar
@@ -1698,6 +1726,7 @@ SOUNDS = {
     "laser_cannon_fire": laser_cannon_fire,
     "suit_thruster": suit_thruster,
     "rayshield_hum": rayshield_hum,
+    "alarm_siren": alarm_siren,
     "rayshield_on": rayshield_on,
     "rayshield_off": rayshield_off,
     "rayshield_hit": rayshield_hit,

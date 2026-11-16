@@ -124,6 +124,8 @@ public final class Emp {
                 camera.updateOnline(level, pos, device.getBlockState());
             } else if (device instanceof com.senne.imttech.security.wall.CameraMonitorBlockEntity monitor) {
                 monitor.updateOn(level);
+            } else if (device instanceof com.senne.imttech.alarm.AlarmSpeakerBlockEntity speaker) {
+                speaker.updateOnline(level); // hoofdstuk 126: meteen stil, en hij hoort geen alarm tot de puls voorbij is
             } else {
                 Block block = device.getBlockState().getBlock();
                 // Hoofdstuk 38: ook een Network Switch valt even uit (zie NetworkSwitchBlock.passes).

@@ -24,6 +24,7 @@
     "imttech:monitor",
     "imttech:camera_monitor",
     "imttech:security_camera",
+    "imttech:alarm_speaker",
     "imttech:server_rack",
     "imttech:keycard_reader",
     "imttech:code_panel",

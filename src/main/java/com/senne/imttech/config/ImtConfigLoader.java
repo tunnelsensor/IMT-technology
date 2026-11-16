@@ -61,6 +61,7 @@ public final class ImtConfigLoader {
             ImtConfig.Turrets.class,
             ImtConfig.Security.class,
             ImtConfig.Network.class,
+            ImtConfig.Alarms.class,
             ImtConfig.Logic.class,
             ImtConfig.Uplink.class,
             ImtConfig.Breach.class,

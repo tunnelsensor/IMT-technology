@@ -730,8 +730,11 @@ public final class SecurityOs {
     /** Eén torentje aan of uit. */
     private static void toggleTurret(ServerPlayer player, SecurityCoreBlockEntity core, Session session, BlockPos pos, boolean on) {
         // Een torentje, of (hoofdstuk 39) een laserpoort of laserbrug: elk met zijn eigen aan/uit-knop in Devices.
-        String what = player.serverLevel().getBlockState(pos).getBlock() instanceof com.senne.imttech.turret.TurretBlock ? "turret"
-                : player.serverLevel().getBlockState(pos).getBlock() instanceof com.senne.imttech.shield.LaserBridgeBlock ? "laser bridge"
+        net.minecraft.world.level.block.Block block = player.serverLevel().getBlockState(pos).getBlock();
+        String what = block instanceof com.senne.imttech.turret.TurretBlock ? "turret"
+                : block instanceof com.senne.imttech.shield.LaserBridgeBlock ? "laser bridge"
+                : block instanceof com.senne.imttech.security.CameraBlock ? "camera"
+                : block instanceof com.senne.imttech.alarm.AlarmSpeakerBlock ? "alarm speaker" // hoofdstuk 126
                 : "laser gate";
         String error = com.senne.imttech.security.SecurityDevices.switchDevice(player.serverLevel(), core, pos, on);
         if (error != null) {

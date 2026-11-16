@@ -384,6 +384,17 @@ public final class ModBlocks {
                     .noOcclusion()
                     .lightLevel(state -> state.getValue(com.senne.imttech.security.CameraBlock.ONLINE) ? 2 : 0));
 
+    /** Hoofdstuk 126: de Alarm Speaker, een sirene met je eigen geluid aan de muur, het plafond of de vloer (zie alarm/AlarmSpeakerBlock). */
+    public static final DeferredBlock<com.senne.imttech.alarm.AlarmSpeakerBlock> ALARM_SPEAKER = BLOCKS.registerBlock(
+            "alarm_speaker", com.senne.imttech.alarm.AlarmSpeakerBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(2.0f, 6.0f)
+                    .sound(SoundType.METAL)
+                    .noOcclusion()
+                    .lightLevel(state -> state.getValue(com.senne.imttech.alarm.AlarmSpeakerBlock.SOUNDING) ? 7
+                            : state.getValue(com.senne.imttech.alarm.AlarmSpeakerBlock.ONLINE) ? 1 : 0));
+
     /**
      * Het serverrack: racks die elkaar raken zijn samen de server van je beveiligingskern, waar je
      * redstone-diagrammen op draaien (7 oktober).

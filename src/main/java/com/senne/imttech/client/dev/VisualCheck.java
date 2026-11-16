@@ -5819,6 +5819,16 @@ public final class VisualCheck {
             StorageTour.pictures(t);
         }
 
+        // --- Hoofdstuk 126: de Alarm Speaker (-Ponly=alarm): klaar, afgaand na een alarm van de kern, het overzicht, de zin
+        // boven je hotbar, zijn scherm (met een geluid, met een gekozen bestand, uploaden) en de tooltip. En het plaatje van
+        // zijn scherm voor How it works (-Ponly=howtopics:alarm; dat verandert een bestand van de mod).
+        if (want("alarm")) {
+            AlarmTour.tour(t);
+        }
+        if (ONLY.contains("howtopics:alarm")) {
+            AlarmTour.pictures(t);
+        }
+
         // --- How it works (hoofdstuk 63): de plaatjes van echte schermen (alleen als je erom vraagt: dat verandert
         // bestanden van de mod), en W op een item, de animatie van de Power Battery, het knopje en het overzicht.
         if (ONLY.contains("howtopics")) {

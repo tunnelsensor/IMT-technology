@@ -62,12 +62,12 @@ public final class SecurityDevices {
     /**
      * Wat er bij een kern hoort: torentjes, alle laserzenders, van elke laserpoort één zender, de
      * camera's, de serverracks (zie LogicServer), de keycardlezers en codepanelen (inputs) en (hoofdstuk 38) de
-     * Network Switches en van elke laserbrug één zender (bridges), (hoofdstuk 40) de Computers, en (19 oktober) alle Camera
-     * Monitors.
+     * Network Switches en van elke laserbrug één zender (bridges), (hoofdstuk 40) de Computers, (19 oktober) alle Camera
+     * Monitors, en (hoofdstuk 126) de Alarm Speakers.
      */
     public record Found(List<BlockPos> turrets, List<BlockPos> emitters, List<BlockPos> gates, List<BlockPos> bridges,
                         List<BlockPos> cameras, List<BlockPos> racks, List<BlockPos> inputs, List<BlockPos> switches,
-                        List<BlockPos> computers, List<BlockPos> monitors, long time) {}
+                        List<BlockPos> computers, List<BlockPos> monitors, List<BlockPos> alarms, long time) {}
 
     private static final Map<GlobalPos, Found> CACHE = new HashMap<>();
 
@@ -100,6 +100,7 @@ public final class SecurityDevices {
         List<BlockPos> bridges = new ArrayList<>();
         List<BlockPos> computers = new ArrayList<>();
         List<BlockPos> monitors = new ArrayList<>();
+        List<BlockPos> alarms = new ArrayList<>();
         for (BlockPos pos : com.senne.imttech.lan.LanGrid.devicesOf(level, core.getBlockPos())) {
             BlockEntity blockEntity = level.getBlockEntity(pos);
             if (blockEntity instanceof TurretBlockEntity turret) {
@@ -122,6 +123,8 @@ public final class SecurityDevices {
                 if (belongs(core, bridge)) {
                     bridges.add(pos);
                 }
+            } else if (blockEntity instanceof com.senne.imttech.alarm.AlarmSpeakerBlockEntity) {
+                alarms.add(pos);
             } else if (level.getBlockState(pos).is(ModBlocks.LASER_EMITTER.get())) {
                 emitters.add(pos);
             }
@@ -132,7 +135,7 @@ public final class SecurityDevices {
         emitters.sort(null);
         racks.sort(null);
         switches.sort(null);
-        return found(level, turrets, emitters, bridges, cameras, racks, inputs, switches, computers, monitors, now);
+        return found(level, turrets, emitters, bridges, cameras, racks, inputs, switches, computers, monitors, alarms, now);
     }
 
     /** Zoals vroeger: alles wat in het gebied van deze kern staat (en geen andere kern dichterbij heeft). */
@@ -146,6 +149,7 @@ public final class SecurityDevices {
         List<BlockPos> bridges = new ArrayList<>();
         List<BlockPos> computers = new ArrayList<>();
         List<BlockPos> monitors = new ArrayList<>();
+        List<BlockPos> alarms = new ArrayList<>();
         AABB area = core.area();
         int minCx = SectionPos.blockToSectionCoord((int) Math.floor(area.minX));
         int maxCx = SectionPos.blockToSectionCoord((int) Math.floor(area.maxX));
@@ -182,6 +186,9 @@ public final class SecurityDevices {
                     } else if (blockEntity instanceof com.senne.imttech.security.wall.CameraMonitorBlockEntity monitor
                             && SecurityCores.ownedBy(level, core, monitor.getBlockPos())) {
                         monitors.add(monitor.getBlockPos().immutable());
+                    } else if (blockEntity instanceof com.senne.imttech.alarm.AlarmSpeakerBlockEntity speaker
+                            && SecurityCores.ownedBy(level, core, speaker.getBlockPos())) {
+                        alarms.add(speaker.getBlockPos().immutable());
                     }
                 }
                 LevelChunkSection[] sections = chunk.getSections();
@@ -207,7 +214,7 @@ public final class SecurityDevices {
                 }
             }
         }
-        return found(level, turrets, emitters, bridges, cameras, racks, inputs, switches, computers, monitors, now);
+        return found(level, turrets, emitters, bridges, cameras, racks, inputs, switches, computers, monitors, alarms, now);
     }
 
     /**
@@ -216,7 +223,7 @@ public final class SecurityDevices {
      */
     private static Found found(ServerLevel level, List<BlockPos> turrets, List<BlockPos> emitters, List<BlockPos> bridgeEmitters,
                                List<BlockPos> cameras, List<BlockPos> racks, List<BlockPos> inputs, List<BlockPos> switches,
-                               List<BlockPos> computers, List<BlockPos> monitors, long now) {
+                               List<BlockPos> computers, List<BlockPos> monitors, List<BlockPos> alarms, long now) {
         // Zenders die aan elkaar vastzitten zijn samen één poort.
         List<BlockPos> gates = new ArrayList<>();
         Set<BlockPos> seen = new HashSet<>();
@@ -245,9 +252,12 @@ public final class SecurityDevices {
         // De computers ook (hoofdstuk 40): zo staan ze in de app Computers altijd in dezelfde volgorde.
         computers.sort(null);
         monitors.sort(null);
+        // De Alarm Speakers (hoofdstuk 126) net als de camera's: zo staan ze in Devices altijd in dezelfde volgorde.
+        alarms.sort(java.util.Comparator.comparingInt((BlockPos pos) -> -pos.getY())
+                .thenComparingInt(BlockPos::getZ).thenComparingInt(BlockPos::getX));
         return new Found(List.copyOf(turrets), List.copyOf(emitters), List.copyOf(gates), List.copyOf(bridges),
                 List.copyOf(cameras), List.copyOf(racks), List.copyOf(inputs), List.copyOf(switches), List.copyOf(computers),
-                List.copyOf(monitors), now);
+                List.copyOf(monitors), List.copyOf(alarms), now);
     }
 
     /** Hoort dit torentje bij de kern? Een beveiligingstorentje altijd, een Biebia's Industries-torentje als het van de eigenaar is. */
@@ -516,6 +526,20 @@ public final class SecurityDevices {
                     : core.camerasEnabled() ? "no power" : "off (network)");
             list.add(device);
         }
+        // Hoofdstuk 126: de Alarm Speakers. "on" = gaat hij af (de knop zet hem aan of uit, zoals off("Alarm 1")).
+        for (BlockPos pos : found.alarms()) {
+            if (!(level.getBlockEntity(pos) instanceof com.senne.imttech.alarm.AlarmSpeakerBlockEntity speaker)) {
+                continue;
+            }
+            BlockState state = level.getBlockState(pos);
+            boolean sounding = state.getValue(com.senne.imttech.alarm.AlarmSpeakerBlock.SOUNDING);
+            CompoundTag device = position("alarm", pos);
+            device.putString("name", speaker.name().isEmpty() ? "Alarm speaker" : speaker.name());
+            device.putBoolean("on", sounding);
+            device.putString("st", sounding ? "sounding"
+                    : state.getValue(com.senne.imttech.alarm.AlarmSpeakerBlock.ONLINE) ? "ready" : "no power");
+            list.add(device);
+        }
         // 19 oktober: de schermmuren, één regel per scherm (monitoren die samen een scherm zijn, staan op de plek linksboven).
         Set<BlockPos> screens = new HashSet<>();
         for (BlockPos pos : found.monitors()) {
@@ -636,7 +660,8 @@ public final class SecurityDevices {
         boolean gate = state.is(ModBlocks.LASER_EMITTER.get());
         boolean bridge = level.getBlockEntity(pos) instanceof LaserBridgeBlockEntity entity && belongs(core, entity);
         boolean camera = state.getBlock() instanceof CameraBlock;
-        if (!(gate || bridge || camera) || !SecurityCores.linkedTo(level, core, pos)) {
+        boolean alarm = state.getBlock() instanceof com.senne.imttech.alarm.AlarmSpeakerBlock; // hoofdstuk 126
+        if (!(gate || bridge || camera || alarm) || !SecurityCores.linkedTo(level, core, pos)) {
             return "that device is not part of this network";
         }
         com.senne.imttech.redstone.ImtRedstone.switchAt(level, pos, -1,
@@ -669,6 +694,9 @@ public final class SecurityDevices {
         } else if (state.getBlock() instanceof CameraBlock) {
             members = List.of(pos);
             key = CameraBlock.DEFAULT_NAME;
+        } else if (state.getBlock() instanceof com.senne.imttech.alarm.AlarmSpeakerBlock) {
+            members = List.of(pos); // hoofdstuk 126
+            key = com.senne.imttech.alarm.AlarmSpeakerBlock.DEFAULT_NAME;
         } else {
             return "that device is not part of this network";
         }
@@ -680,6 +708,8 @@ public final class SecurityDevices {
         }
         if (level.getBlockEntity(pos) instanceof CameraBlockEntity camera) {
             camera.setName(com.senne.imttech.redstone.ImtRedstone.clean(name, com.senne.imttech.redstone.DeviceNames.MAX_NAME, ""));
+        } else if (level.getBlockEntity(pos) instanceof com.senne.imttech.alarm.AlarmSpeakerBlockEntity speaker) {
+            speaker.setName(com.senne.imttech.redstone.ImtRedstone.clean(name, com.senne.imttech.redstone.DeviceNames.MAX_NAME, ""));
         }
         // De server kent de naam meteen (voor je diagrammen), als jij de eigenaar van de kern bent.
         com.senne.imttech.logic.LogicDevices.refresh(level, core, player);

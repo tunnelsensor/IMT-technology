@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "imttech:alarm_speaker",
+          "functions": [
+            {
+              "function": "minecraft:copy_components",
+              "include": [
+                "minecraft:custom_name",
+                "imttech:alarm_settings"
+              ],
+              "source": "block_entity"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "random_sequence": "imttech:blocks/alarm_speaker"
+}
