@@ -1172,7 +1172,8 @@ tegen de lezer, open dan de kluis 3 seconden; anders alarm". De server hangt aan
    linkerkant de whens en `def`, in een blok de acties en je eigen defs, na `if` de gegevens die bij
    de trigger passen, en tussen aanhalingstekens de namen van je apparaten, lezers en panelen.
    Pijltjes kiezen, Enter of Tab vult in, Esc sluit; verder typen maakt de lijst korter. Na `card.`
-   of `on("` gaat het lijstje vanzelf open.
+   of `on("` gaat het lijstje vanzelf open. Een voorbeeldgetal uit het lijstje (de 2 van `wait(2)`)
+   vult Tab niet in: je krijgt `wait()` met de cursor tussen de haakjes, klaar voor jouw getal.
 
 De code lijkt op Python: wat ingesprongen staat (4 spaties), hoort bij de regel erboven.
 ```

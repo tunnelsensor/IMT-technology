@@ -868,6 +868,9 @@ public sealed interface Expr {
                         break;
                     }
                     next();
+                    if (peek().is(")")) {
+                        throw new LogicException(Checks.emptyAfterComma(function.name)); // read(1, ) (16 november)
+                    }
                 }
             }
             if (!next().is(")")) {

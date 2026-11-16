@@ -214,8 +214,11 @@ public final class CodeCompletion {
                         : op == Op.ORDERED && data.kind() == ProgramKind.CAR ? "fetch"
                         : op.textArg() == Op.Arg.TEXT ? op.textExample() : device;
                 String label = "when " + (named ? op.code() + "(...)" : op.example()) + ":";
-                String call = named ? op.code() + "(\"" + name + "\")" : op.example();
-                items.add(new Item(label, "when " + call + ":\n    ", -1, op.help(), TRIGGER));
+                // Zonder voorbeeldgetal (16 november): when every(|): met de cursor tussen de haakjes.
+                String typed = op.typedExample();
+                String call = named ? op.code() + "(\"" + name + "\")" : typed.replace("|", "");
+                int caret = named || typed.indexOf('|') < 0 ? -1 : "when ".length() + typed.indexOf('|');
+                items.add(new Item(label, "when " + call + ":\n    ", caret, op.help(), TRIGGER));
             }
             if (data.kind() == ProgramKind.CAR) {
                 items.add(new Item("when ordered(\"store\"):", "when ordered(\"store\"):\n    ", -1,
@@ -254,12 +257,13 @@ public final class CodeCompletion {
 
     /**
      * Een blokje uit Op als suggestie, met wat erachter moet ({@code suffix}, bijvoorbeeld de ":" van
-     * een trigger). De cursor komt waar de | in het voorbeeld staat (zie {@link Op#example}).
+     * een trigger). Het lijstje toont het voorbeeld met zijn getal ({@code wait(2)}), maar Tab vult het in zonder getal,
+     * met de cursor waar de | staat (16 november, zie {@link Op#typedExample}): {@code wait(|)}.
      */
     private static Item item(Op op, String suffix, int colour) {
-        String example = op.example();
-        return new Item(example.replace("|", "...") + suffix, example.replace("|", "") + suffix,
-                example.indexOf('|'), op.help(), colour);
+        String typed = op.typedExample();
+        return new Item(op.example().replace("|", "...") + suffix, typed.replace("|", "") + suffix,
+                typed.indexOf('|'), op.help(), colour);
     }
 
     /** Een ingesprongen regel: acties, if/elif/else/pass en je eigen defs (ook die uit je global scripts). */
@@ -275,8 +279,8 @@ public final class CodeCompletion {
         items.add(new Item("name: type = value", "count: int = 0", 0, 5,
                 "Give a name a value and a type (" + VarType.words() + "): it keeps that type", VARIABLE));
         items.add(new Item("if ...:", "if :", 3, Op.IF.help(), KEYWORD));
-        // De lussen (16 oktober: for en while). Het bereik van for is meteen geselecteerd: typen vervangt het.
-        items.add(new Item("for i in range(3):", "for i in range(3):", 15, 1,
+        // De lussen (16 oktober: for en while). Zonder voorbeeldgetal (16 november): de cursor staat in range(|).
+        items.add(new Item("for i in range(3):", "for i in range():", 15,
                 Op.FOR.help() + ". i is 0, 1, 2; range(1, 4) counts 1, 2, 3", KEYWORD));
         items.add(new Item("while ...:", "while :", 6, Op.WHILE.help(), KEYWORD));
         items.add(new Item("while true:", "while true:", -1, "Do the steps inside again and again, until break", KEYWORD));
@@ -493,6 +497,14 @@ public final class CodeCompletion {
             }
         }
         return open >= 0 && depth == 0 ? open : -1;
+    }
+
+    /**
+     * Waar de cursor komt na een gekozen naam (16 november): {@code col} staat net na de sluitende ". Volgt er een leeg
+     * vakje voor een getal ({@code pulse("Lamp", )}), dan springt hij daarin; anders blijft hij staan.
+     */
+    public static int skipEmptySlot(String line, int col) {
+        return line.startsWith(", )", col) ? col + 2 : col;
     }
 
     /** Het woord vlak voor de haakjes: in {@code pulse(} is dat "pulse". */

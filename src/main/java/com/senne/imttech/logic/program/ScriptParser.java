@@ -476,6 +476,9 @@ public final class ScriptParser {
             i = end[0];
             if (tokens.get(i).is(",")) {
                 i++;
+                if (tokens.get(i).is(")")) {
+                    throw new LogicException(line.number(), Checks.emptyAfterComma("range")); // range(1, ) (16 november)
+                }
                 continue;
             }
             if (!tokens.get(i).is(")")) {
@@ -664,6 +667,10 @@ public final class ScriptParser {
                 i = end[0];
                 if (tokens.get(i).is(",")) {
                     i++;
+                    if (tokens.get(i).is(")")) {
+                        // Een leeg vakje na de komma (16 november: Tab vult pulse("", ) in, zonder voorbeeldgetal).
+                        throw new LogicException(line.number(), Checks.emptyAfterComma(name.text()));
+                    }
                     continue;
                 }
                 if (!tokens.get(i).is(")")) {

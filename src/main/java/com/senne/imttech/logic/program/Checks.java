@@ -401,6 +401,15 @@ public final class Checks {
     }
 
     /**
+     * Een leeg vakje na een komma (16 november): {@code pulse("Lamp", )}, {@code range(1, )} of {@code read(1, )}. Tab vult
+     * {@code pulse("", )} in zonder voorbeeldgetal; laat je dat vakje leeg, dan zegt Check dit (en niet "I did not expect )
+     * here").
+     */
+    public static String emptyAfterComma(String name) {
+        return "Something is missing after the comma in " + name + "(...): fill it in, or remove the comma";
+    }
+
+    /**
      * Mag een def zo heten? Net als in Python: letters, cijfers en _ (niet met een cijfer beginnen),
      * en niet een woord dat de taal zelf al gebruikt. Geeft de fout, of null.
      */

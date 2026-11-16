@@ -362,6 +362,21 @@ public enum Op {
      * vanzelf in komt. Niet voor DEF, CALL en IF: die zien er anders uit.
      */
     public String example() {
+        return example(true);
+    }
+
+    /**
+     * Het voorbeeld zoals Tab het invult (16 november, jouw wens: "overal waar een voorbeeldgetal staat zoals wait(2) ...
+     * tussen de haakjes zonder getal"): het voorbeeldgetal valt weg, en de cursor ({@code |}) komt op zijn plek:
+     * {@code wait(|)}, {@code every(|)}, {@code charge(|)}. Staat de cursor al tussen de aanhalingstekens, dan blijft hij
+     * daar en blijft het vakje voor het getal leeg: {@code pulse("|", )}. Het lijstje toont het getal nog wel (zie
+     * {@link #example()}), zodat je ziet wat er hoort.
+     */
+    public String typedExample() {
+        return example(false);
+    }
+
+    private String example(boolean withNumber) {
         if (withoutBrackets()) {
             return code;
         }
@@ -383,7 +398,7 @@ public enum Op {
             text.append("\"|\"");
         }
         if (number == Arg.NUMBER || number == Arg.OPTIONAL_NUMBER) {
-            text.append(quotes ? ", " : "").append(exampleNumber());
+            text.append(quotes ? ", " : "").append(withNumber ? String.valueOf(exampleNumber()) : quotes ? "" : "|");
         }
         return text.append(')').toString();
     }

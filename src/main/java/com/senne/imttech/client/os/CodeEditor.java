@@ -380,7 +380,8 @@ final class CodeEditor {
             // Na een naam: over de sluitende " heen (of zet hem erbij als hij er nog niet is).
             String now = lines.get(cursorLine);
             if (cursorCol < now.length() && now.charAt(cursorCol) == '"') {
-                cursorCol++;
+                // Daarna een leeg vakje voor een getal (16 november: pulse("Lamp", ))? Dan meteen daarheen.
+                cursorCol = CodeCompletion.skipEmptySlot(now, cursorCol + 1);
             } else if (now.indexOf('"', cursorCol) < 0) {
                 insertRaw("\"");
             }

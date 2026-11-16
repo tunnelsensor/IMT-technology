@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 635 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 636 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -9655,10 +9655,52 @@ Mijn invulling (verander ik op jouw woord):
 Nog niet gedaan:
 - Niet zelf gespeeld, en nooit met een tweede speler (zie "Nog nooit in het spel bekeken").
 
+### 127. Tab vult geen voorbeeldgetal meer in: de cursor staat tussen de haakjes (16 november)
+
+Jouw wens: "kun je zorgen dat bij het gebruiken van tab bij aanvullen van code wil ik dat overal waar een voorbeel getal
+staat zoals wait(2) je niet na het ) komt te staan maar tussen de haakjes zonder getal dus op de plaats van waar x is
+wait(x)".
+
+- [x] **Zonder voorbeeldgetal**: het lijstje van Ctrl+Spatie toont nog `wait(2)` (zo zie je wat er hoort), maar Tab (of
+      Enter, of een klik) vult `wait()` in, met de cursor tussen de haakjes. Zo ook `every()` (ook `when every():` aan de
+      linkerkant), `forward()`, `back()`, `up()`, `down()`, `charge()` en `for i in range():` (daar was de 3 vroeger
+      geselecteerd). Nieuw: `Op.typedExample()`; `Op.example()` houdt zijn getal, want de foutmeldingen ("like wait(2)")
+      gebruiken het.
+- [x] **pulse**: de cursor komt eerst tussen de aanhalingstekens (daar komt de naam, en het lijstje met je apparaten gaat
+      open), en het vakje voor het getal blijft leeg: `pulse("", )`. Kies je een naam, dan springt de cursor meteen naar
+      dat lege vakje: `pulse("Lamp", |)` (`CodeCompletion.skipEmptySlot`). Laat je het leeg, dan zegt Check nu
+      "Something is missing after the comma in pulse(...): fill it in, or remove the comma" (vroeger: "I did not expect )
+      here"). Dezelfde melding krijg je bij elke lege plek na een komma: in een blokje (`goto(1, 2, )`), in `range(1, )`
+      en in een functie van een check (`read(1, )`); ze staat op één plek, `Checks.emptyAfterComma`.
+- [x] **Wat bleef**: blokjes zonder getal (`accept()`, `turn_left()`) zetten de cursor nog altijd achter de `)`, en
+      `arm_up()` ook (zonder getal is het één blok, het gewone geval). Bij `count = 0` en `lockdown: bool = false` blijft
+      de waarde staan: daar is de naam geselecteerd, en het staat niet tussen haakjes. De lijst van **Help** (klikken in
+      plaats van Tab) zet nog volledige voorbeelden in je code, met hun getal (`wait(2)`, `pulse("Lamp", 3)`): die kloppen
+      meteen, zonder getal zou Check ze afkeuren, en je wens ging over Tab.
+- [x] **LEESMIJ**: één zin bij Ctrl+Spatie.
+- [x] **Tests**: `logic_tab_leaves_out_example_numbers` (nieuw, in de bestaande batch `logic_language`, dus nog altijd 192
+      batchnamen): wat Tab invult en waar de cursor dan staat, voor wait, pulse, range, accept, forward, charge,
+      `when every():` en `every():` na `when `; de sprong naar het lege vakje na een naam (`skipEmptySlot`, alleen bij
+      `, )`); dat een foutmelding haar voorbeeldgetal houdt (`wait(1, 2)` zegt nog "like wait(2)"); en de nieuwe melding
+      bij `pulse("Lamp", )`, `range(1, )` en `read(1, )`. 636 tests op master van vandaag, allemaal groen.
+- [x] **Nalezing** (vier lezers, elk met een eigen kijk: de suggesties, de editor, de parser, de teksten en tests; per
+      lezer één controleur die hun vondsten probeerde te weerleggen). Geen fout in de code. Wel echt en hersteld: de
+      stappen hieronder bij "Nog nooit in het spel bekeken" vergaten Ctrl+Spatie (zonder lijstje zet Tab spaties), de
+      nieuwe melding gold eerst alleen voor blokjes en niet voor `range` en de functies in een check, de test keek naar
+      `Op.example()` maar niet naar een echte foutmelding, en de sprong na een naam had geen test (hij zat in de editor,
+      die de tests niet kunnen starten; nu staat hij in `CodeCompletion`). De controleur van de teksten en tests viel weg
+      (gebruikslimiet); die vondsten heb ik zelf nagekeken.
+- **Mijn invulling**: bij `pulse` blijft het vakje voor het getal leeg in plaats van weg te vallen (het getal mag weg, dan
+  is het 1 seconde: haal dan de komma weg). Geen nieuwe versie: een kleine aanpassing aan iets dat er al was.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
+
+- [ ] **Tab zonder voorbeeldgetal (hoofdstuk 127)**: alleen met een test gecontroleerd. Probeer in de app Logic, in een
+      blok: (1) typ `wa`, druk op Ctrl+Spatie en dan op Tab: staat er `wait()` met de cursor tussen de haakjes? (2) typ
+      `pul`, Ctrl+Spatie, Tab, en kies een apparaat met Tab: staat de cursor daarna in `pulse("Lamp", |)`?
 
 - [ ] **Je bril verbinden met een security core (hoofdstuk 122 en 123)**: met tests gecontroleerd en gezien op screenshots
       (`-Ponly=uplink`, ul09 tot ul20), maar niet met de muis gespeeld. Probeer: (1) G-menu, tabblad Systems, Datacenter: typ het IP (de app Status van je kern) en je wachtwoord.

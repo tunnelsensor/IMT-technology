@@ -1657,8 +1657,58 @@ public final class LogicGameTests {
         helper.succeed();
     }
 
+    /**
+     * 16 november: "kun je zorgen dat bij het gebruiken van tab bij aanvullen van code ... overal waar een voorbeeldgetal
+     * staat zoals wait(2) je niet na het ) komt te staan maar tussen de haakjes zonder getal". Het lijstje toont nog
+     * wait(2), maar Tab vult wait() in met de cursor tussen de haakjes; zo ook every, forward, charge en range. Bij pulse
+     * blijft de cursor tussen de aanhalingstekens (daar komt de naam) en is het vakje voor het getal leeg. Een blokje
+     * zonder getal (accept()) zet de cursor nog altijd erachter.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "logic_language")
+    public static void logic_tab_leaves_out_example_numbers(GameTestHelper helper) {
+        String server = "when every(5):\n    |";
+        expectTyped(server, ProgramKind.SERVER, "wait(2)", "wait()", 5);
+        expectTyped(server, ProgramKind.SERVER, "pulse(\"...\", 3)", "pulse(\"\", )", 7);
+        expectTyped(server, ProgramKind.SERVER, "for i in range(3):", "for i in range():", 15);
+        expectTyped(server, ProgramKind.SERVER, "accept()", "accept()", -1);
+        expectTyped("when started:\n    |", ProgramKind.ROBOT, "forward(3)", "forward()", 8);
+        expectTyped("when started:\n    |", ProgramKind.ROBOT, "charge(80)", "charge()", 7);
+        expectTyped("|", ProgramKind.SERVER, "when every(10):", "when every():\n    ", 11);
+        expectTyped("when |", ProgramKind.SERVER, "every(10):", "every():", 6);
+        // Na het kiezen van een naam springt de cursor naar het lege vakje voor het getal, en alleen daar.
+        check(com.senne.imttech.client.os.CodeCompletion.skipEmptySlot("    pulse(\"Lamp\", )", 16) == 18
+                        && com.senne.imttech.client.os.CodeCompletion.skipEmptySlot("    pulse(\"Lamp\", 3)", 16) == 16
+                        && com.senne.imttech.client.os.CodeCompletion.skipEmptySlot("    on(\"Lamp\")", 13) == 13,
+                "De cursor springt na een naam niet (of verkeerd) naar het lege vakje voor het getal");
+        // De foutmeldingen houden hun voorbeeldgetal: "like wait(2)".
+        check(Op.WAIT.example().equals("wait(2)") && Op.PULSE.example().equals("pulse(\"|\", 3)"),
+                "Het voorbeeld met getal is veranderd: " + Op.WAIT.example() + " / " + Op.PULSE.example());
+        expectKindError("when every(5):\n    wait(1, 2)", ProgramKind.SERVER, 2, "like wait(2)");
+        // Laat je het vakje voor het getal leeg, dan zegt Check wat er ontbreekt (en niet "I did not expect )"), ook in
+        // range en in een functie van een check.
+        expectKindError("when every(5):\n    pulse(\"Lamp\", )", ProgramKind.SERVER, 2, "Something is missing after the comma in pulse");
+        expectKindError("when every(5):\n    for i in range(1, ):\n        pass", ProgramKind.SERVER, 2,
+                "Something is missing after the comma in range");
+        expectKindError("when started:\n    if read(1, ):\n        stop()", ProgramKind.ROBOT, 2,
+                "Something is missing after the comma in read");
+        helper.succeed();
+    }
+
+    /** Tab op de suggestie met dit label vult {@code insert} in, en de cursor staat dan {@code caret} tekens verder. */
+    private static void expectTyped(String code, ProgramKind kind, String label, String insert, int caret) {
+        var item = completeItems(code, kind).stream().filter(i -> i.label().equals(label)).findFirst()
+                .orElseThrow(() -> new GameTestAssertException("Geen " + label + " in het lijstje voor: " + code));
+        check(item.insert().equals(insert) && item.caret() == caret, "Tab op " + label + " vult \"" + item.insert()
+                + "\" in met de cursor op " + item.caret() + ", niet \"" + insert + "\" op " + caret);
+    }
+
     /** Ctrl+Spatie op de | in deze code, voor deze soort programma, met twee robots in het netwerk. */
     private static List<String> complete(String code, ProgramKind kind) {
+        return completeItems(code, kind).stream().map(com.senne.imttech.client.os.CodeCompletion.Item::label).toList();
+    }
+
+    /** De suggesties zelf, met wat Tab invult en waar de cursor dan staat. */
+    private static List<com.senne.imttech.client.os.CodeCompletion.Item> completeItems(String code, ProgramKind kind) {
         String[] lines = code.split("\n", -1);
         for (int i = 0; i < lines.length; i++) {
             int at = lines[i].indexOf('|');
@@ -1666,8 +1716,7 @@ public final class LogicGameTests {
                 List<String> clean = new java.util.ArrayList<>(List.of(code.replace("|", "").split("\n", -1)));
                 var data = new com.senne.imttech.client.os.CodeCompletion.Data(List.of("Vault door"), List.of("Lab door"),
                         List.of("Front door"), kind, List.of("Guard 1", "Door guard"));
-                return com.senne.imttech.client.os.CodeCompletion.complete(clean, i, at, data).items().stream()
-                        .map(com.senne.imttech.client.os.CodeCompletion.Item::label).toList();
+                return com.senne.imttech.client.os.CodeCompletion.complete(clean, i, at, data).items();
             }
         }
         throw new GameTestAssertException("Geen | in de test-code");
