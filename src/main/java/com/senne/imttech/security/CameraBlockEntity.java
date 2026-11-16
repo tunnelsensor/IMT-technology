@@ -38,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  * Sinds hoofdstuk 93 onthoudt hij ook wie hem neerzette ({@link BaseTrust.Placed}): wie dat is, of wie vertrouwd is in de
  * basis, geeft hem met sneak + rechtsklik een andere naam (zie CameraNames), net als bij een keycardlezer.
  */
-public class CameraBlockEntity extends BlockEntity implements BaseTrust.Placed {
+public class CameraBlockEntity extends BlockEntity implements BaseTrust.Placed, com.senne.imttech.lan.DevicePower.Idle {
     /** Zoveel graden mag je hem hooguit draaien of kantelen (elke kant op). */
     public static final float MAX_TURN = 60f;
     /** Zo lang mag zijn naam hooguit zijn (tekens). */
@@ -186,7 +186,23 @@ public class CameraBlockEntity extends BlockEntity implements BaseTrust.Placed {
         boolean online = state.getValue(CameraBlock.ENABLED) && allowed && !com.senne.imttech.weapons.Emp.isOut(level, pos)
                 && PowerGrid.pay(level, pos, ImtConfig.Power.CAMERA_UPKEEP);
         if (online != state.getValue(CameraBlock.ONLINE)) {
-            level.setBlock(pos, state.setValue(CameraBlock.ONLINE, online), Block.UPDATE_CLIENTS);
+            // Hoofdstuk 124: zonder vormupdates naar de buren (UPDATE_KNOWN_SHAPE). ONLINE verandert geen enkele buur, en aan
+            // de rand van een stuk wereld dat niet draait, zou de server het stuk ernaast daarvoor meteen moeten laden.
+            level.setBlock(pos, state.setValue(CameraBlock.ONLINE, online), Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
+        }
+    }
+
+    /**
+     * Hoofdstuk 124: draait zijn stuk wereld niet (aan het eind van een lange kabel, dat NetworkKeeper alleen geladen
+     * houdt), dan kijkt zijn kern om de twee seconden of hij aan kan (zie DevicePower.refreshIdle). Alleen aan, nooit uit:
+     * daar ziet de kern zijn eigen stroom niet altijd (zie DevicePower.Idle). Uit gaat hij in zijn eigen tick, of als je
+     * hem uitzet.
+     */
+    @Override
+    public void refreshIdle(ServerLevel level) {
+        BlockState state = getBlockState();
+        if (state.getBlock() instanceof CameraBlock && !state.getValue(CameraBlock.ONLINE)) {
+            updateOnline(level, worldPosition, state);
         }
     }
 

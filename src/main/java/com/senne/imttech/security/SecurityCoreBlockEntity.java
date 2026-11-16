@@ -703,6 +703,9 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         }
         // Hoofdstuk 38: de stroom van de lezers en panelen op zijn netwerk (ieder van zijn eigen stroomnet).
         com.senne.imttech.lan.DevicePower.payUpkeep(level, SecurityDevices.scan(level, this).inputs());
+        // Hoofdstuk 124: camera's, torentjes, switches en routers op zijn net in een stuk wereld dat niet draait (vaak aan het
+        // eind van een lange kabel) werken hun stand niet zelf bij: dat doet de kern dan.
+        com.senne.imttech.lan.DevicePower.refreshIdle(level, worldPosition);
     }
 
     // ================================================================ Elke tick
@@ -951,9 +954,29 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         return networkChunks;
     }
 
-    /** Na een zoektocht langs de kabels (lan/LanGrid): onthouden waar het netwerk ligt (alleen bewaren als het veranderde). */
-    public void rememberNetwork(long[] chunks) {
-        long[] sorted = chunks.clone();
+    /**
+     * Na een zoektocht langs de kabels (lan/LanGrid): onthouden waar het netwerk ligt (alleen bewaren als het veranderde).
+     *
+     * Hoofdstuk 124: {@code partial} = de zoektocht zag niet alles (hij kwam langs een stuk wereld dat niet geladen was, of
+     * het net was te groot). Dan vergeten we de stukken die we al kenden niet: we houden ze erbij (tot
+     * LanGrid.MAX_NETWORK_CHUNKS). Zo zocht een kern die zijn net een tijd niet gebruikte (of net opnieuw opgestart was), de
+     * kabel daarna niet opnieuw stuk voor stuk af (twee seconden per stuk: minuten voor een lange kabel), maar laadt
+     * NetworkKeeper meteen alles wat hij nog weet. Zag de zoektocht wel alles, dan klopt de nieuwe lijst precies: een
+     * weggehaalde kabel valt er dan uit.
+     */
+    public void rememberNetwork(long[] chunks, boolean partial) {
+        long[] kept = chunks;
+        if (partial && networkChunks.length > 0) {
+            it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet merged = new it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet(chunks);
+            for (long known : networkChunks) {
+                if (merged.size() >= com.senne.imttech.lan.LanGrid.MAX_NETWORK_CHUNKS) {
+                    break;
+                }
+                merged.add(known);
+            }
+            kept = merged.toLongArray();
+        }
+        long[] sorted = kept.clone();
         java.util.Arrays.sort(sorted);
         if (!java.util.Arrays.equals(sorted, networkChunks)) {
             networkChunks = sorted;

@@ -158,7 +158,7 @@ public final class LanGrid {
         long now = level.getGameTime();
         if (link == null || link.version() != version || now - link.gameTime() > CORE_TICKS || now < link.gameTime()) {
             boolean[] flags = {false, false}; // te groot, en: langs een stuk wereld dat niet geladen is
-            BlockPos core = searchCore(level, device, null, flags);
+            BlockPos core = searchCore(level, device, null, flags, MAX_NODES);
             if (core == null && flags[0]) {
                 core = coreByReach(level, device);
             }
@@ -240,16 +240,19 @@ public final class LanGrid {
      * Hoofdstuk 85 (jouw wens: "zorg ook dat power cable, netwerk en poe niet connecten aan elkaar"): een netwerkkabel loopt
      * alleen verder in een netwerkkabel, een PoE-kabel alleen in een PoE-kabel. Van de ene soort naar de andere kom je
      * alleen via een blok (de kern, een switch, een rack...). Elk netwerkblok neemt allebei de soorten aan.
+     *
+     * {@code limit}: zoveel plekken volgen we hooguit ({@link #MAX_NODES} om de kern te zoeken; de weg voor de signalen zoekt
+     * verder, zie {@link #path}).
      */
     private static @Nullable BlockPos searchCore(Level level, BlockPos device, @Nullable Map<Node, Node> parents,
-                                                 @Nullable boolean[] flags) {
+                                                 @Nullable boolean[] flags, int limit) {
         Set<Node> seen = new HashSet<>();
         ArrayDeque<Node> todo = new ArrayDeque<>();
         Node start = new Node(device.immutable(), null);
         seen.add(start);
         todo.add(start);
         int followed = 0;
-        while (!todo.isEmpty() && followed++ < MAX_NODES) {
+        while (!todo.isEmpty() && followed++ < limit) {
             Node at = todo.poll();
             BlockState atState = level.getBlockState(at.pos());
             for (Direction direction : Direction.values()) {
@@ -257,7 +260,7 @@ public final class LanGrid {
                     continue;
                 }
                 BlockPos next = at.pos().relative(direction);
-                if (!level.isLoaded(next)) {
+                if (!ready(level, next)) {
                     if (!level.isOutsideBuildHeight(next)) {
                         noteUnloaded(flags); // daar kan een kabel verder lopen: we weten het niet
                     }
@@ -283,7 +286,7 @@ public final class LanGrid {
             // Hoofdstuk 112: door de lucht, van een router naar zijn apparaten of van een apparaat naar zijn router.
             for (BlockPos next : wireless(level, at)) {
                 Node block = new Node(next.immutable(), null);
-                if (!level.isLoaded(next)) {
+                if (!ready(level, next)) {
                     noteUnloaded(flags); // zijn router (of een apparaat van deze router) staat in een stuk dat niet geladen is
                     continue;
                 }
@@ -304,6 +307,23 @@ public final class LanGrid {
             flags[0] = true; // gestopt met nog werk over: het net is groter dan we vanaf hier zoeken
         }
         return null;
+    }
+
+    /**
+     * Is het stuk wereld van deze plek er helemaal, zodat we ernaar kunnen kijken zonder te wachten? Hoofdstuk 124 (gevonden
+     * door de nalezing): level.isLoaded zegt al ja zodra een stuk een ticket heeft, ook als het nog van de schijf komt, en
+     * level.getBlockState liet de server dan wachten tot het er was. NetworkKeeper zet soms veel stukken tegelijk klaar (de
+     * kern onthoudt zijn verre stukken nu, zie SecurityCoreBlockEntity.rememberNetwork): de zoektocht slaat een stuk dat nog
+     * laadt over, alsof het niet geladen is, en de volgende ronde neemt het mee.
+     */
+    private static boolean ready(Level level, BlockPos pos) {
+        if (level.isOutsideBuildHeight(pos)) {
+            return false;
+        }
+        if (level instanceof ServerLevel server) {
+            return server.getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4) != null;
+        }
+        return level.isLoaded(pos);
     }
 
     /** De zoektocht kwam langs een stuk wereld dat niet geladen is (zie {@link #searchComplete}). */
@@ -329,6 +349,7 @@ public final class LanGrid {
         ArrayDeque<Node> todo = new ArrayDeque<>();
         it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet chunks = new it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet();
         boolean otherCore = false;
+        boolean unloaded = false; // hoofdstuk 124: kwamen we langs een stuk wereld dat niet geladen is?
         BlockPos self = core.immutable();
         Node start = new Node(self, null);
         seen.add(start);
@@ -345,8 +366,9 @@ public final class LanGrid {
                         continue;
                     }
                     BlockPos next = at.pos().relative(direction);
-                    if (!level.isLoaded(next)) {
+                    if (!ready(level, next)) {
                         addChunk(chunks, next); // hier gaat het net misschien verder, in een stuk wereld dat niet geladen is
+                        unloaded |= !level.isOutsideBuildHeight(next);
                         continue;
                     }
                     BlockState state = level.getBlockState(next);
@@ -373,8 +395,9 @@ public final class LanGrid {
                 }
                 // Hoofdstuk 112: door de lucht, van een router naar zijn apparaten (en van de kern naar zijn router).
                 for (BlockPos next : wireless(level, at)) {
-                    if (!level.isLoaded(next)) {
+                    if (!ready(level, next)) {
                         addChunk(chunks, next); // de router of het apparaat staat in een stuk wereld dat niet geladen is
+                        unloaded = true;
                         continue;
                     }
                     BlockState state = level.getBlockState(next);
@@ -410,7 +433,9 @@ public final class LanGrid {
             SEARCHING.remove(self);
         }
         if (level.getBlockEntity(self) instanceof SecurityCoreBlockEntity entity) {
-            entity.rememberNetwork(chunks.toLongArray());
+            // Hoofdstuk 124: zagen we niet alles (een stuk wereld dat niet geladen was, of te groot), dan vergeet de kern de
+            // verre stukken die hij al kende niet (zie rememberNetwork).
+            entity.rememberNetwork(chunks.toLongArray(), unloaded || !todo.isEmpty());
         }
         return Set.copyOf(devices);
     }
@@ -440,7 +465,7 @@ public final class LanGrid {
 
     /** Zoekt het hele net van deze plek (zie {@link #networkOf}). Een plek in een stuk wereld dat niet geladen is, heeft geen net. */
     private static Set<BlockPos> searchNetwork(Level level, BlockPos from) {
-        if (!level.isLoaded(from)) {
+        if (!ready(level, from)) {
             return Set.of(); // hiervoor laden we niets (level.getBlockState zou dat stuk wereld anders laden)
         }
         Set<BlockPos> found = new LinkedHashSet<>();
@@ -461,7 +486,7 @@ public final class LanGrid {
                     continue;
                 }
                 BlockPos next = at.pos().relative(direction);
-                if (!level.isLoaded(next)) {
+                if (!ready(level, next)) {
                     continue;
                 }
                 BlockState state = level.getBlockState(next);
@@ -472,7 +497,7 @@ public final class LanGrid {
                 visitNetwork(level, next, state, seen, todo, found);
             }
             for (BlockPos next : wireless(level, at)) {
-                if (level.isLoaded(next)) {
+                if (ready(level, next)) {
                     visitNetwork(level, next, level.getBlockState(next), seen, todo, found);
                 }
             }
@@ -543,11 +568,13 @@ public final class LanGrid {
     /**
      * De weg langs de kabels van dit apparaat naar zijn kern (de dichtstbijzijnde langs de kabel): elke plek, van het
      * apparaat tot en met de kern. Leeg als het nergens aan hangt. Voor de signalen die je over de kabel ziet lopen (zie
-     * CableTraffic); dit wordt niet onthouden.
+     * CableTraffic); dit wordt niet onthouden. Hoofdstuk 124: dit zoekt even ver als een kern zijn apparaten zoekt
+     * ({@link #MAX_NODES_FROM_CORE}), en stopt bij de eerste kern: anders liep er op een lange kabel nooit een signaal, en
+     * leek een kabel die werkt niet aangesloten.
      */
     public static List<BlockPos> path(Level level, BlockPos device) {
         Map<Node, Node> parents = new HashMap<>();
-        BlockPos core = searchCore(level, device, parents, null);
+        BlockPos core = searchCore(level, device, parents, null, MAX_NODES_FROM_CORE);
         if (core == null) {
             return List.of();
         }

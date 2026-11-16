@@ -21,7 +21,11 @@ import net.minecraft.resources.ResourceLocation;
  * {@code path} zijn de plekken langs de weg, elke plek naast de vorige.
  */
 public record CableTrafficPayload(boolean power, List<BlockPos> path, int ticks) implements CustomPacketPayload {
-    /** Zo veel plekken mag een weg hooguit hebben (de netten zoeken er hooguit 512 af). */
+    /**
+     * Zo veel plekken mag een weg in één bericht hooguit hebben. Een langere weg (hoofdstuk 124: een lange kabel) knipt
+     * lan/CableTraffic in stukken per speler; dit getal blijft zo, zodat een speler met een oudere versie het bericht nog
+     * kan lezen.
+     */
     public static final int MAX_PATH = 600;
 
     public static final Type<CableTrafficPayload> TYPE =

@@ -53,8 +53,13 @@ import org.jetbrains.annotations.Nullable;
  * erin door (zie Cables). Een verborgen kabel zie je alleen met de bril op.
  */
 public class CableSpoolItem extends Item {
-    /** Waar elke speler de vorige tick zijn kabel legde (zolang hij de knop vasthoudt). */
-    private static final Map<UUID, BlockPos> DRAWING = new HashMap<>();
+    /**
+     * Waar elke speler de vorige tick zijn kabel liet ophouden (zolang hij de knop vasthoudt): het laatste stukje dat er echt
+     * ligt, en in welke wereld (Overworld, Nether...).
+     */
+    private record Anchor(net.minecraft.resources.ResourceKey<Level> dimension, BlockPos pos) {}
+
+    private static final Map<UUID, Anchor> DRAWING = new HashMap<>();
     /** Zo ver kun je een kabel leggen of oprapen (blokken). */
     private static final double REACH = 6.0;
 
@@ -81,6 +86,12 @@ public class CableSpoolItem extends Item {
                 }
             }
             return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
+        }
+        // Hoofdstuk 124: elke keer dat je de knop indrukt, begint een nieuwe lijn waar je kijkt. Raakte je vorige rol leeg
+        // terwijl je trok, dan liet Minecraft de knop los zonder releaseUsing: de lijn begon dan bij een oude plek, en de nieuwe
+        // rol legde een kabel van daar naar waar je nu kijkt (met een gat ertussen).
+        if (!level.isClientSide) {
+            DRAWING.remove(player.getUUID());
         }
         player.startUsingItem(hand);
         return InteractionResultHolder.consume(stack);
@@ -112,11 +123,15 @@ public class CableSpoolItem extends Item {
         if (cell == null) {
             return;
         }
-        BlockPos last = DRAWING.get(player.getUUID());
+        Anchor anchor = DRAWING.get(player.getUUID());
+        BlockPos last = anchor != null && anchor.dimension() == serverLevel.dimension() ? anchor.pos() : null;
         List<BlockPos> path = last == null ? List.of(cell) : PowerCables.route(serverLevel, last, cell);
         int placed = 0;
+        // Hoofdstuk 124: tot waar de kabel nu echt ligt. Raakt de rol leeg halverwege, dan is dat niet waar je kijkt.
+        BlockPos reached = null;
         for (BlockPos pos : path) {
             if (Cables.has(kind, serverLevel, pos)) {
+                reached = pos;
                 continue;
             }
             if (!player.getAbilities().instabuild && stack.isEmpty()) {
@@ -125,12 +140,17 @@ public class CableSpoolItem extends Item {
             // Het stuk kabel is van jou: met de bril zie je het door een muur heen, een ander niet (hoofdstuk 92).
             if (Cables.add(kind, serverLevel, pos, player.getUUID())) {
                 placed++;
+                reached = pos;
                 if (!player.getAbilities().instabuild) {
                     stack.shrink(1);
                 }
             }
         }
-        DRAWING.put(player.getUUID(), cell);
+        if (reached != null) {
+            DRAWING.put(player.getUUID(), new Anchor(serverLevel.dimension(), reached));
+        } else {
+            DRAWING.remove(player.getUUID());
+        }
         if (placed > 0 && remaining % 3 == 0) {
             serverLevel.playSound(null, cell, SoundEvents.WOOL_PLACE, SoundSource.BLOCKS, 0.4f, 1.3f);
         }
@@ -138,7 +158,9 @@ public class CableSpoolItem extends Item {
 
     @Override
     public void releaseUsing(ItemStack stack, Level level, LivingEntity entity, int timeLeft) {
-        DRAWING.remove(entity.getUUID());
+        if (!level.isClientSide) { // alleen de server houdt dit bij (in singleplayer delen spel en server deze lijst)
+            DRAWING.remove(entity.getUUID());
+        }
     }
 
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {

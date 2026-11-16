@@ -143,8 +143,14 @@ public final class Cables {
         synchronized (LOCK) {
             TO_SYNC.add(new Pending(chunk, kind));
         }
-        // Een stroomnet (en straks een netwerk) is anders geworden: opnieuw zoeken.
-        PowerGrid.changed();
+        // Een stroomnet of een netwerk is anders geworden: opnieuw zoeken. Hoofdstuk 124: een netwerkkabel geeft geen stroom
+        // door, dus die laat het stroomnet met rust (anders zocht elk groot stroomnet zich opnieuw af terwijl iemand ergens een
+        // netwerkkabel trok, zie PowerGrid.grid).
+        if (kind.carriesPower()) {
+            PowerGrid.changed();
+        } else {
+            com.senne.imttech.lan.LanGrid.changed();
+        }
     }
 
     // ================================================================ Doorsturen

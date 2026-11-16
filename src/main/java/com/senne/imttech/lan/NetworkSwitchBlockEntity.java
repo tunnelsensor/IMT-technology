@@ -22,7 +22,7 @@ import org.jetbrains.annotations.Nullable;
  * De binnenkant van een Network Switch (zie NetworkSwitchBlock): zijn naam ("Switch 1"), wie hem neerzette, en om de
  * twee seconden: heeft hij stroom? Dat staat dan in het blok (ONLINE), zodat de lampjes branden en het netwerk erdoor kan.
  */
-public class NetworkSwitchBlockEntity extends BlockEntity implements BaseTrust.Placed, NamedDevice {
+public class NetworkSwitchBlockEntity extends BlockEntity implements BaseTrust.Placed, NamedDevice, DevicePower.Idle {
     private String name = "";
     private @Nullable UUID owner;
     private String ownerName = "";
@@ -81,8 +81,23 @@ public class NetworkSwitchBlockEntity extends BlockEntity implements BaseTrust.P
         }
         boolean online = !LanGrid.required() || block.upkeep() <= 0 || PowerGrid.pay(level, worldPosition, block.upkeep());
         if (online != state.getValue(NetworkSwitchBlock.ONLINE)) {
-            level.setBlock(worldPosition, state.setValue(NetworkSwitchBlock.ONLINE, online), Block.UPDATE_CLIENTS);
+            // Hoofdstuk 124: zonder vormupdates naar de buren (zie CameraBlockEntity.updateOnline).
+            level.setBlock(worldPosition, state.setValue(NetworkSwitchBlock.ONLINE, online),
+                    Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
             LanGrid.changed();
+        }
+    }
+
+    /**
+     * Hoofdstuk 124: draait zijn stuk wereld niet (onderweg op een lange kabel, dat NetworkKeeper alleen geladen houdt), dan
+     * kijkt zijn kern om de twee seconden of hij aan kan (zie DevicePower.refreshIdle). Anders liet een switch die ooit geen
+     * stroom had, het net erachter nooit meer door. Alleen aan, nooit uit (zie DevicePower.Idle).
+     */
+    @Override
+    public void refreshIdle(ServerLevel level) {
+        BlockState state = getBlockState();
+        if (state.getBlock() instanceof NetworkSwitchBlock && !state.getValue(NetworkSwitchBlock.ONLINE)) {
+            updateOnline(level);
         }
     }
 

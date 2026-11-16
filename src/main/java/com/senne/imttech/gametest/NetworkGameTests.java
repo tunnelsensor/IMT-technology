@@ -1463,8 +1463,13 @@ public final class NetworkGameTests {
         check(Routers.autoJoin(level, helper.absolutePos(fresh), null) == null, "Een lezer die al verbonden is, verbond nog eens");
         BlockPos extra = new BlockPos(8, 3, 12);
         helper.setBlock(extra, ModBlocks.KEYCARD_READER.get());
-        withRouterLimits(32, 5, () -> check(Routers.autoJoin(level, helper.absolutePos(extra), null) == null
-                && links.routerOf(helper.absolutePos(extra)) == null, "Een lezer ging aan een volle router"));
+        // Bereik 8 (hoofdstuk 124): de arena's liggen 29 blokken uit elkaar, en met 32 blokken nam de lezer soms de router van
+        // een test ernaast (die niet vol is). Elke test die erbij komt, schuift de arena's op.
+        withRouterLimits(8, 5, () -> {
+            BlockPos joined = Routers.autoJoin(level, helper.absolutePos(extra), null);
+            check(joined == null && links.routerOf(helper.absolutePos(extra)) == null,
+                    "Een lezer ging aan een volle router (hij ging aan " + joined + ", deze router: " + router + ")");
+        });
         // Alleen aan een router die je mag instellen: die van Alice neemt wat Bob neerzet niet, wat Alice neerzet wel.
         ((RouterBlockEntity) helper.getBlockEntity(routerPos)).setOwner(alice);
         check(Routers.autoJoin(level, helper.absolutePos(extra), bob) == null, "De lezer van een ander ging aan de router van Alice");
@@ -1797,5 +1802,354 @@ public final class NetworkGameTests {
             ImtConfig.Network.OLD_RELAYS_NEED_NETWORK = before;
         }
         helper.succeed();
+    }
+
+    // ================================================================ Hoofdstuk 124: lange kabels
+
+    /**
+     * Een lange kabel als slang door de arena: lagen op hoogte 2, 4, 6 ... (met een lege laag ertussen), in elke laag rijen
+     * van x = 1 tot 22 op z = 1, 3, 5 ... 21 (met een lege rij ertussen), aan de uiteinden met één stukje aan elkaar. Zo
+     * raakt geen stuk een ander dan zijn twee buren: het is één kabel van 252 stukjes per laag, zonder kortere weg. Geeft
+     * alle plekken op volgorde, vanaf (1, 2, 1).
+     */
+    private static List<BlockPos> snake(int layers) {
+        List<BlockPos> path = new java.util.ArrayList<>();
+        int x = 1;
+        int z = 1;
+        for (int layer = 0; layer < layers; layer++) {
+            int y = 2 + 2 * layer;
+            if (layer > 0) {
+                path.add(new BlockPos(x, y - 1, z)); // omhoog naar de volgende laag
+            }
+            int dz = layer % 2 == 0 ? 2 : -2;
+            for (int row = 0; row < 11; row++) {
+                if (row > 0) {
+                    path.add(new BlockPos(x, y, z + dz / 2)); // naar de volgende rij
+                    z += dz;
+                }
+                int toX = x == 1 ? 22 : 1;
+                path.add(new BlockPos(x, y, z));
+                while (x != toX) {
+                    x += Integer.signum(toX - x);
+                    path.add(new BlockPos(x, y, z));
+                }
+            }
+        }
+        return path;
+    }
+
+    /**
+     * Hoofdstuk 124, jouw melding: "mijn poe kabel is connected en is heel lang hierdoor denk ik dat die niet verbind terwijl
+     * die wel vast hangt". Een PoE-kabel van 758 stukjes (een slang door de arena) van een kern met stroom naar een camera
+     * en een keycardlezer. Het netwerk vond ze al (de kern zoekt 8192 stukjes ver, hoofdstuk 94), maar de stroom zocht
+     * vanaf het apparaat maar 512 stukjes ver: de camera stond in Devices met "no power". Nu hebben ze allebei stroom, en
+     * zoekt de lezer het net niet opnieuw af (de camera deed dat al). Een Crusher aan dezelfde kabel krijgt nog steeds niets
+     * (PoE voedt alleen netwerkblokken). Knip je de kabel door, dan is alles weg; leg je het stukje terug, dan is het er weer.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 40, batch = "lan")
+    public static void a_long_poe_cable_brings_power_and_network(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(0, 2, 1), null);
+        List<BlockPos> path = snake(3);
+        for (BlockPos pos : path) {
+            Cables.add(CableKind.POE, level, helper.absolutePos(pos));
+        }
+        BlockPos end = path.getLast();
+        BlockPos camera = placeCamera(helper, end.east());
+        BlockPos reader = end.west().above();
+        helper.setBlock(reader, ModBlocks.KEYCARD_READER.get());
+        BlockPos crusher = end.above();
+        helper.setBlock(crusher, ModBlocks.CRUSHER.get());
+        BlockPos cameraAbs = helper.absolutePos(camera);
+        BlockPos readerAbs = helper.absolutePos(reader);
+        helper.runAfterDelay(2, () -> {
+            check(path.size() > PowerGrid.MAX_CABLES + 200, "De slang is te kort om iets te bewijzen: " + path.size() + " stukjes");
+            check(path.getFirst().equals(new BlockPos(1, 2, 1)) && end.equals(new BlockPos(22, 6, 21)),
+                    "De slang loopt anders dan gedacht: " + path.getFirst() + " tot " + end);
+            // Elke plek van de slang raakt alleen zijn twee buren (anders is het een net met een kortere weg).
+            java.util.Set<BlockPos> cells = new java.util.HashSet<>(path);
+            for (int i = 0; i < path.size(); i++) {
+                int touching = 0;
+                for (Direction direction : Direction.values()) {
+                    if (cells.contains(path.get(i).relative(direction))) {
+                        touching++;
+                    }
+                }
+                check(touching == (i == 0 || i == path.size() - 1 ? 1 : 2), "De slang raakt zichzelf bij " + path.get(i));
+            }
+            // De stroom: de camera vindt hem (het hele net één keer afgezocht), de lezer daarna zonder opnieuw te zoeken.
+            PowerGrid.changed();
+            int searches = PowerGrid.gridSearches();
+            long started = System.nanoTime();
+            int forCamera = PowerGrid.available(level, cameraAbs);
+            long micros = (System.nanoTime() - started) / 1000;
+            ImtTech.LOGGER.info("Hoofdstuk 124: stroom voor een camera aan {} stukjes PoE-kabel gezocht in {} microseconden",
+                    path.size(), micros);
+            check(forCamera > 0, "De camera aan " + path.size() + " stukjes PoE-kabel krijgt geen stroom");
+            check(PowerGrid.gridSearches() == searches + 1,
+                    "Voor de camera werd het hele net " + (PowerGrid.gridSearches() - searches) + " keer afgezocht");
+            check(PowerGrid.available(level, readerAbs) > 0, "De lezer aan het eind van de PoE-kabel krijgt geen stroom");
+            check(PowerGrid.gridSearches() == searches + 1, "De lezer zocht het hele net opnieuw af, terwijl de camera dat al deed");
+            check(PowerGrid.available(level, helper.absolutePos(crusher)) == 0, "Een Crusher aan een lange PoE-kabel krijgt er stroom van");
+            check(com.senne.imttech.lan.DevicePower.hasPower(level, readerAbs), "De lezer aan de lange PoE-kabel heeft geen stroom");
+            // Het netwerk: de camera en de lezer horen bij de kern, en de camera heeft beeld.
+            check(coreOf(helper, camera) == core, "De camera aan de lange PoE-kabel hangt niet aan de kern");
+            check(coreOf(helper, reader) == core, "De lezer aan de lange PoE-kabel hangt niet aan de kern");
+            CameraBlockEntity lens = (CameraBlockEntity) helper.getBlockEntity(camera);
+            lens.updateOnline(level, cameraAbs, level.getBlockState(cameraAbs));
+            check(level.getBlockState(cameraAbs).getValue(CameraBlock.ONLINE), "De camera aan de lange PoE-kabel heeft geen beeld");
+            SecurityDevices.forget(level, core);
+            check(statusOf(level, core, cameraAbs).equals("online"), "Devices zegt bij de camera: " + statusOf(level, core, cameraAbs));
+            String readerStatus = statusOf(level, core, readerAbs);
+            check(!readerStatus.isEmpty() && !readerStatus.equals("no power"), "Devices zegt bij de lezer: '" + readerStatus + "'");
+            // Het signaal vindt zijn weg ook over de hele kabel (vroeger hooguit 512 stukjes: op een lange kabel liep er nooit
+            // iets, en leek hij niet aangesloten).
+            List<BlockPos> signal = LanGrid.path(level, readerAbs);
+            check(signal.size() > LanGrid.MAX_NODES && signal.getFirst().equals(readerAbs)
+                            && signal.getLast().equals(core.getBlockPos()),
+                    "De weg van het signaal van de lezer naar de kern klopt niet (" + signal.size() + " plekken)");
+            // Wat een speler ervan krijgt (zie CableTraffic.part): bij de lezer de eerste plekken (daar vertrekt het vakje), bij
+            // de kern de laatste. Je spel tekent alleen een weg waarvan het midden dichtbij is; een korte weg helemaal.
+            List<BlockPos> atReader = com.senne.imttech.lan.CableTraffic.part(signal, true, 48);
+            List<BlockPos> atCore = com.senne.imttech.lan.CableTraffic.part(signal, false, 48);
+            check(atReader.size() == 64 && atReader.getFirst().equals(readerAbs) && atCore.size() == 64
+                            && atCore.getLast().equals(core.getBlockPos())
+                            && com.senne.imttech.lan.CableTraffic.part(signal.subList(0, 10), true, 48).size() == 10,
+                    "Het stuk van de weg per speler klopt niet (" + atReader.size() + " en " + atCore.size() + " plekken)");
+            // De gele streepjes zoeken bewust maar 512 stukjes ver (de nalezing: anders zocht elk apparaat aan het eind van een
+            // lange kabel om de twee seconden de hele kabel af): op deze kabel dus geen.
+            check(PowerGrid.path(level, cameraAbs).isEmpty(), "De gele streepjes zochten verder dan 512 stukjes");
+            // Doorknippen in het midden: geen stroom en geen netwerk meer.
+            BlockPos middle = helper.absolutePos(path.get(path.size() / 2));
+            Cables.remove(CableKind.POE, level, middle);
+            check(PowerGrid.available(level, cameraAbs) == 0, "Een doorgeknipte PoE-kabel geeft nog stroom");
+            check(coreOf(helper, camera) == null, "Een doorgeknipte PoE-kabel geeft nog netwerk");
+            lens.updateOnline(level, cameraAbs, level.getBlockState(cameraAbs));
+            check(!level.getBlockState(cameraAbs).getValue(CameraBlock.ONLINE), "De camera heeft nog beeld na het doorknippen");
+            // Het stukje terug: alles weer.
+            Cables.add(CableKind.POE, level, middle);
+            check(PowerGrid.available(level, cameraAbs) > 0, "Met het stukje terug krijgt de camera geen stroom");
+            check(coreOf(helper, camera) == core, "Met het stukje terug hangt de camera niet aan de kern");
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Hoofdstuk 124, gevonden door de nalezing: een Network Switch die bovenop een getekende PoE-kabel staat, zocht zijn eigen
+     * stroom over het stukje kabel onder zich, en dat gaat alle kanten op, ook door een poort die uit staat. Dat antwoord
+     * kwam in het gedeelde geheugen van het hele net, en dan kreeg een camera achter de dichte poort toch stroom. Nu niet:
+     * de switch heeft zijn stroom (van de kant van de kern), de camera achter de poort die uit staat niet; zet je de poort
+     * aan, dan wel. De switch staat 200 stukjes van de kern, zodat er achter hem nog meer dan 512 liggen (anders zoekt de
+     * camera alles zelf af, en gebruikt hij het gedeelde geheugen niet).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "lan")
+    public static void a_switch_on_a_long_cable_keeps_its_port_shut(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ImtTechGameTests.placeCore(helper, new BlockPos(0, 2, 1), null);
+        List<BlockPos> path = snake(3);
+        for (BlockPos pos : path) {
+            Cables.add(CableKind.POE, level, helper.absolutePos(pos));
+        }
+        int at = 200;
+        BlockPos sw = path.get(at);
+        BlockPos swAbs = helper.absolutePos(sw);
+        Direction toFar = Direction.fromDelta(path.get(at + 1).getX() - sw.getX(), path.get(at + 1).getY() - sw.getY(),
+                path.get(at + 1).getZ() - sw.getZ());
+        helper.setBlock(sw, ModBlocks.NETWORK_SWITCH.get()); // bovenop de kabel: die blijft eronder liggen
+        check(Cables.has(CableKind.POE, level, swAbs), "De PoE-kabel onder de switch is weg");
+        com.senne.imttech.lan.NetworkSwitches.setPort(level, swAbs, toFar, false);
+        BlockPos cameraAbs = helper.absolutePos(placeCamera(helper, path.getLast().east()));
+        check(path.size() - at - 1 > PowerGrid.MAX_CABLES, "Achter de switch ligt te weinig kabel om iets te bewijzen");
+        PowerGrid.changed();
+        check(PowerGrid.available(level, swAbs) > 0, "De switch krijgt zelf geen stroom van de kant van de kern");
+        check(PowerGrid.available(level, cameraAbs) == 0,
+                "Achter een poort die uit staat, kreeg de camera toch stroom (via het stukje kabel onder de switch)");
+        com.senne.imttech.lan.NetworkSwitches.setPort(level, swAbs, toFar, true);
+        check(PowerGrid.available(level, cameraAbs) > 0, "Met de poort aan krijgt de camera geen stroom");
+        helper.succeed();
+    }
+
+    /**
+     * Hoofdstuk 124: hetzelfde voor een gewone stroomkabel. Een Crusher aan het eind van een stroomkabel van 758 stukjes
+     * krijgt de stroom van de generator aan het begin (vroeger zocht hij maar 512 stukjes ver); doorgeknipt niet meer.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "lan")
+    public static void a_long_power_cable_brings_power(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        generator(helper, new BlockPos(0, 2, 1));
+        List<BlockPos> path = snake(3);
+        for (BlockPos pos : path) {
+            Cables.add(CableKind.POWER, level, helper.absolutePos(pos));
+        }
+        BlockPos crusherAbs = helper.absolutePos(path.getLast().east());
+        helper.setBlock(path.getLast().east(), ModBlocks.CRUSHER.get());
+        check(PowerGrid.available(level, crusherAbs) > 0, "Een Crusher aan " + path.size() + " stukjes stroomkabel krijgt geen stroom");
+        Cables.remove(CableKind.POWER, level, helper.absolutePos(path.get(path.size() / 2)));
+        check(PowerGrid.available(level, crusherAbs) == 0, "Een doorgeknipte stroomkabel geeft nog stroom");
+        helper.succeed();
+    }
+
+    /**
+     * Hoofdstuk 124: een lange kabel leg je met veel rollen. Raakte je rol leeg terwijl je trok, dan liet Minecraft de knop
+     * los zonder dat de rol het merkte: met een nieuwe rol begon de lijn dan bij de plek waar je kéék toen hij leeg raakte
+     * (niet waar de kabel ophield), en legde hij een kabel van daar naar waar je nu kijkt, met een gat ertussen. Nu begint
+     * elke keer dat je de knop indrukt een nieuwe lijn waar je kijkt, en kun je de kabel gewoon afmaken.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "lan")
+    public static void an_empty_spool_leaves_no_stray_cable(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer player = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(8, 4, 8), "lan-spool-empty");
+        player.getAbilities().instabuild = false; // echt survival: elk stukje kost een kabel
+        for (int x = 4; x <= 14; x++) {
+            helper.setBlock(new BlockPos(x, 2, 8), Blocks.STONE);
+        }
+        CableSpoolItem spool = (CableSpoolItem) ModItems.NETWORK_CABLE.get();
+        java.util.function.IntPredicate laid = x -> Cables.has(CableKind.NETWORK, level, helper.absolutePos(new BlockPos(x, 3, 8)));
+        // Twee kabels: één op x = 6, dan kijk je naar x = 9: hij legt x = 7 en is dan leeg.
+        ItemStack two = new ItemStack(ModItems.NETWORK_CABLE.get(), 2);
+        player.setItemInHand(InteractionHand.MAIN_HAND, two);
+        spool.use(level, player, InteractionHand.MAIN_HAND);
+        ZoneGameTests.lookDownAt(helper, player, new BlockPos(6, 2, 8));
+        spool.onUseTick(level, player, two, 0);
+        ZoneGameTests.lookDownAt(helper, player, new BlockPos(9, 2, 8));
+        spool.onUseTick(level, player, two, 0);
+        check(two.isEmpty() && laid.test(6) && laid.test(7) && !laid.test(8) && !laid.test(9),
+                "De eerste rol legde niet precies x = 6 en 7 (nog " + two.getCount() + " over)");
+        // Zoals in het spel: met een lege hand houdt het trekken op zonder releaseUsing. Een nieuwe rol, en je kijkt naar
+        // x = 12: alleen daar komt een stukje, geen kabel van x = 9 naar x = 12.
+        ItemStack more = new ItemStack(ModItems.NETWORK_CABLE.get(), 16);
+        player.setItemInHand(InteractionHand.MAIN_HAND, more);
+        spool.use(level, player, InteractionHand.MAIN_HAND);
+        ZoneGameTests.lookDownAt(helper, player, new BlockPos(12, 2, 8));
+        spool.onUseTick(level, player, more, 0);
+        check(laid.test(12) && !laid.test(9) && !laid.test(10) && !laid.test(11),
+                "De nieuwe rol legde een kabel vanaf een oude plek (9: " + laid.test(9) + ", 10: " + laid.test(10) + ", 11: "
+                        + laid.test(11) + ")");
+        // Dezelfde lijn terug naar x = 8: nu ligt de kabel van 6 tot 12 zonder gat, voor precies 5 kabels.
+        ZoneGameTests.lookDownAt(helper, player, new BlockPos(8, 2, 8));
+        spool.onUseTick(level, player, more, 0);
+        spool.releaseUsing(more, level, player, 0);
+        for (int x = 6; x <= 12; x++) {
+            check(laid.test(x), "Er zit een gat in de kabel op x = " + x);
+        }
+        check(more.getCount() == 11, "De nieuwe rol gebruikte " + (16 - more.getCount()) + " kabels in plaats van 5");
+        helper.succeed();
+    }
+
+    /** Houdt een stuk wereld alleen geladen (niet draaiend), zoals NetworkKeeper dat met het net van een kern doet. */
+    private static final net.minecraft.server.level.TicketType<net.minecraft.world.level.ChunkPos> STILL =
+            net.minecraft.server.level.TicketType.create("imttech_test_still",
+                    java.util.Comparator.comparingLong(net.minecraft.world.level.ChunkPos::toLong), 600);
+
+    /**
+     * Hoofdstuk 124: aan het eind van een lange kabel staat een apparaat vaak in een stuk wereld dat NetworkKeeper alleen
+     * geladen houdt. Daar tikken geen blokken, dus een camera of switch werkte zijn stand nooit meer bij: een camera die één
+     * keer "no power" had, bleef zo in Devices staan, en een switch zonder stroom liet het net erachter nooit meer door. Nu
+     * doet de kern het om de twee seconden. In een stuk wereld 448 blokken hiervandaan, waar niets draait, zet hij eerst de
+     * switch aan en de ronde daarna de camera erachter. In de arena (die wel draait) laat hij de camera met rust: die doet
+     * het zelf.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 200, batch = "lan")
+    public static void the_core_updates_devices_in_a_chunk_that_stands_still(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        SecurityCoreBlockEntity nearCore = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), null);
+        line(helper, CableKind.POE, new BlockPos(3, 3, 2), new BlockPos(5, 3, 2));
+        BlockPos nearCamera = placeCamera(helper, new BlockPos(6, 3, 2));
+        BlockPos nearCameraAbs = helper.absolutePos(nearCamera);
+        // Ver weg: 448 blokken ten westen van deze test (de tests liggen in rijen naar het oosten, dus daar staat geen
+        // arena): een kern met een generator, een PoE-kabel naar een switch en verder naar een camera, allebei nog uit.
+        BlockPos here = helper.absolutePos(new BlockPos(2, 3, 2));
+        net.minecraft.world.level.ChunkPos chunk = new net.minecraft.world.level.ChunkPos((here.getX() - 448) >> 4, here.getZ() >> 4);
+        BlockPos corePos = new BlockPos(chunk.getMinBlockX() + 2, here.getY(), chunk.getMinBlockZ() + 8);
+        BlockPos switchPos = corePos.east(4);
+        BlockPos cameraPos = corePos.east(8);
+        level.getChunkSource().addRegionTicket(STILL, chunk, 0, chunk);
+        helper.startSequence()
+                .thenWaitUntil(() -> check(level.getChunkSource().getChunkNow(chunk.x, chunk.z) != null,
+                        "Het stuk wereld ver weg laadt niet"))
+                .thenExecute(() -> {
+                    try {
+                        // De arena draait: daar werkt de kern de camera niet bij (hij heeft wel stroom en netwerk). Zijn eigen
+                        // tick kan hem intussen al aan gezet hebben: eerst weer uit, en dan in dezelfde tick kijken.
+                        check(level.shouldTickBlocksAt(nearCameraAbs), "De arena draait niet: dan bewijst dit deel niets");
+                        level.setBlock(nearCameraAbs, level.getBlockState(nearCameraAbs).setValue(CameraBlock.ONLINE, false),
+                                net.minecraft.world.level.block.Block.UPDATE_CLIENTS);
+                        com.senne.imttech.lan.DevicePower.refreshIdle(level, nearCore.getBlockPos());
+                        check(!level.getBlockState(nearCameraAbs).getValue(CameraBlock.ONLINE),
+                                "De kern werkte een camera bij die zelf tikt (dubbel)");
+                        ((CameraBlockEntity) helper.getBlockEntity(nearCamera))
+                                .updateOnline(level, nearCameraAbs, level.getBlockState(nearCameraAbs));
+                        check(level.getBlockState(nearCameraAbs).getValue(CameraBlock.ONLINE),
+                                "De camera in de arena heeft geen stroom of netwerk");
+                        // Ver weg, waar niets draait.
+                        check(!level.shouldTickBlocksAt(cameraPos), "Het stuk wereld ver weg draait toch: dan bewijst deze test niets");
+                        level.setBlockAndUpdate(corePos.below(), ModBlocks.HEAT_GENERATOR.get().defaultBlockState());
+                        ((ChargerBlockEntity) level.getBlockEntity(corePos.below())).fill(20_000);
+                        level.setBlockAndUpdate(corePos, ModBlocks.SECURITY_CORE.get().defaultBlockState());
+                        SecurityCoreBlockEntity core = (SecurityCoreBlockEntity) level.getBlockEntity(corePos);
+                        for (int i = 1; i <= 7; i++) {
+                            if (i != 4) {
+                                Cables.add(CableKind.POE, level, corePos.east(i));
+                            }
+                        }
+                        level.setBlockAndUpdate(switchPos, ModBlocks.NETWORK_SWITCH.get().defaultBlockState());
+                        level.setBlockAndUpdate(cameraPos.below(), Blocks.STONE.defaultBlockState());
+                        level.setBlockAndUpdate(cameraPos, ModBlocks.SECURITY_CAMERA.get().defaultBlockState()
+                                .setValue(CameraBlock.FACE, AttachFace.FLOOR).setValue(CameraBlock.FACING, Direction.SOUTH));
+                        check(!level.getBlockState(switchPos).getValue(com.senne.imttech.lan.NetworkSwitchBlock.ONLINE)
+                                && !level.getBlockState(cameraPos).getValue(CameraBlock.ONLINE), "De switch of de camera stond al aan");
+                        // Eerste ronde van de kern: de switch krijgt stroom (de camera erachter hangt dan nog niet aan het net).
+                        core.powerTick(level);
+                        check(level.getBlockState(switchPos).getValue(com.senne.imttech.lan.NetworkSwitchBlock.ONLINE),
+                                "De kern zette de switch in het stilstaande stuk wereld niet aan");
+                        // De ronde daarna: ook de camera achter de switch.
+                        core.powerTick(level);
+                        check(level.getBlockState(cameraPos).getValue(CameraBlock.ONLINE),
+                                "De kern zette de camera in het stilstaande stuk wereld niet aan");
+                        SecurityDevices.forget(level, core);
+                        check(statusOf(level, core, cameraPos).equals("online"),
+                                "Devices zegt bij de camera ver weg: '" + statusOf(level, core, cameraPos) + "'");
+                        // De kern zet een apparaat ver weg alleen aan, nooit uit (de nalezing: daar ziet hij een batterij in het
+                        // stuk ernaast niet). Zonder generator blijven de switch en de camera dus aan tot hun eigen tick.
+                        level.setBlockAndUpdate(corePos.below(), Blocks.AIR.defaultBlockState());
+                        core.powerTick(level);
+                        check(level.getBlockState(switchPos).getValue(com.senne.imttech.lan.NetworkSwitchBlock.ONLINE)
+                                        && level.getBlockState(cameraPos).getValue(CameraBlock.ONLINE),
+                                "De kern zette een apparaat in het stilstaande stuk wereld uit");
+                        // De kern vergeet de verre stukken van zijn net niet als zijn zoektocht niet alles zag: een netwerkkabel
+                        // naar de rand van zijn stuk wereld, waarachter een stuk ligt dat niet geladen is.
+                        long known = net.minecraft.world.level.ChunkPos.asLong(chunk.x + 40, chunk.z);
+                        core.rememberNetwork(new long[] {chunk.toLong(), known}, false);
+                        for (int x = corePos.getX() - 1; x >= chunk.getMinBlockX(); x--) {
+                            Cables.add(CableKind.NETWORK, level, new BlockPos(x, corePos.getY(), corePos.getZ()));
+                        }
+                        check(!level.isLoaded(new BlockPos(chunk.getMinBlockX() - 1, corePos.getY(), corePos.getZ())),
+                                "Het stuk wereld naast het verre stuk is toch geladen: dan bewijst dit deel niets");
+                        LanGrid.changed();
+                        LanGrid.devicesOf(level, corePos);
+                        check(java.util.Arrays.stream(core.networkChunks()).anyMatch(c -> c == known),
+                                "Na een zoektocht die niet alles zag, vergat de kern een stuk van zijn net");
+                        // Zonder die kabel ziet de zoektocht alles: dan klopt de lijst precies, en valt het oude stuk eruit.
+                        for (int x = corePos.getX() - 1; x >= chunk.getMinBlockX(); x--) {
+                            Cables.remove(CableKind.NETWORK, level, new BlockPos(x, corePos.getY(), corePos.getZ()));
+                        }
+                        LanGrid.changed();
+                        LanGrid.devicesOf(level, corePos);
+                        check(java.util.Arrays.stream(core.networkChunks()).noneMatch(c -> c == known),
+                                "Na een zoektocht die alles zag, bleef een stuk staan waar het net niet meer komt");
+                    } finally {
+                        for (int x = corePos.getX() - 1; x >= chunk.getMinBlockX(); x--) {
+                            Cables.remove(CableKind.NETWORK, level, new BlockPos(x, corePos.getY(), corePos.getZ()));
+                        }
+                        for (int i = 1; i <= 7; i++) {
+                            Cables.remove(CableKind.POE, level, corePos.east(i));
+                        }
+                        for (BlockPos pos : List.of(cameraPos, cameraPos.below(), switchPos, corePos, corePos.below())) {
+                            level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+                        }
+                        level.getChunkSource().removeRegionTicket(STILL, chunk, 0, chunk);
+                    }
+                })
+                .thenSucceed();
     }
 }

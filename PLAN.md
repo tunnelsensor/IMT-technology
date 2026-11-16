@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 636 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 641 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -9655,6 +9655,114 @@ Mijn invulling (verander ik op jouw woord):
 Nog niet gedaan:
 - Niet zelf gespeeld, en nooit met een tweede speler (zie "Nog nooit in het spel bekeken").
 
+### 124. Een lange PoE-kabel geeft weer stroom (15 november)
+
+Jouw melding: "Mijn poe kabel is connected en is heel lang hierdoor denk ik dat die niet verbind terwijl die wel vast hangt
+kun je dat eens na kijken en oplossen aub".
+
+- [x] **De oorzaak**: het netwerk zoekt vanaf een kern 8192 stukjes kabel ver (hoofdstuk 94), maar de stroom zocht vanaf een
+      apparaat maar 512 stukjes ver (`PowerGrid.MAX_CABLES`). Een camera, lezer, torentje of switch aan een PoE-kabel van
+      meer dan zo'n 500 stukjes hing dus wel aan het net (hij stond in Devices), maar kreeg geen stroom: "no power", geen
+      beeld. Met veel kabels rond de kern kon dat al bij een kortere kabel, want die 512 stukjes worden over alle takken
+      verdeeld. Een gewone lange stroomkabel had hetzelfde.
+- [x] **Het hele net in één keer** (`PowerGrid.grid`): zoekt een apparaat zijn 512 stukjes af en is het net groter, dan
+      zoeken we het hele net af waar het op aansluit, tot 16384 stukjes (`MAX_GRID`, twee keer zo ver als het netwerk), en
+      onthouden we bij elk stukje bij welk net het hoort. Een volgend apparaat aan hetzelfde net neemt dat antwoord over:
+      één keer zoeken voor iedereen eraan, anders zocht elk apparaat aan een groot net zelf de hele weg af. Een kleiner net
+      gaat zoals vroeger (de dichtstbijzijnde leverancier eerst). Een PoE-kabel voedt nog steeds alleen netwerkblokken.
+      Verandert er ergens een kabel, dan zoeken we opnieuw, net als vroeger. De stroom voor een camera aan 758 stukjes
+      PoE-kabel zoeken kost zo'n 2 milliseconden.
+- [x] **Apparaten die stilstaan** (`DevicePower.refreshIdle`, `DevicePower.Idle`): aan het eind van een lange kabel staat een
+      apparaat vaak in een stuk wereld dat NetworkKeeper alleen geladen houdt (hoofdstuk 94 en 120). Daar tikken blokken
+      niet, dus een camera, torentje, switch of router werkte zijn stand nooit bij: had een camera één keer "no power" (door
+      de grens van 512), dan bleef hij zo in Devices en op je schermmuur staan, en een switch zonder stroom liet het net
+      erachter nooit meer door. Nu kijkt de kern om de twee seconden voor ze (in zijn ronde voor de stroom), zolang hun stuk
+      wereld niet draait, en zet hij ze aan als het kan: alleen aan, nooit uit (daar ziet hij een batterij of zonnepaneel in
+      het stuk ernaast niet altijd). Draait hun stuk wereld wel, dan doen ze het zelf, aan en uit. Hun stand verandert
+      zonder updates naar de buren (`UPDATE_KNOWN_SHAPE`): aan de rand van zo'n stuk wereld zou de server anders het stuk
+      ernaast meteen moeten laden (dat hapert). Daarom ook niet de Camera Monitor en de Computer: die kijken naar de
+      monitoren naast zich en sturen hun buren een update.
+- [x] **Het signaal dat je ziet lopen** (`LanGrid.path`, `CableTraffic.send`): het witte of groene vakje zocht zijn weg
+      maar 512 stukjes ver, dus op een lange kabel liep er nooit iets, en leek een kabel die werkt niet aangesloten. Nu zoekt
+      het even ver als het net (en stopt bij de kern), en onthoudt de weg twee seconden (een diagram kan in één tick
+      tientallen keren accept() doen). En je spel tekent een weg alleen als het midden ervan binnen 64 blokken ligt: van
+      een weg van meer dan zo'n 130 blokken zag je daarom ook vroeger al niets. Nu krijgt een speler bij een lange weg het
+      stuk bij zijn eigen kant (64 plekken): het vakje vertrekt bij jou, of komt binnen een paar seconden bij je aan. Het
+      bericht zelf bleef hetzelfde: vrienden met de vorige versie kunnen nog op je server. De gele streepjes van de stroom
+      zoeken bewust nog maar 512 stukjes ver (zie de nalezing hieronder).
+- [x] **De kern vergeet zijn verre stukken niet meer** (`SecurityCoreBlockEntity.rememberNetwork`): na elke zoektocht
+      onthield de kern alleen de stukken wereld die hij toen zag. Was het verre deel van je kabel even niet geladen (de
+      desktop dicht, of net na een herstart van de server), dan vergat hij het, en zocht NetworkKeeper de kabel daarna stuk
+      voor stuk opnieuw af: twee seconden per stuk, minuten voor een lange kabel. Nu houdt hij de stukken die hij al kende
+      erbij als zijn zoektocht niet alles zag; zag hij wel alles, dan klopt de lijst precies (een weggehaalde kabel valt
+      eruit). NetworkKeeper laadt die stukken dan allemaal tegelijk; de zoektocht van het netwerk slaat een stuk dat nog van
+      de schijf komt over (`LanGrid.ready`) in plaats van erop te wachten, en de volgende ronde neemt het mee.
+- [x] **Een netwerkkabel laat het stroomnet met rust** (`Cables.store`): elk stukje kabel dat je legde, liet alle
+      stroomnetten opnieuw zoeken, ook een netwerkkabel (die geeft geen stroom door). Met het afzoeken van een heel net
+      kostte dat bij een groot net te veel terwijl iemand ergens een netwerkkabel trok.
+- [x] **Een gat bij een lege kabelrol** (`CableSpoolItem`): een lange kabel leg je met veel rollen. Raakte je rol leeg
+      terwijl je trok, dan liet Minecraft de knop los zonder dat de rol het merkte; met de volgende rol begon de lijn dan bij
+      de plek waar je kéék toen hij leeg raakte, en legde hij een kabel van daar naar waar je nu kijkt, met een gat
+      ertussen. Nu begint elke keer dat je de knop indrukt een nieuwe lijn waar je kijkt, onthoudt de rol tot waar de kabel
+      echt ligt, en ook in welke wereld (na de Nether begint hij niet bij een plek in de Overworld).
+- [x] **Teksten**: LEESMIJ (bij de PoE-kabel: "Een lange kabel mag", en bij de camera's).
+- [x] **Tests** (batch lan, geen nieuwe batchnaam): `a_long_poe_cable_brings_power_and_network` (een slang van 758 stukjes
+      PoE-kabel door de arena: de camera en een lezer aan het eind hebben stroom en netwerk, de lezer zoekt het net niet
+      opnieuw af, een Crusher krijgt niets, het signaal vindt zijn weg over de hele kabel en elke speler krijgt het stuk bij
+      zijn kant, de streepjes zoeken niet verder dan 512, doorknippen en terugleggen), `a_long_power_cable_brings_power`
+      (hetzelfde met een stroomkabel), `a_switch_on_a_long_cable_keeps_its_port_shut` (een switch bovenop de kabel, met de
+      poort naar de camera uit: de switch heeft stroom, de camera niet; poort aan, dan wel),
+      `the_core_updates_devices_in_a_chunk_that_stands_still` (448 blokken ver, in een stuk wereld dat alleen geladen is: de
+      kern zet eerst de switch aan en de ronde daarna de camera erachter, en zet ze niet meer uit als de generator weg is; in
+      de arena laat hij een camera die zelf tikt met rust; en de kern vergeet een ver stuk niet na een zoektocht langs een
+      stuk wereld dat niet geladen is, wel na een zoektocht die alles zag) en `an_empty_spool_leaves_no_stray_cable` (de rol
+      raakt leeg halverwege; de volgende rol legt geen kabel vanaf een oude plek, en de kabel is daarna zonder gat af te
+      maken). Nagerekend dat elke test op de code van vóór dit hoofdstuk faalt (niet gedraaid: een paar ervan gebruiken
+      functies die er toen nog niet waren). En `routers_and_devices_find_each_other` (hoofdstuk 112) faalde nu één keer:
+      hij keek of een lezer niet aan een volle router gaat, maar zocht routers tot 32 blokken ver, en met mijn tests erbij
+      schoof de arena van een andere test met een router binnen dat bereik (de arena's liggen 29 blokken uit elkaar). Die
+      controle zoekt nu 8 blokken ver.
+- [x] **Eerst gezocht** (vóór het bouwen): vier lezers, elk met een eigen kijk (de stroom, het netwerk en de geladen stukken
+      wereld, de apparaten zelf, het leggen en tekenen van de kabel), zo'n 1,25 miljoen tokens. Ze vonden allemaal de grens
+      van 512, en daarnaast de stilstaande apparaten, het vergeten van verre stukken, het onzichtbare signaal en het gat bij
+      een lege rol.
+- [x] **Nalezing**: drie lezers (het stroomnet, de stilstaande apparaten en het onthouden van stukken, de rol/het
+      signaal/de tests), met per lezer een controleur die elke vondst tegen de code en de bronnen van Minecraft nakeek (6
+      agents, zo'n 1,46 miljoen tokens, 40 minuten). Bevestigd en opgelost: (1) een switch bovenop een getekende kabel zocht
+      zijn eigen stroom over het stukje kabel onder zich, dat alle kanten op gaat, ook door een dichte poort, en dat antwoord
+      kwam in het gedeelde geheugen: een camera achter de dichte poort kreeg zo toch stroom. Nu nemen we voor zo'n poort de
+      plekken die je vanaf dat stukje bereikt (`PowerGrid.entries`); (2) de kern zette apparaten ver weg ook uit, terwijl hij
+      daar hun eigen batterij in het stuk ernaast niet ziet (een switch viel zo uit, met het hele net erachter): nu alleen
+      aan; (3) hun stand veranderen stuurde nog vormupdates naar de buren, en aan de rand van een stuk wereld laadde de
+      server dan het stuk ernaast: nu `UPDATE_KNOWN_SHAPE`; (4) met de onthouden stukken laadt NetworkKeeper er soms veel
+      tegelijk, en de volgende zoektocht wachtte op stukken die nog laadden: nu slaat hij die over; (5) je spel tekende de
+      stukken van 600 plekken nooit (het midden lag te ver weg): nu een kort stuk bij jouw kant; (6) de gele streepjes zochten
+      voor elk apparaat aan een lange kabel om de twee seconden de hele kabel af (tien lezers: tientallen milliseconden in
+      één tick): terug naar 512; (7) elke kabel, ook een netwerkkabel, liet alle grote stroomnetten opnieuw zoeken: een
+      netwerkkabel nu niet meer; (8) de weg van een signaal werd bij elk signaal opnieuw gezocht: nu twee seconden onthouden.
+      Niet gedaan (de controleur vond het "laag"): een eigen teller per wereld, en een rem op het opnieuw afzoeken van een
+      heel groot stroomnet terwijl iemand stroom- of PoE-kabel legt.
+- [x] **Volledige ronde**: 641 tests (636 + mijn 5), in een eigen worktree, met 192 batchnamen.
+
+Mijn invulling (verander ik op jouw woord):
+- **16384 stukjes** voor een heel stroomnet: een PoE-kabel zo lang als het netwerk reikt (8192), met de kabels van je basis
+  erbij. Een nog groter net krijgt de leveranciers die binnen die 16384 stukjes liggen.
+- **De gele streepjes** van de stroom (G > Information > Power flow) zoeken nog steeds maar 512 stukjes ver: op een heel
+  lange kabel zie je ze niet lopen, de stroom komt er wel.
+- **De kern zet een apparaat ver weg alleen aan** (en dan betaalt het één keer zijn stroom). Uit gaat het in zijn eigen
+  tick, als er iemand in de buurt is, of als je het uitzet. Verliest een camera ver weg zijn stroom terwijl niemand er is,
+  dan blijft hij dus "online" tot iemand in de buurt komt (zoals vroeger).
+- **Een stuk wereld dat nog laadt**, slaat de zoektocht van het netwerk over; het stroomnet wacht er wel op (dat was al zo).
+- **Wat niet verandert**: een kern zonder zone houdt zijn net alleen geladen terwijl iemand de desktop open heeft of bij
+  een schermmuur staat (hoofdstuk 94). Sta je zelf bij een camera ver weg, dan is je basis niet geladen en heeft die camera
+  geen netwerk; met een zone (hoofdstuk 120) blijft alles geladen. En het net van één kern houdt hooguit 256 stukken wereld
+  geladen (zo'n 4000 blokken kabel recht door).
+- Geen nieuwe versie: een reparatie.
+
+Nog niet gedaan:
+- Niet in het spel bekeken (zie "Nog nooit in het spel bekeken"). De reparatie zit in de server: op jullie server moet de
+  nieuwe jar ook staan.
+
 ### 127. Tab vult geen voorbeeldgetal meer in: de cursor staat tussen de haakjes (16 november)
 
 Jouw wens: "kun je zorgen dat bij het gebruiken van tab bij aanvullen van code wil ik dat overal waar een voorbeel getal
@@ -9698,6 +9806,11 @@ wait(x)".
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **Een lange PoE-kabel (hoofdstuk 124)**: alleen met tests gecontroleerd. Probeer: (1) je lange PoE-kabel van
+      vandaag: staat de camera (of lezer) aan het eind nu op "online" in Devices, en heeft hij beeld? (2) Staat hij ver
+      weg, open dan de desktop bij je basis: komt hij binnen een paar seconden op "online", ook als je er niet bij bent
+      geweest? (3) Haal je kaart langs een lezer aan het eind: zie je het vakje vertrekken? (4) Merk je lag als je een heel
+      lange kabel legt?
 - [ ] **Tab zonder voorbeeldgetal (hoofdstuk 127)**: alleen met een test gecontroleerd. Probeer in de app Logic, in een
       blok: (1) typ `wa`, druk op Ctrl+Spatie en dan op Tab: staat er `wait()` met de cursor tussen de haakjes? (2) typ
       `pul`, Ctrl+Spatie, Tab, en kies een apparaat met Tab: staat de cursor daarna in `pulse("Lamp", |)`?

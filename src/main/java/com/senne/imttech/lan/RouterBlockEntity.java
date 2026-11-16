@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
  * hij stroom? Dat staat dan in het blok (ONLINE), zodat de lampjes branden en het netwerk erdoor kan. Wie er draadloos aan
  * hangt, staat niet hier maar in {@link RouterLinks} (één lijst voor de hele wereld).
  */
-public class RouterBlockEntity extends BlockEntity implements BaseTrust.Placed, NamedDevice {
+public class RouterBlockEntity extends BlockEntity implements BaseTrust.Placed, NamedDevice, DevicePower.Idle {
     private String name = "";
     private @Nullable UUID owner;
     private String ownerName = "";
@@ -82,8 +82,23 @@ public class RouterBlockEntity extends BlockEntity implements BaseTrust.Placed, 
         }
         boolean online = !LanGrid.required() || block.upkeep() <= 0 || PowerGrid.pay(level, worldPosition, block.upkeep());
         if (online != state.getValue(RouterBlock.ONLINE)) {
-            level.setBlock(worldPosition, state.setValue(RouterBlock.ONLINE, online), Block.UPDATE_CLIENTS);
+            // Hoofdstuk 124: zonder vormupdates naar de buren (zie CameraBlockEntity.updateOnline).
+            level.setBlock(worldPosition, state.setValue(RouterBlock.ONLINE, online),
+                    Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
             LanGrid.changed();
+        }
+    }
+
+    /**
+     * Hoofdstuk 124: draait zijn stuk wereld niet (aan het eind van een lange kabel, dat NetworkKeeper alleen geladen houdt),
+     * dan kijkt zijn kern om de twee seconden of hij aan kan (zie DevicePower.refreshIdle). Anders liet een router die ooit
+     * geen stroom had, zijn apparaten nooit meer op het net. Alleen aan, nooit uit (zie DevicePower.Idle).
+     */
+    @Override
+    public void refreshIdle(ServerLevel level) {
+        BlockState state = getBlockState();
+        if (state.getBlock() instanceof RouterBlock && !state.getValue(RouterBlock.ONLINE)) {
+            updateOnline(level);
         }
     }
 

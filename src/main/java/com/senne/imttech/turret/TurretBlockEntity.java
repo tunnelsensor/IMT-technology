@@ -50,7 +50,7 @@ import org.jetbrains.annotations.Nullable;
  * In JOUW SPEL draait de kop naar dat doelwit (zie clientTick en TurretRenderer). De server
  * vertelt alleen WIE het doelwit is; het draaien zelf rekent je spel uit, zo loopt het soepel.
  */
-public class TurretBlockEntity extends BlockEntity {
+public class TurretBlockEntity extends BlockEntity implements com.senne.imttech.lan.DevicePower.Idle {
     private @Nullable UUID ownerId;
     private String ownerName = "";
     private int laserCooldown;
@@ -176,9 +176,24 @@ public class TurretBlockEntity extends BlockEntity {
                         || com.senne.imttech.security.SecurityCores.deviceCore(level, worldPosition) != null);
         if (online != state.getValue(TurretBlock.ONLINE)) {
             state = state.setValue(TurretBlock.ONLINE, online);
-            level.setBlock(worldPosition, state, Block.UPDATE_CLIENTS);
+            // Hoofdstuk 124: zonder vormupdates naar de buren (zie CameraBlockEntity.updateOnline).
+            level.setBlock(worldPosition, state, Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
         }
         return state;
+    }
+
+    /**
+     * Hoofdstuk 124: draait zijn stuk wereld niet (aan het eind van een lange kabel, dat NetworkKeeper alleen geladen
+     * houdt), dan kijkt zijn kern om de twee seconden of hij aan kan (zie DevicePower.refreshIdle), zodat hij in Devices
+     * niet "no power" blijft zeggen. Alleen aan, nooit uit (zie DevicePower.Idle). Schieten doet hij daar niet: dat doet
+     * hij alleen in zijn eigen tick.
+     */
+    @Override
+    public void refreshIdle(ServerLevel level) {
+        BlockState state = getBlockState();
+        if (state.getBlock() instanceof TurretBlock && !state.getValue(TurretBlock.ONLINE)) {
+            refreshOnline(level);
+        }
     }
 
     private double laserRange() {

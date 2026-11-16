@@ -863,6 +863,9 @@ een **Router** (zie hieronder).
   PoE-kabels, en een camera aan een PoE-kabel heeft beeld zonder eigen stroomkabel. Een PoE-kabel
   sluit alleen op netwerkapparaten aan: een generator ertegen voedt hem niet, en een Crusher of een
   ander blok zonder netwerk haalt er geen stroom uit.
+- **Een lange kabel mag.** De kern zoekt zijn net tot 8192 stukjes kabel ver (alle takken samen), en de stroom gaat even
+  ver mee, over een PoE-kabel en over een gewone stroomkabel (sinds hoofdstuk 124; vroeger hield de stroom na 512 stukjes
+  op, en stond een camera aan een lange PoE-kabel wel in Devices, maar met "no power").
 - **Network Switch** (ijzer, netwerkkabels, redstone en een Computer Chip): een punt waar netwerk- en
   PoE-kabels van alle zes kanten samenkomen, zoals de stroomkast. Achter het deurtje (rechtsklik) zet
   je **elke poort aan of uit**; een poort die uit staat, knipt de tak erachter af. De switch heeft
@@ -938,9 +941,12 @@ grote beeld, waar je hem draait en kantelt.
   wereld rond de camera's die je bekijkt (de blokken, het licht, kisten en de koppen van torentjes, en wie er rondloopt), en je
   spel tekent het beeld daaruit. Dat werkt ook met **Sodium**. Een nieuw beeld staat even op **CONNECTING...** tot het eerste
   stukje wereld binnen is, en vult zich dan in een paar tellen.
-- **Een lange kabel.** Zolang iemand je net gebruikt (de desktop open, of bij een schermmuur), houdt de server de stukken
-  wereld van je kabels geladen, zodat een camera aan het eind van een lange kabel erbij blijft horen, ook als daar niemand is.
-  Daar tikt niets extra's: een boerderij ver weg gaat er niet van draaien, en dieren daar staan stil tot er iemand komt.
+- **Een lange kabel.** Zolang iemand je net gebruikt (de desktop open, of bij een schermmuur), en altijd als je kern een zone
+  heeft, houdt de server de stukken wereld van je kabels geladen, zodat een camera aan het eind van een lange kabel erbij
+  blijft horen, ook als daar niemand is. Daar tikt niets extra's: een boerderij ver weg gaat er niet van draaien, en dieren
+  daar staan stil tot er iemand komt. Omdat blokken daar zelf niet tikken, kijkt je kern om de twee seconden voor ze of je
+  camera's, torentjes, switches en routers daar stroom en netwerk hebben (hoofdstuk 124): zo staat een camera ver weg in
+  Devices niet op "no power" als hij gewoon werkt.
 - **Hoe ver hij kijkt**: `cameraFeedDistance` in `imttech-client.toml` (standaard 48 blokken), tot hooguit
   `cameraFeedMax` onder `[network]` in `config/imttech.toml` (64, de grens van de server).
 - **Een naam** ("Lobby") geef je in een aambeeld, op de desktop (Rename bij het grote beeld), of met **sneak + rechtsklik met

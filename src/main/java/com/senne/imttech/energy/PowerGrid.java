@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,12 +38,25 @@ import org.jetbrains.annotations.Nullable;
  * - Het zoeken kost wat werk, dus we onthouden het resultaat per apparaat. Komt er ergens een
  *   kabel of leverancier bij of gaat er een weg, dan verhogen we {@link #changed()} en zoeken we
  *   de volgende keer opnieuw.
+ * - Hoofdstuk 124: is een net groter dan een apparaat zelf afzoekt (een lange kabel), dan zoeken we het hele
+ *   net één keer af, voor alle apparaten eraan samen (zie {@link #grid}).
  */
 public final class PowerGrid {
     private PowerGrid() {}
 
-    /** Zoveel kabels volgen we hooguit vanaf één apparaat (tegen eindeloos lange netten). */
+    /**
+     * Zoveel kabels volgen we vanaf één apparaat. Is zijn net groter (een lange kabel, of een basis vol kabels), dan zoeken
+     * we het hele net één keer af, voor alle apparaten eraan samen (zie {@link #grid}).
+     */
     public static final int MAX_CABLES = 512;
+    /**
+     * Zo groot mag een heel net zijn dat we in één keer afzoeken (hoofdstuk 124, jouw melding: "mijn poe kabel is connected
+     * en is heel lang hierdoor denk ik dat die niet verbind"). Het netwerk zoekt vanaf een kern 8192 stukjes ver
+     * (LanGrid.MAX_NODES_FROM_CORE), maar de stroom zocht vanaf een apparaat maar 512 ver: een camera aan het eind van een
+     * lange PoE-kabel stond zo wel in je desktop, maar had "no power". Nu twee keer zo ver als het netwerk: een PoE-kabel
+     * zo lang als het netwerk reikt, met de kabels van je basis erbij.
+     */
+    public static final int MAX_GRID = 2 * com.senne.imttech.lan.LanGrid.MAX_NODES_FROM_CORE;
     /** Na zo veel ticks zoeken we sowieso opnieuw (bijvoorbeeld als er een stuk wereld laadde). */
     private static final int CACHE_TICKS = 200;
 
@@ -52,6 +66,24 @@ public final class PowerGrid {
     private record Found(int version, long gameTime, List<BlockPos> sources) {}
 
     private static final Map<ResourceKey<Level>, Map<BlockPos, Found>> CACHE = new HashMap<>();
+
+    /**
+     * Een heel net (hoofdstuk 124): de leveranciers die je bereikt vanaf elke plek die we bij het afzoeken volgden, en
+     * wanneer dat was. Eén keer zoeken voor alle apparaten aan dat net samen: anders zocht elk apparaat aan een groot net
+     * zelf de hele weg af, en dat zou de server laten haperen.
+     */
+    private record Grid(long gameTime, List<BlockPos> sources) {}
+
+    /**
+     * Per wereld: bij welk net elke gevolgde plek hoorde. Apart voor apparaten die stroom uit een PoE-kabel mogen halen en
+     * voor de andere (zie {@link #takesPoe}): voor die laatste houdt elk net op bij een PoE-kabel.
+     */
+    private static final Map<ResourceKey<Level>, Map<Node, Grid>> GRIDS = new HashMap<>();
+    private static final Map<ResourceKey<Level>, Map<Node, Grid>> POE_GRIDS = new HashMap<>();
+    /** De stand van {@link #version} bij het laatste afzoeken: veranderde er sindsdien iets, dan vergeten we alle netten. */
+    private static int gridsVersion = -1;
+    /** Hoe vaak we een heel net afzochten (voor de tests: een tweede apparaat aan hetzelfde net zoekt niet opnieuw). */
+    private static int gridSearches;
 
     /** Per apparaat: wat het nog schuldig is, minder dan 1 (zie {@link #pay}). */
     private static final Map<ResourceKey<Level>, Map<BlockPos, Double>> OWED = new HashMap<>();
@@ -224,7 +256,7 @@ public final class PowerGrid {
         Found found = perLevel.get(device);
         long now = level.getGameTime();
         if (found == null || found.version != version || now - found.gameTime > CACHE_TICKS) {
-            found = new Found(version, now, search(level, device, null));
+            found = new Found(version, now, search(level, device));
             perLevel.put(device.immutable(), found);
         }
         return found.sources;
@@ -263,11 +295,83 @@ public final class PowerGrid {
      *       apparaat dat stroom zoekt zelf geen netwerkblok, dan slaan we elke PoE-kabel over (ook verderop, achter een
      *       rack): zo krijgt het nooit stroom via PoE.</li>
      * </ul>
+     *
+     * Hoofdstuk 124: we volgen vanaf het apparaat {@link #MAX_CABLES} plekken. Is het net groter, dan horen er ook alle
+     * leveranciers bij van het hele net waar het apparaat op aansluit (zie {@link #grid}).
      */
-    private static List<BlockPos> search(Level level, BlockPos device, @Nullable Map<Node, Node> parents) {
+    private static List<BlockPos> search(Level level, BlockPos device) {
         List<BlockPos> sources = new ArrayList<>();
         Set<Node> seen = new HashSet<>();
         ArrayDeque<Node> todo = new ArrayDeque<>();
+        boolean poe = begin(level, device, null, sources, seen, todo);
+        // Waar het apparaat zelf op aansluit: de kabels en blokken waar de zoektocht begint (voor het hele net, hieronder).
+        List<Node> entries = entries(level, device, poe, todo);
+        int followed = 0;
+        while (!todo.isEmpty() && followed < MAX_CABLES) {
+            look(level, todo.poll(), poe, sources, seen, todo, false, null);
+            followed++;
+        }
+        if (todo.isEmpty()) {
+            return List.copyOf(sources);
+        }
+        // Hoofdstuk 124: het net is groter dan we vanaf hier volgen (een lange kabel). Dan het hele net waar het apparaat op
+        // aansluit, één keer voor iedereen eraan. De leveranciers die we hierboven al vonden (de dichtstbijzijnde) blijven
+        // vooraan.
+        Set<BlockPos> all = new LinkedHashSet<>(sources);
+        for (Node entry : entries) {
+            all.addAll(grid(level, entry, poe).sources());
+        }
+        all.remove(device.immutable()); // een apparaat is nooit zijn eigen leverancier (een batterijpoort op een groot net)
+        return List.copyOf(all);
+    }
+
+    /**
+     * Waar we het hele net van een apparaat vanaf zoeken (zie {@link #grid}): de plekken waar het zelf op aansluit
+     * ({@code afterStart}, wat {@link #begin} vond).
+     *
+     * Met één uitzondering, gevonden door de nalezing: een poort (een Network Switch, een lichtschakelaar of een stroomkast)
+     * die bovenop een getekende kabel staat. Dat stukje kabel gebruikt alleen de poort zelf: van buiten komt niemand erin
+     * (look slaat een kabel op de plek van een poort over), maar vanaf daar ga je alle kanten op, ook door een poort die uit
+     * staat. Wat je vanaf dat stukje bereikt, hangt dus wel af van wie het vroeg, en mag niet in het gedeelde geheugen: anders
+     * kreeg een camera achter een dichte poort toch stroom. Daarom nemen we in zijn plaats de plekken die je vanaf dat stukje
+     * bereikt; die gelden voor iedereen.
+     */
+    private static List<Node> entries(Level level, BlockPos device, boolean poe, ArrayDeque<Node> afterStart) {
+        if (!gate(level.getBlockState(device))) {
+            return List.copyOf(afterStart);
+        }
+        List<Node> entries = new ArrayList<>();
+        Set<Node> seen = new HashSet<>(afterStart);
+        seen.add(new Node(device.immutable(), null));
+        for (Node entry : afterStart) {
+            if (entry.kind() != null && entry.pos().equals(device)) {
+                ArrayDeque<Node> beyond = new ArrayDeque<>();
+                look(level, entry, poe, new ArrayList<>(), seen, beyond, false, null);
+                entries.addAll(beyond);
+            } else {
+                entries.add(entry);
+            }
+        }
+        return entries;
+    }
+
+    /**
+     * Beslist dit blok zelf wat er door een kabel op zijn plek gaat (een Network Switch, een lichtschakelaar of een
+     * stroomkast)? Dan volgen we een kabel op zijn plek niet vanaf een buur (zie {@link #look}).
+     */
+    private static boolean gate(BlockState state) {
+        return state.getBlock() instanceof com.senne.imttech.lan.NetworkSwitchBlock
+                || state.getBlock() instanceof com.senne.imttech.light.LightSwitchBlock
+                || state.getBlock() instanceof PowerCabinetBlock;
+    }
+
+    /**
+     * Het begin van elke zoektocht vanaf een apparaat: de kabels waar het zelf op staat, en zijn zes buren (zie
+     * {@link #look}). Wat het daar vindt, staat daarna in {@code todo} (en een leverancier ertegen in {@code sources}).
+     * Geeft terug of deze zoektocht over PoE-kabels mag (zie {@link #takesPoe}).
+     */
+    private static boolean begin(Level level, BlockPos device, @Nullable Map<Node, Node> parents, List<BlockPos> sources,
+                                 Set<Node> seen, ArrayDeque<Node> todo) {
         Node start = new Node(device.immutable(), null);
         seen.add(start);
         boolean poe = takesPoe(level.getBlockState(device));
@@ -283,12 +387,77 @@ public final class PowerGrid {
             }
         }
         look(level, start, poe, sources, seen, todo, true, parents);
+        return poe;
+    }
+
+    /**
+     * De dichtstbijzijnde leverancier van dit apparaat, langs de kabels, voor de gele streepjes ({@link #path}): hooguit
+     * {@link #MAX_CABLES} plekken ver, en we stoppen bij de eerste. Null als er geen is (zo dichtbij).
+     *
+     * Hoofdstuk 124: de stroom zelf komt nu van veel verder (zie {@link #grid}), maar de streepjes blijven dichtbij. Ze zijn
+     * alleen om naar te kijken, en de nalezing rekende uit dat tien lezers aan het eind van een lange kabel anders om de twee
+     * seconden elk de hele kabel opnieuw afzochten (tientallen milliseconden in één tick).
+     */
+    private static @Nullable BlockPos nearest(Level level, BlockPos device, Map<Node, Node> parents) {
+        List<BlockPos> sources = new ArrayList<>();
+        Set<Node> seen = new HashSet<>();
+        ArrayDeque<Node> todo = new ArrayDeque<>();
+        boolean poe = begin(level, device, parents, sources, seen, todo);
         int followed = 0;
-        while (!todo.isEmpty() && followed < MAX_CABLES) {
+        while (sources.isEmpty() && !todo.isEmpty() && followed < MAX_CABLES) {
             look(level, todo.poll(), poe, sources, seen, todo, false, parents);
             followed++;
         }
-        return List.copyOf(sources);
+        return sources.isEmpty() ? null : sources.getFirst();
+    }
+
+    /**
+     * Het hele net waar deze plek in ligt (hoofdstuk 124): alle leveranciers die je vanaf hier bereikt, hooguit
+     * {@link #MAX_GRID} plekken ver. Uit het geheugen als een ander apparaat hetzelfde net al afzocht en er sindsdien niets
+     * veranderde: elke plek die we volgen, onthoudt bij welk net hij hoort.
+     *
+     * Dit volgt dezelfde regels als de zoektocht vanaf een apparaat (zie {@link #look}), alleen begint het bij een kabel of
+     * blok waar dat apparaat op aansluit. Wat je zo bereikt, hangt niet af van welk apparaat het vroeg: een stroomkast,
+     * switch of lichtschakelaar laat het in beide richtingen even goed door (of niet), en een PoE-kabel sluit vanaf beide
+     * kanten alleen op netwerkblokken aan. Daarom mag een volgend apparaat aan hetzelfde net het antwoord gewoon overnemen.
+     */
+    private static Grid grid(Level level, Node entry, boolean poe) {
+        if (gridsVersion != version) {
+            GRIDS.clear();
+            POE_GRIDS.clear();
+            gridsVersion = version;
+        }
+        Map<Node, Grid> perLevel = (poe ? POE_GRIDS : GRIDS).computeIfAbsent(level.dimension(), key -> new HashMap<>());
+        long now = level.getGameTime();
+        Grid grid = perLevel.get(entry);
+        if (grid != null && now - grid.gameTime() <= CACHE_TICKS && now >= grid.gameTime()) {
+            return grid;
+        }
+        if (perLevel.size() > 4 * MAX_GRID) {
+            perLevel.clear(); // plekken van netten waar al lang niemand meer naar vroeg
+        }
+        gridSearches++;
+        List<BlockPos> sources = new ArrayList<>();
+        Set<Node> seen = new HashSet<>();
+        ArrayDeque<Node> todo = new ArrayDeque<>();
+        List<Node> followed = new ArrayList<>();
+        seen.add(entry);
+        todo.add(entry);
+        while (!todo.isEmpty() && followed.size() < MAX_GRID) {
+            Node at = todo.poll();
+            followed.add(at);
+            look(level, at, poe, sources, seen, todo, false, null);
+        }
+        grid = new Grid(now, List.copyOf(sources));
+        for (Node node : followed) {
+            perLevel.put(node, grid);
+        }
+        return grid;
+    }
+
+    /** Hoe vaak we tot nu toe een heel net afzochten (zie {@link #grid}). Voor de tests. */
+    public static int gridSearches() {
+        return gridSearches;
     }
 
     /**
@@ -303,16 +472,17 @@ public final class PowerGrid {
     /**
      * De weg langs de kabels van de dichtstbijzijnde leverancier van dit apparaat naar het apparaat: elke plek, van de
      * leverancier tot en met het apparaat. Leeg als het geen leverancier heeft. Voor de gele streepjes van de stroom die je
-     * over een kabel ziet lopen (hoofdstuk 38, zie lan/CableTraffic); dit wordt niet onthouden.
+     * over een kabel ziet lopen (hoofdstuk 38, zie lan/CableTraffic); dit wordt niet onthouden. Alleen dichtbij (zie
+     * {@link #nearest}): een leverancier verder dan {@link #MAX_CABLES} stukjes geeft wel stroom, maar geen streepjes.
      */
     public static List<BlockPos> path(Level level, BlockPos device) {
         Map<Node, Node> parents = new HashMap<>();
-        List<BlockPos> sources = search(level, device, parents);
-        if (sources.isEmpty()) {
+        BlockPos source = nearest(level, device, parents);
+        if (source == null) {
             return List.of();
         }
         List<BlockPos> path = new ArrayList<>();
-        for (Node at = new Node(sources.getFirst(), null); at != null; at = parents.get(at)) {
+        for (Node at = new Node(source, null); at != null; at = parents.get(at)) {
             // Een apparaat op een kabel is twee plekken in de zoektocht maar één plek in de wereld: die maar één keer.
             if (path.isEmpty() || !path.getLast().equals(at.pos())) {
                 path.add(at.pos());
@@ -352,9 +522,7 @@ public final class PowerGrid {
             BlockState state = level.getBlockState(next);
             // Een switch, een lichtschakelaar en een stroomkast beslissen zelf wat erdoor gaat (hieronder), ook als er een
             // getekende kabel door loopt.
-            boolean gate = state.getBlock() instanceof com.senne.imttech.lan.NetworkSwitchBlock
-                    || state.getBlock() instanceof com.senne.imttech.light.LightSwitchBlock
-                    || state.getBlock() instanceof PowerCabinetBlock;
+            boolean gate = gate(state);
             // Eerst de kabels op de buurplek: alleen dezelfde soort als waar we op lopen (hoofdstuk 85). Komen we uit een
             // blok, dan elke soort waar dat blok op aansluit (een PoE-kabel alleen bij een netwerkblok, en uit een switch
             // alleen een PoE-kabel).
@@ -443,6 +611,8 @@ public final class PowerGrid {
     /** Bij het afsluiten van de wereld: alles vergeten. */
     public static void clear() {
         CACHE.clear();
+        GRIDS.clear();
+        POE_GRIDS.clear();
         OWED.clear();
         USES.clear();
         FeBridge.clear();
