@@ -1007,6 +1007,65 @@ public sealed interface Expr {
         };
     }
 
+    /**
+     * Kan dit al uitgerekend worden voor er iets draait (een when-regel, hoofdstuk 135)? Alleen vaste waarden en namen uit
+     * {@code known} (de namen van bovenaan het programma, met hun beginwaarde). Geeft het eerste dat dat tegenhoudt: een
+     * naam zonder vaste beginwaarde ({@code i}), een gegeven ({@code card.name}) of een functie ({@code is_on(...)}); of
+     * null als het kan.
+     */
+    static @Nullable String notFixed(Expr expr, java.util.Set<String> known) {
+        return switch (expr) {
+            case Num n -> null;
+            case Str s -> null;
+            case Bool b -> null;
+            case Ref r -> known.contains(r.name()) ? null : r.name();
+            case Var v -> v.name();
+            case IsOn i -> "is_on(...)";
+            case Call c -> c.function().name + "(...)";
+            case In i -> "in " + i.where().code + "()";
+            case Neg n -> notFixed(n.inner(), known);
+            case Not n -> notFixed(n.inner(), known);
+            case Arith a -> firstNotFixed(known, List.of(a.left(), a.right()));
+            case Or o -> firstNotFixed(known, List.of(o.left(), o.right()));
+            case And a -> firstNotFixed(known, List.of(a.left(), a.right()));
+            case Compare c -> firstNotFixed(known, List.of(c.left(), c.right()));
+            case Template t -> firstNotFixed(known, t.parts());
+        };
+    }
+
+    private static @Nullable String firstNotFixed(java.util.Set<String> known, List<Expr> parts) {
+        for (Expr part : parts) {
+            String problem = notFixed(part, known);
+            if (problem != null) {
+                return problem;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Rekent een vaste waarde uit (zie {@link #notFixed}): een naam krijgt zijn beginwaarde uit {@code values}. Gegevens en
+     * functies komen hier niet voor (notFixed liet ze niet door).
+     */
+    static Object fixedValue(Expr expr, java.util.Map<String, Object> values) {
+        return eval(expr, new Facts() {
+            @Override
+            public Object value(String variable) {
+                return false;
+            }
+
+            @Override
+            public boolean isOn(String device) {
+                return false;
+            }
+
+            @Override
+            public @Nullable Object variable(String name) {
+                return values.get(name);
+            }
+        });
+    }
+
     /** Alle gegevens (card.valid, code, player.name...) die in deze voorwaarde voorkomen. */
     static java.util.Set<String> variables(Expr expr) {
         java.util.Set<String> names = new java.util.LinkedHashSet<>();

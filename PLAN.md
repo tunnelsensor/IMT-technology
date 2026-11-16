@@ -10443,11 +10443,59 @@ net gecrased en uit de game gestuurd" (met het rapport `disconnect-2026-11-16_16
   steeds 50: de berichten zijn precies hetzelfde gebleven). Maar je server draait 2.22.1 (protocol 49): op de server
   **en** bij al je vrienden moet de nieuwe jar.
 
+### 135. Een f-tekst werkt overal, ook in een when-regel (16 november)
+
+Jouw wens: "zorg dat een f string bij alles werkt niet enkel bij for loop".
+
+- [x] **Nagekeken waar het al werkte.** Een f-tekst is sinds hoofdstuk 131 gewoon tekst met namen erin, dus hij werkte
+      al op elke plek waar tekst mag, niet alleen in een lus. Met een proefprogramma van 29 gevallen nagelopen: bovenaan
+      (`prefix = f"gate {1}"`, ook uit een andere naam), in een when of def, in say/log/alarm/send, on/off/toggle/pulse,
+      is_on, if, while, een def-parameter (`open(f"Door {n}")`) en in een def zelf, order, activate/deactivate,
+      active(...), card.in_group(...), item(...) in een RC program, en genest (`f"a {f'b {n}'}"`). Alleen de
+      when-regel zelf wilde het niet (`when turned_on(f"gate {n}"):` gaf "needs a name between quotes"); en
+      `return f"..."` kan niet omdat een def in deze taal geen waarde teruggeeft (dat heeft niets met f-teksten te maken).
+- [x] **Nu ook in een when-regel**, met de namen van bovenaan je programma: `room = "Lab"` en dan
+      `when keycard(f"{room} door"):`. Ook `when turned_on("gate " + n):`, `when keycard(door):` met `door = "Vault"`
+      bovenaan, en de gedeelde namen van je global scripts. De parser rekent de naam meteen uit
+      (`ScriptParser.fixedTriggerName`, met `Expr.notFixed` en `Expr.fixedValue`): een when moet al weten op welk
+      apparaat (of welke opdracht of training) hij wacht voor er iets draait. Daarna is het een gewone vaste naam, dus
+      de rest van de mod (lezers, Devices, de telling op je datacenter, de blokjes) merkt geen verschil.
+      Mijn invulling: hij neemt de **beginwaarde** (zoals het bovenaan staat); krijgt `room` tijdens het draaien een
+      andere waarde, dan blijft de when op "Lab door" wachten. In de blokjes staat de uitgerekende naam; in de code zie
+      je je eigen f-tekst zolang die bij de blokjes past (zoals al je code).
+- [x] **Wat niet kan, zegt Check**: een naam die pas in de when bestaat (`when turned_on(f"gate {i}"):` zonder `i`
+      bovenaan) geeft "i has no value at the top of your program. A when line can only use names from the top (with
+      their starting value), like i = 1 above it"; `card.name` of `is_on(...)` in een when-regel geeft "... cannot be in
+      a when line: it only has a value once the when has started"; een losse onbekende naam blijft "Put names between
+      quotes"; een getal (`n = 1` en `when keycard(n):`) zegt dat er een naam (tekst) moet staan. Een naam die pas
+      ónder de when staat, telt niet (Check zegt dan ook "has no value at the top").
+- [x] **Uitleg**: in de app Logic (Help) zet de regel over tekst met namen de f voorop: `say(f"This is test {count}")`,
+      "Fills in the { }: a name or a sum. Anywhere text goes." (de uitleg over `$` en `{{` paste niet op de twee regels
+      onder het paneel). In een serverdiagram staat er een regel bij: `when keycard(f"{room}"):` (een klik zet
+      `room = "Lab"` en `when keycard(f"{room} door"):` in je code), "A when uses names from the top: room = "Lab" above
+      it." Alle labels en uitleg gemeten met het echte lettertype: ze passen. In LEESMIJ ("Tekst met namen erin" en
+      "Parameters") voorbeelden buiten een lus en het voorbeeld met `room` in een when-regel.
+- [x] **Tests** (in `logic_text_with_names`, geen nieuwe test): vijf when-regels (f-tekst met twee namen bovenaan,
+      `"gate " + n`, een losse naam bovenaan, een naam bovenaan die zelf een f-tekst is, `f"Lab"` zonder haakjes) wachten
+      op de goede naam; een gedeelde naam uit een global script werkt; vijf foutmeldingen (een naam uit een lus,
+      card.name, een losse onbekende naam, een getal, een naam die pas onder de when staat); en code met een f-tekst in
+      een when-regel en commentaar past bij zijn blokjes (dan toont de app Logic je eigen code).
+- [x] **Volledige ronde**: alle 663 tests groen (na het rebasen op de nalezing van hoofdstuk 132, die er 2 bij zette).
+      De twee rondes daarvoor (661 tests) waren elk 660 groen: telkens een andere bekende wiebeltest
+      (`raid_starts_outside_a_base`, daarna `raven_soldier_shoots`), die geen scripts gebruiken. Geen nieuwe test.
+- **Geen nieuwe versie**: een uitbreiding van wat er al was (2.23, het laatste getal telt vanzelf op). Het netwerkprotocol
+  is niet veranderd.
+- **Nog niet in het spel bekeken**: de nieuwe Help-regels (zie "Nog nooit in het spel bekeken").
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **Een f-tekst in een when-regel (hoofdstuk 135)**: met tests gecontroleerd, niet in het spel gezien. Probeer: (1) zet
+      bovenaan `room = "Lab"` en daaronder `when keycard(f"{room} door"):` met `accept()`: werkt je lezer "Lab door"? (2)
+      Help in een serverdiagram: staan `say(f"This is test {count}")` en `when keycard(f"{room}"):` er helemaal, en past
+      hun uitleg op twee regels?
 - [ ] **Lag en de kick tijdens een raid (hoofdstuk 134)**: met tests gecontroleerd, niet met een echte server en een
       echt spel. Probeer op je server met de nieuwe jar: (1) staat in het logboek van je spel bij het joinen
       "[config] ... numbers from imttech.toml loaded" (en niet meer "Cannot call getFullPath()")? (2) Vlieg naar een plek

@@ -46,6 +46,11 @@ public final class ScriptParser {
     private final Library library;
     /** Begint de code met de regel {@code global}? Dan is dit een global script (hoofdstuk 43). */
     private boolean global;
+    /**
+     * De beginwaarden van de namen bovenaan (en van de gedeelde namen van je global scripts) die er tot nu toe waren: daarmee
+     * rekenen we een f-tekst in een when-regel uit (hoofdstuk 135). Een naam zonder vaste beginwaarde staat er niet in.
+     */
+    private final java.util.Map<String, Object> topValues = new java.util.HashMap<>();
 
     private ScriptParser(String source, ProgramKind kind, Library library) {
         this.kind = kind;
@@ -129,6 +134,9 @@ public final class ScriptParser {
 
     private Script script() {
         List<Script.Top> items = new ArrayList<>();
+        for (Library.Shared shared : library.shared().values()) {
+            remember(shared.declaration());
+        }
         while (index < lines.size()) {
             Line line = lines.get(index);
             if (line.indent() != 0) {
@@ -148,7 +156,9 @@ public final class ScriptParser {
                 // count = 0 helemaal links: een naam voor het hele programma. Met een soort-woord (hoofdstuk 43):
                 // count: int = 0.
                 String[] parts = assignment(line);
-                items.add(new Script.Global(parts[0], parts[1], parts[2], line.number()));
+                Script.Global declaration = new Script.Global(parts[0], parts[1], parts[2], line.number());
+                items.add(declaration);
+                remember(declaration);
                 continue;
             }
             if (!first.is("when")) {
@@ -186,6 +196,7 @@ public final class ScriptParser {
                 throw new LogicException(line.number(), ScriptChecker.wrongKind(ScriptChecker.triggerWord(trigger), kind, trigger::allowedIn));
             }
             expectColon(line, call.end());
+            call = fixedTriggerName(line, trigger, call);
             Values values = values(line, trigger, call);
             check(line, trigger, values);
             if (trigger == Op.ORDERED && kind == ProgramKind.CAR && !"fetch".equals(values.text()) && !"store".equals(values.text())) {
@@ -199,6 +210,54 @@ public final class ScriptParser {
                     values.number() == null ? 0 : values.number(), body, line.number()));
         }
         return new Script(items, global);
+    }
+
+    /** Onthoudt de beginwaarde van een naam bovenaan (als die vast is), voor {@link #fixedTriggerName}. */
+    private void remember(Script.Global declaration) {
+        try {
+            Expr value = Expr.parseLenient(declaration.value(), false);
+            if (Expr.notFixed(value, topValues.keySet()) == null) {
+                topValues.put(declaration.name(), Expr.fixedValue(value, topValues));
+                return;
+            }
+        } catch (LogicException e) {
+            // Een fout in die regel zegt de rest van de controle al.
+        }
+        topValues.remove(declaration.name());
+    }
+
+    /**
+     * Een f-tekst, + of naam in een when-regel (hoofdstuk 135, jouw wens: "zorg dat een f string bij alles werkt niet
+     * enkel bij for loop"): {@code room = "Lab"} bovenaan en dan {@code when keycard(f"{room} door"):}. Een when moet al
+     * weten op welk apparaat (of welke opdracht of training) hij wacht voor er iets draait, dus rekenen we de naam nu uit,
+     * met de beginwaarden van de namen erboven. Daarna is het een gewone vaste naam: krijgt {@code room} tijdens het draaien
+     * een andere waarde, dan blijft de when op "Lab door" wachten. Een naam die pas in de when bestaat ({@code i} van een
+     * lus, {@code card.name}) kan hier dus niet, en dat zeggen we.
+     */
+    private Call fixedTriggerName(Line line, Op trigger, Call call) {
+        if (trigger.textArg() == Op.Arg.NONE || call.args().isEmpty() || call.args().getFirst() instanceof Expr.Str) {
+            return call;
+        }
+        Expr arg = call.args().getFirst();
+        String problem = Expr.notFixed(arg, topValues.keySet());
+        if (problem != null) {
+            if (arg instanceof Expr.Ref ref) {
+                throw new LogicException(line.number(), "Put names between quotes: " + trigger.code() + "(\"" + ref.name() + "\")");
+            }
+            if (problem.matches("[A-Za-z_][A-Za-z0-9_]*")) {
+                throw new LogicException(line.number(), problem + " has no value at the top of your program. A when line can"
+                        + " only use names from the top (with their starting value), like " + problem + " = 1 above it");
+            }
+            throw new LogicException(line.number(), problem + " cannot be in a when line: it only has a value once the when has"
+                    + " started. Use names from the top of your program, like room = \"Lab\" and then " + trigger.code()
+                    + "(f\"{room} door\")");
+        }
+        if (!(Expr.fixedValue(arg, topValues) instanceof String name)) {
+            throw new LogicException(line.number(), trigger.code() + " needs a name (text), like " + trigger.code() + "(\"Lab door\")");
+        }
+        List<Expr> args = new ArrayList<>(call.args());
+        args.set(0, new Expr.Str(name));
+        return new Call(call.name(), List.copyOf(args), call.end());
     }
 
     // ================================================================ def naam(parameters):

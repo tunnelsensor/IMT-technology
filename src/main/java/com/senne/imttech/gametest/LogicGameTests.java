@@ -528,6 +528,16 @@ public final class LogicGameTests {
         SecurityOs.handleAction(setup.owner(), new OsActionPayload(setup.coreAbs(), "logic_save", args));
     }
 
+    /** De naam waarop de eerste when in deze code wacht, zoals de parser hem uitrekende (hoofdstuk 135). */
+    private static String whenName(String code, com.senne.imttech.logic.program.Library library) {
+        for (Script.Top top : ScriptParser.parse(code, ProgramKind.SERVER, library).items()) {
+            if (top instanceof Script.Handler handler) {
+                return handler.text();
+            }
+        }
+        return "(geen when)";
+    }
+
     private static void expectError(String code, int line, String part) {
         try {
             ScriptParser.parse(code);
@@ -820,6 +830,35 @@ public final class LogicGameTests {
         String fromBlocks = ScriptPrinter.print(GraphConverter.toScript(userGraph));
         String fromSource = ScriptPrinter.print(ScriptParser.parseUnchecked(withGlobal, ProgramKind.SERVER, globalLibrary));
         check(fromSource.equals(fromBlocks), "Code met een global def paste niet bij zijn blokjes:\n" + fromSource + "\n" + fromBlocks);
+        // Hoofdstuk 135: een f-tekst, + of naam in een when-regel, met de beginwaarden van de namen bovenaan (en van de
+        // gedeelde namen van een global script). Een naam die pas in de when bestaat, kan daar niet.
+        String[][] whenCases = {
+                {"room = \"Lab\"\nn = 2\n\nwhen keycard(f\"{room} door {n}\"):\n    accept()\n", "Lab door 2"},
+                {"n = 1\n\nwhen turned_on(\"gate \" + n):\n    say(\"x\")\n", "gate 1"},
+                {"door = \"Vault\"\n\nwhen keycard(door):\n    accept()\n", "Vault"},
+                {"prefix = f\"Wing {1}\"\nroom = f\"{prefix} lab\"\n\nwhen keycard(f\"{room}\"):\n    accept()\n", "Wing 1 lab"},
+                {"when keycard(f\"Lab\"):\n    accept()\n", "Lab"},
+        };
+        for (String[] test : whenCases) {
+            String name = whenName(test[0], com.senne.imttech.logic.program.Library.EMPTY);
+            check(test[1].equals(name), "De when-regel in\n" + test[0] + "wacht op \"" + name + "\" in plaats van \"" + test[1] + "\"");
+        }
+        var wingGraph = GraphConverter.toGraph(ScriptParser.parse("global\n\nwing = \"B\"\n"), null);
+        var wingLibrary = com.senne.imttech.logic.program.Library.of(List.of(new com.senne.imttech.logic.program.LogicProgram(
+                "Global 2", true, wingGraph, "", ProgramKind.SERVER)), null);
+        String wingName = whenName("when keycard(f\"Wing {wing}\"):\n    accept()\n", wingLibrary);
+        check(wingName.equals("Wing B"), "Een gedeelde naam in een when-regel gaf \"" + wingName + "\"");
+        expectError("when turned_on(f\"gate {i}\"):\n    say(\"x\")\n", 1, "i has no value at the top of your program");
+        expectError("when keycard(f\"Card {card.name}\"):\n    accept()\n", 1, "card.name cannot be in a when line");
+        expectError("when keycard(door):\n    accept()\n", 1, "Put names between quotes: keycard(\"door\")");
+        expectError("n = 1\n\nwhen keycard(n):\n    accept()\n", 3, "keycard needs a name (text)");
+        expectError("when keycard(f\"{room}\"):\n    accept()\n\nroom = \"Lab\"\n", 1, "room has no value at the top");
+        // Je eigen code (met de f-tekst en je commentaar) past bij zijn blokjes: dan toont de app Logic je eigen code.
+        String withWhen = "room = \"Lab\"\n\nwhen keycard(f\"{room} door\"):  # mijn deur\n    accept()\n";
+        String whenFromBlocks = ScriptPrinter.print(GraphConverter.toScript(GraphConverter.toGraph(ScriptParser.parse(withWhen), null)));
+        String whenFromSource = ScriptPrinter.print(ScriptParser.parseUnchecked(withWhen, ProgramKind.SERVER));
+        check(whenFromSource.equals(whenFromBlocks), "Een f-tekst in een when paste niet bij zijn blokjes:\n" + whenFromSource
+                + "\n" + whenFromBlocks);
         helper.succeed();
     }
 
