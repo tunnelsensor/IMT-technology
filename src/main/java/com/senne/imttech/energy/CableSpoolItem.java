@@ -38,9 +38,11 @@ import org.jetbrains.annotations.Nullable;
  *   <li><b>Rechtermuisknop ingedrukt houden</b> en rondkijken: waar je kijkt komt een kabel te
  *       liggen, over de vloer, tegen een muur op, onder een plafond. Beweeg je sneller dan één
  *       blok per keer, dan trekt hij netjes een lijn van waar je was naar waar je nu kijkt.
- *       Elk stukje kost één kabel van de rol. Ligt het eind van je kabel te ver weg (meer dan 24
- *       blokken, of er is geen weg langs de oppervlakken), dan begint hij een nieuwe lijn waar je
- *       kijkt, en zegt hij dat boven je werkbalk (hoofdstuk 132).</li>
+ *       Elk stukje kost één kabel van de rol. Hij sluit aan op het dichtstbijzijnde stuk van de
+ *       kabel die je aan het trekken bent: kijk je terug naar je kabel, dan komt er niets bij.
+ *       Ligt je kabel te ver weg (meer dan 24 blokken langs de assen), of achter een muur van meer
+ *       dan 3 blokken zonder weg eromheen, dan begint hij een nieuwe lijn waar je kijkt, en zegt
+ *       hij dat boven je werkbalk (hoofdstuk 132).</li>
  *   <li><b>Shift + rechtsklik</b> op een kabel: oprapen (je krijgt hem terug). Alleen de soort van de rol in je
  *       hand: liggen er een stroom- en een netwerkkabel op dezelfde plek, dan raapt een netwerkrol alleen de
  *       netwerkkabel op.</li>
@@ -121,6 +123,11 @@ public class CableSpoolItem extends Item {
         if (!(level instanceof ServerLevel serverLevel) || !(entity instanceof ServerPlayer player)) {
             return;
         }
+        // Hoofdstuk 132 (nalezing): een toeschouwer legt geen kabel (wie met de knop ingedrukt naar spectator wisselde,
+        // bleef anders kabels leggen waar hij keek).
+        if (player.isSpectator()) {
+            return;
+        }
         BlockPos cell = lookedAtCell(player);
         // Hoofdstuk 132: ook niets als die plek buiten de wereld ligt (boven op een blok op de bouwhoogte): daar kan geen
         // kabel liggen, en de zoektocht ernaartoe zou elke tick vergeefs duizenden plekken aflopen.
@@ -129,10 +136,11 @@ public class CableSpoolItem extends Item {
         }
         Anchor anchor = DRAWING.get(player.getUUID());
         BlockPos last = anchor != null && anchor.dimension() == serverLevel.dimension() ? anchor.pos() : null;
-        // Hoofdstuk 132: ligt het eind van je kabel te ver weg (je keek even in de lucht en liep door, of je werd
-        // geteleporteerd), dan geeft route null: we beginnen een nieuwe lijn waar je kijkt. Vroeger trok hij dan een rechte
-        // lijn dwars door de muren, en ging je hele rol in één keer op.
-        List<BlockPos> path = last == null ? null : PowerCables.route(serverLevel, last, cell);
+        // Hoofdstuk 132: ligt je kabel te ver weg (je keek even in de lucht en liep door, of je werd geteleporteerd), of
+        // achter een dikke muur zonder weg eromheen, dan geeft route null: we beginnen een nieuwe lijn waar je kijkt. Vroeger
+        // trok hij dan een rechte lijn dwars door de muren, en ging je hele rol in één keer op. De route vertrekt van het
+        // dichtstbijzijnde stuk van je kabel (de nalezing): terugkijken legt geen tweede kabel naast de eerste.
+        List<BlockPos> path = last == null ? null : PowerCables.route(serverLevel, kind, last, cell);
         boolean newLine = last != null && path == null;
         if (path == null) {
             path = List.of(cell);
@@ -169,9 +177,27 @@ public class CableSpoolItem extends Item {
         if (placed > 0 && remaining % 3 == 0) {
             serverLevel.playSound(null, cell, SoundEvents.WOOL_PLACE, SoundSource.BLOCKS, 0.4f, 1.3f);
         }
-        // Hoofdstuk 132: zeg het als de kabel opnieuw begon, want er zit dan een gat tussen het oude eind en hier.
+        // Hoofdstuk 132: zeg het als de kabel opnieuw begon, want er zit dan een gat tussen het oude eind en hier. Met een
+        // Engelse tekst erbij voor een vriend met een oudere versie van de mod (die kent de sleutel niet).
         if (newLine && placed > 0) {
-            player.displayClientMessage(Component.translatable("message.imttech.cable.new_line"), true);
+            player.displayClientMessage(Component.translatableWithFallback(NEW_LINE_KEY,
+                    "New cable line: your cable ends too far away or behind a thick wall"), true);
+        }
+    }
+
+    /** De melding als de rol een nieuwe lijn begint (hoofdstuk 132; een test kijkt of hij komt). */
+    public static final String NEW_LINE_KEY = "message.imttech.cable.new_line";
+
+    /**
+     * Hoofdstuk 132 (nalezing): ga je met de knop ingedrukt door een portaal (of word je naar een andere wereld
+     * geteleporteerd), dan laat je spel de knop los, maar de server merkte dat niet: die bleef de rol gebruiken en legde
+     * kabel waar je keek, zonder dat je iets vasthield, tot je opnieuw klikte. Nu stopt de rol bij elke andere wereld.
+     */
+    public static void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        Player player = event.getEntity();
+        DRAWING.remove(player.getUUID());
+        if (player.isUsingItem() && player.getUseItem().getItem() instanceof CableSpoolItem) {
+            player.stopUsingItem();
         }
     }
 

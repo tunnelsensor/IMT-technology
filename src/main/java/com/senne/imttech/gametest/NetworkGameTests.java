@@ -2061,6 +2061,7 @@ public final class NetworkGameTests {
         ItemStack cables = new ItemStack(ModItems.POE_CABLE.get(), 64);
         player.setItemInHand(InteractionHand.MAIN_HAND, cables);
         spool.use(level, player, InteractionHand.MAIN_HAND);
+        actionBarKeys(player); // wat de server tot nu toe stuurde, telt niet
         // Dichtbij: een stukje op x = 2, dan kijk je naar x = 5: hij sluit aan langs de vloer (x = 3, 4 en 5).
         ZoneGameTests.lookDownAt(helper, player, new BlockPos(2, 2, 2));
         spool.onUseTick(level, player, cables, 0);
@@ -2070,6 +2071,7 @@ public final class NetworkGameTests {
             check(laid.test(x, 2), "Dichtbij sloot de kabel niet aan: een gat op x = " + x);
         }
         check(cables.getCount() == 60, "Het begin kostte " + (64 - cables.getCount()) + " kabels in plaats van 4");
+        check(!actionBarKeys(player).contains(CableSpoolItem.NEW_LINE_KEY), "Dichtbij zei de rol dat hij een nieuwe lijn begon");
         // Zonder de knop los te laten ver weg (33 blokken langs de assen, alsof je even in de lucht keek en doorliep):
         // alleen daar een stukje, geen lijn van x = 5 naar x = 20 en dan naar z = 20 (zo liep de rechte lijn).
         ZoneGameTests.lookDownAt(helper, player, new BlockPos(20, 2, 20));
@@ -2082,6 +2084,8 @@ public final class NetworkGameTests {
             check(!laid.test(20, z), "De rol trok een lange kabel vanaf het oude eind (langs z, op z = " + z + ")");
         }
         check(cables.getCount() == 59, "Ver weg kostte " + (60 - cables.getCount()) + " kabels in plaats van 1");
+        check(actionBarKeys(player).contains(CableSpoolItem.NEW_LINE_KEY),
+                "Ver weg zei de rol niet boven je werkbalk dat hij een nieuwe lijn begon");
         // Vanaf de nieuwe lijn sluit hij weer gewoon aan: naar z = 17 legt hij z = 19, 18 en 17.
         ZoneGameTests.lookDownAt(helper, player, new BlockPos(20, 2, 17));
         spool.onUseTick(level, player, cables, 0);
@@ -2097,6 +2101,139 @@ public final class NetworkGameTests {
         List<BlockPos> near = com.senne.imttech.energy.PowerCables.route(level, start, helper.absolutePos(new BlockPos(5, 3, 2)));
         check(near != null && near.size() == 4, "Dichtbij gaf PowerCables.route geen route van 4 plekken: " + near);
         helper.succeed();
+    }
+
+    /**
+     * Hoofdstuk 132 (nalezing): de rol sluit aan op het dichtstbijzijnde stuk van de kabel die je aan het trekken bent, en
+     * gaat door hooguit 3 blokken muur. Kijk je terug naar het begin van je kabel, dan komt er niets bij (vroeger zocht hij
+     * vanaf het eind een nieuwe route terug, vaak een andere, en legde zo een lus); kijk je naast je kabel, dan één stukje.
+     * In een blok steen met drie gangen: van de eerste naar de tweede gang (8 blokken steen, geen weg eromheen) begint hij
+     * een nieuwe lijn, met de melding, in plaats van door de steen te gaan; van de tweede naar de derde (2 blokken) gaat
+     * hij er gewoon doorheen.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "lan")
+    public static void a_cable_spool_follows_its_own_cable_and_no_thick_walls(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer player = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(4, 2, 15), "lan-spool-back");
+        player.getAbilities().instabuild = false; // echt survival: elk stukje kost een kabel
+        java.util.function.Predicate<BlockPos> laid = pos -> Cables.has(CableKind.NETWORK, level, helper.absolutePos(pos));
+        CableSpoolItem spool = (CableSpoolItem) ModItems.NETWORK_CABLE.get();
+        ItemStack cables = new ItemStack(ModItems.NETWORK_CABLE.get(), 64);
+        player.setItemInHand(InteractionHand.MAIN_HAND, cables);
+        // Op de vloer van de arena (die ligt op y = 1, de kabels dus op y = 2): van (4, 15) naar (8, 19) is een hoek van 9.
+        spool.use(level, player, InteractionHand.MAIN_HAND);
+        ZoneGameTests.lookDownAt(helper, player, new BlockPos(4, 1, 15));
+        spool.onUseTick(level, player, cables, 0);
+        ZoneGameTests.lookDownAt(helper, player, new BlockPos(8, 1, 19));
+        spool.onUseTick(level, player, cables, 0);
+        check(cables.getCount() == 55, "De hoek kostte " + (64 - cables.getCount()) + " kabels in plaats van 9");
+        // Terug naar het begin: daar ligt je kabel al, er komt niets bij.
+        ZoneGameTests.lookDownAt(helper, player, new BlockPos(4, 1, 15));
+        spool.onUseTick(level, player, cables, 0);
+        check(cables.getCount() == 55, "Terugkijken naar het begin legde nog " + (55 - cables.getCount()) + " kabels (een lus)");
+        // Eén blok naast het andere eind: één stukje, vanaf dat eind (niet vanaf het begin waar je net keek).
+        ZoneGameTests.lookDownAt(helper, player, new BlockPos(9, 1, 19));
+        spool.onUseTick(level, player, cables, 0);
+        check(laid.test(new BlockPos(9, 2, 19)) && cables.getCount() == 54,
+                "Naast je kabel kostte het " + (55 - cables.getCount()) + " kabels in plaats van 1, of lag niet op 9 2 19; kabels: "
+                        + cablesIn(helper, CableKind.NETWORK));
+        spool.releaseUsing(cables, level, player, 0);
+
+        // Een blok steen (x 0 tot 20, y 1 tot 11, z 2 tot 12) met drie gangen van 3 hoog op y = 5 tot 7 en z = 6 tot 8, op
+        // x = 4, 13 en 16. Rond elke gang zit minstens 4 blokken steen, behalve tussen de tweede en de derde (2 blokken).
+        for (int x = 0; x <= 20; x++) {
+            for (int y = 1; y <= 11; y++) {
+                for (int z = 2; z <= 12; z++) {
+                    boolean gang = (x == 4 || x == 13 || x == 16) && y >= 5 && y <= 7 && z >= 6 && z <= 8;
+                    helper.setBlock(new BlockPos(x, y, z), gang ? Blocks.AIR : Blocks.STONE);
+                }
+            }
+        }
+        spool.use(level, player, InteractionHand.MAIN_HAND);
+        ZoneGameTests.lookDownAt(helper, player, new BlockPos(4, 4, 7));
+        spool.onUseTick(level, player, cables, 0);
+        check(laid.test(new BlockPos(4, 5, 7)) && cables.getCount() == 53, "In de eerste gang kwam er geen kabel");
+        actionBarKeys(player);
+        // Naar de tweede gang: 8 blokken steen ertussen en geen weg eromheen. Een nieuwe lijn, niets in de steen.
+        ZoneGameTests.lookDownAt(helper, player, new BlockPos(13, 4, 7));
+        spool.onUseTick(level, player, cables, 0);
+        check(laid.test(new BlockPos(13, 5, 7)), "In de tweede gang kwam er geen kabel");
+        for (int x = 5; x <= 12; x++) {
+            for (int y = 1; y <= 11; y++) {
+                for (int z = 2; z <= 12; z++) {
+                    check(!laid.test(new BlockPos(x, y, z)), "De kabel ging door de dikke muur, op " + x + " " + y + " " + z);
+                }
+            }
+        }
+        check(cables.getCount() == 52, "Achter de dikke muur kostte het " + (53 - cables.getCount()) + " kabels in plaats van 1");
+        check(actionBarKeys(player).contains(CableSpoolItem.NEW_LINE_KEY), "Achter de dikke muur kwam de melding niet");
+        // Naar de derde gang: 2 blokken steen, daar gaat hij gewoon door (3 kabels), zonder melding.
+        ZoneGameTests.lookDownAt(helper, player, new BlockPos(16, 4, 7));
+        spool.onUseTick(level, player, cables, 0);
+        spool.releaseUsing(cables, level, player, 0);
+        check(laid.test(new BlockPos(14, 5, 7)) && laid.test(new BlockPos(15, 5, 7)) && laid.test(new BlockPos(16, 5, 7))
+                && cables.getCount() == 49, "Door de dunne muur kostte het " + (52 - cables.getCount()) + " kabels in plaats van 3");
+        check(!actionBarKeys(player).contains(CableSpoolItem.NEW_LINE_KEY), "Door de dunne muur kwam toch de melding");
+        helper.succeed();
+    }
+
+    /**
+     * Hoofdstuk 132 (nalezing): ga je met de knop ingedrukt door een portaal, dan laat je spel de knop los, maar de server
+     * merkte dat niet en bleef de rol gebruiken: hij legde kabel waar je keek tot je opnieuw klikte. Nu stopt de rol bij
+     * een andere wereld. Een schild in je hand laat hij met rust.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "lan")
+    public static void a_cable_spool_stops_in_another_world(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer player = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(4, 2, 4), "lan-spool-portal");
+        ItemStack cables = new ItemStack(ModItems.CABLE.get(), 8);
+        player.setItemInHand(InteractionHand.MAIN_HAND, cables);
+        ((CableSpoolItem) ModItems.CABLE.get()).use(level, player, InteractionHand.MAIN_HAND);
+        check(player.isUsingItem(), "De rol werd niet gebruikt (dan bewijst dit niets)");
+        CableSpoolItem.onPlayerChangedDimension(new net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerChangedDimensionEvent(
+                player, net.minecraft.world.level.Level.OVERWORLD, net.minecraft.world.level.Level.NETHER));
+        check(!player.isUsingItem(), "Na een andere wereld bleef de rol in gebruik (dan legt hij kabel zonder dat je klikt)");
+        // Een schild: dat blijft omhoog.
+        ItemStack shield = new ItemStack(Items.SHIELD);
+        player.setItemInHand(InteractionHand.MAIN_HAND, shield);
+        Items.SHIELD.use(level, player, InteractionHand.MAIN_HAND);
+        check(player.isUsingItem(), "Het schild ging niet omhoog (dan bewijst dit niets)");
+        CableSpoolItem.onPlayerChangedDimension(new net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerChangedDimensionEvent(
+                player, net.minecraft.world.level.Level.NETHER, net.minecraft.world.level.Level.OVERWORLD));
+        check(player.isUsingItem(), "Na een andere wereld ging ook je schild omlaag");
+        helper.succeed();
+    }
+
+    /** Hoofdstuk 132: waar in de arena kabels van deze soort liggen (voor een foutmelding). */
+    private static List<BlockPos> cablesIn(GameTestHelper helper, CableKind kind) {
+        List<BlockPos> found = new java.util.ArrayList<>();
+        for (int x = 0; x < 24; x++) {
+            for (int y = 0; y < 16; y++) {
+                for (int z = 0; z < 24; z++) {
+                    if (Cables.has(kind, helper.getLevel(), helper.absolutePos(new BlockPos(x, y, z)))) {
+                        found.add(new BlockPos(x, y, z));
+                    }
+                }
+            }
+        }
+        return found;
+    }
+
+    /**
+     * Hoofdstuk 132: de sleutels van de teksten die de server deze testspeler boven de werkbalk liet zien sinds de vorige
+     * keer. Een testspeler heeft een nepverbinding: wat de server hem stuurt, blijft daarin liggen tot we het lezen.
+     */
+    private static List<String> actionBarKeys(ServerPlayer player) {
+        List<String> keys = new java.util.ArrayList<>();
+        io.netty.channel.embedded.EmbeddedChannel channel =
+                (io.netty.channel.embedded.EmbeddedChannel) player.connection.getConnection().channel();
+        for (Object message = channel.readOutbound(); message != null; message = channel.readOutbound()) {
+            if (message instanceof net.minecraft.network.protocol.game.ClientboundSystemChatPacket chat && chat.overlay()
+                    && chat.content().getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents text) {
+                keys.add(text.getKey());
+            }
+        }
+        return keys;
     }
 
     /** Houdt een stuk wereld alleen geladen (niet draaiend), zoals NetworkKeeper dat met het net van een kern doet. */

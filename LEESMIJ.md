@@ -580,10 +580,16 @@ Kabels zijn **geen blokken**: je **tekent** ze.
 - Neem de kabel in je hand, **houd de rechtermuisknop ingedrukt** en kijk rond: waar je kijkt,
   komt een dun kabeltje te liggen, over de vloer, tegen een muur op, onder een plafond. Kijk je
   een stuk verder, dan trekt hij netjes een lijn (langs de oppervlakken). Elk stukje kost één kabel.
-- Ligt het eind van je kabel **meer dan 24 blokken** van waar je kijkt (je keek even in de lucht en
-  liep door, of je werd geteleporteerd), dan begint hij daar een **nieuwe lijn** en zegt hij dat
-  boven je werkbalk ("New cable line"). Trek het stuk ertussen dan zelf, anders zit er een gat in.
-  (Vroeger trok hij dan een lange rechte lijn dwars door de muren, en ging je hele rol in één keer op.)
+- Hij sluit aan op het **dichtstbijzijnde stuk** van de kabel die je aan het trekken bent: kijk je
+  terug naar je kabel, dan komt er niets bij, en kijk je er vlak naast, dan één stukje.
+- Een kabel gaat door hooguit **3 blokken muur** na elkaar; is de muur dikker, dan zoekt hij een weg
+  eromheen. Ligt je kabel **meer dan 24 blokken** van waar je kijkt (langs de assen geteld, dus schuin
+  al vanaf zo'n 17; je keek even in de lucht en liep door, of je werd geteleporteerd), of achter een
+  dikke muur zonder weg eromheen, dan begint hij daar een **nieuwe lijn** en zegt hij dat boven je
+  werkbalk ("New cable line"). Trek het stuk ertussen dan zelf, anders zit er een gat in. (Vroeger trok
+  hij dan een lange rechte lijn dwars door de muren, en ging je hele rol in één keer op.)
+- Ga je met de knop ingedrukt door een portaal, dan stopt de rol. (Vroeger bleef hij in de andere
+  wereld kabel leggen waar je keek, tot je opnieuw klikte.)
 - Kabels **van dezelfde soort** die naast elkaar liggen zitten aan elkaar vast; een apparaat naast
   een kabel (of er bovenop gezet) ook. Een stroomkabel, een netwerkkabel en een PoE-kabel zitten
   **nooit** aan elkaar vast (sinds 12 november): van de ene soort naar de andere gaat het alleen via

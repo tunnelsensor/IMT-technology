@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 661 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 663 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -10287,9 +10287,50 @@ bedoel."
 - [x] **Onderzoek**: drie lezers (het indrukken en loslaten van de knop in Minecraft, de zoektocht, je screenshots) en
       hun controleurs liepen na zo'n 18 minuten tegen de gebruikslimiet van 5 uur: geen rapport. Een model van de
       zoektocht dat een van hen schreef, heb ik zelf gedraaid (de metingen hierboven); de rest heb ik zelf nagelopen in de
-      code en in de bronnen van Minecraft. Er is dus **geen nalezing** door aparte lezers gebeurd.
+      code en in de bronnen van Minecraft. De nalezing kwam later die avond (hieronder).
 - **Geen nieuwe versie** (een reparatie: 2.23, het laatste getal telt vanzelf op) en geen nieuw netwerkprotocol. De
   reparatie zit in de server: op je gehoste server moet de nieuwe jar, anders trekt de rol daar nog rechte lijnen.
+
+**Nalezing** ('s avonds, toen de limiet weer vrij was): drie lezers (kan de rol nog kabel leggen die je niet tekende;
+wat werkte vroeger en nu niet meer, en kloppen de teksten; snelheid en de server), elk met een controleur die de vondsten
+probeerde te weerleggen. Over snelheid en de server vonden ze niets. De andere zeven vondsten waren echt of half echt,
+allemaal klein, maar drie ervan zijn je melding in het klein. Ze zaten er al vóór dit hoofdstuk in:
+
+- [x] **Door een portaal met de knop ingedrukt** (`CableSpoolItem.onPlayerChangedDimension`): je spel laat de knop dan los,
+      maar de server merkte dat niet. Hij bleef de rol gebruiken en legde in de andere wereld kabel waar je keek, zonder dat
+      je iets vasthield, tot je opnieuw klikte (ook na een /tp naar een andere wereld). Nu stopt de rol bij elke andere
+      wereld. Een toeschouwer (spectator) legt ook geen kabel meer.
+- [x] **Nog steeds door de rots, maar korter** (`PowerCables.search`, `MAX_WALL`): binnen 24 blokken zocht de rol een weg
+      die een blok steen 3 keer zo duur vond als een stap langs een muur, en ging zo door tot 19 blokken massieve steen,
+      bijvoorbeeld tussen twee gangen naast elkaar: tot 18 kabels in één tik, dezelfde gloeiende lijn door de rots. Nu gaat
+      een kabel door hooguit 3 blokken muur na elkaar. Is de muur dikker, dan zoekt hij een weg eromheen (door een gang),
+      en is die er niet, dan begint hij een nieuwe lijn met de melding. De zoektocht onthoudt daarvoor bij elke stap hoe
+      diep hij al in de muur zit.
+- [x] **Terugkijken legde een tweede kabel** (`PowerCables.route`, `sources`): kijk je terug naar het begin van je kabel,
+      dan zocht hij vanaf het eind een nieuwe route terug, en die liep vaak anders (de andere kant van een hoek, of over
+      het plafond): een lus van kabels die je niet tekende. In een kamer kostte heen en weer kijken zo de helft meer
+      kabels. Nu vertrekt de route van het dichtstbijzijnde stuk van de kabel die je aan het trekken bent (hooguit 64
+      stukjes rond het eind): kijk je naar je kabel, dan komt er niets bij; kijk je ernaast, dan één stukje. Ook "meer dan
+      24 blokken" telt nu vanaf het dichtstbijzijnde stuk van je kabel.
+- [x] **Gemeten** (het model van de zoektocht, nu met deze regels; telkens tienduizenden keren): eenmaal heen en terug
+      kijken kostte vroeger 27 tot 62% extra kabels (een kamer, een vlakte, een gang, een grot), nu 0%; langzaam heen en
+      terug draaien 12 tot 49%, nu 0%; met de knop ingedrukt lopen (een trap, een grot, een vlakte, een kronkelgang) meestal
+      1 tot 19% minder kabels (een keer 5% meer: de kronkelgang met haperingen van 5 seconden), en in de grot met een
+      haperende server 13 nieuwe lijnen in plaats van 37. Bij gewoon rondkijken begint hij nooit onterecht een nieuwe lijn,
+      en de grens van 3 blokken muur raakt daar niets (de langste stukken door steen waren op een na 2 blokken, en ook voor
+      die ene vond hij een weg). Twee gangen met 5 blokken steen ertussen en een verbindingsgang 16 blokken verder: vroeger
+      6 kabels door de steen, nu 38 langs de gangen.
+- [x] **De melding** zegt nu "New cable line: your cable ends too far away or behind a thick wall", met die Engelse tekst
+      ook als terugval voor een vriend met een oudere versie van de mod (die kent de sleutel niet en zag anders
+      "message.imttech.cable.new_line").
+- [x] **Teksten**: LEESMIJ zegt erbij dat 24 blokken langs de assen telt (schuin al vanaf zo'n 17), dat een kabel door
+      hooguit 3 blokken muur gaat, en dat de rol stopt bij een portaal. Het punt hieronder in "Nog nooit in het spel
+      bekeken" zei dat de melding in de tests gecontroleerd was; dat was niet zo, nu wel.
+- [x] **Tests** (batch lan): `a_far_cable_end_starts_a_new_line` kijkt nu ook of de melding komt (bij de sprong) en niet
+      komt (dichtbij), via de nepverbinding van de testspeler. Nieuw: `a_cable_spool_follows_its_own_cable_and_no_thick_walls`
+      (terugkijken naar het begin kost niets, naast je kabel één stukje; in een blok steen met drie gangen begint hij
+      achter 8 blokken steen een nieuwe lijn, met de melding, en gaat hij door 2 blokken gewoon heen) en
+      `a_cable_spool_stops_in_another_world` (de rol stopt, een schild niet). 663 tests.
 
 ### 134. Lag op de server en "Connection reset" (16 november)
 
@@ -10416,9 +10457,11 @@ eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er
       snel om (ook in F5), verdwijnt er nergens een kabel die je zou moeten zien? (5) Een Arc Lamp aan te weinig
       zonnepanelen: knippert hij nog maar zelden? En een lichtschakelaar werkt toch meteen? (6) Een raid met Threat Scan
       aan en veel drones, mobs en kogels om je heen: blijf je in het spel?
-- [ ] **De melding "New cable line" (hoofdstuk 132)**: in de tests gecontroleerd, niet in het spel gezien. Houd met
-      een kabelrol de knop vast, kijk even in de lucht en loop zo'n 30 blokken door, kijk dan naar de vloer: begint daar
-      een nieuwe lijn (zonder kabel door de muur), en zie je de melding boven je werkbalk?
+- [ ] **De kabelrol (hoofdstuk 132)**: in de tests gecontroleerd, niet in het spel gezien. (1) Houd met een kabelrol de
+      knop vast, kijk even in de lucht en loop zo'n 30 blokken door, kijk dan naar de vloer: begint daar een nieuwe lijn
+      (zonder kabel door de muur), en zie je "New cable line" boven je werkbalk? (2) Trek een hoek en kijk terug naar het
+      begin: komt er geen tweede kabel bij? (3) Loop met de knop ingedrukt door een Nether-portaal: legt hij aan de andere
+      kant niets meer?
 - [ ] **De SD-kaart (hoofdstuk 130)**: met tests en de rondleiding gecontroleerd (sc01 tot sc10), maar niet met de muis
       gespeeld en niet met twee echte spelers. Probeer: (1) steek een kaart in je kern (rechtsklik) en haal hem eruit
       (sneak + lege hand): zie je het kaartje vooraan, en komt hij in je hand? (2) In Logic: klik op SD, zet een programma

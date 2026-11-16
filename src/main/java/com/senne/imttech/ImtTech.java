@@ -224,6 +224,8 @@ public class ImtTech {
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.workbench.SuitWorkbenchBlock::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.energy.CableSpoolItem::onRightClickItem);
         NeoForge.EVENT_BUS.addListener(com.senne.imttech.energy.CableSpoolItem::onPlayerLoggedOut);
+        // Hoofdstuk 132 (nalezing): door een portaal met de knop ingedrukt: de rol stopt.
+        NeoForge.EVENT_BUS.addListener(com.senne.imttech.energy.CableSpoolItem::onPlayerChangedDimension);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent event) ->
                 com.senne.imttech.energy.PowerCables.clear());
         // Hoofdstuk 38: het netwerk van de beveiligingskernen (wat het onthield) vergeten, en wanneer de stroom liep.

@@ -48,6 +48,17 @@ public final class PowerCables {
      * (de route volgt de oppervlakken, en kan dus om iets heen lopen), telt niet: dan begint de rol een nieuwe lijn.
      */
     private static final int MAX_CATCH_UP = MAX_ROUTE * 2;
+    /**
+     * Hoofdstuk 132 (nalezing): zo dik mag een muur zijn waar de route doorheen gaat (blokken na elkaar in steen). Dikker:
+     * dan zoekt hij een weg eromheen, en is die er niet, dan begint de rol een nieuwe lijn. Vroeger ging hij tot zo'n 19
+     * blokken door massieve steen, dezelfde gloeiende lijn door de rots als op je screenshots, alleen korter.
+     */
+    private static final int MAX_WALL = 3;
+    /**
+     * Hoofdstuk 132 (nalezing): zoveel stukjes van de kabel die je aan het trekken bent, gebruikt de zoektocht hooguit als
+     * vertrekpunt (zie sources).
+     */
+    private static final int MAX_SOURCES = 64;
 
     // ================================================================ De stroomkabel (zie Cables voor alle soorten)
 
@@ -73,74 +84,134 @@ public final class PowerCables {
 
     // ================================================================ Tekenen
 
+    /** Hetzelfde als route met de soort erbij, voor een stroomkabel. */
+    public static @Nullable List<BlockPos> route(Level level, BlockPos from, BlockPos to) {
+        return route(level, CableKind.POWER, from, to);
+    }
+
     /**
      * De plekken van {@code from} naar {@code to} (allebei meegerekend), langs een route over
      * oppervlakken: over de vloer, tegen een muur op, onder een plafond. Waar geen oppervlak is,
-     * mag hij ook door blokken heen (dan zit hij in de muur). We zoeken de kortste route met zo
-     * weinig mogelijk bochten.
+     * mag hij ook door blokken heen (dan zit hij in de muur), maar door hooguit MAX_WALL blokken na
+     * elkaar. We zoeken de kortste route met zo weinig mogelijk bochten.
      *
-     * <p>Hoofdstuk 132: geeft null als dat niet gaat: {@code to} ligt meer dan MAX_ROUTE blokken van {@code from}, de
-     * zoektocht vindt geen route, of de route zou meer dan MAX_CATCH_UP nieuwe stukjes kosten. De kabelrol begint dan een
-     * nieuwe lijn waar je kijkt. Vroeger trok hij in dat geval een rechte lijn per as (eerst x, dan z, dan y), dwars door
-     * alles heen: keek je even in de lucht terwijl je doorliep (of werd je geteleporteerd), dan legde hij in één tick een
-     * lange kabel door de muren, tot je hele rol op was.
+     * <p>Hoofdstuk 132 (nalezing): de route vertrekt van het dichtstbijzijnde stuk van de kabel die je aan het trekken
+     * bent (zie sources), niet alleen van {@code from}, het eind ervan. Kijk je terug naar een plek waar je kabel al ligt,
+     * dan komt er niets bij; kijk je ernaast, dan één stukje. Vroeger zocht hij vanaf het eind een nieuwe route terug, en
+     * die liep vaak anders: zo legde hij lussen en dubbele kabels die je niet tekende (in een kamer de helft extra).
+     *
+     * <p>Hoofdstuk 132: geeft null als dat niet gaat: {@code to} ligt meer dan MAX_ROUTE blokken van je kabel, de
+     * zoektocht vindt geen route (ook niet om een dikke muur heen), of de route zou meer dan MAX_CATCH_UP stukjes kosten.
+     * De kabelrol begint dan een nieuwe lijn waar je kijkt. Vroeger trok hij in dat geval een rechte lijn per as (eerst x,
+     * dan z, dan y), dwars door alles heen: keek je even in de lucht terwijl je doorliep (of werd je geteleporteerd), dan
+     * legde hij in één tick een lange kabel door de muren, tot je hele rol op was.
      */
-    public static @Nullable List<BlockPos> route(Level level, BlockPos from, BlockPos to) {
+    public static @Nullable List<BlockPos> route(Level level, CableKind kind, BlockPos from, BlockPos to) {
         if (from.equals(to)) {
             return List.of(to);
         }
-        if (from.distManhattan(to) > MAX_ROUTE) {
+        java.util.LinkedHashSet<BlockPos> sources = sources(level, kind, from);
+        if (sources.contains(to)) {
+            return List.of(to); // je kijkt naar je eigen kabel: er hoeft niets bij
+        }
+        int nearest = Integer.MAX_VALUE;
+        for (BlockPos source : sources) {
+            nearest = Math.min(nearest, source.distManhattan(to));
+        }
+        if (nearest > MAX_ROUTE) {
             return null;
         }
-        List<BlockPos> found = search(level, from, to);
-        // Het eerste stukje (from) ligt er al: de rest kost elk een kabel.
+        List<BlockPos> found = search(level, sources, from, to);
+        // Het eerste stukje (een stuk van je kabel) ligt er al: de rest kost elk een kabel.
         return found != null && found.size() - 1 <= MAX_CATCH_UP ? found : null;
     }
 
     /**
-     * Zoekt stap voor stap (van dichtbij naar ver) een route. Een stap kost 1; door een blok heen
-     * kost 3 (liever erlangs dan erdoor), een stap door de lucht zonder muur of vloer ernaast
-     * kost 4 (een kabel hangt niet graag in de lucht), en een bocht kost 1 extra.
+     * Hoofdstuk 132 (nalezing): de stukjes van de kabel die je aan het trekken bent, rond het eind ervan: {@code from} zelf,
+     * en de kabels van dezelfde soort die er aan vastzitten, hooguit MAX_SOURCES stuks en hooguit MAX_ROUTE blokken van
+     * {@code from}. Daar mag de route van vertrekken: dat is dezelfde kabel (ze zitten aan elkaar vast).
      */
-    private static @Nullable List<BlockPos> search(Level level, BlockPos from, BlockPos to) {
-        record Node(BlockPos pos, @Nullable Direction dir, int cost) {}
-        Map<BlockPos, BlockPos> cameFrom = new HashMap<>();
-        Map<BlockPos, Integer> best = new HashMap<>();
+    private static java.util.LinkedHashSet<BlockPos> sources(Level level, CableKind kind, BlockPos from) {
+        java.util.LinkedHashSet<BlockPos> found = new java.util.LinkedHashSet<>();
+        found.add(from);
+        if (!Cables.has(kind, level, from)) {
+            return found; // het eind is weg (doorgeknipt): dan vertrekken we alleen daar
+        }
+        ArrayDeque<BlockPos> todo = new ArrayDeque<>();
+        todo.add(from);
+        while (!todo.isEmpty() && found.size() < MAX_SOURCES) {
+            BlockPos at = todo.poll();
+            for (Direction dir : Direction.values()) {
+                BlockPos next = at.relative(dir);
+                if (found.size() >= MAX_SOURCES) {
+                    break;
+                }
+                if (next.distManhattan(from) > MAX_ROUTE || found.contains(next) || !Cables.has(kind, level, next)) {
+                    continue;
+                }
+                found.add(next);
+                todo.add(next);
+            }
+        }
+        return found;
+    }
+
+    /**
+     * Zoekt stap voor stap (van dichtbij naar ver) een route, vanaf alle {@code sources} tegelijk (die kosten niets: daar
+     * ligt je kabel al). Een stap kost 1; door een blok heen kost 3 (liever erlangs dan erdoor), een stap door de lucht
+     * zonder muur of vloer ernaast kost 4 (een kabel hangt niet graag in de lucht), en een bocht kost 1 extra. Meer dan
+     * MAX_WALL blokken na elkaar door steen mag niet: daarom onthoudt elke stap ook hoe diep hij al in de muur zit.
+     */
+    private static @Nullable List<BlockPos> search(Level level, java.util.Collection<BlockPos> sources, BlockPos from, BlockPos to) {
+        record Step(BlockPos pos, int wall) {}
+        record Node(Step step, @Nullable Direction dir, int cost) {}
+        Map<Step, Step> cameFrom = new HashMap<>();
+        Map<Step, Integer> best = new HashMap<>();
         java.util.PriorityQueue<Node> open = new java.util.PriorityQueue<>(
-                java.util.Comparator.comparingInt(node -> node.cost() + node.pos().distManhattan(to)));
-        open.add(new Node(from, null, 0));
-        best.put(from, 0);
+                java.util.Comparator.comparingInt(node -> node.cost() + node.step().pos().distManhattan(to)));
+        for (BlockPos source : sources) {
+            Step start = new Step(source, 0);
+            open.add(new Node(start, null, 0));
+            best.put(start, 0);
+        }
         int visited = 0;
         while (!open.isEmpty() && visited++ < 4000) {
             Node node = open.poll();
-            if (node.pos().equals(to)) {
+            BlockPos pos = node.step().pos();
+            if (pos.equals(to)) {
                 List<BlockPos> path = new ArrayList<>();
-                for (BlockPos at = to; at != null; at = cameFrom.get(at)) {
-                    path.add(0, at);
+                for (Step at = node.step(); at != null; at = cameFrom.get(at)) {
+                    path.add(0, at.pos());
                 }
                 return path;
             }
-            if (node.cost() > best.getOrDefault(node.pos(), Integer.MAX_VALUE)) {
+            if (node.cost() > best.getOrDefault(node.step(), Integer.MAX_VALUE)) {
                 continue;
             }
             for (Direction dir : Direction.values()) {
-                BlockPos next = node.pos().relative(dir);
+                BlockPos next = pos.relative(dir);
                 if (next.distManhattan(from) > MAX_ROUTE * 2 || !level.isLoaded(next)) {
                     continue;
                 }
-                int cost = node.cost() + stepCost(level, next) + (node.dir() != null && node.dir() != dir ? 1 : 0);
-                if (cost < best.getOrDefault(next, Integer.MAX_VALUE)) {
-                    best.put(next, cost);
-                    cameFrom.put(next, node.pos());
-                    open.add(new Node(next, dir, cost));
+                boolean solid = isSolid(level, next);
+                int wall = solid ? node.step().wall() + 1 : 0;
+                if (wall > MAX_WALL) {
+                    continue; // te diep in de muur: zoek een andere weg
+                }
+                int cost = node.cost() + stepCost(level, next, solid) + (node.dir() != null && node.dir() != dir ? 1 : 0);
+                Step step = new Step(next, wall);
+                if (cost < best.getOrDefault(step, Integer.MAX_VALUE)) {
+                    best.put(step, cost);
+                    cameFrom.put(step, node.step());
+                    open.add(new Node(step, dir, cost));
                 }
             }
         }
         return null;
     }
 
-    private static int stepCost(Level level, BlockPos pos) {
-        if (isSolid(level, pos)) {
+    private static int stepCost(Level level, BlockPos pos, boolean solid) {
+        if (solid) {
             return 3;
         }
         for (Direction dir : Direction.values()) {

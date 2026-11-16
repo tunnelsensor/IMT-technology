@@ -143,7 +143,7 @@
   "tooltip.imttech.cable.take": "Shift + right-click a cable to pick it up",
   "tooltip.imttech.cable.cut": "Build over it to hide it in a wall; shears cut it",
   "tooltip.imttech.cable.apart": "Power, network and PoE cables never join each other",
-  "message.imttech.cable.new_line": "New cable line: the end of your cable was too far away",
+  "message.imttech.cable.new_line": "New cable line: your cable ends too far away or behind a thick wall",
   "item.imttech.network_cable": "Network Cable",
   "item.imttech.poe_cable": "PoE Cable",
   "tooltip.imttech.network_cable": "Connects security devices to the desktop of a Security Core",
