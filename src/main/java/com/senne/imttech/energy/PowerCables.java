@@ -38,8 +38,16 @@ import org.jetbrains.annotations.Nullable;
 public final class PowerCables {
     private PowerCables() {}
 
-    /** Zo ver mag één stuk dat je in één keer tekent, hooguit zoeken (blokken). */
+    /**
+     * Zo ver mag het eind van je kabel van de plek waar je kijkt liggen om er in één keer een stuk tussen te tekenen
+     * (blokken, langs de assen geteld). Verder weg: dan begint de rol een nieuwe lijn (zie route).
+     */
     private static final int MAX_ROUTE = 24;
+    /**
+     * Hoofdstuk 132: zoveel stukjes kabel legt de rol hooguit in één keer bij om aan te sluiten. Een omweg die langer is
+     * (de route volgt de oppervlakken, en kan dus om iets heen lopen), telt niet: dan begint de rol een nieuwe lijn.
+     */
+    private static final int MAX_CATCH_UP = MAX_ROUTE * 2;
 
     // ================================================================ De stroomkabel (zie Cables voor alle soorten)
 
@@ -69,19 +77,24 @@ public final class PowerCables {
      * De plekken van {@code from} naar {@code to} (allebei meegerekend), langs een route over
      * oppervlakken: over de vloer, tegen een muur op, onder een plafond. Waar geen oppervlak is,
      * mag hij ook door blokken heen (dan zit hij in de muur). We zoeken de kortste route met zo
-     * weinig mogelijk bochten; lukt dat niet binnen MAX_ROUTE stappen, dan een rechte lijn per as.
+     * weinig mogelijk bochten.
+     *
+     * <p>Hoofdstuk 132: geeft null als dat niet gaat: {@code to} ligt meer dan MAX_ROUTE blokken van {@code from}, de
+     * zoektocht vindt geen route, of de route zou meer dan MAX_CATCH_UP nieuwe stukjes kosten. De kabelrol begint dan een
+     * nieuwe lijn waar je kijkt. Vroeger trok hij in dat geval een rechte lijn per as (eerst x, dan z, dan y), dwars door
+     * alles heen: keek je even in de lucht terwijl je doorliep (of werd je geteleporteerd), dan legde hij in één tick een
+     * lange kabel door de muren, tot je hele rol op was.
      */
-    public static List<BlockPos> route(Level level, BlockPos from, BlockPos to) {
+    public static @Nullable List<BlockPos> route(Level level, BlockPos from, BlockPos to) {
         if (from.equals(to)) {
             return List.of(to);
         }
-        if (from.distManhattan(to) <= MAX_ROUTE) {
-            List<BlockPos> found = search(level, from, to);
-            if (found != null) {
-                return found;
-            }
+        if (from.distManhattan(to) > MAX_ROUTE) {
+            return null;
         }
-        return straight(from, to);
+        List<BlockPos> found = search(level, from, to);
+        // Het eerste stukje (from) ligt er al: de rest kost elk een kabel.
+        return found != null && found.size() - 1 <= MAX_CATCH_UP ? found : null;
     }
 
     /**
@@ -136,26 +149,6 @@ public final class PowerCables {
             }
         }
         return 4;
-    }
-
-    /** Een rechte lijn: eerst langs x, dan z, dan y. */
-    private static List<BlockPos> straight(BlockPos from, BlockPos to) {
-        List<BlockPos> path = new ArrayList<>();
-        BlockPos.MutableBlockPos at = from.mutable();
-        path.add(from.immutable());
-        while (at.getX() != to.getX()) {
-            at.move(Integer.signum(to.getX() - at.getX()), 0, 0);
-            path.add(at.immutable());
-        }
-        while (at.getZ() != to.getZ()) {
-            at.move(0, 0, Integer.signum(to.getZ() - at.getZ()));
-            path.add(at.immutable());
-        }
-        while (at.getY() != to.getY()) {
-            at.move(0, Integer.signum(to.getY() - at.getY()), 0);
-            path.add(at.immutable());
-        }
-        return path;
     }
 
     /** Een volledig, stevig blok (waar een kabel "in" zit in plaats van "op" ligt). */

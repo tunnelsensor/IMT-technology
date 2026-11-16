@@ -580,6 +580,10 @@ Kabels zijn **geen blokken**: je **tekent** ze.
 - Neem de kabel in je hand, **houd de rechtermuisknop ingedrukt** en kijk rond: waar je kijkt,
   komt een dun kabeltje te liggen, over de vloer, tegen een muur op, onder een plafond. Kijk je
   een stuk verder, dan trekt hij netjes een lijn (langs de oppervlakken). Elk stukje kost één kabel.
+- Ligt het eind van je kabel **meer dan 24 blokken** van waar je kijkt (je keek even in de lucht en
+  liep door, of je werd geteleporteerd), dan begint hij daar een **nieuwe lijn** en zegt hij dat
+  boven je werkbalk ("New cable line"). Trek het stuk ertussen dan zelf, anders zit er een gat in.
+  (Vroeger trok hij dan een lange rechte lijn dwars door de muren, en ging je hele rol in één keer op.)
 - Kabels **van dezelfde soort** die naast elkaar liggen zitten aan elkaar vast; een apparaat naast
   een kabel (of er bovenop gezet) ook. Een stroomkabel, een netwerkkabel en een PoE-kabel zitten
   **nooit** aan elkaar vast (sinds 12 november): van de ene soort naar de andere gaat het alleen via

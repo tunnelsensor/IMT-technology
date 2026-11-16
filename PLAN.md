@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 658 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 659 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -10249,11 +10249,56 @@ range(3): on("gate" + i) of met string interpolation: for i in range(3): on(f"ga
 - **Nog niet in het spel bekeken**: de kleuren van `f"..."` in de editor en de Help-regels (zie "Nog nooit in het spel
   bekeken").
 
+### 132. Geen lange kabels meer dwars door de muur (16 november)
+
+Jouw melding: "Kun je eens kijken waarom dit gebeurd; crayzy cable die voledig door de muur gaan, dit gebeurd soms waneer ik
+een cabel wil plaatsen, opeens verdwijnt het hele stack in die slot en gebeurd dit, kijk ook naar de screenshot wat ik
+bedoel."
+
+- [x] **De oorzaak** (`PowerCables.route`): zolang je de knop vasthoudt, legt de rol elke tick een stuk kabel van waar je
+      kabel ophield naar waar je kijkt. Lag dat eind meer dan 24 blokken ver (of vond hij geen weg langs de oppervlakken),
+      dan trok hij een **rechte lijn**: eerst langs x, dan langs z, dan langs y, dwars door alles heen, voor één kabel per
+      stukje. Zo ging in één tick je hele rol op. Op je screenshot van 12 november zie je precies die vorm: een lange rechte
+      lijn door de steen (met de bril zie je hem door de muur gloeien), een hoek vlak voor je, en een dun stuk recht omlaag
+      de gang in (dat stuk hangt in de lucht). Op die van 15 november ligt zo'n lange lijn naast een trap van korte stukken
+      die hij daarna legde, ook in de steen.
+- [x] **Waarom het eind zo ver weg lag**: tot vanochtend onthield de rol het eind van een vorige keer. Raakte je rol leeg
+      terwijl je trok, of wisselde je van vakje met de knop ingedrukt, dan merkte de rol niet dat je losliet. De volgende
+      keer dat je een kabel wilde leggen, ook veel later en ergens anders, begon hij bij die oude plek. Dat is opgelost in
+      hoofdstuk 124 (versie 2.20.4, van vanochtend); je screenshots zijn van daarvoor. Maar binnen één keer trekken kon het
+      nog steeds: houd je de knop vast terwijl je even nergens naar kijkt (de lucht, of verder dan 6 blokken) en loop je
+      door, of word je geteleporteerd, dan ligt het eind ook ver weg. Ook als het eind 20 blokken of meer achter massieve
+      steen lag, gaf de zoektocht het op (na 4000 plekken) en kwam de rechte lijn.
+- [x] **Nu**: is het eind meer dan 24 blokken ver, vindt de zoektocht geen weg, of zou het stuk meer dan 48 kabels kosten,
+      dan begint de rol een **nieuwe lijn** waar je kijkt, en zegt hij boven je werkbalk "New cable line: the end of your
+      cable was too far away". Trek het stuk ertussen dan zelf (anders zit er een gat in). Dichtbij sluit hij gewoon aan
+      zoals altijd. De rechte lijn (`PowerCables.straight`) bestaat niet meer. Twee kleine dingen erbij: de rol legt nooit
+      een kabel in een stuk wereld dat niet geladen is (de server zou het dan moeten laden), en kijk je naar de bovenkant
+      van een blok op de bouwhoogte (daar kan geen kabel), dan doet hij niets in plaats van elke tick vergeefs te zoeken.
+- [x] **Gemeten** (met een model van de zoektocht, buiten het spel): bij gewoon rondkijken met de knop ingedrukt (een
+      kamer, een vlakte, een grot met een schuin plafond, telkens 20.000 keer) gaf de zoektocht het nooit op en was een
+      stuk hooguit 23 kabels lang (van de vloer naar het plafond recht erboven in een hoge kamer: 38). De nieuwe grenzen
+      raken dus alleen de gevallen die mis gingen.
+- [x] **Teksten**: LEESMIJ (bij het tekenen van kabels), de uitleg in `CableSpoolItem` en `PowerCables.route`.
+- [x] **Test** (batch lan, geen nieuwe batchnaam): `a_far_cable_end_starts_a_new_line`: dichtbij sluit de kabel aan
+      langs de vloer (4 kabels); dan zonder los te laten 33 blokken verder kijken: alleen daar één stukje, geen lijn ertussen
+      (met de oude code legde hij er 33); vanaf de nieuwe lijn sluit hij weer gewoon aan; en `PowerCables.route` geeft
+      niets naar een plek 36 blokken verder. 659 tests, allemaal groen.
+- [x] **Onderzoek**: drie lezers (het indrukken en loslaten van de knop in Minecraft, de zoektocht, je screenshots) en
+      hun controleurs liepen na zo'n 18 minuten tegen de gebruikslimiet van 5 uur: geen rapport. Een model van de
+      zoektocht dat een van hen schreef, heb ik zelf gedraaid (de metingen hierboven); de rest heb ik zelf nagelopen in de
+      code en in de bronnen van Minecraft. Er is dus **geen nalezing** door aparte lezers gebeurd.
+- **Geen nieuwe versie** (een reparatie: 2.23, het laatste getal telt vanzelf op) en geen nieuw netwerkprotocol. De
+  reparatie zit in de server: op je gehoste server moet de nieuwe jar, anders trekt de rol daar nog rechte lijnen.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **De melding "New cable line" (hoofdstuk 132)**: in de tests gecontroleerd, niet in het spel gezien. Houd met
+      een kabelrol de knop vast, kijk even in de lucht en loop zo'n 30 blokken door, kijk dan naar de vloer: begint daar
+      een nieuwe lijn (zonder kabel door de muur), en zie je de melding boven je werkbalk?
 - [ ] **De SD-kaart (hoofdstuk 130)**: met tests en de rondleiding gecontroleerd (sc01 tot sc10), maar niet met de muis
       gespeeld en niet met twee echte spelers. Probeer: (1) steek een kaart in je kern (rechtsklik) en haal hem eruit
       (sneak + lege hand): zie je het kaartje vooraan, en komt hij in je hand? (2) In Logic: klik op SD, zet een programma

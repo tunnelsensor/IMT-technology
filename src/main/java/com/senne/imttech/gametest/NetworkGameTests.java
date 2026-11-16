@@ -2036,6 +2036,69 @@ public final class NetworkGameTests {
         helper.succeed();
     }
 
+    /**
+     * Hoofdstuk 132: "crazy" kabels dwars door de muur, en je hele rol in één keer op. Hield je de knop vast terwijl je even
+     * nergens naar keek (de lucht, of verder dan 6 blokken) en doorliep, of werd je geteleporteerd, dan trok de rol bij de
+     * volgende plek waar je keek een rechte lijn van het eind van je kabel tot daar: eerst langs x, dan z, dan y, door alles
+     * heen, voor een kabel per stukje. Nu begint hij een nieuwe lijn als dat eind meer dan 24 blokken ver ligt, en sluit hij
+     * dichtbij nog gewoon aan (langs de vloer, zonder gat).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "lan")
+    public static void a_far_cable_end_starts_a_new_line(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer player = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(2, 4, 2), "lan-spool-far");
+        player.getAbilities().instabuild = false; // echt survival: elk stukje kost een kabel
+        // Een stenen vloer onder de kabel: bij het begin (x = 2 tot 5 op z = 2) en ver weg (x = 20, z = 17 tot 20).
+        for (int x = 2; x <= 5; x++) {
+            helper.setBlock(new BlockPos(x, 2, 2), Blocks.STONE);
+        }
+        for (int z = 17; z <= 20; z++) {
+            helper.setBlock(new BlockPos(20, 2, z), Blocks.STONE);
+        }
+        java.util.function.BiPredicate<Integer, Integer> laid =
+                (x, z) -> Cables.has(CableKind.POE, level, helper.absolutePos(new BlockPos(x, 3, z)));
+        CableSpoolItem spool = (CableSpoolItem) ModItems.POE_CABLE.get();
+        ItemStack cables = new ItemStack(ModItems.POE_CABLE.get(), 64);
+        player.setItemInHand(InteractionHand.MAIN_HAND, cables);
+        spool.use(level, player, InteractionHand.MAIN_HAND);
+        // Dichtbij: een stukje op x = 2, dan kijk je naar x = 5: hij sluit aan langs de vloer (x = 3, 4 en 5).
+        ZoneGameTests.lookDownAt(helper, player, new BlockPos(2, 2, 2));
+        spool.onUseTick(level, player, cables, 0);
+        ZoneGameTests.lookDownAt(helper, player, new BlockPos(5, 2, 2));
+        spool.onUseTick(level, player, cables, 0);
+        for (int x = 2; x <= 5; x++) {
+            check(laid.test(x, 2), "Dichtbij sloot de kabel niet aan: een gat op x = " + x);
+        }
+        check(cables.getCount() == 60, "Het begin kostte " + (64 - cables.getCount()) + " kabels in plaats van 4");
+        // Zonder de knop los te laten ver weg (33 blokken langs de assen, alsof je even in de lucht keek en doorliep):
+        // alleen daar een stukje, geen lijn van x = 5 naar x = 20 en dan naar z = 20 (zo liep de rechte lijn).
+        ZoneGameTests.lookDownAt(helper, player, new BlockPos(20, 2, 20));
+        spool.onUseTick(level, player, cables, 0);
+        check(laid.test(20, 20), "Ver weg legde de rol geen kabel waar je keek");
+        for (int x = 6; x <= 20; x++) {
+            check(!laid.test(x, 2), "De rol trok een lange kabel vanaf het oude eind (langs x, op x = " + x + ")");
+        }
+        for (int z = 3; z <= 19; z++) {
+            check(!laid.test(20, z), "De rol trok een lange kabel vanaf het oude eind (langs z, op z = " + z + ")");
+        }
+        check(cables.getCount() == 59, "Ver weg kostte " + (60 - cables.getCount()) + " kabels in plaats van 1");
+        // Vanaf de nieuwe lijn sluit hij weer gewoon aan: naar z = 17 legt hij z = 19, 18 en 17.
+        ZoneGameTests.lookDownAt(helper, player, new BlockPos(20, 2, 17));
+        spool.onUseTick(level, player, cables, 0);
+        spool.releaseUsing(cables, level, player, 0);
+        for (int z = 17; z <= 20; z++) {
+            check(laid.test(20, z), "De nieuwe lijn sloot niet aan: een gat op z = " + z);
+        }
+        check(cables.getCount() == 56, "De nieuwe lijn kostte " + (59 - cables.getCount()) + " kabels in plaats van 3");
+        // De route zelf: verder dan 24 blokken is er geen (null), dichtbij een aaneengesloten stuk.
+        BlockPos start = helper.absolutePos(new BlockPos(2, 3, 2));
+        check(com.senne.imttech.energy.PowerCables.route(level, start, helper.absolutePos(new BlockPos(20, 3, 20))) == null,
+                "PowerCables.route gaf nog een route naar een plek 36 blokken verder");
+        List<BlockPos> near = com.senne.imttech.energy.PowerCables.route(level, start, helper.absolutePos(new BlockPos(5, 3, 2)));
+        check(near != null && near.size() == 4, "Dichtbij gaf PowerCables.route geen route van 4 plekken: " + near);
+        helper.succeed();
+    }
+
     /** Houdt een stuk wereld alleen geladen (niet draaiend), zoals NetworkKeeper dat met het net van een kern doet. */
     private static final net.minecraft.server.level.TicketType<net.minecraft.world.level.ChunkPos> STILL =
             net.minecraft.server.level.TicketType.create("imttech_test_still",

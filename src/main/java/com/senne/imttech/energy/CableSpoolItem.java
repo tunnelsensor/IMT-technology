@@ -38,7 +38,9 @@ import org.jetbrains.annotations.Nullable;
  *   <li><b>Rechtermuisknop ingedrukt houden</b> en rondkijken: waar je kijkt komt een kabel te
  *       liggen, over de vloer, tegen een muur op, onder een plafond. Beweeg je sneller dan één
  *       blok per keer, dan trekt hij netjes een lijn van waar je was naar waar je nu kijkt.
- *       Elk stukje kost één kabel van de rol.</li>
+ *       Elk stukje kost één kabel van de rol. Ligt het eind van je kabel te ver weg (meer dan 24
+ *       blokken, of er is geen weg langs de oppervlakken), dan begint hij een nieuwe lijn waar je
+ *       kijkt, en zegt hij dat boven je werkbalk (hoofdstuk 132).</li>
  *   <li><b>Shift + rechtsklik</b> op een kabel: oprapen (je krijgt hem terug). Alleen de soort van de rol in je
  *       hand: liggen er een stroom- en een netwerkkabel op dezelfde plek, dan raapt een netwerkrol alleen de
  *       netwerkkabel op.</li>
@@ -120,16 +122,29 @@ public class CableSpoolItem extends Item {
             return;
         }
         BlockPos cell = lookedAtCell(player);
-        if (cell == null) {
+        // Hoofdstuk 132: ook niets als die plek buiten de wereld ligt (boven op een blok op de bouwhoogte): daar kan geen
+        // kabel liggen, en de zoektocht ernaartoe zou elke tick vergeefs duizenden plekken aflopen.
+        if (cell == null || !serverLevel.isLoaded(cell)) {
             return;
         }
         Anchor anchor = DRAWING.get(player.getUUID());
         BlockPos last = anchor != null && anchor.dimension() == serverLevel.dimension() ? anchor.pos() : null;
-        List<BlockPos> path = last == null ? List.of(cell) : PowerCables.route(serverLevel, last, cell);
+        // Hoofdstuk 132: ligt het eind van je kabel te ver weg (je keek even in de lucht en liep door, of je werd
+        // geteleporteerd), dan geeft route null: we beginnen een nieuwe lijn waar je kijkt. Vroeger trok hij dan een rechte
+        // lijn dwars door de muren, en ging je hele rol in één keer op.
+        List<BlockPos> path = last == null ? null : PowerCables.route(serverLevel, last, cell);
+        boolean newLine = last != null && path == null;
+        if (path == null) {
+            path = List.of(cell);
+        }
         int placed = 0;
         // Hoofdstuk 124: tot waar de kabel nu echt ligt. Raakt de rol leeg halverwege, dan is dat niet waar je kijkt.
         BlockPos reached = null;
         for (BlockPos pos : path) {
+            // Hoofdstuk 132: nooit een kabel in een stuk wereld dat niet geladen is (dan zou de server het moeten laden).
+            if (!serverLevel.isLoaded(pos)) {
+                break;
+            }
             if (Cables.has(kind, serverLevel, pos)) {
                 reached = pos;
                 continue;
@@ -153,6 +168,10 @@ public class CableSpoolItem extends Item {
         }
         if (placed > 0 && remaining % 3 == 0) {
             serverLevel.playSound(null, cell, SoundEvents.WOOL_PLACE, SoundSource.BLOCKS, 0.4f, 1.3f);
+        }
+        // Hoofdstuk 132: zeg het als de kabel opnieuw begon, want er zit dan een gat tussen het oude eind en hier.
+        if (newLine && placed > 0) {
+            player.displayClientMessage(Component.translatable("message.imttech.cable.new_line"), true);
         }
     }
 
