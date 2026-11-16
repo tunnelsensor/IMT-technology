@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 641 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 644 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -9763,6 +9763,80 @@ Nog niet gedaan:
 - Niet in het spel bekeken (zie "Nog nooit in het spel bekeken"). De reparatie zit in de server: op jullie server moet de
   nieuwe jar ook staan.
 
+### 125. Een nieuw programma begint leeg, en je eigen templates (16 november)
+
+Jouw wens: "zorg dat al de standaard scripts die in een script komen als je een nieuw script maakt weg zijn want dat is
+onhandig dat je altijd standaar dingen moet weghalen, je kunt wel templates maken en opslaan die je dan kunt inladen bij een
+nieuw leeg aangemaakt script".
+
+- [x] **Leeg beginnen** (`LogicApp.newDiagram`, `startEmpty`): een nieuw serverdiagram, robot-, drone- en RC program is
+      helemaal leeg: geen `when keycard(...)` met accept en deny, geen `when started: pass`, geen `up(2)` en geen uitleg in
+      commentaar meer. Een nieuw global script heeft alleen de regel `global` (zonder die regel is het geen global script),
+      met de cursor eronder; de voorbeeldnaam `lockdown` en de voorbeeld-def `activate_alarm` zijn weg.
+- [x] **Grijze uitleg in een leeg programma** (`LogicApp.renderEmptyHint`): onder de cursor "Empty. Type your code here, or
+      click Help to see what you can use." (bij een RC program: een def is een knop op de auto; bij een global script: defs
+      en gedeelde namen). Die tekst staat niet in je code: hij is weg zodra je typt en wordt nooit bewaard.
+- [x] **Templates** (`logic/program/ScriptTemplates`, `LogicApp.renderTemplates`): de knop **Templates** links onder je
+      diagrammen opent rechts een paneel (waar ook Help staat): een naamvak, **Save as template** (de code links bewaren
+      onder die naam), en de lijst met je templates van de soort programma die open is. Een klik op een naam laadt hem, de
+      **x** gooit hem weg (twee keer klikken), en dezelfde naam nog eens bewaren vervangt hem (ook na een tweede klik).
+- [x] **Inladen in een nieuw, leeg programma**: in de grijze uitleg staan je templates van die soort ("Your templates
+      (click one to load it):"); één klik en de code staat erin. Staat er al code, dan vraagt de eerste klik het ("Click
+      Patrol again to replace your code"), en Ctrl+Z geeft je oude code terug (`CodeEditor.replaceAll`).
+- [x] **Per soort**: robottemplates zie je bij robotprogramma's, servertemplates bij serverdiagrammen (die van een global
+      script met een oranje G), en zo ook bij drone- en RC programs.
+- [x] **Op je pc** (`imttech/script_templates.json` in je Minecraft-map, naast de mappen `ai` en `voice`): in elke wereld en
+      op elke server dezelfde, en niemand anders ziet ze. Hooguit 100 templates, elk hooguit 8000 tekens, een naam tot 24
+      tekens. Een kapot bestand (met de hand fout aangepast) geeft geen templates, en bij het eerste bewaren blijft het oude
+      bestand staan als `script_templates.json.broken`.
+- [x] **Geen lege programma's op je server**: een nieuw programma waar nog niets in staat, telt niet als "niet bewaard"
+      (`LogicApp.dirty` kijkt naar wat Save echt zou bewaren). Weggaan vraagt niets, Save is grijs (en een klik erop of
+      Ctrl+S zegt "Nothing to save yet: write some code first"), en bij het sluiten van de desktop bewaren we geen leeg
+      programma (vroeger bewaarde het sluiten een nieuw programma met zijn voorbeeldcode).
+- [x] **Teksten**: de melding bij een leeg global script is korter ("Empty global script: add defs and shared names"): de
+      oude zin paste niet op een klein scherm, en die zie je nu bij elk nieuw global script.
+- [x] **Tests** (`LogicGameTests`, in batches die al bestonden, dus nog altijd 192 batchnamen):
+      `logic_script_templates_kept_per_kind` (bewaren, teruglezen uit het bestand, per soort, op alfabet, vervangen,
+      weggooien), `logic_script_templates_rules` (wat leeg is, geen naam of code, te lang, 100 templates, een kapot
+      bestand, een fout stuk in het bestand) en `logic_empty_programs_can_be_saved` (een leeg programma van elke soort, en
+      een global script met alleen `global`, bewaart de server zonder blokjes). 644 tests, allemaal groen.
+- [x] **Nalezing** (vier lezers met elk een eigen kijk: de schermlogica, het bestand, de editor en de schermindeling, en wat
+      elders kan breken; per kijk een controleur die elke vondst probeerde te weerleggen; samen zo'n 1,7 miljoen tokens).
+      15 vondsten bevestigd, samen 8 dingen, allemaal opgelost: (1) in een leeg programma lag de klikbare lijst met
+      templates onder het lijstje van Ctrl+Spatie, en een klik op een suggestie laadde dan een template: nu is de grijze
+      uitleg weg zolang dat lijstje open is, en krijgt het lijstje de klik; (2) na alleen een Enter en een wissel naar de
+      blokjes telde een leeg nieuw programma als gewijzigd, en dan kwam bij het sluiten toch een leeg programma op je
+      server (ook Save of Ctrl+S deed dat); (3) een klik in de lijst links, naast of boven de knop Templates, opende een
+      diagram dat daar niet getekend stond; (4) na + kon het naamvak van Templates nog aan staan, zodat je code daarin
+      kwam; (5) een template die bij het lezen werd overgeslagen (een soort die deze versie niet kent), verdween bij het
+      volgende bewaren: nu blijft het oude bestand dan eerst als `.broken` staan; (6) code van precies 8000 tekens was
+      "te lang"; (7) een strookje onder de laatste zichtbare template laadde (of gooide weg) de volgende, onzichtbare;
+      (8) na Ctrl+A, Ctrl+X in een gescrolde editor stond het beeld onder je code (de editor toonde dan niets): knippen en
+      plakken schuiven het beeld nu mee. Zelf erbij: een BOM vooraan het bestand (Kladblok) is geen kapot bestand,
+      `global  # commentaar` telt ook als global script, en een mislukte schrijfpoging laat geen `.tmp` liggen. De test
+      `logic_script_templates_rules` kijkt nu ook naar 8000 tekens, de kopie na een overgeslagen template, de BOM en
+      global met commentaar. Afgewezen (de controleur weerlegde ze): het bestand kan verouderen terwijl de desktop open
+      staat (dat duurt maar één keer de desktop open), en een leesfout telt als kapot bestand (dan blijft er een kopie).
+- [x] **Screenshots** (`gradlew runVisualCheck -Ponly=templates`, `TemplatesTour`, tp01 tot tp08): een nieuw robotprogramma
+      (leeg, met de uitleg), het paneel Templates, na Save as template, een nieuw robotprogramma met twee templates in de
+      uitleg, Patrol ingeladen, een nieuw serverdiagram (zonder de robottemplates), een nieuw global script, en de vraag als
+      er al code staat. Eerst stond de knop Templates rechtsboven naast Help, maar op 1280 x 720 schoof hij over Delete:
+      daarom staat hij links onder je diagrammen. De lange meldingen zijn ingekort zodat ze ook op dat scherm passen.
+
+Mijn invulling (verander ik op jouw woord):
+- **De regel `global` blijft** in een nieuw global script: hij maakt er een global script van (anders was + > Global script
+  hetzelfde als + > Server diagram).
+- **Templates staan op je pc**, niet op de server: zo heb je ze in elke wereld en op de server met je vrienden, en ze nemen
+  geen plaats in op je SSD's. Zeg het als je ze liever op een kern wil (gedeeld met wie daar mag programmeren).
+- **Geen kant-en-klare templates**: de lijst begint leeg en je maakt ze zelf (zoals bij de RC Car: "er mag geen
+  voorbestaande code zijn"). De voorbeelden onder EXAMPLES in Help blijven: die komen er alleen in als jij erop klikt.
+- **Een template laden vervangt alle code** (in een leeg programma meteen, anders na een tweede klik); het voegt niets in op
+  de cursor. Stukjes invoegen doe je met Help of Ctrl+Spatie. De naam van het programma (bijvoorbeeld "Robot 2") blijft.
+- Versie 2.21: iets nieuws (templates).
+
+Nog niet gedaan:
+- Niet zelf met de muis gespeeld (zie "Nog nooit in het spel bekeken").
+
 ### 127. Tab vult geen voorbeeldgetal meer in: de cursor staat tussen de haakjes (16 november)
 
 Jouw wens: "kun je zorgen dat bij het gebruiken van tab bij aanvullen van code wil ik dat overal waar een voorbeel getal
@@ -9806,6 +9880,11 @@ wait(x)".
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **Lege nieuwe programma's en templates (hoofdstuk 125)**: met tests gecontroleerd en gezien op screenshots
+      (`-Ponly=templates`, tp01 tot tp08), maar niet met de muis gespeeld. Probeer: (1) + > Robot program: is het leeg, met
+      grijze uitleg eronder? (2) Schrijf iets, klik links onder je diagrammen op Templates, typ een naam en Save as
+      template. (3) Nog eens + > Robot program: staat je template in de grijze uitleg, en staat de code erin na één klik?
+      Ctrl+Z: weer leeg? (4) Sluit Minecraft en open een andere wereld of de server: zijn je templates er nog?
 - [ ] **Een lange PoE-kabel (hoofdstuk 124)**: alleen met tests gecontroleerd. Probeer: (1) je lange PoE-kabel van
       vandaag: staat de camera (of lezer) aan het eind nu op "online" in Devices, en heeft hij beeld? (2) Staat hij ver
       weg, open dan de desktop bij je basis: komt hij binnen een paar seconden op "online", ook als je er niet bij bent

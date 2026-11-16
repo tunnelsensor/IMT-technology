@@ -11,6 +11,7 @@ import com.senne.imttech.logic.program.ProgramKind;
 import com.senne.imttech.logic.program.Script;
 import com.senne.imttech.logic.program.ScriptParser;
 import com.senne.imttech.logic.program.ScriptPrinter;
+import com.senne.imttech.logic.program.ScriptTemplates;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.Util;
@@ -43,6 +44,10 @@ import org.jetbrains.annotations.Nullable;
  *
  * De server bewaart blokjes (zie LogicGraph); de code is een andere manier om ze te laten zien (zie
  * GraphConverter). Je commentaar (#) blijft bewaard zolang de code bij de blokjes past.
+ * <p>
+ * Een nieuw programma begint leeg (hoofdstuk 125, jouw wens: "zorg dat al de standaard scripts die in een script komen
+ * als je een nieuw script maakt weg zijn"). Code die je vaak gebruikt, bewaar je met <b>Templates</b> (links onder je
+ * diagrammen) op je pc, en in een leeg programma klik je hem aan om hem in te laden (zie ScriptTemplates).
  */
 final class LogicApp {
     private static final int SIDE = 92;
@@ -100,6 +105,20 @@ final class LogicApp {
     private @Nullable CompoundTag renaming;
     private @Nullable EditBox renameBox;
 
+    /** Rechts het paneel Templates in plaats van Help (hoofdstuk 125)? Nooit allebei. */
+    private boolean templatesOpen;
+    private int templateScroll;
+    /** In het paneel Templates: de naam waaronder je de code bewaart. */
+    private @Nullable EditBox templateNameBox;
+    /** Je templates (hoofdstuk 125): het bestand op je pc, gelezen zodra de app ze voor het eerst nodig heeft. */
+    private @Nullable ScriptTemplates templates;
+
+    /** Een template in de hint van een leeg programma: waar hij staat, zodat een klik hem laadt. */
+    private record HintRow(ScriptTemplates.Template template, int x, int y, int w) {}
+
+    /** De templates in de hint, zoals ze het laatst getekend werden (leeg als er geen hint staat). */
+    private final List<HintRow> hintRows = new ArrayList<>();
+
     LogicApp(SecurityOsScreen screen, Font font) {
         this.screen = screen;
         this.editor = new CodeEditor(font);
@@ -134,6 +153,25 @@ final class LogicApp {
             renameBox.setTextColor(HudStyle.argb(255, HudStyle.WHITE));
         }
         return renameBox;
+    }
+
+    private EditBox templateNameBox() {
+        if (templateNameBox == null) {
+            templateNameBox = new EditBox(Minecraft.getInstance().font, 0, 0, 80, 10, Component.literal("Template name"));
+            templateNameBox.setBordered(false);
+            templateNameBox.setMaxLength(ScriptTemplates.MAX_NAME);
+            templateNameBox.setTextColor(HudStyle.argb(255, HudStyle.WHITE));
+        }
+        return templateNameBox;
+    }
+
+    /** Je templates (hoofdstuk 125): {@code imttech/script_templates.json} in je Minecraft-map, voor elke wereld en server. */
+    private ScriptTemplates templates() {
+        if (templates == null) {
+            templates = new ScriptTemplates(Minecraft.getInstance().gameDirectory.toPath()
+                    .resolve("imttech").resolve("script_templates.json"));
+        }
+        return templates;
     }
 
     // ================================================================ Van de server
@@ -200,6 +238,9 @@ final class LogicApp {
         codeAtSwitch = code;
         loadedName = entry.name();
         nameBox().setValue(entry.name());
+        if (templateNameBox != null && !keepCursor) {
+            templateNameBox.setValue(entry.name()); // bewaar je dit als template, dan heet het standaard zoals het diagram
+        }
         confirm = null;
         check(false);
         int loose = entry.graph().size() - entry.graph().reachable().size();
@@ -259,8 +300,21 @@ final class LogicApp {
 
     /** Zijn er wijzigingen die nog niet bewaard zijn? */
     boolean dirty() {
-        return open && (current == null || blocksEdited || !editor.text().equals(loadedCode)
-                || !nameBox().getValue().strip().equals(loadedName));
+        if (!open) {
+            return false;
+        }
+        if (current == null) {
+            // Een nieuw programma waar nog niets in staat (hoofdstuk 125: het begint leeg) is geen wijziging: weggaan gooit
+            // niets weg, en bij het sluiten van de desktop bewaren we geen leeg programma op je server. We kijken naar wat
+            // Save echt zou bewaren (de nalezing: een Enter en een wissel naar de blokjes telde al als wijziging): in de
+            // blokjes de blokjes; in de code de code, of losse blokjes die van de blokjes overbleven.
+            if (mode == Mode.BLOCKS) {
+                return blockGraph != null && blockGraph.size() > 0;
+            }
+            return !ScriptTemplates.blank(editor.text())
+                    || blocksEdited && editor.text().equals(codeAtSwitch) && blockGraph != null && blockGraph.size() > 0;
+        }
+        return blocksEdited || !editor.text().equals(loadedCode) || !nameBox().getValue().strip().equals(loadedName);
     }
 
     // ================================================================ Code <-> blokjes
@@ -349,7 +403,7 @@ final class LogicApp {
                 // Een global script (hoofdstuk 43): defs en gedeelde namen voor al je diagrammen.
                 int defs = script.functions().size();
                 int shared = script.globals().size();
-                show(blocks == 0 ? "Global script: add defs and shared names (like lockdown: bool = false) for all your diagrams"
+                show(blocks == 0 ? "Empty global script: add defs and shared names"
                         : "Global script: " + defs + (defs == 1 ? " def" : " defs") + " and " + shared
                         + (shared == 1 ? " shared name" : " shared names") + " for all your diagrams (" + blocks
                         + (blocks == 1 ? " block)" : " blocks)"), HudStyle.GREEN);
@@ -380,6 +434,12 @@ final class LogicApp {
     /** Bewaren: de code wordt blokjes, en die gaan naar de server. */
     void save() {
         if (!open) {
+            return;
+        }
+        if (current == null && !dirty()) {
+            // Een nieuw programma zonder code bewaren we niet (hoofdstuk 125, de nalezing): Save is dan grijs, maar een klik
+            // of Ctrl+S zette anders toch een leeg programma op je server.
+            show("Nothing to save yet: write some code first", HudStyle.ORANGE);
             return;
         }
         LogicGraph graph;
@@ -436,8 +496,10 @@ final class LogicApp {
 
     /**
      * Een nieuw programma van deze soort: een diagram op de server, of (hoofdstuk 23) een robotprogramma, of
-     * (hoofdstuk 25) een droneprogramma. Het krijgt een vrije naam ("Diagram 2", "Robot 1", "Flight 1") en een begin
-     * dat al klopt.
+     * (hoofdstuk 25) een droneprogramma, of (hoofdstuk 119) een RC program. Het krijgt een vrije naam ("Diagram 2",
+     * "Robot 1", "Flight 1", "RC 1") en is <b>leeg</b> (hoofdstuk 125, jouw wens: "zorg dat al de standaard scripts die in
+     * een script komen als je een nieuw script maakt weg zijn"). In het lege programma staan je templates van deze soort:
+     * klik er een aan en hij staat erin.
      */
     private void newDiagram(ProgramKind newKind) {
         choosingKind = false;
@@ -458,27 +520,33 @@ final class LogicApp {
         setKind(newKind);
         nameBox().setValue(base + number);
         loadedName = "";
-        String reader = firstInput(Op.KEYCARD);
-        // Een RC program begint zonder code (jouw wens bij de RC Car: "er mag geen voorbestaande code zijn"): alleen uitleg.
-        String code = newKind == ProgramKind.CAR
-                ? "# An RC program, for your RC Cars.\n"
-                        + "# Every def without parameters, like\n"
-                        + "# def dig():, is a button on the car.\n"
-                        + "# Load it onto a car: Program on the car's\n"
-                        + "# screen, or in the Robots app.\n"
-                        + "# Help shows what a car can do.\n"
-                : newKind == ProgramKind.ROBOT
-                ? "# A robot program: it runs on the robot itself. Press Help to see what a robot can do.\nwhen started:\n    pass\n"
-                : newKind == ProgramKind.DRONE
-                ? "# A drone program: it runs on the drone itself. Press Help to see what a drone can do.\nwhen started:\n    up(2)\n"
-                : reader != null
-                ? "when keycard(\"" + reader + "\"):\n    if card.valid:\n        accept()\n    else:\n        deny()\n"
-                : "# Start with a when. Press Help to see everything you can use.\nwhen every(10):\n    pass\n";
+        // Leeg (hoofdstuk 125): geen voorbeeldcode en geen uitleg in commentaar meer. Wat je hier kunt typen, staat in de
+        // grijze hint in de editor (die wordt niet bewaard), in Help en onder Ctrl+Spatie.
+        startEmpty(newKind, "");
+    }
+
+    /**
+     * Het begin van elk nieuw programma: deze code (leeg, of de regel global), niets om ongedaan te maken, en de blokjes
+     * erbij. Zijn we in de blokjes, dan blijven we daar.
+     */
+    private void startEmpty(ProgramKind newKind, String code) {
         editor.setText(code);
+        editor.cursorToEnd();
+        editor.setErrorLine(0);
         loadedCode = "";
         codeAtSwitch = code;
         blockGraph = GraphConverter.toGraph(ScriptParser.parse(code, newKind), null);
         blocksEdited = false;
+        templateScroll = 0;
+        // Typen gaat naar de code (de nalezing: stond het naamvak van Templates nog aan, dan kwam je code daarin).
+        nameBox().setFocused(false);
+        if (renameBox != null) {
+            renameBox.setFocused(false);
+        }
+        if (templateNameBox != null) {
+            templateNameBox.setValue("");
+            templateNameBox.setFocused(false);
+        }
         if (mode == Mode.BLOCKS) {
             canvas.setGraph(blockGraph);
             checkBlocks(false);
@@ -489,8 +557,9 @@ final class LogicApp {
     }
 
     /**
-     * Een nieuw global script (hoofdstuk 43): een diagram op de server dat met {@code global} begint, met een gedeelde
-     * naam en een def als voorbeeld. Het heet "Global 1".
+     * Een nieuw global script (hoofdstuk 43): een diagram op de server dat met {@code global} begint. Het heet "Global 1".
+     * Sinds hoofdstuk 125 staat er alleen die eerste regel in (zonder {@code global} is het geen global script), geen
+     * voorbeeldnaam en geen voorbeeld-def meer; de cursor staat eronder.
      */
     private void newGlobalScript() {
         choosingKind = false;
@@ -507,28 +576,7 @@ final class LogicApp {
         setKind(ProgramKind.SERVER);
         nameBox().setValue("Global " + number);
         loadedName = "";
-        String code = """
-                global
-
-                # Shared names: every diagram of this core reads and changes the same value.
-                lockdown: bool = false
-
-                # Defs for every diagram: use activate_alarm() in any when.
-                def activate_alarm():
-                    alarm("Alarm!")
-                """;
-        editor.setText(code);
-        loadedCode = "";
-        codeAtSwitch = code;
-        blockGraph = GraphConverter.toGraph(ScriptParser.parse(code, ProgramKind.SERVER), null);
-        blocksEdited = false;
-        if (mode == Mode.BLOCKS) {
-            canvas.setGraph(blockGraph);
-            checkBlocks(false);
-        } else {
-            editor.setFocused(true);
-            check(false);
-        }
+        startEmpty(ProgramKind.SERVER, "global\n\n");
     }
 
     private void toggleOn() {
@@ -563,7 +611,11 @@ final class LogicApp {
 
     /** Bij iets dat je niet ongedaan kunt maken: de eerste klik vraagt het, de tweede doet het. */
     private boolean confirmed(String what, String question) {
-        boolean needed = what.equals("delete") || dirty();
+        return ask(what, question, what.equals("delete") || dirty());
+    }
+
+    /** Hetzelfde, maar je zegt zelf of het gevraagd moet worden ({@code needed}; de templates van hoofdstuk 125). */
+    private boolean ask(String what, String question, boolean needed) {
         if (!needed || what.equals(confirm) && Util.getMillis() < confirmUntil) {
             confirm = null;
             return true;
@@ -667,20 +719,28 @@ final class LogicApp {
         }
         int top = a.y() + TOOLBAR;
         hoverHint = "";
+        hintRows.clear();
+        // Rechts: Help (bij de code).
+        int rx = a.x() + a.w();
+        for (String label : panelButtons().reversed()) {
+            rx -= OsDraw.buttonWidth(font, label);
+            panelButton(g, font, rx, a.y(), label, helpOpen, HudStyle.ORANGE);
+            rx -= 3;
+        }
         if (mode == Mode.BLOCKS) {
             canvas.render(g, font, x0, top, width, a.h() - TOOLBAR - STATUS, mx, my, partialTick);
         } else {
-            int helpX = a.x() + a.w() - OsDraw.buttonWidth(font, "Help");
-            if (helpOpen) {
-                g.fill(helpX, a.y(), helpX + OsDraw.buttonWidth(font, "Help"), a.y() + OsDraw.BUTTON_H, HudStyle.argb(255, 0x4A3416));
-            }
-            OsDraw.button(g, font, helpX, a.y(), "Help", true, HudStyle.ORANGE);
-            // De editor.
-            int editorW = helpOpen ? width - HELP_W - 4 : width;
-            editor.setBounds(x0, top, editorW, a.h() - TOOLBAR - STATUS);
+            // De editor, met rechts Help of Templates als dat open is.
+            boolean panel = helpOpen || templatesOpen;
+            int editorW = panel ? width - HELP_W - 4 : width;
+            int editorH = a.h() - TOOLBAR - STATUS;
+            editor.setBounds(x0, top, editorW, editorH);
             editor.render(g, mx, my);
+            renderEmptyHint(g, font, x0, top, editorW, editorH, mx, my);
             if (helpOpen) {
-                renderHelp(g, font, x0 + editorW + 4, top, HELP_W, a.h() - TOOLBAR - STATUS, mx, my, partialTick);
+                renderHelp(g, font, x0 + editorW + 4, top, HELP_W, editorH, mx, my, partialTick);
+            } else if (templatesOpen) {
+                renderTemplates(g, font, x0 + editorW + 4, top, HELP_W, editorH, mx, my, partialTick);
             }
         }
         // De statusregel (in de blokjes: wat er onder de muis is, als er iets is).
@@ -693,9 +753,10 @@ final class LogicApp {
     private int nameWidth(Font font, SecurityOsScreen.Area a) {
         int x0 = a.x() + SIDE + 6;
         int room = a.x() + a.w() - x0 - font.width("Name") - 8;
-        if (mode == Mode.CODE) {
-            room -= OsDraw.buttonWidth(font, "Help") + 4;
+        for (String label : panelButtons()) {
+            room -= OsDraw.buttonWidth(font, label) + 3;
         }
+        room -= 1;
         for (String label : toolbar()) {
             room -= OsDraw.buttonWidth(font, label) + 3;
         }
@@ -714,6 +775,28 @@ final class LogicApp {
             return List.of(view, "Check", "Save", "Delete");
         }
         return List.of(view, "Check", "Save", entry.on() ? "Off" : "On", "Delete");
+    }
+
+    /**
+     * De knoppen helemaal rechts in de knoppenbalk: Help (alleen bij de code). De knop Templates (hoofdstuk 125) staat
+     * links onder je diagrammen: in de knoppenbalk is op een klein scherm geen plek meer (1280 x 720: dan schoof hij over
+     * Delete). Help en Templates openen allebei rechts een paneel; nooit twee tegelijk.
+     */
+    private List<String> panelButtons() {
+        return mode == Mode.CODE ? List.of("Help") : List.of();
+    }
+
+    /** Waar de knop Templates staat: onderaan in de lijst met diagrammen (alleen als er een programma open is). */
+    private static int templatesButtonY(SecurityOsScreen.Area a) {
+        return a.y() + a.h() - 34 - OsDraw.BUTTON_H - 3;
+    }
+
+    /** Een knop die het paneel rechts opent (Help, Templates): met een streepje eronder als dat paneel open is. */
+    private static void panelButton(GuiGraphics g, Font font, int x, int y, String label, boolean open, int accent) {
+        int w = OsDraw.button(g, font, x, y, label, true, accent);
+        if (open) {
+            g.fill(x + 3, y + OsDraw.BUTTON_H - 2, x + w - 3, y + OsDraw.BUTTON_H - 1, HudStyle.argb(255, accent));
+        }
     }
 
     private void renderSidebar(GuiGraphics g, Font font, SecurityOsScreen.Area a, int mx, int my) {
@@ -736,10 +819,17 @@ final class LogicApp {
             OsDraw.button(g, font, x + 4, top + 15 + 5 * (OsDraw.BUTTON_H + 3), "Cancel", true, OsDraw.GREY);
             return;
         }
+        // Onderaan in de lijst: de knop Templates (hoofdstuk 125), als er een programma open is.
+        int listBottom = bottom;
+        if (open) {
+            int ty = templatesButtonY(a);
+            panelButton(g, font, x + 3, ty, "Templates", templatesOpen && mode == Mode.CODE, TEMPLATE_COLOUR);
+            listBottom = ty - 2;
+        }
         int y = top + 3;
         List<Entry> shown = new ArrayList<>(entries);
         sideScroll = Math.max(0, Math.min(sideScroll, Math.max(0, shown.size() - 1)));
-        for (int i = sideScroll; i < shown.size() && y + ROW <= bottom; i++) {
+        for (int i = sideScroll; i < shown.size() && y + ROW <= listBottom; i++) {
             Entry entry = shown.get(i);
             boolean selected = open && current != null && current.equalsIgnoreCase(entry.name());
             if (selected) {
@@ -765,7 +855,7 @@ final class LogicApp {
             }
             y += ROW;
         }
-        if (open && current == null && y + ROW <= bottom) {
+        if (open && current == null && y + ROW <= listBottom) {
             g.fill(x + 2, y - 2, x + SIDE - 2, y + ROW - 3, HudStyle.argb(255, 0x16303F));
             g.drawString(font, OsDraw.fitLeft(font, "*" + nameBox().getValue(), SIDE - 14), x + 10, y,
                     HudStyle.argb(255, HudStyle.ORANGE), false);
@@ -1287,6 +1377,314 @@ final class LogicApp {
         }
     }
 
+    // ================================================================ Templates (hoofdstuk 125)
+
+    /** De kleur van de knop en het paneel Templates: zeegroen, anders dan Help (oranje) en de knoppen links (cyaan). */
+    private static final int TEMPLATE_COLOUR = 0x7FD4C1;
+    /** Zo hoog is een regel in de lijst met templates. */
+    private static final int TEMPLATE_ROW = 10;
+    private static final String SAVE_TEMPLATE = "Save as template";
+
+    /** De kleur van een template van deze soort: zoals de letter in de lijst links (R geel, D lichtblauw, C groen). */
+    private static int kindColour(ProgramKind kind) {
+        return switch (kind) {
+            case ROBOT -> 0xF1E87C;
+            case DRONE -> DRONE_COLOUR;
+            case CAR -> CAR_COLOUR;
+            default -> HudStyle.WHITE;
+        };
+    }
+
+    /** Het kopje van het paneel: je ziet de templates van de soort programma die open is. */
+    private String templateTitle() {
+        return switch (kind) {
+            case ROBOT -> "ROBOT TEMPLATES";
+            case DRONE -> "DRONE TEMPLATES";
+            case CAR -> "RC TEMPLATES";
+            default -> "SERVER TEMPLATES";
+        };
+    }
+
+    /** Waarmee we een vraag ("klik nog eens") aan één template koppelen. */
+    private static String key(ScriptTemplates.Template template) {
+        return template.kind().name() + ":" + template.name().toLowerCase(java.util.Locale.ROOT);
+    }
+
+    /** Hoeveel rijen er in de lijst van het paneel passen (zoveel tekent renderTemplates: elke rij 9 hoog, 10 uit elkaar). */
+    private static int templateRows(int top, int bottom) {
+        return Math.max(1, (bottom - top + 1) / TEMPLATE_ROW);
+    }
+
+    private static String lines(ScriptTemplates.Template template) {
+        return template.lines() + (template.lines() == 1 ? " line" : " lines");
+    }
+
+    /** De knop Templates: het paneel open of dicht. In de blokjes gaan we eerst naar de code (een template is code). */
+    private void toggleTemplates() {
+        if (templatesOpen && mode == Mode.CODE) {
+            templatesOpen = false;
+            templateNameBox().setFocused(false);
+            return;
+        }
+        if (mode == Mode.BLOCKS) {
+            switchMode();
+        }
+        templatesOpen = true;
+        helpOpen = false;
+        renaming = null;
+        templateScroll = 0;
+        if (templateNameBox().getValue().isBlank() && current != null) {
+            templateNameBox().setValue(current);
+        }
+    }
+
+    /**
+     * Het paneel Templates, rechts naast de code (waar ook Help staat):
+     * <pre>
+     *  ROBOT TEMPLATES
+     *  [Patrol_____________]
+     *  [Save as template]
+     *  ---------------------
+     *  Come when called   x
+     *  Patrol             x
+     *  (uitleg van wat onder de muis is)
+     * </pre>
+     */
+    private void renderTemplates(GuiGraphics g, Font font, int x, int y, int w, int h, int mx, int my, float partialTick) {
+        OsDraw.field(g, x, y, x + w, y + h, false);
+        g.drawString(font, templateTitle(), x + 4, y + 3, HudStyle.argb(255, TEMPLATE_COLOUR), false);
+        // Het naamvak, met een grijs woordje erin zolang het leeg is.
+        int fy = y + 14;
+        EditBox box = templateNameBox();
+        OsDraw.field(g, x + 3, fy, x + w - 3, fy + OsDraw.BUTTON_H, box.isFocused());
+        box.setX(x + 6);
+        box.setY(fy + 2);
+        box.setWidth(w - 12);
+        box.render(g, mx, my, partialTick);
+        if (box.getValue().isEmpty() && !box.isFocused()) {
+            g.drawString(font, "template name", x + 6, fy + 2, HudStyle.argb(255, 0x46606C), false);
+        }
+        int sy = fy + OsDraw.BUTTON_H + 3;
+        boolean blank = ScriptTemplates.blank(editor.text());
+        OsDraw.button(g, font, x + 3, sy, SAVE_TEMPLATE, !blank, TEMPLATE_COLOUR);
+        int tipH = 20;
+        int top = sy + OsDraw.BUTTON_H + 6;
+        int bottom = y + h - tipH;
+        g.fill(x + 3, top - 4, x + w - 3, top - 3, HudStyle.argb(255, OsDraw.DIM));
+        List<ScriptTemplates.Template> list = templates().of(kind);
+        // De uitleg onderaan heeft twee korte regels (het paneel is smal): lange zinnen zouden afgeknipt worden.
+        String tip = list.isEmpty() ? "Kept on this PC, for every world."
+                : blank ? "Click a template to load it. x deletes it." : "Click a template to replace your code. x deletes it.";
+        if (OsDraw.inside(mx, my, x + 3, sy, OsDraw.buttonWidth(font, SAVE_TEMPLATE), OsDraw.BUTTON_H)) {
+            tip = blank ? "Write some code first." : "Keep the code on the left as a template.";
+        }
+        if (list.isEmpty()) {
+            // Nog geen templates: in de lijst zelf wat je moet doen (daar is plek voor meer regels).
+            int ey = top;
+            for (String line : OsDraw.wrap(font, "No " + kind.noun() + " templates yet. Write code on the left, type a name above,"
+                    + " then press " + SAVE_TEMPLATE + ".", w - 8, Math.max(1, (bottom - top) / TEMPLATE_ROW))) {
+                g.drawString(font, line, x + 4, ey, HudStyle.argb(255, OsDraw.GREY), false);
+                ey += TEMPLATE_ROW;
+            }
+        }
+        int rows = templateRows(top, bottom);
+        templateScroll = Math.max(0, Math.min(templateScroll, Math.max(0, list.size() - rows)));
+        int ly = top;
+        g.enableScissor(x + 1, top - 1, x + w - 1, bottom);
+        for (int i = templateScroll; i < list.size() && ly + 9 <= bottom; i++) {
+            ScriptTemplates.Template template = list.get(i);
+            boolean hover = mx >= x + 1 && mx < x + w - 1 && my >= ly - 1 && my < ly + 9;
+            boolean onDelete = hover && mx >= x + w - 12;
+            boolean asking = ("tdel:" + key(template)).equals(confirm) && Util.getMillis() < confirmUntil;
+            if (hover) {
+                g.fill(x + 1, ly - 1, x + w - 1, ly + 9, HudStyle.argb(255, 0x16303F));
+                tip = onDelete ? "Delete " + template.name() + " (click x twice)"
+                        : blank ? "Load " + template.name() + " (" + lines(template) + ")" : "Replace your code with " + template.name();
+            }
+            int room = w - 20 - (template.global() ? 10 : 0);
+            g.drawString(font, OsDraw.fitRight(font, template.name(), room), x + 4, ly,
+                    HudStyle.argb(255, kindColour(template.kind())), false);
+            if (template.global()) {
+                g.drawString(font, "G", x + w - 21, ly, HudStyle.argb(255, HudStyle.ORANGE), false);
+            }
+            g.drawString(font, "x", x + w - 9, ly, HudStyle.argb(255, asking || onDelete ? HudStyle.RED : OsDraw.GREY), false);
+            ly += TEMPLATE_ROW;
+        }
+        g.disableScissor();
+        // Onderaan: de uitleg van wat onder de muis is (over twee regels, zoals bij Help).
+        List<String> tipLines = OsDraw.wrap(font, tip, w - 6, 2);
+        for (int i = 0; i < tipLines.size(); i++) {
+            g.drawString(font, tipLines.get(i), x + 3, y + h - tipH + 1 + i * 9, HudStyle.argb(255, OsDraw.GREY), false);
+        }
+    }
+
+    private void clickTemplates(Font font, int x, int y, int w, int h, int mx, int my) {
+        int fy = y + 14;
+        if (OsDraw.inside(mx, my, x + 3, fy, w - 6, OsDraw.BUTTON_H)) {
+            editor.setFocused(false);
+            templateNameBox().setFocused(true);
+            templateNameBox().mouseClicked(mx, my, 0);
+            return;
+        }
+        int sy = fy + OsDraw.BUTTON_H + 3;
+        if (OsDraw.inside(mx, my, x + 3, sy, OsDraw.buttonWidth(font, SAVE_TEMPLATE), OsDraw.BUTTON_H)) {
+            saveTemplate();
+            return;
+        }
+        int top = sy + OsDraw.BUTTON_H + 6;
+        if (my < top - 1 || my >= y + h - 20) {
+            return;
+        }
+        // Alleen een rij die getekend is (de nalezing: onder de laatste zichtbare rij laadde een klik de volgende).
+        int row = (my - top + 1) / TEMPLATE_ROW;
+        if (row >= templateRows(top, y + h - 20)) {
+            return;
+        }
+        List<ScriptTemplates.Template> list = templates().of(kind);
+        int index = templateScroll + row;
+        if (index < 0 || index >= list.size()) {
+            return;
+        }
+        if (mx >= x + w - 12) {
+            deleteTemplate(list.get(index));
+        } else {
+            loadTemplate(list.get(index));
+        }
+    }
+
+    /** Save as template (of Enter in het naamvak): de code links bewaren onder die naam, voor deze soort programma. */
+    private void saveTemplate() {
+        if (!open) {
+            return;
+        }
+        String name = templateNameBox().getValue().strip();
+        if (name.isEmpty()) {
+            editor.setFocused(false);
+            templateNameBox().setFocused(true);
+            show("Type a name for the template first", HudStyle.ORANGE);
+            return;
+        }
+        String code = editor.text();
+        if (ScriptTemplates.blank(code)) {
+            show("Nothing to save yet: write some code first", HudStyle.ORANGE);
+            return;
+        }
+        ScriptTemplates.Template old = templates().find(kind, name);
+        if (old != null && !ask("tsave:" + key(old), "That name exists: click again to replace the template", true)) {
+            return;
+        }
+        ScriptTemplates.Result result = templates().save(name, kind, code);
+        ScriptTemplates.Template saved = templates().find(kind, name);
+        String shown = saved == null ? name : saved.name();
+        switch (result) {
+            case SAVED -> show("Saved template " + shown + " on this PC", HudStyle.GREEN);
+            case REPLACED -> show("Replaced template " + shown, HudStyle.GREEN);
+            case TOO_LONG -> show("Too long for a template: at most " + ScriptTemplates.MAX_CODE + " characters", HudStyle.RED);
+            case FULL -> show("You have " + ScriptTemplates.MAX_TEMPLATES + " templates: delete one first (x)", HudStyle.RED);
+            case NOT_WRITTEN -> show("Could not write the template file (not saved)", HudStyle.RED);
+            default -> show("Not saved: a template needs a name and some code", HudStyle.ORANGE);
+        }
+        if (result == ScriptTemplates.Result.SAVED || result == ScriptTemplates.Result.REPLACED) {
+            templateNameBox().setFocused(false);
+        }
+    }
+
+    /**
+     * Een template inladen. In een leeg programma (of een nieuw global script met alleen de regel global) meteen; staat er
+     * al code, dan vraagt de eerste klik het, en vervangt de tweede je code (Ctrl+Z geeft hem terug).
+     */
+    private void loadTemplate(ScriptTemplates.Template template) {
+        if (!open) {
+            return;
+        }
+        if (mode == Mode.BLOCKS) {
+            switchMode();
+        }
+        if (!ask("tload:" + key(template), "Click " + template.name() + " again to replace your code",
+                !ScriptTemplates.blank(editor.text()))) {
+            return;
+        }
+        editor.replaceAll(template.code());
+        editor.setFocused(true);
+        editor.setErrorLine(0);
+        templateNameBox().setFocused(false);
+        Script script = check(false);
+        if (script != null) {
+            int blocks = script.blocks();
+            show("Loaded template " + template.name() + " (" + blocks + (blocks == 1 ? " block)" : " blocks)"), HudStyle.GREEN);
+        }
+    }
+
+    private void deleteTemplate(ScriptTemplates.Template template) {
+        if (!ask("tdel:" + key(template), "Click x again to delete " + template.name(), true)) {
+            return;
+        }
+        if (templates().delete(template.kind(), template.name())) {
+            show("Deleted template " + template.name(), HudStyle.ORANGE);
+        } else {
+            show("Could not delete " + template.name() + " (template file)", HudStyle.RED);
+        }
+    }
+
+    /**
+     * In een leeg programma: grijze uitleg onder de cursor, en je templates van deze soort om aan te klikken. Het staat
+     * niet in je code: het verdwijnt zodra je iets typt, en wordt nooit bewaard. Klik je ernaast, dan typ je gewoon.
+     */
+    private void renderEmptyHint(GuiGraphics g, Font font, int ex, int ey, int ew, int eh, int mx, int my) {
+        // Niet terwijl het lijstje van Ctrl+Spatie open is (de nalezing: dat lijstje ligt over de hint, en een klik erop
+        // laadde dan een template in plaats van je keuze).
+        if (!ScriptTemplates.blank(editor.text()) || editor.popupOpen()) {
+            return;
+        }
+        int left = editor.textLeft();
+        int width = ex + ew - 8 - left;
+        int bottom = ey + eh - 2;
+        int ly = editor.lineTop(editor.lineCount()) + CodeEditor.LINE_H / 2;
+        if (width < 40 || ly < ey + 2 || ly + CodeEditor.LINE_H > bottom) {
+            return;
+        }
+        int grey = HudStyle.argb(255, OsDraw.GREY);
+        String intro = ScriptTemplates.startsGlobal(editor.text())
+                ? "A global script: write defs and shared names (like lockdown: bool = false) for all your diagrams."
+                : kind == ProgramKind.CAR ? "Empty. Write def name(): for a button on the car. Help shows what a car can do."
+                : "Empty. Type your code here, or click Help to see what you can use.";
+        g.enableScissor(ex + 1, ey + 1, ex + ew - 1, ey + eh - 1);
+        for (String line : OsDraw.wrap(font, intro, width, 3)) {
+            g.drawString(font, line, left, ly, grey, false);
+            ly += CodeEditor.LINE_H;
+        }
+        ly += CodeEditor.LINE_H / 2;
+        List<ScriptTemplates.Template> list = templates().of(kind);
+        if (list.isEmpty()) {
+            for (String line : OsDraw.wrap(font, "No " + kind.noun() + " templates yet. Code you use often: keep it with"
+                    + " Templates (under your diagrams), then click it here in a new " + kind.noun() + ".", width, 4)) {
+                g.drawString(font, line, left, ly, grey, false);
+                ly += CodeEditor.LINE_H;
+            }
+        } else if (ly + 2 * CodeEditor.LINE_H <= bottom) {
+            g.drawString(font, OsDraw.fitRight(font, "Your templates (click one to load it):", width), left, ly, grey, false);
+            ly += CodeEditor.LINE_H;
+            int room = (bottom - ly) / CodeEditor.LINE_H;
+            int shown = list.size() <= room ? list.size() : Math.max(0, room - 1);
+            for (int i = 0; i < shown; i++) {
+                ScriptTemplates.Template template = list.get(i);
+                if (OsDraw.inside(mx, my, left - 2, ly - 1, width + 4, CodeEditor.LINE_H)) {
+                    g.fill(left - 2, ly - 1, left + width + 2, ly + CodeEditor.LINE_H - 1, HudStyle.argb(255, 0x16303F));
+                    hoverHint = "Load template " + template.name() + " (" + lines(template) + ")";
+                }
+                String label = "> " + template.name() + (template.global() ? "  (global)" : "");
+                g.drawString(font, OsDraw.fitRight(font, label, width), left, ly, HudStyle.argb(255, kindColour(kind)), false);
+                hintRows.add(new HintRow(template, left - 2, ly - 1, width + 4));
+                ly += CodeEditor.LINE_H;
+            }
+            if (shown < list.size() && room > 0) {
+                g.drawString(font, OsDraw.fitRight(font, "+ " + (list.size() - shown) + " more under Templates (bottom left)", width),
+                        left, ly, grey, false);
+            }
+        }
+        g.disableScissor();
+    }
+
     // ================================================================ Muis
 
     void mouseClicked(Font font, SecurityOsScreen.Area a, int mx, int my, int button) {
@@ -1315,9 +1713,19 @@ final class LogicApp {
                 return;
             }
         }
+        // Onderaan in de lijst: de knop Templates (hoofdstuk 125).
+        if (!choosingKind && open
+                && OsDraw.inside(mx, my, a.x() + 3, templatesButtonY(a), OsDraw.buttonWidth(font, "Templates"), OsDraw.BUTTON_H)) {
+            toggleTemplates();
+            return;
+        }
         if (mx >= a.x() && mx < a.x() + SIDE && my >= top) {
-            int index = sideScroll + (my - top - 1) / ROW;
-            if (index >= 0 && index < entries.size()) {
+            // Alleen een rij die getekend is (de nalezing: naast en boven de knop Templates opende een klik een diagram dat
+            // daar niet stond). renderSidebar tekent een rij als hij helemaal boven listBottom past.
+            int listBottom = open ? templatesButtonY(a) - 2 : a.y() + a.h() - 34;
+            int row = (my - top - 1) / ROW;
+            int index = sideScroll + row;
+            if (my > top && top + 3 + (row + 1) * ROW <= listBottom && index >= 0 && index < entries.size()) {
                 Entry entry = entries.get(index);
                 if (current == null || !current.equalsIgnoreCase(entry.name())) {
                     if (confirmed("switch:" + entry.name(), "Unsaved changes: click " + entry.name() + " again to throw them away")) {
@@ -1337,6 +1745,9 @@ final class LogicApp {
         int nameW = nameWidth(font, a);
         boolean inName = OsDraw.inside(mx, my, bx, a.y(), nameW, OsDraw.BUTTON_H);
         box.setFocused(inName);
+        if (templateNameBox != null) {
+            templateNameBox.setFocused(false); // weer aan als je in het naamvak van Templates klikt (clickTemplates)
+        }
         if (inName) {
             editor.setFocused(false);
             box.mouseClicked(mx, my, 0);
@@ -1371,14 +1782,29 @@ final class LogicApp {
         int helpW = OsDraw.buttonWidth(font, "Help");
         if (OsDraw.inside(mx, my, a.x() + a.w() - helpW, a.y(), helpW, OsDraw.BUTTON_H)) {
             helpOpen = !helpOpen;
+            templatesOpen = false; // Help en Templates delen het paneel rechts (hoofdstuk 125)
             renaming = null;
             return;
         }
-        // Het Help-paneel.
+        // Het paneel rechts: Help of Templates.
         int width = a.x() + a.w() - x0;
         if (helpOpen && mx >= x0 + width - HELP_W) {
             clickHelp(font, x0 + width - HELP_W, a.y() + TOOLBAR, HELP_W, a.h() - TOOLBAR - STATUS, mx, my);
             return;
+        }
+        if (templatesOpen && mx >= x0 + width - HELP_W) {
+            clickTemplates(font, x0 + width - HELP_W, a.y() + TOOLBAR, HELP_W, a.h() - TOOLBAR - STATUS, mx, my);
+            return;
+        }
+        // In een leeg programma: een template uit de hint aanklikken laadt hem (hoofdstuk 125). Is het lijstje van
+        // Ctrl+Spatie open, dan krijgt dat de klik.
+        if (!editor.popupOpen()) {
+            for (HintRow row : hintRows) {
+                if (OsDraw.inside(mx, my, row.x(), row.y(), row.w(), CodeEditor.LINE_H)) {
+                    loadTemplate(row.template());
+                    return;
+                }
+            }
         }
         editor.mouseClicked(mx, my, button);
     }
@@ -1449,6 +1875,8 @@ final class LogicApp {
             canvas.mouseScrolled(mx, my, scrollY, Screen.hasShiftDown(), Screen.hasControlDown());
         } else if (helpOpen && mx >= a.x() + a.w() - HELP_W) {
             helpScroll = Math.max(0, helpScroll - (int) Math.signum(scrollY) * 2);
+        } else if (templatesOpen && mx >= a.x() + a.w() - HELP_W) {
+            templateScroll = Math.max(0, templateScroll - (int) Math.signum(scrollY));
         } else {
             editor.mouseScrolled(scrollY);
         }
@@ -1468,6 +1896,17 @@ final class LogicApp {
                 renaming = null;
             } else {
                 renameBox().keyPressed(keyCode, scanCode, modifiers);
+            }
+            return true;
+        }
+        if (templateNameBox != null && templateNameBox.isFocused()) {
+            // Het naamvak van Templates (hoofdstuk 125): Enter bewaart de code als template, Esc laat het.
+            if (keyCode == 257 || keyCode == 335) {
+                saveTemplate();
+            } else if (keyCode == 256) {
+                templateNameBox.setFocused(false);
+            } else {
+                templateNameBox.keyPressed(keyCode, scanCode, modifiers);
             }
             return true;
         }
@@ -1499,6 +1938,10 @@ final class LogicApp {
             nameBox().charTyped(codePoint, modifiers);
             return true;
         }
+        if (templateNameBox != null && templateNameBox.isFocused()) {
+            templateNameBox.charTyped(codePoint, modifiers);
+            return true;
+        }
         return mode == Mode.BLOCKS ? canvas.charTyped(codePoint, modifiers) : editor.charTyped(codePoint, modifiers);
     }
 
@@ -1508,6 +1951,9 @@ final class LogicApp {
         nameBox().setFocused(false);
         if (renameBox != null) {
             renameBox.setFocused(false);
+        }
+        if (templateNameBox != null) {
+            templateNameBox.setFocused(false);
         }
     }
 
@@ -1555,6 +2001,60 @@ final class LogicApp {
             switchMode();
         }
         helpOpen = true;
+        templatesOpen = false;
+    }
+
+    /** Alleen voor de screenshot-rondleiding (hoofdstuk 125): een nieuw (leeg) programma, zonder Help of Templates. */
+    void tourNewEmpty(ProgramKind newKind) {
+        open = false;
+        newDiagram(newKind);
+        if (mode == Mode.BLOCKS) {
+            switchMode();
+        }
+        helpOpen = false;
+        templatesOpen = false;
+    }
+
+    /** Alleen voor de screenshot-rondleiding (hoofdstuk 125): + > Global script, zonder Help of Templates. */
+    void tourNewGlobal() {
+        open = false;
+        newGlobalScript();
+        if (mode == Mode.BLOCKS) {
+            switchMode();
+        }
+        helpOpen = false;
+        templatesOpen = false;
+    }
+
+    /** Alleen voor de screenshot-rondleiding (hoofdstuk 125): het paneel Templates open of dicht, en deze naam erin. */
+    void tourTemplates(boolean show, @Nullable String name) {
+        if (show != (templatesOpen && mode == Mode.CODE)) {
+            toggleTemplates();
+        }
+        if (show) {
+            helpOpen = false;
+        }
+        if (name != null) {
+            templateNameBox().setValue(name);
+        }
+    }
+
+    /** Alleen voor de screenshot-rondleiding: de knop Save as template. */
+    void tourSaveTemplate() {
+        saveTemplate();
+    }
+
+    /** Alleen voor de screenshot-rondleiding: de template met deze naam aanklikken (zoals in de hint of het paneel). */
+    void tourLoadTemplate(String name) {
+        ScriptTemplates.Template template = templates().find(kind, name);
+        if (template != null) {
+            loadTemplate(template);
+        }
+    }
+
+    /** Alleen voor de screenshot-rondleiding: een template van de rondleiding weer weg, zonder te vragen. */
+    void tourForgetTemplate(ProgramKind templateKind, String name) {
+        templates().delete(templateKind, name);
     }
 
     /** Alleen voor de screenshot-rondleiding: scroll de Help tot het kopje met deze naam bovenaan staat. */
@@ -1589,6 +2089,9 @@ final class LogicApp {
         editor.setText(code);
         loadedCode = "";
         helpOpen = help;
+        if (help) {
+            templatesOpen = false;
+        }
         check(true);
     }
 }

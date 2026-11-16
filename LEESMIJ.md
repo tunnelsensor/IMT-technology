@@ -1180,6 +1180,17 @@ tegen de lezer, open dan de kluis 3 seconden; anders alarm". De server hangt aan
    Pijltjes kiezen, Enter of Tab vult in, Esc sluit; verder typen maakt de lijst korter. Na `card.`
    of `on("` gaat het lijstje vanzelf open. Een voorbeeldgetal uit het lijstje (de 2 van `wait(2)`)
    vult Tab niet in: je krijgt `wait()` met de cursor tussen de haakjes, klaar voor jouw getal.
+   **Een nieuw programma is leeg** (sinds versie 2.21): na **+** staat er geen voorbeeldcode meer in die je eerst moet
+   weghalen, alleen een grijze uitleg die niet in je code komt (weg zodra je typt). Een nieuw global script heeft alleen
+   de regel `global`, want die maakt er een global script van. Code die je vaak gebruikt, bewaar je als **template**:
+   druk links onder je diagrammen op **Templates**, typ een naam en druk op **Save as template**. In een nieuw, leeg
+   programma staan je templates dan in die grijze uitleg: klik er een aan en de code staat erin (in het paneel Templates
+   kan het ook). Staat er al code, dan vraagt de eerste klik of je die wil vervangen, en Ctrl+Z geeft hem terug. Een
+   template hoort bij één soort programma: robottemplates zie je bij robotprogramma's, servertemplates bij
+   serverdiagrammen (die van een global script met een oranje **G**), en zo ook bij drone- en RC programs. Dezelfde naam
+   nog eens bewaren vervangt hem, en met de **x** gooi je er een weg (twee keer klikken). Je templates staan op **je eigen
+   pc**, in `imttech/script_templates.json` in je Minecraft-map: je hebt ze in elke wereld en op elke server, en niemand
+   anders ziet ze. Hooguit 100 templates, elk hooguit 8000 tekens.
 
 De code lijkt op Python: wat ingesprongen staat (4 spaties), hoort bij de regel erboven.
 ```
@@ -1302,7 +1313,8 @@ when keycard("Lab door"):
   keycardlezer kijkt `if lockdown: deny()`), en de kern bewaart hem, ook na een herstart en na opnieuw
   bewaren (alleen een nieuwe naam of een andere soort begint opnieuw). Je mag zoveel global scripts hebben
   als je wil; dezelfde def of naam twee keer maken mag niet (ook niet in een gewoon diagram: Check zegt
-  het). Maak er een met **+ > Global script** in de app Logic; in de lijst staat er een oranje **G** bij,
+  het). Maak er een met **+ > Global script** in de app Logic (hij begint met alleen de regel `global`); in de lijst
+  staat er een oranje **G** bij,
   en in de blokjes is het een vinkje **global script** bovenaan het palet (alleen DEF-blokken en AT
   START-namen). Help toont onder GLOBAL SCRIPTS de defs en de gedeelde namen met hun waarde van nu.
   Een robot- of droneprogramma mag een global def ook gebruiken (als er niets in staat dat alleen de

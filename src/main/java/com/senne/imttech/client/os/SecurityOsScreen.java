@@ -404,6 +404,39 @@ public class SecurityOsScreen extends Screen {
         logic.tourNew(kind);
     }
 
+    /** Alleen voor de screenshot-rondleiding (hoofdstuk 125): in de app Logic een nieuw, leeg programma (zonder Help). */
+    public void tourLogicNewEmpty(com.senne.imttech.logic.program.ProgramKind kind) {
+        openApp(App.LOGIC);
+        logic.tourNewEmpty(kind);
+    }
+
+    /** Alleen voor de screenshot-rondleiding (hoofdstuk 125): in de app Logic + > Global script. */
+    public void tourLogicNewGlobal() {
+        openApp(App.LOGIC);
+        logic.tourNewGlobal();
+    }
+
+    /** Alleen voor de screenshot-rondleiding (hoofdstuk 125): in de app Logic het paneel Templates open of dicht. */
+    public void tourLogicTemplates(boolean show, @Nullable String name) {
+        openApp(App.LOGIC);
+        logic.tourTemplates(show, name);
+    }
+
+    /** Alleen voor de screenshot-rondleiding (hoofdstuk 125): in de app Logic de knop Save as template. */
+    public void tourLogicSaveTemplate() {
+        logic.tourSaveTemplate();
+    }
+
+    /** Alleen voor de screenshot-rondleiding (hoofdstuk 125): in de app Logic een template aanklikken. */
+    public void tourLogicLoadTemplate(String name) {
+        logic.tourLoadTemplate(name);
+    }
+
+    /** Alleen voor de screenshot-rondleiding (hoofdstuk 125): een template van de rondleiding weggooien. */
+    public void tourLogicForgetTemplate(com.senne.imttech.logic.program.ProgramKind kind, String name) {
+        logic.tourForgetTemplate(kind, name);
+    }
+
     /** Alleen voor de screenshot-rondleiding: in de app Robots de lijst met programma's voor de eerste robot (hoofdstuk 23). */
     public void tourRobotsProgram() {
         openApp(App.ROBOTS);

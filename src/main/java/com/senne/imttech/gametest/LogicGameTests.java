@@ -1416,6 +1416,197 @@ public final class LogicGameTests {
         SecurityOs.handleAction(setup.owner(), new OsActionPayload(setup.coreAbs(), "input_rename", args));
     }
 
+    // ================================================================ Hoofdstuk 125: leeg beginnen, en je eigen templates
+
+    /**
+     * Hoofdstuk 125: je eigen templates. Bewaren, teruglezen uit het bestand (de desktop opnieuw open leest hetzelfde
+     * bestand), per soort programma en op alfabet; dezelfde naam (hoofdletters maken niet uit) vervangt de code in plaats
+     * van een tweede te maken, en weggooien.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "logic_language")
+    public static void logic_script_templates_kept_per_kind(GameTestHelper helper) {
+        java.nio.file.Path folder = tempFolder();
+        try {
+            java.nio.file.Path file = folder.resolve("imttech").resolve("script_templates.json");
+            com.senne.imttech.logic.program.ScriptTemplates templates = new com.senne.imttech.logic.program.ScriptTemplates(file);
+            check(templates.size() == 0, "Zonder bestand zouden er geen templates mogen zijn");
+            var saved = com.senne.imttech.logic.program.ScriptTemplates.Result.SAVED;
+            check(templates.save("Patrol", ProgramKind.ROBOT, "when started:\r\n\twhile true:\n        forward(4)\n        turn_right()\n\n\n")
+                    == saved, "De robottemplate werd niet bewaard");
+            check(templates.save("Door", ProgramKind.SERVER, "when keycard(\"Lab door\"):\n    accept()") == saved,
+                    "De servertemplate werd niet bewaard");
+            check(templates.save("Alarm", ProgramKind.SERVER, "global\n\ndef activate_alarm():\n    alarm(\"Alarm!\")\n") == saved,
+                    "De template van een global script werd niet bewaard");
+            check(templates.save("patrol", ProgramKind.DRONE, "when started:\n    up(2)\n") == saved,
+                    "Dezelfde naam bij een andere soort is een andere template");
+            check(java.nio.file.Files.isRegularFile(file), "Het bestand " + file + " werd niet geschreven");
+            // De desktop opnieuw open: een nieuwe app leest hetzelfde bestand.
+            com.senne.imttech.logic.program.ScriptTemplates again = new com.senne.imttech.logic.program.ScriptTemplates(file);
+            check(again.size() == 4, "Uit het bestand kwamen " + again.size() + " templates in plaats van 4");
+            var server = again.of(ProgramKind.SERVER);
+            check(server.size() == 2 && server.get(0).name().equals("Alarm") && server.get(1).name().equals("Door"),
+                    "De servertemplates zouden Alarm en Door moeten zijn, op alfabet: " + server);
+            check(server.get(0).global() && !server.get(1).global(), "Alarm is een global script, Door niet");
+            check(again.of(ProgramKind.CAR).isEmpty(), "Er zouden geen RC-templates mogen zijn");
+            var patrol = again.find(ProgramKind.ROBOT, "PATROL");
+            check(patrol != null && patrol.code().equals("when started:\n    while true:\n        forward(4)\n        turn_right()\n"),
+                    "De code van Patrol zou netjes moeten zijn (\\n, spaties, één regeleinde): " + (patrol == null ? null : patrol.code()));
+            check(patrol.lines() == 4, "Patrol heeft 4 regels, niet " + patrol.lines());
+            // Wat de app inlaadt, is goede code voor zijn soort.
+            ScriptParser.parse(patrol.code(), ProgramKind.ROBOT);
+            ScriptParser.parse(server.get(0).code(), ProgramKind.SERVER);
+            // Dezelfde naam (andere hoofdletters) vervangt: geen tweede Patrol.
+            check(again.save("PATROL", ProgramKind.ROBOT, "when started:\n    forward(1)\n")
+                    == com.senne.imttech.logic.program.ScriptTemplates.Result.REPLACED, "PATROL zou Patrol moeten vervangen");
+            com.senne.imttech.logic.program.ScriptTemplates third = new com.senne.imttech.logic.program.ScriptTemplates(file);
+            var robots = third.of(ProgramKind.ROBOT);
+            check(robots.size() == 1 && robots.getFirst().name().equals("PATROL")
+                    && robots.getFirst().code().equals("when started:\n    forward(1)\n"), "Na vervangen: " + robots);
+            // Weggooien (en een tweede keer gaat niet meer).
+            check(third.delete(ProgramKind.DRONE, "Patrol"), "De dronetemplate patrol werd niet weggegooid");
+            check(!third.delete(ProgramKind.DRONE, "Patrol"), "Een template die er niet meer is, kun je niet weggooien");
+            com.senne.imttech.logic.program.ScriptTemplates fourth = new com.senne.imttech.logic.program.ScriptTemplates(file);
+            check(fourth.find(ProgramKind.DRONE, "patrol") == null && fourth.find(ProgramKind.ROBOT, "patrol") != null,
+                    "Alleen de dronetemplate zou weg moeten zijn");
+        } finally {
+            deleteFolder(folder);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Hoofdstuk 125: een nieuw programma begint leeg, en dat is goede code voor elke soort (een nieuw global script heeft
+     * alleen de regel global). Wat als leeg telt (daar laadt een template meteen), wat een template niet mag (geen naam,
+     * geen code, te lang, meer dan 100), en een kapot bestand: geen templates, en bij het eerste bewaren een kopie ervan.
+     */
+    @GameTest(template = ARENA, timeoutTicks = 20, batch = "logic_language")
+    public static void logic_script_templates_rules(GameTestHelper helper) {
+        // Leeg: niets, witregels, of alleen de regel global. Commentaar typte je zelf: dat is niet leeg.
+        check(com.senne.imttech.logic.program.ScriptTemplates.blank("")
+                && com.senne.imttech.logic.program.ScriptTemplates.blank("\n   \n")
+                && com.senne.imttech.logic.program.ScriptTemplates.blank("global\n\n"), "Leeg, witregels en alleen global tellen als leeg");
+        check(!com.senne.imttech.logic.program.ScriptTemplates.blank("# my door\n")
+                && !com.senne.imttech.logic.program.ScriptTemplates.blank("global\nglobal\n")
+                && !com.senne.imttech.logic.program.ScriptTemplates.blank("when started:\n    pass\n"), "Commentaar en code zijn niet leeg");
+        check(com.senne.imttech.logic.program.ScriptTemplates.startsGlobal("# shared things\n\nglobal\n")
+                && !com.senne.imttech.logic.program.ScriptTemplates.startsGlobal("when every(5):\n    pass\n"),
+                "global na commentaar is een global script, een when niet");
+        for (ProgramKind kind : List.of(ProgramKind.SERVER, ProgramKind.ROBOT, ProgramKind.DRONE, ProgramKind.CAR)) {
+            check(ScriptParser.parse("", kind).items().isEmpty(), "Een leeg " + kind.noun() + " zou goede code moeten zijn");
+        }
+        Script global = ScriptParser.parse("global\n\n", ProgramKind.SERVER);
+        check(global.global() && global.items().isEmpty(), "Een nieuw global script (alleen global) is een leeg global script");
+        java.nio.file.Path folder = tempFolder();
+        try {
+            java.nio.file.Path file = folder.resolve("script_templates.json");
+            com.senne.imttech.logic.program.ScriptTemplates templates = new com.senne.imttech.logic.program.ScriptTemplates(file);
+            String code = "when started:\n    pass\n";
+            check(templates.save("   ", ProgramKind.ROBOT, code) == com.senne.imttech.logic.program.ScriptTemplates.Result.NO_NAME,
+                    "Een template zonder naam mag niet");
+            check(templates.save("Empty", ProgramKind.ROBOT, "\n\n") == com.senne.imttech.logic.program.ScriptTemplates.Result.NO_CODE
+                    && templates.save("Only global", ProgramKind.SERVER, "global\n")
+                    == com.senne.imttech.logic.program.ScriptTemplates.Result.NO_CODE, "Een template zonder code mag niet");
+            check(templates.save("Big", ProgramKind.SERVER, "#" + "x".repeat(com.senne.imttech.logic.program.ScriptTemplates.MAX_CODE))
+                    == com.senne.imttech.logic.program.ScriptTemplates.Result.TOO_LONG, "Een te lange template mag niet");
+            // Precies zoveel als in de editor past (8000 tekens), mag wel (de nalezing: het regeleinde erachter telde mee).
+            check(templates.save("Exact", ProgramKind.SERVER, "#" + "x".repeat(com.senne.imttech.logic.program.ScriptTemplates.MAX_CODE - 1))
+                    == com.senne.imttech.logic.program.ScriptTemplates.Result.SAVED, "Een template van precies 8000 tekens mag wel");
+            check(new com.senne.imttech.logic.program.ScriptTemplates(file).find(ProgramKind.SERVER, "exact") != null,
+                    "De template van 8000 tekens zou ook weer gelezen moeten worden");
+            check(com.senne.imttech.logic.program.ScriptTemplates.startsGlobal("global  # shared things\n"),
+                    "global met commentaar erachter is ook een global script");
+            check(templates.save("A name that is far too long for a template", ProgramKind.ROBOT, code)
+                    == com.senne.imttech.logic.program.ScriptTemplates.Result.SAVED, "Een lange naam wordt korter, niet geweigerd");
+            check(templates.find(ProgramKind.ROBOT, "A name that is far too l") != null, "De naam zou na 24 tekens moeten stoppen");
+            for (int i = templates.size(); i < com.senne.imttech.logic.program.ScriptTemplates.MAX_TEMPLATES; i++) {
+                check(templates.save("T" + i, ProgramKind.SERVER, "when every(5):\n    pass\n")
+                        == com.senne.imttech.logic.program.ScriptTemplates.Result.SAVED, "Template T" + i + " werd niet bewaard");
+            }
+            check(templates.save("One more", ProgramKind.SERVER, "when every(5):\n    pass\n")
+                    == com.senne.imttech.logic.program.ScriptTemplates.Result.FULL, "Meer dan 100 templates mag niet");
+            check(templates.save("t5", ProgramKind.SERVER, "when every(9):\n    pass\n")
+                    == com.senne.imttech.logic.program.ScriptTemplates.Result.REPLACED, "Vervangen mag ook als het vol is");
+            // Een kapot bestand: geen templates, en het eerste bewaren houdt een kopie van het oude bestand.
+            java.nio.file.Files.writeString(file, "{ this is not json");
+            com.senne.imttech.logic.program.ScriptTemplates broken = new com.senne.imttech.logic.program.ScriptTemplates(file);
+            check(broken.size() == 0, "Uit een kapot bestand zouden geen templates mogen komen");
+            check(broken.save("Fresh", ProgramKind.ROBOT, code) == com.senne.imttech.logic.program.ScriptTemplates.Result.SAVED,
+                    "Na een kapot bestand zou bewaren moeten lukken");
+            check(java.nio.file.Files.readString(file.resolveSibling("script_templates.json.broken")).equals("{ this is not json"),
+                    "Het kapotte bestand zou als script_templates.json.broken bewaard moeten zijn");
+            check(new com.senne.imttech.logic.program.ScriptTemplates(file).size() == 1, "Na bewaren staat alleen Fresh erin");
+            // Eén fout stuk in het bestand (een onbekende soort, een template zonder code): alleen dat valt weg.
+            java.nio.file.Files.writeString(file, "{\"templates\": [{\"name\": \"Good\", \"kind\": \"ROBOT\", \"code\": \"when started:\\n    pass\\n\"},"
+                    + " {\"name\": \"Odd\", \"kind\": \"SPACESHIP\", \"code\": \"when started:\\n    pass\\n\"}, {\"name\": 5}]}");
+            com.senne.imttech.logic.program.ScriptTemplates partly = new com.senne.imttech.logic.program.ScriptTemplates(file);
+            check(partly.size() == 1 && partly.find(ProgramKind.ROBOT, "good") != null, "Alleen Good is een goede template: " + partly.size());
+            // Wat overgeslagen werd, blijft bewaard in de kopie (de nalezing: het verdween anders bij het volgende bewaren).
+            String withOdd = java.nio.file.Files.readString(file);
+            check(partly.save("Second", ProgramKind.ROBOT, code) == com.senne.imttech.logic.program.ScriptTemplates.Result.SAVED,
+                    "Bewaren na een overgeslagen template zou moeten lukken");
+            check(java.nio.file.Files.readString(file.resolveSibling("script_templates.json.broken")).equals(withOdd),
+                    "Het bestand met de overgeslagen template zou als script_templates.json.broken bewaard moeten zijn");
+            // Een BOM vooraan (Kladblok) is geen kapot bestand.
+            java.nio.file.Files.writeString(file, "\uFEFF{\"templates\": [{\"name\": \"Bom\", \"kind\": \"DRONE\", \"code\": \"when started:\\n    up(2)\\n\"}]}");
+            check(new com.senne.imttech.logic.program.ScriptTemplates(file).find(ProgramKind.DRONE, "bom") != null,
+                    "Een bestand met een BOM vooraan zou gewoon gelezen moeten worden");
+        } catch (java.io.IOException e) {
+            throw new GameTestAssertException("Het testbestand lukte niet: " + e);
+        } finally {
+            deleteFolder(folder);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Hoofdstuk 125: een nieuw programma begint leeg. Zo'n leeg programma, van elke soort, en een global script met alleen
+     * de regel global, bewaart de server ook (zonder blokjes op je SSD's).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 60, batch = "logic_runner_kinds")
+    public static void logic_empty_programs_can_be_saved(GameTestHelper helper) {
+        Setup setup = setup(helper);
+        helper.runAfterDelay(2, () -> {
+            ImtTechGameTests.startServer(helper, setup.rack(), setup.core());
+            SecurityOs.open(setup.owner(), setup.coreAbs());
+            String[][] programs = {{"Diagram 1", "SERVER", ""}, {"Robot 1", "ROBOT", ""}, {"Flight 1", "DRONE", ""},
+                    {"RC 1", "CAR", ""}, {"Global 1", "SERVER", "global\n\n"}};
+            for (String[] program : programs) {
+                ProgramKind kind = ProgramKind.valueOf(program[1]);
+                CompoundTag args = new CompoundTag();
+                args.putString("old", "");
+                args.putString("name", program[0]);
+                args.put("graph", GraphConverter.toGraph(ScriptParser.parse(program[2], kind), null).save());
+                args.putString("source", program[2]);
+                args.putString("kind", kind.name());
+                SecurityOs.handleAction(setup.owner(), new OsActionPayload(setup.coreAbs(), "logic_save", args));
+                LogicProgram stored = setup.core().logic().program(program[0]);
+                check(stored != null && stored.kind() == kind && stored.graph().size() == 0,
+                        "Het lege programma " + program[0] + " werd niet bewaard: " + lastLog(setup.core()));
+            }
+            check(setup.core().logic().program("Global 1").graph().global(), "Global 1 zou een global script moeten zijn");
+            check(setup.core().logic().blocks() == 0, "Lege programma's nemen geen plaats in op je SSD's");
+            helper.succeed();
+        });
+    }
+
+    /** Een lege map voor een testbestand (hoofdstuk 125: je templates staan in een bestand op je pc). */
+    private static java.nio.file.Path tempFolder() {
+        try {
+            return java.nio.file.Files.createTempDirectory("imttech-templates");
+        } catch (java.io.IOException e) {
+            throw new GameTestAssertException("Kon geen tijdelijke map maken: " + e);
+        }
+    }
+
+    /** Ruimt de map van {@link #tempFolder} weer op. */
+    private static void deleteFolder(java.nio.file.Path folder) {
+        try (var walk = java.nio.file.Files.walk(folder)) {
+            walk.sorted(java.util.Comparator.reverseOrder()).forEach(path -> path.toFile().delete());
+        } catch (java.io.IOException e) {
+            // Een tijdelijke map: laat maar.
+        }
+    }
+
     // ================================================================ Een lezer hernoemen met sneak + rechtsklik
 
     private static void check(boolean ok, String message) {

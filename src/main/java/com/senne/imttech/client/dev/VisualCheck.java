@@ -3834,6 +3834,11 @@ public final class VisualCheck {
             t.close(10);
         }
 
+        // --- Hoofdstuk 125 (-Ponly=templates): een nieuw programma begint leeg, en je eigen templates in de app Logic.
+        if (want("templates")) {
+            TemplatesTour.tour(t);
+        }
+
         // --- De Remote Frag (hoofdstuk 35, in plaats van C4): drie tegen een muur, op de vloer en onder een overstekje,
         // van dichtbij; de Frag Trigger in je hand met de bordjes boven je ladingen; het alarm "FRAG!" op je zone; dan de
         // klap: een gat in de muur met barsten eromheen, en barsten in obsidiaan (na drie frags nog geen gat).

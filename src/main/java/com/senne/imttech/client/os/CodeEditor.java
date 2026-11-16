@@ -188,6 +188,54 @@ final class CodeEditor {
         insertRaw(joined.toString());
     }
 
+    /**
+     * Vervangt alle code door deze tekst, met de cursor bovenaan (een template laden, hoofdstuk 125). Anders dan
+     * {@link #setText} kun je dit ongedaan maken: Ctrl+Z geeft je je oude code terug.
+     */
+    void replaceAll(String text) {
+        if (readOnly) {
+            return;
+        }
+        popup = null;
+        remember(true);
+        String clean = text.replace("\r", "").replace("\t", "    ");
+        if (clean.length() > MAX_LENGTH) {
+            clean = clean.substring(0, MAX_LENGTH);
+        }
+        lines = new ArrayList<>(List.of(clean.split("\n", -1)));
+        cursorLine = 0;
+        cursorCol = 0;
+        anchorLine = -1;
+        scrollLine = 0;
+        scrollX = 0;
+        lastEdit = 0; // wat je hierna typt, is een nieuwe stap voor Ctrl+Z
+    }
+
+    /** De cursor naar het einde van de code (een nieuw global script: onder de regel global, hoofdstuk 125). */
+    void cursorToEnd() {
+        cursorLine = lines.size() - 1;
+        cursorCol = lines.get(cursorLine).length();
+        anchorLine = -1;
+        if (w > 0 && h > 0) {
+            keepCursorVisible(); // nog nooit getekend (geen maat): dan niet schuiven, anders schuift het beeld te ver
+        }
+    }
+
+    /** Hoeveel regels er zijn. */
+    int lineCount() {
+        return lines.size();
+    }
+
+    /** Waar de tekst begint op het scherm (rechts van de regelnummers), voor de hint over een leeg script. */
+    int textLeft() {
+        return x + gutterWidth() + 4 - scrollX;
+    }
+
+    /** De bovenkant van deze regel (vanaf 0) op het scherm. */
+    int lineTop(int line) {
+        return y + 2 + (line - scrollLine) * LINE_H;
+    }
+
     // ================================================================ Tekenen
 
     private int gutterWidth() {
@@ -713,11 +761,13 @@ final class CodeEditor {
                 Minecraft.getInstance().keyboardHandler.setClipboard(selected);
                 remember(true);
                 deleteSelection();
+                keepCursorVisible(); // hoofdstuk 125 (de nalezing): na Ctrl+A, Ctrl+X stond het beeld anders onder je code
             }
             return true;
         }
         if (Screen.isPaste(key)) {
             insert(Minecraft.getInstance().keyboardHandler.getClipboard());
+            keepCursorVisible();
             return true;
         }
         if (control && key == 90) { // Ctrl+Z
