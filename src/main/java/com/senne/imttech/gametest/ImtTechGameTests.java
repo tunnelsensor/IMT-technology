@@ -5377,6 +5377,21 @@ public final class ImtTechGameTests {
             if (ImtSpy.of(owner).log().isEmpty()) {
                 throw new GameTestAssertException("Logboek blijft leeg");
             }
+            // Hoofdstuk 129: het rapportscherm haalt elke regel uit elkaar in de tijd (een kolom links) en de tekst
+            // (die afbreekt). Dat moet ook nog lukken nadat de regel over het netwerk naar de speler ging.
+            net.minecraft.network.RegistryFriendlyByteBuf buf = new net.minecraft.network.RegistryFriendlyByteBuf(
+                    io.netty.buffer.Unpooled.buffer(), helper.getLevel().registryAccess());
+            com.senne.imttech.network.SpyReportPayload.STREAM_CODEC.encode(buf, new com.senne.imttech.network.SpyReportPayload(
+                    net.minecraft.network.chat.Component.literal("Husk"), List.copyOf(ImtSpy.of(owner).log()), false));
+            net.minecraft.network.chat.Component arrived =
+                    com.senne.imttech.network.SpyReportPayload.STREAM_CODEC.decode(buf).lines().getFirst();
+            com.senne.imttech.spy.SpyLog.Entry first = com.senne.imttech.spy.SpyLog.split(arrived);
+            if (!first.stamp().getString().equals("[0:00] ")
+                    || !(first.text().getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents start)
+                    || !start.getKey().equals("imt.imttech.spy.log.start")) {
+                throw new GameTestAssertException("De eerste regel van het rapport valt niet uiteen in tijd en tekst: "
+                        + arrived + " -> tijd '" + first.stamp().getString() + "', tekst " + first.text());
+            }
             if (ImtDrones.find(owner, DroneEntity.Mode.SPY).isEmpty()) {
                 throw new GameTestAssertException("Geen spionagedrone in de lucht");
             }

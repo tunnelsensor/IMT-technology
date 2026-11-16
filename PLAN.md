@@ -10054,6 +10054,47 @@ Jouw wens: "Zorg dat het alarm niet vanzelf kan afgaan, het gebeurd enkel vanuit
   runVisualCheck -Ponly=howtopics:alarm,alarm` (dan ook al01 tot al03 van hoofdstuk 126); dat kon niet omdat je aan het
   spelen was, en een tweede spelvenster had je spel gestoord. In het spel zelf staat de nieuwe tekst al op de knop.
 
+### 129. Het rapport van de spionagedrone: lange regels breken af (16 november)
+
+Jouw melding: "Kun je eens kijken naar het spydroneraport, het spydrone raport zijn tekst komt er uit kun je dat
+oplossen."
+
+- [x] **Waarom de tekst eruit liep.** Het rapportscherm tekende elke regel uit het logboek op één lijn, zonder af te
+      breken. Het rapport van elke 30 seconden ("[3:00] Steve is at 120 64 -40, 10 hearts, holding Diamond Pickaxe. 2
+      others nearby, closest: Alex.") is ongeveer 500 pixels breed, het paneel 340: de tekst liep er rechts uit, soms tot
+      buiten je scherm. Een chatbericht van het doelwit kan nog veel langer zijn. De screenshot van dit scherm toonde
+      alleen drie korte regels, daarom viel het nooit op.
+- [x] **Afbreken.** Elke regel breekt nu af op de breedte van het paneel, ook een lang woord zonder spaties.
+- [x] **De tijd in een eigen kolom.** De tijd ("[3:07]") staat links, en de rest van een lange regel staat eronder, naast
+      die kolom: zo zie je meteen waar een nieuwe regel begint. De kolom is zo breed als de breedste tijd ("[10:00]").
+- [x] **De tekst is wit.** De tekst hing vroeger ín de tijd en erfde zo zijn kleur: de hele regel was donker cyaan. Nu is
+      alleen de tijd cyaan.
+- [x] **Scrollen per regel op het scherm.** Het schuifbalkje en de knoppen ^ en v tellen de regels zoals je ze ziet (na
+      het afbreken). Het muiswiel schuift 3 regels per tik; een touchpad stuurt kleine stukjes, die tellen op. Bij het
+      openen sta je nog altijd onderaan, bij het laatste nieuws, en wie onderaan staat, blijft daar als het venster van
+      grootte verandert. Bovenaan staat nog altijd hoeveel regels er in het logboek staan.
+- [x] **Een lange naam van het doelwit** (een naamplaatje) wordt afgeknipt met "...".
+- [x] **Een klein scherm**: is het scherm smaller of lager dan het paneel (bv. met het Unicode-lettertype, dat de
+      GUI-schaal naar 4 duwt: 320 x 180), dan wordt het paneel smaller en lager, en breken de regels opnieuw af.
+- [x] **Eén plek voor de vorm van een regel**: `SpyLog.line` maakt een regel (de server, en de screenshots), `SpyLog.split`
+      haalt hem weer uit elkaar in de tijd en de tekst (het scherm).
+- [x] **Test**: in de bestaande test `spy_drone` (dus nog altijd 651 tests) gaat de eerste regel van het logboek door de
+      netwerkcodec van het rapport, en daarna moet hij nog uiteenvallen in de tijd "[0:00] " en de tekst "Surveillance
+      of ... started.".
+- [x] **Screenshots** (`gradlew runVisualCheck -Ponly=screens`): 27_spy_report toont nu echte, lange regels (gemaakt met
+      `SpyLog.line`, zoals de server ze maakt), meer dan er passen, met het schuifbalkje. Nieuw: 27b (klein scherm, je
+      blijft onderaan), 27c (naar boven gescrold) en 27d (een doelwit met een heel lange naam). Alle vier bekeken.
+- [x] **Volledige ronde** (in een eigen worktree): de eerste ronde 650 van de 651, alleen `raid_drones_come_for_you`
+      ("een raiddrone begon 102 blokken hoog", de bekende wiebeltest die ook op een schone master omvalt); de tweede
+      ronde alle 651 groen. Het laatste stukje (onderaan blijven) kwam daarna en zit alleen in het scherm, dat de tests
+      niet starten; het is wel gecompileerd en op de screenshots bekeken.
+- [x] **Nalezing**: twee lezers (het scherm; de server, het netwerk en de test), met per lezer een controleur. De lezer
+      van de server, het netwerk en de test vond niets. De lezer van het scherm vond één ding: stond je onderaan en
+      veranderde het venster zo dat er meer regels nodig waren, dan zakte het laatste nieuws uit beeld. De controleur
+      noemde dat geen fout (het gebeurt zelden, en de lijsten van Minecraft zelf doen hetzelfde), maar het kleine deel heb
+      ik toch overgenomen: wie onderaan staat, blijft onderaan.
+- **Geen nieuwe versie**: een oplossing van iets dat er al was.
+
 ### 131. Namen met een getal: f"gate {i}" en "gate " + i (16 november)
 
 Jouw wens: "zorg dat je ook strings kunt maken zodat je herhalend namen maar met ander getal kunt gebruiken: for i in

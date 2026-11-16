@@ -901,11 +901,50 @@ public final class VisualCheck {
             t.shot(20, "25_music");
             t.open(0, RelayListScreen::new);
             t.shot(20, "26_relays");
+            // Hoofdstuk 129: echte, lange regels (zoals de server ze maakt), zodat je ziet dat ze afbreken en dat de
+            // tijd in een eigen kolom staat. Het zijn er meer dan in het scherm passen, dus er is ook een schuifbalkje.
             t.open(0, () -> new SpyReportScreen(Component.literal("Steve"), List.of(
-                    Component.literal("00:30  Steve is at 120, 64, -40"),
-                    Component.literal("01:00  Steve mined 3 diamond ore"),
-                    Component.literal("01:30  Steve entered a cave"))));
+                    com.senne.imttech.spy.SpyLog.line("0:00", Component.translatable("imt.imttech.spy.log.start", "Steve")),
+                    com.senne.imttech.spy.SpyLog.line("0:30", Component.translatable("imt.imttech.spy.report", "Steve",
+                            120, 64, -40, 10, Component.translatable("item.minecraft.diamond_pickaxe"),
+                            Component.translatable("imt.imttech.spy.company", 2, "Alex"))),
+                    com.senne.imttech.spy.SpyLog.line("0:41", Component.translatable("imt.imttech.spy.log.break",
+                            Component.translatable("block.minecraft.deepslate_diamond_ore"), 118, -52, -37)),
+                    com.senne.imttech.spy.SpyLog.line("0:58", Component.translatable("imt.imttech.spy.log.container")),
+                    com.senne.imttech.spy.SpyLog.line("1:00", Component.translatable("imt.imttech.spy.report", "Steve",
+                            121, 64, -38, 9, Component.translatable("imt.imttech.spy.empty_hands"),
+                            Component.translatable("imt.imttech.spy.alone"))),
+                    com.senne.imttech.spy.SpyLog.line("1:12", Component.translatable("imt.imttech.spy.log.chat",
+                            "meet me at the old tower tonight, bring the keycards and the laptop, the guards change at nine")),
+                    com.senne.imttech.spy.SpyLog.line("1:30", Component.translatable("imt.imttech.spy.report", "Steve",
+                            160, 71, 12, 10, Component.translatable("item.imttech.hacking_laptop"),
+                            Component.translatable("imt.imttech.spy.company", 4, "Alex"))),
+                    com.senne.imttech.spy.SpyLog.line("1:44", Component.translatable("imt.imttech.spy.log.attack",
+                            Component.translatable("entity.minecraft.zombie"))),
+                    com.senne.imttech.spy.SpyLog.line("2:00", Component.translatable("imt.imttech.spy.log.place",
+                            Component.translatable("block.minecraft.tnt"), 162, 70, 14)),
+                    com.senne.imttech.spy.SpyLog.line("2:31", Component.translatable("imt.imttech.spy.log.portal",
+                            Component.translatable("imt.imttech.dimension.nether"))),
+                    com.senne.imttech.spy.SpyLog.line("2:32", Component.translatable("imt.imttech.spy.log.dimension",
+                            Component.translatable("imt.imttech.dimension.nether"))),
+                    com.senne.imttech.spy.SpyLog.line("3:00", Component.translatable("imt.imttech.spy.report", "Steve",
+                            20, 70, -5, 10, Component.translatable("item.minecraft.flint_and_steel"),
+                            Component.translatable("imt.imttech.spy.alone"))),
+                    com.senne.imttech.spy.SpyLog.line("10:00", Component.translatable("imt.imttech.spy.log.end_time")))));
             t.shot(20, "27_spy_report");
+            // Een klein scherm: met het Unicode-lettertype gaat de GUI-schaal van 3 naar 4 (320 x 180). Het paneel wordt
+            // smaller en lager, en de regels breken opnieuw af (zo test dit ook het scherm dat van grootte verandert).
+            // Je stond onderaan, dus je blijft onderaan: de laatste regel staat nog in beeld.
+            t.step(0, () -> Minecraft.getInstance().options.forceUnicodeFont().set(true));
+            t.shot(10, "27b_spy_report_small");
+            t.step(0, () -> Minecraft.getInstance().options.forceUnicodeFont().set(false));
+            // Helemaal naar boven gescrold: de eerste regel, en het knopje van het schuifbalkje bovenaan.
+            t.step(0, () -> scrollScreen(10));
+            t.shot(10, "27c_spy_report_top");
+            // Een doelwit met een heel lange naam (een naamplaatje) en nog niets in het logboek: de naam wordt afgeknipt.
+            t.open(0, () -> new SpyReportScreen(Component.literal("Sir Reginald Fluffington the Third, Breaker of Chests"
+                    + " and Eater of All the Cake in the Village"), List.of()));
+            t.shot(20, "27d_spy_report_long_name");
             t.open(0, () -> new VoiceCommandsScreen(null));
             t.shot(20, "28_voice_commands");
             t.close(0);

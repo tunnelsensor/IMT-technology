@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
@@ -359,9 +358,9 @@ public final class ImtSpy {
         ImtServer.send(owner, line, ImtMessagePayload.Level.COMMS);
     }
 
-    /** Een regel in het logboek, met de tijd erbij. */
+    /** Een regel in het logboek, met de tijd erbij (hoe zo'n regel eruitziet: zie SpyLog). */
     private static void add(Mission mission, Component line) {
-        mission.log.add(Component.literal("[" + mission.elapsed() + "] ").withStyle(ChatFormatting.DARK_AQUA).append(line));
+        mission.log.add(SpyLog.line(mission.elapsed(), line));
         while (mission.log.size() > MAX_LOG) {
             mission.log.removeFirst();
         }
