@@ -62,6 +62,7 @@ public final class ImtConfigLoader {
             ImtConfig.Security.class,
             ImtConfig.Network.class,
             ImtConfig.Alarms.class,
+            ImtConfig.SdCards.class,
             ImtConfig.Logic.class,
             ImtConfig.Uplink.class,
             ImtConfig.Breach.class,

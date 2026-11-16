@@ -105,7 +105,17 @@ public final class DesktopRights {
             case "fs_open" -> shows("NOTES");
             case "fs_save" -> mayUse("NOTES");
             case "fs_touch" -> mayUse("FILES") || mayUse("NOTES");
-            case "fs_mkdir", "fs_move", "fs_delete", "fs_trap" -> mayUse("FILES");
+            case "fs_mkdir", "fs_delete", "fs_trap" -> mayUse("FILES");
+            // Hoofdstuk 130: kopiëren tussen je systeem en een SD-kaart (ook slepen tussen de twee) is bedienen in Files, en
+            // het gaat om de tekst van bestanden: van je systeem naar de kaart is die tekst lezen (Notes zien), van de kaart
+            // naar je systeem is tekst schrijven (Notes bedienen). Gevonden door de nalezing: anders haalde een bezoeker met
+            // alleen Files de notities van een computer zonder Notes op zijn eigen kaart. De programma's op de kaart staan in
+            // Logic (erop zetten, installeren en weggooien is bedienen, de code van een open programma bekijken is kijken).
+            case "fs_move" -> mayUse("FILES") && (onCard(args.getString("from")) == onCard(args.getString("to"))
+                    || notesFor(args.getString("from")));
+            case "fs_copy" -> mayUse("FILES") && notesFor(args.getString("from"));
+            case "sd_copy", "sd_install", "sd_delete" -> mayUse("LOGIC");
+            case "sd_view" -> shows("LOGIC");
             // De schakelaars van het hele netwerk: monsters en spelers staan in Access, de rest in Devices.
             case "flag" -> {
                 String name = args.getString("name");
@@ -138,10 +148,23 @@ public final class DesktopRights {
         };
     }
 
+    /** Hoofdstuk 130: staat dit pad (van Files) op een SD-kaart ({@code sd:/...}, zie sdcard/SdDesktop)? */
+    private static boolean onCard(String path) {
+        return path.startsWith("sd:");
+    }
+
+    /**
+     * Hoofdstuk 130: mag de tekst van {@code from} over naar de andere kant? Van de kaart naar je systeem schrijft tekst
+     * (Notes bedienen), van je systeem naar de kaart leest tekst (Notes zien).
+     */
+    private boolean notesFor(String from) {
+        return onCard(from) ? mayUse("NOTES") : shows("NOTES");
+    }
+
     /** Bij welke app hoort deze opdracht (voor de melding "View only")? Leeg als we het niet weten. */
     public static String appOf(String op, CompoundTag args) {
-        if (op.equals("fs_open") || op.equals("fs_save")) {
-            return "NOTES";
+        if (op.equals("fs_open") || op.equals("fs_save") || op.equals("fs_copy")) {
+            return "NOTES"; // fs_copy (hoofdstuk 130): Files mag het wel, maar Notes niet
         }
         if (op.startsWith("fs_")) {
             return "FILES";
@@ -174,7 +197,7 @@ public final class DesktopRights {
         if (op.startsWith("card_") || op.startsWith("cgroup_")) {
             return "KEYCARDS";
         }
-        if (op.startsWith("logic_") || op.equals("input_rename")) {
+        if (op.startsWith("logic_") || op.equals("input_rename") || op.startsWith("sd_")) {
             return "LOGIC";
         }
         if (op.startsWith("zone_")) {

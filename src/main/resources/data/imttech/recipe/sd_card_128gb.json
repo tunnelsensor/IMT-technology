@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "imttech:computer_chip"
+    },
+    {
+      "item": "imttech:computer_chip"
+    },
+    {
+      "item": "imttech:computer_chip"
+    },
+    {
+      "item": "imttech:plastic"
+    },
+    {
+      "tag": "c:gems/diamond"
+    }
+  ],
+  "result": {
+    "id": "imttech:sd_card_128gb",
+    "count": 1
+  }
+}

@@ -53,6 +53,14 @@ public class RcCarProgramScreen extends Screen {
     /** Eén regel in de lijst: een RC program van de server, of de eigen code van de auto ({@code own}). */
     private record Entry(String name, String source, boolean own) {}
 
+    /** Wat je ziet bij een RC program op slot (hoofdstuk 130): de code zelf komt nooit naar je spel. */
+    private static final String LOCKED_TEXT = """
+            # This RC program is locked (it came from an SD card).
+            # Load it onto your car and use it: start, stop and
+            # its functions on the RC Controller all work.
+            # Its code stays secret: nobody can read or change it.
+            """;
+
     private final int entityId;
     private final String owner;
     private final boolean remote;
@@ -109,7 +117,8 @@ public class RcCarProgramScreen extends Screen {
             list.add(new Entry("(its own code)", fresh.own(), true));
         }
         for (RcCarProgramsPayload.Program program : fresh.programs()) {
-            list.add(new Entry(program.name(), program.source(), false));
+            // Hoofdstuk 130: een RC program op slot (van een SD-kaart) laad je wel, maar zijn code krijgt je spel nooit.
+            list.add(new Entry(program.name(), program.locked() ? LOCKED_TEXT : program.source(), false));
         }
         entries = list;
         if (!fresh.result().isEmpty()) {

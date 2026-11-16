@@ -90,6 +90,10 @@ public final class SecurityOs {
         private int sentLogicRevision = -1;
         /** Kreeg het scherm al welke vensters er de vorige keer open stonden (19 oktober)? Dat gaat er maar één keer in. */
         private boolean sentDesktop;
+        /** Hoofdstuk 130: welke stand van de SD-kaart het scherm al kreeg (zie SdDesktop.key); null = nog niets. */
+        private @Nullable String sentSdKey;
+        /** Hoofdstuk 130: de code van een open programma op de SD-kaart, om te bekijken (één keer), of null. */
+        private @Nullable CompoundTag sdCodeToSend;
 
         /** Wie deze desktop open heeft (de app Zone toont waar hij staat). */
         private final UUID viewer;
@@ -489,7 +493,18 @@ public final class SecurityOs {
                     : "This computer does not allow that", true);
             return;
         }
-        switch (payload.op()) {
+        // Hoofdstuk 130: Files en Notes op een SD-kaart (een pad dat met sd: begint), en kopiëren tussen je systeem en de kaart.
+        String op = payload.op();
+        if (op.equals("fs_copy") || op.startsWith("fs_") && !op.equals("fs_open")
+                && com.senne.imttech.sdcard.SdDesktop.touchesCard(args)) {
+            var view = com.senne.imttech.sdcard.SdDesktop.view(level, sdHolder(level, core, session));
+            sdResult(player, core, session, op.equals("fs_copy")
+                    ? com.senne.imttech.sdcard.SdDesktop.copy(player, core, view, args.getString("from"), args.getString("to"),
+                    isOwner(player, core))
+                    : com.senne.imttech.sdcard.SdDesktop.fileOp(player, core, view, op, args, isOwner(player, core)));
+            return;
+        }
+        switch (op) {
             case "close" -> close(player);
             // De desktop ging dicht: onthoud welke vensters er open stonden (19 oktober). Uitzetten met de aan/uit-knop
             // vergeet ze: de volgende keer start hij met alleen Status.
@@ -519,7 +534,13 @@ public final class SecurityOs {
             case "req_answer" -> answerRequest(player, core, session, args.getInt("id"), args.getBoolean("ok"));
             case "phone_block" -> blockPhone(player, core, session, args.getString("id"), args.getBoolean("on"));
             case "msg_send" -> Phones.sendMessage(player, args.getString("to"), args.getString("text"));
-            case "fs_open" -> openFile(player, core, session, path(args, "path"));
+            case "fs_open" -> {
+                if (com.senne.imttech.sdcard.SdDesktop.onCard(args.getString("path"))) {
+                    openCardFile(player, core, session, args.getString("path")); // hoofdstuk 130: een bestand op de SD-kaart
+                } else {
+                    openFile(player, core, session, path(args, "path"));
+                }
+            }
             case "fs_mkdir" -> fileResult(player, core, session, core.fs().mkdir(path(args, "path")));
             case "fs_touch" -> fileResult(player, core, session, touch(core.fs(), path(args, "path")));
             case "fs_save" -> saveFile(player, core, session, path(args, "path"), args.getString("text"));
@@ -554,6 +575,15 @@ public final class SecurityOs {
                     args.getCompound("graph"), args.getString("source"), args.getString("kind"));
             case "logic_delete" -> deleteProgram(player, core, session, args.getString("name"));
             case "logic_enable" -> enableProgram(player, core, session, args.getString("name"), args.getBoolean("on"));
+            // Hoofdstuk 130: de programma's op de SD-kaart (in de app Logic).
+            case "sd_copy" -> sdResult(player, core, session, com.senne.imttech.sdcard.SdDesktop.copyToCard(player, core,
+                    com.senne.imttech.sdcard.SdDesktop.view(level, sdHolder(level, core, session)), args.getString("name"),
+                    args.getBoolean("locked")));
+            case "sd_install" -> sdResult(player, core, session, com.senne.imttech.sdcard.SdDesktop.install(player, core,
+                    com.senne.imttech.sdcard.SdDesktop.view(level, sdHolder(level, core, session)), args.getString("name")));
+            case "sd_delete" -> sdResult(player, core, session, com.senne.imttech.sdcard.SdDesktop.deleteFromCard(player, core,
+                    com.senne.imttech.sdcard.SdDesktop.view(level, sdHolder(level, core, session)), args.getString("name")));
+            case "sd_view" -> viewCardProgram(player, core, session, args.getString("name"));
             case "input_rename" -> renameInput(player, core, session,
                     new BlockPos(args.getInt("x"), args.getInt("y"), args.getInt("z")), args.getString("name"));
             case "zone_new", "zone_scan", "zone_undo", "zone_delete", "zone_grow", "zone_set" -> {
@@ -912,6 +942,11 @@ public final class SecurityOs {
             return;
         }
         var old = oldName.isEmpty() ? null : store.program(oldName);
+        // Hoofdstuk 130: een programma op slot (van een SD-kaart) verander je nooit; je spel heeft zijn code ook niet.
+        if (old != null && old.locked()) {
+            notify(player, core, session, "Not saved: " + old.name() + " is locked, you can only use it", true);
+            return;
+        }
         var clash = store.program(name);
         if (clash != null && clash != old) {
             notify(player, core, session, "Not saved: there already is a diagram called " + clash.name(), true);
@@ -978,6 +1013,66 @@ public final class SecurityOs {
         core.setChanged();
         core.logEvent(EventLog.Type.DEVICE, player.getGameProfile().getName() + " deleted the diagram \"" + name + "\"");
         notify(player, core, session, "Deleted " + name, false);
+    }
+
+    // ================================================================ De SD-kaart (hoofdstuk 130)
+
+    /**
+     * Het blok waarvan deze desktop de SD-kaart gebruikt: op een Computer de kaart in die kast; op de kern zelf en met de
+     * laptop de kaart in de kern. De telefoon heeft geen Logic of Files, dus geen kaart.
+     */
+    private static @Nullable com.senne.imttech.sdcard.SdCardHolder sdHolder(ServerLevel level, SecurityCoreBlockEntity core,
+                                                                          Session session) {
+        if (session.phone() != null) {
+            return null;
+        }
+        if (session.computer() != null) {
+            return level.getBlockEntity(session.computer()) instanceof com.senne.imttech.computer.ComputerBlockEntity computer
+                    ? computer : null;
+        }
+        return core;
+    }
+
+    /** Wat een opdracht op de SD-kaart zei, onderaan de desktop (geen tekst: alleen de nieuwe lijsten sturen). */
+    private static void sdResult(ServerPlayer player, SecurityCoreBlockEntity core, Session session,
+                                 com.senne.imttech.sdcard.SdDesktop.Result result) {
+        // Een valstrik kan de desktop net gesloten hebben (SdDesktop.copy): dan sturen we niets meer.
+        if (SESSIONS.get(player.getUUID()) != session) {
+            return;
+        }
+        if (result.text() == null) {
+            sendSnapshot(player, core, session);
+        } else {
+            notify(player, core, session, result.text(), result.error());
+        }
+    }
+
+    /** Een bestand van de SD-kaart openen in Notes (de inhoud gaat één keer naar het scherm, zoals bij een gewoon bestand). */
+    private static void openCardFile(ServerPlayer player, SecurityCoreBlockEntity core, Session session, String path) {
+        ServerLevel level = player.serverLevel();
+        var view = com.senne.imttech.sdcard.SdDesktop.view(level, sdHolder(level, core, session));
+        if (com.senne.imttech.sdcard.SdDesktop.cardFile(view, path) == null) {
+            notify(player, core, session, VirtualFs.nameOf(path) + ": no such file on the SD card", true);
+            return;
+        }
+        session.fileToSend = com.senne.imttech.sdcard.SdDesktop.PREFIX + com.senne.imttech.sdcard.SdDesktop.cardPath(path);
+        sendSnapshot(player, core, session);
+    }
+
+    /** De code van een open programma op de SD-kaart bekijken voor je het installeert (op slot: nooit). */
+    private static void viewCardProgram(ServerPlayer player, SecurityCoreBlockEntity core, Session session, String name) {
+        ServerLevel level = player.serverLevel();
+        var view = com.senne.imttech.sdcard.SdDesktop.view(level, sdHolder(level, core, session));
+        String code = com.senne.imttech.sdcard.SdDesktop.code(view, name);
+        if (code == null) {
+            notify(player, core, session, "You can't read " + name + ": it is locked, or not on the SD card", true);
+            return;
+        }
+        CompoundTag tag = new CompoundTag();
+        tag.putString("n", name);
+        tag.putString("c", code);
+        session.sdCodeToSend = tag;
+        sendSnapshot(player, core, session);
     }
 
     /** Een diagram aan- of uitzetten (uit = het blijft bewaard, maar doet niets). */
@@ -1416,7 +1511,36 @@ public final class SecurityOs {
             session.sentFs = fs;
             session.sentRevision = fs.revision();
         }
+        // Hoofdstuk 130: de SD-kaart (voor Logic en Files), alleen als er iets aan veranderde: een andere kaart, iets erop
+        // veranderd, of eruit gehaald. Nooit code; de code van een open programma alleen als je hem wilt bekijken (één keer).
+        boolean logicApp = rights.shows("LOGIC");
+        var sdView = logicApp || files ? com.senne.imttech.sdcard.SdDesktop.view(level, sdHolder(level, core, session)) : null;
+        if (logicApp || files) {
+            String sdKey = com.senne.imttech.sdcard.SdDesktop.key(sdView);
+            if (!sdKey.equals(session.sentSdKey)) {
+                data.put("sd", com.senne.imttech.sdcard.SdDesktop.snapshot(sdView));
+                session.sentSdKey = sdKey;
+            }
+        }
+        if (session.sdCodeToSend != null) {
+            if (logicApp) {
+                data.put("sdCode", session.sdCodeToSend);
+            }
+            session.sdCodeToSend = null;
+        }
         // Een net geopend bestand (één keer).
+        if (session.fileToSend != null && com.senne.imttech.sdcard.SdDesktop.onCard(session.fileToSend)) {
+            // Hoofdstuk 130: een bestand van de SD-kaart (gewoon te bewaren: een kaart heeft geen security.conf).
+            VirtualFs.Node node = com.senne.imttech.sdcard.SdDesktop.cardFile(sdView, session.fileToSend);
+            if (files && node != null) {
+                CompoundTag file = new CompoundTag();
+                file.putString("p", session.fileToSend);
+                file.putString("c", node.content());
+                file.putBoolean("s", false);
+                data.put("file", file);
+            }
+            session.fileToSend = null;
+        }
         if (session.fileToSend != null) {
             VirtualFs.Node node = fs.get(session.fileToSend);
             if (files && node != null && !node.isDir()) {
@@ -1623,7 +1747,8 @@ public final class SecurityOs {
             logic.putInt("rev", store.revision());
             ListTag programs = new ListTag();
             for (var program : store.programs()) {
-                programs.add(program.save());
+                // Hoofdstuk 130: van een programma op slot alleen de naam en zo, nooit de blokjes of de code.
+                programs.add(program.saveForClient());
             }
             logic.put("programs", programs);
             data.put("logic", logic);

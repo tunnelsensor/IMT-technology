@@ -58,10 +58,12 @@ public class ComputerBlock extends BaseEntityBlock implements PowerConnectable, 
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     /** Werkt hij (brandt de ring, licht de monitor op)? Zie ComputerBlockEntity.updateOn. */
     public static final BooleanProperty ON = BooleanProperty.create("on");
+    /** Hoofdstuk 130: zit er een SD-kaart in de kast? Dan steekt er vooraan een kaartje uit de gleuf. */
+    public static final BooleanProperty CARD = BooleanProperty.create("card");
 
     public ComputerBlock(Properties properties) {
         super(properties);
-        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(ON, false));
+        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(ON, false).setValue(CARD, false));
     }
 
     @Override
@@ -71,7 +73,7 @@ public class ComputerBlock extends BaseEntityBlock implements PowerConnectable, 
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, ON);
+        builder.add(FACING, ON, CARD);
     }
 
     @Override
@@ -154,9 +156,41 @@ public class ComputerBlock extends BaseEntityBlock implements PowerConnectable, 
             PowerGrid.changed();
             if (level instanceof ServerLevel serverLevel) {
                 Computers.gone(serverLevel, pos);
+                // Hoofdstuk 130: de SD-kaart valt eruit.
+                if (level.getBlockEntity(pos) instanceof ComputerBlockEntity entity) {
+                    com.senne.imttech.sdcard.SdCardSlots.dropOnBreak(level, pos, entity);
+                }
             }
         }
         super.onRemove(state, level, pos, newState, movedByPiston);
+    }
+
+    /**
+     * Hoofdstuk 130: rechtsklik met een SD-kaart steekt hem in de kast; sneak met een lege hand haalt hem eruit (zie
+     * SdCardSlots). Al de rest zoals altijd: hoe hij ervoor staat.
+     */
+    @Override
+    protected net.minecraft.world.ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
+                                                                  Player player, net.minecraft.world.InteractionHand hand,
+                                                                  BlockHitResult hit) {
+        if (stack.isEmpty()) {
+            if (player.isSecondaryUseActive() && state.getValue(CARD)) {
+                if (player instanceof ServerPlayer serverPlayer && level.getBlockEntity(pos) instanceof ComputerBlockEntity entity) {
+                    com.senne.imttech.sdcard.SdCardSlots.takeOut(serverPlayer, pos, entity,
+                            com.senne.imttech.sdcard.SdCardSlots.mayTakeOut(serverPlayer, entity));
+                }
+                return net.minecraft.world.ItemInteractionResult.sidedSuccess(level.isClientSide);
+            }
+            return net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+        if (hand != net.minecraft.world.InteractionHand.MAIN_HAND || !com.senne.imttech.sdcard.SdCardItem.isCard(stack)) {
+            return super.useItemOn(stack, state, level, pos, player, hand, hit);
+        }
+        if (player instanceof ServerPlayer serverPlayer && level.getBlockEntity(pos) instanceof ComputerBlockEntity entity) {
+            com.senne.imttech.sdcard.SdCardSlots.insert(serverPlayer, pos, entity, stack,
+                    com.senne.imttech.sdcard.SdCardSlots.mayUse(serverPlayer, entity));
+        }
+        return net.minecraft.world.ItemInteractionResult.sidedSuccess(level.isClientSide);
     }
 
     /** Rechtsklik op de kast: hoe hij ervoor staat (openen doe je op de monitor). */

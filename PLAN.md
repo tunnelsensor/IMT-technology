@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 651 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 658 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -10095,6 +10095,91 @@ oplossen."
       ik toch overgenomen: wie onderaan staat, blijft onderaan.
 - **Geen nieuwe versie**: een oplossing van iets dat er al was.
 
+### 130. De SD-kaart: programma's en bestanden doorgeven of verkopen (16 november)
+
+Jouw wens: "zorg dat je programs ook op een sd card kunt zetten, deze kun je in je security core zetten of op een desktop
+aansluiten, zo kun je makklijk securiy files/programs doorgeven aan ander bv je hebt een goeie minerobot gemaakt en je wilt
+dat doorgeven/verkopen aan iemand"
+
+Jouw antwoorden (één vragenronde): **open of op slot**, per programma te kiezen als je het op de kaart zet, en "als het
+opslot is kun je het enkel gebruiken zoals start stop bij een rc car… je kunt de code niet zien anders zou je die kunnen
+overnemen"; insteken in de **Security Core en de Computer**; op de desktop **in Logic en Files zelf** (geen nieuwe app);
+**drie maten**.
+
+- [x] **De kaart** (`sdcard/SdCardItem`): **SD Card (8 GB)**, **(32 GB)** en **(128 GB)**, elk met een eigen kleur (blauw,
+      groen, paars) en 1, 2 of 3 streepjes op het etiket. Er passen 4, 16 of 64 programma's op en 8, 32 of 128 bestanden
+      (en evenveel mappen; `[sdCards] programs` en `files`). Recepten zonder vorm: een chip, plastic en koperdraad; twee
+      chips, plastic en een goudstaaf; drie chips, plastic en een diamant. De tooltip zegt wat erop staat en hoeveel op
+      slot. Wat erop staat, bewaart de **server** (`sdcard/SdCards`, bij de wereld in `imttech_sd_cards`): op het item
+      staat alleen zijn nummer en die samenvatting (`SdCardData`), want alles op een item gaat ook naar het spel van wie
+      het vasthoudt, en dan kon je een programma op slot toch lezen. Alles van een kaart weggooien maakt hem weer leeg.
+- [x] **Erin en eruit** (`sdcard/SdCardSlots`, `SecurityCoreBlock.useItemOn`, `ComputerBlock.useItemOn`): rechtsklik met de
+      kaart op de kern of de computerkast; vooraan steekt dan een kaartje uit een gleuf (de blokstand `card`, een klein
+      extra model: van het blok zelf gaat niets naar je spel). Sneak met een lege hand haalt hem eruit, in je hand. Een
+      kern: de eigenaar en wie hij vertrouwt; een computer: wie hem mag gebruiken of instellen. Eruit halen ook wie hem erin
+      stak. Iets anders in je hand opent de desktop zoals altijd. Breekt het blok, dan valt de kaart eruit (precies één
+      keer: hij staat naast de instellingen van de kern, niet erin, dus een weggehakte kern neemt hem niet mee).
+- [x] **In Logic** (`client/os/LogicApp`, `sdcard/SdDesktop`): onder je programma's de kop **SD** met wat er op de kaart
+      staat. De kop opent de pagina van de kaart (hoe vol, en per programma van je server **Copy** en **Copy locked**); een
+      programma van de kaart opent zijn pagina (**Install on this server**, **Delete from card**, en de code van een open
+      programma om te lezen). Installeren doet dezelfde controles als Save; een diagram staat daarna uit; een bezette naam
+      krijgt een nummer. De editor blijft zoals hij was: klik je je diagram weer aan, dan staat alles er nog.
+- [x] **Op slot** (`LogicProgram.locked` en `author`): een programma op slot draait, gaat aan en uit en op een robot of RC
+      Car, en weg, maar nooit naar iemands spel: de desktop krijgt alleen zijn naam, soort, aan/uit, van wie en hoeveel
+      blokjes (`saveForClient`); het scherm Program van de auto toont "locked" in plaats van de code; het item van een robot,
+      drone of RC Car stuurt het zonder code (de schijf houdt het wel, zodat hij het na neerzetten nog draait); het logboek
+      noemt bij een fout geen stukjes code. Save over een programma op slot lukt niet, en op een kaart zetten ook niet (dus
+      niet doorverkopen door te kopiëren). In Logic: een slotje in de lijst en een eigen pagina in plaats van de editor.
+- [x] **In Files** (`client/os/FilesApp`): de kaart is de map **sd** bovenaan (paden `sd:/...`). Mappen, notities,
+      hernoemen en weggooien werken op de kaart; slepen tussen je systeem en de kaart kopieert, en rechtsklik geeft **Copy
+      to SD card** en **Copy to your folder**. security.conf gaat nooit mee, valstrikken niet als valstrik, en wie niet de
+      eigenaar is en een valstrik kopieert, laat hem afgaan. Notes opent en bewaart bestanden op de kaart.
+- [x] **Rechten op een Computer** (`DesktopRights`): op de kaart zetten, installeren en weggooien vraagt Logic op Use, de
+      code lezen Logic op View; kopiëren van bestanden Files op Use. Op een computer gebruikt de desktop de kaart in die
+      kast, op de kern en met de laptop de kaart in de kern; de telefoon heeft geen kaart.
+- [x] **Nalezing** (vier lezers: lekken van code op slot, de server en dubbele kaarten, de schermen, wat er stuk kon gaan;
+      per lezer een controleur): 14 dingen gevonden, 11 echt (samen 9 verschillende), allemaal opgelost.
+      - *Het grootste*: een robot, drone of RC Car met een programma op slot nam de hele code mee in zijn item. Dat ging
+        niet over het netwerk, maar wel als je het item op een holotafel legde, in een rugzak die je neerzet of in een
+        versierde pot: dan kreeg iedereen in de buurt het. Nu staat een programma op slot nooit meer op een item: alleen
+        een vingerafdruk ervan, en het hele programma staat op de server (`logic/LockedPrograms`). Neergezet haalt de
+        server het terug (ook als je spel het item terugstuurt, bv. in creative: dat was eerst een verlies).
+      - *Rechten*: op een Computer met Files op Use maar zonder Notes kon je toch de tekst van een bestand naar je kaart
+        kopiëren (of tekst van je kaart in een bestand zetten). Nu vraagt kopiëren ook Notes (zien om te lezen, bedienen
+        om te schrijven).
+      - *Typen*: had het naamvak de focus en klikte je op SD, dan ging wat je typte ongezien in de naam van je programma,
+        en het sluiten van de desktop bewaarde die nieuwe naam. Nu staat er op de pagina's van de kaart en bij een
+        programma op slot geen tekstvak meer aan.
+      - *Kleine dingen*: de melding als een programma op slot niet past, noemde namen uit zijn code (nu: "install the
+        global script Utils from the card first" of "ask Senne"); de map sd zelf kon je slepen; de uitleg "Drag onto .."
+        klopte niet in een map op de kaart; een lange kaartnaam liep uit de titel; twee regels tegelijk gekozen in de
+        lijst; en een groene kern liet bij het breken rode brokjes vallen (door de nieuwe blockstate).
+      - De controleurs wezen er drie af (een selectie na slepen die al zo werkte, een lange statusregel die al netjes
+        afgeknipt werd, en de kaart onder 9 programma's: die zie je door te scrollen).
+- [x] **How it works**: een nieuw onderwerp **SD Card** op het tabblad Security (`SecurityItemScenes.sdCard`, vijf
+      hoofdstukjes, met drie foto's van de echte schermen). 67 van de 67 onderwerpen zijn klaar.
+- [x] **Tests** (7 nieuwe, in de bestaande batches "security_os", "computers" en "robot_upload", dus nog altijd 192
+      batchnamen; `gametest/SdCardGameTests`): `sd_card_goes_in_and_out_of_a_core`,
+      `sd_card_carries_programs_to_another_core`, `locked_program_is_used_but_never_read`,
+      `sd_card_files_copy_without_the_secrets`, `sd_card_capacity_and_saving`, `sd_card_in_a_computer` en
+      `locked_rc_program_runs_on_a_car_but_stays_secret`.
+- [x] **Volledige ronde**: 658 tests, alle groen (ook na de oplossingen van de nalezing en bovenop hoofdstuk 129 en 131). In
+      een ronde daarvoor viel alleen de bekende wiebeltest `guard_searches_where_he_lost_you` om.
+- [x] **Gezien** (`gradlew runVisualCheck -Ponly=sdcard,howtopics:sdcard`, sc01 tot sc10): het kaartje vooraan in de kern
+      (naast het lampje) en in de computer (in de bovenste drive bay), Logic met het lijstje SD, de pagina van de kaart,
+      een open programma op de kaart (met zijn code), een programma op slot op de kaart, een programma op slot op je
+      server, Files met de map sd, op de kaart, het menu met Copy to SD card, en de tooltip van de kaart. Ook de drie
+      plaatjes voor How it works.
+- [x] LEESMIJ (een nieuw stuk "De SD-kaart: programma's en bestanden doorgeven of verkopen", en de lijst van How it works),
+      CurseForge-beschrijving, versie 2.23.0, protocol 50 (de lijst met RC programs kreeg "op slot" erbij: vrienden met een
+      oudere versie kunnen niet op je server).
+
+Mijn invullingen (zeg het als je iets anders wil): 4/16/64 programma's en 8/32/128 bestanden; wat erop staat op de server
+in plaats van op het item; eruit met sneak + lege hand; de kaart gaat ook in creative uit je hand; een global script gaat
+altijd open (je andere programma's hebben zijn namen nodig); een geïnstalleerd diagram staat uit; een bezette naam krijgt
+een nummer; een programma op slot kan niet hernoemd worden; bestanden zijn nooit op slot; de laptop gebruikt de kaart in
+de kern.
+
 ### 131. Namen met een getal: f"gate {i}" en "gate " + i (16 november)
 
 Jouw wens: "zorg dat je ook strings kunt maken zodat je herhalend namen maar met ander getal kunt gebruiken: for i in
@@ -10169,6 +10254,13 @@ range(3): on("gate" + i) of met string interpolation: for i in range(3): on(f"ga
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
 eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er raar uitziet.
 
+- [ ] **De SD-kaart (hoofdstuk 130)**: met tests en de rondleiding gecontroleerd (sc01 tot sc10), maar niet met de muis
+      gespeeld en niet met twee echte spelers. Probeer: (1) steek een kaart in je kern (rechtsklik) en haal hem eruit
+      (sneak + lege hand): zie je het kaartje vooraan, en komt hij in je hand? (2) In Logic: klik op SD, zet een programma
+      erop met Copy en een met Copy locked, en kijk of het lijstje klopt. (3) Geef de kaart aan een vriend: kan hij op zijn
+      kern installeren, het programma op slot aanzetten of op zijn RC Car laden, maar nergens de code zien? (4) In Files:
+      sleep een notitie op sd, en van de kaart terug op ..: wordt het gekopieerd? (5) Een kaart in een Computer van je
+      receptie: zie je op die pc de kaart van de kast (niet die van de kern)?
 - [ ] **Namen met een getal (hoofdstuk 131)**: met tests gecontroleerd, maar niet in het spel gezien. Probeer: (1) zet drie
       relais "gate 0", "gate 1" en "gate 2" neer en typ `for i in range(3):` met daaronder `on(f"gate {i}")`: kleurt
       `f"gate {i}"` zoals `$"..."` (de `{i}` in de kleur van code), en zegt Save groen "Saved ..." zonder "no device

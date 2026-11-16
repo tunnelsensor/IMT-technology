@@ -1,6 +1,7 @@
 {
   "parent": "minecraft:block/orientable",
   "textures": {
+    "particle": "imttech:block/security_core_side",
     "front": "imttech:block/security_core_front",
     "side": "imttech:block/security_core_side",
     "top": "imttech:block/security_core_top"

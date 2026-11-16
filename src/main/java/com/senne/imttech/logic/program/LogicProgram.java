@@ -16,20 +16,50 @@ import net.minecraft.nbt.CompoundTag;
  *
  * Hoofdstuk 23: elk programma heeft een soort ({@link ProgramKind}). Een robotprogramma staat ook op de
  * server (het telt mee voor je SSD's), maar de server voert het niet uit: dat doet de robot.
+ * <p>
+ * Hoofdstuk 130 (de SD-kaart): een programma kan <b>op slot</b> zijn ({@code locked}). Dat gebeurt als iemand het op slot
+ * op een SD-kaart zet om het door te geven of te verkopen (jouw wens: "als het opslot is kun je het enkel gebruiken zoals
+ * start stop bij een rc car... je kunt de code niet zien anders zou je die kunnen overnemen"). Wie het installeert, kan
+ * het laten draaien, aan- en uitzetten, op een robot of RC Car laden en weggooien, maar nooit de code zien of veranderen,
+ * en het ook niet weer op een kaart zetten. {@code author} is wie het op slot zette ("" bij een open programma). De
+ * blokjes en de code staan wel op de server (die moet het kunnen uitvoeren), maar gaan nooit naar iemands spel: zie
+ * {@link #saveForClient()}.
  */
-public record LogicProgram(String name, boolean enabled, LogicGraph graph, String source, ProgramKind kind) {
+public record LogicProgram(String name, boolean enabled, LogicGraph graph, String source, ProgramKind kind, boolean locked,
+                           String author) {
     /** Zo lang mag de naam van een diagram hooguit zijn. */
     public static final int MAX_NAME = 24;
     /** Zo lang mag de bewaarde code hooguit zijn (tekens). */
     public static final int MAX_SOURCE = 8000;
+    /** Zo lang mag de naam van wie een programma op slot zette hooguit zijn (een Minecraft-naam is hooguit 16). */
+    public static final int MAX_AUTHOR = 32;
+
+    public LogicProgram {
+        author = author == null ? "" : author.length() > MAX_AUTHOR ? author.substring(0, MAX_AUTHOR) : author;
+    }
 
     /** Een diagram op de server (zoals vóór hoofdstuk 23). */
     public LogicProgram(String name, boolean enabled, LogicGraph graph, String source) {
         this(name, enabled, graph, source, ProgramKind.SERVER);
     }
 
+    /** Een open programma (zoals vóór hoofdstuk 130: niet op slot). */
+    public LogicProgram(String name, boolean enabled, LogicGraph graph, String source, ProgramKind kind) {
+        this(name, enabled, graph, source, kind, false, "");
+    }
+
     public LogicProgram withEnabled(boolean on) {
-        return new LogicProgram(name, on, graph, source, kind);
+        return new LogicProgram(name, on, graph, source, kind, locked, author);
+    }
+
+    /** Hetzelfde programma met een andere naam (hoofdstuk 130: installeren van een SD-kaart als die naam al bestaat). */
+    public LogicProgram withName(String newName) {
+        return new LogicProgram(newName, enabled, graph, source, kind, locked, author);
+    }
+
+    /** Hetzelfde programma, op slot (of weer open), met wie het op slot zette. */
+    public LogicProgram withLock(boolean lock, String by) {
+        return new LogicProgram(name, enabled, graph, source, kind, lock, lock ? by : "");
     }
 
     public CompoundTag save() {
@@ -43,7 +73,67 @@ public record LogicProgram(String name, boolean enabled, LogicGraph graph, Strin
         if (kind != ProgramKind.SERVER) {
             tag.putString("Kind", kind.name());
         }
+        if (locked) {
+            tag.putBoolean("Locked", true);
+            tag.putString("Author", author);
+        }
         return tag;
+    }
+
+    /**
+     * Wat het spel van een speler van dit programma krijgt (hoofdstuk 130). Een open programma: alles ({@link #save()}). Een
+     * programma op slot: alleen zijn naam, aan of uit, zijn soort, dat het op slot is en van wie, en hoeveel blokjes het
+     * heeft (voor wat het op je SSD's inneemt), maar <b>geen blokjes en geen code</b>: uit de blokjes kun je de code weer
+     * maken, dus die zijn net zo geheim. In je spel wordt het zo een leeg programma met {@code locked} = true.
+     */
+    public CompoundTag saveForClient() {
+        if (!locked) {
+            return save();
+        }
+        CompoundTag tag = new CompoundTag();
+        tag.putString("Name", name);
+        tag.putBoolean("On", enabled);
+        tag.put("Graph", new CompoundTag());
+        if (kind != ProgramKind.SERVER) {
+            tag.putString("Kind", kind.name());
+        }
+        tag.putBoolean("Locked", true);
+        tag.putString("Author", author);
+        tag.putInt("Blocks", graph.size());
+        return tag;
+    }
+
+    /**
+     * Een opgeslagen programma over het netwerk (in het item van een robot of drone): een programma op slot gaat zonder
+     * blokjes en code (zie {@link #redact}), een open programma zoals het is. Op de schijf blijft alles staan.
+     */
+    public static final net.minecraft.network.codec.StreamCodec<io.netty.buffer.ByteBuf, CompoundTag> NETWORK_TAG =
+            net.minecraft.network.codec.ByteBufCodecs.COMPOUND_TAG.map(tag -> tag, LogicProgram::redact);
+
+    /** Is dit een (opgeslagen) programma op slot? Zonder het helemaal in te lezen (voor de netwerkcodecs van robots). */
+    public static boolean isLocked(CompoundTag tag) {
+        return tag.getBoolean("Locked");
+    }
+
+    /** Wat er van een opgeslagen programma op slot over het netwerk mag (zie {@link #saveForClient()}), zonder het in te lezen. */
+    public static CompoundTag redact(CompoundTag tag) {
+        if (!isLocked(tag)) {
+            return tag;
+        }
+        CompoundTag safe = new CompoundTag();
+        safe.putString("Name", tag.getString("Name"));
+        safe.putBoolean("On", !tag.contains("On") || tag.getBoolean("On"));
+        safe.put("Graph", new CompoundTag());
+        if (tag.contains("Kind")) {
+            safe.putString("Kind", tag.getString("Kind"));
+        }
+        safe.putBoolean("Locked", true);
+        safe.putString("Author", tag.getString("Author"));
+        // De verwijzing naar het hele programma op de server (logic/LockedPrograms): een vingerafdruk, geen code.
+        if (tag.contains("Ref")) {
+            safe.putString("Ref", tag.getString("Ref"));
+        }
+        return safe;
     }
 
     public static LogicProgram load(CompoundTag tag) {
@@ -63,7 +153,8 @@ public record LogicProgram(String name, boolean enabled, LogicGraph graph, Strin
             source = converted != null ? converted : printed;
         }
         return new LogicProgram(tag.getString("Name"), !tag.contains("On") || tag.getBoolean("On"),
-                graph, source.length() > MAX_SOURCE ? "" : source, kind);
+                graph, source.length() > MAX_SOURCE ? "" : source, kind, tag.getBoolean("Locked"),
+                tag.getBoolean("Locked") ? tag.getString("Author") : "");
     }
 
     /** {@code repeat(3):}, met wat ervoor staat (inspringen) en erna (commentaar). */

@@ -207,7 +207,7 @@ Elk item dat meer doet dan in een recept gaan, krijgt een animatie die laat zien
   **wijs je een blok aan**, dan zie je hoe het heet. Heeft een item meer animaties, dan blader je met de
   pijltjes bovenaan. **Esc** brengt je terug naar je inventaris, met alles nog zoals het was. In je eigen
   wereld staat het spel stil terwijl je kijkt.
-- **Alles is er** (66 van de 66), per tabblad:
+- **Alles is er** (67 van de 67), per tabblad:
   - *Equipment*: de bril, het harnas (minder schade, vliegen, landen, de laser cannon), de mini-raketten, de
     drones van je arsenaal, de Illusion Jammer, de holster, de pouches en de slings, de militaire rugzakken, de
     MOLLE-pouches en de body armor.
@@ -225,7 +225,7 @@ Elk item dat meer doet dan in een recept gaan, krijgt een animatie die laat zien
   - *Security*: de Security Core, computer en monitor, zones, de Block Reinforcer, handboeien, keycards en lezers,
     het codepaneel, autorisatiecodes en de Auth Console, de netwerkknop en -hendel, laserpoorten, de laserbrug, de
     schildkoepel, camera's en de schermmuur, de Alarm Speaker, torentjes, de Bypass Kit (lezers en panelen hacken, laserdraden
-    knippen en zakkenrollen), de Hacking Laptop en de I.M.T Phone.
+    knippen en zakkenrollen), de Hacking Laptop, de I.M.T Phone en de SD-kaarten.
   - *Robots*: een guard robot bouwen en programmeren, modules solderen en wat ze doen, security drones, de RC Car, het
     opslagsysteem (de Storage Interface, de Chest Sensor en de Charging Pad) en training.
   - *Datacenter*: serverracks en warmte en fans.
@@ -1098,6 +1098,42 @@ De **I.M.T Phone** (een zwart glaspaneel, een computerchip en een ijzerstaaf) is
 - **Gestolen?** Op de desktop van de kern (of met de laptop) staat in **Access** elke telefoon die aan de kern
   hangt, met **Block**: een geblokkeerde telefoon gaat meteen dicht en opent niet meer, tot je hem weer
   vrijgeeft. Messages staat ook op de gewone desktop.
+
+### De SD-kaart: programma's en bestanden doorgeven of verkopen (sinds 16 november)
+Heb je een goed programma gemaakt (een RC program dat netjes mijnt, een robot die patrouilleert, een slim diagram) en wil
+je het aan een vriend geven of verkopen? Zet het op een **SD-kaart**. Er zijn drie maten: **8 GB** (4 programma's en 8
+bestanden), **32 GB** (16 en 32) en **128 GB** (64 en 128). Recepten (zonder vorm): een computerchip, plastic en een
+koperdraad (8 GB); twee chips, plastic en een goudstaaf (32 GB); drie chips, plastic en een diamant (128 GB). Een naam
+geef je de kaart in een aambeeld.
+
+- **Erin en eruit.** Rechtsklik met de kaart op je **Security Core** of op een **Computer** (de kast): hij schuift erin, en
+  je ziet een kaartje in de gleuf zitten. **Sneak met een lege hand** op het blok haalt hem eruit (in je hand). In een kern
+  steken de eigenaar en wie hij vertrouwt (Access, zijn team) een kaart; in een computer iedereen die die computer mag
+  gebruiken. Eruit halen mag wie hem erin stak, en de eigenaar en wie hij vertrouwt. Breekt het blok, dan valt de kaart
+  eruit (een weggehakte kern neemt hem niet mee).
+- **In Logic.** Zit er een kaart in, dan staat onder je programma's **SD** met wat erop staat. Klik op **SD**: de pagina van
+  de kaart, met al je programma's en per programma **Copy** (open: wie het krijgt, kan de code lezen en veranderen) of
+  **Copy locked** (op slot). Staat er al een programma met die naam op de kaart, dan wordt het vervangen (zo werk je je
+  "product" bij). Klik op een programma van de kaart: **Install on this server** zet het op jouw server (een diagram staat
+  dan nog uit: zet het zelf aan; bestaat de naam al, dan krijgt het een nummer, "Mine car 2"), **Delete from card** gooit
+  het van de kaart. De code van een open programma kun je daar eerst lezen. Op een computer moet Logic op **Use** staan om
+  te kopiëren of te installeren.
+- **Op slot** (jouw keuze: "je kunt de code niet zien anders zou je die kunnen overnemen"): wie een programma op slot
+  installeert, kan het **gebruiken** (een diagram aan- en uitzetten, een robot-, drone- of RC program op een robot of RC
+  Car laden en daar starten en stoppen), en weggooien. Maar niemand ziet of verandert de code: in Logic zie je alleen een
+  slotje en van wie het is, Save werkt niet, en het kan niet weer op een kaart (dus niet doorverkopen door te kopiëren; de
+  kaart zelf doorgeven kan wel). De code staat alleen op de server, nooit in iemands spel (ook niet in het item van een
+  robot of RC Car). Een **global script** gaat altijd open op een kaart: je andere programma's hebben zijn namen nodig.
+- **In Files.** De kaart is de map **sd**, helemaal bovenaan. Daarin werk je zoals in elke map (mappen, notities,
+  hernoemen, weggooien). **Sleep** een bestand of map van je systeem op **sd** om het te kopiëren (zoals tussen twee
+  schijven), of van de kaart op **..** om het terug te zetten; rechtsklik geeft ook **Copy to SD card** en **Copy to your
+  folder** (je eigen map in /home). Zo geef je ook een handleiding mee bij een programma. **security.conf** gaat nooit mee
+  (dat is de sleutel van je systeem), en of iets een valstrik is ook niet. Iemand die niet de eigenaar is en een valstrik
+  kopieert, laat hem afgaan (net als openen).
+- **Waar staat het?** Wat er op een kaart staat, bewaart de server (bij de wereld, `imttech_sd_cards`); op het item staat
+  alleen zijn nummer en hoeveel erop staat (de tooltip). Gooi je alles van een kaart weg, dan is het weer een lege kaart.
+- **Voor wie de server beheert** (`[sdCards]` in `imttech.toml`): `programs` (4, 16, 64) en `files` (8, 32, 128), voor
+  de kaart van 8, 32 en 128 GB.
 
 ### Licht: de Arc Lamp en de lichtschakelaar
 De **Arc Lamp** (ijzer, glazen ruiten, gloeisteen en een computerchip) is een lamp met **lichtniveau

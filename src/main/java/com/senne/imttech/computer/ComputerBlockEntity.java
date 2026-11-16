@@ -35,7 +35,8 @@ import org.jetbrains.annotations.Nullable;
  * alleen bekijkt of ook bedient ({@link #rights}), wie hem mag gebruiken ({@link #who}) en de code ({@link #code}). En
  * welke vensters er de vorige keer open stonden, los van de desktop van de kern.
  */
-public class ComputerBlockEntity extends BlockEntity implements BaseTrust.Placed, NamedDevice {
+public class ComputerBlockEntity extends BlockEntity implements BaseTrust.Placed, NamedDevice,
+        com.senne.imttech.sdcard.SdCardHolder {
     /** Wie deze computer mag gebruiken (de eigenaar van de kern mag het altijd). */
     public enum Who {
         /** Iedereen die ervoor staat (bijvoorbeeld in de receptie). */
@@ -57,6 +58,9 @@ public class ComputerBlockEntity extends BlockEntity implements BaseTrust.Placed
     private @Nullable SystemPassword code;
     /** Welke vensters er de vorige keer open stonden (zoals de desktop van de kern, zie SecurityOs "desk_save"). */
     private ListTag desktop = new ListTag();
+    /** Hoofdstuk 130: de SD-kaart die in de kast zit (of leeg), en wie hem erin stak. Hak je hem weg, dan valt hij eruit. */
+    private net.minecraft.world.item.ItemStack sdCard = net.minecraft.world.item.ItemStack.EMPTY;
+    private @Nullable UUID sdCardBy;
 
     public ComputerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.COMPUTER.get(), pos, state);
@@ -147,6 +151,54 @@ public class ComputerBlockEntity extends BlockEntity implements BaseTrust.Placed
     public void serverTick(ServerLevel level, BlockPos pos) {
         if ((level.getGameTime() + pos.hashCode()) % 40 == 0) {
             updateOn(level);
+            showSdCard(); // hoofdstuk 130: het kaartje vooraan klopt altijd met wat erin zit (ook na laden)
+        }
+    }
+
+    // ================================================================ De SD-kaart (hoofdstuk 130)
+
+    @Override
+    public net.minecraft.world.item.ItemStack sdCard() {
+        return sdCard;
+    }
+
+    @Override
+    public @Nullable UUID sdCardBy() {
+        return sdCard.isEmpty() ? null : sdCardBy;
+    }
+
+    @Override
+    public void putSdCard(net.minecraft.world.item.ItemStack card, @Nullable UUID by) {
+        sdCard = card;
+        sdCardBy = card.isEmpty() ? null : by;
+        setChanged();
+        showSdCard();
+    }
+
+    @Override
+    public net.minecraft.world.item.ItemStack takeSdCard() {
+        net.minecraft.world.item.ItemStack card = sdCard;
+        sdCard = net.minecraft.world.item.ItemStack.EMPTY;
+        sdCardBy = null;
+        setChanged();
+        showSdCard();
+        return card;
+    }
+
+    @Override
+    public void sdCardChanged() {
+        setChanged();
+    }
+
+    /** Zet de blokstand {@code card} zoals het is. Met de stand die NU in de wereld staat (bij weghalen al lucht). */
+    private void showSdCard() {
+        if (level == null || level.isClientSide) {
+            return;
+        }
+        BlockState live = level.getBlockState(worldPosition);
+        boolean has = !sdCard.isEmpty();
+        if (live.getBlock() instanceof ComputerBlock && live.getValue(ComputerBlock.CARD) != has) {
+            level.setBlock(worldPosition, live.setValue(ComputerBlock.CARD, has), Block.UPDATE_CLIENTS);
         }
     }
 
@@ -191,6 +243,12 @@ public class ComputerBlockEntity extends BlockEntity implements BaseTrust.Placed
             tag.put("Code", code.save());
         }
         tag.put("Desktop", desktop);
+        if (!sdCard.isEmpty()) {
+            tag.put("SdCard", sdCard.save(registries));
+            if (sdCardBy != null) {
+                tag.putUUID("SdCardBy", sdCardBy);
+            }
+        }
     }
 
     @Override
@@ -208,6 +266,10 @@ public class ComputerBlockEntity extends BlockEntity implements BaseTrust.Placed
         group = tag.getString("Group");
         code = tag.contains("Code") ? SystemPassword.load(tag.getCompound("Code")) : null;
         desktop = tag.getList("Desktop", Tag.TAG_COMPOUND);
+        sdCard = tag.contains("SdCard")
+                ? net.minecraft.world.item.ItemStack.parseOptional(registries, tag.getCompound("SdCard"))
+                : net.minecraft.world.item.ItemStack.EMPTY;
+        sdCardBy = tag.hasUUID("SdCardBy") ? tag.getUUID("SdCardBy") : null;
     }
 
     /** Breek je hem af, dan krijgt het item zijn naam mee (zie de loot table: copy_components). */
@@ -223,5 +285,8 @@ public class ComputerBlockEntity extends BlockEntity implements BaseTrust.Placed
     public void removeComponentsFromTag(CompoundTag tag) {
         super.removeComponentsFromTag(tag);
         tag.remove("Name");
+        // Hoofdstuk 130: een kopie van de kast (creative: middelklik met Ctrl) krijgt de SD-kaart nooit mee.
+        tag.remove("SdCard");
+        tag.remove("SdCardBy");
     }
 }

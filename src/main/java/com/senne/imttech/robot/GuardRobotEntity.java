@@ -185,7 +185,10 @@ public class GuardRobotEntity extends BotEntity {
         setBoard(data.board());
         setCustomName(data.name().isEmpty() ? null : Component.literal(data.name()));
         battery = Math.max(0, Math.min(1, data.battery())) * maxBattery();
-        brain.setProgram(data.program().isEmpty() ? null : LogicProgram.load(data.program()));
+        // Hoofdstuk 130: een programma op slot staat niet op het item, alleen een verwijzing (zie LockedPrograms).
+        net.minecraft.nbt.CompoundTag program = com.senne.imttech.logic.LockedPrograms.fromItem(
+                level() instanceof net.minecraft.server.level.ServerLevel server ? server : null, data.program());
+        brain.setProgram(program.isEmpty() ? null : LogicProgram.load(program));
         setAmmo(data.ammo());
         updateState(false);
     }
@@ -193,7 +196,9 @@ public class GuardRobotEntity extends BotEntity {
     /** Wat er in zijn item komt als je hem oppakt (zijn programma, kogels en schade gaan mee). */
     public RobotData toData() {
         return new RobotData(parts().pack(), board(), hasCustomName() ? getCustomName().getString() : "",
-                (float) (battery / Math.max(1.0, maxBattery())), brain.program() == null ? new CompoundTag() : brain.program().save(),
+                (float) (battery / Math.max(1.0, maxBattery())), brain.program() == null ? new CompoundTag()
+                        : com.senne.imttech.logic.LockedPrograms.forItem(
+                        level() instanceof net.minecraft.server.level.ServerLevel server ? server : null, brain.program().save()),
                 ammo(), healthFraction());
     }
 

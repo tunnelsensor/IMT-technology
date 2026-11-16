@@ -47,7 +47,7 @@ import org.jetbrains.annotations.Nullable;
  * de wereld (ZoneData), zodat de zone ook werkt als deze chunk niet geladen is; de kern vertelt daar
  * van wie hij is, wie hij vertrouwt, en of er stroom genoeg is.
  */
-public class SecurityCoreBlockEntity extends BlockEntity {
+public class SecurityCoreBlockEntity extends BlockEntity implements com.senne.imttech.sdcard.SdCardHolder {
     private @Nullable UUID ownerId;
     private String ownerName = "";
 
@@ -70,6 +70,13 @@ public class SecurityCoreBlockEntity extends BlockEntity {
     private com.senne.imttech.logic.Datacenter datacenter = new com.senne.imttech.logic.Datacenter();
     /** Had de kern bij de laatste telling stroom? */
     private boolean online = true;
+    /**
+     * Hoofdstuk 130: de SD-kaart die erin zit (of leeg), en wie hem erin stak. Bewust NIET in saveConfig: een weggehakte
+     * kern laat de kaart vallen (SecurityCoreBlock.onRemove) en neemt hem niet mee in zijn ingepakte instellingen
+     * (anders had je hem twee keer), en een ingepakte kern die je neerzet, wist geen kaart.
+     */
+    private net.minecraft.world.item.ItemStack sdCard = net.minecraft.world.item.ItemStack.EMPTY;
+    private @Nullable UUID sdCardBy;
     /** Zette deze kern (van een Biebia's Industries Tower) Biebia's drones al op zijn docks (hoofdstuk 25)? Dat doet hij maar één keer. */
     private boolean towerDrones;
     /** Hoofdstuk 60: idem voor Biebia's bewakersrobots (TowerRobots); zolang er geen dock geladen is, proberen we het nog even. */
@@ -719,6 +726,7 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         if (!registered) {
             ensureSystem(level);
             syncZone();
+            showSdCard(); // hoofdstuk 130: na laden klopt het kaartje vooraan weer met wat erin zit
             // Hoofdstuk 117: een toren of bunker van Biebia's die nu pas opduikt in de zone van een ander, maakt zich vrij.
             SecurityCores.freeBuilding(level, pos);
             registered = true;
@@ -940,6 +948,12 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         tag.putBoolean("TowerDrones", towerDrones);
         tag.putBoolean("TowerRobots", towerRobots);
         tag.putLongArray("NetworkChunks", networkChunks);
+        if (!sdCard.isEmpty()) {
+            tag.put("SdCard", sdCard.save(registries));
+            if (sdCardBy != null) {
+                tag.putUUID("SdCardBy", sdCardBy);
+            }
+        }
     }
 
     // ================================================================ Waar zijn netwerk ligt (hoofdstuk 94)
@@ -1066,6 +1080,68 @@ public class SecurityCoreBlockEntity extends BlockEntity {
         towerDrones = tag.getBoolean("TowerDrones");
         towerRobots = tag.getBoolean("TowerRobots");
         networkChunks = tag.getLongArray("NetworkChunks");
+        sdCard = tag.contains("SdCard")
+                ? net.minecraft.world.item.ItemStack.parseOptional(registries, tag.getCompound("SdCard"))
+                : net.minecraft.world.item.ItemStack.EMPTY;
+        sdCardBy = tag.hasUUID("SdCardBy") ? tag.getUUID("SdCardBy") : null;
+    }
+
+    // ================================================================ De SD-kaart (hoofdstuk 130)
+
+    @Override
+    public net.minecraft.world.item.ItemStack sdCard() {
+        return sdCard;
+    }
+
+    @Override
+    public @Nullable UUID sdCardBy() {
+        return sdCard.isEmpty() ? null : sdCardBy;
+    }
+
+    @Override
+    public void putSdCard(net.minecraft.world.item.ItemStack card, @Nullable UUID by) {
+        sdCard = card;
+        sdCardBy = card.isEmpty() ? null : by;
+        setChanged();
+        showSdCard();
+    }
+
+    @Override
+    public net.minecraft.world.item.ItemStack takeSdCard() {
+        net.minecraft.world.item.ItemStack card = sdCard;
+        sdCard = net.minecraft.world.item.ItemStack.EMPTY;
+        sdCardBy = null;
+        setChanged();
+        showSdCard();
+        return card;
+    }
+
+    @Override
+    public void sdCardChanged() {
+        setChanged();
+    }
+
+    /** Een kopie van de kern (creative: middelklik met Ctrl) krijgt de SD-kaart nooit mee (anders had je hem twee keer). */
+    @Override
+    public void removeComponentsFromTag(CompoundTag tag) {
+        super.removeComponentsFromTag(tag);
+        tag.remove("SdCard");
+        tag.remove("SdCardBy");
+    }
+
+    /**
+     * Zet de blokstand {@code card} zoals het is (het kaartje vooraan). We lezen de stand die NU in de wereld staat (niet
+     * de bewaarde): als het blok net weggehaald wordt, staat daar al lucht, en dan zetten we de kern niet terug.
+     */
+    private void showSdCard() {
+        if (level == null || level.isClientSide) {
+            return;
+        }
+        BlockState live = level.getBlockState(worldPosition);
+        boolean has = !sdCard.isEmpty();
+        if (live.getBlock() instanceof SecurityCoreBlock && live.getValue(SecurityCoreBlock.CARD) != has) {
+            level.setBlock(worldPosition, live.setValue(SecurityCoreBlock.CARD, has), Block.UPDATE_CLIENTS);
+        }
     }
 
     /** Terug uit {@link #saveConfig}. */

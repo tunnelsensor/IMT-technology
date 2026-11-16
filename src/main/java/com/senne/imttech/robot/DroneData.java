@@ -45,11 +45,12 @@ public record DroneData(BotBoard board, String name, float battery, CompoundTag 
             Codec.FLOAT.optionalFieldOf("health", 1.0f).forGetter(DroneData::health)
     ).apply(instance, DroneData::new));
 
+    /** Hoofdstuk 130: een programma op slot gaat zonder code naar je spel (LogicProgram.NETWORK_TAG). */
     public static final StreamCodec<ByteBuf, DroneData> STREAM_CODEC = StreamCodec.composite(
             BotBoard.STREAM_CODEC, DroneData::board,
             ByteBufCodecs.STRING_UTF8, DroneData::name,
             ByteBufCodecs.FLOAT, DroneData::battery,
-            ByteBufCodecs.COMPOUND_TAG, DroneData::program,
+            com.senne.imttech.logic.program.LogicProgram.NETWORK_TAG, DroneData::program,
             ByteBufCodecs.VAR_INT, DroneData::ammo,
             ByteBufCodecs.FLOAT, DroneData::health,
             DroneData::new);

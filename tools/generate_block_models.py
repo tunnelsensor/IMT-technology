@@ -598,7 +598,23 @@ def computer_and_monitor():
                 if y:
                     option["y"] = y
                 variants["facing=%s,on=%s" % (facing, "true" if on else "false")] = option
-        blockstate(name, variants)
+        if name == "computer":
+            # Hoofdstuk 130: de kast als "multipart", met een kaartje in de bovenste drive bay als er een SD-kaart in zit
+            # (dat model schrijft tools/generate_sd_card_assets.py).
+            parts = []
+            for key, option in variants.items():
+                facing, on = key.split(",")
+                parts.append({"when": {"facing": facing.split("=")[1], "on": on.split("=")[1]}, "apply": option})
+            for facing, y in turn.items():
+                option = {"model": "imttech:block/computer_card"}
+                if y:
+                    option["y"] = y
+                parts.append({"when": {"facing": facing, "card": "true"}, "apply": option})
+            path = ROOT / "blockstates" / "computer.json"
+            path.write_text(json.dumps({"multipart": parts}, indent=2) + "\n", encoding="utf-8", newline="\n")
+            print("geschreven:", path.relative_to(ROOT.parent.parent.parent.parent.parent))
+        else:
+            blockstate(name, variants)
         write(ROOT / "models" / "item" / (name + ".json"), {"parent": "imttech:block/" + name + "_on"})
 
 

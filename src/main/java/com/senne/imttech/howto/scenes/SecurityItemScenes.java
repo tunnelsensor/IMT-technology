@@ -190,6 +190,78 @@ public final class SecurityItemScenes {
         return List.of(s.build());
     }
 
+    // ================================================================ De SD-kaart (hoofdstuk 130)
+
+    /**
+     * De SD-kaart: drie maten, erin steken (een kern of een computer) en eruit halen, in Logic een programma op de kaart
+     * zetten (als plaatje), open of op slot (als plaatje), en de map sd in Files (als plaatje).
+     */
+    public static List<HowToScene> sdCard() {
+        HowToSceneBuilder s = new HowToSceneBuilder("sd_card", "SD Card").plate(5, 4).height(3);
+        BlockPos core = new BlockPos(1, 1, 1);
+        BlockPos gen = new BlockPos(0, 1, 1);
+        BlockPos pc = new BlockPos(3, 1, 1);
+        BlockPos screen = pc.above();
+        Vec3 you = new Vec3(1.5, 1.0, 3.3);
+        ItemStack card = new ItemStack(ModItems.SD_CARD_32GB.get());
+        s.idle(6);
+        s.chapter("Three sizes");
+        s.item(110, new Vec3(1.5, 2.0, 2.5), new ItemStack(ModItems.SD_CARD_8GB.get()), 0.7f);
+        s.item(110, new Vec3(2.5, 2.0, 2.5), card, 0.7f);
+        s.item(110, new Vec3(3.5, 2.0, 2.5), new ItemStack(ModItems.SD_CARD_128GB.get()), 0.7f);
+        s.text(100, new Vec3(2.5, 2.6, 2.5), Side.RIGHT,
+                "An *SD Card* carries programs and files to another base: to give a good program away, or to sell it. The"
+                        + " *8 GB* card holds %s programs, *32 GB* %s and *128 GB* %s (and twice as many files).",
+                HowToSceneBuilder.number(ImtConfig.SdCards.PROGRAMS[0]), HowToSceneBuilder.number(ImtConfig.SdCards.PROGRAMS[1]),
+                HowToSceneBuilder.number(ImtConfig.SdCards.PROGRAMS[2]));
+        s.idle(115);
+
+        s.chapter("Put it in");
+        s.place(core, SecurityScenes.core(Direction.SOUTH, true));
+        s.idle(4);
+        s.place(gen, SecurityScenes.heat(Direction.SOUTH));
+        s.place(pc, computer(true));
+        s.place(screen, monitor(true));
+        s.idle(10);
+        s.player("you", HowToSceneBuilder.UNTIL_END, 0, 180.0f, Map.of(EquipmentSlot.MAINHAND, card), you);
+        s.rightClick(HowToSceneBuilder.face(core, Direction.SOUTH), card);
+        s.idle(8);
+        s.change(core, SecurityScenes.core(Direction.SOUTH, true).setValue(com.senne.imttech.security.SecurityCoreBlock.CARD, true));
+        s.sound(SoundEvents.IRON_TRAPDOOR_CLOSE, 0.3f, 2.0f);
+        s.text(110, HowToSceneBuilder.face(core, Direction.SOUTH), Side.RIGHT,
+                "Right-click your *Security Core* (or a *Computer*) with the card: it slides into its slot. *Sneak* with an"
+                        + " empty hand to take it out again. If the block breaks, the card drops.");
+        s.idle(115);
+
+        s.chapter("Copy programs onto it");
+        s.text(70, HowToSceneBuilder.top(core), Side.RIGHT,
+                "On the desktop, open *Logic*: under your programs is the card. Click *SD* for its page.");
+        s.idle(75);
+        s.picture(160, "sd_logic_card", 426, 240,
+                s.arrow(0.29f, 0.16f, "The card, and how full it is"),
+                s.arrow(0.77f, 0.29f, "*Copy*: they get the code"),
+                s.arrow(0.9f, 0.29f, "*Copy locked*: they can only use it"),
+                s.arrow(0.09f, 0.52f, "What is on the card"));
+        s.idle(165);
+
+        s.chapter("Open or locked");
+        s.text(120, HowToSceneBuilder.top(screen), Side.LEFT,
+                "Click a program on the card to *install* it. A *locked* program runs, switches on and off, and loads onto a"
+                        + " robot or RC Car, but nobody can read or change its code, or put it on another card.");
+        s.idle(125);
+        s.picture(130, "sd_locked", 426, 240,
+                s.arrow(0.6f, 0.16f, "*On*/*Off* and *Delete* still work"),
+                s.arrow(0.45f, 0.26f, "Locked: only its name, never its code"));
+        s.idle(135);
+
+        s.chapter("Files");
+        s.picture(130, "sd_files", 426, 240,
+                s.arrow(0.36f, 0.33f, "The card is the folder *sd*"),
+                s.arrow(0.55f, 0.88f, "Drag a file onto it: a copy (never security.conf)"));
+        s.idle(135);
+        return List.of(s.build());
+    }
+
     // ================================================================ De Block Reinforcer
 
     /**

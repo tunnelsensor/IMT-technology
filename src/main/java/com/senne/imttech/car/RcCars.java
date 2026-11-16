@@ -428,16 +428,17 @@ public final class RcCars {
         if (problem == null && core != null) {
             for (LogicProgram program : rcPrograms(core)) {
                 // Nooit meer tekst dan het bericht mag dragen (anders valt de speler van de server): dan zonder code.
-                String code = code(program);
+                // Hoofdstuk 130: een programma op slot (van een SD-kaart) gaat ook zonder code: je kunt het laden, niet lezen.
+                String code = program.locked() ? "" : code(program);
                 programs.add(new RcCarProgramsPayload.Program(program.name(),
-                        code.length() > RcCarProgramsPayload.MAX_CODE ? "" : code));
+                        code.length() > RcCarProgramsPayload.MAX_CODE ? "" : code, program.locked()));
             }
             old = olderThanServer(car, core);
         }
         boolean other = core != null && !sameServer(car, core);
         // Een auto van vóór hoofdstuk 119 met zijn eigen code: die toont het scherm (alleen lezen), zodat je hem kunt
         // overtypen in een RC program. Die code staat nergens anders meer.
-        String own = car.programName().isEmpty() && !car.source().isBlank()
+        String own = car.programName().isEmpty() && !car.programLocked() && !car.source().isBlank()
                 && car.source().length() <= RcCarProgramsPayload.MAX_CODE ? car.source() : "";
         ModNetwork.sendTo(player, new RcCarProgramsPayload(car.getId(), car.ownerName(), remote, open,
                 core == null ? "" : core.ownerName(), problem == null ? "" : clip(problem), car.programName(), other, old,
@@ -481,7 +482,7 @@ public final class RcCars {
         if (program == null || program.kind() != ProgramKind.CAR) {
             return new Robots.Desktop("There is no RC program called " + name + " on this server", true);
         }
-        String problem = car.loadProgram(program.name(), code(program), core.ip());
+        String problem = car.loadProgram(program.name(), code(program), core.ip(), program.locked());
         return problem != null ? new Robots.Desktop("Not loaded: " + problem, true)
                 : new Robots.Desktop("Loaded " + program.name() + " onto " + carName, false);
     }

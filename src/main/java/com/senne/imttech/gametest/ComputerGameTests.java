@@ -352,7 +352,7 @@ public final class ComputerGameTests {
         check(snapshot.getString("pc").equals("Computer 1") && snapshot.contains("rights") && snapshot.contains("cameras")
                         && snapshot.contains("log") && snapshot.contains("devices"),
                 "De pc kreeg niet wat hij mag tonen: " + snapshot.getAllKeys());
-        for (String hidden : new String[] {"cards", "fs", "computers", "logicInfo", "backup", "zone", "robots"}) {
+        for (String hidden : new String[] {"cards", "fs", "computers", "logicInfo", "backup", "zone", "robots", "sd"}) {
             check(!snapshot.contains(hidden), "De pc kreeg gegevens die hij niet mag tonen: " + hidden);
         }
         // Devices op Use: de laserwanden uitzetten mag. Access, mappen en het wachtwoord niet.

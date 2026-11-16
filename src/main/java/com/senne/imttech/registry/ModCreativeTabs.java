@@ -248,6 +248,9 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.BYPASS_KIT.get());
                 output.accept(ModItems.HACKING_LAPTOP.get());
                 output.accept(ModItems.PHONE.get());
+                output.accept(ModItems.SD_CARD_8GB.get()); // hoofdstuk 130
+                output.accept(ModItems.SD_CARD_32GB.get());
+                output.accept(ModItems.SD_CARD_128GB.get());
             });
 
     /** Eerst alle robotonderdelen, dan alle chips, de training, en daarna de rest voor robots. */

@@ -26,15 +26,30 @@ import net.minecraft.world.item.component.ItemContainerContents;
  * @param program  de naam van het RC program van de server waar zijn code een kopie van is (hoofdstuk 119); "" = geen
  * @param programServer van welke server dat RC program kwam (het IP van die Security Core); "" = onbekend
  *                 (een nieuwe auto, of een auto met code die je vóór hoofdstuk 119 op de auto zelf schreef)
+ * @param programRef hoofdstuk 130: is dat RC program op slot (van een SD-kaart), dan staat hier de vingerafdruk van zijn
+ *                 code op de server (zie logic/LockedPrograms) en is {@code source} leeg. Zo staat de code nooit op het
+ *                 item: niet in je inventaris, niet op een holotafel, niet in een kist. "" = een open programma.
  */
 public record RcCarData(String name, String source, Optional<UUID> link, float cell, ItemContainerContents trunk, DrillHead drill,
-                        boolean robotArm, String program, String programServer) {
+                        boolean robotArm, String program, String programServer, String programRef) {
+    /** Een auto met een open programma (zoals vóór hoofdstuk 130). */
+    public RcCarData(String name, String source, Optional<UUID> link, float cell, ItemContainerContents trunk, DrillHead drill,
+                     boolean robotArm, String program, String programServer) {
+        this(name, source, link, cell, trunk, drill, robotArm, program, programServer, "");
+    }
+
+    /** Is zijn RC program op slot (hoofdstuk 130)? */
+    public boolean programLocked() {
+        return !programRef.isEmpty();
+    }
+
     /** Geen energiecel. */
     public static final float NO_CELL = -1.0f;
 
     /** Een nieuwe auto: geen naam, geen programma, geen cel, een lege kofferbak, de ijzeren boorkop, geen arm. */
     public static final RcCarData DEFAULT =
-            new RcCarData("", CarProgram.EMPTY, Optional.empty(), NO_CELL, ItemContainerContents.EMPTY, DrillHead.IRON, false, "", "");
+            new RcCarData("", CarProgram.EMPTY, Optional.empty(), NO_CELL, ItemContainerContents.EMPTY, DrillHead.IRON, false, "", "",
+                    "");
 
     /** Heeft hij een energiecel? */
     public boolean hasCell() {
@@ -48,7 +63,7 @@ public record RcCarData(String name, String source, Optional<UUID> link, float c
 
     /** Dezelfde auto zonder vast nummer (het item dat in creative in je hand blijft, zie RcCarItem). */
     public RcCarData withoutLink() {
-        return new RcCarData(name, source, Optional.empty(), cell, trunk, drill, robotArm, program, programServer);
+        return new RcCarData(name, source, Optional.empty(), cell, trunk, drill, robotArm, program, programServer, programRef);
     }
 
     public static final Codec<RcCarData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -63,16 +78,19 @@ public record RcCarData(String name, String source, Optional<UUID> link, float c
             // hoofdstuk 106: wat er al is, blijft). Daarom is "geen veld" hier waar; een auto zonder arm bewaart false.
             Codec.BOOL.optionalFieldOf("robot_arm", true).forGetter(RcCarData::robotArm),
             Codec.STRING.optionalFieldOf("program", "").forGetter(RcCarData::program),
-            Codec.STRING.optionalFieldOf("program_server", "").forGetter(RcCarData::programServer)
+            Codec.STRING.optionalFieldOf("program_server", "").forGetter(RcCarData::programServer),
+            Codec.STRING.optionalFieldOf("program_ref", "").forGetter(RcCarData::programRef)
     ).apply(instance, RcCarData::new));
 
     /**
      * Over het netwerk (in je spel: de tooltip). Met de hand geschreven, want StreamCodec.composite kent er hooguit zes.
+     * Hoofdstuk 130: van een programma op slot staat de code niet op het item (alleen zijn naam en de vingerafdruk), dus
+     * hij gaat ook nooit over het netwerk.
      */
     public static final StreamCodec<RegistryFriendlyByteBuf, RcCarData> STREAM_CODEC = StreamCodec.of(
             (buf, data) -> {
                 ByteBufCodecs.STRING_UTF8.encode(buf, data.name());
-                ByteBufCodecs.STRING_UTF8.encode(buf, data.source());
+                ByteBufCodecs.STRING_UTF8.encode(buf, data.programLocked() ? "" : data.source());  // ook als iemand er toch code in zette
                 UUIDUtil.STREAM_CODEC.apply(ByteBufCodecs::optional).encode(buf, data.link());
                 buf.writeFloat(data.cell());
                 ItemContainerContents.STREAM_CODEC.encode(buf, data.trunk());
@@ -80,9 +98,10 @@ public record RcCarData(String name, String source, Optional<UUID> link, float c
                 buf.writeBoolean(data.robotArm());
                 ByteBufCodecs.STRING_UTF8.encode(buf, data.program());
                 ByteBufCodecs.STRING_UTF8.encode(buf, data.programServer());
+                ByteBufCodecs.STRING_UTF8.encode(buf, data.programRef());
             },
             buf -> new RcCarData(ByteBufCodecs.STRING_UTF8.decode(buf), ByteBufCodecs.STRING_UTF8.decode(buf),
                     UUIDUtil.STREAM_CODEC.apply(ByteBufCodecs::optional).decode(buf), buf.readFloat(),
                     ItemContainerContents.STREAM_CODEC.decode(buf), DrillHead.STREAM_CODEC.decode(buf), buf.readBoolean(),
-                    ByteBufCodecs.STRING_UTF8.decode(buf), ByteBufCodecs.STRING_UTF8.decode(buf)));
+                    ByteBufCodecs.STRING_UTF8.decode(buf), ByteBufCodecs.STRING_UTF8.decode(buf), ByteBufCodecs.STRING_UTF8.decode(buf)));
 }

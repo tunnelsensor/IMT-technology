@@ -50,6 +50,9 @@ bunkers to raid.
   you run switches it on by name. It never sounds by itself.
 - Server racks with CPU, RAM, SSD, GPU and fans: program your base with redstone diagrams or a
   small Python-like language. Racks heat up, so give every rack a fan.
+- SD Cards (8, 32 and 128 GB) to give away or sell your programs and files: slide one into a Security Core or a
+  Computer, copy a program onto it open or locked, and install it on another base. A locked program can be used
+  (run it, switch it on and off, load it onto a robot or RC Car) but nobody can read or change its code.
 - Break-ins: hack keycard readers and code panels with the Bypass Kit, or pickpocket a keycard.
 
 **Robots and drones**

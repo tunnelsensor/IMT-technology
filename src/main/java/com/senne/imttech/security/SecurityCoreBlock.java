@@ -52,10 +52,17 @@ public class SecurityCoreBlock extends BaseEntityBlock implements com.senne.imtt
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     /** Heeft iemand de toren overgenomen? (Groen lampje.) */
     public static final BooleanProperty CLAIMED = BooleanProperty.create("claimed");
+    /**
+     * Hoofdstuk 130: zit er een SD-kaart in? Dan zie je vooraan een kaartje in de gleuf. Dit staat in de blokstand (en
+     * niet in iets dat het blok naar je spel stuurt): de kern bewaart je wachtwoord, je bestanden en je code, en daarvan
+     * mag niets naar iemands spel.
+     */
+    public static final BooleanProperty CARD = BooleanProperty.create("card");
 
     public SecurityCoreBlock(Properties properties) {
         super(properties);
-        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(CLAIMED, false));
+        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(CLAIMED, false)
+                .setValue(CARD, false));
     }
 
     @Override
@@ -65,7 +72,7 @@ public class SecurityCoreBlock extends BaseEntityBlock implements com.senne.imtt
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, CLAIMED);
+        builder.add(FACING, CLAIMED, CARD);
     }
 
     /**
@@ -153,6 +160,38 @@ public class SecurityCoreBlock extends BaseEntityBlock implements com.senne.imtt
      * beveiliging niet bezit, krijgt "access denied"; die neemt hem over met een Hacking Laptop
      * (HackingLaptopItem vangt het rechtsklikken mét laptop af vóór dit).
      */
+    /**
+     * Hoofdstuk 130: rechtsklik met een SD-kaart steekt hem erin; sneak met een lege hand haalt hem eruit (zie
+     * SdCardSlots). Al de rest gaat zoals altijd: een lege hand (of iets anders in je hand) opent de desktop.
+     * <p>
+     * Minecraft roept dit ook aan met een lege hand, en in je eigen spel tegen een blok zonder gegevens: daar kijken we
+     * dus alleen naar de blokstand ({@link #CARD}).
+     */
+    @Override
+    protected net.minecraft.world.ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level,
+                                                                  BlockPos pos, Player player,
+                                                                  net.minecraft.world.InteractionHand hand,
+                                                                  BlockHitResult hit) {
+        if (stack.isEmpty()) {
+            if (player.isSecondaryUseActive() && state.getValue(CARD)) {
+                if (player instanceof ServerPlayer serverPlayer && level.getBlockEntity(pos) instanceof SecurityCoreBlockEntity core) {
+                    com.senne.imttech.sdcard.SdCardSlots.takeOut(serverPlayer, pos, core,
+                            com.senne.imttech.sdcard.SdCardSlots.mayTakeOut(serverPlayer, core));
+                }
+                return net.minecraft.world.ItemInteractionResult.sidedSuccess(level.isClientSide);
+            }
+            return net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+        if (hand != net.minecraft.world.InteractionHand.MAIN_HAND || !com.senne.imttech.sdcard.SdCardItem.isCard(stack)) {
+            return super.useItemOn(stack, state, level, pos, player, hand, hit); // zoals altijd: de desktop
+        }
+        if (player instanceof ServerPlayer serverPlayer && level.getBlockEntity(pos) instanceof SecurityCoreBlockEntity core) {
+            com.senne.imttech.sdcard.SdCardSlots.insert(serverPlayer, pos, core, stack,
+                    com.senne.imttech.sdcard.SdCardSlots.mayUse(serverPlayer, core));
+        }
+        return net.minecraft.world.ItemInteractionResult.sidedSuccess(level.isClientSide);
+    }
+
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
                                                BlockHitResult hit) {
@@ -220,6 +259,8 @@ public class SecurityCoreBlock extends BaseEntityBlock implements com.senne.imtt
                 && level.getBlockEntity(pos) instanceof SecurityCoreBlockEntity core) {
             core.releaseSystem(serverLevel);
             com.senne.imttech.logic.LogicRunner.stop(serverLevel, pos);
+            // Hoofdstuk 130: de SD-kaart valt eruit (ook in creative, bij een ontploffing en met /setblock: één keer).
+            com.senne.imttech.sdcard.SdCardSlots.dropOnBreak(level, pos, core);
         }
         if (!state.is(newState.getBlock())) {
             com.senne.imttech.lan.LanGrid.changed();

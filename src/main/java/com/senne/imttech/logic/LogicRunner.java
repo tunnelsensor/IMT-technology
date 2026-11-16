@@ -214,9 +214,14 @@ public final class LogicRunner {
 
         @Override
         public void report(String message) {
-            LogicRunner.report(level, core, runtime, EventLog.Type.LOGIC, "\"" + run.program.name() + "\": " + message);
+            // Hoofdstuk 130: van een programma op slot (van een SD-kaart) noemt het logboek geen stukjes code.
+            LogicRunner.report(level, core, runtime, EventLog.Type.LOGIC, "\"" + run.program.name() + "\": "
+                    + (run.program.locked() ? LOCKED_PROBLEM : message));
         }
     }
+
+    /** Hoofdstuk 130: wat het logboek zegt als een programma op slot iets niet kan (zonder de code te noemen). */
+    private static final String LOCKED_PROBLEM = "something in this locked program does not work here (ask who made it)";
 
     /** Wat er op één server bezig is. */
     private static final class Runtime {
@@ -496,8 +501,8 @@ public final class LogicRunner {
     private static boolean check(ServerLevel level, SecurityCoreBlockEntity core, Runtime runtime, Run run, LogicGraph.Node node) {
         Expr condition = ExprCache.get(node.text, run.context.trigger());
         if (condition == null) {
-            report(level, core, runtime, EventLog.Type.LOGIC, "\"" + run.program.name() + "\": the check \"" + node.text
-                    + "\" is not valid, so it counts as no");
+            report(level, core, runtime, EventLog.Type.LOGIC, "\"" + run.program.name() + "\": "
+                    + (run.program.locked() ? LOCKED_PROBLEM : "the check \"" + node.text + "\" is not valid, so it counts as no"));
             return false;
         }
         return ExprCache.test(condition, facts(level, core, run));
@@ -664,7 +669,8 @@ public final class LogicRunner {
     private static void order(ServerLevel level, SecurityCoreBlockEntity core, Runtime runtime, Run run, LogicGraph.Node node) {
         List<Expr> exprs = ExprCache.values(node.expr);
         if (exprs == null || exprs.size() < 2) {
-            report(level, core, runtime, EventLog.Type.LOGIC, "\"" + run.program.name() + "\": the order " + node.expr + " is not valid");
+            report(level, core, runtime, EventLog.Type.LOGIC, "\"" + run.program.name() + "\": "
+                    + (run.program.locked() ? LOCKED_PROBLEM : "the order " + node.expr + " is not valid"));
             return;
         }
         Expr.Facts facts = facts(level, core, run);

@@ -3878,6 +3878,16 @@ public final class VisualCheck {
             TemplatesTour.tour(t);
         }
 
+        // --- Hoofdstuk 130 (-Ponly=sdcard): de SD-kaart in een kern en een computer, het lijstje SD in Logic, de pagina van
+        // de kaart, programma's op slot, de map sd in Files en de tooltip (sc01 tot sc10). De plaatjes voor How it works met
+        // -Ponly=howtopics:sdcard (dat verandert bestanden van de mod).
+        if (want("sdcard")) {
+            SdCardTour.tour(t);
+        }
+        if (ONLY.contains("howtopics:sdcard")) {
+            SdCardTour.pictures(t);
+        }
+
         // --- De Remote Frag (hoofdstuk 35, in plaats van C4): drie tegen een muur, op de vloer en onder een overstekje,
         // van dichtbij; de Frag Trigger in je hand met de bordjes boven je ladingen; het alarm "FRAG!" op je zone; dan de
         // klap: een gat in de muur met barsten eromheen, en barsten in obsidiaan (na drie frags nog geen gat).

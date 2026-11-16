@@ -1,6 +1,7 @@
 package com.senne.imttech.client.os;
 
 import com.senne.imttech.client.hud.HudStyle;
+import com.senne.imttech.sdcard.SdDesktop;
 import com.senne.imttech.security.os.VirtualFs;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -31,6 +32,11 @@ import org.jetbrains.annotations.Nullable;
  * controleert of het mag en daarna de nieuwe mappenlijst terugstuurt.
  *
  * Wie niet de eigenaar is, ziet niet welke bestanden valstrikken zijn (dat stuurt de server niet).
+ * <p>
+ * Hoofdstuk 130 (jouw keuze: "in Files staat de kaart als map sd/"): zit er een SD-kaart in de kern of computer, dan staat
+ * helemaal bovenaan de map <b>sd</b>. Daarin werk je zoals in elke map; paden op de kaart beginnen met {@code sd:}
+ * ({@code sd:/notes/plan.txt}). Sleep je iets van je systeem op sd (of van de kaart op ".."), dan wordt het gekopieerd,
+ * zoals tussen twee schijven; rechtsklik geeft ook "Copy to SD card" en "Copy to your folder".
  */
 final class FilesApp {
     /** Eén map of bestand zoals de server het stuurde. */
@@ -49,8 +55,11 @@ final class FilesApp {
     /** De knoppen bovenaan. */
     private enum Tool { UP, FOLDER, FILE, RENAME, DELETE, TRAP }
 
-    /** De keuzes in het rechtsklik-menu. */
-    private enum MenuItem { OPEN, RENAME, DELETE, TRAP }
+    /** De keuzes in het rechtsklik-menu (hoofdstuk 130: ook kopiëren naar de SD-kaart en terug). */
+    private enum MenuItem { OPEN, RENAME, DELETE, TRAP, TO_CARD, TO_SYSTEM }
+
+    /** Hoofdstuk 130: de SD-kaart zelf, helemaal bovenaan in de map "/". */
+    static final String CARD_ROOT = SdDesktop.PREFIX + "/";
 
     private static final int ROW = 11;
     /** Twee kliks binnen deze tijd (ms) op hetzelfde = dubbelklik. */
@@ -61,6 +70,11 @@ final class FilesApp {
     private final SecurityOsScreen screen;
     /** Alle mappen en bestanden (de laatste lijst van de server). */
     private final List<Entry> entries = new ArrayList<>();
+    /** Hoofdstuk 130: de mappen en bestanden op de SD-kaart (paden met sd:), en of er een kaart in zit. */
+    private final List<Entry> cardEntries = new ArrayList<>();
+    private boolean cardIn;
+    private String cardName = "";
+    private int cardGb;
     /** De map die je nu bekijkt. */
     private String cwd = "/";
     private @Nullable String selected;
@@ -108,7 +122,24 @@ final class FilesApp {
             entries.add(new Entry(item.getString("p"), item.getBoolean("d"), item.getBoolean("s"),
                     item.getBoolean("t"), item.getInt("n")));
         }
-        // Bestaat de map waar je stond niet meer (weggegooid of verplaatst)? Dan terug naar /.
+        forgetMissing();
+    }
+
+    /** Hoofdstuk 130: wat er op de SD-kaart staat (alleen als er iets veranderde, of de kaart eruit ging). */
+    void updateCard(CompoundTag sd) {
+        cardIn = sd.getBoolean("in");
+        cardName = sd.getString("name");
+        cardGb = sd.getInt("gb");
+        cardEntries.clear();
+        for (Tag element : sd.getList("f", Tag.TAG_COMPOUND)) {
+            CompoundTag item = (CompoundTag) element;
+            cardEntries.add(new Entry(item.getString("p"), item.getBoolean("d"), false, false, item.getInt("n")));
+        }
+        forgetMissing();
+    }
+
+    /** Bestaat de map waar je stond niet meer (weggegooid, verplaatst, of de kaart is eruit)? Dan terug naar /. */
+    private void forgetMissing() {
         if (!cwd.equals("/") && find(cwd) == null) {
             cwd = "/";
             scroll = 0;
@@ -119,6 +150,18 @@ final class FilesApp {
     }
 
     @Nullable Entry find(String path) {
+        if (SdDesktop.onCard(path)) {
+            // Hoofdstuk 130: de kaart zelf, of iets erop.
+            if (path.equals(CARD_ROOT)) {
+                return cardIn ? new Entry(CARD_ROOT, true, false, false, 0) : null;
+            }
+            for (Entry entry : cardEntries) {
+                if (entry.path().equals(path)) {
+                    return entry;
+                }
+            }
+            return null;
+        }
         for (Entry entry : entries) {
             if (entry.path().equals(path)) {
                 return entry;
@@ -127,24 +170,60 @@ final class FilesApp {
         return null;
     }
 
+    /** Staat dit op de SD-kaart (of is het de kaart zelf)? */
+    private static boolean onCard(Entry entry) {
+        return SdDesktop.onCard(entry.path());
+    }
+
+    /** Is dit de SD-kaart zelf (de map sd helemaal bovenaan)? */
+    private static boolean isCardRoot(Entry entry) {
+        return entry.path().equals(CARD_ROOT);
+    }
+
+    /** De naam zoals je hem ziet: de kaart zelf heet "sd". */
+    private static String shownName(Entry entry) {
+        return isCardRoot(entry) ? "sd" : entry.name();
+    }
+
     /** De map die je nu bekijkt (Notes maakt daar een nieuwe notitie). */
     String cwd() {
         return cwd;
     }
 
-    /** {@code /home} + {@code a.txt} = {@code /home/a.txt} (en in de bovenste map {@code /a.txt}). */
+    /**
+     * {@code /home} + {@code a.txt} = {@code /home/a.txt} (en in de bovenste map {@code /a.txt}). Hoofdstuk 130: op de kaart
+     * {@code sd:/} + {@code a.txt} = {@code sd:/a.txt}.
+     */
     static String child(String dir, String name) {
-        return (dir.equals("/") ? "" : dir) + "/" + name;
+        return (dir.endsWith("/") ? dir : dir + "/") + name;
     }
 
-    /** Wat er in de map staat die je bekijkt: eerst ".." (als je niet bovenaan bent), dan de mappen, dan de bestanden. */
+    /**
+     * De map waar dit in staat. Op de kaart: {@code sd:/notes/a.txt} geeft {@code sd:/notes}, {@code sd:/a.txt} geeft
+     * {@code sd:/}, en de kaart zelf ({@code sd:/}) staat in {@code /} (daar is hij de map sd).
+     */
+    static String parent(String path) {
+        if (SdDesktop.onCard(path)) {
+            String inside = path.substring(SdDesktop.PREFIX.length());
+            return inside.equals("/") ? "/" : SdDesktop.PREFIX + VirtualFs.parentOf(inside);
+        }
+        return VirtualFs.parentOf(path);
+    }
+
+    /**
+     * Wat er in de map staat die je bekijkt: eerst ".." (als je niet bovenaan bent), dan (bovenaan, hoofdstuk 130) de
+     * SD-kaart als map sd, dan de mappen, dan de bestanden.
+     */
     private List<Row> rows() {
         List<Row> rows = new ArrayList<>();
         if (!cwd.equals("/")) {
-            rows.add(new Row(new Entry(VirtualFs.parentOf(cwd), true, false, false, 0), true));
+            rows.add(new Row(new Entry(parent(cwd), true, false, false, 0), true));
         }
-        entries.stream()
-                .filter(entry -> VirtualFs.parentOf(entry.path()).equals(cwd))
+        if (cwd.equals("/") && cardIn) {
+            rows.add(new Row(new Entry(CARD_ROOT, true, false, false, 0), false));
+        }
+        (SdDesktop.onCard(cwd) ? cardEntries : entries).stream()
+                .filter(entry -> parent(entry.path()).equals(cwd))
                 .sorted(Comparator.comparing((Entry entry) -> !entry.dir())
                         .thenComparing(entry -> entry.name().toLowerCase(Locale.ROOT)))
                 .forEach(entry -> rows.add(new Row(entry, false)));
@@ -193,12 +272,14 @@ final class FilesApp {
     }
 
     private boolean enabled(Tool tool, @Nullable Entry selection) {
+        // Hoofdstuk 130: de kaart zelf hernoem of verwijder je niet, en op een kaart staan geen valstrikken.
+        boolean card = selection != null && isCardRoot(selection);
         return switch (tool) {
             case UP -> !cwd.equals("/");
             case FOLDER, FILE -> true;
-            case RENAME -> selection != null;
-            case DELETE -> selection != null && !holdsSystemFile(selection);
-            case TRAP -> selection != null && !selection.dir() && !selection.system();
+            case RENAME -> selection != null && !card;
+            case DELETE -> selection != null && !card && !holdsSystemFile(selection);
+            case TRAP -> selection != null && !selection.dir() && !selection.system() && !onCard(selection);
         };
     }
 
@@ -252,6 +333,7 @@ final class FilesApp {
             int ry = top + (i - scroll) * ROW;
             boolean isSelected = !row.up() && entry.path().equals(selected);
             boolean isDrop = dragging && row.equals(hover) && entry.dir() && !entry.path().equals(pressed);
+            boolean card = !row.up() && isCardRoot(entry);
             if (isDrop) {
                 g.fill(a.x() + 1, ry, a.x() + a.w() - 1, ry + ROW, HudStyle.argb(255, 0x1E5A3A));
             } else if (isSelected) {
@@ -259,9 +341,20 @@ final class FilesApp {
             } else if (row.equals(hover)) {
                 g.fill(a.x() + 1, ry, a.x() + a.w() - 1, ry + ROW, HudStyle.argb(255, 0x14303D));
             }
-            icon(g, a.x() + 3, ry + 1, entry, row.up());
-            String name = row.up() ? ".." : entry.name();
-            g.drawString(font, name, a.x() + 15, ry + 2, HudStyle.argb(255, row.up() ? OsDraw.GREY : HudStyle.WHITE), false);
+            if (card) {
+                cardIcon(g, a.x() + 3, ry + 1);
+            } else {
+                icon(g, a.x() + 3, ry + 1, entry, row.up());
+            }
+            String name = row.up() ? ".." : shownName(entry);
+            g.drawString(font, name, a.x() + 15, ry + 2, HudStyle.argb(255, row.up() ? OsDraw.GREY : card ? HudStyle.CYAN : HudStyle.WHITE), false);
+            if (card) {
+                // Rechts: de naam van de kaart (uit een aambeeld) en zijn maat.
+                String about = (cardName.isBlank() ? "SD card" : cardName) + "  " + cardGb + " GB";
+                int sx = a.x() + a.w() - 4 - font.width(about);
+                g.drawString(font, OsDraw.fitLeft(font, about, a.w() - 60), Math.max(a.x() + 50, sx), ry + 2,
+                        HudStyle.argb(255, OsDraw.GREY), false);
+            }
             // Rechts: de vlaggen en de grootte.
             if (!entry.dir()) {
                 String size = entry.size() + " B";
@@ -286,8 +379,12 @@ final class FilesApp {
         if (input != Input.NONE && nameBox != null) {
             renderInput(g, font, a, by, mx, my, partialTick);
         } else {
-            g.drawString(font, "Double-click: open   Drag: move   Right-click: menu", a.x(), by + 2,
-                    HudStyle.argb(255, OsDraw.GREY), false);
+            // Hoofdstuk 130: met een SD-kaart erin zegt de uitleg hoe je kopieert.
+            String hint = cwd.equals(CARD_ROOT) ? "On the SD card. Drag onto ..: copy to the system"
+                    : SdDesktop.onCard(cwd) ? "On the SD card. Right-click: Copy to your folder"
+                    : cardIn && cwd.equals("/") ? "Drag a file onto sd: copy it to the SD card"
+                    : "Double-click: open   Drag: move   Right-click: menu";
+            g.drawString(font, OsDraw.fitRight(font, hint, a.w()), a.x(), by + 2, HudStyle.argb(255, OsDraw.GREY), false);
         }
         // Slepen: de naam hangt aan de muis.
         if (dragging && pressed != null) {
@@ -321,6 +418,13 @@ final class FilesApp {
         OsDraw.button(g, font, fx + fw + 6 + okW, by, "Cancel", true, HudStyle.CYAN);
     }
 
+    /** Hoofdstuk 130: de SD-kaart in de lijst: een blauw kaartje met een afgeknipte hoek en goudkleurige pootjes. */
+    private static void cardIcon(GuiGraphics g, int x, int y) {
+        g.fill(x + 1, y, x + 8, y + 9, HudStyle.argb(255, 0x2A5BD7));
+        g.fill(x + 1, y, x + 3, y + 2, HudStyle.argb(255, OsDraw.FIELD)); // de afgeknipte hoek
+        g.fill(x + 2, y + 6, x + 7, y + 8, HudStyle.argb(255, 0xE8C25A));
+    }
+
     private static void icon(GuiGraphics g, int x, int y, Entry entry, boolean up) {
         if (entry.dir()) {
             int colour = HudStyle.argb(255, up ? OsDraw.GREY : 0xE8C25A);
@@ -339,12 +443,21 @@ final class FilesApp {
     // ---------------------------------------------------------------- Het rechtsklik-menu
 
     private List<MenuItem> menuItems(Entry entry) {
+        if (isCardRoot(entry)) {
+            return List.of(MenuItem.OPEN); // de kaart zelf: alleen openen
+        }
         List<MenuItem> items = new ArrayList<>(List.of(MenuItem.OPEN, MenuItem.RENAME));
         if (!holdsSystemFile(entry)) {
             items.add(MenuItem.DELETE);
         }
-        if (screen.isOwner() && !entry.dir() && !entry.system()) {
+        if (screen.isOwner() && !entry.dir() && !entry.system() && !onCard(entry)) {
             items.add(MenuItem.TRAP);
+        }
+        // Hoofdstuk 130: kopiëren naar de SD-kaart (nooit security.conf) en van de kaart naar je eigen map.
+        if (onCard(entry)) {
+            items.add(MenuItem.TO_SYSTEM);
+        } else if (cardIn && !entry.system()) {
+            items.add(MenuItem.TO_CARD);
         }
         return items;
     }
@@ -355,6 +468,8 @@ final class FilesApp {
             case RENAME -> "Rename";
             case DELETE -> confirming(entry.path()) ? "Click again to delete" : "Delete";
             case TRAP -> entry.trap() ? "Remove trap" : "Mark as trap";
+            case TO_CARD -> "Copy to SD card";
+            case TO_SYSTEM -> "Copy to your folder";
         };
     }
 
@@ -463,11 +578,13 @@ final class FilesApp {
             open(entry);
             return true;
         }
-        // Misschien begint hier een sleep.
-        pressed = entry.path();
-        pressX = mx;
-        pressY = my;
-        dragging = false;
+        // Misschien begint hier een sleep (hoofdstuk 130: niet met de kaart zelf, die verplaats of kopieer je niet).
+        if (!isCardRoot(entry)) {
+            pressed = entry.path();
+            pressX = mx;
+            pressY = my;
+            dragging = false;
+        }
         return true;
     }
 
@@ -491,7 +608,8 @@ final class FilesApp {
         }
         Row target = rowAt(a, mx, my);
         if (target != null && target.entry().dir() && !target.entry().path().equals(from)
-                && !target.entry().path().equals(VirtualFs.parentOf(from))) {
+                && !target.entry().path().equals(parent(from))) {
+            // Hoofdstuk 130: van je systeem naar de kaart (of terug) is kopiëren; de server doet dat bij fs_move tussen de twee.
             CompoundTag args = new CompoundTag();
             args.putString("from", from);
             args.putString("to", target.entry().path());
@@ -609,6 +727,14 @@ final class FilesApp {
                 menuFor = null;
                 setTrap(entry, !entry.trap());
             }
+            case TO_CARD, TO_SYSTEM -> {
+                // Hoofdstuk 130: naar de kaart (in sd zelf), of van de kaart naar je eigen map in /home (de server kiest).
+                menuFor = null;
+                CompoundTag args = new CompoundTag();
+                args.putString("from", entry.path());
+                args.putString("to", "");
+                screen.send("fs_copy", args);
+            }
         }
     }
 
@@ -628,7 +754,7 @@ final class FilesApp {
     private void goUp() {
         if (!cwd.equals("/")) {
             selected = cwd;
-            cwd = VirtualFs.parentOf(cwd);
+            cwd = parent(cwd);
             scroll = 0;
         }
     }
@@ -704,7 +830,7 @@ final class FilesApp {
             cancelInput();
             return;
         }
-        String dir = input == Input.RENAME && renameFrom != null ? VirtualFs.parentOf(renameFrom) : cwd;
+        String dir = input == Input.RENAME && renameFrom != null ? parent(renameFrom) : cwd;
         String target = child(dir, name);
         if (find(target) != null && !target.equals(renameFrom)) {
             screen.showNotice(name + " already exists", true);

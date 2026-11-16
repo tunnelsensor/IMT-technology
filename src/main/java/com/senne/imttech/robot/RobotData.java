@@ -62,13 +62,16 @@ public record RobotData(int parts, BotBoard board, String name, float battery, C
             Codec.FLOAT.optionalFieldOf("health", 1.0f).forGetter(RobotData::health)
     ).apply(instance, RobotData::new));
 
-    /** Zeven velden: dat kan StreamCodec.composite van Minecraft niet (hooguit zes), die van NeoForge wel. */
+    /**
+     * Zeven velden: dat kan StreamCodec.composite van Minecraft niet (hooguit zes), die van NeoForge wel. Hoofdstuk 130:
+     * een programma op slot gaat zonder code naar je spel (LogicProgram.NETWORK_TAG); de robot zelf draait het op de server.
+     */
     public static final StreamCodec<ByteBuf, RobotData> STREAM_CODEC = NeoForgeStreamCodecs.composite(
             ByteBufCodecs.VAR_INT, RobotData::parts,
             BotBoard.STREAM_CODEC, RobotData::board,
             ByteBufCodecs.STRING_UTF8, RobotData::name,
             ByteBufCodecs.FLOAT, RobotData::battery,
-            ByteBufCodecs.COMPOUND_TAG, RobotData::program,
+            com.senne.imttech.logic.program.LogicProgram.NETWORK_TAG, RobotData::program,
             ByteBufCodecs.VAR_INT, RobotData::ammo,
             ByteBufCodecs.FLOAT, RobotData::health,
             RobotData::new);

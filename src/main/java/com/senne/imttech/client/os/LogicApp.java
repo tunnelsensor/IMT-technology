@@ -48,6 +48,12 @@ import org.jetbrains.annotations.Nullable;
  * Een nieuw programma begint leeg (hoofdstuk 125, jouw wens: "zorg dat al de standaard scripts die in een script komen
  * als je een nieuw script maakt weg zijn"). Code die je vaak gebruikt, bewaar je met <b>Templates</b> (links onder je
  * diagrammen) op je pc, en in een leeg programma klik je hem aan om hem in te laden (zie ScriptTemplates).
+ * <p>
+ * Hoofdstuk 130 (de SD-kaart, jouw keuze: "in Logic en Files zelf"): zit er een SD-kaart in de kern of computer, dan staat
+ * onder je diagrammen een lijstje <b>SD</b> met wat er op de kaart staat. Klik op de kop: een pagina om programma's van je
+ * server op de kaart te zetten, open of <b>op slot</b>. Klik op een programma van de kaart: installeren op je server, of
+ * weggooien (een open programma kun je eerst lezen). Een programma op slot op je server opent niet in de editor: je ziet
+ * alleen dat het op slot is, en je kunt het aan- en uitzetten en weggooien (jouw wens: "enkel gebruiken").
  */
 final class LogicApp {
     private static final int SIDE = 92;
@@ -57,7 +63,17 @@ final class LogicApp {
     private static final int HELP_W = 152;
 
     /** Eén diagram zoals de server het stuurde. */
-    private record Entry(String name, boolean on, LogicGraph graph, String source, ProgramKind kind) {}
+    private record Entry(String name, boolean on, LogicGraph graph, String source, ProgramKind kind, boolean locked,
+                         String author, int blocks) {}
+
+    /** Hoofdstuk 130: een programma op de SD-kaart (naam en zo; de code komt alleen als je hem wilt lezen, en nooit op slot). */
+    private record CardProgram(String name, ProgramKind kind, boolean locked, String author, int blocks, boolean global) {}
+
+    /** Hoofdstuk 130: wat er rechts van de lijst staat: de editor, de pagina van de SD-kaart, of een programma op de kaart. */
+    private enum Page { EDITOR, CARD, CARD_PROGRAM }
+
+    /** Eén regel in de lijst links: een diagram, het nieuwe (nog niet bewaarde) programma, de kop SD, of een kaartprogramma. */
+    private record SideRow(@Nullable Entry entry, @Nullable CardProgram card, boolean header, boolean fresh) {}
 
     /** Code of blokjes: twee manieren om hetzelfde diagram te bewerken. */
     private enum Mode { CODE, BLOCKS }
@@ -119,12 +135,36 @@ final class LogicApp {
     /** De templates in de hint, zoals ze het laatst getekend werden (leeg als er geen hint staat). */
     private final List<HintRow> hintRows = new ArrayList<>();
 
+    // ---------------------------------------------------------------- De SD-kaart (hoofdstuk 130)
+    /** Zit er een kaart in (in de kern, of in de computer van deze desktop)? */
+    private boolean cardIn;
+    /** Zijn naam uit een aambeeld ("" = geen: dan heet hij "SD card"). */
+    private String cardName = "";
+    private int cardGb;
+    private int cardMaxPrograms;
+    private int cardMaxFiles;
+    private int cardFiles;
+    private final List<CardProgram> cardPrograms = new ArrayList<>();
+    private Page page = Page.EDITOR;
+    /** Het programma op de kaart dat je aanklikte (Page.CARD_PROGRAM). */
+    private @Nullable String cardSelected;
+    private int cardScroll;
+    /** Welk programma op de kaart al één keer op Delete from card kreeg, en tot wanneer de tweede klik telt. */
+    private @Nullable String cardConfirm;
+    private long cardConfirmUntil;
+    /** De code van een open programma op de kaart (alleen lezen), en van welk programma die is (null = nog niet gekregen). */
+    private final CodeEditor cardPreview;
+    private @Nullable String previewFor;
+
     LogicApp(SecurityOsScreen screen, Font font) {
         this.screen = screen;
         this.editor = new CodeEditor(font);
         // Ctrl+Spatie: de namen van je apparaten, lezers en panelen komen van de server.
         this.editor.setCompletionData(this::completionData);
         this.canvas = new BlockCanvas(this::info, () -> blocksEdited = true, text -> hoverHint = text);
+        this.cardPreview = new CodeEditor(font);
+        cardPreview.setReadOnly(true);
+        cardPreview.setCompletionData(() -> new CodeCompletion.Data(List.of(), List.of(), List.of(), ProgramKind.SERVER));
     }
 
     private CompoundTag info() {
@@ -182,7 +222,10 @@ final class LogicApp {
         entries.clear();
         for (Tag element : logic.getList("programs", Tag.TAG_COMPOUND)) {
             LogicProgram program = LogicProgram.load((CompoundTag) element);
-            entries.add(new Entry(program.name(), program.enabled(), program.graph(), program.source(), program.kind()));
+            // Hoofdstuk 130: van een programma op slot krijgt je spel geen blokjes of code, alleen hoeveel blokjes het heeft.
+            int blocks = program.locked() ? ((CompoundTag) element).getInt("Blocks") : program.graph().size();
+            entries.add(new Entry(program.name(), program.enabled(), program.graph(), program.source(), program.kind(),
+                    program.locked(), program.author(), blocks));
         }
         if (pendingSelect != null && find(pendingSelect) != null) {
             openEntry(find(pendingSelect), true);
@@ -215,8 +258,130 @@ final class LogicApp {
         return null;
     }
 
+    // ================================================================ De SD-kaart (hoofdstuk 130)
+
+    /** Wat er op de SD-kaart staat (de server stuurt het alleen als er iets veranderde, of als de kaart eruit ging). */
+    void updateCard(CompoundTag sd) {
+        cardIn = sd.getBoolean("in");
+        cardName = sd.getString("name");
+        cardGb = sd.getInt("gb");
+        cardMaxPrograms = sd.getInt("maxP");
+        cardMaxFiles = sd.getInt("maxF");
+        cardPrograms.clear();
+        for (Tag element : sd.getList("p", Tag.TAG_COMPOUND)) {
+            CompoundTag entry = (CompoundTag) element;
+            cardPrograms.add(new CardProgram(entry.getString("n"), ProgramKind.byName(entry.getString("k")), entry.getBoolean("l"),
+                    entry.getString("a"), entry.getInt("b"), entry.getBoolean("g")));
+        }
+        cardFiles = (int) sd.getList("f", Tag.TAG_COMPOUND).stream().filter(tag -> !((CompoundTag) tag).getBoolean("d")).count();
+        if (!cardIn) {
+            page = Page.EDITOR;
+            cardSelected = null;
+        } else if (page == Page.CARD_PROGRAM && (cardSelected == null || cardProgram(cardSelected) == null)) {
+            page = Page.CARD; // weggegooid van de kaart: terug naar de kaart
+            cardSelected = null;
+        }
+    }
+
+    /** De code van een open programma op de kaart, waar je om vroeg (sd_view). */
+    void updateCardCode(CompoundTag code) {
+        if (page == Page.CARD_PROGRAM && code.getString("n").equalsIgnoreCase(cardSelected == null ? "" : cardSelected)) {
+            cardPreview.setText(code.getString("c"));
+            previewFor = cardSelected;
+        }
+    }
+
+    private @Nullable CardProgram cardProgram(String name) {
+        for (CardProgram program : cardPrograms) {
+            if (program.name().equalsIgnoreCase(name)) {
+                return program;
+            }
+        }
+        return null;
+    }
+
+    /** Hoe de kaart heet: zijn naam uit een aambeeld, anders "SD card". */
+    private String cardTitle() {
+        return cardName.isBlank() ? "SD card" : cardName;
+    }
+
+    /** Is het programma dat open staat een programma op slot (van een SD-kaart)? */
+    private boolean currentLocked() {
+        Entry entry = current == null ? null : find(current);
+        return entry != null && entry.locked();
+    }
+
+    /**
+     * Geen tekstvak meer actief (het naamvak, het naamvak van Templates, het hernoemvak van Help). Op de pagina's van de
+     * kaart en bij een programma op slot staan die niet op het scherm: typen mag dan nergens heen gaan (gevonden door de
+     * nalezing: anders hernoemde je ongezien het programma dat open stond, en bewaarde het sluiten van de desktop dat).
+     */
+    private void clearTextFocus() {
+        renaming = null;
+        nameBox().setFocused(false);
+        if (renameBox != null) {
+            renameBox.setFocused(false);
+        }
+        if (templateNameBox != null) {
+            templateNameBox.setFocused(false);
+        }
+        editor.setFocused(false);
+    }
+
+    /** Naar de pagina van de kaart (de kop SD in de lijst). De editor blijft zoals hij was. */
+    private void openCardPage() {
+        page = Page.CARD;
+        cardSelected = null;
+        cardScroll = 0;
+        choosingKind = false;
+        clearTextFocus();
+    }
+
+    /** Een programma op de kaart aanklikken: zijn pagina, en (als het open is) vragen we de code om te lezen. */
+    private void openCardProgram(CardProgram program) {
+        page = Page.CARD_PROGRAM;
+        cardSelected = program.name();
+        choosingKind = false;
+        clearTextFocus();
+        previewFor = null;
+        cardPreview.setText("");
+        if (!program.locked()) {
+            CompoundTag args = new CompoundTag();
+            args.putString("name", program.name());
+            screen.send("sd_view", args);
+        }
+    }
+
+    /**
+     * Een programma op slot opent niet in de editor (je spel heeft zijn code ook niet): de editor wordt leeg en
+     * onaanraakbaar, en rechts staat dat het op slot is. Aanzetten, uitzetten en weggooien kan wel.
+     */
+    private void openLocked(Entry entry) {
+        current = entry.name();
+        open = true;
+        setKind(entry.kind());
+        baseGraph = entry.graph();
+        blockGraph = entry.graph().copy();
+        blocksEdited = false;
+        editor.setText("");
+        editor.setErrorLine(0);
+        loadedCode = "";
+        codeAtSwitch = "";
+        loadedName = entry.name();
+        nameBox().setValue(entry.name());
+        clearTextFocus();
+        helpOpen = false;
+        templatesOpen = false;
+        confirm = null;
+        show("Locked: you can use it, not read it", OsDraw.GREY);
+    }
+
     /** Opent dit diagram in de editor. {@code keepCursor}: is de code hetzelfde, laat de editor dan met rust. */
     private void openEntry(Entry entry, boolean keepCursor) {
+        if (entry.locked()) {
+            openLocked(entry); // hoofdstuk 130
+            return;
+        }
         current = entry.name();
         open = true;
         setKind(entry.kind());
@@ -310,6 +475,10 @@ final class LogicApp {
     /** Zijn er wijzigingen die nog niet bewaard zijn? */
     boolean dirty() {
         if (!open) {
+            return false;
+        }
+        if (currentLocked()) {
+            // Hoofdstuk 130: een programma op slot verander je niet (ook niet vanzelf bij het sluiten van de desktop).
             return false;
         }
         if (current == null) {
@@ -445,6 +614,10 @@ final class LogicApp {
         if (!open) {
             return;
         }
+        if (currentLocked()) {
+            show("This program is locked: you can only use it", HudStyle.ORANGE);
+            return;
+        }
         if (current == null && !dirty()) {
             // Een nieuw programma zonder code bewaren we niet (hoofdstuk 125, de nalezing): Save is dan grijs, maar een klik
             // of Ctrl+S zette anders toch een leeg programma op je server.
@@ -512,6 +685,7 @@ final class LogicApp {
      */
     private void newDiagram(ProgramKind newKind) {
         choosingKind = false;
+        page = Page.EDITOR;
         if (!confirmed("new", "Unsaved changes: click New again to throw them away")) {
             return;
         }
@@ -572,6 +746,7 @@ final class LogicApp {
      */
     private void newGlobalScript() {
         choosingKind = false;
+        page = Page.EDITOR;
         if (!confirmed("new", "Unsaved changes: click New again to throw them away")) {
             return;
         }
@@ -703,6 +878,15 @@ final class LogicApp {
         renderSidebar(g, font, a, mx, my);
         int x0 = a.x() + SIDE + 6;
         int width = a.x() + a.w() - x0;
+        // Hoofdstuk 130: de pagina van de SD-kaart, of van een programma erop (de editor blijft daaronder zoals hij was).
+        if (page == Page.CARD && cardIn) {
+            renderCardPage(g, font, a, x0, width, mx, my);
+            return;
+        }
+        if (page == Page.CARD_PROGRAM && cardIn && cardSelected != null && cardProgram(cardSelected) != null) {
+            renderCardProgramPage(g, font, a, x0, width, mx, my, cardProgram(cardSelected));
+            return;
+        }
         if (!open) {
             g.drawString(font, "No diagram open.", x0, a.y() + 4, HudStyle.argb(255, HudStyle.WHITE), false);
             g.drawString(font, "Press + to make one.", x0, a.y() + 16, HudStyle.argb(255, OsDraw.GREY), false);
@@ -714,11 +898,17 @@ final class LogicApp {
         bx += font.width("Name") + 4;
         EditBox box = nameBox();
         int nameW = nameWidth(font, a);
-        OsDraw.field(g, bx, a.y(), bx + nameW, a.y() + OsDraw.BUTTON_H, box.isFocused());
-        box.setX(bx + 3);
-        box.setY(a.y() + 2);
-        box.setWidth(nameW - 6);
-        box.render(g, mx, my, partialTick);
+        boolean locked = currentLocked();
+        OsDraw.field(g, bx, a.y(), bx + nameW, a.y() + OsDraw.BUTTON_H, box.isFocused() && !locked);
+        if (locked) {
+            // Hoofdstuk 130: de naam van een programma op slot staat vast (je kunt hem niet bewaren).
+            g.drawString(font, OsDraw.fitRight(font, current, nameW - 6), bx + 3, a.y() + 2, HudStyle.argb(255, OsDraw.GREY), false);
+        } else {
+            box.setX(bx + 3);
+            box.setY(a.y() + 2);
+            box.setWidth(nameW - 6);
+            box.render(g, mx, my, partialTick);
+        }
         bx += nameW + 4;
         for (String label : toolbar()) {
             boolean enabled = !label.equals("Save") || dirty();
@@ -736,7 +926,9 @@ final class LogicApp {
             panelButton(g, font, rx, a.y(), label, helpOpen, HudStyle.ORANGE);
             rx -= 3;
         }
-        if (mode == Mode.BLOCKS) {
+        if (locked) {
+            renderLockedPage(g, font, x0, top, width, a.h() - TOOLBAR - STATUS);
+        } else if (mode == Mode.BLOCKS) {
             canvas.render(g, font, x0, top, width, a.h() - TOOLBAR - STATUS, mx, my, partialTick);
         } else {
             // De editor, met rechts Help of Templates als dat open is.
@@ -778,6 +970,11 @@ final class LogicApp {
      */
     private List<String> toolbar() {
         Entry entry = current == null ? null : find(current);
+        if (entry != null && entry.locked()) {
+            // Hoofdstuk 130: op slot = alleen gebruiken: aan of uit (een diagram op de server) en weggooien.
+            return entry.kind() == ProgramKind.SERVER && !entry.graph().global() ? List.of(entry.on() ? "Off" : "On", "Delete")
+                    : List.of("Delete");
+        }
         String view = mode == Mode.CODE ? "Blocks" : "Code";
         if (entry == null || entry.kind() != ProgramKind.SERVER) {
             // Een robotprogramma zet je niet aan of uit op de server: de robot draait het (app Robots).
@@ -792,7 +989,7 @@ final class LogicApp {
      * Delete). Help en Templates openen allebei rechts een paneel; nooit twee tegelijk.
      */
     private List<String> panelButtons() {
-        return mode == Mode.CODE ? List.of("Help") : List.of();
+        return mode == Mode.CODE && !currentLocked() ? List.of("Help") : List.of();
     }
 
     /** Waar de knop Templates staat: onderaan in de lijst met diagrammen (alleen als er een programma open is). */
@@ -828,48 +1025,22 @@ final class LogicApp {
             OsDraw.button(g, font, x + 4, top + 15 + 5 * (OsDraw.BUTTON_H + 3), "Cancel", true, OsDraw.GREY);
             return;
         }
-        // Onderaan in de lijst: de knop Templates (hoofdstuk 125), als er een programma open is.
+        // Onderaan in de lijst: de knop Templates (hoofdstuk 125), als er een programma open is (niet bij een programma op
+        // slot, en niet op de pagina's van de SD-kaart: daar is geen code).
         int listBottom = bottom;
-        if (open) {
+        if (templatesButtonShown()) {
             int ty = templatesButtonY(a);
             panelButton(g, font, x + 3, ty, "Templates", templatesOpen && mode == Mode.CODE, TEMPLATE_COLOUR);
             listBottom = ty - 2;
         }
         int y = top + 3;
-        List<Entry> shown = new ArrayList<>(entries);
-        sideScroll = Math.max(0, Math.min(sideScroll, Math.max(0, shown.size() - 1)));
-        for (int i = sideScroll; i < shown.size() && y + ROW <= listBottom; i++) {
-            Entry entry = shown.get(i);
-            boolean selected = open && current != null && current.equalsIgnoreCase(entry.name());
-            if (selected) {
-                g.fill(x + 2, y - 2, x + SIDE - 2, y + ROW - 3, HudStyle.argb(255, 0x16303F));
-            }
-            g.fill(x + 4, y + 2, x + 7, y + 5, HudStyle.argb(255, entry.on() ? HudStyle.GREEN : 0x4A5A62));
-            String name = (selected && dirty() ? "*" : "") + entry.name();
-            boolean car = entry.kind() == ProgramKind.CAR;
-            boolean bot = entry.kind().onBot() || car;
-            boolean global = entry.graph().global();
-            g.drawString(font, OsDraw.fitLeft(font, name, SIDE - (bot || global ? 24 : 14)), x + 10, y,
-                    HudStyle.argb(255, entry.on() || bot ? HudStyle.WHITE : OsDraw.GREY), false);
-            if (bot) {
-                // Een robotprogramma: een geel R'tje rechts (het draait op een robot, niet op de server); een
-                // droneprogramma (hoofdstuk 25): een lichtblauwe D.
-                boolean drone = entry.kind() == ProgramKind.DRONE;
-                // Een RC program (hoofdstuk 119): een groene C (het draait op een RC Car).
-                g.drawString(font, car ? "C" : drone ? "D" : "R", x + SIDE - 10, y,
-                        HudStyle.argb(255, car ? CAR_COLOUR : drone ? DRONE_COLOUR : 0xF1E87C), false);
-            } else if (global) {
-                // Een global script (hoofdstuk 43): een oranje G.
-                g.drawString(font, "G", x + SIDE - 10, y, HudStyle.argb(255, HudStyle.ORANGE), false);
-            }
+        List<SideRow> rows = sideRows();
+        sideScroll = Math.max(0, Math.min(sideScroll, Math.max(0, rows.size() - 1)));
+        for (int i = sideScroll; i < rows.size() && y + ROW <= listBottom; i++) {
+            renderSideRow(g, font, x, y, rows.get(i));
             y += ROW;
         }
-        if (open && current == null && y + ROW <= listBottom) {
-            g.fill(x + 2, y - 2, x + SIDE - 2, y + ROW - 3, HudStyle.argb(255, 0x16303F));
-            g.drawString(font, OsDraw.fitLeft(font, "*" + nameBox().getValue(), SIDE - 14), x + 10, y,
-                    HudStyle.argb(255, HudStyle.ORANGE), false);
-        }
-        if (entries.isEmpty() && !open) {
+        if (entries.isEmpty() && !open && !cardIn) {
             g.drawString(font, "(none yet)", x + 5, top + 3, HudStyle.argb(255, OsDraw.GREY), false);
         }
         // Onderaan: hoe vol de SSD's zijn, en wat er bezig is.
@@ -889,6 +1060,338 @@ final class LogicApp {
                 : "Running " + info.getInt("running") + (info.getInt("queued") > 0 ? ", waiting " + info.getInt("queued") : "");
         g.drawString(font, OsDraw.fitLeft(font, state, SIDE), x, sy + 16,
                 HudStyle.argb(255, server.getBoolean("online") ? OsDraw.GREY : HudStyle.RED), false);
+    }
+
+    /** Staat de knop Templates onderaan de lijst? Alleen bij code die je kunt veranderen. */
+    private boolean templatesButtonShown() {
+        return open && page == Page.EDITOR && !currentLocked();
+    }
+
+    /**
+     * Wat er in de lijst links staat: je diagrammen, het nieuwe programma dat nog niet bewaard is, en (hoofdstuk 130) als er
+     * een SD-kaart in zit de kop SD met de programma's op de kaart.
+     */
+    private List<SideRow> sideRows() {
+        List<SideRow> rows = new ArrayList<>();
+        for (Entry entry : entries) {
+            rows.add(new SideRow(entry, null, false, false));
+        }
+        if (open && current == null) {
+            rows.add(new SideRow(null, null, false, true));
+        }
+        if (cardIn) {
+            rows.add(new SideRow(null, null, true, false));
+            for (CardProgram program : cardPrograms) {
+                rows.add(new SideRow(null, program, false, false));
+            }
+        }
+        return rows;
+    }
+
+    /** Een slotje (hoofdstuk 130): een programma op slot. 5 breed en 7 hoog. */
+    private static void lock(GuiGraphics g, int x, int y, int colour) {
+        int c = HudStyle.argb(255, colour);
+        g.fill(x + 1, y, x + 4, y + 1, c);
+        g.fill(x, y + 1, x + 1, y + 3, c);
+        g.fill(x + 4, y + 1, x + 5, y + 3, c);
+        g.fill(x, y + 3, x + 5, y + 7, c);
+    }
+
+    /** De letter van de soort rechts in de lijst (R, D, C of G), of "" voor een gewoon diagram. */
+    private static String kindLetter(ProgramKind kind, boolean global) {
+        return switch (kind) {
+            case CAR -> "C";
+            case DRONE -> "D";
+            case ROBOT -> "R";
+            default -> global ? "G" : "";
+        };
+    }
+
+    private static int kindLetterColour(ProgramKind kind) {
+        return switch (kind) {
+            case CAR -> CAR_COLOUR;
+            case DRONE -> DRONE_COLOUR;
+            case ROBOT -> 0xF1E87C;
+            default -> HudStyle.ORANGE;
+        };
+    }
+
+    private void renderSideRow(GuiGraphics g, Font font, int x, int y, SideRow row) {
+        if (row.header()) {
+            // De kop van de SD-kaart: een kaartje, "SD" en zijn naam.
+            boolean selected = page == Page.CARD;
+            g.fill(x + 2, y - 3, x + SIDE - 2, y - 2, HudStyle.argb(255, OsDraw.DIM));
+            if (selected) {
+                g.fill(x + 2, y - 2, x + SIDE - 2, y + ROW - 3, HudStyle.argb(255, 0x16303F));
+            }
+            g.fill(x + 4, y, x + 9, y + 7, HudStyle.argb(255, 0x2A5BD7));
+            g.fill(x + 4, y, x + 6, y + 2, HudStyle.argb(255, OsDraw.FIELD));
+            g.drawString(font, OsDraw.fitRight(font, cardName.isBlank() ? "SD card" : "SD " + cardName, SIDE - 16), x + 12, y,
+                    HudStyle.argb(255, HudStyle.CYAN), false);
+            return;
+        }
+        if (row.fresh()) {
+            if (page == Page.EDITOR) {
+                g.fill(x + 2, y - 2, x + SIDE - 2, y + ROW - 3, HudStyle.argb(255, 0x16303F));
+            }
+            g.drawString(font, OsDraw.fitLeft(font, "*" + nameBox().getValue(), SIDE - 14), x + 10, y,
+                    HudStyle.argb(255, HudStyle.ORANGE), false);
+            return;
+        }
+        if (row.card() != null) {
+            // Een programma op de kaart: ingesprongen, zonder aan/uit-bolletje.
+            CardProgram program = row.card();
+            boolean selected = page == Page.CARD_PROGRAM && program.name().equalsIgnoreCase(cardSelected == null ? "" : cardSelected);
+            if (selected) {
+                g.fill(x + 2, y - 2, x + SIDE - 2, y + ROW - 3, HudStyle.argb(255, 0x16303F));
+            }
+            String letter = kindLetter(program.kind(), program.global());
+            int room = SIDE - 12 - (letter.isEmpty() ? 4 : 12) - (program.locked() ? 8 : 0);
+            g.drawString(font, OsDraw.fitLeft(font, program.name(), room), x + 10, y, HudStyle.argb(255, 0xB8D8E8), false);
+            if (!letter.isEmpty()) {
+                g.drawString(font, letter, x + SIDE - 10, y, HudStyle.argb(255, kindLetterColour(program.kind())), false);
+            }
+            if (program.locked()) {
+                lock(g, x + SIDE - (letter.isEmpty() ? 10 : 18), y, 0xE8C25A);
+            }
+            return;
+        }
+        Entry entry = row.entry();
+        boolean selected = page == Page.EDITOR && open && current != null && current.equalsIgnoreCase(entry.name());
+        if (selected) {
+            g.fill(x + 2, y - 2, x + SIDE - 2, y + ROW - 3, HudStyle.argb(255, 0x16303F));
+        }
+        g.fill(x + 4, y + 2, x + 7, y + 5, HudStyle.argb(255, entry.on() ? HudStyle.GREEN : 0x4A5A62));
+        String name = (selected && dirty() ? "*" : "") + entry.name();
+        boolean car = entry.kind() == ProgramKind.CAR;
+        boolean bot = entry.kind().onBot() || car;
+        boolean global = entry.graph().global();
+        // Een robotprogramma: een geel R'tje rechts (het draait op een robot, niet op de server); een droneprogramma
+        // (hoofdstuk 25): een lichtblauwe D; een RC program (hoofdstuk 119): een groene C; een global script (hoofdstuk 43):
+        // een oranje G. Hoofdstuk 130: een programma op slot krijgt er een slotje bij.
+        String letter = kindLetter(entry.kind(), global);
+        int room = SIDE - (letter.isEmpty() ? 14 : 24) - (entry.locked() ? 8 : 0);
+        g.drawString(font, OsDraw.fitLeft(font, name, room), x + 10, y,
+                HudStyle.argb(255, entry.on() || bot ? HudStyle.WHITE : OsDraw.GREY), false);
+        if (!letter.isEmpty()) {
+            g.drawString(font, letter, x + SIDE - 10, y, HudStyle.argb(255, kindLetterColour(entry.kind())), false);
+        }
+        if (entry.locked()) {
+            lock(g, x + SIDE - (letter.isEmpty() ? 10 : 18), y, 0xE8C25A);
+        }
+    }
+
+    /**
+     * Een klik op een regel in de lijst links: een diagram opent in de editor (met de vraag of je wijzigingen weg mogen),
+     * de kop SD opent de pagina van de kaart, een programma op de kaart zijn pagina. De pagina's van de kaart laten de editor
+     * zoals hij was: klik je daarna je diagram weer aan, dan staat alles er nog (ook wat je nog niet bewaarde).
+     */
+    private void clickSideRow(SideRow row) {
+        if (row.header()) {
+            openCardPage();
+            return;
+        }
+        if (row.card() != null) {
+            openCardProgram(row.card());
+            return;
+        }
+        if (row.fresh()) {
+            page = Page.EDITOR; // het nieuwe programma dat je aan het schrijven bent
+            return;
+        }
+        Entry entry = row.entry();
+        if (current != null && current.equalsIgnoreCase(entry.name())) {
+            page = Page.EDITOR;
+            return;
+        }
+        if (confirmed("switch:" + entry.name(), "Unsaved changes: click " + entry.name() + " again to throw them away")) {
+            page = Page.EDITOR;
+            openEntry(entry, false);
+        }
+    }
+
+    // ================================================================ De pagina's van de SD-kaart (hoofdstuk 130)
+
+    /** Een rij knoppen die je kunt aanklikken: waar ze staan en wat ze doen (getekend en geklikt met dezelfde plekken). */
+    private record CardHit(int x, int y, int w, int h, Runnable action) {}
+
+    private final List<CardHit> cardHits = new ArrayList<>();
+    private static final int CARD_ROW = 13;
+
+    private int cardButton(GuiGraphics g, Font font, int x, int y, String label, boolean enabled, int accent, Runnable action) {
+        int w = OsDraw.button(g, font, x, y, label, enabled, accent);
+        if (enabled) {
+            cardHits.add(new CardHit(x, y, w, OsDraw.BUTTON_H, action));
+        }
+        return w;
+    }
+
+    /** Hoe een soort heet: "Server diagram", "Robot program", ... en "Global script". */
+    private static String kindTitle(ProgramKind kind, boolean global) {
+        return global ? "Global script" : kind.title();
+    }
+
+    private static int kindTitleColour(ProgramKind kind, boolean global) {
+        return kind == ProgramKind.SERVER && !global ? HudStyle.CYAN : kindLetterColour(kind);
+    }
+
+    /**
+     * De pagina van de kaart:
+     * <pre>
+     *  SD CARD  Mijnbot  32 GB                 3/16 programs  2/32 files
+     *  Copy a program from this server onto the card:
+     *  Lights        Server diagram          [Copy] [Copy locked]
+     *  Mine car      RC program              [Copy] [Copy locked]
+     *  Locked: they can use it (start, stop, load it on a car), never read it.
+     * </pre>
+     */
+    private void renderCardPage(GuiGraphics g, Font font, SecurityOsScreen.Area a, int x0, int width, int mx, int my) {
+        cardHits.clear();
+        int y0 = a.y();
+        int right = x0 + width;
+        String used = cardPrograms.size() + "/" + cardMaxPrograms + " programs  " + cardFiles + "/" + cardMaxFiles + " files";
+        g.drawString(font, "SD CARD", x0, y0 + 2, HudStyle.argb(255, HudStyle.CYAN), false);
+        int nx = x0 + font.width("SD CARD") + 6;
+        String title = (cardName.isBlank() ? "" : cardName + "  ") + cardGb + " GB";
+        g.drawString(font, OsDraw.fitRight(font, title, right - font.width(used) - 8 - nx), nx, y0 + 2,
+                HudStyle.argb(255, HudStyle.WHITE), false);
+        g.drawString(font, used, right - font.width(used), y0 + 2, HudStyle.argb(255, OsDraw.GREY), false);
+        g.fill(x0, y0 + 12, right, y0 + 13, HudStyle.argb(255, OsDraw.DIM));
+        boolean mayUse = screen.mayUse(SecurityOsScreen.App.LOGIC);
+        g.drawString(font, "Copy a program from this server onto the card:", x0, y0 + 17, HudStyle.argb(255, HudStyle.WHITE), false);
+        int top = y0 + 30;
+        int bottom = a.y() + a.h() - 34;
+        int rows = Math.max(1, (bottom - top) / CARD_ROW);
+        cardScroll = Math.max(0, Math.min(cardScroll, Math.max(0, entries.size() - rows)));
+        int lockedW = OsDraw.buttonWidth(font, "Copy locked");
+        int copyW = OsDraw.buttonWidth(font, "Copy");
+        int kindX = x0 + Math.min(110, (width - lockedW - copyW - 10) / 2);
+        if (entries.isEmpty()) {
+            g.drawString(font, "(no programs on this server yet)", x0 + 4, top + 2, HudStyle.argb(255, OsDraw.GREY), false);
+        }
+        for (int i = cardScroll; i < entries.size() && i - cardScroll < rows; i++) {
+            Entry entry = entries.get(i);
+            int ry = top + (i - cardScroll) * CARD_ROW;
+            boolean global = entry.graph().global();
+            g.drawString(font, OsDraw.fitRight(font, entry.name(), kindX - x0 - 6), x0 + 4, ry + 2,
+                    HudStyle.argb(255, HudStyle.WHITE), false);
+            g.drawString(font, OsDraw.fitRight(font, kindTitle(entry.kind(), global), right - lockedW - copyW - 10 - kindX), kindX, ry + 2,
+                    HudStyle.argb(255, kindTitleColour(entry.kind(), global)), false);
+            if (entry.locked()) {
+                // Een programma op slot (van een kaart) zet je nooit weer op een kaart.
+                String text = "locked";
+                lock(g, right - font.width(text) - 9, ry + 2, 0xE8C25A);
+                g.drawString(font, text, right - font.width(text), ry + 2, HudStyle.argb(255, OsDraw.GREY), false);
+                continue;
+            }
+            String name = entry.name();
+            cardButton(g, font, right - lockedW - copyW - 3, ry, "Copy", mayUse, HudStyle.CYAN, () -> copyToCard(name, false));
+            // Een global script gaat altijd open op een kaart (je andere programma's hebben zijn namen nodig).
+            cardButton(g, font, right - lockedW, ry, "Copy locked", mayUse && !global, 0xE8C25A, () -> copyToCard(name, true));
+        }
+        int ty = a.y() + a.h() - 30;
+        g.drawString(font, OsDraw.fitRight(font, "Locked: they can use it, never read or change it.", width), x0, ty,
+                HudStyle.argb(255, OsDraw.GREY), false);
+        g.drawString(font, OsDraw.fitRight(font, "Files: the card is the folder sd. Sneak + empty hand: out.", width), x0, ty + 10,
+                HudStyle.argb(255, OsDraw.GREY), false);
+    }
+
+    /**
+     * De pagina van een programma op de kaart: wat het is, Install en Delete, en (open) zijn code om te lezen of (op
+     * slot) dat je de code nooit ziet.
+     */
+    private void renderCardProgramPage(GuiGraphics g, Font font, SecurityOsScreen.Area a, int x0, int width, int mx, int my,
+                                       CardProgram program) {
+        cardHits.clear();
+        int y0 = a.y();
+        int right = x0 + width;
+        g.drawString(font, OsDraw.fitRight(font, program.name(), width / 2), x0, y0 + 2, HudStyle.argb(255, HudStyle.WHITE), false);
+        int kx = x0 + Math.min(font.width(program.name()), width / 2) + 6;
+        g.drawString(font, OsDraw.fitRight(font, kindTitle(program.kind(), program.global()) + " on " + cardTitle(), right - kx),
+                kx, y0 + 2, HudStyle.argb(255, kindTitleColour(program.kind(), program.global())), false);
+        g.fill(x0, y0 + 12, right, y0 + 13, HudStyle.argb(255, OsDraw.DIM));
+        String about = program.locked()
+                ? "Locked by " + (program.author().isBlank() ? "its maker" : program.author())
+                        + ": install it to use it. Nobody can read or change its code."
+                : "Open: install it, then you can read and change it. Its code is below.";
+        List<String> lines = OsDraw.wrap(font, about, width, 2);
+        for (int i = 0; i < lines.size(); i++) {
+            g.drawString(font, lines.get(i), x0, y0 + 17 + i * 10,
+                    HudStyle.argb(255, program.locked() ? 0xE8C25A : OsDraw.GREY), false);
+        }
+        boolean mayUse = screen.mayUse(SecurityOsScreen.App.LOGIC);
+        int by = y0 + 40;
+        String name = program.name();
+        int bx = x0;
+        bx += cardButton(g, font, bx, by, "Install on this server", mayUse, HudStyle.GREEN, () -> installFromCard(name)) + 4;
+        boolean asking = name.equalsIgnoreCase(cardConfirm) && Util.getMillis() < cardConfirmUntil;
+        cardButton(g, font, bx, by, asking ? "Sure? Click again" : "Delete from card", mayUse, HudStyle.RED, () -> deleteFromCard(name));
+        int top = by + OsDraw.BUTTON_H + 5;
+        int h = a.y() + a.h() - STATUS - top;
+        if (program.locked()) {
+            OsDraw.field(g, x0, top, right, top + h, false);
+            lock(g, x0 + 8, top + 8, 0xE8C25A);
+            List<String> text = new ArrayList<>(OsDraw.wrap(font, "The code of a locked program never leaves the server.",
+                    width - 26, 2));
+            text.add("Size: " + program.blocks() + (program.blocks() == 1 ? " block" : " blocks"));
+            for (int i = 0; i < text.size(); i++) {
+                g.drawString(font, text.get(i), x0 + 20, top + 8 + i * 10, HudStyle.argb(255, OsDraw.GREY), false);
+            }
+        } else {
+            cardPreview.setBounds(x0, top, width, h);
+            cardPreview.render(g, mx, my);
+            if (previewFor == null) {
+                g.drawString(font, "Loading the code...", x0 + 6, top + 6, HudStyle.argb(255, OsDraw.GREY), false);
+            }
+        }
+    }
+
+    /** Een programma op slot op je server: geen code, alleen wat het is en wat je ermee kunt. */
+    private void renderLockedPage(GuiGraphics g, Font font, int x0, int top, int width, int h) {
+        Entry entry = current == null ? null : find(current);
+        if (entry == null) {
+            return;
+        }
+        OsDraw.field(g, x0, top, x0 + width, top + h, false);
+        lock(g, x0 + 8, top + 8, 0xE8C25A);
+        g.drawString(font, "Locked: " + kindTitle(entry.kind(), entry.graph().global()), x0 + 20,
+                top + 8, HudStyle.argb(255, 0xE8C25A), false);
+        String by = entry.author().isBlank() ? "someone" : entry.author();
+        String use = entry.kind() == ProgramKind.SERVER
+                ? "From an SD card, locked by " + by + ". You can switch it on and off, or delete it."
+                : "From an SD card, locked by " + by + ". Load it onto a " + (entry.kind() == ProgramKind.CAR ? "car" : "robot")
+                        + " (app Robots), or delete it.";
+        List<String> lines = new ArrayList<>(OsDraw.wrap(font, use, width - 26, 3));
+        lines.addAll(OsDraw.wrap(font, "Nobody can see or change its code: it only runs.", width - 26, 2));
+        for (int i = 0; i < lines.size(); i++) {
+            g.drawString(font, lines.get(i), x0 + 20, top + 22 + i * 10, HudStyle.argb(255, OsDraw.GREY), false);
+        }
+    }
+
+    private void copyToCard(String name, boolean locked) {
+        CompoundTag args = new CompoundTag();
+        args.putString("name", name);
+        args.putBoolean("locked", locked);
+        screen.send("sd_copy", args);
+    }
+
+    private void installFromCard(String name) {
+        CompoundTag args = new CompoundTag();
+        args.putString("name", name);
+        screen.send("sd_install", args);
+    }
+
+    /** Weggooien van de kaart vraagt het eerst: de knop wordt "Sure? Click again" (4 seconden). */
+    private void deleteFromCard(String name) {
+        if (!name.equalsIgnoreCase(cardConfirm) || Util.getMillis() >= cardConfirmUntil) {
+            cardConfirm = name;
+            cardConfirmUntil = Util.getMillis() + 4000;
+            return;
+        }
+        cardConfirm = null;
+        CompoundTag args = new CompoundTag();
+        args.putString("name", name);
+        screen.send("sd_delete", args);
     }
 
     // ================================================================ Help
@@ -1729,7 +2232,7 @@ final class LogicApp {
             }
         }
         // Onderaan in de lijst: de knop Templates (hoofdstuk 125).
-        if (!choosingKind && open
+        if (!choosingKind && templatesButtonShown()
                 && OsDraw.inside(mx, my, a.x() + 3, templatesButtonY(a), OsDraw.buttonWidth(font, "Templates"), OsDraw.BUTTON_H)) {
             toggleTemplates();
             return;
@@ -1737,16 +2240,25 @@ final class LogicApp {
         if (mx >= a.x() && mx < a.x() + SIDE && my >= top) {
             // Alleen een rij die getekend is (de nalezing: naast en boven de knop Templates opende een klik een diagram dat
             // daar niet stond). renderSidebar tekent een rij als hij helemaal boven listBottom past.
-            int listBottom = open ? templatesButtonY(a) - 2 : a.y() + a.h() - 34;
+            int listBottom = templatesButtonShown() ? templatesButtonY(a) - 2 : a.y() + a.h() - 34;
             int row = (my - top - 1) / ROW;
             int index = sideScroll + row;
-            if (my > top && top + 3 + (row + 1) * ROW <= listBottom && index >= 0 && index < entries.size()) {
-                Entry entry = entries.get(index);
-                if (current == null || !current.equalsIgnoreCase(entry.name())) {
-                    if (confirmed("switch:" + entry.name(), "Unsaved changes: click " + entry.name() + " again to throw them away")) {
-                        openEntry(entry, false);
-                    }
+            List<SideRow> rows = sideRows();
+            if (my > top && top + 3 + (row + 1) * ROW <= listBottom && index >= 0 && index < rows.size()) {
+                clickSideRow(rows.get(index));
+            }
+            return;
+        }
+        // Hoofdstuk 130: de pagina's van de SD-kaart (hun knoppen).
+        if (page != Page.EDITOR && cardIn) {
+            for (CardHit hit : List.copyOf(cardHits)) {
+                if (OsDraw.inside(mx, my, hit.x(), hit.y(), hit.w(), hit.h())) {
+                    hit.action().run();
+                    return;
                 }
+            }
+            if (page == Page.CARD_PROGRAM) {
+                cardPreview.mouseClicked(mx, my, button);
             }
             return;
         }
@@ -1758,7 +2270,7 @@ final class LogicApp {
         int bx = x0 + font.width("Name") + 4;
         EditBox box = nameBox();
         int nameW = nameWidth(font, a);
-        boolean inName = OsDraw.inside(mx, my, bx, a.y(), nameW, OsDraw.BUTTON_H);
+        boolean inName = OsDraw.inside(mx, my, bx, a.y(), nameW, OsDraw.BUTTON_H) && !currentLocked();
         box.setFocused(inName);
         if (templateNameBox != null) {
             templateNameBox.setFocused(false); // weer aan als je in het naamvak van Templates klikt (clickTemplates)
@@ -1789,6 +2301,9 @@ final class LogicApp {
                 return;
             }
             bx += w + 3;
+        }
+        if (currentLocked()) {
+            return; // hoofdstuk 130: geen code om in te klikken
         }
         if (mode == Mode.BLOCKS) {
             canvas.mouseClicked(font, mx, my, button);
@@ -1872,10 +2387,20 @@ final class LogicApp {
     }
 
     boolean mouseDragged(int mx, int my) {
+        if (page == Page.CARD_PROGRAM && cardIn) {
+            return cardPreview.mouseDragged(mx, my);
+        }
+        if (page != Page.EDITOR && cardIn || currentLocked()) {
+            return false;
+        }
         return mode == Mode.BLOCKS ? canvas.mouseDragged(mx, my) : editor.mouseDragged(mx, my);
     }
 
     void mouseReleased(int mx, int my) {
+        if (page == Page.CARD_PROGRAM && cardIn) {
+            cardPreview.mouseReleased();
+            return;
+        }
         if (mode == Mode.BLOCKS) {
             canvas.mouseReleased(mx, my);
         } else {
@@ -1886,6 +2411,12 @@ final class LogicApp {
     void mouseScrolled(SecurityOsScreen.Area a, int mx, int my, double scrollY) {
         if (mx < a.x() + SIDE) {
             sideScroll = Math.max(0, sideScroll - (int) Math.signum(scrollY));
+        } else if (page == Page.CARD && cardIn) {
+            cardScroll = Math.max(0, cardScroll - (int) Math.signum(scrollY));
+        } else if (page == Page.CARD_PROGRAM && cardIn) {
+            cardPreview.mouseScrolled(scrollY);
+        } else if (currentLocked()) {
+            return;
         } else if (mode == Mode.BLOCKS) {
             canvas.mouseScrolled(mx, my, scrollY, Screen.hasShiftDown(), Screen.hasControlDown());
         } else if (helpOpen && mx >= a.x() + a.w() - HELP_W) {
@@ -1900,6 +2431,16 @@ final class LogicApp {
     // ================================================================ Toetsen
 
     boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (page == Page.CARD_PROGRAM && cardIn) {
+            // Hoofdstuk 130: de code van een open programma op de kaart: alleen lezen (Ctrl+A en Ctrl+C werken).
+            return cardPreview.keyPressed(keyCode, scanCode, modifiers);
+        }
+        if (page != Page.EDITOR && cardIn) {
+            return false;
+        }
+        if (currentLocked()) {
+            return false; // hoofdstuk 130: bij een programma op slot staat er geen tekstvak en geen code
+        }
         if (Screen.hasControlDown() && keyCode == 83) { // Ctrl+S
             save();
             return true;
@@ -1934,6 +2475,9 @@ final class LogicApp {
             }
             return true;
         }
+        if (currentLocked()) {
+            return false; // hoofdstuk 130: geen code om in te typen
+        }
         if (mode == Mode.BLOCKS) {
             return canvas.keyPressed(keyCode, scanCode, modifiers);
         }
@@ -1945,6 +2489,9 @@ final class LogicApp {
     }
 
     boolean charTyped(char codePoint, int modifiers) {
+        if (page != Page.EDITOR && cardIn || currentLocked()) {
+            return false; // hoofdstuk 130: op de pagina's van de kaart en bij een programma op slot typ je niets
+        }
         if (renaming != null && renameBox().isFocused()) {
             renameBox().charTyped(codePoint, modifiers);
             return true;
@@ -1962,6 +2509,7 @@ final class LogicApp {
 
     void blur() {
         editor.setFocused(false);
+        cardPreview.setFocused(false);
         canvas.blur();
         nameBox().setFocused(false);
         if (renameBox != null) {
@@ -2093,6 +2641,24 @@ final class LogicApp {
             helpOpen = false;
             openEntry(entry, false);
         }
+    }
+
+    /** Alleen voor de screenshot-rondleiding (hoofdstuk 130): de pagina van de SD-kaart. */
+    void tourCard() {
+        openCardPage();
+    }
+
+    /** Alleen voor de screenshot-rondleiding: een programma op de SD-kaart (een open programma vraagt zijn code). */
+    void tourCardProgram(String name) {
+        CardProgram program = cardProgram(name);
+        if (program != null) {
+            openCardProgram(program);
+        }
+    }
+
+    /** Alleen voor de screenshot-rondleiding: terug naar de editor (bij het programma dat open stond). */
+    void tourEditor() {
+        page = Page.EDITOR;
     }
 
     /** Een nieuw diagram met deze code en naam, en meteen Check. */

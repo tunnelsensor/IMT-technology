@@ -168,6 +168,9 @@ public final class HowToTopics {
                     SecurityItemScenes::bypassWires, SecurityItemScenes::pickpocket), ModItems.BYPASS_KIT),
             topic("hacking_laptop", "security", "Hacking Laptop", SecurityItemScenes::laptop, ModItems.HACKING_LAPTOP),
             topic("phone", "security", "I.M.T Phone", SecurityItemScenes::phone, ModItems.PHONE),
+            // Hoofdstuk 130: de SD-kaarten (programma's en bestanden doorgeven of verkopen, open of op slot).
+            topic("sd_card", "security", "SD Card", SecurityItemScenes::sdCard, ModItems.SD_CARD_8GB, ModItems.SD_CARD_32GB,
+                    ModItems.SD_CARD_128GB),
             // ------------------------------------------------------------ Robots
             topicItems("guard_robot", "robots", "Guard robots", scenes(RobotScenes::build, RobotScenes::program),
                     () -> concat(robotParts(), List.of(ModItems.ROBOT_ASSEMBLER.get(), ModItems.ROBOT_DOCK.get(),

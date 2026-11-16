@@ -295,6 +295,20 @@ public final class ModItems {
     /** De I.M.T Phone (hoofdstuk 50): de desktop van je kern in je zak, met een PIN. */
     public static final DeferredItem<com.senne.imttech.security.PhoneItem> PHONE = ITEMS.registerItem(
             "phone", com.senne.imttech.security.PhoneItem::new, new Item.Properties().stacksTo(1));
+    /**
+     * Hoofdstuk 130: de SD-kaarten, in drie maten. Je steekt er een in een Security Core of een Computer en kopieert je
+     * programma's en bestanden erop (open of op slot), om ze door te geven of te verkopen. Eén per stapel: elke kaart heeft
+     * zijn eigen inhoud (op de server, zie SdCards).
+     */
+    public static final DeferredItem<com.senne.imttech.sdcard.SdCardItem> SD_CARD_8GB = ITEMS.registerItem(
+            "sd_card_8gb", properties -> new com.senne.imttech.sdcard.SdCardItem(0, properties),
+            new Item.Properties().stacksTo(1));
+    public static final DeferredItem<com.senne.imttech.sdcard.SdCardItem> SD_CARD_32GB = ITEMS.registerItem(
+            "sd_card_32gb", properties -> new com.senne.imttech.sdcard.SdCardItem(1, properties),
+            new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON));
+    public static final DeferredItem<com.senne.imttech.sdcard.SdCardItem> SD_CARD_128GB = ITEMS.registerItem(
+            "sd_card_128gb", properties -> new com.senne.imttech.sdcard.SdCardItem(2, properties),
+            new Item.Properties().stacksTo(1).rarity(Rarity.RARE));
     public static final DeferredItem<Item> ROCKET_AMMO = ITEMS.registerSimpleItem("rocket_ammo",
             new Item.Properties());
 

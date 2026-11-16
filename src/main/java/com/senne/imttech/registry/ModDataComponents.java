@@ -326,4 +326,13 @@ public final class ModDataComponents {
             COMPONENTS.registerComponentType("alarm_settings", builder -> builder
                     .persistent(com.senne.imttech.alarm.AlarmSettings.CODEC)
                     .networkSynchronized(com.senne.imttech.alarm.AlarmSettings.STREAM_CODEC));
+
+    /**
+     * Hoofdstuk 130: het nummer van een SD-kaart en een samenvatting voor de tooltip. Nooit wat erop staat: dat staat op
+     * de server (SdCards), want alles op een item gaat ook naar het spel van wie het vasthoudt.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<com.senne.imttech.sdcard.SdCardData>> SD_CARD =
+            COMPONENTS.registerComponentType("sd_card", builder -> builder
+                    .persistent(com.senne.imttech.sdcard.SdCardData.CODEC)
+                    .networkSynchronized(com.senne.imttech.sdcard.SdCardData.STREAM_CODEC));
 }

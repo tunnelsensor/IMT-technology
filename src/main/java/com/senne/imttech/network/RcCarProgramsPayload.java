@@ -39,11 +39,15 @@ public record RcCarProgramsPayload(int entityId, String owner, boolean remote, b
     /** Zoveel tekens code gaan hooguit mee (een RC program is hooguit {@link LogicProgram#MAX_SOURCE} tekens). */
     public static final int MAX_CODE = LogicProgram.MAX_SOURCE * 2;
 
-    /** Eén RC program: zijn naam en zijn code (die toont het scherm, zodat je ziet wat je laadt). */
-    public record Program(String name, String source) {
+    /**
+     * Eén RC program: zijn naam en zijn code (die toont het scherm, zodat je ziet wat je laadt). Hoofdstuk 130: is het op
+     * slot ({@code locked}, van een SD-kaart), dan is de code leeg: laden mag, lezen niet.
+     */
+    public record Program(String name, String source, boolean locked) {
         public static final StreamCodec<ByteBuf, Program> STREAM_CODEC = StreamCodec.composite(
                 ByteBufCodecs.stringUtf8(64), Program::name,
                 ByteBufCodecs.stringUtf8(MAX_CODE), Program::source,
+                ByteBufCodecs.BOOL, Program::locked,
                 Program::new);
     }
 

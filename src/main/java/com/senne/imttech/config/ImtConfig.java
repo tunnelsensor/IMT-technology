@@ -80,6 +80,7 @@ package com.senne.imttech.config;
  *   Security ..... de beveiligingskern: zone, drones, systeem
  *   Network ...... netwerkkabels: welke apparaten er een nodig hebben (hoofdstuk 38)
  *   Alarms ....... de Alarm Speaker: eigen geluiden uploaden, hoe lang, hoe ver (hoofdstuk 126)
+ *   SdCards ...... de SD-kaarten: hoeveel programma's en bestanden er op elke maat passen (hoofdstuk 130)
  *   Logic ........ serverkasten en het datacenter: snelheid, warmte, brand, backups
  *   Breach ....... hoe sterk blokken zijn tegen frags, en TNT en de satelliet tegen een beschermde zone
  *   Repair ....... barsten herstellen (Crusher, Compactor, Repair Paste)
@@ -1463,6 +1464,26 @@ public final class ImtConfig {
         /** Hoe lang een speaker hooguit afgaat als een script hem aanzet (behalve "tot je hem uitzet"). */
         @Tunable(value = "Longest time (seconds) players can set an Alarm Speaker to sound when a diagram switches it on (0 = until switched off is always allowed)", min = 5, max = 3600)
         public static float MAX_ALARM_SECONDS = 300.0f;
+    }
+
+    // =============================================================================================== SD Cards
+
+    @Section("SD Cards (chapter 130): carry programs and files from one Security Core or Computer to another. "
+            + "Lists have 3 numbers: the 8 GB, 32 GB and 128 GB card")
+    public static final class SdCards {
+        private SdCards() {}
+
+        /*
+         * Jouw keuze (hoofdstuk 130): drie maten, "hoe groter de kaart, hoe meer programma's en bestanden erop passen". Mijn
+         * invulling: 4, 16 en 64 programma's (de middelste evenveel als een server) en het dubbele aan bestanden. Mappen
+         * tellen niet als bestand, maar een kaart heeft er hooguit evenveel als bestanden (tegen een kaart vol lege mappen).
+         */
+        /** Zoveel programma's passen op een kaart van 8, 32 en 128 GB. */
+        @Tunable(value = "How many programs fit on an SD card of 8 GB, 32 GB and 128 GB", min = 1, max = 256)
+        public static float[] PROGRAMS = {4.0f, 16.0f, 64.0f};
+        /** Zoveel bestanden passen op een kaart van 8, 32 en 128 GB (en evenveel mappen). */
+        @Tunable(value = "How many files fit on an SD card of 8 GB, 32 GB and 128 GB (it holds as many folders at most)", min = 1, max = 512)
+        public static float[] FILES = {8.0f, 32.0f, 128.0f};
     }
 
     // =============================================================================================== Logic

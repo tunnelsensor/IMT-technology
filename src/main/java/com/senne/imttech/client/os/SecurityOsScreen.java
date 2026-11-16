@@ -214,6 +214,16 @@ public class SecurityOsScreen extends Screen {
         if (snapshot.contains("logic")) {
             logic.update(snapshot.getCompound("logic"));
         }
+        // Hoofdstuk 130: de SD-kaart (alleen als er iets veranderde) voor Logic en Files, en de code van een open
+        // programma op de kaart waar je om vroeg.
+        if (snapshot.contains("sd")) {
+            CompoundTag sd = snapshot.getCompound("sd");
+            logic.updateCard(sd);
+            files.updateCard(sd);
+        }
+        if (snapshot.contains("sdCode")) {
+            logic.updateCardCode(snapshot.getCompound("sdCode"));
+        }
         if (snapshot.contains("file")) {
             CompoundTag file = snapshot.getCompound("file");
             Win win = openApp(App.NOTES);
@@ -380,6 +390,23 @@ public class SecurityOsScreen extends Screen {
     public void tourLogicOpen(String name) {
         openApp(App.LOGIC);
         logic.tourOpen(name);
+    }
+
+    /** Alleen voor de screenshot-rondleiding (hoofdstuk 130): de app Logic op de pagina van de SD-kaart. */
+    public void tourLogicCard() {
+        openApp(App.LOGIC);
+        logic.tourCard();
+    }
+
+    /** Alleen voor de screenshot-rondleiding: de app Logic met een programma van de SD-kaart gekozen. */
+    public void tourLogicCardProgram(String name) {
+        openApp(App.LOGIC);
+        logic.tourCardProgram(name);
+    }
+
+    /** Alleen voor de screenshot-rondleiding: de app Logic terug in de editor. */
+    public void tourLogicEditor() {
+        logic.tourEditor();
     }
 
     /** Alleen voor de screenshot-rondleiding: de app Logic in de blokjes, met eventueel een blokje gekozen. */

@@ -116,6 +116,11 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
     private String source = CarProgram.EMPTY;
     /** Hoofdstuk 119: van welke server zijn RC program kwam (het IP van die Security Core), of "" als dat niet bekend is. */
     private String programServer = "";
+    /**
+     * Hoofdstuk 130: is zijn RC program op slot (van een SD-kaart)? Dan draait hij het gewoon, maar gaat de code nooit naar
+     * iemands spel: niet naar het scherm Program (zie RcCars.sendPrograms) en niet met zijn item mee (zie RcCarData).
+     */
+    private boolean programLocked;
     private final SimpleContainer trunk = new SimpleContainer(TRUNK_SIZE) {
         /** De kofferbak gaat dicht als de auto weg is of te ver van je wegrijdt. */
         @Override
@@ -209,6 +214,7 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
             return e.describe();
         }
         source = code;
+        programLocked = false; // eigen code (zonder server) is nooit op slot; loadProgram zet het daarna eventueel
         brain.setProgram(compiled);
         showProgram(compiled, "");
         return null;
@@ -229,6 +235,11 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
      * neemt hij niet aan (gevonden door de nalezing: zijn item en zijn opgeslagen gegevens kunnen dat niet bewaren).
      */
     public @Nullable String loadProgram(String name, String code, String server) {
+        return loadProgram(name, code, server, false);
+    }
+
+    /** Zoals {@link #loadProgram(String, String, String)}, en (hoofdstuk 130) of het programma op slot is. */
+    public @Nullable String loadProgram(String name, String code, String server, boolean locked) {
         if (code.length() > LogicProgram.MAX_SOURCE) {
             return "this RC program is too long for a car (at most " + LogicProgram.MAX_SOURCE + " characters)";
         }
@@ -236,8 +247,14 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
         if (problem == null) {
             entityData.set(PROGRAM_NAME, name);
             programServer = name.isEmpty() ? "" : server;
+            programLocked = locked && !name.isEmpty();
         }
         return problem;
+    }
+
+    /** Hoofdstuk 130: is zijn RC program op slot (dan krijgt niemands spel zijn code)? */
+    public boolean programLocked() {
+        return programLocked;
     }
 
     /**
@@ -484,6 +501,19 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
         entityData.set(PROGRAM_NAME, data.program());
         programServer = data.programServer();
         source = limited(com.senne.imttech.logic.program.CodeUpgrade.source(data.source())); // een item van vóór hoofdstuk 114 (zie readAdditionalSaveData)
+        programLocked = false;
+        if (data.programLocked()) {
+            // Hoofdstuk 130: de code op slot staat op de server (LockedPrograms), het item heeft alleen de vingerafdruk.
+            // Vindt de server hem niet (een item uit een andere wereld), dan heeft de auto geen programma.
+            String locked = com.senne.imttech.logic.LockedPrograms.code(
+                    level() instanceof net.minecraft.server.level.ServerLevel server ? server : null, data.programRef());
+            source = locked == null ? CarProgram.EMPTY : limited(locked);
+            programLocked = locked != null && !data.program().isEmpty();
+            if (locked == null) {
+                entityData.set(PROGRAM_NAME, "");
+                programServer = "";
+            }
+        }
         setDrill(data.drill());
         link = data.link().orElseGet(UUID::randomUUID);
         cell = data.cell() < 0 ? ItemStack.EMPTY : EnergyCellItem.withCharge(data.cell());
@@ -494,9 +524,12 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
 
     /** Wat er in zijn item komt als je hem oppakt. */
     public RcCarData toData() {
-        return new RcCarData(hasCustomName() ? getCustomName().getString() : "", source, java.util.Optional.of(link),
-                cell.isEmpty() ? RcCarData.NO_CELL : EnergyCellItem.charge(cell), ItemContainerContents.fromItems(trunk.getItems()),
-                drill(), hasRobotArm(), programName(), programServer);
+        // Hoofdstuk 130: een programma op slot gaat niet op het item, alleen de vingerafdruk van zijn code (LockedPrograms).
+        String ref = programLocked && level() instanceof net.minecraft.server.level.ServerLevel server
+                ? com.senne.imttech.logic.LockedPrograms.storeCode(server, source) : "";
+        return new RcCarData(hasCustomName() ? getCustomName().getString() : "", ref.isEmpty() ? source : "",
+                java.util.Optional.of(link), cell.isEmpty() ? RcCarData.NO_CELL : EnergyCellItem.charge(cell),
+                ItemContainerContents.fromItems(trunk.getItems()), drill(), hasRobotArm(), programName(), programServer, ref);
     }
 
     /** Het item waarin hij verandert als je hem oppakt (met alles erin). */
@@ -838,6 +871,9 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
         tag.putString("Source", source);
         tag.putString("ProgramName", programName());
         tag.putString("ProgramServer", programServer);
+        if (programLocked) {
+            tag.putBoolean("ProgramLocked", true); // hoofdstuk 130
+        }
         if (!cell.isEmpty()) {
             tag.putFloat("Cell", EnergyCellItem.charge(cell)); // hoe vol (0 tot 100); geen cel = niets
         }
@@ -863,6 +899,7 @@ public class RcCarEntity extends Mob implements BaseTrust.Placed, EmpTarget {
                 : CarProgram.EMPTY;
         entityData.set(PROGRAM_NAME, tag.getString("ProgramName")); // een auto van vóór hoofdstuk 119: geen naam
         programServer = tag.getString("ProgramServer");
+        programLocked = tag.getBoolean("ProgramLocked") && !tag.getString("ProgramName").isEmpty();
         setDrill(DrillHead.byId(tag.getString("DrillHead"))); // een auto zonder dit gegeven heeft de ijzeren kop
         cell = tag.contains("Cell") ? EnergyCellItem.withCharge(tag.getFloat("Cell")) : ItemStack.EMPTY;
         trunk.clearContent();

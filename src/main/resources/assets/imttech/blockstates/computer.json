@@ -1,34 +1,121 @@
 {
-  "variants": {
-    "facing=north,on=false": {
-      "model": "imttech:block/computer"
+  "multipart": [
+    {
+      "when": {
+        "facing": "north",
+        "on": "false"
+      },
+      "apply": {
+        "model": "imttech:block/computer"
+      }
     },
-    "facing=north,on=true": {
-      "model": "imttech:block/computer_on"
+    {
+      "when": {
+        "facing": "north",
+        "on": "true"
+      },
+      "apply": {
+        "model": "imttech:block/computer_on"
+      }
     },
-    "facing=east,on=false": {
-      "model": "imttech:block/computer",
-      "y": 90
+    {
+      "when": {
+        "facing": "east",
+        "on": "false"
+      },
+      "apply": {
+        "model": "imttech:block/computer",
+        "y": 90
+      }
     },
-    "facing=east,on=true": {
-      "model": "imttech:block/computer_on",
-      "y": 90
+    {
+      "when": {
+        "facing": "east",
+        "on": "true"
+      },
+      "apply": {
+        "model": "imttech:block/computer_on",
+        "y": 90
+      }
     },
-    "facing=south,on=false": {
-      "model": "imttech:block/computer",
-      "y": 180
+    {
+      "when": {
+        "facing": "south",
+        "on": "false"
+      },
+      "apply": {
+        "model": "imttech:block/computer",
+        "y": 180
+      }
     },
-    "facing=south,on=true": {
-      "model": "imttech:block/computer_on",
-      "y": 180
+    {
+      "when": {
+        "facing": "south",
+        "on": "true"
+      },
+      "apply": {
+        "model": "imttech:block/computer_on",
+        "y": 180
+      }
     },
-    "facing=west,on=false": {
-      "model": "imttech:block/computer",
-      "y": 270
+    {
+      "when": {
+        "facing": "west",
+        "on": "false"
+      },
+      "apply": {
+        "model": "imttech:block/computer",
+        "y": 270
+      }
     },
-    "facing=west,on=true": {
-      "model": "imttech:block/computer_on",
-      "y": 270
+    {
+      "when": {
+        "facing": "west",
+        "on": "true"
+      },
+      "apply": {
+        "model": "imttech:block/computer_on",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "card": "true"
+      },
+      "apply": {
+        "model": "imttech:block/computer_card"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "card": "true"
+      },
+      "apply": {
+        "model": "imttech:block/computer_card",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "card": "true"
+      },
+      "apply": {
+        "model": "imttech:block/computer_card",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "card": "true"
+      },
+      "apply": {
+        "model": "imttech:block/computer_card",
+        "y": 270
+      }
     }
-  }
+  ]
 }
