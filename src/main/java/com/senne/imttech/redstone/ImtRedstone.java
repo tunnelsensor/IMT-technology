@@ -686,6 +686,11 @@ public final class ImtRedstone {
         }
         if (op == Op.PULSE) {
             PULSES.add(new Pulse(level.dimension(), pos.immutable(), channel, Math.max(1, pulseTicks)));
+            // De puls hierboven is na een herstart weg: een blok dat zelf zijn eindtijd bewaart, krijgt hem hier (hoofdstuk 128).
+            BlockState after = level.getBlockState(pos);
+            if (channel < 0 && after.getBlock() instanceof ImtSwitchable switchable) {
+                switchable.pulsed(level, pos, after, Math.max(1, pulseTicks));
+            }
         }
         changed(level, pos, channel, before);
         return true;

@@ -5819,7 +5819,7 @@ public final class VisualCheck {
             StorageTour.pictures(t);
         }
 
-        // --- Hoofdstuk 126: de Alarm Speaker (-Ponly=alarm): klaar, afgaand na een alarm van de kern, het overzicht, de zin
+        // --- Hoofdstuk 126: de Alarm Speaker (-Ponly=alarm): klaar, afgaand als een script hem aanzet, het overzicht, de zin
         // boven je hotbar, zijn scherm (met een geluid, met een gekozen bestand, uploaden) en de tooltip. En het plaatje van
         // zijn scherm voor How it works (-Ponly=howtopics:alarm; dat verandert een bestand van de mod).
         if (want("alarm")) {

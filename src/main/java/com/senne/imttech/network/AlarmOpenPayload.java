@@ -20,7 +20,7 @@ import net.minecraft.resources.ResourceLocation;
  * @param soundState     {@link #DEFAULT_SOUND}, {@link #CUSTOM_SOUND} of {@link #MISSING_SOUND}
  * @param volume         hoe hard (0,1 tot 1)
  * @param range          tot hoe ver je hem hoort (blokken)
- * @param alarmSeconds   zo lang loeit hij als de kern alarm slaat (0 = tot je hem uitzet)
+ * @param alarmSeconds   zo lang loeit hij als een script hem aanzet met on("naam") (0 = tot je hem uitzet)
  * @param maxSeconds     zoveel seconden van een bestand neemt de server hooguit (uit de config)
  * @param status         {@link #ONLINE}, {@link #NO_POWER}, {@link #NO_NETWORK} of {@link #EMP}
  * @param uploadsAllowed mag je op deze server uploaden ({@code [alarm] uploadsAllowed})?

@@ -10006,6 +10006,54 @@ wait(x)".
 - **Mijn invulling**: bij `pulse` blijft het vakje voor het getal leeg in plaats van weg te vallen (het getal mag weg, dan
   is het 1 seconde: haal dan de komma weg). Geen nieuwe versie: een kleine aanpassing aan iets dat er al was.
 
+### 128. De Alarm Speaker gaat nooit vanzelf af: alleen een script dat je runt zet hem aan (16 november)
+
+Jouw wens: "Zorg dat het alarm niet vanzelf kan afgaan, het gebeurd enkel vanuit een script als je het runt".
+
+- [x] **Geen koppeling meer met het alarm van de kern.** Sinds hoofdstuk 126 liet elke ALARM-regel in het logboek van een
+      Security Core alle speakers van zijn netwerk afgaan: `alarm("...")` in een diagram, iemand die aan een lezer, paneel
+      of laserpoort prutst, een ontploffing of Remote Frag in je zone, een brand in de serverruimte. Die ene regel in
+      `SecurityCoreBlockEntity.logEvent` is weg, en daarmee `AlarmSpeakers.coreAlarm` en `AlarmSpeakerBlockEntity.raise`.
+      Het alarm staat nog gewoon in het logboek; alleen de speaker blijft stil.
+- [x] **Alleen op zijn naam.** Een script dat je runt zet hem aan: `on("Alarm 1")` laat hem loeien zo lang als in zijn
+      scherm staat (standaard 30 seconden, of tot je hem uitzet), `pulse("Alarm 1", 10)` tien seconden, `off("Alarm 1")`
+      zet hem stil, `toggle` wisselt. Wil je hem bij een alarm horen, zet dan `on("Alarm 1")` naast je `alarm("...")`.
+- [x] **Een puls stopt op tijd, ook na een herstart.** `pulse("Alarm 1", 10)` zette hem eerst aan met zijn eigen
+      lengte (30 seconden, of "tot je hem uitzet"); het uitzetten na 10 seconden onthield alleen het geheugen van de
+      server. Sloot je de wereld (of herstartte de server) midden in een puls, dan loeide hij na het laden zonder script
+      verder: tot 30 seconden, en op "tot je hem uitzet" voor altijd. Nu bewaart de speaker de eindtijd van de puls zelf
+      (`ImtSwitchable.pulsed`, dat ImtRedstone na elke puls aanroept; voor de andere blokken doet het niets), dus hij stopt
+      ook na een herstart op tijd. En een puls duurt nu zo lang als de puls, ook als die langer is dan zijn eigen lengte.
+- [x] **Met de hand proberen blijft kunnen**: Test in zijn scherm (5 seconden) en Turn on/off in Devices. Ook je bril en
+      je stem kunnen hem op zijn naam schakelen, en een Relay Emitter die jij zelf op zijn naam instelt. Dat gebeurt
+      allemaal niet "vanzelf", dus het blijft (zeg het als het ook weg moet).
+- [x] **De knop "hoe lang"** in zijn scherm heet nu "When switched on: sound for 30 s" (was "When the core raises an
+      alarm: ..."): hij hoorde al bij `on(...)`, nu alleen nog daarbij. Ook de tooltip van het item, de uitleg bij die knop,
+      de config-uitleg (`[alarms] maxAlarmSeconds`), How it works (hoofdstukje "Only your script sets it off"), de
+      rondleiding en de showcase (die zetten de speakers nu op hun naam aan, zoals een script), LEESMIJ en de
+      CurseForge-beschrijving zijn bijgewerkt.
+- [x] **Test**: `alarm_speaker_sounds_when_its_core_raises_an_alarm` is `alarm_speaker_never_sounds_by_itself` geworden: een
+      ALARM in het logboek van de kern laat hem stil (ook drie seconden later, na zijn controles van stroom en netwerk), het
+      alarm staat één keer in het logboek, en pas op zijn naam aangezet gaat hij af, 5 seconden lang, en stopt hij vanzelf.
+      Een speaker aan een andere kern blijft al die tijd stil. In `alarm_speaker_switches_by_name` erbij: een puls van 6
+      seconden op een speaker van 5 duurt 6 seconden, en op "tot je hem uitzet" bewaart een puls zijn eigen eindtijd. Nog
+      altijd 651 tests (in de batch "lan").
+- [x] **Volledige ronde**: 651 tests, alle groen (1,6 minuten), na de oplossingen van de nalezing. (De ronde ervoor: 650 van de 651; alleen raid_drones_come_for_you viel om, de bekende wiebeltest met een drone die te hoog begint, die vandaag ook op een schone master omviel.)
+- [x] **Nalezing**: drie lezers (verborgen manieren waarop hij toch vanzelf afgaat, de wijziging zelf, en alle teksten),
+      met per vondst een controleur die hem probeerde te weerleggen: 15 vondsten, 10 echt (samen vier dingen), en alles
+      opgelost behalve de foto. Dat was de puls (hierboven); de tooltip die zei dat een puls zijn eigen tijd kiest (dat
+      klopt nu wel); vergeten teksten ("hoe lang hij loeit bij een alarm" in LEESMIJ, de uitleg van de showcase, punt 4
+      bij "Nog nooit in het spel bekeken", zes Nederlandse commentaren); en de foto in How it works (zie hieronder).
+      Afgewezen: een Relay Emitter kan hem nog aanzetten (alleen als jij hem op zijn naam instelt: niet vanzelf), en twee
+      woordkeuzes in How it works. Ook afgewezen, maar wel het vermelden waard: zet je een diagram uit terwijl het nog
+      bezig is (een lus met `wait`), dan maakt het die stappen nog af, ook `on("Alarm 1")`. Dat geldt voor elk apparaat en
+      bestond al; ik heb het niet veranderd (zeg het als dat ook moet stoppen).
+- **Geen nieuwe versie**: een aanpassing aan iets dat er al was (2.22, het laatste getal telt vanzelf op).
+- **Nog niet gedaan: de foto in How it works.** De foto van het scherm (`alarm_screen.png`, in het hoofdstukje "Your own
+  sound") toont nog de oude knop "When the core raises an alarm: sound for 30 s". Opnieuw maken met `gradlew
+  runVisualCheck -Ponly=howtopics:alarm,alarm` (dan ook al01 tot al03 van hoofdstuk 126); dat kon niet omdat je aan het
+  spelen was, en een tweede spelvenster had je spel gestoord. In het spel zelf staat de nieuwe tekst al op de knop.
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het
@@ -10015,8 +10063,9 @@ eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er
       nooit echt gehoord. Probeer: (1) upload een echte mp4 van je gsm of een YouTube-download (Choose file, of sleep hem
       op het venster): klinkt hij goed, ook de eerste seconde, en zonder kraken? (2) Met een vriend op je server: hoort hij
       jouw geluid (na een seconde ophalen), uit de goede richting en tot zo'n 32 blokken ver? (3) In volledig scherm: komt
-      het bestandsvenster vóór Minecraft, of moet je slepen? (4) Een echt alarm van je kern (een foute kaart en
-      `alarm()` in je diagram): gaan al je speakers af, en stoppen ze na 30 seconden? (5) `customAlarmSounds = false` in
+      het bestandsvenster vóór Minecraft, of moet je slepen? (4) Zet `on("Alarm 1")` in een diagram (bijvoorbeeld bij
+      een foute kaart): gaat hij af en stopt hij na 30 seconden? En blijft hij echt stil bij een alarm van je kern zonder
+      dat (hoofdstuk 128)? (5) `customAlarmSounds = false` in
       imttech-client.toml: hoor je dan de ingebouwde sirene? (6) Staan je speakers in Devices onder ALARM SPEAKERS?
 - [ ] **Lege nieuwe programma's en templates (hoofdstuk 125)**: met tests gecontroleerd en gezien op screenshots
       (`-Ponly=templates`, tp01 tot tp08), maar niet met de muis gespeeld. Probeer: (1) + > Robot program: is het leeg, met

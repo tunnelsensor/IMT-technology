@@ -991,21 +991,22 @@ en een netwerkkabel.
   een Router), en een beetje stroom (`alarmSpeakerUpkeep` onder `[power]`; een PoE-kabel brengt die mee). Het kleine
   **groene lampje** brandt als hij klaar is. Gewoon rechtsklikken zegt hoe hij ervoor staat. Zonder kern, zonder stroom of
   in een EMP-puls blijft hij stil.
-- **Wanneer gaat hij af?** Als zijn kern **alarm slaat**: je diagram zegt `alarm("...")`, iemand prutst aan een
-  keycardlezer, codepaneel of laserpoort, er ontploft iets (of iemand plant een Remote Frag) in je zone, of een serverrek
-  vat vuur. Dan gaat **elke speaker van dat netwerk** af: 30 seconden, of zo lang als je instelt (10 s, 30 s, 1 min, 2 min,
-  5 min, of tot je hem uitzet). Een tweede alarm maakt het langer. Zijn rode licht draait, en je hoort hem tot 32 blokken
-  ver (instelbaar).
-- **Op zijn naam.** Wie hem neerzet, heeft hem in zijn I.M.T-lijst ("Alarm 1"): `on("Alarm 1")`, `off("Alarm 1")`,
-  `toggle` en `pulse("Alarm 1", 10)` in je diagrammen, met je bril of je stem, en in **Devices** (de groep ALARM SPEAKERS:
-  Turn on/off en Rename).
+- **Wanneer gaat hij af?** **Nooit vanzelf** (sinds hoofdstuk 128), ook niet als je kern alarm slaat (een `alarm("...")`
+  in je diagram, iemand die aan een lezer of laserpoort prutst, een ontploffing of een brand). Alleen een **script dat je
+  runt** zet hem aan, op zijn naam: `on("Alarm 1")` laat hem 30 seconden loeien, of zo lang als je in zijn scherm
+  instelt (10 s, 30 s, 1 min, 2 min, 5 min, of tot je hem uitzet); `pulse("Alarm 1", 10)` tien seconden;
+  `off("Alarm 1")` zet hem stil. Wil je hem bij een alarm horen, zet dan `on("Alarm 1")` naast je `alarm("...")`. Zijn
+  rode licht draait, en je hoort hem tot 32 blokken ver (instelbaar).
+- **Op zijn naam.** Wie hem neerzet, heeft hem in zijn I.M.T-lijst ("Alarm 1"): daarmee zet je script hem aan en uit
+  (`on`, `off`, `toggle`, `pulse`). Met de hand proberen kan ook: **Test** in zijn scherm, of Turn on/off in **Devices**
+  (de groep ALARM SPEAKERS, waar je hem ook hernoemt).
 - **Je eigen geluid.** Sneak + rechtsklik met een lege hand (als jij hem neerzette of vertrouwd bent in de basis): zijn
   scherm. **Choose file** opent het gewone "bestand openen"-venster van je computer; je kunt ook een bestand uit je
   Verkenner **op het Minecraft-venster slepen** (handig in volledig scherm, waar het venster soms achter Minecraft valt).
   **Folder** opent de map `imttech/alarms` in je Minecraft-map, een handige plek voor je geluiden. Je spel leest het bestand
   zelf in: de **eerste 30 seconden** (stilte vooraan telt niet mee), alles even hard. **Preview** laat het alleen jou horen;
   **Save** stuurt het naar de server en zet het op de speaker (een balkje toont hoe ver het is). Verder: **Volume**, tot hoe
-  ver je hem hoort, hoe lang hij loeit bij een alarm, **Test** (5 seconden echt), **Stop**, **Built-in siren** (weer de
+  ver je hem hoort, hoe lang hij loeit als je script hem aanzet met `on(...)`, **Test** (5 seconden echt), **Stop**, **Built-in siren** (weer de
   ingebouwde sirene) en **Use on all speakers** (hetzelfde geluid op elke speaker van dat netwerk die je mag instellen).
   Lukt een bestand niet, dan zegt het scherm waarom. Eén soort kan het spel niet lezen: een **mp3 met een lage snelheid**
   (22 kHz of minder, zoals sommige ingesproken berichten of oude belsignalen); sla die op als 44,1 kHz, of gebruik mp4,

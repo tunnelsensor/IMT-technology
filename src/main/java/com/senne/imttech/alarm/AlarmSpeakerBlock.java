@@ -55,11 +55,10 @@ import org.jetbrains.annotations.Nullable;
  *   <li>Hij hoort bij de Security Core aan het andere eind van zijn netwerkkabel (of PoE-kabel, of draadloos via een
  *       Router), net als een camera, en heeft een beetje stroom nodig. Zonder kern of zonder stroom blijft hij stil (zijn
  *       groene lampje is dan uit: ONLINE = false).</li>
- *   <li><b>Slaat de kern alarm</b> (je diagram zegt {@code alarm("...")}, iemand prutst aan een lezer of een laserpoort,
- *       er ontploft iets in je zone, een serverrek vat vuur), dan gaat elke speaker van dat netwerk af, zo lang als in de
- *       speaker staat (standaard 30 seconden, of tot je hem uitzet).</li>
- *   <li>Wie hem neerzet, heeft hem in zijn I.M.T-lijst ("Alarm 1"), en zet hem op die naam aan en uit, net als een relais:
- *       met een diagram ({@code on("Alarm 1")}, {@code pulse("Alarm 1", 10)}), je bril, je stem of de knop in Devices.</li>
+ *   <li><b>Hij gaat nooit vanzelf af</b> (hoofdstuk 128), ook niet als de kern alarm slaat. Wie hem neerzet, heeft hem in
+ *       zijn I.M.T-lijst ("Alarm 1"), en een script dat je runt zet hem op die naam aan en uit, net als een relais:
+ *       {@code on("Alarm 1")} (zo lang als in de speaker staat: standaard 30 seconden, of tot je hem uitzet),
+ *       {@code pulse("Alarm 1", 10)}, {@code off("Alarm 1")}. Met de hand: Devices, of Test in zijn scherm.</li>
  *   <li>Sneak + rechtsklik met een lege hand: zijn scherm (naam, eigen geluid uploaden, hoe hard, hoe ver, hoe lang), als
  *       je hem mag instellen (wie hem neerzette, of wie vertrouwd is in de basis: zie AlarmSpeakers.open). Gewoon
  *       rechtsklikken: hoe hij ervoor staat.</li>
@@ -216,6 +215,14 @@ public class AlarmSpeakerBlock extends FaceAttachedHorizontalDirectionalBlock im
     @Override
     public boolean isSwitchedOn(BlockState state) {
         return state.getValue(SOUNDING);
+    }
+
+    /** Een puls ({@code pulse("Alarm 1", 10)}): hij stopt na de tijd van de puls, ook na een herstart (zie ImtSwitchable). */
+    @Override
+    public void pulsed(ServerLevel level, BlockPos pos, BlockState state, int ticks) {
+        if (level.getBlockEntity(pos) instanceof AlarmSpeakerBlockEntity speaker) {
+            speaker.pulsed(level, ticks);
+        }
     }
 
     // ================================================================ Aanklikken

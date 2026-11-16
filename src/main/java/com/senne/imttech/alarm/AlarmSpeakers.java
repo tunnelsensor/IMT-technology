@@ -36,8 +36,9 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * De Alarm Speakers op de server (hoofdstuk 126): wie er geladen zijn, wat er gebeurt als een kern alarm slaat, en het
- * scherm (openen, opslaan, de knoppen). Het uploaden en ophalen van geluiden staat in {@link AlarmUploads}, het bewaren in
+ * De Alarm Speakers op de server (hoofdstuk 126): wie er geladen zijn, en het scherm (openen, opslaan, de knoppen). Een
+ * speaker gaat nooit vanzelf af, ook niet als zijn kern alarm slaat (hoofdstuk 128): alleen als een script hem op zijn
+ * naam aanzet (zie AlarmSpeakerBlock.setSwitched), of met Test in zijn scherm. Het uploaden en ophalen van geluiden staat in {@link AlarmUploads}, het bewaren in
  * {@link AlarmSounds}.
  *
  * De berichten van de speaker hebben hun eigen lijst ({@link #register}), net als de rugzakken en het opslagsysteem: zo
@@ -172,32 +173,6 @@ public final class AlarmSpeakers {
         LOADED.clear();
         AlarmUploads.clear();
         AlarmSounds.clear();
-    }
-
-    // ================================================================ Een alarm van de kern
-
-    /**
-     * De kern sloeg alarm (SecurityCoreBlockEntity.logEvent met type ALARM): elke speaker van zijn netwerk gaat af, of
-     * blijft langer afgaan. Alleen speakers die de eigenaar van de kern zelf mag instellen (van hem, van wie hij vertrouwt,
-     * of in zijn basis): de speaker van een vreemde die op jouw kabel hangt, vertelt die vreemde niets.
-     *
-     * Dit gebeurt midden in andere dingen (een diagram, een ontploffing, een brand), dus het schrijft zelf geen alarm in het
-     * logboek (dat zou zichzelf weer oproepen).
-     */
-    public static void coreAlarm(ServerLevel level, SecurityCoreBlockEntity core) {
-        for (BlockPos pos : SecurityDevices.scan(level, core).alarms()) {
-            if (!level.isLoaded(pos) || !(level.getBlockEntity(pos) instanceof AlarmSpeakerBlockEntity speaker)) {
-                continue;
-            }
-            if (core.ownerId() != null && !BaseTrust.wouldAllow(level, speaker, core.ownerId(), core.ownerName())) {
-                continue;
-            }
-            boolean wasSounding = speaker.getBlockState().getValue(AlarmSpeakerBlock.SOUNDING);
-            speaker.raise(level);
-            if (!wasSounding && speaker.getBlockState().getValue(AlarmSpeakerBlock.SOUNDING)) {
-                com.senne.imttech.lan.CableTraffic.signal(level, pos, false); // een wit vakje van de kern naar de speaker
-            }
-        }
     }
 
     // ================================================================ Het scherm

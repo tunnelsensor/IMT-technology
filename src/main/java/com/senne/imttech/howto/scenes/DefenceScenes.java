@@ -207,8 +207,9 @@ public final class DefenceScenes {
     // ================================================================ Alarm Speaker (hoofdstuk 126)
 
     /**
-     * De Alarm Speaker: een kabel naar je kern, afgaan als de kern alarm slaat, je eigen geluid kiezen (met een foto van het
-     * echte scherm, gemaakt door de rondleiding: -Ponly=howtopics:alarm), en schakelen op zijn naam.
+     * De Alarm Speaker: een kabel naar je kern, alleen afgaan als een script hem aanzet (hoofdstuk 128: nooit vanzelf), je
+     * eigen geluid kiezen (met een foto van het echte scherm, gemaakt door de rondleiding: -Ponly=howtopics:alarm), en hem
+     * met de hand proberen.
      */
     public static List<HowToScene> alarm() {
         HowToSceneBuilder s = new HowToSceneBuilder("alarm_speaker", "Alarm Speaker").plate(7, 6);
@@ -239,13 +240,13 @@ public final class DefenceScenes {
                         + " shows it is ready.");
         s.idle(95);
 
-        s.chapter("When your core raises an alarm");
+        s.chapter("Only your script sets it off");
         s.change(speaker, alarmSpeaker(true, true));
         s.sound(ModSounds.ALARM_SIREN.get(), 0.4f, 1.0f);
         s.pulse(40, Vec3.atCenterOf(speaker), 3.0f, HowToSceneBuilder.RED);
         s.text(100, HowToSceneBuilder.top(speaker), Side.RIGHT,
-                "When your core raises an alarm (*alarm()* in a diagram, someone tampering with a reader, a blast in your zone,"
-                        + " a fire in your server room), every speaker on its network sounds: *%s seconds*, or as long as you set.",
+                "It never sounds by itself, not even when your core raises an alarm. A diagram you run sets it off by its name:"
+                        + " *on(\"Alarm 1\")* sounds for *%s seconds* (or as long as you set), *off(\"Alarm 1\")* stops it.",
                 com.senne.imttech.alarm.AlarmSpeakerBlockEntity.DEFAULT_ALARM_SECONDS);
         s.idle(105);
         s.change(speaker, alarmSpeaker(true, false));
@@ -269,8 +270,8 @@ public final class DefenceScenes {
         s.chapter("Switch it by name");
         s.change(speaker, alarmSpeaker(true, true));
         s.text(90, HowToSceneBuilder.top(speaker), Side.RIGHT,
-                "It is in your I.M.T list as *Alarm 1*: a diagram switches it with *on(\"Alarm 1\")*, *off*, *toggle* or"
-                        + " *pulse(\"Alarm 1\", 10)*. Your glasses, your voice and *Devices* can too.");
+                "It is in your I.M.T list as *Alarm 1*: in a diagram *on*, *off*, *toggle* or *pulse(\"Alarm 1\", 10)*."
+                        + " To try it by hand: *Test* in its screen, or *Devices*.");
         s.idle(95);
         s.change(speaker, alarmSpeaker(true, false));
         return List.of(s.build());

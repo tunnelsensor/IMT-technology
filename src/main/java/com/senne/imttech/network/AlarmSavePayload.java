@@ -16,7 +16,7 @@ import net.minecraft.resources.ResourceLocation;
  * @param name         de naam (ook in je I.M.T-lijst en je diagrammen: {@code on("Lab alarm")})
  * @param volume       hoe hard (0,1 tot 1)
  * @param range        tot hoe ver je hem hoort (blokken)
- * @param alarmSeconds zo lang loeit hij bij een alarm van de kern (0 = tot je hem uitzet)
+ * @param alarmSeconds zo lang loeit hij als een script hem aanzet met on("naam") (0 = tot je hem uitzet)
  */
 public record AlarmSavePayload(BlockPos pos, String name, float volume, int range, int alarmSeconds) implements CustomPacketPayload {
     public static final Type<AlarmSavePayload> TYPE =

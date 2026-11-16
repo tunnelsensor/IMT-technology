@@ -18,7 +18,7 @@ import net.minecraft.network.codec.StreamCodec;
  * @param soundSeconds hoe lang het geluid duurt
  * @param volume       hoe hard (0,1 tot 1)
  * @param range        tot hoe ver je hem hoort (blokken)
- * @param alarmSeconds zo lang loeit hij bij een alarm (0 = tot je hem uitzet)
+ * @param alarmSeconds zo lang loeit hij als een script hem aanzet met on("naam") (0 = tot je hem uitzet)
  */
 public record AlarmSettings(String soundId, String soundName, float soundSeconds, float volume, int range, int alarmSeconds) {
     public static final Codec<AlarmSettings> CODEC = RecordCodecBuilder.create(instance -> instance.group(

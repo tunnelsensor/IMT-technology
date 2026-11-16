@@ -1437,8 +1437,8 @@ public final class ImtConfig {
 
     // =============================================================================================== Alarms
 
-    @Section("The Alarm Speaker (chapter 126): a speaker on a security core's network that sounds when its core raises an "
-            + "alarm, with a sound file players upload themselves (mp4, m4a, mp3, wav, ogg). Its power use is under [power]")
+    @Section("The Alarm Speaker (chapter 126): a speaker on a security core's network that sounds only when a diagram "
+            + "switches it on by name, with a sound file players upload themselves (mp4, m4a, mp3, wav, ogg). Its power use is under [power]")
     public static final class Alarms {
         private Alarms() {}
 
@@ -1460,8 +1460,8 @@ public final class ImtConfig {
         /** Tot hoe ver je een speaker hooguit kunt laten klinken. */
         @Tunable(value = "Farthest (blocks) players can set an Alarm Speaker to be heard", min = 8, max = 256)
         public static float MAX_RANGE = 64.0f;
-        /** Hoe lang een speaker hooguit afgaat na een alarm van zijn kern (behalve "tot je hem uitzet"). */
-        @Tunable(value = "Longest time (seconds) players can set an Alarm Speaker to sound after an alarm (0 = until switched off is always allowed)", min = 5, max = 3600)
+        /** Hoe lang een speaker hooguit afgaat als een script hem aanzet (behalve "tot je hem uitzet"). */
+        @Tunable(value = "Longest time (seconds) players can set an Alarm Speaker to sound when a diagram switches it on (0 = until switched off is always allowed)", min = 5, max = 3600)
         public static float MAX_ALARM_SECONDS = 300.0f;
     }
 

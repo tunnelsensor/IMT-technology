@@ -161,12 +161,14 @@ public final class AlarmSpeakerGameTests {
     }
 
     /**
-     * Slaat de kern alarm (zoals {@code alarm("...")} in een diagram), dan gaat zijn speaker af, zo lang als ingesteld
-     * (hier 5 seconden); een speaker aan een andere kern blijft stil. In het logboek staat het alarm één keer (de speaker
-     * schrijft zelf geen tweede alarm).
+     * Hij gaat nooit vanzelf af (hoofdstuk 128): een alarm in het logboek van zijn kern (zoals {@code alarm("...")} in een
+     * diagram, iemand die aan een lezer prutst, een ontploffing of een brand: die komen allemaal via logEvent) laat hem stil,
+     * ook drie seconden later nog (na zijn controles van stroom en netwerk). Het alarm staat wel gewoon in het logboek. Pas
+     * op zijn naam aangezet, zoals {@code on("Alarm 1")} in een diagram dat je runt, gaat hij af, zo lang als ingesteld (hier
+     * 5 seconden), en dan stopt hij vanzelf. Een speaker aan een andere kern blijft al die tijd stil.
      */
-    @GameTest(template = ARENA, batch = "lan", timeoutTicks = 200)
-    public static void alarm_speaker_sounds_when_its_core_raises_an_alarm(GameTestHelper helper) {
+    @GameTest(template = ARENA, batch = "lan", timeoutTicks = 260)
+    public static void alarm_speaker_never_sounds_by_itself(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 3, 7), "lan-alarm-owner2");
         SecurityCoreBlockEntity[] cores = new SecurityCoreBlockEntity[1];
@@ -178,20 +180,28 @@ public final class AlarmSpeakerGameTests {
         speaker(helper, pos).setSettings(1f, 32, 5);
         SecurityDevices.forget(level, core);
 
-        long now = level.getGameTime();
         core.logEvent(EventLog.Type.ALARM, "Intruder at the alarm test door");
-        helper.assertBlockProperty(pos, AlarmSpeakerBlock.SOUNDING, true);
+        helper.assertBlockProperty(pos, AlarmSpeakerBlock.SOUNDING, false);
         helper.assertBlockProperty(other, AlarmSpeakerBlock.SOUNDING, false);
-        check(speaker(helper, pos).soundUntil() == now + 100, "De speaker stopt niet na 5 seconden: " + (speaker(helper, pos).soundUntil() - now));
+        check(speaker(helper, pos).soundUntil() == 0, "Na een ALARM in het logboek heeft de speaker toch een eindtijd");
         long alarms = core.log().entries().stream()
                 .filter(entry -> entry.type() == EventLog.Type.ALARM && entry.text().contains("alarm test door")).count();
-        check(alarms == 1, "Het alarm staat " + alarms + " keer in het logboek");
-        // Een tweede alarm vlak erna schuift de eindtijd op, nooit eerder.
-        helper.runAfterDelay(20, () -> {
-            core.logEvent(EventLog.Type.ALARM, "Again at the alarm test door");
-            check(speaker(helper, pos).soundUntil() == now + 120, "Een tweede alarm verlengt de speaker niet");
+        check(alarms == 1, "Het alarm staat " + alarms + " keer in het logboek (verwacht: 1)");
+
+        BlockPos abs = helper.absolutePos(pos);
+        long[] switchedAt = new long[1];
+        helper.runAfterDelay(60, () -> {
+            helper.assertBlockProperty(pos, AlarmSpeakerBlock.SOUNDING, false);
+            helper.assertBlockProperty(other, AlarmSpeakerBlock.SOUNDING, false);
+            // Zoals on("Alarm 1") in een diagram dat je runt.
+            switchedAt[0] = level.getGameTime();
+            ImtRedstone.switchAt(level, abs, -1, ImtRedstone.Op.ON, 0);
+            helper.assertBlockProperty(pos, AlarmSpeakerBlock.SOUNDING, true);
+            helper.assertBlockProperty(other, AlarmSpeakerBlock.SOUNDING, false);
+            check(speaker(helper, pos).soundUntil() == switchedAt[0] + 100,
+                    "Aan op zijn naam stopt niet na 5 seconden: " + (speaker(helper, pos).soundUntil() - switchedAt[0]));
         });
-        helper.runAfterDelay(130, () -> {
+        helper.runAfterDelay(60 + 130, () -> {
             helper.assertBlockProperty(pos, AlarmSpeakerBlock.SOUNDING, false);
             check(speaker(helper, pos).soundUntil() == 0, "Na het stoppen staat er nog een eindtijd");
             helper.succeed();
@@ -240,8 +250,19 @@ public final class AlarmSpeakerGameTests {
         check(error == null && speaker.name().equals("Lobby siren") && DeviceNames.nameOf(owner, List.of(abs)).equals("Lobby siren"),
                 "Hernoemen in Devices werkt niet: " + error + " / " + speaker.name());
 
+        // Een puls langer dan de speaker zelf (5 seconden) duurt zo lang als de puls.
+        speaker.setSettings(1f, 32, 5);
+        ImtRedstone.switchAt(level, abs, -1, ImtRedstone.Op.PULSE, 120);
+        check(speaker.soundUntil() == level.getGameTime() + 120,
+                "Een puls van 6 seconden kreeg de 5 seconden van de speaker: " + (speaker.soundUntil() - level.getGameTime()));
+        ImtRedstone.switchAt(level, abs, -1, ImtRedstone.Op.OFF, 0);
+        // Ook op "tot je hem uitzet" bewaart een puls zijn eigen eindtijd: stopt de server midden in de puls (die
+        // ImtRedstone niet bewaart), dan stopt de speaker na het laden toch op tijd.
+        speaker.setSettings(1f, 32, 0);
         ImtRedstone.switchAt(level, abs, -1, ImtRedstone.Op.PULSE, 10);
         helper.assertBlockProperty(pos, AlarmSpeakerBlock.SOUNDING, true);
+        check(speaker.soundUntil() == level.getGameTime() + 10,
+                "Een puls bewaart zijn eigen eindtijd niet (na een herstart zou hij blijven loeien): " + speaker.soundUntil());
         helper.runAfterDelay(14, () -> {
             helper.assertBlockProperty(pos, AlarmSpeakerBlock.SOUNDING, false);
             // Zonder kabel: geen netwerk en geen stroom, dus hij kan niet aan.

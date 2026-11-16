@@ -38,7 +38,7 @@ import net.minecraft.world.phys.Vec3;
  * scherm voor How it works met {@code -Ponly=howtopics:alarm} (dat verandert een bestand van de mod).
  *
  * Het toneel: een Security Core met een PoE-kabel naar een speaker aan een muurtje en een speaker op de vloer. De foto's:
- * de speaker klaar (groen lampje), afgaand (rood licht) na een alarm van de kern, het overzicht, de zin boven je hotbar
+ * de speaker klaar (groen lampje), afgaand (rood licht) als een script hem aanzet, het overzicht, de zin boven je hotbar
  * (rechtsklik), zijn scherm (met een eigen geluid, met een gekozen bestand, tijdens het uploaden) en de tooltip van het item.
  *
  * Een echt "bestand openen"-venster kan de rondleiding niet bedienen: het scherm krijgt het geluid via tourPending (een
@@ -134,16 +134,13 @@ final class AlarmTour {
         t.step(0, () -> LanGrid.overrideRequired(true));
         t.onServer(10, AlarmTour::stage);
         t.step(0, () -> Minecraft.getInstance().options.hideGui = true);
-        // De speaker van dichtbij (ingezoomd: hij is klein): klaar (groen lampje), en afgaand na een alarm (rood licht).
+        // De speaker van dichtbij (ingezoomd: hij is klein): klaar (groen lampje), en afgaand (rood licht) als een script
+        // hem op zijn naam aanzet: vanzelf gaat hij nooit af (hoofdstuk 128).
         t.step(0, () -> zoom(true));
         // De ogen op de hoogte van de speaker (je voeten staan zo'n 1,6 blok lager), een klein beetje naar beneden kijkend.
         t.view(20, SPEAKER.getX() + 2.2, SPEAKER.getY() - 0.9, SPEAKER.getZ() + 3.4, 148, 4);
         t.shot(30, "al01_speaker_ready");
-        t.onServer(0, player -> {
-            if (player.serverLevel().getBlockEntity(CORE) instanceof SecurityCoreBlockEntity core) {
-                core.logEvent(EventLog.Type.ALARM, "Intruder at Front door");
-            }
-        });
+        t.onServer(0, player -> ImtRedstone.switchAt(player.serverLevel(), SPEAKER, -1, ImtRedstone.Op.ON, 0));
         t.waitUntil(80, () -> AlarmClient.playingAt(SPEAKER));
         t.shot(10, "al02_speaker_sounding");
         t.step(5, () -> zoom(false));
@@ -259,8 +256,8 @@ final class AlarmTour {
     static final Vec3 SHOW_FROM = Vec3.atBottomCenterOf(YARD.offset(5, 0, 6));
 
     /**
-     * De showcase-functie "Alarm Speaker": het toneel, een alarm van de kern (beide speakers gaan af, de ene met een eigen
-     * geluid, de andere met de ingebouwde sirene), de speaker stopt, zijn scherm, en hem op zijn naam aan en uit zetten.
+     * De showcase-functie "Alarm Speaker": het toneel, beide speakers op hun naam aan (zoals on(...) in een script; de ene
+     * met een eigen geluid, de andere met de ingebouwde sirene), weer uit, zijn scherm, en een puls van drie seconden.
      */
     static void showcase(DevScript s) {
         s.command(0, "time set noon")
@@ -268,9 +265,8 @@ final class AlarmTour {
                 .onServer(0, AlarmTour::stage)
                 .pause(80)
                 .onServer(0, player -> {
-                    if (player.serverLevel().getBlockEntity(CORE) instanceof SecurityCoreBlockEntity core) {
-                        core.logEvent(EventLog.Type.ALARM, "Intruder at Front door");
-                    }
+                    ImtRedstone.switchAt(player.serverLevel(), SPEAKER, -1, ImtRedstone.Op.ON, 0);
+                    ImtRedstone.switchAt(player.serverLevel(), FLOOR_SPEAKER, -1, ImtRedstone.Op.ON, 0);
                 })
                 .pause(200)
                 .onServer(0, player -> {

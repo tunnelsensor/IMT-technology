@@ -35,11 +35,16 @@ import org.jetbrains.annotations.Nullable;
  *       het duurt. Het geluid zelf zit NIET hierin: het staat in de map van de wereld, en je spel haalt het apart op. Zo
  *       blijft wat de server bij elk stuk wereld naar je stuurt klein.</li>
  *   <li><b>Instellingen</b>: hoe hard ({@link #volume}, 0,1 tot 1), tot hoe ver je hem hoort ({@link #range}, blokken) en
- *       hoe lang hij loeit als zijn kern alarm slaat ({@link #alarmSeconds}, 0 = tot je hem uitzet).</li>
+ *       hoe lang hij loeit als een script hem aanzet ({@link #alarmSeconds}, 0 = tot je hem uitzet).</li>
+ *   <li><b>Nooit vanzelf</b> (hoofdstuk 128, jouw wens: "Zorg dat het alarm niet vanzelf kan afgaan, het gebeurd enkel
+ *       vanuit een script als je het runt"): ook niet als zijn kern alarm slaat. Hij gaat alleen af als iets hem op zijn
+ *       naam aanzet ({@code on("Alarm 1")} of {@code pulse("Alarm 1", 10)} in een diagram dat je runt; met de hand:
+ *       Devices), of met Test in zijn scherm.</li>
  *   <li><b>Aan en uit</b>: het blok zelf weet of hij afgaat (AlarmSpeakerBlock.SOUNDING); dat ziet je spel meteen, en dan
  *       speelt het het geluid. Elke keer dat hij aangaat, krijgt hij een eindtijd ({@link #soundUntil}, de speltijd waarop
  *       hij vanzelf stopt; 0 = geen). Die wordt bewaard: valt de server uit terwijl het alarm loeit, dan stopt het na een
- *       herstart toch op tijd, in plaats van eeuwig door te gaan.</li>
+ *       herstart toch op tijd, in plaats van eeuwig door te gaan. Bij een puls is dat de tijd van de puls (zie
+ *       {@link #pulsed}): de puls zelf onthoudt ImtRedstone na een herstart niet.</li>
  *   <li><b>Stroom</b>: om de twee seconden betaalt hij zelf een beetje stroom ([power] alarmSpeakerUpkeep) en kijkt hij of
  *       hij aan een kern hangt en niet door een EMP is uitgeschakeld (AlarmSpeakerBlock.ONLINE). Zonder dat blijft hij
  *       stil.</li>
@@ -53,7 +58,7 @@ public class AlarmSpeakerBlockEntity extends BlockEntity implements BaseTrust.Pl
     /** Het bereik als je hem neerzet (blokken), en hoe dichtbij hooguit. */
     public static final int DEFAULT_RANGE = 32;
     public static final int MIN_RANGE = 8;
-    /** Zo lang loeit hij als je hem neerzet (seconden), als zijn kern alarm slaat. */
+    /** Zo lang loeit hij als je hem neerzet (seconden), als een script hem aanzet met on(...). */
     public static final int DEFAULT_ALARM_SECONDS = 30;
     /** De keuzes voor "hoe lang" in het scherm (seconden; 0 = tot je hem uitzet). */
     public static final int[] ALARM_CHOICES = {10, 30, 60, 120, 300, 0};
@@ -201,28 +206,6 @@ public class AlarmSpeakerBlockEntity extends BlockEntity implements BaseTrust.Pl
 
     // ================================================================ Afgaan en stoppen
 
-    /**
-     * Zijn kern sloeg alarm: hij gaat af voor {@link #alarmSeconds} seconden (of tot je hem uitzet). Gaat hij al af, dan
-     * duurt het langer, nooit korter: twee alarmen vlak na elkaar schuiven alleen de eindtijd op.
-     */
-    public void raise(ServerLevel level) {
-        BlockState state = getBlockState();
-        if (!(state.getBlock() instanceof AlarmSpeakerBlock) || !state.getValue(AlarmSpeakerBlock.ONLINE)) {
-            return; // geen stroom of geen netwerk: hij hoort het alarm niet
-        }
-        long now = level.getGameTime();
-        boolean wasSounding = state.getValue(AlarmSpeakerBlock.SOUNDING);
-        if (alarmSeconds == 0) {
-            soundUntil = 0; // tot je hem uitzet
-        } else if (!wasSounding || soundUntil != 0) {
-            soundUntil = Math.max(soundUntil, now + alarmSeconds * 20L);
-        }
-        setChanged();
-        if (!wasSounding) {
-            level.setBlock(worldPosition, state.setValue(AlarmSpeakerBlock.SOUNDING, true), Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
-        }
-    }
-
     /** Hij gaat af voor zoveel seconden (de knop Test), of verlengt het tot dan. */
     public void soundFor(ServerLevel level, int seconds) {
         BlockState state = getBlockState();
@@ -240,12 +223,27 @@ public class AlarmSpeakerBlockEntity extends BlockEntity implements BaseTrust.Pl
     }
 
     /**
-     * Op zijn naam aangezet (een diagram {@code on("Lab alarm")}, je bril, je stem, Devices): hij gaat af zoals bij een
-     * alarm, dus met dezelfde eindtijd ({@link #alarmSeconds}; 0 = tot je hem uitzet). Een puls zet hem zelf eerder uit.
+     * Op zijn naam aangezet (een diagram {@code on("Lab alarm")}, of met de hand in Devices): hij loeit
+     * {@link #alarmSeconds} seconden (0 = tot je hem uitzet). Een puls zet hem zelf eerder uit. Dit is de enige manier
+     * waarop hij afgaat, naast Test (hoofdstuk 128).
      */
     void switchedOn(ServerLevel level) {
         soundUntil = alarmSeconds == 0 ? 0 : level.getGameTime() + alarmSeconds * 20L;
         setChanged();
+    }
+
+    /**
+     * Een puls zette hem aan (of hij stond al aan): hij stopt na {@code ticks} ticks, ook als dat langer of korter is dan
+     * zijn eigen lengte, en ook als hij op "tot je hem uitzet" staat. Gevonden door de nalezing van hoofdstuk 128: eerst
+     * kreeg een puls de eindtijd van de speaker zelf, en stopte de server midden in een puls, dan loeide hij na het laden
+     * zonder script verder (bij "tot je hem uitzet" zelfs voor altijd).
+     */
+    void pulsed(ServerLevel level, int ticks) {
+        BlockState state = getBlockState();
+        if (state.getBlock() instanceof AlarmSpeakerBlock && state.getValue(AlarmSpeakerBlock.SOUNDING)) {
+            soundUntil = level.getGameTime() + Math.max(1, ticks);
+            setChanged();
+        }
     }
 
     /** Uitgezet: geen eindtijd meer. */
