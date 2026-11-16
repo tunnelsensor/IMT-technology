@@ -490,7 +490,8 @@ final class CodeEditor {
                 java.util.Arrays.fill(colours, i, line.length(), 0x6E8A96);
                 break;
             }
-            if (c == '$' && i + 1 < line.length() && (line.charAt(i + 1) == '"' || line.charAt(i + 1) == '\'')) {
+            boolean fString = (c == 'f' || c == 'F') && (i == 0 || !Character.isLetterOrDigit(line.charAt(i - 1)) && line.charAt(i - 1) != '_');
+            if ((c == '$' || fString) && i + 1 < line.length() && (line.charAt(i + 1) == '"' || line.charAt(i + 1) == '\'')) {
                 i = templateColours(line, i, colours);
             } else if (c == '"' || c == '\'') {
                 int end = i + 1;

@@ -466,7 +466,8 @@ public final class CodeCompletion {
                 }
                 if (c == '"' || c == '\'') {
                     open = i;
-                    template = i > 0 && before.charAt(i - 1) == '$';
+                    template = i > 0 && (before.charAt(i - 1) == '$' || (before.charAt(i - 1) == 'f' || before.charAt(i - 1) == 'F')
+                            && (i == 1 || !Character.isLetterOrDigit(before.charAt(i - 2)) && before.charAt(i - 2) != '_'));
                     depth = 0;
                 }
             } else if (depth > 0) {

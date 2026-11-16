@@ -1035,8 +1035,12 @@ final class LogicApp {
                 0x9ED8FF, null));
         // 19 oktober: tekst met namen erin (jouw notitie: $"dit is de {aantal} test").
         lines.add(new HelpLine("say($\"This is test {count}\")", "say($\"This is test {count}\")",
-                "Text with a $ in front: what is between { and } is filled in, a name or a sum: $\"{count + 1} left\". "
+                "Text with a $ (or an f) in front: what is between { and } is filled in, a name or a sum: $\"{count + 1} left\". "
                         + "Write {{ or }} for a bracket in the text.", 0x6BE88B, null));
+        // 16 november (hoofdstuk 131): een rijtje apparaten met dezelfde naam en een ander getal.
+        lines.add(new HelpLine("for i in range(3): on(f\"gate {i}\")", "for i in range(3):\n    on(f\"gate {i}\")",
+                "Names with a number: this switches on gate 0, gate 1 and gate 2. \"gate \" + i does the same.",
+                0x6BE88B, null));
         lines.add(header("LOOPS (again and again)"));
         lines.add(new HelpLine("for i in range(3):", "for i in range(3):\n    pulse(\"" + device + "\", 0.5)\n    wait(1)",
                 "Do the steps inside 3 times; i is 0, then 1, then 2. The range may be a name or a sum: range(count + 1)",

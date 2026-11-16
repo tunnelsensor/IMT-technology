@@ -10054,6 +10054,33 @@ Jouw wens: "Zorg dat het alarm niet vanzelf kan afgaan, het gebeurd enkel vanuit
   runVisualCheck -Ponly=howtopics:alarm,alarm` (dan ook al01 tot al03 van hoofdstuk 126); dat kon niet omdat je aan het
   spelen was, en een tweede spelvenster had je spel gestoord. In het spel zelf staat de nieuwe tekst al op de knop.
 
+### 131. Namen met een getal: f"gate {i}" en "gate " + i (16 november)
+
+Jouw wens: "zorg dat je ook strings kunt maken zodat je herhalend namen maar met ander getal kunt gebruiken: for i in
+range(3): on("gate" + i) of met string interpolation: for i in range(3): on(f"gate {i}")".
+
+- [x] **Wat er al was.** Tekst aan elkaar plakken met `+` (`"gate " + i`) en tekst met namen erin met een `$`
+      (`$"gate {i}"`, hoofdstuk 31) bestonden al, en sinds hoofdstuk 43 mag een apparaat ook een berekende naam zijn.
+      `for i in range(3): on("gate " + i)` werkte dus al; alleen de schrijfwijze van Python, `f"..."`, kende de taal niet.
+- [x] **`f"..."` is nu hetzelfde als `$"..."`** (ook `F"..."`, en met enkele aanhalingstekens). De Lexer leest een `f`
+      vlak voor een aanhalingsteken als een `$`, dus alles van hoofdstuk 31 geldt: `{{` en `}}`, tekst en berekeningen
+      tussen `{` en `}`, de foutmeldingen. Een naam die op f eindigt (`elif"..."`, `self"..."`) telt niet: de f moet aan
+      het begin van een woord staan. Bewaar je het programma als blokjes en komt de code terug (via de blokjes), dan
+      staat er `$"..."`: dat doet precies hetzelfde.
+- [x] **De editor** kleurt `f"gate {i}"` zoals `$"..."` (de code tussen `{` en `}` in de kleuren van code), en het
+      aanvullen met Tab werkt binnen de `{ }` van een f-tekst, net als bij `$"..."`.
+- [x] **Uitleg**: in de app Logic (Help) een nieuwe regel `for i in range(3): on(f"gate {i}")` ("this switches on gate 0,
+      gate 1 and gate 2"), en de regel over `$"..."` noemt de `f`. In LEESMIJ ("Tekst met namen erin") het voorbeeld met de
+      lus, `range(1, 4)` voor 1 tot 3, en de spatie: `"gate" + i` geeft "gate0". De oude zin "niet als naam van een
+      apparaat" klopte al sinds hoofdstuk 43 niet meer en is weg.
+- [x] **Tests**: in `logic_text_with_names` vier gevallen erbij (`f"gate {count}"`, `F'gate {count + 1}'`,
+      `"gate " + count`, `"gate" + (count + 1)` geeft "gate3") en de lus met `on(f"gate {i}")` en `on("gate" + i)` wordt
+      gelezen. `logic_text_with_names_run` zet in het spel echt drie relais aan: `for i in range(2): on(f"gate {i}")` en
+      `on("gate " + rounds)` zetten "gate 0", "gate 1" en "gate 2" aan. Nog altijd 651 tests, alle groen (volledige ronde).
+- **Geen nieuwe versie**: een kleine aanvulling op de taal die er al was (2.22, het laatste getal telt vanzelf op). Het
+  netwerkprotocol is niet veranderd.
+- **Nog niet in het spel bekeken**: de kleuren van `f"..."` in de editor (gebouwd zoals die van `$"..."`).
+
 ## Nog nooit in het spel bekeken
 
 De automatische tests draaien zonder beeld: ze controleren wat er gebeurt, niet hoe het

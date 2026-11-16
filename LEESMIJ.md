@@ -1283,11 +1283,20 @@ when keycard("Lab door"):
   Een apparaat is meestal gewone tekst tussen aanhalingstekens, maar mag sinds 4 november ook een naam of
   berekening zijn (zie "Parameters" hieronder). Delen door 0 geeft 0.
 - **Tekst met namen erin** (sinds 19 oktober): zet een `$` voor de tekst, en wat tussen `{` en `}` staat,
-  wordt ingevuld: `say($"This is test {count}")` zegt "This is test 3". Tussen de haakjes mag een naam, een
+  wordt ingevuld: `say($"This is test {count}")` zegt "This is test 3". Sinds 16 november mag er ook een `f`
+  voor staan, zoals in Python: `f"This is test {count}"` is hetzelfde. Tussen de haakjes mag een naam, een
   gegeven of een berekening staan: `$"Round {i + 1} of {count}"`, `$"Card {card.name} (#{card.number})"`.
   Een getal komt er zonder overbodige nullen in, en `true`/`false` als woord. Wil je een gewoon haakje in de
-  tekst, schrijf dan `{{` of `}}`. Het werkt overal waar tekst mag (een bericht, `naam = ...`, een `if`), niet
-  als naam van een apparaat.
+  tekst, schrijf dan `{{` of `}}`. Het werkt overal waar tekst mag (een bericht, `naam = ...`, een `if`), en
+  ook als naam van een apparaat. Zo zet je een rijtje apparaten met dezelfde naam en een ander getal aan:
+
+  ```
+  for i in range(3):
+      on(f"gate {i}")
+  ```
+
+  zet "gate 0", "gate 1" en "gate 2" aan (`range(3)` telt vanaf 0; wil je 1 tot 3, schrijf dan `range(1, 4)`).
+  Met `+` gaat het ook: `on("gate " + i)`. Let op de spatie: `"gate" + i` geeft "gate0".
 - **Namen** (variabelen): `count = 0` helemaal links is een naam voor het hele programma; hij houdt
   zijn waarde tussen de runs (tot je het programma opnieuw bewaart). `count = count + 1` in een when of
   def geeft hem een nieuwe waarde. Een naam die je pas in een when maakt, bestaat alleen in die run; een

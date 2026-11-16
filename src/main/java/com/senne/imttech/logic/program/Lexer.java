@@ -101,6 +101,10 @@ public final class Lexer {
                 i++;
             } else if (c == '#') {
                 break; // commentaar tot het einde van de regel
+            } else if ((c == 'f' || c == 'F') && i + 1 < n && (line.charAt(i + 1) == '"' || line.charAt(i + 1) == '\'')) {
+                // f"gate {i}" (zoals in Python) is hetzelfde als $"gate {i}" (16 november, jouw wens).
+                line = line.substring(0, i) + '$' + line.substring(i + 1);
+                continue;
             } else if (Character.isLetter(c) || c == '_') {
                 int start = i;
                 while (i < n && (Character.isLetterOrDigit(line.charAt(i)) || line.charAt(i) == '_' || line.charAt(i) == '.')) {

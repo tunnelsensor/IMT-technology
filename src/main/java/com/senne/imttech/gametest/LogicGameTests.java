@@ -772,6 +772,11 @@ public final class LogicGameTests {
                 {"$\"{{count}} is {count}\"", "{count} is 2"},
                 {"$\"Night: {is_night}\"", "Night: true"},
                 {"$\"no names\"", "no names"},
+                // 16 november: f"..." zoals in Python, en tekst + getal.
+                {"f\"gate {count}\"", "gate 2"},
+                {"F'gate {count + 1}'", "gate 3"},
+                {"\"gate \" + count", "gate 2"},
+                {"\"gate\" + (count + 1)", "gate3"},
         };
         for (String[] test : cases) {
             Expr expr = ExprCache.value(test[0]);
@@ -791,13 +796,22 @@ public final class LogicGameTests {
             throw new GameTestAssertException("Een apparaat als $\"...\" kwam anders terug: " + ScriptPrinter.print(ScriptParser.parse(templateDevice)));
         }
         expectError("when every(5):\n    say($\"Open)", 2, "missing its closing quote");
+        // Een rijtje poorten met een lus (16 november, jouw wens).
+        ScriptParser.parse("when every(5):\n    for i in range(3):\n        on(f\"gate {i}\")\n        on(\"gate\" + i)\n");
         helper.succeed();
     }
 
-    /** Tekst met namen erin tijdens het uitvoeren: in het logboek staan de waarden zelf. */
+    /**
+     * Tekst met namen erin tijdens het uitvoeren: in het logboek staan de waarden zelf. Sinds 16 november (hoofdstuk 131)
+     * ook een rijtje apparaten met een lus: f"gate {i}" en "gate " + i zetten "gate 0", "gate 1" en "gate 2" aan.
+     */
     @GameTest(template = ARENA, timeoutTicks = 200, batch = "logic_runner_text")
     public static void logic_text_with_names_run(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
         Setup setup = setup(helper);
+        BlockPos gate0 = relay(helper, setup, new BlockPos(9, 3, 2), "gate 0");
+        BlockPos gate1 = relay(helper, setup, new BlockPos(9, 3, 4), "gate 1");
+        BlockPos gate2 = relay(helper, setup, new BlockPos(9, 3, 6), "gate 2");
         helper.runAfterDelay(2, () -> {
             ImtTechGameTests.startServer(helper, setup.rack(), setup.core());
             SecurityOs.open(setup.owner(), setup.coreAbs());
@@ -808,6 +822,9 @@ public final class LogicGameTests {
                         rounds = rounds + 1
                         if rounds == 2:
                             log($"Round {rounds}: {rounds * 3} points, night {is_night}")
+                            for i in range(2):
+                                on(f"gate {i}")
+                            on("gate " + rounds)
                     """);
             check(setup.core().logic().program("Template") != null, "Het diagram werd niet bewaard: " + lastLog(setup.core()));
         });
@@ -815,6 +832,9 @@ public final class LogicGameTests {
             // (Dag of nacht hangt af van de tijd in de testwereld: allebei goed, als het maar ingevuld is.)
             check(logged(setup.core(), "Round 2: 6 points, night true") || logged(setup.core(), "Round 2: 6 points, night false"),
                     "De ingevulde tekst staat niet in het logboek: " + lastLog(setup.core()));
+            check(level.getBlockState(gate0).getValue(RelayBlock.POWERED), "on(f\"gate {i}\") zette gate 0 niet aan");
+            check(level.getBlockState(gate1).getValue(RelayBlock.POWERED), "on(f\"gate {i}\") zette gate 1 niet aan");
+            check(level.getBlockState(gate2).getValue(RelayBlock.POWERED), "on(\"gate \" + 2) zette gate 2 niet aan");
             helper.succeed();
         });
     }
