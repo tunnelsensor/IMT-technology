@@ -392,18 +392,23 @@ public final class LogicRunner {
         Context context = new Context(Op.LOGGED, entry.text(), null, null, "", false, false, null, false,
                 entry.type().name().toLowerCase(java.util.Locale.ROOT), null, List.of(), false, false, false, "", false, entry);
         int limit = Math.max(1, Math.round(com.senne.imttech.config.ImtConfig.Logic.LOGGED_PER_SECOND));
+        boolean counted = false;
         for (LogicProgram program : runnable(core, stats)) {
             for (LogicGraph.Node node : program.graph().nodes()) {
                 if (node.op != Op.LOGGED) {
                     continue;
                 }
-                if (now - runtime.loggedWindowStart >= 20 || now < runtime.loggedWindowStart) {
-                    runtime.loggedWindowStart = now;
-                    runtime.loggedWindowCount = 0;
-                }
-                if (++runtime.loggedWindowCount > limit) {
-                    report(level, core, runtime, EventLog.Type.LOGIC, "Too many new log lines at once: when logged: skipped some");
-                    return;
+                // De grens telt regels, niet when-blokken (de nalezing): een regel die erdoor mag, zien alle when logged:.
+                if (!counted) {
+                    counted = true;
+                    if (now - runtime.loggedWindowStart >= 20 || now < runtime.loggedWindowStart) {
+                        runtime.loggedWindowStart = now;
+                        runtime.loggedWindowCount = 0;
+                    }
+                    if (++runtime.loggedWindowCount > limit) {
+                        report(level, core, runtime, EventLog.Type.LOGIC, "Too many new log lines at once: when logged: skipped some");
+                        return;
+                    }
                 }
                 enqueue(level, core, runtime, newRun(core, runtime, program, node.next, context, now + stats.reactionTicks()));
             }

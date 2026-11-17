@@ -10548,22 +10548,24 @@ zelf staat stil (zie daar); dit stuk staat er los van, als iets voor je eigen be
 in de app Logs rechts uit het venster.
 
 - [x] **`when logged:`** (`Op.LOGGED`, alleen in een serverdiagram): begint bij elke nieuwe regel in het logboek van je
-      kern, met `log.text` (de regel) en `log.kind` (de soort in kleine letters: `login_fail`, `login`, `hack`, `trap`,
-      `entry`, `device`, `system`, `owner`, `zone`, `heat`, `training`). `SecurityCoreBlockEntity.logEvent` geeft elke
+      kern, met `log.text` (de regel) en `log.kind` (de soort in kleine letters: `login_fail`, `login`, `trap`, `entry`,
+      `device`, `system`, `owner`, `zone`, `heat`, `training`). `SecurityCoreBlockEntity.logEvent` geeft elke
       regel door aan `LogicRunner.logged`. Regels van de soort LOGIC (wat diagrammen en robots zelf zeggen of loggen,
       meldingen van de server) en ALARM starten hem nooit: zo kan een diagram zichzelf niet eindeloos starten. Hij heeft
-      een eigen grens per seconde (`[logic] loggedPerSecond`, 10), los van de 40 triggers per seconde van je lezers,
+      een eigen grens per seconde (`[logic] loggedPerSecond`, 10 regels; elke regel die erdoor mag, zien al je
+      `when logged:`), los van de 40 triggers per seconde van je lezers,
       panelen en knoppen: een drukke minuut in je logboek houdt je deuren niet tegen. Wat erboven komt, slaat hij over,
       met één regel "Too many new log lines at once" (soort LOGIC, die hij zelf niet ziet).
 - [x] **`flag("...")`** (`Op.FLAG`, alleen in een serverdiagram, en alleen in een `when logged:` of een def): markeert die
       regel (`EventLog.Entry.flag`, bewaard met het logboek). De reden mag berekend zijn, ook een f-tekst
-      (`flag(f"Wrong password: {log.text}")`). I.M.T waarschuwt de eigenaar in Messages en op zijn bril
+      (`flag(f"Wrong password ({fails} so far)")`). I.M.T waarschuwt de eigenaar in Messages en op zijn bril
       ("Flagged on Base-7: Wrong password (...)"), hooguit om de `[logic] flagAlertSeconds` (10) seconden per kern. Een
       markering schrijft zelf geen regel in het logboek.
 - [x] **Oude programma's**: `logged` en `flag` zijn geen bezette woorden (`Op.reservedIn`), zoals de woorden van
       hoofdstuk 113: een diagram met een naam `flag` of een eigen `def flag():` blijft werken.
 - [x] **De app Logs** (`SecurityOsScreen.renderLogs`): een lange regel breekt af binnen het venster, met de tijd in een
-      eigen kolom (eerst liep hij er rechts uit, ook al vóór dit hoofdstuk); het muiswiel schuift per regel op het scherm.
+      eigen kolom (eerst liep hij er rechts uit, ook al vóór dit hoofdstuk); het muiswiel schuift per regel op het scherm,
+      omhoog naar oudere regels en niet verder dan de oudste (beide al fout vóór dit hoofdstuk).
       Een gemarkeerde regel is rood, met de reden ervoor ("[Wrong password] ..."). Naast **Show: all** staat **Flagged N**:
       die toont alleen de gemarkeerde regels (van elke soort; dan staat Show weer op all).
 - [x] **Help** in de app Logic (serverdiagram): het kopje **WATCH YOUR LOG** met `logged`, `flag(...)` en
@@ -10572,8 +10574,21 @@ in de app Logs rechts uit het venster.
       `log_watch_language` (flag buiten when logged:, in een robotprogramma, log.text buiten when logged:, een f-tekst in
       flag, een oude naam flag en een oude def flag()) en `log_watch_flags_lines` (een fout wachtwoord van ver wordt
       gemarkeerd met de regel erin; een SYSTEM-regel ook; LOGIC- en ALARM-regels niet; één waarschuwing van I.M.T; de
-      desktop krijgt de markering; bewaren en laden houdt hem; van 25 regels tegelijk worden er hooguit 10 nagekeken, met
-      de melding). 665 tests, allemaal groen.
+      desktop krijgt de markering; bewaren en laden houdt hem; een markering lukt ook na het opnieuw laden van het
+      logboek; van 25 regels tegelijk in een nieuwe seconde worden er precies 10 nagekeken, door beide diagrammen, met de
+      melding). 665 tests.
+- [x] **Nalezing** (vier lezers: de server, de taal, de schermen, uitleg en tests; per vondst een controleur): 18
+      vondsten, 14 verschillende, 12 echt, 2 afgewezen. De laatste ronde ("wat misten ze?") en één controle liepen niet:
+      de gebruikslimiet van 5 uur was op. Opgelost: de grens per seconde telde per `when logged:` in plaats van per regel
+      (met twee diagrammen keek hij maar 5 regels na, en soms een regel maar half); de soort `hack` stond in de uitleg maar
+      wordt nergens geschreven (weg uit LEESMIJ, Help en de uitleg van `log.kind`); de regel bij kortsluiting van een robot
+      ging langs `logEvent` heen (nu ook voor `when logged:`); een markering mislukte stil als het logboek intussen
+      opnieuw geladen was (nu vindt hij dezelfde regel op tijd, soort en tekst); de foutmelding zei "when logged(...)"
+      (nu "when logged:"); de voorbeelden zetten de regel nog eens in de reden (nu een teller); en het muiswiel in Logs.
+      Niet opgelost (kleine randgevallen): een def met `flag(...)` die je vanuit een andere `when` aanroept, doet niets
+      (Check zegt het niet); een `flag`-blokje naast een eigen `def flag()` wordt in de code een aanroep van die def;
+      Ctrl+Spatie stelt een eigen naam `flag` of `logged` niet meer voor; een gemarkeerde regel heeft hetzelfde rood als
+      een fout wachtwoord (de reden ervoor en de knop Flagged maken het verschil).
 - [x] LEESMIJ (bij **De server**: "Je logboek laten nakijken", en bij Logs de knop Flagged en het afbreken),
       CurseForge-beschrijving, versie 2.24.0 en protocol 51 (twee nieuwe blokjes gaan heen en weer met de desktop: een
       oudere versie kan die niet lezen).

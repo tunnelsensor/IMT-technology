@@ -477,8 +477,7 @@ public abstract class BotEntity extends PathfinderMob implements Bot, BaseTrust.
                 + (burnsDown ? ", and the " + kindWord() + " burnt down" : "");
         com.senne.imttech.security.SecurityCoreBlockEntity core = com.senne.imttech.security.SecurityCores.coreAt(level, blockPosition());
         if (core != null) {
-            core.log().add(level.getGameTime(), com.senne.imttech.security.os.EventLog.Type.DEVICE, text);
-            core.setChanged();
+            core.logEvent(com.senne.imttech.security.os.EventLog.Type.DEVICE, text); // hoofdstuk 138: ook voor when logged:
         }
         ServerPlayer owner = this.owner == null ? null : level.getServer().getPlayerList().getPlayer(this.owner);
         if (owner != null) {

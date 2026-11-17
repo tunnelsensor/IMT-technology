@@ -209,7 +209,7 @@ public sealed interface Expr {
         PASSED("passed", Type.BOOL, "true if the trainee passed (reached the goal, or survived the time)", Op.TRAINING_ENDED),
         // Na when logged: (hoofdstuk 138) de nieuwe regel in je logboek.
         LOG_TEXT("log.text", Type.TEXT, "the text of the new log line", Op.LOGGED),
-        LOG_KIND("log.kind", Type.TEXT, "its kind: login_fail, login, hack, trap, entry, device ...", Op.LOGGED);
+        LOG_KIND("log.kind", Type.TEXT, "its kind: login_fail, login, trap, entry, device ...", Op.LOGGED);
 
         final String name;
         final Type type;
@@ -287,7 +287,8 @@ public sealed interface Expr {
             if (this == TRAINEE || this == LIVES || this == HITS) {
                 return "when training_started(...), training_hit(...), training_ended(...) or (in a Training End block) when trainee_hit:";
             }
-            return only == null ? null : "when " + only.code() + "(...)";
+            // Een trigger zonder haakjes (when logged:, when started:) schrijven we ook zo in de melding.
+            return only == null ? null : only.withoutBrackets() ? "when " + only.code() + ":" : "when " + only.code() + "(...)";
         }
 
         /**

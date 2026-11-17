@@ -1474,8 +1474,8 @@ final class LogicApp {
             lines.add(header("WATCH YOUR LOG"));
             lines.add(item("logged", "when logged:\n    if log.kind == \"login_fail\":\n        flag(\"Wrong password\")\n", Op.LOGGED));
             lines.add(item("flag(...)", "flag(\"Wrong password\")", Op.FLAG));
-            lines.add(new HelpLine("if log.kind == \"trap\":", "if log.kind == \"trap\":\n    flag(f\"Trap: {log.text}\")",
-                    "log.kind: login_fail, login, hack, trap, entry, device ...", HudStyle.WHITE, null));
+            lines.add(new HelpLine("if log.kind == \"trap\":", "if log.kind == \"trap\":\n    flag(\"Trap opened\")",
+                    "log.kind: login_fail, login, trap, entry, device ...", HudStyle.WHITE, null));
         } else {
             // Wat een robot (of een drone, hoofdstuk 25) zelf kan (hoofdstuk 23).
             String self = kind == ProgramKind.DRONE ? "drone" : "robot";

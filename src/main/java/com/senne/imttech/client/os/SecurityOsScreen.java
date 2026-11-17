@@ -952,6 +952,9 @@ public class SecurityOsScreen extends Screen {
             case MONITOR -> monitor.mouseScrolled(scrollY);
             case BACKUP -> backup.mouseScrolled(scrollY);
             case COMPUTERS -> computers.mouseScrolled(scrollY);
+            // Logs staat onderaan vast (de nieuwste regel onderaan): het wiel omhoog toont oudere regels, en verder dan de
+            // oudste gaat het niet (de nalezing van hoofdstuk 138; dat was al zo voor dit hoofdstuk).
+            case LOGS -> win.scroll = Math.max(0, Math.min(logsMaxScroll, win.scroll + (int) Math.signum(scrollY) * 3));
             default -> win.scroll = Math.max(0, win.scroll - (int) Math.signum(scrollY) * 3);
         }
         return true;
@@ -1285,6 +1288,9 @@ public class SecurityOsScreen extends Screen {
     /** Eén regel op het scherm: de tijd (alleen op de eerste regel van een melding), de tekst, en de kleur. */
     private record LogRow(String time, String text, int colour) {}
 
+    /** Zover kan Logs omhoog schuiven (zoveel regels staan er boven het scherm), bij de laatste keer tekenen. */
+    private int logsMaxScroll;
+
     /**
      * De app Logs. Hoofdstuk 138: een lange regel breekt af binnen het venster (eerst liep hij er rechts uit), met de tijd in
      * een eigen kolom links; een gemarkeerde regel is rood, met de reden ervoor ("[Wrong password] ..."). Het muiswiel
@@ -1321,7 +1327,8 @@ public class SecurityOsScreen extends Screen {
         }
         int visible = Math.max(1, ch / LINE);
         int total = rows.size();
-        int first = Math.max(0, total - visible - scroll);
+        logsMaxScroll = Math.max(0, total - visible);
+        int first = Math.max(0, total - visible - Math.min(scroll, logsMaxScroll));
         int end = Math.min(total, first + visible);
         int y = cy;
         for (int i = first; i < end; i++) {

@@ -133,6 +133,8 @@ public final class LogWatchGameTests {
                     save(owner, abs, "Watch", WATCH);
                     check(core.logic().program("Watch") != null && core.logic().program("Watch").enabled(),
                             "Het diagram Watch werd niet bewaard");
+                    // Een tweede when logged: (de nalezing: de grens telt regels, dus elke regel die erdoor mag, zien ze allebei).
+                    save(owner, abs, "Also", "when logged:\n    if log.kind == \"system\":\n        log(\"also \" + log.text)\n");
                 })
                 .thenExecuteAfter(2, () -> {
                     String[] said = {""};
@@ -159,15 +161,31 @@ public final class LogWatchGameTests {
                     EventLog loaded = EventLog.load(core.log().save());
                     check(loaded.entries().stream().anyMatch(entry -> entry.text().equals(wrong)
                             && entry.flag().equals("Wrong password: " + wrong)), "Na bewaren en laden is de markering weg");
-                    // Veel regels tegelijk: when logged: kijkt er hooguit loggedPerSecond na (10), en zegt het.
+                    // Een markering lukt ook nadat het logboek opnieuw geladen werd (dezelfde regel, een ander object).
+                    EventLog.Entry plain = loaded.entries().stream().filter(entry -> entry.text().equals("probe logic"))
+                            .findFirst().orElseThrow();
+                    check(loaded.flag(new EventLog.Entry(plain.time(), plain.type(), plain.text()), "later")
+                            && loaded.entries().stream().anyMatch(entry -> entry.text().equals("probe logic")
+                            && entry.flag().equals("later")), "Een regel uit een opnieuw geladen logboek kon niet gemarkeerd worden");
+                })
+                // Veel regels tegelijk, in een nieuwe seconde: when logged: kijkt er precies loggedPerSecond (10) na, en elk
+                // daarvan zien beide diagrammen; de rest slaat het over, met een melding.
+                .thenExecuteAfter(25, () -> {
                     for (int i = 0; i < 25; i++) {
                         core.logEvent(EventLog.Type.SYSTEM, "burst " + i);
                     }
                 })
-                .thenExecuteAfter(15, () -> {
+                .thenWaitUntil(() -> {
                     long watched = core.log().entries().stream()
                             .filter(entry -> entry.text().startsWith("burst ") && !entry.flag().isEmpty()).count();
-                    check(watched > 0 && watched <= 10, watched + " van de 25 regels tegelijk werden nagekeken (hooguit 10)");
+                    long also = core.log().entries().stream().filter(entry -> entry.text().startsWith("also burst ")).count();
+                    check(watched == 10 && also == 10, watched + " regels gemarkeerd en " + also
+                            + " gezien door het tweede diagram, van de 25 tegelijk (verwacht 10 en 10)");
+                })
+                .thenExecuteAfter(10, () -> {
+                    long watched = core.log().entries().stream()
+                            .filter(entry -> entry.text().startsWith("burst ") && !entry.flag().isEmpty()).count();
+                    check(watched == 10, watched + " van de 25 regels tegelijk werden nagekeken (hooguit 10)");
                     check(core.log().entries().stream().anyMatch(entry -> entry.type() == EventLog.Type.LOGIC
                             && entry.text().contains("Too many new log lines")), "Geen melding dat when logged: regels oversloeg");
                 })

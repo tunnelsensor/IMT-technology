@@ -36,9 +36,12 @@ final class LogWatchTour {
     private static final BlockPos RACK = new BlockPos(258, -60, -228);
 
     private static final String WATCH = """
+            fails = 0
+
             when logged:
                 if log.kind == "login_fail":
-                    flag(f"Wrong password: {log.text}")
+                    fails = fails + 1
+                    flag(f"Wrong password ({fails} so far)")
                 elif log.kind == "trap":
                     flag("Trap opened")
             """;

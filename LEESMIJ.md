@@ -1458,10 +1458,9 @@ when keycard("Lab door"):
   ```
 - **Je logboek laten nakijken** (sinds 17 november): `when logged:` begint bij elke nieuwe regel in het logboek van
   je kern, met `log.text` (de tekst van de regel) en `log.kind` (de soort: `login_fail` voor een fout wachtwoord,
-  `login`, `hack`, `trap` als een valstrik afging, `entry`, `device`, `system`, `owner`, `zone`, `heat` of
-  `training`). Met `flag("...")` markeer je die regel: in **Logs** wordt hij rood, met de reden ervoor, en I.M.T
+  `login`, `trap` als een valstrik afging, `entry`, `device`, `system`, `owner`, `zone`, `heat` of `training`). Met `flag("...")` markeer je die regel: in **Logs** wordt hij rood, met de reden ervoor, en I.M.T
   waarschuwt je in Messages en op je bril (hooguit om de 10 seconden, ook als er veel tegelijk gemarkeerd worden). De
-  reden mag berekend zijn, ook met een f-tekst: `flag(f"Wrong password: {log.text}")`. `flag(...)` werkt alleen in een
+  reden mag berekend zijn, ook met een f-tekst: `flag(f"Wrong password ({fails} so far)")` (zie het voorbeeld). `flag(...)` werkt alleen in een
   `when logged:` (of in een def die je daar aanroept). Regels van de soort `logic` en `alarm` starten `when logged:`
   nooit: wat je diagrammen en robots zelf zeggen of loggen (`say`, `log`, `alarm`), meldingen van de server (zoals "Too
   many triggers") en alarmen. Zo kan een diagram zichzelf niet eindeloos starten. Per seconde kijkt het hooguit 10
@@ -1470,9 +1469,12 @@ when keycard("Lab door"):
   `flag` of een def `flag()`, dan blijft die werken. Voor wie de server beheert: `[logic] flagAlertSeconds` (10) en
   `loggedPerSecond` (10).
   ```
+  fails = 0
+
   when logged:
       if log.kind == "login_fail":
-          flag(f"Wrong password: {log.text}")
+          fails = fails + 1
+          flag(f"Wrong password ({fails} so far)")
       elif log.kind == "trap":
           flag("Trap opened")
   ```

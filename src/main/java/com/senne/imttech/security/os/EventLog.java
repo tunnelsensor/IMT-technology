@@ -52,8 +52,24 @@ public final class EventLog {
      */
     public boolean flag(Entry entry, String reason) {
         List<Entry> all = new ArrayList<>(entries);
+        int at = -1;
         for (int i = 0; i < all.size(); i++) {
             if (all.get(i) == entry) {
+                at = i;
+            }
+        }
+        // Werd het logboek intussen opnieuw geladen (de wereld rond de kern ging even uit), dan is het dezelfde regel als
+        // hij er nog precies zo staat (tijd, soort en tekst), en nog niet gemarkeerd (de nalezing).
+        for (int i = all.size() - 1; at < 0 && i >= 0; i--) {
+            Entry other = all.get(i);
+            if (other.time() == entry.time() && other.type() == entry.type() && other.text().equals(entry.text())
+                    && other.flag().isEmpty()) {
+                at = i;
+            }
+        }
+        for (int i = 0; i < all.size(); i++) {
+            if (i == at) {
+                entry = all.get(i);
                 if (!entry.flag().isEmpty()) {
                     return false;
                 }
