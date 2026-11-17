@@ -10541,6 +10541,103 @@ Jouw wens: "zorg dat een f string bij alles werkt niet enkel bij for loop".
 - **Nog niet in het spel bekeken**: de nieuwe Help-regels en het when-blokje met zijn code (zie "Nog nooit in het spel
   bekeken").
 
+### 136. De Speaker: geluiden in Files, playsound en playtext met de stem van I.M.T (17 november)
+
+Jouw wens: "Kun je text to speech door de speakers toevoegen zodat je bijvoorbeel 'Alarm armed' kunt laten zeggen met de IMT
+stem maar dan voor iedereen door de speakers van je base". En op mijn vragen: "Alleen wie de stem heeft hoort het ander zegt
+de chat speaker: ...", "ik wil dat je niet op de speaker een geluid kiest maar in je securitycore bij files, hier kun je de
+geluiden in de map sounds zetten ... while true: play("joufile","welkespeaker/all") ... je kunt bij play ook zeggen
+default, verander de naam van de sirene naar speaker", "Dit zijn twee dingen playsound en playtext", "Nee, meteen verder",
+"On en pulse en off mag weg", en "Sirene even stil" (zolang hij praat).
+
+- [x] **Het blok heet nu Speaker** (was Alarm Speaker; de naam in de code en in werelden blijft `alarm_speaker`, dus
+      bestaande speakers blijven staan). Nieuwe heten Speaker 1, Speaker 2... Hij heeft geen eigen geluid meer en is geen
+      schakelaar meer: aan, uit, toggle en pulse op zijn naam doen niets (het logboek zegt "Speaker 1 is a speaker: use
+      playsound(...) or playtext(...)"), en Devices heeft bij SPEAKERS geen Turn on/off meer, wel Rename.
+- [x] **De geluiden staan in Files van de kern**, in de map `sounds` (`VirtualFs.SOUNDS`): een nieuw soort bestand, een
+      geluid (de vingerafdruk van het geluid en hoeveel monsters het heeft; het geluid zelf staat bij de wereld, zoals in
+      hoofdstuk 126). De knop **+Sound** in Files opent het "bestand openen"-venster van je computer (of sleep een bestand
+      op het venster terwijl Files vooraan staat); je spel leest het in zoals in hoofdstuk 126 en stuurt het in stukjes naar
+      de server, die het in `/sounds` zet (de naam van het bestand, zonder extensie, in kleine letters). Alleen wie het
+      bureaublad van die kern open heeft en daar bestanden mag maken (`SecurityOs.filesCore`, dus ook de regels van een
+      Computer). In de lijst staat "SOUND 6.0 s"; **dubbelklik** laat het alleen jou horen (de server stuurt het,
+      `AlarmPreviewPayload`). Hernoemen, verplaatsen en weggooien gaat zoals bij elk bestand; als tekst veranderen niet, en
+      kopiëren naar een SD-kaart slaat een geluid over (het geluid staat bij de wereld, niet op de kaart).
+- [x] **`playsound("siren", "Speaker 1")`** (nieuw in de taal van de diagrammen): de speaker speelt het geluid uit
+      `/sounds` één keer (`"siren.mp4"` vindt het ook); `"all"` (of zonder tweede waarde) = alle speakers van de kern die de
+      eigenaar mag instellen; `"default"` = de ingebouwde sirene (twee seconden). Het script wacht niet (jouw keuze): in een
+      lus zet je zelf `wait(...)`. Speelt hij dat geluid nog, dan verandert er niets (zo hapert een lus zonder wait niet);
+      een ander geluid vervangt het. Kom je later in de buurt, dan hoor je het vanaf het goede moment.
+- [x] **`playtext("Alarm armed", "all")`**: de speaker zegt de zin met de stem van I.M.T. Die stem (Piper) maakt het spel
+      van elke speler in de buurt zelf (`ImtSpeech.synthesize`: dezelfde stem en dezelfde rij als I.M.T zelf, maar niet
+      afgespeeld maar teruggegeven) en speelt hem uit de speaker, zachter als je verder weg staat. Wie de stem niet heeft
+      (niet geïnstalleerd, uit, of geen Windows), ziet in de chat "Speaker 1: Alarm armed", één keer per omroep. Zolang hij
+      praat, is zijn geluid stil (jouw keuze), en draait zijn rode licht.
+- [x] **Beide waarden mogen berekend zijn**, zoals overal sinds hoofdstuk 131 en 135: `playsound(f"siren {n}", f"Speaker {i}")`
+      en `playtext(f"Gate {n} is open", "all")` (het zijn VALUES-blokjes, net als `order(...)`). De woorden zijn niet
+      gereserveerd: een oud programma met een eigen `def playsound():` blijft werken.
+- [x] **Een diagram uitzetten stopt het meteen** (`LogicRunner.dropStale`): runs van een serverdiagram dat je uitzet,
+      weggooit of opnieuw bewaart, stoppen, ook een lus met `wait` die nog bezig was. Eerst maakte een uitgezet diagram nog
+      af waar het mee bezig was, zodat een `while true:`-lus met `playsound(...)` nooit meer stopte. Voor elk apparaat, niet
+      alleen de speaker (dat vroeg ik je gisteren; met play zonder wachten is het nodig om zo'n lus te kunnen stoppen).
+- [x] **Een speaker met een eigen geluid van vroeger** (hoofdstuk 126 tot 135): dat geluid komt één keer in `/sounds` van zijn
+      kern, onder de naam van het bestand; het logboek van de kern zegt hoe het heet ("play it with playsound(...)").
+- [x] **Zijn scherm**: naam, volume, bereik en Test (5 seconden de ingebouwde sirene); de uitleg zegt waar de geluiden staan.
+      Weg: Choose file, Folder, Preview, Built-in siren, Use on all, Stop en "hoe lang" (en `[alarms] maxAlarmSeconds`).
+- [x] **How it works** (Speaker, vijf hoofdstukjes: aansluiten, de geluiden in Files, een diagram speelt ze, laat hem praten,
+      zijn scherm met een nieuwe foto), de rondleiding (`-Ponly=alarm`, sp01 tot sp08), de showcase, LEESMIJ (een nieuw stuk
+      "De Speaker", met een voorbeeld van een sirene in een lus), de Logic-hulp en de CurseForge-beschrijving.
+- [x] **Tests** (nog altijd 663; de speakertests in de batch "lan" zijn herschreven): `alarm_speaker_never_sounds_by_itself`
+      (een alarm van de kern laat hem stil, aan op zijn naam en Devices doen niets, playsound "default" twee seconden,
+      hetzelfde geluid nog eens verandert niets, een onbekend geluid of een onbekende speaker geeft de goede fout, playtext),
+      `speaker_plays_from_a_running_diagram` (nieuw in de plaats van `alarm_speaker_switches_by_name`: een echt diagram met
+      `playsound(f"siren{n}", f"Speaker {n}")` en `playtext(f"Gate {n} is open", "all")`, en een uitgezet diagram stopt
+      meteen), `alarm_upload_in_chunks_only_for_whoever_may_edit` (uploaden naar `/sounds`: alleen met het bureaublad open,
+      dezelfde controles als in hoofdstuk 126, "siren.mp4" vindt "siren"), `alarm_speaker_keeps_its_sound_when_mined`
+      (instellingen blijven op het item, en een oud geluid verhuist naar `/sounds`, maar één keer), en de vragen-test speelt
+      nu via playsound.
+- [x] **Volledige ronde**: 665 tests op master met hoofdstuk 138 erbij: 664 groen; alleen `raven_soldier_shoots` viel om (de bekende
+      wiebeltest met een soldaat die niet op tijd raakt). De ronde daarvoor (op hoofdstuk 135): alle 663 groen.
+- [x] **Nalezing**: drie lezers (de server en de taal, je spel en Files, de tests en teksten), met per vondst een controleur
+      die hem probeerde te weerleggen: 26 vondsten, 22 echt, alle 22 opgelost. Zinnen: het spel stopte een zin zodra de
+      server dacht dat hij klaar was, ook als de stem hem pas later had (dan was hij afgekapt of helemaal weg, en kreeg je
+      ook geen chatregel); nu speelt een zin helemaal uit, één keer, van de dichtstbijzijnde speaker, is de sirene stil
+      zolang hij echt klinkt, komt hij vooraan in de rij van de stem, en staat hij na vijf seconden zonder stem toch in de
+      chat. Een lus met steeds een andere zin kon de chat en de stem laten vollopen: nu hooguit één nieuwe zin per seconde
+      per speaker, en hooguit drie zinnen tegelijk in de maak. Geluiden: een kort geluid was vaak al voorbij als je spel
+      erom vroeg (dan kreeg je het niet, en een halve minuut niet meer): nu mag je spel een geluid uit /sounds van de kern
+      van een speaker in de buurt altijd ophalen; de tijd van het ophalen telt niet meer als "te laat" (de eerste keer
+      begon het halverwege of niet); een geluid dat klaar is, begint niet opnieuw als je spel even achterloopt; en
+      beluisteren in Files heeft dezelfde rem als ophalen (eerst stuurde elke dubbelklik het hele geluid opnieuw).
+      Diagrammen: een wachtend diagram stopte ook als het stuk wereld van de kern opnieuw laadde (dan zijn de diagrammen
+      nieuwe objecten); nu loopt het gewoon verder als de code dezelfde is. Tijdens je eigen drill speelde geen enkele
+      speaker (je hebt dan even geen rechten): in het gebied van je kern telt dat niet meer. Files: beluisteren is een
+      eigen opdracht (`fs_play`), zodat het ook werkt op een Computer met Files maar zonder Notes; de map sounds maakt de
+      kern zelf als je het bureaublad opent; een geluid naar een SD-kaart kopiëren zegt nu dat het niet kan (eerst zei
+      het "gekopieerd"); slepen werkt ook terwijl het venster van +Sound open staat, met de goede meldingen; en de
+      uitslag van een upload staat onderaan in Files (boven je hotbar zag je hem niet onder het bureaublad). Het scherm:
+      de regel `playsound("siren", "Speaker 1")` staat op een eigen rij (ernaast werd de naam afgekapt). Teksten: de
+      uitleg van `uploadsAllowed` (uit = geen nieuwe uploads, wat er al staat blijft spelen) en het voorbeeld met een
+      f-tekst in LEESMIJ (een bestandsnaam heeft geen spaties). Weerlegd: 4 (onder meer dat het opruimen geluiden van een
+      kern zou weggooien).
+- [x] **Gezien**: `gradlew runVisualCheck -Ponly=alarm,howtopics:alarm`, sp01 tot sp08: de speaker aan de
+      muur (klaar, en spelend met het rode licht), de statusregel, zijn scherm (naam, volume, bereik, Test, de uitleg en de
+      regel voor een diagram), Files in de map sounds ("air_raid_siren  SOUND 6.0 s", de knop +Sound en de uitleg
+      onderaan), en de tooltip. De chatregel van `playtext` ("Speaker 1: Alarm armed") staat in het logboek van de
+      rondleiding, maar niet op sp07 (de foto komt voor de chat in beeld). De foto voor How it works is opnieuw gemaakt
+      (300 x 186). Het overzicht sp03 staat nog te ver weg (alleen een foto voor mij, zoals al01 tot al03 in hoofdstuk 126).
+- **Nieuwe versie**: 2.25.0, en het protocol 52 (nieuwe woorden in de taal, zoals bij hoofdstuk 138) (iets nieuws: twee nieuwe woorden in de taal, geluiden in Files).
+
+Mijn invullingen (zeg het als je iets anders wil): `"all"` = alle speakers van de kern die de eigenaar mag instellen, en
+zonder tweede waarde ook; hetzelfde geluid of dezelfde zin terwijl hij nog bezig is, verandert niets; wat een speaker speelt,
+bewaren we niet (na het laden van de wereld is hij stil); uploaden mag wie in Files van die kern een bestand mag maken; een
+geluid kan niet op een SD-kaart; de chatregel alleen voor wie binnen het bereik van de speaker staat; de ingebouwde sirene
+blijft ook als je `customAlarmSounds` uit zet; geen gong en geen tekst boven je hotbar (dat koos je niet).
+
+Nog niet gedaan: de stem van I.M.T echt uit een speaker gehoord (de rondleiding heeft de stem niet, dus die gaf de
+chatregel); niet geprobeerd met twee echte spelers, met het echte "bestand openen"-venster (de rondleiding kan dat niet
+bedienen), of met slepen in volledig scherm.
+
 ### 138. Je logboek laten nakijken: when logged: en flag(...) (17 november)
 
 Jouw wens (bij hoofdstuk 133): "zorg ook dat je een script kunt maken waar je logs door kunt flaggen". Hoofdstuk 133
@@ -10634,14 +10731,14 @@ eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er
       called"? (2) Help > NAMES: staat `on(f"gate {i}") in a loop` er helemaal, en past de uitleg eronder op twee regels?
       (3) Een programma met een def uit een global script en een commentaar: staat je commentaar er nog na het sluiten en
       opnieuw openen van de desktop?
-- [ ] **Het alarm met je eigen geluid (hoofdstuk 126)**: met tests en de rondleiding gecontroleerd (al01 tot al09), maar
-      nooit echt gehoord. Probeer: (1) upload een echte mp4 van je gsm of een YouTube-download (Choose file, of sleep hem
-      op het venster): klinkt hij goed, ook de eerste seconde, en zonder kraken? (2) Met een vriend op je server: hoort hij
-      jouw geluid (na een seconde ophalen), uit de goede richting en tot zo'n 32 blokken ver? (3) In volledig scherm: komt
-      het bestandsvenster vóór Minecraft, of moet je slepen? (4) Zet `on("Alarm 1")` in een diagram (bijvoorbeeld bij
-      een foute kaart): gaat hij af en stopt hij na 30 seconden? En blijft hij echt stil bij een alarm van je kern zonder
-      dat (hoofdstuk 128)? (5) `customAlarmSounds = false` in
-      imttech-client.toml: hoor je dan de ingebouwde sirene? (6) Staan je speakers in Devices onder ALARM SPEAKERS?
+- [ ] **De Speaker (hoofdstuk 126 en 136)**: met tests en de rondleiding gecontroleerd (sp01 tot sp08), maar nooit echt
+      gehoord. Probeer: (1) Files op je kern, map sounds, +Sound: een echte mp4 van je gsm of een download (of sleep hem op
+      het venster); staat hij erin met zijn lengte, en hoor je hem met een dubbelklik? (2) Een diagram met
+      `playsound("naam", "all")` (zonder .mp4): klinkt hij goed, uit de goede richting, en hoort een vriend hem ook (na
+      een seconde ophalen)? (3) `playtext("Alarm armed", "all")` met de stem van I.M.T geïnstalleerd: hoor je de zin uit
+      de speaker, helemaal, en is de sirene zolang stil? En een vriend zonder stem: ziet hij "Speaker 1: Alarm armed" in
+      de chat? (4) Een `while true:`-lus met `playsound` en `wait(...)`: stopt hij meteen als je het diagram uitzet?
+      (5) Een speaker die vóór vandaag een eigen geluid had: staat dat nu in sounds van zijn kern?
 - [ ] **Lege nieuwe programma's en templates (hoofdstuk 125)**: met tests gecontroleerd en gezien op screenshots
       (`-Ponly=templates`, tp01 tot tp08), maar niet met de muis gespeeld. Probeer: (1) + > Robot program: is het leeg, met
       grijze uitleg eronder? (2) Schrijf iets, klik links onder je diagrammen op Templates, typ een naam en Save as

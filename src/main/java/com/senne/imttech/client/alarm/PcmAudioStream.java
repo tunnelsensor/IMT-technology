@@ -15,7 +15,8 @@ import org.lwjgl.BufferUtils;
  * doet: zachter als je verder weg staat, uit je linker- of rechteroor, de schuif "Blocks" in je instellingen, stil in het
  * pauzemenu.
  *
- * Met {@code looping} begint hij aan het einde gewoon weer vooraan (een sirene loeit door zolang het alarm afgaat).
+ * Hoofdstuk 136: een geluid speelt één keer ({@code playsound}); kom je later in de buurt, dan begint hij halverwege
+ * ({@code start}), zodat iedereen hetzelfde moment hoort. Met {@code looping} begint hij aan het einde weer vooraan.
  * De geluidsmotor vraagt de stukjes op zijn eigen draad; de monsters zelf veranderen nooit meer, dus dat is veilig.
  */
 final class PcmAudioStream implements AudioStream {
@@ -25,9 +26,15 @@ final class PcmAudioStream implements AudioStream {
     private int position;
 
     PcmAudioStream(short[] samples, int rate, boolean looping) {
+        this(samples, rate, looping, 0);
+    }
+
+    /** @param start bij welk monster hij begint (0 = vooraan) */
+    PcmAudioStream(short[] samples, int rate, boolean looping, int start) {
         this.samples = samples;
         this.format = new AudioFormat(rate, 16, 1, true, false);
         this.looping = looping && samples.length > 0;
+        this.position = Math.max(0, Math.min(samples.length, start));
     }
 
     @Override

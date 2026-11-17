@@ -13,11 +13,12 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
- * Een alarmgeluid naar de server sturen (hoofdstuk 126), in je spel.
+ * Een geluid naar de server sturen (hoofdstuk 126; sinds hoofdstuk 136 naar de map sounds in Files van een kern), in je
+ * spel.
  *
- * Het scherm geeft het ingelezen geluid ({@link #start}); wij maken het klein (Adpcm) en sturen het in stukjes van 24 kB,
- * een paar per tick (AlarmUploadPayload). Daarna wachten we op het antwoord van de server (AlarmUploadReplyPayload): gelukt,
- * of waarom niet. Dit loopt door als je het scherm sluit; dan zie je het antwoord boven je hotbar.
+ * Files geeft het ingelezen geluid ({@link #start}, met de plek van de kern); wij maken het klein (Adpcm) en sturen het in
+ * stukjes van 24 kB, een paar per tick (AlarmUploadPayload). Daarna wachten we op het antwoord van de server
+ * (AlarmUploadReplyPayload): gelukt (dan staat het in /sounds), of waarom niet. Het antwoord zie je boven je hotbar.
  *
  * Het geluid dat je net uploadde, onthoudt je spel meteen (AlarmSoundCache): je hoeft het niet terug op te halen.
  */
@@ -38,14 +39,17 @@ public final class AlarmUploadClient {
     private static int sent;
     private static int waited;
     private static Component message = Component.empty();
+    /** Wanneer (onze klok, ticks) de laatste upload klaar was of mislukte, zodat Files de uitslag nog even toont. */
+    private static long finishedAt = -10_000;
+    private static long clock;
     private static int nextId = 1;
 
-    /** Begin een upload naar de speaker op deze plek. Een upload die nog bezig was, stopt. */
-    public static void start(BlockPos speaker, String fileName, short[] samples) {
+    /** Begin een upload naar Files van de kern op deze plek. Een upload die nog bezig was, stopt. */
+    public static void start(BlockPos core, String fileName, short[] samples) {
         byte[] adpcm = Adpcm.encode(samples);
         // Wat je zelf hoort, is wat de anderen horen: het kleine geluid, weer uitgepakt.
         AlarmSoundCache.put(AlarmSounds.idOf(samples.length, adpcm), Adpcm.decode(adpcm, samples.length));
-        pos = speaker.immutable();
+        pos = core.immutable();
         uploadId = nextId++;
         chunks = AlarmUploads.payloads(pos, uploadId, samples.length, fileName, adpcm);
         sent = 0;
@@ -55,6 +59,7 @@ public final class AlarmUploadClient {
     }
 
     static void tick() {
+        clock++;
         if (state == State.SENDING) {
             for (int i = 0; i < CHUNKS_PER_TICK && sent < chunks.size(); i++) {
                 PacketDistributor.sendToServer(chunks.get(sent++));
@@ -80,11 +85,10 @@ public final class AlarmUploadClient {
     private static void finish(boolean ok, Component text) {
         state = ok ? State.DONE : State.FAILED;
         message = text;
+        finishedAt = clock;
         chunks = List.of();
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.screen instanceof AlarmSpeakerScreen screen && screen.pos().equals(pos)) {
-            screen.uploadFinished(ok, text);
-        } else if (minecraft.player != null) {
+        if (minecraft.player != null) {
             minecraft.player.displayClientMessage(text.copy().withStyle(ok ? ChatFormatting.GREEN : ChatFormatting.RED), true);
         }
     }
@@ -101,13 +105,27 @@ public final class AlarmUploadClient {
         return state;
     }
 
-    /** Gaat er nu een upload naar deze speaker? */
-    public static boolean busyFor(BlockPos speaker) {
-        return (state == State.SENDING || state == State.WAITING) && pos.equals(speaker);
+    /** Gaat er nu een upload naar (Files van) de kern op deze plek? */
+    public static boolean busyFor(BlockPos core) {
+        return (state == State.SENDING || state == State.WAITING) && pos.equals(core);
     }
 
     public static Component message() {
         return message;
+    }
+
+    /**
+     * Hoofdstuk 136: de uitslag van de laatste upload naar deze kern (gelukt, of waarom niet), als die minder dan acht
+     * seconden geleden kwam; anders null. Files toont hem onderaan: boven je hotbar zie je hem niet, want het bureaublad
+     * ligt erover (gevonden door de nalezing).
+     */
+    public static @org.jetbrains.annotations.Nullable Component recentResult(BlockPos core) {
+        return (state == State.DONE || state == State.FAILED) && pos.equals(core) && clock - finishedAt < 160 ? message : null;
+    }
+
+    /** Was de laatste upload (waarvan {@link #recentResult} iets zegt) gelukt? */
+    public static boolean lastOk() {
+        return state == State.DONE;
     }
 
     static void clear() {

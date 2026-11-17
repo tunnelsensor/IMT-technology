@@ -12,7 +12,6 @@ import com.senne.imttech.registry.ModDataComponents;
 import com.senne.imttech.security.SecurityCoreBlockEntity;
 import com.senne.imttech.security.SecurityCores;
 import com.senne.imttech.security.SecurityDevices;
-import com.senne.imttech.shield.ImtSwitchable;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -47,36 +46,37 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * De Alarm Speaker (hoofdstuk 126, jouw wens van 16 november: "Voeg een nieuwe blok toe namelijk een alarm waar je zelf een
- * mp4 bestand naar kunt uploaden zodat je custom alarmen kunt hebben"): een sirene aan de muur, aan het plafond of op de
- * vloer, met een rood zwaailicht.
+ * De Speaker (hoofdstuk 126 als "Alarm Speaker", jouw wens van 16 november: "Voeg een nieuwe blok toe namelijk een alarm
+ * waar je zelf een mp4 bestand naar kunt uploaden zodat je custom alarmen kunt hebben"; sinds hoofdstuk 136 "Speaker"): een
+ * luidspreker aan de muur, aan het plafond of op de vloer, met een rood zwaailicht.
  *
  * <ul>
  *   <li>Hij hoort bij de Security Core aan het andere eind van zijn netwerkkabel (of PoE-kabel, of draadloos via een
  *       Router), net als een camera, en heeft een beetje stroom nodig. Zonder kern of zonder stroom blijft hij stil (zijn
  *       groene lampje is dan uit: ONLINE = false).</li>
- *   <li><b>Hij gaat nooit vanzelf af</b> (hoofdstuk 128), ook niet als de kern alarm slaat. Wie hem neerzet, heeft hem in
- *       zijn I.M.T-lijst ("Alarm 1"), en een script dat je runt zet hem op die naam aan en uit, net als een relais:
- *       {@code on("Alarm 1")} (zo lang als in de speaker staat: standaard 30 seconden, of tot je hem uitzet),
- *       {@code pulse("Alarm 1", 10)}, {@code off("Alarm 1")}. Met de hand: Devices, of Test in zijn scherm.</li>
- *   <li>Sneak + rechtsklik met een lege hand: zijn scherm (naam, eigen geluid uploaden, hoe hard, hoe ver, hoe lang), als
- *       je hem mag instellen (wie hem neerzette, of wie vertrouwd is in de basis: zie AlarmSpeakers.open). Gewoon
- *       rechtsklikken: hoe hij ervoor staat.</li>
- *   <li>Breek je hem af, dan houdt het item zijn naam, zijn geluid en zijn instellingen.</li>
+ *   <li><b>Hij speelt alleen wat een script zegt</b> (hoofdstuk 128 en 136): {@code playsound("siren", "Speaker 1")}
+ *       speelt een geluid uit de map sounds in Files van de kern ("default" = de ingebouwde sirene),
+ *       {@code playtext("Alarm armed", "all")} zegt een zin met de stem van I.M.T. Aan, uit en pulse op zijn naam
+ *       werken niet meer (jouw keuze): hij is geen schakelaar maar een luidspreker. Wie hem neerzet, heeft zijn naam wel in
+ *       zijn I.M.T-lijst ("Speaker 1"), zodat namen niet botsen en hernoemen overal klopt.</li>
+ *   <li>Sneak + rechtsklik met een lege hand: zijn scherm (naam, hoe hard, hoe ver, Test), als je hem mag instellen (wie
+ *       hem neerzette, of wie vertrouwd is in de basis: zie AlarmSpeakers.open). Gewoon rechtsklikken: hoe hij ervoor
+ *       staat.</li>
+ *   <li>Breek je hem af, dan houdt het item zijn naam en zijn instellingen.</li>
  * </ul>
  *
- * Het geluid zelf speelt je spel af (client/alarm/AlarmSpeakerSounds): het ziet in het blok dat hij afgaat (SOUNDING).
+ * Het geluid zelf speelt je spel af (client/alarm/AlarmSpeakerSounds): de blok-entiteit zegt wat hij speelt.
  */
 public class AlarmSpeakerBlock extends FaceAttachedHorizontalDirectionalBlock implements EntityBlock, PowerConnectable,
-        NetworkConnectable, ImtSwitchable, DevicePower.Powered {
+        NetworkConnectable, DevicePower.Powered {
     public static final MapCodec<AlarmSpeakerBlock> CODEC = simpleCodec(AlarmSpeakerBlock::new);
 
     /** Werkt hij (stroom, een kern, geen EMP)? Dan brandt zijn groene lampje. */
     public static final BooleanProperty ONLINE = BooleanProperty.create("online");
-    /** Gaat hij af? Dan draait zijn rode licht, en speelt je spel het geluid. Dit is ook "aan" voor zijn naam. */
+    /** Speelt hij iets (een geluid of een zin)? Dan draait zijn rode licht. */
     public static final BooleanProperty SOUNDING = BooleanProperty.create("sounding");
 
-    /** De standaardnaam in de I.M.T-lijst: "Alarm 1". */
+    /** De standaardnaam in de I.M.T-lijst: "Speaker 1" (de sleutel heet nog zoals in hoofdstuk 126). */
     public static final String DEFAULT_NAME = "imt.imttech.alarm_speaker.default_name";
 
     /** De vorm (voor het aanklikken) per bevestiging en richting. */
@@ -132,8 +132,8 @@ public class AlarmSpeakerBlock extends FaceAttachedHorizontalDirectionalBlock im
     // ================================================================ Neerzetten en weghalen
 
     /**
-     * Wie hem neerzet, is zijn eigenaar en heeft hem in zijn I.M.T-lijst ("Alarm 1", of de naam van het item). Het geluid en
-     * de instellingen van het item heeft de blok-entiteit al overgenomen (zie AlarmSettings).
+     * Wie hem neerzet, is zijn eigenaar en heeft hem in zijn I.M.T-lijst ("Speaker 1", of de naam van het item). De
+     * instellingen van het item heeft de blok-entiteit al overgenomen (zie AlarmSettings).
      */
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
@@ -185,50 +185,10 @@ public class AlarmSpeakerBlock extends FaceAttachedHorizontalDirectionalBlock im
         }
     }
 
-    // ================================================================ Aan en uit op zijn naam
-
-    /**
-     * Aan = hij gaat af (zo lang als in de speaker staat, of tot je hem uitzet); uit = stil. Zonder stroom of kern kan hij
-     * niet aan: dan blijft hij uit, en weet je diagram dat ook ("when turned_on" komt niet).
-     */
-    @Override
-    public void setSwitched(ServerLevel level, BlockPos pos, BlockState state, boolean on) {
-        if (!(level.getBlockEntity(pos) instanceof AlarmSpeakerBlockEntity speaker)) {
-            return;
-        }
-        if (on && !state.getValue(ONLINE)) {
-            speaker.updateOnline(level); // misschien heeft hij net stroom gekregen
-            state = level.getBlockState(pos);
-            if (!state.is(this) || !state.getValue(ONLINE)) {
-                return;
-            }
-        }
-        // Alleen naar de spelers sturen (zij spelen het geluid), geen buren wakker maken.
-        level.setBlock(pos, state.setValue(SOUNDING, on), Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
-        if (on) {
-            speaker.switchedOn(level);
-        } else {
-            speaker.switchedOff();
-        }
-    }
-
-    @Override
-    public boolean isSwitchedOn(BlockState state) {
-        return state.getValue(SOUNDING);
-    }
-
-    /** Een puls ({@code pulse("Alarm 1", 10)}): hij stopt na de tijd van de puls, ook na een herstart (zie ImtSwitchable). */
-    @Override
-    public void pulsed(ServerLevel level, BlockPos pos, BlockState state, int ticks) {
-        if (level.getBlockEntity(pos) instanceof AlarmSpeakerBlockEntity speaker) {
-            speaker.pulsed(level, ticks);
-        }
-    }
-
     // ================================================================ Aanklikken
 
     /**
-     * Rechtsklik: hoe staat hij ervoor (stroom, bij welke kern, welk geluid)? Sneak + rechtsklik met een lege hand: zijn
+     * Rechtsklik: hoe staat hij ervoor (stroom, bij welke kern, wat hij speelt)? Sneak + rechtsklik met een lege hand: zijn
      * scherm, als je hem mag instellen (zie AlarmSpeakers.open). Met iets in je hand en sneak slaat Minecraft dit zelf over.
      */
     @Override
@@ -245,7 +205,7 @@ public class AlarmSpeakerBlock extends FaceAttachedHorizontalDirectionalBlock im
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
-    /** De zin boven je hotbar: "Alarm 1: online | part of senne-sec | siren.mp4 (12 s)". */
+    /** De zin boven je hotbar: "Speaker 1: online | part of senne-sec | silent: playsound(...) in a diagram". */
     public static Component status(ServerLevel level, BlockPos pos, BlockState state, AlarmSpeakerBlockEntity speaker) {
         SecurityCoreBlockEntity core = SecurityCores.deviceCore(level, pos);
         boolean cable = LanGrid.required();
@@ -263,10 +223,14 @@ public class AlarmSpeakerBlock extends FaceAttachedHorizontalDirectionalBlock im
                 ? Component.translatable(cable ? "security.imttech.alarm_speaker.no_cable" : "security.imttech.alarm_speaker.no_network")
                         .withStyle(ChatFormatting.YELLOW)
                 : Component.translatable("security.imttech.alarm_speaker.network", core.hostname()).withStyle(ChatFormatting.AQUA);
-        Component sound = speaker.soundId().isEmpty()
-                ? Component.translatable("security.imttech.alarm_speaker.siren").withStyle(ChatFormatting.GRAY)
-                : Component.translatable("security.imttech.alarm_speaker.sound", speaker.soundName(),
-                        String.format(java.util.Locale.ROOT, "%.1f", speaker.soundSeconds())).withStyle(ChatFormatting.GRAY);
+        long now = level.getGameTime();
+        Component sound = speaker.speakingAt(now)
+                ? Component.translatable("security.imttech.alarm_speaker.saying", speaker.speechText()).withStyle(ChatFormatting.GRAY)
+                : speaker.playingAt(now)
+                ? Component.translatable(speaker.playKind() == AlarmSpeakerBlockEntity.PLAY_DEFAULT
+                        ? "security.imttech.alarm_speaker.playing_default" : "security.imttech.alarm_speaker.playing")
+                        .withStyle(ChatFormatting.GRAY)
+                : Component.translatable("security.imttech.alarm_speaker.silent").withStyle(ChatFormatting.GRAY);
         String name = speaker.name().isEmpty() ? Component.translatable("block.imttech.alarm_speaker").getString() : speaker.name();
         return Component.translatable("security.imttech.alarm_speaker.status", name, status, network, sound);
     }
@@ -275,11 +239,6 @@ public class AlarmSpeakerBlock extends FaceAttachedHorizontalDirectionalBlock im
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         tooltip.add(Component.translatable("tooltip.imttech.alarm_speaker").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.imttech.alarm_speaker.upload").withStyle(ChatFormatting.DARK_GRAY));
-        AlarmSettings settings = stack.get(ModDataComponents.ALARM_SETTINGS.get());
-        if (settings != null && !settings.soundId().isEmpty()) {
-            tooltip.add(Component.translatable("tooltip.imttech.alarm_speaker.sound", settings.soundName(),
-                    String.format(java.util.Locale.ROOT, "%.1f", settings.soundSeconds())).withStyle(ChatFormatting.AQUA));
-        }
     }
 
     // ================================================================ Binnenkant

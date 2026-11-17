@@ -9,16 +9,15 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * Bericht van speler naar server (hoofdstuk 126): Save in het scherm van een Alarm Speaker. De server kijkt opnieuw na of je
- * hem mag instellen, en houdt alles binnen de grenzen (zie AlarmSpeakers.handleSave).
+ * Bericht van speler naar server (hoofdstuk 126): Save in het scherm van een Speaker. De server kijkt opnieuw na of je hem
+ * mag instellen, en houdt alles binnen de grenzen (zie AlarmSpeakers.handleSave).
  *
- * @param pos          welke speaker
- * @param name         de naam (ook in je I.M.T-lijst en je diagrammen: {@code on("Lab alarm")})
- * @param volume       hoe hard (0,1 tot 1)
- * @param range        tot hoe ver je hem hoort (blokken)
- * @param alarmSeconds zo lang loeit hij als een script hem aanzet met on("naam") (0 = tot je hem uitzet)
+ * @param pos    welke speaker
+ * @param name   de naam (in je diagrammen: {@code playsound("siren", "Lab speaker")})
+ * @param volume hoe hard (0,1 tot 1)
+ * @param range  tot hoe ver je hem hoort (blokken)
  */
-public record AlarmSavePayload(BlockPos pos, String name, float volume, int range, int alarmSeconds) implements CustomPacketPayload {
+public record AlarmSavePayload(BlockPos pos, String name, float volume, int range) implements CustomPacketPayload {
     public static final Type<AlarmSavePayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "alarm_save"));
 
@@ -27,7 +26,6 @@ public record AlarmSavePayload(BlockPos pos, String name, float volume, int rang
             ByteBufCodecs.stringUtf8(64), AlarmSavePayload::name,
             ByteBufCodecs.FLOAT, AlarmSavePayload::volume,
             ByteBufCodecs.VAR_INT, AlarmSavePayload::range,
-            ByteBufCodecs.VAR_INT, AlarmSavePayload::alarmSeconds,
             AlarmSavePayload::new);
 
     @Override

@@ -159,7 +159,8 @@ public final class LogicRunner {
 
     /** Eén run: een vingertje (de tolk, zie Interpreter) dat de blokjes van één when-blok afloopt. */
     private static final class Run {
-        final LogicProgram program;
+        /** Het diagram van deze run (na het herladen van de kern het nieuwe, zelfde diagram: zie dropStale). */
+        LogicProgram program;
         final Context context;
         final long startAt;
         final Interpreter machine;
@@ -236,6 +237,8 @@ public final class LogicRunner {
 
     /** Wat er op één server bezig is. */
     private static final class Runtime {
+        /** Hoofdstuk 136: de lijst met diagrammen van de kern die deze runs kennen (na het herladen een nieuwe). */
+        @org.jetbrains.annotations.Nullable LogicStore store;
         final List<Run> running = new ArrayList<>();
         final ArrayDeque<Run> queue = new ArrayDeque<>();
         /** Per timer ("diagramnaam#blokje") wanneer hij weer afgaat. */
@@ -560,6 +563,7 @@ public final class LogicRunner {
             return;
         }
         runtime.wasOnline = true;
+        dropStale(core, runtime);
         timers(level, core, runtime, stats, now);
         // Uit de rij: zoveel als het RAM toelaat, als hun reactietijd voorbij is.
         while (!runtime.queue.isEmpty() && runtime.running.size() < stats.maxRuns() && runtime.queue.peekFirst().startAt <= now) {
@@ -574,6 +578,49 @@ public final class LogicRunner {
                 it.remove();
             }
         }
+    }
+
+    /**
+     * Hoofdstuk 136: runs van een serverdiagram dat je uitzette, weggooide of opnieuw bewaarde, stoppen meteen, ook een
+     * lus met wait die nog bezig was. Eerst maakte een uitgezet diagram nog af waar het mee bezig was, zodat een
+     * {@code while true:}-lus met {@code playsound(...)} nooit meer stopte. Een diagram is een vaste waarde (LogicProgram):
+     * bij elke verandering (aan, uit, bewaren) komt er een nieuw in de lijst van de kern, dus "is het nog hetzelfde?" is
+     * genoeg. Runs van een Training End-blok (die hun programma niet uit die lijst halen) laten we met rust.
+     */
+    private static void dropStale(SecurityCoreBlockEntity core, Runtime runtime) {
+        LogicStore store = core.logic();
+        if (runtime.store != store) {
+            // De kern kwam terug van de schijf (een stuk wereld dat opnieuw laadde): dezelfde diagrammen, nieuwe objecten.
+            // Dan wijzen de runs naar de nieuwe, als de code dezelfde is; anders stoppen ze hieronder. (Gevonden door de
+            // nalezing: eerst stopte elke wachtende run bij het herladen.)
+            runtime.store = store;
+            runtime.queue.forEach(run -> rebind(store, run));
+            runtime.running.forEach(run -> rebind(store, run));
+        }
+        if (runtime.queue.isEmpty() && runtime.running.isEmpty()) {
+            return;
+        }
+        runtime.queue.removeIf(run -> stale(core, run));
+        runtime.running.removeIf(run -> stale(core, run));
+    }
+
+    private static void rebind(LogicStore store, Run run) {
+        if (run.program.kind() != com.senne.imttech.logic.program.ProgramKind.SERVER) {
+            return;
+        }
+        LogicProgram now = store.program(run.program.name());
+        if (now != null && now.kind() == run.program.kind() && now.source().equals(run.program.source())
+                && now.graph().size() == run.program.graph().size()) {
+            run.program = now; // dezelfde code: hij loopt gewoon verder (tenzij het diagram uit staat)
+        }
+    }
+
+    private static boolean stale(SecurityCoreBlockEntity core, Run run) {
+        if (run.program.kind() != com.senne.imttech.logic.program.ProgramKind.SERVER) {
+            return false;
+        }
+        LogicProgram current = core.logic().program(run.program.name());
+        return current != run.program || !current.enabled();
     }
 
     /** De timers ("when every(10):") die nu afgaan. */
@@ -734,8 +781,12 @@ public final class LogicRunner {
                 int pulseTicks = (int) Math.max(1, Math.round(seconds * 20));
                 String device = deviceName(level, core, run, node);
                 if (LogicDevices.switchByName(level, core, device, op, pulseTicks) == 0) {
-                    report(level, core, runtime, EventLog.Type.LOGIC, "\"" + run.program.name() + "\": there is no device called \""
-                            + device + "\" in this network");
+                    // Hoofdstuk 136: een speaker schakel je niet meer aan of uit; hij speelt wat playsound of playtext zegt.
+                    report(level, core, runtime, EventLog.Type.LOGIC, "\"" + run.program.name() + "\": "
+                            + (com.senne.imttech.alarm.AlarmSpeakers.hasSpeaker(level, core, device)
+                            ? "\"" + device + "\" is a speaker: it can't be switched on or off. Use playsound(\"sound\", \""
+                            + device + "\") or playtext(\"text\", \"" + device + "\")"
+                            : "there is no device called \"" + device + "\" in this network"));
                 }
             }
             case ACCEPT, DENY -> {
@@ -762,6 +813,7 @@ public final class LogicRunner {
             // Hoofdstuk 138: in when logged: deze regel markeren (rood in Logs, en I.M.T waarschuwt).
             case FLAG -> flag(level, core, context.logEntry(), message(level, core, run, node));
             case ORDER -> order(level, core, runtime, run, node);
+            case PLAYSOUND, PLAYTEXT -> speaker(level, core, runtime, run, node);
             case ACTIVATE, DEACTIVATE -> {
                 String robot = deviceName(level, core, run, node);
                 BotLink.Result result = BotLink.switchOn(level, core, robot, node.op == Op.ACTIVATE);
@@ -803,6 +855,37 @@ public final class LogicRunner {
         BlockPos place = values.size() >= 5 ? BlockPos.containing(toNumber(values.get(2)), toNumber(values.get(3)), toNumber(values.get(4)))
                 : null;
         robotProblem(level, core, runtime, run, robot, BotLink.order(level, core, robot, Expr.text(values.get(1)), place));
+    }
+
+    /**
+     * Hoofdstuk 136: {@code playsound("siren", "Speaker 1")} of {@code playtext("Alarm armed", "all")}. Beide waarden
+     * mogen berekend zijn ({@code f"Speaker {i}"}); zonder speaker: alle speakers. Het script wacht niet. Lukt het niet,
+     * dan een regel in het logboek (niet elke seconde dezelfde, zie report).
+     */
+    private static void speaker(ServerLevel level, SecurityCoreBlockEntity core, Runtime runtime, Run run, LogicGraph.Node node) {
+        List<Expr> exprs = ExprCache.values(node.expr);
+        if (exprs == null || exprs.isEmpty()) {
+            report(level, core, runtime, EventLog.Type.LOGIC, "\"" + run.program.name() + "\": "
+                    + (run.program.locked() ? LOCKED_PROBLEM : node.op.code() + "(" + node.expr + ") is not valid"));
+            return;
+        }
+        Expr.Facts facts = facts(level, core, run);
+        String what = Expr.text(ExprCache.eval(exprs.get(0), facts));
+        String target = exprs.size() > 1 ? Expr.text(ExprCache.eval(exprs.get(1), facts)) : com.senne.imttech.alarm.AlarmSpeakers.ALL;
+        com.senne.imttech.alarm.AlarmSpeakers.Result result = node.op == Op.PLAYSOUND
+                ? com.senne.imttech.alarm.AlarmSpeakers.playSound(level, core, what, target)
+                : com.senne.imttech.alarm.AlarmSpeakers.playText(level, core, what, target);
+        String problem = switch (result) {
+            case NO_SPEAKER -> target.isBlank() || target.strip().equalsIgnoreCase(com.senne.imttech.alarm.AlarmSpeakers.ALL)
+                    ? "there is no speaker on this network" : "there is no speaker called \"" + target + "\" on this network";
+            case NO_SOUND -> "there is no sound called \"" + what + "\" in " + com.senne.imttech.security.os.VirtualFs.SOUNDS
+                    + " (upload one in Files, or use \"default\")";
+            case OFFLINE -> "the speaker has no power or no network cable";
+            default -> null;
+        };
+        if (problem != null) {
+            report(level, core, runtime, EventLog.Type.LOGIC, "\"" + run.program.name() + "\": " + problem);
+        }
     }
 
     private static double toNumber(Object value) {

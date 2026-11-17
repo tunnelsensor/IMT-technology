@@ -417,6 +417,11 @@ public final class SdDesktop {
         if (node == null || fromPath.equals("/")) {
             return Result.fail(VirtualFs.nameOf(fromPath) + ": no such file or directory");
         }
+        // Hoofdstuk 136: een geluid blijft op de kern (het geluid zelf staat bij deze wereld, niet op de kaart). Eerst zei het
+        // "gekopieerd" zonder iets te doen (gevonden door de nalezing).
+        if (toCard && node.isSound()) {
+            return Result.fail(node.name() + " is a sound: sounds stay on this core");
+        }
         // Wat er gekopieerd wordt (een map met alles erin), en wat niet mee mag.
         List<String> paths = new ArrayList<>();
         paths.add(fromPath);
@@ -512,7 +517,8 @@ public final class SdDesktop {
      */
     private static @Nullable String copyTree(VirtualFs from, String path, VirtualFs to, String dir) {
         VirtualFs.Node node = from.get(path);
-        if (node == null || node.isSystem()) {
+        // Een geluid (hoofdstuk 136) blijft op de kern: het geluid zelf staat in de map van deze wereld, niet op de kaart.
+        if (node == null || node.isSystem() || node.isSound()) {
             return null;
         }
         String target = (dir.equals("/") ? "" : dir) + "/" + node.name();

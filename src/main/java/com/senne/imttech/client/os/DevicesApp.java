@@ -77,7 +77,7 @@ final class DevicesApp {
     private List<Row> rows() {
         List<Row> rows = new ArrayList<>();
         String[][] kinds = {{"turret", "TURRETS"}, {"drone", "DRONES"}, {"laser", "LASER GATES"}, {"bridge", "LASER BRIDGES"},
-                {"camera", "CAMERAS"}, {"monitor", "CAMERA WALLS"}, {"alarm", "ALARM SPEAKERS"}, {"reader", "KEYCARD READERS"},
+                {"camera", "CAMERAS"}, {"monitor", "CAMERA WALLS"}, {"alarm", "SPEAKERS"}, {"reader", "KEYCARD READERS"},
                 {"panel", "CODE PANELS"}, {"button", "BUTTONS"},
                 {"lever", "LEVERS"}, {"console", "AUTH CONSOLES"}, {"switch", "NETWORK SWITCHES"}};
         List<Tag> devices = screen.data().getList("devices", Tag.TAG_COMPOUND);
@@ -130,16 +130,24 @@ final class DevicesApp {
         if (device.getString("k").equals("switch")) {
             return isRenaming(device) ? "Save" : posOf(device).equals(portsOpen) ? "Close" : "Ports";
         }
-        return renamable(device) ? renameLabel(device) : null;
+        return renamable(device) || speaker(device) ? renameLabel(device) : null;
     }
 
     /**
-     * Een torentje, of (hoofdstuk 39) een laserpoort, laserbrug of camera, of (hoofdstuk 126) een Alarm Speaker: die hebben
-     * een knop Turn off / Turn on, en Rename (de naam in je I.M.T-lijst).
+     * Een torentje, of (hoofdstuk 39) een laserpoort, laserbrug of camera: die hebben een knop Turn off / Turn on, en Rename
+     * (de naam in je I.M.T-lijst).
      */
     private static boolean switchable(CompoundTag device) {
         String kind = device.getString("k");
-        return kind.equals("turret") || kind.equals("laser") || kind.equals("bridge") || kind.equals("camera") || kind.equals("alarm");
+        return kind.equals("turret") || kind.equals("laser") || kind.equals("bridge") || kind.equals("camera");
+    }
+
+    /**
+     * Hoofdstuk 136: een Speaker kun je niet aan- of uitzetten (hij speelt wat een diagram zegt), wel hernoemen: zijn naam
+     * staat ook in je I.M.T-lijst (zoals bij een torentje), dus via dev_rename.
+     */
+    private static boolean speaker(CompoundTag device) {
+        return device.getString("k").equals("alarm");
     }
 
     private int buttonColour(CompoundTag device) {
@@ -496,8 +504,8 @@ final class DevicesApp {
         EditBox box = nameBox();
         // Een lezer, paneel, knop, hendel of switch heeft zijn naam zelf; een torentje, poort, brug of camera (hoofdstuk
         // 39) krijgt hem in je I.M.T-lijst (en mag dan wat langer zijn).
-        renameOp = switchable(device) ? "dev_rename" : "input_rename";
-        box.setMaxLength(switchable(device) ? com.senne.imttech.redstone.DeviceNames.MAX_NAME : InputDeviceBlockEntity.MAX_NAME);
+        renameOp = switchable(device) || speaker(device) ? "dev_rename" : "input_rename";
+        box.setMaxLength(switchable(device) || speaker(device) ? com.senne.imttech.redstone.DeviceNames.MAX_NAME : InputDeviceBlockEntity.MAX_NAME);
         box.setValue(device.getString("name"));
         box.moveCursorToEnd(false);
         box.setHighlightPos(0);

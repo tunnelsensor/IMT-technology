@@ -7,8 +7,9 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 
 /**
- * Wat een Alarm Speaker meeneemt als je hem afbreekt (hoofdstuk 126): zijn geluid en zijn instellingen, op het item. Zet je
- * hem ergens anders neer, dan hoef je niet opnieuw te uploaden (zoals een kern zijn instellingen houdt).
+ * Wat een Speaker meeneemt als je hem afbreekt (hoofdstuk 126): zijn instellingen, op het item. Sinds hoofdstuk 136 heeft
+ * een speaker geen eigen geluid meer (de geluiden staan in Files van de kern); het geluid op een oud item gaat bij het
+ * neerzetten naar /sounds van zijn kern. De velden blijven, zodat oude items gewoon blijven werken.
  *
  * Alleen de naam van het geluid (de vingerafdruk) staat op het item, nooit het geluid zelf: dat blijft in de map van de
  * wereld (zie AlarmSounds). Wat op een item staat, gaat naar het spel van wie het vasthoudt en wordt in kisten bewaard.
@@ -18,16 +19,19 @@ import net.minecraft.network.codec.StreamCodec;
  * @param soundSeconds hoe lang het geluid duurt
  * @param volume       hoe hard (0,1 tot 1)
  * @param range        tot hoe ver je hem hoort (blokken)
- * @param alarmSeconds zo lang loeit hij als een script hem aanzet met on("naam") (0 = tot je hem uitzet)
+ * @param alarmSeconds (van vóór hoofdstuk 136, niet meer gebruikt)
  */
 public record AlarmSettings(String soundId, String soundName, float soundSeconds, float volume, int range, int alarmSeconds) {
+    /** "Hoe lang" van vóór hoofdstuk 136 (bleef in het formaat van het item, zodat oude items gelijk blijven). */
+    static final int OLD_ALARM_SECONDS = 30;
+
     public static final Codec<AlarmSettings> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.STRING.optionalFieldOf("sound", "").forGetter(AlarmSettings::soundId),
             Codec.STRING.optionalFieldOf("sound_name", "").forGetter(AlarmSettings::soundName),
             Codec.FLOAT.optionalFieldOf("sound_seconds", 0f).forGetter(AlarmSettings::soundSeconds),
             Codec.FLOAT.optionalFieldOf("volume", 1f).forGetter(AlarmSettings::volume),
             Codec.INT.optionalFieldOf("range", AlarmSpeakerBlockEntity.DEFAULT_RANGE).forGetter(AlarmSettings::range),
-            Codec.INT.optionalFieldOf("alarm_seconds", AlarmSpeakerBlockEntity.DEFAULT_ALARM_SECONDS).forGetter(AlarmSettings::alarmSeconds)
+            Codec.INT.optionalFieldOf("alarm_seconds", OLD_ALARM_SECONDS).forGetter(AlarmSettings::alarmSeconds)
     ).apply(instance, AlarmSettings::new));
 
     public static final StreamCodec<ByteBuf, AlarmSettings> STREAM_CODEC = StreamCodec.composite(
@@ -41,7 +45,7 @@ public record AlarmSettings(String soundId, String soundName, float soundSeconds
             ByteBufCodecs.VAR_INT, AlarmSettings::alarmSeconds,
             AlarmSettings::new);
 
-    /** Een nieuwe speaker: de sirene, vol volume, 32 blokken, 30 seconden. */
+    /** Een nieuwe speaker: vol volume, 32 blokken. */
     public static final AlarmSettings DEFAULT = new AlarmSettings("", "", 0f, 1f, AlarmSpeakerBlockEntity.DEFAULT_RANGE,
-            AlarmSpeakerBlockEntity.DEFAULT_ALARM_SECONDS);
+            OLD_ALARM_SECONDS);
 }

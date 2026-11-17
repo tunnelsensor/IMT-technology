@@ -158,11 +158,11 @@ public final class ImtClientConfig {
     // ---------------------------------------------------------------- Alarm Speaker (hoofdstuk 126)
     /** Hoe hard Alarm Speakers in jouw spel klinken (1 = zoals ingesteld op de speaker, 0 = uit). */
     public static final ModConfigSpec.DoubleValue ALARM_SPEAKER_VOLUME = BUILDER
-            .comment("How loud Alarm Speakers are for you (1 = as set on the speaker, 0 = off)")
+            .comment("How loud Speakers are for you (1 = as set on the speaker, 0 = off)")
             .defineInRange("alarmSpeakerVolume", 1.0, 0.0, 1.0);
     /** Uit: je hoort nooit de geuploade geluiden van anderen, alleen de ingebouwde sirene (en je spel haalt ze niet op). */
     public static final ModConfigSpec.BooleanValue CUSTOM_ALARM_SOUNDS = BUILDER
-            .comment("Play the sounds players uploaded to Alarm Speakers (false = always the built-in siren)")
+            .comment("Play the sounds players uploaded to their cores on Speakers (false = always the built-in siren)")
             .define("customAlarmSounds", true);
 
     // ---------------------------------------------------------------- How it works (hoofdstuk 63)

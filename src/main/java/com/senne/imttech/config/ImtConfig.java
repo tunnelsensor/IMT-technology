@@ -336,7 +336,7 @@ public final class ImtConfig {
         @Tunable(value = "Grid energy a security camera uses every two seconds (without it, it shows NO SIGNAL)", energy = true)
         public static float CAMERA_UPKEEP = 20.0f;
         /** Hoofdstuk 126: stroom die een Alarm Speaker elke twee seconden haalt (zonder stroom blijft hij stil). */
-        @Tunable(value = "Grid energy an Alarm Speaker uses every two seconds (without it, it stays silent)", energy = true)
+        @Tunable(value = "Grid energy a Speaker uses every two seconds (without it, it stays silent)", energy = true)
         public static float ALARM_SPEAKER_UPKEEP = 10.0f;
         /**
          * Hoofdstuk 38: stroom die een keycardlezer elke twee seconden haalt (de kern waar hij met een netwerkkabel aan
@@ -1450,16 +1450,17 @@ public final class ImtConfig {
 
     // =============================================================================================== Alarms
 
-    @Section("The Alarm Speaker (chapter 126): a speaker on a security core's network that sounds only when a diagram "
-            + "switches it on by name, with a sound file players upload themselves (mp4, m4a, mp3, wav, ogg). Its power use is under [power]")
+    @Section("The Speaker (chapter 126, called Speaker since chapter 136): a speaker on a security core's network that "
+            + "plays what a diagram says (playsound, playtext). Its sounds are files players upload into Files > sounds of "
+            + "a security core (mp4, m4a, mp3, wav, ogg). Its power use is under [power]")
     public static final class Alarms {
         private Alarms() {}
 
         /** Mogen spelers eigen geluiden uploaden? Uit: elke speaker speelt de ingebouwde sirene. */
-        @Tunable("May players upload their own sounds to Alarm Speakers? false = every speaker plays the built-in siren")
+        @Tunable("May players upload new sounds into Files > sounds of a security core? false = no new uploads (sounds already there keep playing)")
         public static boolean UPLOADS_ALLOWED = true;
         /** Zoveel seconden van een bestand neemt de speaker hooguit (het begin; stilte vooraan telt niet mee). */
-        @Tunable(value = "Longest sound (seconds) players may upload to an Alarm Speaker; longer files are cut", min = 1, max = 120)
+        @Tunable(value = "Longest sound (seconds) players may upload; longer files are cut", min = 1, max = 120)
         public static float MAX_SOUND_SECONDS = 30.0f;
         /** Wachttijd na een upload, tegen spam. */
         @Tunable(value = "Seconds a player waits after an upload before the next one", max = 3600)
@@ -1471,11 +1472,8 @@ public final class ImtConfig {
         @Tunable(value = "How much space (megabytes) all uploaded sounds may use together (30 seconds is about 0.33 MB)", min = 1, max = 100000)
         public static float MAX_STORAGE_MB = 200.0f;
         /** Tot hoe ver je een speaker hooguit kunt laten klinken. */
-        @Tunable(value = "Farthest (blocks) players can set an Alarm Speaker to be heard", min = 8, max = 256)
+        @Tunable(value = "Farthest (blocks) players can set a Speaker to be heard", min = 8, max = 256)
         public static float MAX_RANGE = 64.0f;
-        /** Hoe lang een speaker hooguit afgaat als een script hem aanzet (behalve "tot je hem uitzet"). */
-        @Tunable(value = "Longest time (seconds) players can set an Alarm Speaker to sound when a diagram switches it on (0 = until switched off is always allowed)", min = 5, max = 3600)
-        public static float MAX_ALARM_SECONDS = 300.0f;
     }
 
     // =============================================================================================== SD Cards

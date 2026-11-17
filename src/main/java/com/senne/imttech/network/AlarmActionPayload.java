@@ -9,20 +9,15 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * Bericht van speler naar server (hoofdstuk 126): een knop in het scherm van een Alarm Speaker (zie AlarmSpeakers.handleAction).
+ * Bericht van speler naar server (hoofdstuk 126): een knop in het scherm van een Speaker (zie AlarmSpeakers.handleAction).
+ * Sinds hoofdstuk 136 is er alleen nog Test: wat hij speelt, zegt een diagram (playsound, playtext).
  *
  * @param pos    welke speaker
- * @param action {@link #TEST}, {@link #STOP}, {@link #DEFAULT_SOUND} of {@link #APPLY_ALL}
+ * @param action {@link #TEST}
  */
 public record AlarmActionPayload(BlockPos pos, int action) implements CustomPacketPayload {
-    /** Test: hij gaat een paar seconden echt af (zodat je hoort hoe ver hij reikt). */
+    /** Test: hij speelt een paar seconden de ingebouwde sirene (zodat je hoort hoe ver hij reikt). */
     public static final int TEST = 0;
-    /** Stop: meteen stil. */
-    public static final int STOP = 1;
-    /** Weer de ingebouwde sirene. */
-    public static final int DEFAULT_SOUND = 2;
-    /** Hetzelfde geluid op alle speakers van dit netwerk die jij mag instellen. */
-    public static final int APPLY_ALL = 3;
 
     public static final Type<AlarmActionPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(ImtTech.MODID, "alarm_action"));

@@ -2758,14 +2758,14 @@ final class ShowcaseFeatures {
                 + "is Router 1), en van boven gaat ook de lamp bij Router 2 aan: twee sprongen door de lucht naar de kern.",
                 RouterTour.SHOW_FROM, 180, 20, RouterTour::showcase);
 
-        add("Alarm Speaker", "Hoofdstuk 126: het alarm met je eigen geluid. Links een Security Core met een groene PoE-kabel "
-                + "naar twee speakers: Alarm 1 aan een muurtje (met een eigen geluid, een sirene die op en neer gaat) en Alarm 2 "
-                + "op de vloer (de ingebouwde sirene). Vanzelf gaan ze nooit af, ook niet als de kern alarm slaat (hoofdstuk "
-                + "128): de showcase zet ze allebei op hun naam aan, zoals on(\"Alarm 1\") in een diagram. Hun rode licht "
-                + "draait en je HOORT ze (de eigen sirene en de ingebouwde door elkaar). Na tien seconden zet de "
-                + "showcase ze uit. Dan het scherm van Alarm 1 (sneak + rechtsklik): naam, het geluid erop (air_raid_siren.mp4), "
-                + "Choose file, Folder, Preview, volume, bereik en hoe lang. Tot slot pulse(\"Alarm 1\", 3): drie seconden aan "
-                + "op zijn naam, zoals een diagram dat doet.",
+        add("Speaker", "Hoofdstuk 126 en 136: de Speaker. Links een Security Core met een groene PoE-kabel naar twee "
+                + "speakers: Speaker 1 aan een muurtje en Speaker 2 op de vloer. Het geluid staat in de kern, in Files > sounds "
+                + "(air_raid_siren, een sirene die op en neer gaat). Vanzelf spelen ze nooit iets: de showcase doet wat een "
+                + "diagram zou doen. Eerst playsound(\"air_raid_siren\", \"Speaker 1\"): alleen de speaker aan de muur, "
+                + "rood licht, en je HOORT de sirene. Dan playsound(\"default\", \"all\"): allebei de ingebouwde sirene. "
+                + "Dan playtext(\"Alarm armed\", \"all\"): met de stem van I.M.T hoor je hem zeggen; zonder die stem staat "
+                + "\"Speaker 1: Alarm armed\" in je chat. Tot slot zijn scherm (sneak + rechtsklik): naam, volume, bereik, "
+                + "Test en waar de geluiden staan.",
                 AlarmTour.SHOW_FROM, 180, 20, AlarmTour::showcase);
 
         add("Network button and lever", "Hoofdstuk 38. Een netwerkhendel en een netwerkknop op de vloer, met een PoE-kabel "

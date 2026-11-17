@@ -1450,6 +1450,11 @@ final class LogicApp {
         lines.add(item("alarm(...)", "alarm(\"Intruder!\")", Op.ALARM));
         lines.add(item("log(...)", "log(\"Door opened\")", Op.LOG));
         if (server) {
+            // Hoofdstuk 136: de speakers van je basis (de geluiden staan in Files > sounds).
+            lines.add(item("playsound(..., \"all\")", "playsound(\"siren\", \"all\")", Op.PLAYSOUND));
+            lines.add(item("playtext(..., \"all\")", "playtext(\"Alarm armed\", \"all\")", Op.PLAYTEXT));
+        }
+        if (server) {
             // Je robots een opdracht geven (hoofdstuk 23).
             lines.add(header("ROBOTS"));
             lines.add(item("order(..., \"attack\")", "order(\"Guard 1\", \"attack\", sender.x, sender.y, sender.z)", Op.ORDER));

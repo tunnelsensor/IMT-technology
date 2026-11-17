@@ -90,6 +90,20 @@ public enum Op {
     LOG(Kind.ACTION, "log", Arg.TEXT, Arg.NONE, "Write a line in the security log"),
     /** {@code flag("Wrong password")} (hoofdstuk 138): in een {@code when logged:} die regel markeren (rood in Logs). */
     FLAG(Kind.ACTION, "flag", Arg.TEXT, Arg.NONE, "In when logged: the line turns red, I.M.T warns you"),
+    /**
+     * {@code playsound("siren", "Speaker 1")} of {@code playsound("siren", "all")} (hoofdstuk 136): een speaker speelt
+     * een geluid uit de map sounds in Files van de kern, één keer; "default" is de ingebouwde sirene. Zonder speaker:
+     * alle speakers. Het script wacht niet. Beide waarden mogen berekend zijn ({@code f"Speaker {i}"}). De waarden staan
+     * in expr.
+     */
+    PLAYSOUND(Kind.ACTION, "playsound", Arg.VALUES, Arg.NONE, "A speaker plays a sound from the folder sounds in Files (\"default\" = "
+            + "the built-in siren), once. \"all\" = every speaker. Your script does not wait"),
+    /**
+     * {@code playtext("Alarm armed", "all")} (hoofdstuk 136): een speaker zegt deze zin met de stem van I.M.T. Wie de stem
+     * niet heeft, ziet de zin in de chat. Het script wacht niet.
+     */
+    PLAYTEXT(Kind.ACTION, "playtext", Arg.VALUES, Arg.NONE, "A speaker says this text with the I.M.T voice (players without "
+            + "the voice see it in the chat). \"all\" = every speaker. Your script does not wait"),
 
     // ---------------------------------------------------------------- Een robot (hoofdstuk 23) of drone (hoofdstuk 25)
     /** {@code forward(3)}: zoveel blokken vooruit, blok voor blok. */
@@ -392,6 +406,9 @@ public enum Op {
         if (this == ORDER) {
             return "order(\"|\", \"attack\")";
         }
+        if (this == PLAYSOUND || this == PLAYTEXT) {
+            return code + "(\"|\", \"all\")";
+        }
         if (this == ARM_UP || this == ARM_DOWN) {
             return code + "()"; // meestal één blok: het getal (arm_up(2)) mag erbij
         }
@@ -420,6 +437,8 @@ public enum Op {
             case GOTO, AIM -> new String[] {"x", "y", "z"};
             case WRITE -> new String[] {"pin", "value"};
             case ORDER -> new String[] {"robot", "order", "x", "y", "z"};
+            case PLAYSOUND -> new String[] {"sound", "speaker"};
+            case PLAYTEXT -> new String[] {"text", "speaker"};
             case PLACE, PLACE_UP, PLACE_DOWN -> new String[] {"block"};
             case TAKE, PUT -> new String[] {"item", "count"};
             default -> new String[0];
@@ -432,6 +451,7 @@ public enum Op {
             case GOTO, AIM -> new Expr.Type[] {Expr.Type.NUMBER, Expr.Type.NUMBER, Expr.Type.NUMBER};
             case WRITE -> new Expr.Type[] {Expr.Type.NUMBER, Expr.Type.ANY};
             case ORDER -> new Expr.Type[] {Expr.Type.TEXT, Expr.Type.TEXT, Expr.Type.NUMBER, Expr.Type.NUMBER, Expr.Type.NUMBER};
+            case PLAYSOUND, PLAYTEXT -> new Expr.Type[] {Expr.Type.TEXT, Expr.Type.TEXT};
             case PLACE, PLACE_UP, PLACE_DOWN -> new Expr.Type[] {Expr.Type.TEXT};
             case TAKE, PUT -> new Expr.Type[] {Expr.Type.TEXT, Expr.Type.NUMBER};
             default -> new Expr.Type[0];
@@ -442,6 +462,7 @@ public enum Op {
     public int requiredValues() {
         return switch (this) {
             case ORDER -> 2;
+            case PLAYSOUND, PLAYTEXT -> 1; // zonder speaker: alle speakers
             case AIM, PLACE, PLACE_UP, PLACE_DOWN, TAKE, PUT -> 0;
             default -> valueNames().length;
         };
@@ -465,6 +486,8 @@ public enum Op {
             case WRITE -> "write(laserPin, true)";
             case AIM -> "aim(10, 64, -20) or aim()";
             case ORDER -> "order(\"Guard 1\", \"attack\") or order(\"Guard 1\", \"attack\", 10, 64, -20)";
+            case PLAYSOUND -> "playsound(\"siren\", \"Speaker 1\") or playsound(\"siren\", \"all\")";
+            case PLAYTEXT -> "playtext(\"Alarm armed\", \"Speaker 1\") or playtext(\"Alarm armed\", \"all\")";
             case PLACE, PLACE_UP, PLACE_DOWN -> code + "() or " + code + "(\"cobblestone\")";
             case TAKE, PUT -> code + "(), " + code + "(\"iron_ingot\") or " + code + "(\"iron_ingot\", 8)";
             default -> code + "()";
@@ -487,6 +510,8 @@ public enum Op {
             // Robots en squads aansturen kan ook een Training End-blok (hoofdstuk 26: deactivate("Wave 1")).
             case ORDER, ACTIVATE, DEACTIVATE -> kind == ProgramKind.SERVER || kind == ProgramKind.TRAINING_END;
             case HIT -> kind == ProgramKind.TRAINING_END;
+            // Hoofdstuk 136: de speakers horen bij je server.
+            case PLAYSOUND, PLAYTEXT -> kind == ProgramKind.SERVER;
             // Een Training End-blok doet alleen iets bij een treffer; een RC Car alleen wat jij start.
             case EVERY -> kind != ProgramKind.TRAINING_END && kind != ProgramKind.CAR;
             // Hoofdstuk 113: een RC Car krijgt zijn opdrachten van een Storage Interface (when ordered("fetch"):).
@@ -513,7 +538,8 @@ public enum Op {
     public boolean reservedIn(@Nullable ProgramKind kind) {
         return switch (this) {
             // Hoofdstuk 138: logged en flag ook niet (een oud programma mag een naam flag of een def flag() hebben).
-            case TAKE, PUT, CHECK, ARM_UP, ARM_DOWN, LOGGED, FLAG -> false;
+            // Hoofdstuk 136: ook playsound en playtext zijn nieuw; een oud programma mag ze als eigen naam hebben.
+            case TAKE, PUT, CHECK, ARM_UP, ARM_DOWN, LOGGED, FLAG, PLAYSOUND, PLAYTEXT -> false;
             default -> true;
         };
     }

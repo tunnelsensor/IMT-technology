@@ -37,10 +37,25 @@ import org.jetbrains.annotations.Nullable;
  * helemaal bovenaan de map <b>sd</b>. Daarin werk je zoals in elke map; paden op de kaart beginnen met {@code sd:}
  * ({@code sd:/notes/plan.txt}). Sleep je iets van je systeem op sd (of van de kaart op ".."), dan wordt het gekopieerd,
  * zoals tussen twee schijven; rechtsklik geeft ook "Copy to SD card" en "Copy to your folder".
+ * <p>
+ * Hoofdstuk 136 (jouw wens: "in je securitycore bij files, hier kun je de geluiden in de map sounds zetten"): de knop
+ * <b>+Sound</b> opent het "bestand openen"-venster van je computer (of sleep een bestand op het venster van Minecraft); je
+ * spel leest het in (mp4, m4a, mov, aac, mp3, wav, ogg) en stuurt het naar de server, die het als geluid in de map
+ * <b>sounds</b> zet. Een geluid staat in de lijst met zijn lengte; dubbelklik laat het je horen (alleen jij). Een diagram
+ * speelt het met {@code playsound("naam", "Speaker 1")}.
  */
 final class FilesApp {
     /** Eén map of bestand zoals de server het stuurde. */
-    record Entry(String path, boolean dir, boolean system, boolean trap, int size) {
+    /** @param sound hoofdstuk 136: hoe lang het geluid duurt (seconden), of 0 als het geen geluid is */
+    record Entry(String path, boolean dir, boolean system, boolean trap, int size, float sound) {
+        Entry(String path, boolean dir, boolean system, boolean trap, int size) {
+            this(path, dir, system, trap, size, 0f);
+        }
+
+        boolean isSound() {
+            return sound > 0f;
+        }
+
         String name() {
             return VirtualFs.nameOf(path);
         }
@@ -53,7 +68,8 @@ final class FilesApp {
     private enum Input { NONE, NEW_FOLDER, NEW_FILE, RENAME }
 
     /** De knoppen bovenaan. */
-    private enum Tool { UP, FOLDER, FILE, RENAME, DELETE, TRAP }
+    /** De knoppen bovenaan (hoofdstuk 136: ook +Sound). */
+    private enum Tool { UP, FOLDER, FILE, SOUND, RENAME, DELETE, TRAP }
 
     /** De keuzes in het rechtsklik-menu (hoofdstuk 130: ook kopiëren naar de SD-kaart en terug). */
     private enum MenuItem { OPEN, RENAME, DELETE, TRAP, TO_CARD, TO_SYSTEM }
@@ -120,7 +136,7 @@ final class FilesApp {
         for (Tag element : list) {
             CompoundTag item = (CompoundTag) element;
             entries.add(new Entry(item.getString("p"), item.getBoolean("d"), item.getBoolean("s"),
-                    item.getBoolean("t"), item.getInt("n")));
+                    item.getBoolean("t"), item.getInt("n"), item.getFloat("a")));
         }
         forgetMissing();
     }
@@ -256,7 +272,7 @@ final class FilesApp {
 
     private List<Tool> tools() {
         return screen.isOwner() ? List.of(Tool.values())
-                : List.of(Tool.UP, Tool.FOLDER, Tool.FILE, Tool.RENAME, Tool.DELETE);
+                : List.of(Tool.UP, Tool.FOLDER, Tool.FILE, Tool.SOUND, Tool.RENAME, Tool.DELETE);
     }
 
     private String label(Tool tool) {
@@ -265,6 +281,7 @@ final class FilesApp {
             case UP -> "Up";
             case FOLDER -> "+Folder";
             case FILE -> "+File";
+            case SOUND -> "+Sound";
             case RENAME -> "Rename";
             case DELETE -> confirming(selected) ? "Sure?" : "Delete";
             case TRAP -> selection != null && selection.trap() ? "Untrap" : "Trap";
@@ -277,10 +294,67 @@ final class FilesApp {
         return switch (tool) {
             case UP -> !cwd.equals("/");
             case FOLDER, FILE -> true;
+            // Hoofdstuk 136: een geluid gaat naar /sounds van de kern (niet op een SD-kaart), één upload tegelijk.
+            case SOUND -> !SdDesktop.onCard(cwd) && !com.senne.imttech.client.alarm.AlarmUploadClient.busyFor(screen.core())
+                    && !reading && !com.senne.imttech.client.alarm.AlarmFiles.dialogOpen();
             case RENAME -> selection != null && !card;
             case DELETE -> selection != null && !card && !holdsSystemFile(selection);
             case TRAP -> selection != null && !selection.dir() && !selection.system() && !onCard(selection);
         };
+    }
+
+    // ================================================================ Geluiden (hoofdstuk 136)
+
+    /** Lezen we nu een geluidsbestand in (naast het spel)? */
+    private boolean reading;
+
+    /** +Sound: het "bestand openen"-venster van je computer, en dan inlezen en uploaden. */
+    private void uploadSound() {
+        boolean opened = com.senne.imttech.client.alarm.AlarmFiles.browse(file -> {
+            if (file != null) {
+                readSound(file);
+            }
+        });
+        screen.showNotice(opened ? "Choose a sound file (the window can be behind Minecraft: Alt+Tab). You can also drag one here."
+                : "The file window is already open (maybe behind Minecraft: Alt+Tab)", false);
+    }
+
+    /** Een bestand dat je op het venster van Minecraft sleepte terwijl Files open stond (zie SecurityOsScreen.onFilesDrop). */
+    void dropped(List<java.nio.file.Path> files) {
+        // Slepen mag ook terwijl het "bestand openen"-venster nog open staat (gevonden door de nalezing), met de goede melding.
+        if (SdDesktop.onCard(cwd)) {
+            screen.showNotice("Sounds go on this core, not on the SD card: go back to your own folders first", true);
+            return;
+        }
+        if (com.senne.imttech.client.alarm.AlarmUploadClient.busyFor(screen.core()) || reading) {
+            screen.showNotice("Wait until the sound that is being read or uploaded is done", true);
+            return;
+        }
+        for (java.nio.file.Path file : files) {
+            if (com.senne.imttech.client.alarm.AlarmFiles.looksLikeSound(file)) {
+                readSound(file);
+                return;
+            }
+        }
+        screen.showNotice("That is not a sound file (mp4, m4a, mov, aac, mp3, wav, ogg)", true);
+    }
+
+    /** Inlezen (naast het spel; de eerste 30 seconden) en dan naar de server: die zet het in /sounds. */
+    private void readSound(java.nio.file.Path file) {
+        reading = true;
+        String name = file.getFileName() == null ? "sound" : file.getFileName().toString();
+        screen.showNotice("Reading " + name + "...", false);
+        double max = com.senne.imttech.alarm.AlarmSounds.maxSamples() / (double) com.senne.imttech.alarm.audio.AlarmAudio.RATE;
+        com.senne.imttech.client.alarm.AlarmFiles.read(file, max, result -> {
+            reading = false;
+            if (result.ok()) {
+                com.senne.imttech.client.alarm.AlarmUploadClient.start(screen.core(), result.fileName(), result.samples());
+                screen.showNotice("Uploading " + result.fileName() + " to " + VirtualFs.SOUNDS + "...", false);
+            } else if (result.error() != null) {
+                screen.showNotice(net.minecraft.network.chat.Component.translatable("alarm.imttech.audio." + result.error().key,
+                        result.error().args).getString(), true);
+            }
+        });
     }
 
     /** Is dit security.conf, of zit het erin? Dan kan het niet weg (wel verplaatsen). */
@@ -355,9 +429,9 @@ final class FilesApp {
                 g.drawString(font, OsDraw.fitLeft(font, about, a.w() - 60), Math.max(a.x() + 50, sx), ry + 2,
                         HudStyle.argb(255, OsDraw.GREY), false);
             }
-            // Rechts: de vlaggen en de grootte.
+            // Rechts: de vlaggen en de grootte (hoofdstuk 136: bij een geluid hoe lang het duurt).
             if (!entry.dir()) {
-                String size = entry.size() + " B";
+                String size = entry.isSound() ? String.format(java.util.Locale.ROOT, "SOUND %.1f s", entry.sound()) : entry.size() + " B";
                 int sx = a.x() + a.w() - 4 - font.width(size);
                 g.drawString(font, size, sx, ry + 2, HudStyle.argb(255, OsDraw.GREY), false);
                 if (entry.trap()) {
@@ -383,7 +457,13 @@ final class FilesApp {
             String hint = cwd.equals(CARD_ROOT) ? "On the SD card. Drag onto ..: copy to the system"
                     : SdDesktop.onCard(cwd) ? "On the SD card. Right-click: Copy to your folder"
                     : cardIn && cwd.equals("/") ? "Drag a file onto sd: copy it to the SD card"
+                    : cwd.equals(VirtualFs.SOUNDS) ? "Double-click: listen   +Sound: add one   playsound(\"name\", \"all\")"
                     : "Double-click: open   Drag: move   Right-click: menu";
+            if (com.senne.imttech.client.alarm.AlarmUploadClient.busyFor(screen.core())) {
+                hint = com.senne.imttech.client.alarm.AlarmUploadClient.message().getString();
+            } else if (com.senne.imttech.client.alarm.AlarmUploadClient.recentResult(screen.core()) != null) {
+                hint = com.senne.imttech.client.alarm.AlarmUploadClient.recentResult(screen.core()).getString();
+            }
             g.drawString(font, OsDraw.fitRight(font, hint, a.w()), a.x(), by + 2, HudStyle.argb(255, OsDraw.GREY), false);
         }
         // Slepen: de naam hangt aan de muis.
@@ -699,6 +779,7 @@ final class FilesApp {
             case UP -> goUp();
             case FOLDER -> startInput(Input.NEW_FOLDER, "");
             case FILE -> startInput(Input.NEW_FILE, "");
+            case SOUND -> uploadSound();
             case RENAME -> startInput(Input.RENAME, selection.name());
             case DELETE -> delete(selection);
             case TRAP -> setTrap(selection, !selection.trap());
@@ -747,7 +828,8 @@ final class FilesApp {
         } else {
             CompoundTag args = new CompoundTag();
             args.putString("path", entry.path());
-            screen.send("fs_open", args);
+            // Hoofdstuk 136: een geluid beluister je (alleen jij); dat valt onder Files, niet onder Notes.
+            screen.send(entry.isSound() ? "fs_play" : "fs_open", args);
         }
     }
 

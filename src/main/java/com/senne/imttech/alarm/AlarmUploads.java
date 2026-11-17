@@ -8,7 +8,6 @@ import com.senne.imttech.network.AlarmSoundRequestPayload;
 import com.senne.imttech.network.AlarmUploadPayload;
 import com.senne.imttech.network.AlarmUploadReplyPayload;
 import com.senne.imttech.network.ModNetwork;
-import com.senne.imttech.security.BaseTrust;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,19 +27,21 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 /**
- * Geluiden uploaden naar een Alarm Speaker en ze naar de spelers sturen (hoofdstuk 126), aan de kant van de server.
+ * Geluiden uploaden naar de map sounds in Files van een kern, en ze naar de spelers sturen (hoofdstuk 126; sinds hoofdstuk
+ * 136 naar Files in plaats van naar een speaker), aan de kant van de server.
  *
  * <b>Uploaden.</b> Je spel leest je bestand zelf in en maakt het klein (AlarmAudio, Adpcm); de server krijgt alleen dat
- * kleine geluid, in stukjes (AlarmUploadPayload). Het eerste stukje begint een upload, als je de speaker mag instellen
- * (je staat erbij, en hij is van jou of je bent vertrouwd in de basis), als uploaden aan staat ({@code [alarms]
- * uploadsAllowed}), als je niet net nog iets uploadde, en als het geluid niet langer is dan {@code maxSoundSeconds}. Daarna
- * moet elk stukje precies op zijn beurt komen en precies even groot zijn als verwacht; anders stopt de upload. Na het
- * laatste stukje bewaart AlarmSounds het geluid, kijkt de server nog eens of je de speaker nog mag instellen, en zet het
- * erop. Eén upload tegelijk per speler; wie uitlogt, of tien seconden niets meer stuurt, is zijn halve upload kwijt.
+ * kleine geluid, in stukjes (AlarmUploadPayload, met de plek van de kern). Het eerste stukje begint een upload, als je in
+ * Files van die kern een bestand mag maken (je bureaublad van die kern staat open, zie SecurityOs.filesCore), als uploaden
+ * aan staat ({@code [alarms] uploadsAllowed}), als je niet net nog iets uploadde, en als het geluid niet langer is dan
+ * {@code maxSoundSeconds}. Daarna moet elk stukje precies op zijn beurt komen en precies even groot zijn als verwacht;
+ * anders stopt de upload. Na het laatste stukje bewaart AlarmSounds het geluid, kijkt de server nog eens of je nog mag,
+ * en zet het als bestand in /sounds (VirtualFs.putSound). Eén upload tegelijk per speler; wie uitlogt, of tien seconden
+ * niets meer stuurt, is zijn halve upload kwijt.
  *
- * <b>Ophalen.</b> Je spel vraagt een geluid zodra je in de buurt komt van een speaker die het heeft
- * (AlarmSoundRequestPayload). De server stuurt het alleen als er echt zo'n speaker in de buurt staat, en hooguit een paar
- * keer per tien seconden per speler: zo kan niemand de server leeg trekken.
+ * <b>Ophalen.</b> Je spel vraagt een geluid zodra een speaker in de buurt het speelt (AlarmSoundRequestPayload). De
+ * server stuurt het alleen als er echt zo'n speaker in de buurt is, en hooguit een paar keer per tien seconden per speler:
+ * zo kan niemand de server leeg trekken.
  */
 public final class AlarmUploads {
     private AlarmUploads() {}
@@ -160,8 +161,7 @@ public final class AlarmUploads {
             reply(player, payload.pos(), payload.uploadId(), false, "alarm.imttech.upload.off", "");
             return false;
         }
-        AlarmSpeakerBlockEntity speaker = AlarmSpeakers.editable(player, payload.pos());
-        if (speaker == null) {
+        if (com.senne.imttech.security.os.SecurityOs.filesCore(player, payload.pos()) == null) {
             reply(player, payload.pos(), payload.uploadId(), false, "alarm.imttech.upload.not_allowed", "");
             return false;
         }
@@ -189,7 +189,7 @@ public final class AlarmUploads {
         return true;
     }
 
-    /** Alles is binnen: bewaren, nog eens kijken of het mag, en op de speaker zetten. */
+    /** Alles is binnen: bewaren, nog eens kijken of het mag, en als bestand in /sounds van de kern zetten. */
     private static void finish(ServerPlayer player, Upload upload) {
         MinecraftServer server = player.server;
         AlarmSounds.store(server, upload.samples, upload.data, soundId -> {
@@ -197,17 +197,24 @@ public final class AlarmUploads {
                 reply(player, upload.pos, upload.uploadId, false, "alarm.imttech.upload.store_failed", "");
                 return;
             }
-            ServerLevel level = server.getLevel(upload.dimension);
-            if (level == null || !level.isLoaded(upload.pos) || !(level.getBlockEntity(upload.pos) instanceof AlarmSpeakerBlockEntity speaker)
-                    || !BaseTrust.wouldAllow(level, speaker, player.getUUID(), player.getGameProfile().getName())) {
+            com.senne.imttech.security.SecurityCoreBlockEntity core = player.level().dimension() == upload.dimension
+                    ? com.senne.imttech.security.os.SecurityOs.filesCore(player, upload.pos) : null;
+            if (core == null) {
                 reply(player, upload.pos, upload.uploadId, false, "alarm.imttech.upload.not_allowed", "");
                 return;
             }
-            speaker.setSound(soundId, upload.fileName, upload.samples / (float) AlarmAudio.RATE);
-            AlarmSpeakers.log(level, upload.pos, player.getGameProfile().getName() + " uploaded the sound \"" + upload.fileName
-                    + "\" to the alarm speaker \"" + speaker.name() + "\"");
-            reply(player, upload.pos, upload.uploadId, true, "alarm.imttech.upload.done", upload.fileName);
-            AlarmSpeakers.refresh(player, speaker);
+            float seconds = upload.samples / (float) AlarmAudio.RATE;
+            String path = core.fs().putSound(com.senne.imttech.security.os.VirtualFs.SOUNDS, AlarmSpeakers.fileName(upload.fileName),
+                    soundId, upload.samples, seconds);
+            if (path == null) {
+                reply(player, upload.pos, upload.uploadId, false, "alarm.imttech.upload.disk_full", "");
+                return;
+            }
+            core.setChanged();
+            core.logEvent(com.senne.imttech.security.os.EventLog.Type.DEVICE, player.getGameProfile().getName() + " uploaded the sound "
+                    + path + " (" + String.format(java.util.Locale.ROOT, "%.1f", seconds) + " s)");
+            reply(player, upload.pos, upload.uploadId, true, "alarm.imttech.upload.done", path);
+            com.senne.imttech.security.os.SecurityOs.filesChanged(player, core);
         });
     }
 

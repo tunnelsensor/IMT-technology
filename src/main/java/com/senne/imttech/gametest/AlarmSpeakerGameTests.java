@@ -25,6 +25,8 @@ import com.senne.imttech.security.SecurityCoreBlockEntity;
 import com.senne.imttech.security.SecurityCores;
 import com.senne.imttech.security.SecurityDevices;
 import com.senne.imttech.security.os.EventLog;
+import com.senne.imttech.security.os.VirtualFs;
+import com.senne.imttech.logic.program.ScriptParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.io.IOException;
@@ -53,8 +55,9 @@ import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 /**
- * Tests voor de Alarm Speaker (hoofdstuk 126, jouw wens van 16 november: "Voeg een nieuwe blok toe namelijk een alarm waar je
- * zelf een mp4 bestand naar kunt uploaden zodat je custom alarmen kunt hebben").
+ * Tests voor de Speaker (hoofdstuk 126, jouw wens van 16 november: "Voeg een nieuwe blok toe namelijk een alarm waar je
+ * zelf een mp4 bestand naar kunt uploaden zodat je custom alarmen kunt hebben"; sinds hoofdstuk 136 staan de geluiden in
+ * Files van de kern en speelt een diagram ze met playsound en playtext).
  *
  * In de bestaande batch "lan" (geen nieuwe batchnaam: zie de 192-regel in het geheugen van de tests): die zet de netwerk-eis
  * aan, net als in een echte wereld (NetworkGameTests.networkOn).
@@ -125,9 +128,9 @@ public final class AlarmSpeakerGameTests {
     // ================================================================ Op het netwerk
 
     /**
-     * Wie hem neerzet, heeft hem in zijn I.M.T-lijst als "Alarm 1". Zonder kabel naar een kern werkt hij niet (zijn lampje
-     * blijft uit); met een PoE-kabel naar de kern (die ook stroom brengt) is hij online, hoort hij bij die kern en staat hij in
-     * Devices als "ready".
+     * Wie hem neerzet, heeft hem in zijn I.M.T-lijst als "Speaker 1" (hoofdstuk 136: zo heet hij nu). Zonder kabel naar een
+     * kern werkt hij niet (zijn lampje blijft uit); met een PoE-kabel naar de kern (die ook stroom brengt) is hij online, hoort
+     * hij bij die kern en staat hij in Devices als "ready".
      */
     @GameTest(template = ARENA, batch = "lan")
     public static void alarm_speaker_needs_a_network_and_power(GameTestHelper helper) {
@@ -137,8 +140,8 @@ public final class AlarmSpeakerGameTests {
         BlockPos pos = placeSpeaker(helper, new BlockPos(8, 4, 2), owner);
         BlockPos abs = helper.absolutePos(pos);
         AlarmSpeakerBlockEntity speaker = speaker(helper, pos);
-        check(speaker.name().equals("Alarm 1") && DeviceNames.nameOf(owner, List.of(abs)).equals("Alarm 1"),
-                "De speaker heet niet Alarm 1 in het blok en in de I.M.T-lijst: " + speaker.name());
+        check(speaker.name().equals("Speaker 1") && DeviceNames.nameOf(owner, List.of(abs)).equals("Speaker 1"),
+                "De speaker heet niet Speaker 1 in het blok en in de I.M.T-lijst: " + speaker.name());
         speaker.updateOnline(level);
         helper.assertBlockProperty(pos, AlarmSpeakerBlock.ONLINE, false);
         check(SecurityCores.deviceCore(level, abs) == null, "Zonder kabel hoort de speaker toch bij een kern");
@@ -161,13 +164,13 @@ public final class AlarmSpeakerGameTests {
     }
 
     /**
-     * Hij gaat nooit vanzelf af (hoofdstuk 128): een alarm in het logboek van zijn kern (zoals {@code alarm("...")} in een
-     * diagram, iemand die aan een lezer prutst, een ontploffing of een brand: die komen allemaal via logEvent) laat hem stil,
-     * ook drie seconden later nog (na zijn controles van stroom en netwerk). Het alarm staat wel gewoon in het logboek. Pas
-     * op zijn naam aangezet, zoals {@code on("Alarm 1")} in een diagram dat je runt, gaat hij af, zo lang als ingesteld (hier
-     * 5 seconden), en dan stopt hij vanzelf. Een speaker aan een andere kern blijft al die tijd stil.
+     * Hij speelt nooit iets vanzelf (hoofdstuk 128) en is geen schakelaar meer (hoofdstuk 136): een alarm in het logboek van
+     * zijn kern laat hem stil, en aan op zijn naam (zoals on("Speaker 1")) doet niets; Devices kan hem niet aanzetten. Pas
+     * playsound speelt iets: "default" (de ingebouwde sirene) twee seconden lang, dan stopt hij vanzelf; hetzelfde geluid
+     * terwijl het nog speelt, verandert niets. playtext zet een zin op hem (zijn rode licht draait), en dezelfde zin nog eens
+     * verandert niets. Een speaker aan een andere kern blijft al die tijd stil, ook bij "all".
      */
-    @GameTest(template = ARENA, batch = "lan", timeoutTicks = 260)
+    @GameTest(template = ARENA, batch = "lan", timeoutTicks = 200)
     public static void alarm_speaker_never_sounds_by_itself(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 3, 7), "lan-alarm-owner2");
@@ -177,137 +180,145 @@ public final class AlarmSpeakerGameTests {
         BlockPos other = wiredSpeaker(helper, owner, cores, 12);
         helper.assertBlockProperty(pos, AlarmSpeakerBlock.ONLINE, true);
         helper.assertBlockProperty(other, AlarmSpeakerBlock.ONLINE, true);
-        speaker(helper, pos).setSettings(1f, 32, 5);
         SecurityDevices.forget(level, core);
+        BlockPos abs = helper.absolutePos(pos);
 
         core.logEvent(EventLog.Type.ALARM, "Intruder at the alarm test door");
+        check(!ImtRedstone.switchAt(level, abs, -1, ImtRedstone.Op.ON, 0), "Aan op zijn naam deed toch iets");
+        check(SecurityDevices.switchDevice(level, core, abs, true) != null, "Devices kon de speaker toch aanzetten");
         helper.assertBlockProperty(pos, AlarmSpeakerBlock.SOUNDING, false);
-        helper.assertBlockProperty(other, AlarmSpeakerBlock.SOUNDING, false);
-        check(speaker(helper, pos).soundUntil() == 0, "Na een ALARM in het logboek heeft de speaker toch een eindtijd");
-        long alarms = core.log().entries().stream()
-                .filter(entry -> entry.type() == EventLog.Type.ALARM && entry.text().contains("alarm test door")).count();
-        check(alarms == 1, "Het alarm staat " + alarms + " keer in het logboek (verwacht: 1)");
-
-        BlockPos abs = helper.absolutePos(pos);
-        long[] switchedAt = new long[1];
-        helper.runAfterDelay(60, () -> {
-            helper.assertBlockProperty(pos, AlarmSpeakerBlock.SOUNDING, false);
-            helper.assertBlockProperty(other, AlarmSpeakerBlock.SOUNDING, false);
-            // Zoals on("Alarm 1") in een diagram dat je runt.
-            switchedAt[0] = level.getGameTime();
-            ImtRedstone.switchAt(level, abs, -1, ImtRedstone.Op.ON, 0);
-            helper.assertBlockProperty(pos, AlarmSpeakerBlock.SOUNDING, true);
-            helper.assertBlockProperty(other, AlarmSpeakerBlock.SOUNDING, false);
-            check(speaker(helper, pos).soundUntil() == switchedAt[0] + 100,
-                    "Aan op zijn naam stopt niet na 5 seconden: " + (speaker(helper, pos).soundUntil() - switchedAt[0]));
-        });
-        helper.runAfterDelay(60 + 130, () -> {
-            helper.assertBlockProperty(pos, AlarmSpeakerBlock.SOUNDING, false);
-            check(speaker(helper, pos).soundUntil() == 0, "Na het stoppen staat er nog een eindtijd");
-            helper.succeed();
-        });
-    }
-
-    /**
-     * Op zijn naam (zoals {@code on("Alarm 1")}, {@code off}, {@code toggle}, {@code pulse} in een diagram, je bril of
-     * Devices): aan gaat hij af met de ingestelde tijd (of tot je hem uitzet), uit is stil. De kern kent de naam. Devices kan
-     * hem aan- en uitzetten en hernoemen. Zonder kabel kan hij niet aan.
-     */
-    @GameTest(template = ARENA, batch = "lan", timeoutTicks = 100)
-    public static void alarm_speaker_switches_by_name(GameTestHelper helper) {
-        ServerLevel level = helper.getLevel();
-        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 3, 6), "lan-alarm-owner3");
-        SecurityCoreBlockEntity[] cores = new SecurityCoreBlockEntity[1];
-        BlockPos pos = wiredSpeaker(helper, owner, cores, 2);
-        SecurityCoreBlockEntity core = cores[0];
-        BlockPos abs = helper.absolutePos(pos);
-        AlarmSpeakerBlockEntity speaker = speaker(helper, pos);
+        check(speaker(helper, pos).playKind() == AlarmSpeakerBlockEntity.PLAY_NONE, "Na een alarm van de kern speelt de speaker toch iets");
 
         long now = level.getGameTime();
-        ImtRedstone.switchAt(level, abs, -1, ImtRedstone.Op.ON, 0);
+        check(AlarmSpeakers.playSound(level, core, "default", "all") == AlarmSpeakers.Result.OK, "playsound(\"default\", \"all\") lukte niet");
+        AlarmSpeakerBlockEntity speaker = speaker(helper, pos);
         helper.assertBlockProperty(pos, AlarmSpeakerBlock.SOUNDING, true);
-        check(speaker.soundUntil() == now + AlarmSpeakerBlockEntity.DEFAULT_ALARM_SECONDS * 20L, "Aan op zijn naam heeft niet de ingestelde tijd");
-        ImtRedstone.switchAt(level, abs, -1, ImtRedstone.Op.OFF, 0);
-        helper.assertBlockProperty(pos, AlarmSpeakerBlock.SOUNDING, false);
-        check(speaker.soundUntil() == 0, "Uit heeft nog een eindtijd");
+        helper.assertBlockProperty(other, AlarmSpeakerBlock.SOUNDING, false);
+        check(speaker.playKind() == AlarmSpeakerBlockEntity.PLAY_DEFAULT && speaker.playEnd() == now + AlarmSpeakers.DEFAULT_TICKS,
+                "De ingebouwde sirene speelt niet twee seconden: " + speaker.playKind() + " tot " + (speaker.playEnd() - now));
+        int token = speaker.playToken();
+        AlarmSpeakers.playSound(level, core, "DEFAULT", "speaker 1");
+        check(speaker.playToken() == token, "Hetzelfde geluid terwijl het nog speelt, begon opnieuw");
+        check(AlarmSpeakers.playSound(level, core, "missing_sound", "all") == AlarmSpeakers.Result.NO_SOUND,
+                "Een geluid dat niet in /sounds staat, gaf geen NO_SOUND");
+        check(AlarmSpeakers.playSound(level, core, "default", "Speaker 9") == AlarmSpeakers.Result.NO_SPEAKER,
+                "Een speaker die niet bestaat, gaf geen NO_SPEAKER");
 
-        speaker.setSettings(1f, 32, 0); // tot je hem uitzet
-        ImtRedstone.switchAt(level, abs, -1, ImtRedstone.Op.TOGGLE, 0);
-        helper.assertBlockProperty(pos, AlarmSpeakerBlock.SOUNDING, true);
-        check(speaker.soundUntil() == 0, "Tot je hem uitzet heeft toch een eindtijd");
-        ImtRedstone.switchAt(level, abs, -1, ImtRedstone.Op.TOGGLE, 0);
-        helper.assertBlockProperty(pos, AlarmSpeakerBlock.SOUNDING, false);
-
-        com.senne.imttech.logic.LogicDevices.refresh(level, core, owner);
-        check(!core.logic().devices("Alarm 1").isEmpty(), "De kern kent de naam Alarm 1 niet (voor diagrammen)");
-
-        SecurityDevices.forget(level, core);
-        check(SecurityDevices.switchDevice(level, core, abs, true) == null, "Devices kan de speaker niet aanzetten");
-        helper.assertBlockProperty(pos, AlarmSpeakerBlock.SOUNDING, true);
-        check(SecurityDevices.switchDevice(level, core, abs, false) == null, "Devices kan de speaker niet uitzetten");
-        helper.assertBlockProperty(pos, AlarmSpeakerBlock.SOUNDING, false);
-        String error = SecurityDevices.renameDevice(owner, core, abs, "Lobby siren");
-        check(error == null && speaker.name().equals("Lobby siren") && DeviceNames.nameOf(owner, List.of(abs)).equals("Lobby siren"),
-                "Hernoemen in Devices werkt niet: " + error + " / " + speaker.name());
-
-        // Een puls langer dan de speaker zelf (5 seconden) duurt zo lang als de puls.
-        speaker.setSettings(1f, 32, 5);
-        ImtRedstone.switchAt(level, abs, -1, ImtRedstone.Op.PULSE, 120);
-        check(speaker.soundUntil() == level.getGameTime() + 120,
-                "Een puls van 6 seconden kreeg de 5 seconden van de speaker: " + (speaker.soundUntil() - level.getGameTime()));
-        ImtRedstone.switchAt(level, abs, -1, ImtRedstone.Op.OFF, 0);
-        // Ook op "tot je hem uitzet" bewaart een puls zijn eigen eindtijd: stopt de server midden in de puls (die
-        // ImtRedstone niet bewaart), dan stopt de speaker na het laden toch op tijd.
-        speaker.setSettings(1f, 32, 0);
-        ImtRedstone.switchAt(level, abs, -1, ImtRedstone.Op.PULSE, 10);
-        helper.assertBlockProperty(pos, AlarmSpeakerBlock.SOUNDING, true);
-        check(speaker.soundUntil() == level.getGameTime() + 10,
-                "Een puls bewaart zijn eigen eindtijd niet (na een herstart zou hij blijven loeien): " + speaker.soundUntil());
-        helper.runAfterDelay(14, () -> {
+        check(AlarmSpeakers.playText(level, core, "Alarm armed", "Speaker 1") == AlarmSpeakers.Result.OK, "playtext lukte niet");
+        check(speaker.speechText().equals("Alarm armed") && speaker.speakingAt(level.getGameTime()), "De speaker zegt de zin niet");
+        int speech = speaker.speechToken();
+        AlarmSpeakers.playText(level, core, "Alarm armed", "all");
+        check(speaker.speechToken() == speech, "Dezelfde zin terwijl hij nog praat, begon opnieuw");
+        helper.runAfterDelay(AlarmSpeakers.DEFAULT_TICKS + 5, () -> check(speaker(helper, pos).playKind() == AlarmSpeakerBlockEntity.PLAY_NONE,
+                "Na twee seconden speelt de sirene nog"));
+        helper.runAfterDelay(150, () -> {
             helper.assertBlockProperty(pos, AlarmSpeakerBlock.SOUNDING, false);
-            // Zonder kabel: geen netwerk en geen stroom, dus hij kan niet aan.
-            for (int x = 3; x <= 8; x++) {
-                Cables.remove(CableKind.POE, level, helper.absolutePos(new BlockPos(x, 3, 2)));
-            }
-            speaker.updateOnline(level);
-            helper.assertBlockProperty(pos, AlarmSpeakerBlock.ONLINE, false);
-            ImtRedstone.switchAt(level, abs, -1, ImtRedstone.Op.ON, 0);
-            helper.assertBlockProperty(pos, AlarmSpeakerBlock.SOUNDING, false);
+            check(speaker(helper, pos).speechText().isEmpty(), "Na de zin staat er nog een zin op de speaker");
             helper.succeed();
         });
     }
 
-    // ================================================================ Uploaden
+    /**
+     * Een echt diagram op de kern (met een server ernaast): playsound en playtext met berekende namen
+     * ({@code f"siren{n}"}, {@code f"Speaker {n}"}, {@code f"Gate {n} is open"}) spelen het geluid uit /sounds op Speaker 1
+     * en zeggen de zin. En zet je een diagram uit terwijl het nog bezig is (een run die wacht), dan stopt die run meteen
+     * (hoofdstuk 136; eerst maakte hij af waar hij mee bezig was, zodat een while true-lus nooit stopte).
+     */
+    @GameTest(template = ARENA, timeoutTicks = 300, batch = "lan")
+    public static void speaker_plays_from_a_running_diagram(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 3, 5), "lan-alarm-owner3");
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), owner);
+        BlockPos rack = new BlockPos(2, 3, 3);
+        ImtTechGameTests.placeServer(helper, rack, core);
+        lineX(helper, CableKind.POE, new BlockPos(3, 3, 2), 8);
+        BlockPos pos = placeSpeaker(helper, new BlockPos(8, 4, 2), owner);
+        speaker(helper, pos).updateOnline(level);
+        core.ensureSystem(level); // eerst het systeem van de kern (dat maakt een nieuw bestandssysteem), dan het geluid
+        String id = AlarmSounds.idOf(2 * AlarmAudio.RATE, new byte[Adpcm.encodedLength(2 * AlarmAudio.RATE)]);
+        check(core.fs().putSound(VirtualFs.SOUNDS, "siren1", id, 2 * AlarmAudio.RATE, 2f) != null, "Het geluid kwam niet in /sounds");
+        // De woorden zelf: met berekende namen (f-tekst) leest de parser ze gewoon.
+        ScriptParser.parse("n = 1\nwhen every(1):\n    playsound(f\"siren{n}\", f\"Speaker {n}\")\n    playtext(f\"Gate {n} is open\", \"all\")\n");
+        ScriptParser.parse("when every(1):\n    playsound(\"siren\")\n    playtext(\"Alarm armed\")\n");
+        BlockPos coreAbs = helper.absolutePos(new BlockPos(2, 3, 2));
+        helper.runAfterDelay(2, () -> {
+            ImtTechGameTests.startServer(helper, rack, core);
+            com.senne.imttech.security.os.SecurityOs.open(owner, coreAbs);
+            saveDiagram(owner, coreAbs, "Speakers", "n = 1\nwhen every(1):\n    playsound(f\"siren{n}\", f\"Speaker {n}\")\n"
+                    + "    playtext(f\"Gate {n} is open\", \"all\")\n");
+            saveDiagram(owner, coreAbs, "Slow", "when every(1):\n    wait(30)\n    log(\"still here\")\n");
+            check(core.logic().program("Speakers") != null && core.logic().program("Slow") != null,
+                    "De diagrammen werden niet bewaard: " + lastLog(core));
+        });
+        helper.runAfterDelay(80, () -> {
+            AlarmSpeakerBlockEntity speaker = speaker(helper, pos);
+            check(speaker.playKind() == AlarmSpeakerBlockEntity.PLAY_SOUND && speaker.playId().equals(id),
+                    "playsound(f\"siren{n}\", f\"Speaker {n}\") speelde het geluid niet. Logboek: " + lastLog(core));
+            check(speaker.speechText().equals("Gate 1 is open"), "playtext(f\"Gate {n} is open\") zei: '" + speaker.speechText() + "'");
+            check(com.senne.imttech.logic.LogicRunner.runningNames(level, core).contains("Slow"), "Het wachtende diagram loopt niet");
+            // Het wachtende diagram uitzetten: zijn run stopt meteen.
+            CompoundTag args = new CompoundTag();
+            args.putString("name", "Slow");
+            args.putBoolean("on", false);
+            com.senne.imttech.security.os.SecurityOs.handleAction(owner, new com.senne.imttech.network.OsActionPayload(coreAbs, "logic_enable", args));
+        });
+        helper.runAfterDelay(90, () -> {
+            check(!com.senne.imttech.logic.LogicRunner.runningNames(level, core).contains("Slow"),
+                    "Een uitgezet diagram liep nog door: " + com.senne.imttech.logic.LogicRunner.runningNames(level, core));
+            helper.succeed();
+        });
+    }
+
+    /** Een diagram bewaren zoals de app Logic dat doet (de code wordt eerst blokjes). */
+    private static void saveDiagram(ServerPlayer owner, BlockPos coreAbs, String name, String code) {
+        CompoundTag args = new CompoundTag();
+        args.putString("old", "");
+        args.putString("name", name);
+        args.put("graph", com.senne.imttech.logic.program.GraphConverter.toGraph(ScriptParser.parse(code), null).save());
+        args.putString("source", code);
+        com.senne.imttech.security.os.SecurityOs.handleAction(owner, new com.senne.imttech.network.OsActionPayload(coreAbs, "logic_save", args));
+    }
+
+    private static String lastLog(SecurityCoreBlockEntity core) {
+        var entries = core.log().entries();
+        return entries.isEmpty() ? "" : entries.getLast().type() + ": " + entries.getLast().text();
+    }
+
+    // ================================================================ Uploaden naar Files
 
     /**
-     * Een geluid uploaden gaat in stukjes, en alleen voor wie de speaker mag instellen: een vreemde komt niet verder dan het
-     * eerste stukje, een stukje dat niet op zijn beurt komt stopt de upload, een geluid langer dan de config toestaat mag
-     * niet beginnen. Een goede upload staat daarna op de speaker (naam, lengte) en als bestand bij de wereld. Save in het
-     * scherm houdt alles binnen de grenzen.
+     * Een geluid uploaden gaat in stukjes, naar de map sounds in Files van een kern, en alleen voor wie het bureaublad van
+     * die kern open heeft: een vreemde zonder bureaublad komt niet verder dan het eerste stukje, een stukje dat niet op zijn
+     * beurt komt stopt de upload, een tweede begin binnen een seconde en een leeg eerste stukje beginnen niets, en een geluid
+     * langer dan de config toestaat mag niet beginnen. Een goede upload staat daarna als geluid in /sounds (met zijn lengte)
+     * en als bestand bij de wereld. Save in het scherm van de speaker houdt naam, volume en bereik binnen de grenzen.
      */
     @GameTest(template = ARENA, batch = "lan", timeoutTicks = 200)
     public static void alarm_upload_in_chunks_only_for_whoever_may_edit(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(7, 3, 5), "lan-alarm-owner4");
+        SecurityCoreBlockEntity core = ImtTechGameTests.placeCore(helper, new BlockPos(2, 3, 2), owner);
+        BlockPos coreAbs = helper.absolutePos(new BlockPos(2, 3, 2));
         BlockPos pos = placeSpeaker(helper, new BlockPos(8, 4, 2), owner);
         BlockPos abs = helper.absolutePos(pos);
         AlarmSpeakerBlockEntity speaker = speaker(helper, pos);
         @SuppressWarnings("removal")
         ServerPlayer stranger = helper.makeMockServerPlayerInLevel();
-        stranger.teleportTo(abs.getX() + 2.5, abs.getY(), abs.getZ() + 0.5);
+        stranger.teleportTo(coreAbs.getX() + 2.5, coreAbs.getY(), coreAbs.getZ() + 0.5);
 
         short[] clip = tone(7.0, 880);
         byte[] adpcm = Adpcm.encode(clip);
-        List<AlarmUploadPayload> parts = AlarmUploads.payloads(abs, 7, clip.length, "siren.mp4", adpcm);
+        List<AlarmUploadPayload> parts = AlarmUploads.payloads(coreAbs, 7, clip.length, "Siren from my phone.mp4", adpcm);
         check(parts.size() >= 3, "Een geluid van 7 seconden zou in minstens 3 stukjes moeten, niet " + parts.size());
 
         for (AlarmUploadPayload part : parts) {
             AlarmUploads.handleUpload(stranger, part);
         }
-        check(!AlarmUploads.uploading(stranger.getUUID()) && speaker.soundId().isEmpty(), "Een vreemde kon uploaden");
+        check(!AlarmUploads.uploading(stranger.getUUID()) && core.fs().get(VirtualFs.SOUNDS) == null, "Een vreemde kon uploaden");
 
+        com.senne.imttech.security.os.SecurityOs.open(owner, coreAbs);
         AlarmUploads.handleUpload(owner, parts.get(0));
-        check(AlarmUploads.uploading(owner.getUUID()), "Het eerste stukje begint geen upload");
+        check(AlarmUploads.uploading(owner.getUUID()), "Het eerste stukje begint geen upload (met het bureaublad open)");
         AlarmUploads.handleUpload(owner, parts.get(2));
         check(!AlarmUploads.uploading(owner.getUUID()), "Een stukje dat niet op zijn beurt kwam, stopte de upload niet");
         // Meteen weer een eerste stukje: dat mag pas na een seconde (een rem tegen bestoken), dus geen upload.
@@ -315,13 +326,13 @@ public final class AlarmSpeakerGameTests {
         check(!AlarmUploads.uploading(owner.getUUID()), "Een tweede poging binnen een seconde begon toch een upload");
         // Een eerste stukje dat niet zo groot is als het hoort, begint niets (en legt geen geheugen vast).
         helper.runAfterDelay(25, () -> {
-            AlarmUploads.handleUpload(owner, new AlarmUploadPayload(abs, 8, 0, parts.get(0).chunks(), clip.length, "siren.mp4", new byte[0]));
+            AlarmUploads.handleUpload(owner, new AlarmUploadPayload(coreAbs, 8, 0, parts.get(0).chunks(), clip.length, "siren.mp4", new byte[0]));
             check(!AlarmUploads.uploading(owner.getUUID()), "Een leeg eerste stukje begon toch een upload");
         });
 
         int tooMany = AlarmSounds.maxSamples() + 1;
         helper.runAfterDelay(50, () -> {
-            AlarmUploads.handleUpload(owner, new AlarmUploadPayload(abs, 9, 0, AlarmUploads.chunksFor(Adpcm.encodedLength(tooMany)),
+            AlarmUploads.handleUpload(owner, new AlarmUploadPayload(coreAbs, 9, 0, AlarmUploads.chunksFor(Adpcm.encodedLength(tooMany)),
                     tooMany, "long.mp3", new byte[AlarmUploadPayload.CHUNK_BYTES]));
             check(!AlarmUploads.uploading(owner.getUUID()), "Een geluid langer dan de config toestaat, mocht beginnen");
         });
@@ -331,59 +342,73 @@ public final class AlarmSpeakerGameTests {
             for (AlarmUploadPayload part : parts) {
                 AlarmUploads.handleUpload(owner, part);
             }
-            AlarmSpeakers.handleSave(owner, new AlarmSavePayload(abs, "Front siren", 7f, 9999, 9999));
+            AlarmSpeakers.handleSave(owner, new AlarmSavePayload(abs, "Front speaker", 7f, 9999));
         });
         helper.succeedWhen(() -> {
-            check(speaker.soundId().equals(id), "Na het uploaden staat het geluid niet op de speaker");
-            check(speaker.soundName().equals("siren.mp4") && Math.abs(speaker.soundSeconds() - 7.0f) < 0.01f,
-                    "Naam of lengte van het geluid klopt niet: " + speaker.soundName() + " " + speaker.soundSeconds());
+            VirtualFs.Node node = core.fs().sound("siren_from_my_phone");
+            check(node != null && node.soundId().equals(id) && node.soundSamples() == clip.length,
+                    "Na het uploaden staat het geluid niet in /sounds: " + core.fs().list(VirtualFs.SOUNDS).size());
+            check(core.fs().sound("siren_from_my_phone.mp4") == node, "Met een extensie erachter vindt playsound het geluid niet");
             check(AlarmSounds.storedNow(level.getServer(), id), "Het geluid staat niet als bestand bij de wereld");
-            check(speaker.name().equals("Front siren"), "Save gaf de speaker geen nieuwe naam: " + speaker.name());
-            check(speaker.volume() == 1.0f && speaker.range() == AlarmSpeakerBlockEntity.maxRange()
-                            && speaker.alarmSeconds() == AlarmSpeakerBlockEntity.clampAlarmSeconds(9999),
-                    "Save hield de instellingen niet binnen de grenzen: " + speaker.volume() + " " + speaker.range() + " " + speaker.alarmSeconds());
+            check(speaker.name().equals("Front speaker"), "Save gaf de speaker geen nieuwe naam: " + speaker.name());
+            check(speaker.volume() == 1.0f && speaker.range() == AlarmSpeakerBlockEntity.maxRange(),
+                    "Save hield de instellingen niet binnen de grenzen: " + speaker.volume() + " " + speaker.range());
         });
     }
 
     /**
-     * Afgebroken houdt het item zijn naam, zijn geluid en zijn instellingen (en zet je hem weer neer, dan heeft hij ze nog);
-     * opslaan en laden verliest niets, ook de eindtijd niet.
+     * Afgebroken houdt het item zijn naam en zijn instellingen (en zet je hem weer neer, dan heeft hij ze nog); opslaan en
+     * laden verliest niets. En een speaker van vóór hoofdstuk 136 met een eigen geluid: dat geluid komt in /sounds van zijn
+     * kern (onder de naam van het bestand), zodat je het met playsound kunt spelen.
      */
-    @GameTest(template = ARENA, batch = "lan")
+    @GameTest(template = ARENA, batch = "lan", timeoutTicks = 100)
     public static void alarm_speaker_keeps_its_sound_when_mined(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 3, 6), "lan-alarm-owner5");
-        BlockPos pos = placeSpeaker(helper, new BlockPos(8, 4, 2), owner);
-        BlockPos abs = helper.absolutePos(pos);
+        SecurityCoreBlockEntity[] cores = new SecurityCoreBlockEntity[1];
+        BlockPos pos = wiredSpeaker(helper, owner, cores, 2);
+        SecurityCoreBlockEntity core = cores[0];
         AlarmSpeakerBlockEntity speaker = speaker(helper, pos);
-        String id = AlarmSounds.idOf(5, new byte[Adpcm.encodedLength(5)]);
-        speaker.setSound(id, "siren.mp4", 2.5f);
-        speaker.setSettings(0.6f, 40, 60);
-        speaker.setName("Lobby siren");
+        speaker.setSettings(0.5f, 40);
 
+        speaker.setName("Lobby speaker");
+        BlockPos abs = helper.absolutePos(pos);
         List<ItemStack> drops = Block.getDrops(helper.getBlockState(pos), level, abs, speaker);
         check(drops.size() == 1, "De speaker laat " + drops.size() + " dingen vallen");
         ItemStack drop = drops.get(0);
         AlarmSettings settings = drop.get(ModDataComponents.ALARM_SETTINGS.get());
-        check(settings != null && settings.soundId().equals(id) && settings.range() == 40 && settings.alarmSeconds() == 60
-                && Math.abs(settings.volume() - 0.6f) < 0.01f, "Het item houdt het geluid of de instellingen niet: " + settings);
-        check(drop.getHoverName().getString().equals("Lobby siren"), "Het item houdt de naam niet: " + drop.getHoverName().getString());
-
+        check(settings != null && settings.range() == 40 && Math.abs(settings.volume() - 0.5f) < 0.01f,
+                "Het item houdt de instellingen niet: " + settings);
+        check(drop.getHoverName().getString().equals("Lobby speaker"), "Het item houdt de naam niet: " + drop.getHoverName().getString());
         BlockPos again = new BlockPos(5, 4, 9);
         helper.setBlock(again.below(), Blocks.STONE);
         helper.setBlock(again, helper.getBlockState(pos));
         AlarmSpeakerBlockEntity placed = speaker(helper, again);
         placed.applyComponentsFromItemStack(drop);
-        check(placed.soundId().equals(id) && placed.range() == 40 && placed.alarmSeconds() == 60 && placed.soundName().equals("siren.mp4"),
-                "Weer neergezet heeft de speaker zijn geluid niet meer");
-
+        check(placed.range() == 40 && Math.abs(placed.volume() - 0.5f) < 0.01f, "Weer neergezet heeft de speaker zijn instellingen niet meer");
         CompoundTag saved = speaker.saveWithoutMetadata(level.registryAccess());
         AlarmSpeakerBlockEntity loaded = new AlarmSpeakerBlockEntity(abs, helper.getBlockState(pos));
         loaded.loadWithComponents(saved, level.registryAccess());
-        check(loaded.soundId().equals(id) && loaded.name().equals("Lobby siren") && loaded.range() == 40
-                && loaded.alarmSeconds() == 60 && loaded.soundUntil() == speaker.soundUntil()
-                && owner.getUUID().equals(loaded.owner()), "Opslaan en laden verliest iets");
-        helper.succeed();
+        check(loaded.name().equals("Lobby speaker") && loaded.range() == 40 && owner.getUUID().equals(loaded.owner()),
+                "Opslaan en laden verliest iets");
+
+        // Een geluid van vroeger (hoofdstuk 126): het staat in wat bewaard was, en verhuist naar /sounds van de kern.
+        short[] clip = tone(1.5, 500);
+        byte[] adpcm = Adpcm.encode(clip);
+        AlarmSounds.store(level.getServer(), clip.length, adpcm, id -> {
+            check(id != null, "Het oude geluid kon niet bewaard worden");
+            CompoundTag old = speaker.saveWithoutMetadata(level.registryAccess());
+            old.putString("SoundId", id);
+            old.putString("SoundName", "Old Siren.mp4");
+            old.putFloat("SoundSeconds", 1.5f);
+            speaker.loadWithComponents(old, level.registryAccess());
+            AlarmSpeakers.moveLegacySound(level, speaker);
+            VirtualFs.Node node = core.fs().sound("old_siren");
+            check(node != null && node.soundId().equals(id), "Het oude geluid staat niet in /sounds: " + core.fs().list(VirtualFs.SOUNDS));
+            AlarmSpeakers.moveLegacySound(level, speaker);
+            check(core.fs().list(VirtualFs.SOUNDS).size() == 1, "Het oude geluid kwam twee keer in /sounds");
+            helper.succeed();
+        });
     }
 
     // ================================================================ Bestanden inlezen
@@ -637,7 +662,7 @@ public final class AlarmSpeakerGameTests {
     // ================================================================ Ophalen
 
     /**
-     * Een speler krijgt een geluid alleen als er een speaker met dat geluid in de buurt staat, hooguit zes geluiden per tien
+     * Een speler krijgt een geluid alleen als er een speaker in de buurt dat geluid speelt, hooguit zes geluiden per tien
      * seconden, en hetzelfde geluid niet steeds opnieuw. De server stuurt het in stukjes die samen weer het geluid zijn;
      * een stukje dat te groot is, kan niet eens verstuurd worden.
      */
@@ -645,12 +670,15 @@ public final class AlarmSpeakerGameTests {
     public static void alarm_sound_requests_are_limited(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         ServerPlayer owner = ImtTechGameTests.makeSurvivalOwner(helper, new BlockPos(6, 3, 6), "lan-alarm-owner6");
-        BlockPos pos = placeSpeaker(helper, new BlockPos(8, 4, 2), owner);
+        SecurityCoreBlockEntity[] cores = new SecurityCoreBlockEntity[1];
+        BlockPos pos = wiredSpeaker(helper, owner, cores, 2);
         BlockPos abs = helper.absolutePos(pos);
         short[] clip = tone(12.0, 600);
         byte[] adpcm = Adpcm.encode(clip);
         String id = AlarmSounds.idOf(clip.length, adpcm);
-        speaker(helper, pos).setSound(id, "siren.wav", 12f);
+        // Hoofdstuk 136: het geluid staat in /sounds van de kern, en de speaker speelt het (playsound).
+        cores[0].fs().putSound(VirtualFs.SOUNDS, "siren", id, clip.length, 12f);
+        check(AlarmSpeakers.playSound(level, cores[0], "siren", "all") == AlarmSpeakers.Result.OK, "playsound lukte niet");
 
         // Een blok-entiteit meldt zich pas bij de volgende tick aan (onLoad): dan pas kent de server de speaker.
         helper.runAfterDelay(3, () -> {

@@ -224,7 +224,7 @@ Elk item dat meer doet dan in een recept gaan, krijgt een animatie die laat zien
     de Compactor), het laadstation, het landingsplatform, de Arc Lamp met de lichtschakelaar, en relais.
   - *Security*: de Security Core, computer en monitor, zones, de Block Reinforcer, handboeien, keycards en lezers,
     het codepaneel, autorisatiecodes en de Auth Console, de netwerkknop en -hendel, laserpoorten, de laserbrug, de
-    schildkoepel, camera's en de schermmuur, de Alarm Speaker, torentjes, de Bypass Kit (lezers en panelen hacken, laserdraden
+    schildkoepel, camera's en de schermmuur, de Speaker, torentjes, de Bypass Kit (lezers en panelen hacken, laserdraden
     knippen en zakkenrollen), de Hacking Laptop, de I.M.T Phone en de SD-kaarten.
   - *Robots*: een guard robot bouwen en programmeren, modules solderen en wat ze doen, security drones, de RC Car, het
     opslagsysteem (de Storage Interface, de Chest Sensor en de Charging Pad) en training.
@@ -850,7 +850,7 @@ Bijvoorbeeld: generatoren aan de achterkant, torentjes links, lasers rechts.
 ### Het netwerk: netwerkkabels, PoE, de switch, knoppen en hendels
 Je beveiliging is echt bekabeld. Een **Network Cable** (wit; koperdraad, een stroomkabel en plastic geven er 4)
 loopt van de desktop (de **Security Core**) naar elk beveiligingsapparaat: keycardlezer, codepaneel,
-camera, Alarm Speaker, beveiligingstorentje, serverrek, laserpoort en laserbrug. Pas dan staat het apparaat in de
+camera, Speaker, beveiligingstorentje, serverrek, laserpoort en laserbrug. Pas dan staat het apparaat in de
 app **Devices** van de desktop, en hoort het bij die kern. Zonder kabel naar elk apparaat kan ook: met
 een **Router** (zie hieronder).
 - Je **tekent** hem net als een stroomkabel (rechtermuisknop ingedrukt), en hij zit net zo vast:
@@ -991,47 +991,65 @@ De app Cameras laat je beelden zien op de desktop. Wil je ze aan de muur, bijvoo
   (dezelfde instellingen als de app Cameras: `cameraFeedFps` en `cameraFeedBudgetMs`; meer beelden tegelijk kost meer van je
   grafische kaart).
 
-### Het alarm: een speaker met je eigen geluid (sinds 16 november)
-De **Alarm Speaker** is een sirene voor je basis: een stalen kastje met een luidsprekerrooster en een rood zwaailicht, aan
-de muur, aan het plafond of op de vloer. Het mooiste: je geeft hem **je eigen geluid**, uit een mp4 (ook een filmpje van je
-gsm: alleen het geluid telt), m4a, mov, aac, mp3, wav of ogg. Recept: 4 ijzer, een redstone-lamp, een nootblok, 2 redstone
-en een netwerkkabel.
+### De Speaker: geluiden en zinnen voor je basis (sinds 16 november, vernieuwd 17 november)
+De **Speaker** (eerst "Alarm Speaker") is een luidspreker voor je basis: een stalen kastje met een luidsprekerrooster en een
+rood zwaailicht, aan de muur, aan het plafond of op de vloer. Hij speelt **je eigen geluiden** (een mp4, ook een filmpje
+van je gsm, m4a, mov, aac, mp3, wav of ogg) en kan iets **zeggen met de stem van I.M.T**. Recept: 4 ijzer, een
+redstone-lamp, een nootblok, 2 redstone en een netwerkkabel.
 
 - **Aansluiten.** Net als een camera: een netwerkkabel of PoE-kabel naar de desktop van je Security Core (of draadloos via
   een Router), en een beetje stroom (`alarmSpeakerUpkeep` onder `[power]`; een PoE-kabel brengt die mee). Het kleine
   **groene lampje** brandt als hij klaar is. Gewoon rechtsklikken zegt hoe hij ervoor staat. Zonder kern, zonder stroom of
   in een EMP-puls blijft hij stil.
-- **Wanneer gaat hij af?** **Nooit vanzelf** (sinds hoofdstuk 128), ook niet als je kern alarm slaat (een `alarm("...")`
-  in je diagram, iemand die aan een lezer of laserpoort prutst, een ontploffing of een brand). Alleen een **script dat je
-  runt** zet hem aan, op zijn naam: `on("Alarm 1")` laat hem 30 seconden loeien, of zo lang als je in zijn scherm
-  instelt (10 s, 30 s, 1 min, 2 min, 5 min, of tot je hem uitzet); `pulse("Alarm 1", 10)` tien seconden;
-  `off("Alarm 1")` zet hem stil. Wil je hem bij een alarm horen, zet dan `on("Alarm 1")` naast je `alarm("...")`. Zijn
-  rode licht draait, en je hoort hem tot 32 blokken ver (instelbaar).
-- **Op zijn naam.** Wie hem neerzet, heeft hem in zijn I.M.T-lijst ("Alarm 1"): daarmee zet je script hem aan en uit
-  (`on`, `off`, `toggle`, `pulse`). Met de hand proberen kan ook: **Test** in zijn scherm, of Turn on/off in **Devices**
-  (de groep ALARM SPEAKERS, waar je hem ook hernoemt).
-- **Je eigen geluid.** Sneak + rechtsklik met een lege hand (als jij hem neerzette of vertrouwd bent in de basis): zijn
-  scherm. **Choose file** opent het gewone "bestand openen"-venster van je computer; je kunt ook een bestand uit je
-  Verkenner **op het Minecraft-venster slepen** (handig in volledig scherm, waar het venster soms achter Minecraft valt).
-  **Folder** opent de map `imttech/alarms` in je Minecraft-map, een handige plek voor je geluiden. Je spel leest het bestand
-  zelf in: de **eerste 30 seconden** (stilte vooraan telt niet mee), alles even hard. **Preview** laat het alleen jou horen;
-  **Save** stuurt het naar de server en zet het op de speaker (een balkje toont hoe ver het is). Verder: **Volume**, tot hoe
-  ver je hem hoort, hoe lang hij loeit als je script hem aanzet met `on(...)`, **Test** (5 seconden echt), **Stop**, **Built-in siren** (weer de
-  ingebouwde sirene) en **Use on all speakers** (hetzelfde geluid op elke speaker van dat netwerk die je mag instellen).
-  Lukt een bestand niet, dan zegt het scherm waarom. Eén soort kan het spel niet lezen: een **mp3 met een lage snelheid**
-  (22 kHz of minder, zoals sommige ingesproken berichten of oude belsignalen); sla die op als 44,1 kHz, of gebruik mp4,
-  m4a of wav. Van HE-AAC (muziek in een heel klein mp4- of m4a-bestand) gebruikt het alleen het gewone AAC-deel: dat klinkt
-  net zo goed, want een alarmgeluid wordt toch op 22 kHz bewaard.
-- **Wat de anderen horen.** Je geluid staat op de server (in de map van de wereld, `imttech_alarm_sounds`), en het spel van
-  wie in de buurt komt, haalt het daar op: iedereen hoort jouw sirene, uit de richting van de speaker, zachter als hij
-  verder weg staat. Wil je de geüploade geluiden van anderen niet horen: `customAlarmSounds = false` in
-  `imttech-client.toml` (dan hoor je altijd de ingebouwde sirene); `alarmSpeakerVolume` zet ze zachter of uit.
-- **Afbreken** houdt zijn naam, zijn geluid en zijn instellingen op het item: ergens anders neerzetten, en je hoeft niet
-  opnieuw te uploaden.
-- **Voor wie de server beheert** (`[alarms]` in `imttech.toml`): `uploadsAllowed` (uit = alleen de ingebouwde sirene),
+- **De geluiden staan in je kern**, niet op de speaker: open op de desktop **Files**, ga naar de map **sounds** (die maakt de
+  kern zelf) en druk op
+  **+Sound**. Dat opent het gewone "bestand openen"-venster van je computer; je kunt ook een bestand uit je Verkenner **op
+  het Minecraft-venster slepen** terwijl Files vooraan staat. Je spel leest het in (de **eerste 30 seconden**, stilte
+  vooraan telt niet mee, alles even hard) en stuurt het naar de server; daarna staat het in `sounds` met zijn lengte
+  ("SOUND 6.0 s"). **Dubbelklik** laat het alleen jou horen. Je kunt een geluid hernoemen, verplaatsen en weggooien zoals
+  elk bestand (een geluid kopiëren naar een SD-kaart kan niet: het geluid zelf staat bij de wereld). Eén soort bestand kan
+  het spel niet lezen: een **mp3 met een lage snelheid** (22 kHz of minder); sla die op als 44,1 kHz, of gebruik mp4, m4a of
+  wav.
+- **Een diagram laat hem spelen** (vanzelf speelt hij nooit iets, ook niet als je kern alarm slaat):
+  - `playsound("siren", "Speaker 1")` speelt het geluid `siren` uit `sounds` één keer op Speaker 1 (ook `"siren.mp4"`
+    vindt het); `"all"` in plaats van een naam = alle speakers van je basis; `"default"` als geluid = de ingebouwde sirene.
+  - `playtext("Alarm armed", "all")` laat hem een zin **zeggen met de stem van I.M.T**. Die stem maakt het spel van elke
+    speler zelf: wie de stem heeft (G-menu, Systems), hoort de zin uit de speaker; wie hem niet heeft, ziet in de chat
+    "Speaker 1: Alarm armed". Zolang hij praat, is zijn geluid even stil.
+  - Je script **wacht niet**: in een lus zet je zelf een `wait(...)`. Een sirene die blijft loeien tot je het diagram
+    uitzet:
+
+    ```
+    when keycard("Front door"):
+        if not card.valid:
+            playtext("Intruder at the front door", "all")
+            while true:
+                playsound("siren", "all")
+                wait(6)
+    ```
+
+    Zet je het diagram uit, dan **stopt die lus meteen** (sinds 17 november; eerst maakte een uitgezet diagram nog af
+    waar het mee bezig was). Hetzelfde geluid nog eens terwijl het speelt, verandert niets; een ander geluid vervangt het.
+  - Namen mogen berekend zijn, net als overal: `playsound(f"siren{n}", f"Speaker {i}")` (een bestandsnaam heeft geen
+    spaties).
+  - Aan, uit en pulse (`on("Speaker 1")`) werken niet bij een speaker: hij is een luidspreker, geen schakelaar. Het logboek
+    van je kern zegt dat dan ook.
+- **Zijn scherm.** Sneak + rechtsklik met een lege hand (als jij hem neerzette of vertrouwd bent in de basis): zijn naam
+  (die gebruik je in je diagrammen), **Volume**, tot hoe ver je hem hoort (standaard 32 blokken), en **Test** (5 seconden
+  de ingebouwde sirene, zodat je hoort hoe ver hij reikt). In **Devices** staat hij onder SPEAKERS (playing, ready of no
+  power), waar je hem ook hernoemt.
+- **Wat de anderen horen.** De geluiden staan op de server (in de map van de wereld, `imttech_alarm_sounds`), en het spel van
+  wie in de buurt komt, haalt een geluid daar op als een speaker het speelt: iedereen hoort het uit de richting van de
+  speaker, zachter als hij verder weg staat. Wil je de geüploade geluiden van anderen niet horen: `customAlarmSounds = false`
+  in `imttech-client.toml` (dan hoor je de ingebouwde sirene); `alarmSpeakerVolume` zet speakers zachter of uit.
+- **Een speaker van vóór 17 november** met een eigen geluid: dat geluid staat nu in `sounds` van zijn kern (onder de naam
+  van het bestand); het logboek van de kern zegt hoe het heet.
+- **Afbreken** houdt zijn naam en zijn instellingen op het item.
+- **Voor wie de server beheert** (`[alarms]` in `imttech.toml`): `uploadsAllowed` (uit = geen nieuwe uploads; wat al in
+  Files staat, blijft spelen),
   `maxSoundSeconds` (30), `uploadCooldownSeconds` (5), `maxStoredSounds` (300) en `maxStorageMb` (200): daarboven verdwijnt
-  het langst niet gebruikte geluid (eerst geluiden die geen geladen speaker heeft), en een speaker die het had, speelt weer
-  de sirene. `maxRange` (64 blokken) en `maxAlarmSeconds` (300) zijn de grenzen in het scherm.
+  het langst niet gebruikte geluid (eerst geluiden die geen geladen kern of speaker heeft). `maxRange` (64 blokken) is de
+  grens in het scherm.
 
 ### Je desktop van overal (de laptop) en computers voor je basis
 De **desktop** van je beveiliging (Security OS) opent met een rechtsklik met een lege hand op je
@@ -1226,7 +1244,7 @@ tegen de lezer, open dan de kluis 3 seconden; anders alarm". De server hangt aan
    **Een naam**: sluip + rechtsklik met een lege hand op een rack en geef het een naam (bijvoorbeeld
    "rack1"; mag als jij het neerzette of als je in de basis vertrouwd bent). Onder die naam staat het in
    de app **Monitor**, met zijn eigen cijfers (zie hieronder).
-2. **Apparaten**: zet relais (of laserzenders, torentjes, koepels, Alarm Speakers) neer en geef ze met je bril een
+2. **Apparaten**: zet relais (of laserzenders, torentjes, koepels) neer en geef ze met je bril een
    naam ("Vault door"): met die naam noem je ze in je diagram. Een **groep** werkt ook: `on("base")`
    zet alles in `base` aan, ook wat in groepen eronder zit. Een **Keycard Reader** en een
    **Code Panel** aan de muur krijgen ook een naam ("Reader 1", of uit een aambeeld). Een andere
@@ -3849,7 +3867,7 @@ luistert ze niet. In creative hoeft het niet.
 | Bestand | Wat |
 |---------|-----|
 | `config/imttech.toml` | **Alle getallen van de mod** (ruim 390), in hoofdstukken: wat mag er (`[rules]`: hacken, zakkenrollen, raids aan/uit), de bril, **alle stroom** (`[power]`: wat elk blok opwekt, opslaat en gebruikt), drones, de satelliet **per upgrade-niveau**, harnas, torentjes, beveiliging, datacenter, wat de bril van je datacenter vraagt (`[uplink]`), granaten en lasers, de Glock 19 (`[guns]`), guard robots, Raven, de bewakers zoals in Hitman (`[guards]`: zien, horen, de radio, het team, lichamen, de sluipaanval), de rugzakken (`[backpacks]`: de rits, traag lopen met de rugzak open), raids... |
-| `config/imttech-client.toml` | Stem, volume, spraaktekst, Spotify Client ID, GPU voor de AI, hoe stroom en grote getallen eruitzien (`powerUnit`, `numberStyle`), het zachte zoemen van de rayshields (`rayshieldHumVolume`: 1 = normaal, 2 = dubbel zo hard, 0 = uit), het laadzoemen van de guard robots (`robotHumVolume`, net zo), de rotors van de security drones (`droneRotorVolume`, net zo), de Alarm Speakers (`alarmSpeakerVolume`: 1 = zoals ingesteld op de speaker, 0 = uit; `customAlarmSounds = false`: altijd de ingebouwde sirene), de geluidjes in de animaties van How it works (`howToVolume`, net zo), de rand van zones (`zoneBorder`) |
+| `config/imttech-client.toml` | Stem, volume, spraaktekst, Spotify Client ID, GPU voor de AI, hoe stroom en grote getallen eruitzien (`powerUnit`, `numberStyle`), het zachte zoemen van de rayshields (`rayshieldHumVolume`: 1 = normaal, 2 = dubbel zo hard, 0 = uit), het laadzoemen van de guard robots (`robotHumVolume`, net zo), de rotors van de security drones (`droneRotorVolume`, net zo), de Speakers (`alarmSpeakerVolume`: 1 = zoals ingesteld op de speaker, 0 = uit; `customAlarmSounds = false`: altijd de ingebouwde sirene), de geluidjes in de animaties van How it works (`howToVolume`, net zo), de rand van zones (`zoneBorder`) |
 | `config/imttech-voice.json` | Alle spraakcommando's (zelf uit te breiden) |
 | `config/imttech-spotify.json` | Je Spotify-token (niet delen) |
 | `src/main/java/.../config/ImtConfig.java` | De standaardwaarden van al die getallen, met uitleg in het Nederlands, plus een paar vaste getallen die niet in het `.toml`-bestand kunnen |

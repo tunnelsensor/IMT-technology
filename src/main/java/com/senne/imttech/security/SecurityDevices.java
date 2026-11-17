@@ -526,7 +526,7 @@ public final class SecurityDevices {
                     : core.camerasEnabled() ? "no power" : "off (network)");
             list.add(device);
         }
-        // Hoofdstuk 126: de Alarm Speakers. "on" = gaat hij af (de knop zet hem aan of uit, zoals off("Alarm 1")).
+        // Hoofdstuk 126: de Speakers (sinds hoofdstuk 136 zonder Turn on/off: hij speelt wat een diagram zegt).
         for (BlockPos pos : found.alarms()) {
             if (!(level.getBlockEntity(pos) instanceof com.senne.imttech.alarm.AlarmSpeakerBlockEntity speaker)) {
                 continue;
@@ -534,9 +534,9 @@ public final class SecurityDevices {
             BlockState state = level.getBlockState(pos);
             boolean sounding = state.getValue(com.senne.imttech.alarm.AlarmSpeakerBlock.SOUNDING);
             CompoundTag device = position("alarm", pos);
-            device.putString("name", speaker.name().isEmpty() ? "Alarm speaker" : speaker.name());
+            device.putString("name", speaker.name().isEmpty() ? "Speaker" : speaker.name());
             device.putBoolean("on", sounding);
-            device.putString("st", sounding ? "sounding"
+            device.putString("st", sounding ? "playing"
                     : state.getValue(com.senne.imttech.alarm.AlarmSpeakerBlock.ONLINE) ? "ready" : "no power");
             list.add(device);
         }
@@ -660,8 +660,11 @@ public final class SecurityDevices {
         boolean gate = state.is(ModBlocks.LASER_EMITTER.get());
         boolean bridge = level.getBlockEntity(pos) instanceof LaserBridgeBlockEntity entity && belongs(core, entity);
         boolean camera = state.getBlock() instanceof CameraBlock;
-        boolean alarm = state.getBlock() instanceof com.senne.imttech.alarm.AlarmSpeakerBlock; // hoofdstuk 126
-        if (!(gate || bridge || camera || alarm) || !SecurityCores.linkedTo(level, core, pos)) {
+        // Een Speaker (hoofdstuk 136) zet je niet aan of uit: hij speelt wat een diagram zegt (playsound, playtext).
+        if (state.getBlock() instanceof com.senne.imttech.alarm.AlarmSpeakerBlock) {
+            return "a speaker plays what a diagram says: playsound(...) or playtext(...)";
+        }
+        if (!(gate || bridge || camera) || !SecurityCores.linkedTo(level, core, pos)) {
             return "that device is not part of this network";
         }
         com.senne.imttech.redstone.ImtRedstone.switchAt(level, pos, -1,

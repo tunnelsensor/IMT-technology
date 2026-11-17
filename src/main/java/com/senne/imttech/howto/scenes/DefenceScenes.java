@@ -204,15 +204,15 @@ public final class DefenceScenes {
         return List.of(s.build());
     }
 
-    // ================================================================ Alarm Speaker (hoofdstuk 126)
+    // ================================================================ Speaker (hoofdstuk 126, sinds hoofdstuk 136 "Speaker")
 
     /**
-     * De Alarm Speaker: een kabel naar je kern, alleen afgaan als een script hem aanzet (hoofdstuk 128: nooit vanzelf), je
-     * eigen geluid kiezen (met een foto van het echte scherm, gemaakt door de rondleiding: -Ponly=howtopics:alarm), en hem
-     * met de hand proberen.
+     * De Speaker: een kabel naar je kern; zijn geluiden staan in Files van de kern (map sounds); een diagram laat hem iets
+     * spelen ({@code playsound}) of zeggen ({@code playtext}); vanzelf doet hij niets (hoofdstuk 128). Met een foto van het
+     * echte scherm, gemaakt door de rondleiding (-Ponly=howtopics:alarm).
      */
     public static List<HowToScene> alarm() {
-        HowToSceneBuilder s = new HowToSceneBuilder("alarm_speaker", "Alarm Speaker").plate(7, 6);
+        HowToSceneBuilder s = new HowToSceneBuilder("alarm_speaker", "Speaker").plate(7, 6);
         BlockPos speaker = new BlockPos(4, 2, 1);
         s.idle(8);
         s.chapter("A speaker on your network");
@@ -236,48 +236,54 @@ public final class DefenceScenes {
         s.idle(28);
         s.change(speaker, alarmSpeaker(true, false));
         s.text(90, HowToSceneBuilder.top(speaker), Side.RIGHT,
-                "An *Alarm Speaker* needs a cable to your *Security Core* (a PoE cable brings power too). Its small green light"
+                "A *Speaker* needs a cable to your *Security Core* (a PoE cable brings power too). Its small green light"
                         + " shows it is ready.");
         s.idle(95);
 
-        s.chapter("Only your script sets it off");
+        s.chapter("Its sounds are in Files");
+        s.pulse(30, Vec3.atCenterOf(SecurityScenes.CORE), 2.0f, HowToSceneBuilder.CYAN);
+        s.text(100, HowToSceneBuilder.top(SecurityScenes.CORE), Side.LEFT,
+                "The sounds are not on the speaker but in your core: open *Files*, go to the folder *sounds* and press"
+                        + " *+Sound* (mp4, m4a, mp3, wav or ogg; a video works too). Double-click a sound to hear it.");
+        s.idle(105);
+
+        s.chapter("A diagram plays them");
         s.change(speaker, alarmSpeaker(true, true));
         s.sound(ModSounds.ALARM_SIREN.get(), 0.4f, 1.0f);
         s.pulse(40, Vec3.atCenterOf(speaker), 3.0f, HowToSceneBuilder.RED);
+        s.text(110, HowToSceneBuilder.top(speaker), Side.RIGHT,
+                "It never plays by itself. A diagram you run says what: *playsound(\"siren\", \"Speaker 1\")* plays a sound"
+                        + " once (*\"default\"* is the built-in siren, *\"all\"* every speaker). Your script does not wait:"
+                        + " in a loop, add *wait(...)*.");
+        s.idle(115);
+        s.change(speaker, alarmSpeaker(true, false));
+
+        s.chapter("Let it speak");
+        s.change(speaker, alarmSpeaker(true, true));
         s.text(100, HowToSceneBuilder.top(speaker), Side.RIGHT,
-                "It never sounds by itself, not even when your core raises an alarm. A diagram you run sets it off by its name:"
-                        + " *on(\"Alarm 1\")* sounds for *%s seconds* (or as long as you set), *off(\"Alarm 1\")* stops it.",
-                com.senne.imttech.alarm.AlarmSpeakerBlockEntity.DEFAULT_ALARM_SECONDS);
+                "*playtext(\"Alarm armed\", \"all\")* says it with the I.M.T voice, from the speaker. Players without"
+                        + " the voice see it in the chat. While it speaks, its sound is quiet.");
         s.idle(105);
         s.change(speaker, alarmSpeaker(true, false));
 
-        s.chapter("Your own sound");
+        s.chapter("Its screen");
         s.sneakRightClick(HowToSceneBuilder.face(speaker, Direction.SOUTH), ItemStack.EMPTY);
-        s.text(80, HowToSceneBuilder.face(speaker, Direction.SOUTH), Side.LEFT,
-                "Sneak + right-click with an empty hand: choose a sound file from your computer (mp4, m4a, mp3, wav or ogg)."
-                        + " A video works too: only its sound is used.");
-        s.idle(85);
-        // De foto van het echte scherm (300 x 226, net als AlarmSpeakerScreen; hier vast getypt: deze code draait ook op een
+        s.text(60, HowToSceneBuilder.face(speaker, Direction.SOUTH), Side.LEFT,
+                "Sneak + right-click with an empty hand: its screen.");
+        s.idle(65);
+        // De foto van het echte scherm (300 x 186, net als AlarmSpeakerScreen; hier vast getypt: deze code draait ook op een
         // server, die het scherm niet kent). De pijlen van boven naar beneden.
-        s.picture(170, "alarm_screen", 300, 226,
-                s.arrow(0.62f, 0.13f, "Its name: on(\"Alarm 1\")"),
-                s.arrow(0.16f, 0.30f, "Your own sound file"),
-                s.arrow(0.58f, 0.30f, "Hear it first"),
-                s.arrow(0.50f, 0.515f, "How loud and how far"),
-                s.arrow(0.13f, 0.83f, "Test: 5 seconds for real"));
-        s.idle(175);
-
-        s.chapter("Switch it by name");
-        s.change(speaker, alarmSpeaker(true, true));
-        s.text(90, HowToSceneBuilder.top(speaker), Side.RIGHT,
-                "It is in your I.M.T list as *Alarm 1*: in a diagram *on*, *off*, *toggle* or *pulse(\"Alarm 1\", 10)*."
-                        + " To try it by hand: *Test* in its screen, or *Devices*.");
-        s.idle(95);
-        s.change(speaker, alarmSpeaker(true, false));
+        s.picture(150, "alarm_screen", 300, 186,
+                s.arrow(0.62f, 0.16f, "Its name"),
+                s.arrow(0.50f, 0.37f, "How loud and how far"),
+                s.arrow(0.14f, 0.56f, "Test: 5 seconds"),
+                s.arrow(0.40f, 0.66f, "Where its sounds are"),
+                s.arrow(0.30f, 0.80f, "In a diagram"));
+        s.idle(155);
         return List.of(s.build());
     }
 
-    /** Een Alarm Speaker aan de muur (de muur aan de noordkant, de voorkant naar het zuiden): uit, klaar of afgaand. */
+    /** Een Speaker aan de muur (de muur aan de noordkant, de voorkant naar het zuiden): uit, klaar of spelend. */
     private static BlockState alarmSpeaker(boolean online, boolean sounding) {
         return ModBlocks.ALARM_SPEAKER.get().defaultBlockState()
                 .setValue(com.senne.imttech.alarm.AlarmSpeakerBlock.FACE, AttachFace.WALL)

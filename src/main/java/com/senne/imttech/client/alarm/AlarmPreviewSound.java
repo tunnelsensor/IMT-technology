@@ -59,7 +59,8 @@ final class AlarmPreviewSound extends AbstractTickableSoundInstance {
 
     @Override
     public void tick() {
-        if (--ticksLeft <= 0 || !(Minecraft.getInstance().screen instanceof AlarmSpeakerScreen)) {
+        // Hoofdstuk 136: je beluistert een geluid in Files (het bureaublad van de kern); gaat dat dicht, dan stopt het.
+        if (--ticksLeft <= 0 || Minecraft.getInstance().screen == null) {
             stop();
         }
     }

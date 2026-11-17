@@ -36,13 +36,22 @@ import org.jetbrains.annotations.Nullable;
  * hoeft te wachten.
  *
  * Ze praat alleen Engels (de Engelse stem "Lessac"), wat de taal van je spel ook is.
+ *
+ * Hoofdstuk 136: een Speaker kan ook iets zeggen met haar stem ({@code playtext("Alarm armed", "all")}). Dan maakt
+ * Piper de zin net zo, maar spelen we hem niet hier af: {@link #synthesize} geeft de monsters terug, en de speaker laat
+ * ze horen uit zijn eigen plek (client/alarm/AlarmSpeakerSounds). Zo'n opdracht wacht in dezelfde rij, maar valt er nooit
+ * uit door de grens van drie zinnen of doordat jij begint te praten.
  * Het volume volgt de schuif "Stem/Spraak" (Voice/Speech) in de geluidsinstellingen van Minecraft.
  */
 public final class ImtSpeech {
     private ImtSpeech() {}
 
-    /** @param number het volgnummer van de zin (zie say en isFinished) */
-    private record Utterance(String text, VoicePack voice, float volume, long number) {}
+    /**
+     * @param number het volgnummer van de zin (zie say en isFinished); 0 voor een zin voor een speaker
+     * @param pcm    hoofdstuk 136: niet afspelen maar de monsters teruggeven (voor een speaker), anders null
+     */
+    private record Utterance(String text, VoicePack voice, float volume, long number,
+                             java.util.function.@Nullable Consumer<short[]> pcm) {}
 
     /** Zinnen die nog uitgesproken moeten worden. Er wachten er nooit meer dan 3: de oudste valt weg. */
     private static final LinkedBlockingDeque<Utterance> QUEUE = new LinkedBlockingDeque<>();
@@ -91,7 +100,7 @@ public final class ImtSpeech {
      * Dit gebruiken we als je zelf begint te praten (spraaktoets): dan zwijgt zij.
      */
     public static void stopSpeaking() {
-        QUEUE.clear();
+        QUEUE.removeIf(utterance -> utterance.pcm() == null); // zinnen voor een speaker blijven staan
         FINISHED.accumulateAndGet(NUMBERS.get(), Math::max); // alles wat wachtte of klonk, is nu klaar
         stopGeneration++;
         lastText = ""; // zo mag dezelfde zin daarna weer gezegd worden
@@ -145,13 +154,35 @@ public final class ImtSpeech {
         if (volume <= 0.001f) {
             return 0;
         }
-        while (QUEUE.size() >= MAX_WAITING) {
-            QUEUE.pollFirst(); // valt weg; hij telt als klaar zodra een latere zin klaar is
+        while (QUEUE.stream().filter(utterance -> utterance.pcm() == null).count() >= MAX_WAITING) {
+            // De oudste gewone zin valt weg (hij telt als klaar zodra een latere zin klaar is); zinnen voor een speaker niet.
+            for (Utterance waiting : QUEUE) {
+                if (waiting.pcm() == null) {
+                    QUEUE.remove(waiting);
+                    break;
+                }
+            }
         }
         long number = NUMBERS.incrementAndGet();
-        QUEUE.offerLast(new Utterance(text, voicePack(), volume, number));
+        QUEUE.offerLast(new Utterance(text, voicePack(), volume, number, null));
         startWorker();
         return number;
+    }
+
+    /**
+     * Hoofdstuk 136: maak deze zin met de stem van I.M.T, maar speel hem niet af. {@code done} krijgt de monsters (mono,
+     * 16 bit, alarm/audio/AlarmAudio.RATE per seconde) op de draad van het spel, of null als het niet lukte. Doet niets (en
+     * geeft false) als haar stem niet aan staat of niet geïnstalleerd is.
+     */
+    public static boolean synthesize(String text, java.util.function.Consumer<short[]> done) {
+        String clean = speakable(text);
+        if (!available() || clean.isEmpty()) {
+            return false;
+        }
+        // Vooraan in de rij: een speaker wacht niet op wat I.M.T jou nog wil zeggen (gevonden door de nalezing).
+        QUEUE.offerFirst(new Utterance(clean, voicePack(), 1f, 0, done));
+        startWorker();
+        return true;
     }
 
     /** Kan I.M.T praten? (Haar stem staat aan en is geïnstalleerd.) */
@@ -202,11 +233,22 @@ public final class ImtSpeech {
             Path wav = null;
             try {
                 wav = synthesize(utterance);
-                speaking = true;
-                play(wav, utterance.volume());
+                if (utterance.pcm() != null) {
+                    // Hoofdstuk 136: voor een speaker. Niet hier afspelen; de monsters gaan terug naar het spel.
+                    short[] samples = readMono(wav);
+                    var done = utterance.pcm();
+                    Minecraft.getInstance().execute(() -> done.accept(samples));
+                } else {
+                    speaking = true;
+                    play(wav, utterance.volume());
+                }
             } catch (Exception e) {
                 ImtTech.LOGGER.warn("I.M.T: speaking failed", e);
                 stopPiper(); // de volgende keer opnieuw starten
+                if (utterance.pcm() != null) {
+                    var done = utterance.pcm();
+                    Minecraft.getInstance().execute(() -> done.accept(null));
+                }
             } finally {
                 speaking = false;
                 FINISHED.accumulateAndGet(utterance.number(), Math::max);
@@ -280,6 +322,40 @@ public final class ImtSpeech {
         Path dir = VoiceInstaller.root().resolve("tmp");
         Files.createDirectories(dir);
         return dir;
+    }
+
+    /**
+     * Hoofdstuk 136: een WAV-bestand van Piper als monsters (mono, 16 bit), omgerekend naar AlarmAudio.RATE als Piper een
+     * andere snelheid gebruikte (de stem Lessac maakt al 22 050 per seconde, dan hoeft er niets).
+     */
+    private static short[] readMono(Path wav) throws Exception {
+        AudioFormat format;
+        byte[] data;
+        try (AudioInputStream in = AudioSystem.getAudioInputStream(wav.toFile())) {
+            format = in.getFormat();
+            data = in.readAllBytes();
+        }
+        int channels = Math.max(1, format.getChannels());
+        boolean big = format.isBigEndian();
+        int frames = data.length / (2 * channels);
+        float[] mono = new float[frames];
+        for (int frame = 0; frame < frames; frame++) {
+            float sum = 0;
+            for (int channel = 0; channel < channels; channel++) {
+                int at = (frame * channels + channel) * 2;
+                int value = big ? (short) ((data[at] << 8) | (data[at + 1] & 0xFF)) : (short) ((data[at] & 0xFF) | (data[at + 1] << 8));
+                sum += value;
+            }
+            mono[frame] = sum / channels / 32768f;
+        }
+        int rate = Math.round(format.getSampleRate());
+        int target = com.senne.imttech.alarm.audio.AlarmAudio.RATE;
+        float[] samples = rate == target || rate <= 0 ? mono : com.senne.imttech.alarm.audio.AlarmAudio.resample(mono, rate, target);
+        short[] out = new short[samples.length];
+        for (int i = 0; i < samples.length; i++) {
+            out[i] = (short) Math.max(-32768, Math.min(32767, Math.round(samples[i] * 32767f)));
+        }
+        return out;
     }
 
     /** Speelt een WAV-bestand af, zachter of luider gemaakt met volume (0-1). */

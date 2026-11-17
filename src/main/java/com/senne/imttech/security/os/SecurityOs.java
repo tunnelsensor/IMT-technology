@@ -189,6 +189,11 @@ public final class SecurityOs {
             return;
         }
         core.ensureSystem(level);
+        // Hoofdstuk 136: de map voor geluiden (playsound zoekt daar), ook op een kern van vóór vandaag.
+        if (core.fs().get(VirtualFs.SOUNDS) == null && core.fs().count() < VirtualFs.MAX_NODES) {
+            core.fs().mkdirs(VirtualFs.SOUNDS);
+            core.setChanged();
+        }
         if (core.ownerId() == null) {
             player.displayClientMessage(Component.translatable("os.imttech.msg.no_owner")
                     .withStyle(ChatFormatting.YELLOW), true);
@@ -539,6 +544,18 @@ public final class SecurityOs {
                     openCardFile(player, core, session, args.getString("path")); // hoofdstuk 130: een bestand op de SD-kaart
                 } else {
                     openFile(player, core, session, path(args, "path"));
+                }
+            }
+            // Hoofdstuk 136: een geluid beluisteren (dubbelklik in Files). Een eigen opdracht, zodat het onder Files valt en
+            // niet onder Notes (op een Computer met Files maar zonder Notes kon je eerst niets horen).
+            case "fs_play" -> {
+                VirtualFs.Node node = core.fs().get(path(args, "path"));
+                if (node == null || !node.isSound()) {
+                    notify(player, core, session, VirtualFs.nameOf(path(args, "path")) + ": no such sound", true);
+                } else if (node.isTrap() && !isOwner(player, core)) {
+                    springTrap(player, core, path(args, "path"));
+                } else {
+                    com.senne.imttech.alarm.AlarmSpeakers.preview(player, node);
                 }
             }
             case "fs_mkdir" -> fileResult(player, core, session, core.fs().mkdir(path(args, "path")));
@@ -1371,8 +1388,39 @@ public final class SecurityOs {
             springTrap(player, core, path);
             return;
         }
+        if (node.isSound()) {
+            // Hoofdstuk 136: een geluid opent niet in Notes; je spel speelt het alleen voor jou.
+            com.senne.imttech.alarm.AlarmSpeakers.preview(player, node);
+            return;
+        }
         session.fileToSend = path;
         sendSnapshot(player, core, session);
+    }
+
+    /**
+     * Hoofdstuk 136: mag deze speler in Files van de kern op deze plek een geluid zetten? Zijn bureaublad van die kern staat
+     * open, en daar mag hij bestanden maken (op een Computer: als de kern dat daar toestaat). Dan die kern, anders null.
+     */
+    public static @Nullable SecurityCoreBlockEntity filesCore(ServerPlayer player, BlockPos corePos) {
+        Session session = SESSIONS.get(player.getUUID());
+        if (session == null || !session.core().equals(corePos)) {
+            return null;
+        }
+        ServerLevel level = player.serverLevel();
+        if (!level.isLoaded(corePos) || !(level.getBlockEntity(corePos) instanceof SecurityCoreBlockEntity core)) {
+            return null;
+        }
+        CompoundTag args = new CompoundTag();
+        args.putString("path", VirtualFs.SOUNDS + "/sound");
+        return session.rights(level).allows("fs_touch", args) ? core : null;
+    }
+
+    /** Hoofdstuk 136: er kwam een geluid bij in Files: de mappenlijst op het bureaublad van deze speler bijwerken. */
+    public static void filesChanged(ServerPlayer player, SecurityCoreBlockEntity core) {
+        Session session = SESSIONS.get(player.getUUID());
+        if (session != null && session.core().equals(core.getBlockPos())) {
+            sendSnapshot(player, core, session);
+        }
     }
 
     /** Een notitie bewaren (de Save-knop van Notes). */
@@ -1777,6 +1825,10 @@ public final class SecurityOs {
                 item.putInt("n", node.content().length());
                 if (node.isSystem()) {
                     item.putBoolean("s", true);
+                }
+                if (node.isSound()) {
+                    // Hoofdstuk 136: een geluid, en hoe lang het duurt (de vingerafdruk zelf heeft het scherm niet nodig).
+                    item.putFloat("a", node.soundSamples() / (float) com.senne.imttech.alarm.audio.AlarmAudio.RATE);
                 }
                 if (owner && node.isTrap()) {
                     item.putBoolean("t", true);

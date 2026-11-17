@@ -348,6 +348,18 @@ public class SecurityOsScreen extends Screen {
         return files;
     }
 
+    /**
+     * Hoofdstuk 136: een bestand uit je Verkenner op het venster van Minecraft gesleept terwijl Files vooraan staat: Files
+     * uploadt het als geluid naar /sounds (zie FilesApp.dropped).
+     */
+    @Override
+    public void onFilesDrop(List<java.nio.file.Path> paths) {
+        Win top = focused();
+        if (top != null && top.app == App.FILES) {
+            files.dropped(paths);
+        }
+    }
+
     /** De laatste momentopname van de server (de apps lezen hier hun gegevens uit). */
     CompoundTag data() {
         return data;

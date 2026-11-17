@@ -128,6 +128,19 @@ final class AlarmSoundCache {
         return true;
     }
 
+    /**
+     * Hoofdstuk 136: de server stuurt dit geluid uit zichzelf (je beluistert het in Files): neem de stukjes aan alsof we
+     * erom vroegen. Hebben we het al, dan hoeft er niets.
+     */
+    static void expect(String id) {
+        if (!AlarmSounds.validId(id) || SOUNDS.containsKey(id)) {
+            return;
+        }
+        FAILED.remove(id);
+        RETRY.remove(id);
+        DOWNLOADS.put(id, new Download(clock));
+    }
+
     /** Een geluid dat we zelf hebben (net geüpload): meteen bewaren, dan hoeven we het niet op te halen. */
     static void put(String id, short[] samples) {
         SOUNDS.put(id, samples);
