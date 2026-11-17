@@ -14,6 +14,9 @@ import net.minecraft.nbt.Tag;
  * van de desktop.
  *
  * Alleen de laatste MAX_ENTRIES regels blijven bewaard (de oudste valt eraf).
+ * <p>
+ * Hoofdstuk 138: een regel kan <b>gemarkeerd</b> zijn ({@code flag}: waarom), door een serverdiagram met
+ * {@code when logged:} en {@code flag("...")}. In Logs is hij dan rood, met de reden ervoor.
  */
 public final class EventLog {
     public static final int MAX_ENTRIES = 64;
@@ -21,16 +24,46 @@ public final class EventLog {
     /** Soort regel: bepaalt het icoontje en de kleur in het Logs-venster. */
     public enum Type { ENTRY, SHOT, HACK, LOGIN_FAIL, LOGIN, TRAP, OWNER, DEVICE, SYSTEM, LOGIC, ALARM, HEAT, ZONE, TRAINING }
 
-    /** Eén regel: wanneer (speltijd in ticks), wat voor soort, en de tekst (Engels). */
-    public record Entry(long time, Type type, String text) {}
+    /** Eén regel: wanneer (speltijd in ticks), wat voor soort, de tekst (Engels), en (hoofdstuk 138) waarom gemarkeerd ("" = niet). */
+    public record Entry(long time, Type type, String text, String flag) {
+        public Entry(long time, Type type, String text) {
+            this(time, type, text, "");
+        }
+    }
 
     private final Deque<Entry> entries = new ArrayDeque<>();
 
     public void add(long time, Type type, String text) {
-        entries.addLast(new Entry(time, type, text));
+        append(new Entry(time, type, text));
+    }
+
+    /** Voegt een regel toe en geeft hem terug (hoofdstuk 138: zo kan when logged: precies deze regel markeren). */
+    public Entry append(Entry entry) {
+        entries.addLast(entry);
         while (entries.size() > MAX_ENTRIES) {
             entries.removeFirst();
         }
+        return entry;
+    }
+
+    /**
+     * Markeert deze regel (dezelfde, niet een die er alleen op lijkt). Geeft false als hij er niet meer is (intussen van het
+     * logboek gevallen) of al gemarkeerd was.
+     */
+    public boolean flag(Entry entry, String reason) {
+        List<Entry> all = new ArrayList<>(entries);
+        for (int i = 0; i < all.size(); i++) {
+            if (all.get(i) == entry) {
+                if (!entry.flag().isEmpty()) {
+                    return false;
+                }
+                all.set(i, new Entry(entry.time(), entry.type(), entry.text(), reason.isBlank() ? "suspicious" : reason));
+                entries.clear();
+                entries.addAll(all);
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Alle regels, de oudste eerst. */
@@ -49,6 +82,9 @@ public final class EventLog {
             tag.putLong("T", entry.time());
             tag.putString("K", entry.type().name());
             tag.putString("X", entry.text());
+            if (!entry.flag().isEmpty()) {
+                tag.putString("F", entry.flag());
+            }
             list.add(tag);
         }
         return list;
@@ -64,7 +100,7 @@ public final class EventLog {
             } catch (IllegalArgumentException e) {
                 type = Type.SYSTEM;
             }
-            log.add(tag.getLong("T"), type, tag.getString("X"));
+            log.append(new Entry(tag.getLong("T"), type, tag.getString("X"), tag.getString("F")));
         }
         return log;
     }

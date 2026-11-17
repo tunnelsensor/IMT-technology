@@ -3888,6 +3888,12 @@ public final class VisualCheck {
             SdCardTour.pictures(t);
         }
 
+        // --- Hoofdstuk 138 (-Ponly=logwatch): Logs met lange regels die afbreken en gemarkeerde regels, de knop Flagged, en
+        // de Help bij WATCH YOUR LOG (lw01 tot lw03).
+        if (want("logwatch")) {
+            LogWatchTour.tour(t);
+        }
+
         // --- De Remote Frag (hoofdstuk 35, in plaats van C4): drie tegen een muur, op de vloer en onder een overstekje,
         // van dichtbij; de Frag Trigger in je hand met de bordjes boven je ladingen; het alarm "FRAG!" op je zone; dan de
         // klap: een gat in de muur met barsten eromheen, en barsten in obsidiaan (na drie frags nog geen gat).

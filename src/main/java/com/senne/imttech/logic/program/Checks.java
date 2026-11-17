@@ -501,6 +501,10 @@ public final class Checks {
         if ((action == Op.ACCEPT || action == Op.DENY) && trigger != null && !trigger.hasSourceDevice()) {
             return action.code() + "() only works inside when keycard(...) or when codepanel(...)";
         }
+        // Hoofdstuk 138: flag(...) markeert de nieuwe regel van het logboek, en die is er alleen na when logged:.
+        if (action == Op.FLAG && trigger != null && trigger != Op.LOGGED) {
+            return "flag(...) only works inside when logged:";
+        }
         return null;
     }
 

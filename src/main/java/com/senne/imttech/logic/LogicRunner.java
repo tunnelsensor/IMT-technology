@@ -81,14 +81,25 @@ public final class LogicRunner {
     public record Context(Op trigger, String source, @Nullable BlockPos sourcePos, @Nullable UUID player, String playerName,
                           boolean trusted, boolean owner, @Nullable KeycardData card, boolean cardValid, String code,
                           com.senne.imttech.training.Training.@Nullable Info training, List<String> cardGroups,
-                          boolean leverOn, boolean authValid, boolean authOld, String authCode, boolean requestAccepted) {
+                          boolean leverOn, boolean authValid, boolean authOld, String authCode, boolean requestAccepted,
+                          EventLog.@Nullable Entry logEntry) {
         /**
          * {@code cardGroups} (25 oktober): de groepen waar de kaart zelf in zit, zoals de kern ze kent toen hij gelezen
          * werd (een nagemaakte kaart: de groep die de hacker koos). Leeg voor een ongeldige kaart. {@code leverOn}
-         * (hoofdstuk 38): na een netwerkhendel, of hij nu aan staat ({@code lever.on}).
+         * (hoofdstuk 38): na een netwerkhendel, of hij nu aan staat ({@code lever.on}). {@code logEntry} (hoofdstuk 138):
+         * na {@code when logged:} de nieuwe regel van het logboek (die {@code flag(...)} markeert).
          */
         public Context {
             cardGroups = List.copyOf(cardGroups);
+        }
+
+        /** Zonder regel van het logboek (alles behalve when logged:). */
+        public Context(Op trigger, String source, @Nullable BlockPos sourcePos, @Nullable UUID player, String playerName,
+                       boolean trusted, boolean owner, @Nullable KeycardData card, boolean cardValid, String code,
+                       com.senne.imttech.training.Training.@Nullable Info training, List<String> cardGroups,
+                       boolean leverOn, boolean authValid, boolean authOld, String authCode, boolean requestAccepted) {
+            this(trigger, source, sourcePos, player, playerName, trusted, owner, card, cardValid, code, training, cardGroups,
+                    leverOn, authValid, authOld, authCode, requestAccepted, null);
         }
 
         /** Zonder autorisatiecode en zonder verzoek (hoofdstuk 49). */
@@ -102,13 +113,13 @@ public final class LogicRunner {
         /** Hetzelfde, met wat het codepaneel van de autorisatiecode vond (hoofdstuk 49: auth.valid, auth.old, auth.code). */
         public Context withAuth(boolean valid, boolean old, String current) {
             return new Context(trigger, source, sourcePos, player, playerName, trusted, owner, card, cardValid, code, training,
-                    cardGroups, leverOn, valid, old, current, requestAccepted);
+                    cardGroups, leverOn, valid, old, current, requestAccepted, logEntry);
         }
 
         /** Hetzelfde, met het antwoord op een toegangsverzoek (hoofdstuk 49: request.accepted). */
         public Context withRequest(boolean accepted) {
             return new Context(trigger, source, sourcePos, player, playerName, trusted, owner, card, cardValid, code, training,
-                    cardGroups, leverOn, authValid, authOld, authCode, accepted);
+                    cardGroups, leverOn, authValid, authOld, authCode, accepted, logEntry);
         }
 
         /** Zonder hendel. */
@@ -242,6 +253,9 @@ public final class LogicRunner {
         final Map<String, Globals> globals = new HashMap<>();
         /** Per programma (naam) het diagram samengevoegd met de global scripts (hoofdstuk 43). */
         final Map<String, Merged> merged = new HashMap<>();
+        /** Hoofdstuk 138: de eigen grens van when logged: (los van de andere triggers). */
+        long loggedWindowStart;
+        int loggedWindowCount;
     }
 
     /**
@@ -357,6 +371,85 @@ public final class LogicRunner {
             }
         }
         return matched;
+    }
+
+    /**
+     * Er kwam een regel in het logboek van de kern (hoofdstuk 138): start {@code when logged:}, met {@code log.text} en
+     * {@code log.kind}. Regels van de soort LOGIC (wat diagrammen en robots zelf zeggen of loggen, en meldingen van de
+     * server) en ALARM niet: zo kan een diagram zichzelf nooit eindeloos starten. Het heeft zijn eigen grens per seconde
+     * ([logic] loggedPerSecond), los van de andere triggers: een drukke minuut in je logboek houdt je deuren niet tegen.
+     */
+    public static void logged(ServerLevel level, SecurityCoreBlockEntity core, EventLog.Entry entry) {
+        if (entry.type() == EventLog.Type.LOGIC || entry.type() == EventLog.Type.ALARM || !listensToLog(core)) {
+            return;
+        }
+        LogicServer.Stats stats = LogicServer.stats(level, core);
+        if (!stats.online()) {
+            return;
+        }
+        Runtime runtime = runtime(level, core);
+        long now = level.getGameTime();
+        Context context = new Context(Op.LOGGED, entry.text(), null, null, "", false, false, null, false,
+                entry.type().name().toLowerCase(java.util.Locale.ROOT), null, List.of(), false, false, false, "", false, entry);
+        int limit = Math.max(1, Math.round(com.senne.imttech.config.ImtConfig.Logic.LOGGED_PER_SECOND));
+        for (LogicProgram program : runnable(core, stats)) {
+            for (LogicGraph.Node node : program.graph().nodes()) {
+                if (node.op != Op.LOGGED) {
+                    continue;
+                }
+                if (now - runtime.loggedWindowStart >= 20 || now < runtime.loggedWindowStart) {
+                    runtime.loggedWindowStart = now;
+                    runtime.loggedWindowCount = 0;
+                }
+                if (++runtime.loggedWindowCount > limit) {
+                    report(level, core, runtime, EventLog.Type.LOGIC, "Too many new log lines at once: when logged: skipped some");
+                    return;
+                }
+                enqueue(level, core, runtime, newRun(core, runtime, program, node.next, context, now + stats.reactionTicks()));
+            }
+        }
+    }
+
+    /** Heeft een diagram van deze kern een when logged:? (Anders hoeven we niet eens naar de server te kijken.) */
+    private static boolean listensToLog(SecurityCoreBlockEntity core) {
+        for (LogicProgram program : core.logic().programs()) {
+            if (program.enabled() && program.kind() == com.senne.imttech.logic.program.ProgramKind.SERVER) {
+                for (LogicGraph.Node node : program.graph().nodes()) {
+                    if (node.op == Op.LOGGED) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /** Wanneer een kern het laatst waarschuwde voor een gemarkeerde regel (hoofdstuk 138: niet bij elke regel een melding). */
+    private static final Map<GlobalPos, Long> LAST_FLAG_ALERT = new HashMap<>();
+
+    /**
+     * {@code flag("...")} in een {@code when logged:} (hoofdstuk 138): die regel wordt rood in Logs (met de reden), en I.M.T
+     * waarschuwt de eigenaar in Messages en op zijn bril, hooguit om de [logic] flagAlertSeconds seconden. Een markering
+     * schrijft zelf geen regel in het logboek.
+     */
+    private static void flag(ServerLevel level, SecurityCoreBlockEntity core, EventLog.@Nullable Entry entry, String reason) {
+        if (entry == null || !core.log().flag(entry, reason)) {
+            return;
+        }
+        core.setChanged();
+        GlobalPos here = GlobalPos.of(level.dimension(), core.getBlockPos());
+        long now = level.getGameTime();
+        Long last = LAST_FLAG_ALERT.get(here);
+        if (last != null && now >= last && now - last < Math.round(com.senne.imttech.config.ImtConfig.Logic.FLAG_ALERT_SECONDS * 20)) {
+            return;
+        }
+        LAST_FLAG_ALERT.put(here, now);
+        String text = "Flagged on " + core.hostname() + ": " + (reason.isBlank() ? "suspicious" : reason) + " (" + entry.text() + ")";
+        core.addMessage(text, true);
+        ServerPlayer owner = owner(level, core);
+        if (owner != null) {
+            ImtServer.send(owner, Component.literal(text), ImtMessagePayload.Level.WARNING);
+        }
     }
 
     /** Elke robot en drone van deze squad ligt neer (hoofdstuk 26): start {@code when squad_down("Wave 1"):}. */
@@ -565,6 +658,9 @@ public final class LogicRunner {
                     case "lives" -> context.training() != null ? (Object) (double) context.training().lives() : own(run, variable, 0.0);
                     case "hits" -> context.training() != null ? (Object) (double) context.training().hits() : own(run, variable, 0.0);
                     case "passed" -> context.training() != null ? (Object) context.training().passed() : own(run, variable, false);
+                    // Na when logged: (hoofdstuk 138): de nieuwe regel en zijn soort ("login_fail", "trap", ...).
+                    case "log.text" -> context.trigger() == Op.LOGGED ? context.source() : "";
+                    case "log.kind" -> context.trigger() == Op.LOGGED ? context.code() : "";
                     default -> false;
                 };
             }
@@ -658,6 +754,8 @@ public final class LogicRunner {
             }
             case LOG -> core.logEvent(EventLog.Type.LOGIC, message(level, core, run, node));
             case ALARM -> alarm(level, core, context, message(level, core, run, node));
+            // Hoofdstuk 138: in when logged: deze regel markeren (rood in Logs, en I.M.T waarschuwt).
+            case FLAG -> flag(level, core, context.logEntry(), message(level, core, run, node));
             case ORDER -> order(level, core, runtime, run, node);
             case ACTIVATE, DEACTIVATE -> {
                 String robot = deviceName(level, core, run, node);
@@ -871,10 +969,12 @@ public final class LogicRunner {
     /** Stopt alles wat op deze server bezig is (bij een overname, of als de kern weg is). */
     public static void stop(ServerLevel level, BlockPos core) {
         RUNTIMES.remove(GlobalPos.of(level.dimension(), core));
+        LAST_FLAG_ALERT.remove(GlobalPos.of(level.dimension(), core));
     }
 
     public static void clear() {
         RUNTIMES.clear();
+        LAST_FLAG_ALERT.clear();
         ExprCache.clear();
     }
 }

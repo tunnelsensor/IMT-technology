@@ -1588,6 +1588,12 @@ public final class ImtConfig {
         /** Zoveel backups van één netwerk blijven op één datacenter staan (de oudste gaat eraf). */
         @Tunable(value = "How many backups of one network a datacenter keeps (the oldest goes first)", min = 1, max = 64)
         public static float BACKUPS_KEPT = 3.0f;
+        /** Hoofdstuk 138: hooguit om de zoveel seconden waarschuwt I.M.T voor gemarkeerde regels van één kern. */
+        @Tunable(value = "Seconds between two I.M.T warnings about flagged log lines of one core", min = 0, max = 600)
+        public static float FLAG_ALERT_SECONDS = 10.0f;
+        /** Hoofdstuk 138: zoveel nieuwe regels per seconde kijkt when logged: hooguit na (los van de andere triggers). */
+        @Tunable(value = "How many new log lines per second when logged: looks at, at most", min = 1, max = 100)
+        public static float LOGGED_PER_SECOND = 10.0f;
 
         // ------------------------------------------------------------------------- Warmte
         /** Warmte (watt) van één CPU die niets doet... */

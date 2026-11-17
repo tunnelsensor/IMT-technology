@@ -206,7 +206,10 @@ public sealed interface Expr {
         TRAINEE("trainee", Type.TEXT, "the name of the player in the training", Op.TRAINING_HIT),
         LIVES("lives", Type.NUMBER, "how many lives the trainee has left", Op.TRAINING_HIT),
         HITS("hits", Type.NUMBER, "how often the trainee was hit", Op.TRAINING_HIT),
-        PASSED("passed", Type.BOOL, "true if the trainee passed (reached the goal, or survived the time)", Op.TRAINING_ENDED);
+        PASSED("passed", Type.BOOL, "true if the trainee passed (reached the goal, or survived the time)", Op.TRAINING_ENDED),
+        // Na when logged: (hoofdstuk 138) de nieuwe regel in je logboek.
+        LOG_TEXT("log.text", Type.TEXT, "the text of the new log line", Op.LOGGED),
+        LOG_KIND("log.kind", Type.TEXT, "its kind: login_fail, login, hack, trap, entry, device ...", Op.LOGGED);
 
         final String name;
         final Type type;

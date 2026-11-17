@@ -1470,6 +1470,12 @@ final class LogicApp {
             lines.add(new HelpLine("trainee, lives, hits, passed", "trainee",
                     "who trains, lives left (Lethal: 1 until they die), how often hit, and (when ended) if they passed",
                     HudStyle.WHITE, null));
+            // Hoofdstuk 138: je logboek laten nakijken, en verdachte regels markeren. De uitleg past op twee regels.
+            lines.add(header("WATCH YOUR LOG"));
+            lines.add(item("logged", "when logged:\n    if log.kind == \"login_fail\":\n        flag(\"Wrong password\")\n", Op.LOGGED));
+            lines.add(item("flag(...)", "flag(\"Wrong password\")", Op.FLAG));
+            lines.add(new HelpLine("if log.kind == \"trap\":", "if log.kind == \"trap\":\n    flag(f\"Trap: {log.text}\")",
+                    "log.kind: login_fail, login, hack, trap, entry, device ...", HudStyle.WHITE, null));
         } else {
             // Wat een robot (of een drone, hoofdstuk 25) zelf kan (hoofdstuk 23).
             String self = kind == ProgramKind.DRONE ? "drone" : "robot";

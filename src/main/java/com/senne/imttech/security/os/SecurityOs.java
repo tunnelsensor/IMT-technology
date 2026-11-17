@@ -1502,6 +1502,9 @@ public final class SecurityOs {
                 line.putInt("ago", (int) Math.max(0, (now - entry.time()) / 20));
                 line.putString("k", entry.type().name());
                 line.putString("x", entry.text());
+                if (!entry.flag().isEmpty()) {
+                    line.putString("f", entry.flag()); // hoofdstuk 138: gemarkeerd door when logged:
+                }
                 log.add(line);
             }
             data.put("log", log);

@@ -61,6 +61,12 @@ public enum Op {
     HIT(Kind.TRIGGER, "trainee_hit", Arg.NONE, Arg.NONE, "The trainee is hit (only in a Training End block)"),
     /** {@code when squad_down("Wave 1"):} (hoofdstuk 26): elke robot en drone van die squad ligt neer (of is kapot). */
     SQUAD_DOWN(Kind.TRIGGER, "squad_down", Arg.TEXT, Arg.NONE, "Every robot and drone of this squad is down, out of power or destroyed"),
+    /**
+     * {@code when logged:} (hoofdstuk 138): er komt een nieuwe regel in het logboek van de kern ({@code log.text},
+     * {@code log.kind}). Niet na een regel van een diagram of robot zelf, of een alarm (soort LOGIC en ALARM): anders kon
+     * een diagram zichzelf eindeloos starten.
+     */
+    LOGGED(Kind.TRIGGER, "logged", Arg.NONE, Arg.NONE, "A new line in the log: log.text, log.kind. flag(...) marks it"),
 
     // ---------------------------------------------------------------- Je eigen blokjes (functies)
     /** Een eigen blok: in de code {@code def open_lab():} met de acties eronder. De tekst is de naam. */
@@ -82,6 +88,8 @@ public enum Op {
     SAY(Kind.ACTION, "say", Arg.TEXT, Arg.NONE, "I.M.T tells the owner something"),
     ALARM(Kind.ACTION, "alarm", Arg.TEXT, Arg.NONE, "Alarm: I.M.T warns the owner and the security hunts the player"),
     LOG(Kind.ACTION, "log", Arg.TEXT, Arg.NONE, "Write a line in the security log"),
+    /** {@code flag("Wrong password")} (hoofdstuk 138): in een {@code when logged:} die regel markeren (rood in Logs). */
+    FLAG(Kind.ACTION, "flag", Arg.TEXT, Arg.NONE, "In when logged: the line turns red, I.M.T warns you"),
 
     // ---------------------------------------------------------------- Een robot (hoofdstuk 23) of drone (hoofdstuk 25)
     /** {@code forward(3)}: zoveel blokken vooruit, blok voor blok. */
@@ -344,6 +352,7 @@ public enum Op {
             case TRAINING_STARTED, TRAINING_HIT, TRAINING_ENDED -> "Bootcamp";
             case SQUAD_DOWN -> "Wave 1";
             case ACTIVATE, DEACTIVATE -> "Guard 1";
+            case FLAG -> "Wrong password";
             default -> "Someone is at the door";
         };
     }
@@ -473,6 +482,8 @@ public enum Op {
         return switch (this) {
             case KEYCARD, CODEPANEL, BUTTON, LEVER, REQUEST, TURNED_ON, TURNED_OFF, ACCEPT, DENY, MESSAGE,
                  TRAINING_STARTED, TRAINING_HIT, TRAINING_ENDED, SQUAD_DOWN -> kind == ProgramKind.SERVER;
+            // Hoofdstuk 138: het logboek nakijken doet de server.
+            case LOGGED, FLAG -> kind == ProgramKind.SERVER;
             // Robots en squads aansturen kan ook een Training End-blok (hoofdstuk 26: deactivate("Wave 1")).
             case ORDER, ACTIVATE, DEACTIVATE -> kind == ProgramKind.SERVER || kind == ProgramKind.TRAINING_END;
             case HIT -> kind == ProgramKind.TRAINING_END;
@@ -501,7 +512,8 @@ public enum Op {
      */
     public boolean reservedIn(@Nullable ProgramKind kind) {
         return switch (this) {
-            case TAKE, PUT, CHECK, ARM_UP, ARM_DOWN -> false;
+            // Hoofdstuk 138: logged en flag ook niet (een oud programma mag een naam flag of een def flag() hebben).
+            case TAKE, PUT, CHECK, ARM_UP, ARM_DOWN, LOGGED, FLAG -> false;
             default -> true;
         };
     }

@@ -1088,7 +1088,10 @@ bekijken of te zien wie er waar binnenkwam.
 **Wie kwam er binnen?** In de app **Logs** staat bovenaan **Show: all**. Klik erop voor **Show:
 entries**: dan zie je alleen welke kaart er bij welke keycardlezer gebruikt werd (niet wie: een lezer weet
 dat niet, zie **Keycards** hieronder), wie welk codepaneel, welke knop of hendel gebruikte, en wie waar
-inlogde ("Lotte logged in at Reception").
+inlogde ("Lotte logged in at Reception"). Een lange regel breekt af binnen het venster, met de tijd in een eigen
+kolom (sinds 17 november). Markeert een diagram regels (zie `when logged:` bij **De server**), dan zijn die rood,
+met de reden ervoor ("[Wrong password] ..."), en de knop **Flagged** ernaast (met hoeveel het er zijn) toont alleen
+die regels.
 
 ### De I.M.T Phone: je kern in je zak
 De **I.M.T Phone** (een zwart glaspaneel, een computerchip en een ijzerstaaf) is de laptop in het klein:
@@ -1452,6 +1455,26 @@ when keycard("Lab door"):
   def activate_alarm():
       alarm("Base lockdown!")
       on("Siren")
+  ```
+- **Je logboek laten nakijken** (sinds 17 november): `when logged:` begint bij elke nieuwe regel in het logboek van
+  je kern, met `log.text` (de tekst van de regel) en `log.kind` (de soort: `login_fail` voor een fout wachtwoord,
+  `login`, `hack`, `trap` als een valstrik afging, `entry`, `device`, `system`, `owner`, `zone`, `heat` of
+  `training`). Met `flag("...")` markeer je die regel: in **Logs** wordt hij rood, met de reden ervoor, en I.M.T
+  waarschuwt je in Messages en op je bril (hooguit om de 10 seconden, ook als er veel tegelijk gemarkeerd worden). De
+  reden mag berekend zijn, ook met een f-tekst: `flag(f"Wrong password: {log.text}")`. `flag(...)` werkt alleen in een
+  `when logged:` (of in een def die je daar aanroept). Regels van de soort `logic` en `alarm` starten `when logged:`
+  nooit: wat je diagrammen en robots zelf zeggen of loggen (`say`, `log`, `alarm`), meldingen van de server (zoals "Too
+  many triggers") en alarmen. Zo kan een diagram zichzelf niet eindeloos starten. Per seconde kijkt het hooguit 10
+  nieuwe regels na (los van je andere triggers: je deuren en lezers blijven gewoon werken); de rest slaat het over, en
+  dat zegt het logboek. Een markering schrijft zelf geen regel, en blijft bewaard. Had een oud diagram al een naam
+  `flag` of een def `flag()`, dan blijft die werken. Voor wie de server beheert: `[logic] flagAlertSeconds` (10) en
+  `loggedPerSecond` (10).
+  ```
+  when logged:
+      if log.kind == "login_fail":
+          flag(f"Wrong password: {log.text}")
+      elif log.kind == "trap":
+          flag("Trap opened")
   ```
 - `repeat(3):` en `forever:` bestaan niet meer (jouw notitie van 16 oktober: "een for en while is
   voldoende"). Een diagram dat ze nog had, zet de server bij het laden om: `repeat(3):` wordt

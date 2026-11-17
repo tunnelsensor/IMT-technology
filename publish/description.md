@@ -49,7 +49,8 @@ bunkers to raid.
 - An Alarm Speaker that plays your own sound (upload an mp4, m4a, mp3, wav or ogg; a video works too) when a diagram
   you run switches it on by name. It never sounds by itself.
 - Server racks with CPU, RAM, SSD, GPU and fans: program your base with redstone diagrams or a
-  small Python-like language. Racks heat up, so give every rack a fan.
+  small Python-like language. Racks heat up, so give every rack a fan. A diagram can also watch your
+  security log (`when logged:`) and flag suspicious lines, like a wrong password, so I.M.T warns you.
 - SD Cards (8, 32 and 128 GB) to give away or sell your programs and files: slide one into a Security Core or a
   Computer, copy a program onto it open or locked, and install it on another base. A locked program can be used
   (run it, switch it on and off, load it onto a robot or RC Car) but nobody can read or change its code.

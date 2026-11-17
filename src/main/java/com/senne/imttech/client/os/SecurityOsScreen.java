@@ -533,6 +533,14 @@ public class SecurityOsScreen extends Screen {
     public void tourLogsEntries() {
         openApp(App.LOGS);
         entriesOnly = true;
+        flaggedOnly = false;
+    }
+
+    /** Alleen voor de screenshot-rondleiding (hoofdstuk 138): de app Logs, met alles of alleen de gemarkeerde regels. */
+    public void tourLogsFlagged(boolean only) {
+        openApp(App.LOGS);
+        entriesOnly = false;
+        flaggedOnly = only;
     }
 
     /** Alleen voor de screenshot-rondleiding (hoofdstuk 38): de app Devices, naar beneden tot dit kopje ("BUTTONS"). */
@@ -837,8 +845,17 @@ public class SecurityOsScreen extends Screen {
             case LOGS -> {
                 Area area = contentArea(win);
                 String label = entriesOnly ? LOGS_ENTRIES : LOGS_ALL;
+                int fx = area.x() + OsDraw.buttonWidth(font, label) + 4;
                 if (OsDraw.inside(mx, my, area.x(), area.y(), OsDraw.buttonWidth(font, label), OsDraw.BUTTON_H)) {
                     entriesOnly = !entriesOnly;
+                    flaggedOnly = false;
+                    win.scroll = 0;
+                } else if (OsDraw.inside(mx, my, fx, area.y(), OsDraw.buttonWidth(font, flaggedLabel()), OsDraw.BUTTON_H)) {
+                    // Hoofdstuk 138: alleen de gemarkeerde regels (van elke soort: dan niet ook "Show: entries").
+                    flaggedOnly = !flaggedOnly;
+                    if (flaggedOnly) {
+                        entriesOnly = false;
+                    }
                     win.scroll = 0;
                 }
             }
@@ -1185,7 +1202,7 @@ public class SecurityOsScreen extends Screen {
             case COMPUTERS -> computers.render(g, font, area, mouseX, mouseY, partialTick);
             case FILES -> files.render(g, font, area, mouseX, mouseY, partialTick);
             case NOTES -> notes.render(g, font, area, mouseX, mouseY, partialTick);
-            case LOGS -> renderLogs(g, area.x(), area.y(), area.h(), win.scroll);
+            case LOGS -> renderLogs(g, area.x(), area.y(), area.w(), area.h(), win.scroll);
             case SETTINGS -> renderSettings(g, area.x(), area.y());
         }
         g.disableScissor();
@@ -1229,40 +1246,95 @@ public class SecurityOsScreen extends Screen {
     private static final String LOGS_ALL = "Show: all";
     private static final String LOGS_ENTRIES = "Show: entries";
 
-    /** De regels van het logboek die je nu ziet (alles, of alleen de entries). */
+    /** Hoofdstuk 138: alleen de regels die een diagram markeerde (when logged: met flag), met de knop "Flagged". */
+    private boolean flaggedOnly;
+
+    /** De regels van het logboek die je nu ziet: alles, alleen de entries, of (hoofdstuk 138) alleen de gemarkeerde. */
     private List<Tag> shownLog() {
         List<Tag> log = data.getList("log", Tag.TAG_COMPOUND);
-        if (!entriesOnly) {
+        if (!entriesOnly && !flaggedOnly) {
             return log;
         }
         List<Tag> entries = new ArrayList<>();
         for (Tag element : log) {
-            String kind = ((CompoundTag) element).getString("k");
-            if (kind.equals("ENTRY") || kind.equals("LOGIN")) {
+            CompoundTag line = (CompoundTag) element;
+            String kind = line.getString("k");
+            boolean entry = kind.equals("ENTRY") || kind.equals("LOGIN");
+            if (flaggedOnly ? !line.getString("f").isEmpty() : entry) {
                 entries.add(element);
             }
         }
         return entries;
     }
 
-    private void renderLogs(GuiGraphics g, int cx, int cy, int ch, int scroll) {
-        OsDraw.button(g, font, cx, cy, entriesOnly ? LOGS_ENTRIES : LOGS_ALL, true, entriesOnly ? HudStyle.ORANGE : HudStyle.CYAN);
+    /** Hoeveel regels er gemarkeerd zijn (de knop "Flagged 3"). */
+    private int flaggedCount() {
+        int count = 0;
+        for (Tag element : data.getList("log", Tag.TAG_COMPOUND)) {
+            if (!((CompoundTag) element).getString("f").isEmpty()) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private String flaggedLabel() {
+        return "Flagged " + flaggedCount();
+    }
+
+    /** Eén regel op het scherm: de tijd (alleen op de eerste regel van een melding), de tekst, en de kleur. */
+    private record LogRow(String time, String text, int colour) {}
+
+    /**
+     * De app Logs. Hoofdstuk 138: een lange regel breekt af binnen het venster (eerst liep hij er rechts uit), met de tijd in
+     * een eigen kolom links; een gemarkeerde regel is rood, met de reden ervoor ("[Wrong password] ..."). Het muiswiel
+     * schuift per regel op het scherm.
+     */
+    private void renderLogs(GuiGraphics g, int cx, int cy, int cw, int ch, int scroll) {
+        String show = entriesOnly ? LOGS_ENTRIES : LOGS_ALL;
+        OsDraw.button(g, font, cx, cy, show, true, entriesOnly ? HudStyle.ORANGE : HudStyle.CYAN);
+        int fx = cx + OsDraw.buttonWidth(font, show) + 4;
+        int flagged = flaggedCount();
+        int fw = OsDraw.button(g, font, fx, cy, flaggedLabel(), true, flaggedOnly || flagged > 0 ? HudStyle.RED : OsDraw.GREY);
+        if (flaggedOnly) {
+            g.fill(fx + 3, cy + OsDraw.BUTTON_H - 2, fx + fw - 3, cy + OsDraw.BUTTON_H - 1, HudStyle.argb(255, HudStyle.RED));
+        }
         cy += OsDraw.BUTTON_H + 4;
         ch -= OsDraw.BUTTON_H + 4;
         List<Tag> log = shownLog();
-        int rows = Math.max(1, ch / LINE);
-        int total = log.size();
-        int first = Math.max(0, total - rows - scroll);
-        int end = Math.min(total, first + rows);
+        int timeW = 0;
+        for (Tag element : log) {
+            timeW = Math.max(timeW, font.width(((CompoundTag) element).getInt("ago") + "s"));
+        }
+        timeW += font.width("  ");
+        int textW = Math.max(40, cw - timeW);
+        List<LogRow> rows = new ArrayList<>();
+        for (Tag element : log) {
+            CompoundTag entry = (CompoundTag) element;
+            String flag = entry.getString("f");
+            String body = (flag.isEmpty() ? "" : "[" + flag + "] ") + entry.getString("x");
+            int colour = flag.isEmpty() ? logColour(entry.getString("k")) : HudStyle.RED;
+            List<String> parts = OsDraw.wrap(font, body, textW, 4);
+            for (int i = 0; i < parts.size(); i++) {
+                rows.add(new LogRow(i == 0 ? entry.getInt("ago") + "s" : "", parts.get(i), colour));
+            }
+        }
+        int visible = Math.max(1, ch / LINE);
+        int total = rows.size();
+        int first = Math.max(0, total - visible - scroll);
+        int end = Math.min(total, first + visible);
         int y = cy;
         for (int i = first; i < end; i++) {
-            CompoundTag entry = (CompoundTag) log.get(i);
-            String text = entry.getInt("ago") + "s  " + entry.getString("x");
-            line(g, cx, y, text, logColour(entry.getString("k")));
+            LogRow row = rows.get(i);
+            if (!row.time().isEmpty()) {
+                line(g, cx, y, row.time(), row.colour());
+            }
+            line(g, cx + timeW, y, row.text(), row.colour());
             y += LINE;
         }
-        if (total == 0) {
-            line(g, cx, cy, entriesOnly ? "(nobody used a reader, panel or computer yet)" : "(no events yet)", 0x5A6B72);
+        if (log.isEmpty()) {
+            line(g, cx, cy, OsDraw.fitRight(font, flaggedOnly ? "(nothing flagged yet)"
+                    : entriesOnly ? "(nobody used a reader, panel or computer yet)" : "(no events yet)", cw), 0x5A6B72);
         }
     }
 

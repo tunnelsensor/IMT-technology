@@ -22,7 +22,7 @@ Afspraken die overal gelden:
   **Rookie squad** met als voorbeeldnaam **Bootcamp**. Rayshield, de robotstijlen en de Ion
   Blaster blijven zo (jouw keuze).
 
-**Stand van zaken:** 663 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
+**Stand van zaken:** 665 automatische tests (`gradlew runGameTestServer`). Met de standaardwaarden uit
 de code allemaal groen; met jouw tragere waarden in `run/config/imttech.toml` (zonnepaneel 0.3, warmte 0.7
 per tick) 3 rood (zie hoofdstuk 14, stap 2). Voor de release blijven de standaardwaarden uit de code
 (jouw keuze, 17 oktober).
@@ -10540,6 +10540,47 @@ Jouw wens: "zorg dat een f string bij alles werkt niet enkel bij for loop".
   is niet veranderd (het when-blokje had zijn code-vak al).
 - **Nog niet in het spel bekeken**: de nieuwe Help-regels en het when-blokje met zijn code (zie "Nog nooit in het spel
   bekeken").
+
+### 138. Je logboek laten nakijken: when logged: en flag(...) (17 november)
+
+Jouw wens (bij hoofdstuk 133): "zorg ook dat je een script kunt maken waar je logs door kunt flaggen". Hoofdstuk 133
+zelf staat stil (zie daar); dit stuk staat er los van, als iets voor je eigen beveiliging. Daarbij liepen lange regels
+in de app Logs rechts uit het venster.
+
+- [x] **`when logged:`** (`Op.LOGGED`, alleen in een serverdiagram): begint bij elke nieuwe regel in het logboek van je
+      kern, met `log.text` (de regel) en `log.kind` (de soort in kleine letters: `login_fail`, `login`, `hack`, `trap`,
+      `entry`, `device`, `system`, `owner`, `zone`, `heat`, `training`). `SecurityCoreBlockEntity.logEvent` geeft elke
+      regel door aan `LogicRunner.logged`. Regels van de soort LOGIC (wat diagrammen en robots zelf zeggen of loggen,
+      meldingen van de server) en ALARM starten hem nooit: zo kan een diagram zichzelf niet eindeloos starten. Hij heeft
+      een eigen grens per seconde (`[logic] loggedPerSecond`, 10), los van de 40 triggers per seconde van je lezers,
+      panelen en knoppen: een drukke minuut in je logboek houdt je deuren niet tegen. Wat erboven komt, slaat hij over,
+      met één regel "Too many new log lines at once" (soort LOGIC, die hij zelf niet ziet).
+- [x] **`flag("...")`** (`Op.FLAG`, alleen in een serverdiagram, en alleen in een `when logged:` of een def): markeert die
+      regel (`EventLog.Entry.flag`, bewaard met het logboek). De reden mag berekend zijn, ook een f-tekst
+      (`flag(f"Wrong password: {log.text}")`). I.M.T waarschuwt de eigenaar in Messages en op zijn bril
+      ("Flagged on Base-7: Wrong password (...)"), hooguit om de `[logic] flagAlertSeconds` (10) seconden per kern. Een
+      markering schrijft zelf geen regel in het logboek.
+- [x] **Oude programma's**: `logged` en `flag` zijn geen bezette woorden (`Op.reservedIn`), zoals de woorden van
+      hoofdstuk 113: een diagram met een naam `flag` of een eigen `def flag():` blijft werken.
+- [x] **De app Logs** (`SecurityOsScreen.renderLogs`): een lange regel breekt af binnen het venster, met de tijd in een
+      eigen kolom (eerst liep hij er rechts uit, ook al vóór dit hoofdstuk); het muiswiel schuift per regel op het scherm.
+      Een gemarkeerde regel is rood, met de reden ervoor ("[Wrong password] ..."). Naast **Show: all** staat **Flagged N**:
+      die toont alleen de gemarkeerde regels (van elke soort; dan staat Show weer op all).
+- [x] **Help** in de app Logic (serverdiagram): het kopje **WATCH YOUR LOG** met `logged`, `flag(...)` en
+      `if log.kind == "trap":`, elk met een uitleg van hooguit twee regels.
+- [x] **Tests** (2 nieuwe, in de bestaande batch "security_os", dus nog altijd 192 batchnamen; `gametest/LogWatchGameTests`):
+      `log_watch_language` (flag buiten when logged:, in een robotprogramma, log.text buiten when logged:, een f-tekst in
+      flag, een oude naam flag en een oude def flag()) en `log_watch_flags_lines` (een fout wachtwoord van ver wordt
+      gemarkeerd met de regel erin; een SYSTEM-regel ook; LOGIC- en ALARM-regels niet; één waarschuwing van I.M.T; de
+      desktop krijgt de markering; bewaren en laden houdt hem; van 25 regels tegelijk worden er hooguit 10 nagekeken, met
+      de melding). 665 tests, allemaal groen.
+- [x] LEESMIJ (bij **De server**: "Je logboek laten nakijken", en bij Logs de knop Flagged en het afbreken),
+      CurseForge-beschrijving, versie 2.24.0 en protocol 51 (twee nieuwe blokjes gaan heen en weer met de desktop: een
+      oudere versie kan die niet lezen).
+
+Mijn invullingen (zeg het als je iets anders wil): de soorten LOGIC en ALARM tellen niet mee; 10 regels per seconde; een
+waarschuwing hooguit om de 10 seconden; de knop Flagged toont alle soorten; een markering schrijft zelf geen regel; flag
+mag ook in een def.
 
 ## Nog nooit in het spel bekeken
 

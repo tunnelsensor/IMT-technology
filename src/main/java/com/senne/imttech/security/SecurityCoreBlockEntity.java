@@ -478,8 +478,12 @@ public class SecurityCoreBlockEntity extends BlockEntity implements com.senne.im
     }
 
     public void logEvent(EventLog.Type type, String text) {
-        log.add(level == null ? 0 : level.getGameTime(), type, text);
+        EventLog.Entry entry = log.append(new EventLog.Entry(level == null ? 0 : level.getGameTime(), type, text));
         setChanged();
+        // Hoofdstuk 138: een diagram met when logged: kijkt de nieuwe regel na (en kan hem markeren).
+        if (level instanceof ServerLevel server && !isRemoved()) {
+            com.senne.imttech.logic.LogicRunner.logged(server, this, entry);
+        }
         // Een alarm in het logboek laat de Alarm Speakers NIET afgaan (hoofdstuk 128): die gaan alleen af als een script
         // ze op hun naam aanzet.
     }
