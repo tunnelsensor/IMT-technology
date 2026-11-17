@@ -425,10 +425,13 @@ public final class LogicGameTests {
         helper.runAfterDelay(2, () -> {
             ImtTechGameTests.startServer(helper, setup.rack(), setup.core());
             SecurityOs.open(setup.owner(), setup.coreAbs());
-            save(setup, "Lib", "global\n\nlockdown: bool = false\n");
+            save(setup, "Lib", "global\n\nlockdown: bool = false\nbuilding = \"North\"\n");
             saveWith(setup, "Doors", """
+                    door = f"{building} lab door"
+
                     when lever("Night"):
                         lockdown = lever.on
+                        log(door)
 
                     when every(1):
                         if lockdown:
@@ -450,6 +453,8 @@ public final class LogicGameTests {
             check(Boolean.TRUE.equals(setup.core().logic().sharedValues().get("lockdown")),
                     "De hendel zette lockdown niet op true: " + setup.core().logic().sharedValues() + " / " + lastLog(setup.core()));
             check(level.getBlockState(lamp).getValue(RelayBlock.POWERED), "De timer in het andere diagram zag lockdown niet (lamp uit)");
+            // Hoofdstuk 135 (nalezing): bovenaan gebruikt door de gedeelde naam building; eerst werd dat "0 lab door".
+            check(logged(setup.core(), "North lab door"), "door = f\"{building} lab door\" bovenaan gaf: " + lastLog(setup.core()));
             // Opslaan en laden houdt de waarde.
             var reloaded = com.senne.imttech.logic.LogicStore.load(setup.core().logic().save());
             check(Boolean.TRUE.equals(reloaded.sharedValues().get("lockdown")), "Na opslaan en laden was lockdown weg: " + reloaded.sharedValues());
@@ -530,7 +535,11 @@ public final class LogicGameTests {
 
     /** De naam waarop de eerste when in deze code wacht, zoals de parser hem uitrekende (hoofdstuk 135). */
     private static String whenName(String code, com.senne.imttech.logic.program.Library library) {
-        for (Script.Top top : ScriptParser.parse(code, ProgramKind.SERVER, library).items()) {
+        return whenName(code, library, ProgramKind.SERVER);
+    }
+
+    private static String whenName(String code, com.senne.imttech.logic.program.Library library, ProgramKind kind) {
+        for (Script.Top top : ScriptParser.parse(code, kind, library).items()) {
             if (top instanceof Script.Handler handler) {
                 return handler.text();
             }
@@ -846,13 +855,62 @@ public final class LogicGameTests {
         var wingGraph = GraphConverter.toGraph(ScriptParser.parse("global\n\nwing = \"B\"\n"), null);
         var wingLibrary = com.senne.imttech.logic.program.Library.of(List.of(new com.senne.imttech.logic.program.LogicProgram(
                 "Global 2", true, wingGraph, "", ProgramKind.SERVER)), null);
-        String wingName = whenName("when keycard(f\"Wing {wing}\"):\n    accept()\n", wingLibrary);
-        check(wingName.equals("Wing B"), "Een gedeelde naam in een when-regel gaf \"" + wingName + "\"");
+        // Een gedeelde naam van een global script mag niet in een when-regel (uit de nalezing): die kan later veranderen.
+        try {
+            String wingName = whenName("when keycard(f\"Wing {wing}\"):\n    accept()\n", wingLibrary);
+            throw new GameTestAssertException("Een gedeelde naam in een when-regel gaf geen fout maar \"" + wingName + "\"");
+        } catch (LogicException e) {
+            check(e.getMessage().contains("wing is a shared name of a global script"), "Verkeerde melding: " + e.getMessage());
+        }
         expectError("when turned_on(f\"gate {i}\"):\n    say(\"x\")\n", 1, "i has no value at the top of your program");
         expectError("when keycard(f\"Card {card.name}\"):\n    accept()\n", 1, "card.name cannot be in a when line");
         expectError("when keycard(door):\n    accept()\n", 1, "Put names between quotes: keycard(\"door\")");
         expectError("n = 1\n\nwhen keycard(n):\n    accept()\n", 3, "keycard needs a name (text)");
-        expectError("when keycard(f\"{room}\"):\n    accept()\n\nroom = \"Lab\"\n", 1, "room has no value at the top");
+        expectError("when keycard(f\"{room}\"):\n    accept()\n\nroom = \"Lab\"\n", 1, "room only gets its value further down");
+        // Uit de nalezing: een losse naam die verder naar onder staat, een gegeven zonder punt, en de soorten.
+        expectError("when keycard(door):\n    accept()\n\ndoor = \"Vault\"\n", 1, "door only gets its value further down");
+        expectError("when keycard(f\"Lab {is_night}\"):\n    accept()\n", 1, "is_night cannot be in a when line");
+        expectError("nr = \"3\"\n\nwhen keycard(f\"Gate {nr - 1}\"):\n    accept()\n", 3, "You can only subtract numbers");
+        String typed = whenName("n: int = 7 / 2\n\nwhen keycard(f\"Gate {n}\"):\n    accept()\n",
+                com.senne.imttech.logic.program.Library.EMPTY);
+        check(typed.equals("Gate 3"), "n: int = 7 / 2 gaf in de when-regel \"" + typed + "\" in plaats van \"Gate 3\"");
+        String robot = whenName("cmd = \"attack\"\n\nwhen ordered(f\"{cmd}\"):\n    say(\"x\")\n",
+                com.senne.imttech.logic.program.Library.EMPTY, ProgramKind.ROBOT);
+        check(robot.equals("attack"), "Een robot met when ordered(f\"{cmd}\") wacht op \"" + robot + "\"");
+        String car = whenName("mode = \"fetch\"\n\nwhen ordered(f\"{mode}\"):\n    pass\n",
+                com.senne.imttech.logic.program.Library.EMPTY, ProgramKind.CAR);
+        check(car.equals("fetch"), "Een RC program met when ordered(f\"{mode}\") wacht op \"" + car + "\"");
+        // De f-tekst van een when-regel gaat mee in de blokjes en komt terug (als $"..."); verander je de naam bovenaan in
+        // de blokjes, dan rekent Save hem opnieuw uit; is de naam weg, dan zegt Check het.
+        String roundTrip = "room = \"Lab\"\n\nwhen keycard(f\"{room} door\"):\n    accept()\n";
+        LogicGraph blocks = GraphConverter.toGraph(ScriptParser.parse(roundTrip), null);
+        String back = ScriptPrinter.print(GraphConverter.toScript(blocks));
+        check(back.contains("when keycard($\"{room} door\"):"), "De f-tekst van de when-regel kwam niet terug uit de blokjes:\n" + back);
+        // Een diagram dat bewaard werd voor de blokjes de code van hun when-naam bijhielden, past nog bij de code met de
+        // f-tekst (zo vergelijkt LogicApp.codeFor): dan zie je na het openen nog je eigen code.
+        LogicGraph oldBlocks = GraphConverter.toGraph(ScriptParser.parse(roundTrip), null);
+        oldBlocks.nodes().forEach(node -> {
+            if (node.op == Op.KEYCARD) {
+                node.textExpr = "";
+            }
+        });
+        check(ScriptPrinter.printWithNames(ScriptParser.parseUnchecked(roundTrip, ProgramKind.SERVER))
+                .equals(ScriptPrinter.printWithNames(GraphConverter.toScript(oldBlocks))), "Een oud diagram paste niet meer bij zijn code");
+        for (LogicGraph.Node node : blocks.nodes()) {
+            if (node.op == Op.GLOBAL && node.text.equals("room")) {
+                node.expr = "\"Vault\"";
+            }
+        }
+        check(ScriptParser.refreshTriggerNames(blocks, ProgramKind.SERVER, true).isEmpty(), "Opnieuw uitrekenen gaf een fout");
+        String refreshed = blocks.nodes().stream().filter(node -> node.op == Op.KEYCARD).findFirst().map(node -> node.text).orElse("");
+        check(refreshed.equals("Vault door"), "Na room = \"Vault\" in de blokjes wacht de when op \"" + refreshed + "\"");
+        for (LogicGraph.Node node : blocks.nodes()) {
+            if (node.op == Op.GLOBAL && node.text.equals("room")) {
+                node.text = "place";
+            }
+        }
+        check(blocks.problems().stream().anyMatch(problem -> problem.message().contains("room has no value at the top")),
+                "Zonder room bovenaan zei Check niets: " + blocks.problems());
         // Je eigen code (met de f-tekst en je commentaar) past bij zijn blokjes: dan toont de app Logic je eigen code.
         String withWhen = "room = \"Lab\"\n\nwhen keycard(f\"{room} door\"):  # mijn deur\n    accept()\n";
         String whenFromBlocks = ScriptPrinter.print(GraphConverter.toScript(GraphConverter.toGraph(ScriptParser.parse(withWhen), null)));

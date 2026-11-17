@@ -936,6 +936,9 @@ public final class SecurityOs {
             notify(player, core, session, "Not saved: " + problems.getFirst().message(), true);
             return;
         }
+        // Hoofdstuk 135 (nalezing): een when met een berekende naam ({@code when keycard(f"{room} door"):}) rekent zijn naam
+        // opnieuw uit met de namen bovenaan, ook als je die in de blokjes veranderde.
+        com.senne.imttech.logic.program.ScriptParser.refreshTriggerNames(graph, kind, true);
         var stats = com.senne.imttech.logic.LogicServer.stats(level, core);
         if (!stats.online()) {
             notify(player, core, session, "Not saved: " + stats.problem(), true);
@@ -991,8 +994,9 @@ public final class SecurityOs {
         }
         java.util.Set<Integer> reachable = graph.reachable();
         for (var node : graph.nodes()) {
+            // Een when met een berekende naam (hoofdstuk 135) heeft zijn uitgerekende naam in text: die kijken we wel na.
             if (!reachable.contains(node.id) || node.op.textArg() != com.senne.imttech.logic.program.Op.Arg.DEVICE
-                    || !node.textExpr.isBlank()) {
+                    || !node.op.isTrigger() && !node.textExpr.isBlank()) {
                 continue;
             }
             boolean known = node.op.fromInput()

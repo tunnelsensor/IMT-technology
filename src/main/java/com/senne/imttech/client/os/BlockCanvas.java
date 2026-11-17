@@ -773,6 +773,9 @@ final class BlockCanvas {
                         }
                     }
                     node.text = value;
+                    if (node.op.isTrigger()) {
+                        node.textExpr = ""; // een eigen naam getypt: dan geen berekende naam meer (hoofdstuk 135)
+                    }
                     edited();
                 }
             });

@@ -410,6 +410,12 @@ public final class LogicGraph {
                 problems.add(new Problem(problem.ref(), problem.message()));
             }
         }
+        // Een when met een berekende naam (hoofdstuk 135): kan hij met de namen bovenaan nog uitgerekend worden?
+        ScriptParser.refreshTriggerNames(this, kind, false).forEach((id, message) -> {
+            if (wrong.add(id)) {
+                problems.add(new Problem(id, message));
+            }
+        });
         return problems;
     }
 

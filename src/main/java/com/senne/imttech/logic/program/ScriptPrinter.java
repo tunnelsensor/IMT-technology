@@ -16,6 +16,20 @@ public final class ScriptPrinter {
 
     private static final String INDENT = "    ";
 
+    /**
+     * Zoals {@link #print(Script)}, maar elke when met zijn uitgerekende naam, ook als hij een berekende naam heeft
+     * (hoofdstuk 135): om te vergelijken of je code nog bij de blokjes past. Een diagram dat bewaard werd voor de blokjes
+     * de code van hun when-naam bijhielden (hoofdstuk 135 voor de nalezing), past dan nog bij je code met de f-tekst.
+     */
+    public static String printWithNames(Script script) {
+        List<Script.Top> items = new java.util.ArrayList<>();
+        for (Script.Top item : script.items()) {
+            items.add(item instanceof Script.Handler handler ? new Script.Handler(handler.trigger(), handler.text(),
+                    handler.number(), handler.body(), handler.ref(), "") : item);
+        }
+        return print(new Script(items, script.global()));
+    }
+
     public static String print(Script script) {
         StringBuilder out = new StringBuilder();
         if (script.global()) {
@@ -35,7 +49,9 @@ public final class ScriptPrinter {
             if (item instanceof Script.Function function) {
                 out.append("def ").append(function.name()).append('(').append(function.paramsCode()).append("):\n");
             } else if (item instanceof Script.Handler handler) {
-                out.append("when ").append(call(handler.trigger(), handler.text(), handler.number())).append(":\n");
+                // Een berekende naam (hoofdstuk 135) komt terug als code: when keycard($"{room} door"):
+                out.append("when ").append(handler.textExpr().isEmpty() ? call(handler.trigger(), handler.text(), handler.number())
+                        : handler.trigger().code() + "(" + handler.textExpr() + ")").append(":\n");
             }
             block(out, item.body(), 1);
         }

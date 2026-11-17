@@ -39,8 +39,13 @@ public record Script(List<Top> items, boolean global) {
         int ref();
     }
 
-    /** Eén "when ...:" met de regels eronder. */
-    public record Handler(Op trigger, String text, double number, List<Stmt> body, int ref) implements Top {}
+    /**
+     * Eén "when ...:" met de regels eronder. {@code textExpr} (hoofdstuk 135) is de code van een berekende naam
+     * ({@code $"{room} door"}, {@code "gate " + n}, {@code door}), of leeg bij een gewone naam tussen aanhalingstekens;
+     * {@code text} is dan wat die code uitrekende met de namen bovenaan. De code gaat mee in de blokjes, zodat hij na de
+     * blokjes terugkomt en bij elke Save opnieuw uitgerekend wordt (zie ScriptParser.refreshTriggerNames).
+     */
+    public record Handler(Op trigger, String text, double number, List<Stmt> body, int ref, String textExpr) implements Top {}
 
     /**
      * Een parameter van een def (hoofdstuk 43): {@code string door} (sinds hoofdstuk 114 zoals in C#, daarvoor

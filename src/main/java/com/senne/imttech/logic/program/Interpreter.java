@@ -416,7 +416,11 @@ public final class Interpreter {
 
             @Override
             public @Nullable Object variable(String name) {
-                return globals.get(name);
+                // Een naam bovenaan mag een gedeelde naam van een global script gebruiken (Check vindt dat goed):
+                // building = "North" en dan door = f"{building} lab door". Die vraagt hij aan facts (hoofdstuk 135, nalezing:
+                // eerst werd dat "0 lab door").
+                Object own = globals.get(name);
+                return own != null ? own : facts.variable(name);
             }
         };
         for (LogicGraph.Node node : nodes) {

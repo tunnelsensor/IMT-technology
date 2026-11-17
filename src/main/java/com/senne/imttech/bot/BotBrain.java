@@ -542,7 +542,16 @@ public final class BotBrain {
 
             @Override
             public @Nullable Object variable(String name) {
-                return run == null ? globals.get(name) : run.machine.variable(name);
+                if (run != null) {
+                    return run.machine.variable(name);
+                }
+                Object own = globals.get(name);
+                if (own != null) {
+                    return own;
+                }
+                // Bovenaan mag een naam een gedeelde naam van een global script gebruiken (hoofdstuk 135, nalezing).
+                SecurityCoreBlockEntity core = BotLink.core(bot);
+                return core == null ? null : core.logic().sharedValues().get(name);
             }
 
             /** {@code read(scanPin)}: wat de module op die pin zegt (hoofdstuk 24). */

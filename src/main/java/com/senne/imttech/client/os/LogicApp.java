@@ -434,7 +434,10 @@ final class LogicApp {
             try {
                 // Zonder de controle (hoofdstuk 115): een oud diagram met een fout van een latere regel (player.trusted na
                 // een keycard) past nog bij zijn blokjes. Dan zie je je eigen code met je commentaar, en de fout eronder.
-                if (ScriptPrinter.print(ScriptParser.parseUnchecked(source, kind, library)).equals(printed)) {
+                // Met de uitgerekende when-namen vergeleken (hoofdstuk 135): een when met een f-tekst past zo ook bij
+                // blokjes die alleen zijn uitgerekende naam kennen.
+                if (ScriptPrinter.printWithNames(ScriptParser.parseUnchecked(source, kind, library))
+                        .equals(ScriptPrinter.printWithNames(GraphConverter.toScript(graph)))) {
                     return source;
                 }
             } catch (LogicException e) {
@@ -1558,7 +1561,7 @@ final class LogicApp {
                 "Switches on gate 0, 1 and 2. on(\"gate \" + i) works too.", 0x6BE88B, null));
         if (server) {
             // Ook in een when-regel, met een naam van bovenaan (zijn beginwaarde): de when moet zijn apparaat al kennen.
-            lines.add(new HelpLine("when keycard(f\"{room}\"):", "room = \"Lab\"\n\nwhen keycard(f\"{room} door\"):\n    accept()",
+            lines.add(new HelpLine("when keycard(f\"{room}\"):", "room = \"Lab\"\n\nwhen keycard(f\"{room} door\"):\n    accept()\n",
                     "A when uses names from the top: room = \"Lab\" above it.", 0x6BE88B, null));
         }
         lines.add(header("LOOPS (again and again)"));

@@ -44,7 +44,7 @@ public final class GraphConverter {
             }
             List<Script.Stmt> body = chain(graph, root.next, new HashSet<>());
             items.add(root.op == Op.DEF ? new Script.Function(root.text, params(root.expr), body, root.id)
-                    : new Script.Handler(root.op, root.text, root.number, body, root.id));
+                    : new Script.Handler(root.op, root.text, root.number, body, root.id, root.textExpr));
         }
         return new Script(items, graph.global());
     }
@@ -218,6 +218,7 @@ public final class GraphConverter {
                 root = graph.add(handler.trigger(), 0, 0);
                 root.text = handler.text();
                 root.number = handler.number();
+                root.textExpr = handler.textExpr(); // een berekende naam (hoofdstuk 135): de code gaat mee
             }
             byPath.put("w", root);
             cells.put(root, new int[] {0, 0});

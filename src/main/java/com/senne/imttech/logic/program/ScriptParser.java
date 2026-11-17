@@ -47,10 +47,16 @@ public final class ScriptParser {
     /** Begint de code met de regel {@code global}? Dan is dit een global script (hoofdstuk 43). */
     private boolean global;
     /**
-     * De beginwaarden van de namen bovenaan (en van de gedeelde namen van je global scripts) die er tot nu toe waren: daarmee
-     * rekenen we een f-tekst in een when-regel uit (hoofdstuk 135). Een naam zonder vaste beginwaarde staat er niet in.
+     * De beginwaarden van de namen bovenaan die er tot nu toe waren: daarmee rekenen we een f-tekst in een when-regel uit
+     * (hoofdstuk 135). Een naam zonder vaste beginwaarde staat er niet in. Alleen de namen van dit programma zelf (uit de
+     * nalezing): een gedeelde naam van een global script kan later veranderen of ontbreken (op een andere server, na een
+     * SD-kaart), en dan zou de when stilletjes op de oude naam blijven wachten.
      */
     private final java.util.Map<String, Object> topValues = new java.util.HashMap<>();
+    /** De namen bovenaan die tot nu toe gezien zijn (ook die zonder vaste beginwaarde), voor de foutmeldingen. */
+    private final java.util.Set<String> declaredAbove = new java.util.HashSet<>();
+    /** Alle namen bovenaan in deze code, ook die verder naar onder staan (eerst opgezocht), voor de foutmeldingen. */
+    private final java.util.Set<String> topNames = new java.util.HashSet<>();
 
     private ScriptParser(String source, ProgramKind kind, Library library) {
         this.kind = kind;
@@ -76,6 +82,9 @@ public final class ScriptParser {
                     continue;
                 }
                 lines.add(new Line(i + 1, indent, tokens));
+                if (indent == 0 && tokens.getFirst().type() == Lexer.Type.NAME && (tokens.get(1).is("=") || tokens.get(1).is(":"))) {
+                    topNames.add(tokens.getFirst().text()); // count = 0 of count: int = 0 helemaal links
+                }
                 if (indent == 0 && tokens.getFirst().is("def") && tokens.get(1).type() == Lexer.Type.NAME) {
                     functionNames.add(tokens.get(1).text());
                 }
@@ -134,9 +143,6 @@ public final class ScriptParser {
 
     private Script script() {
         List<Script.Top> items = new ArrayList<>();
-        for (Library.Shared shared : library.shared().values()) {
-            remember(shared.declaration());
-        }
         while (index < lines.size()) {
             Line line = lines.get(index);
             if (line.indent() != 0) {
@@ -158,7 +164,8 @@ public final class ScriptParser {
                 String[] parts = assignment(line);
                 Script.Global declaration = new Script.Global(parts[0], parts[1], parts[2], line.number());
                 items.add(declaration);
-                remember(declaration);
+                rememberTop(topValues, declaration);
+                declaredAbove.add(declaration.name());
                 continue;
             }
             if (!first.is("when")) {
@@ -196,6 +203,10 @@ public final class ScriptParser {
                 throw new LogicException(line.number(), ScriptChecker.wrongKind(ScriptChecker.triggerWord(trigger), kind, trigger::allowedIn));
             }
             expectColon(line, call.end());
+            // Een berekende naam (hoofdstuk 135): de code ervan gaat mee in de blokjes, zodat hij na de blokjes terugkomt en
+            // bij elke Save opnieuw uitgerekend wordt.
+            String triggerExpr = trigger.textArg() != Op.Arg.NONE && !call.args().isEmpty()
+                    && !(call.args().getFirst() instanceof Expr.Str) ? Expr.print(call.args().getFirst()) : "";
             call = fixedTriggerName(line, trigger, call);
             Values values = values(line, trigger, call);
             check(line, trigger, values);
@@ -207,23 +218,28 @@ public final class ScriptParser {
             index++;
             List<Script.Stmt> body = block(line, trigger);
             items.add(new Script.Handler(trigger, values.text() == null ? "" : values.text(),
-                    values.number() == null ? 0 : values.number(), body, line.number()));
+                    values.number() == null ? 0 : values.number(), body, line.number(), triggerExpr));
         }
         return new Script(items, global);
     }
 
-    /** Onthoudt de beginwaarde van een naam bovenaan (als die vast is), voor {@link #fixedTriggerName}. */
-    private void remember(Script.Global declaration) {
+    /**
+     * Onthoudt de beginwaarde van een naam bovenaan (als die vast is), voor een when-regel. Met zijn soort-woord net zoals
+     * bij het draaien (uit de nalezing): {@code n: int = 7 / 2} is 3, niet 3.5 (zie Interpreter.initGlobals).
+     */
+    static void rememberTop(java.util.Map<String, Object> top, Script.Global declaration) {
         try {
             Expr value = Expr.parseLenient(declaration.value(), false);
-            if (Expr.notFixed(value, topValues.keySet()) == null) {
-                topValues.put(declaration.name(), Expr.fixedValue(value, topValues));
+            if (Expr.notFixed(value, top.keySet()) == null) {
+                Object first = Expr.fixedValue(value, top);
+                VarType type = VarType.byWord(declaration.type());
+                top.put(declaration.name(), type == null ? first : type.coerce(first));
                 return;
             }
         } catch (LogicException e) {
             // Een fout in die regel zegt de rest van de controle al.
         }
-        topValues.remove(declaration.name());
+        top.remove(declaration.name());
     }
 
     /**
@@ -238,26 +254,103 @@ public final class ScriptParser {
         if (trigger.textArg() == Op.Arg.NONE || call.args().isEmpty() || call.args().getFirst() instanceof Expr.Str) {
             return call;
         }
-        Expr arg = call.args().getFirst();
-        String problem = Expr.notFixed(arg, topValues.keySet());
-        if (problem != null) {
-            if (arg instanceof Expr.Ref ref) {
-                throw new LogicException(line.number(), "Put names between quotes: " + trigger.code() + "(\"" + ref.name() + "\")");
-            }
-            if (problem.matches("[A-Za-z_][A-Za-z0-9_]*")) {
-                throw new LogicException(line.number(), problem + " has no value at the top of your program. A when line can"
-                        + " only use names from the top (with their starting value), like " + problem + " = 1 above it");
-            }
-            throw new LogicException(line.number(), problem + " cannot be in a when line: it only has a value once the when has"
-                    + " started. Use names from the top of your program, like room = \"Lab\" and then " + trigger.code()
-                    + "(f\"{room} door\")");
-        }
-        if (!(Expr.fixedValue(arg, topValues) instanceof String name)) {
-            throw new LogicException(line.number(), trigger.code() + " needs a name (text), like " + trigger.code() + "(\"Lab door\")");
+        String name;
+        try {
+            name = triggerName(trigger, call.args().getFirst(), topValues, declaredAbove, topNames, library.shared().keySet(), kind);
+        } catch (LogicException e) {
+            throw e.atLine(line.number());
         }
         List<Expr> args = new ArrayList<>(call.args());
         args.set(0, new Expr.Str(name));
         return new Call(call.name(), List.copyOf(args), call.end());
+    }
+
+    /**
+     * Rekent de berekende naam van een when-regel uit (zie {@link #fixedTriggerName}), of zegt waarom het niet kan.
+     * {@code top}: de beginwaarden van de namen erboven; {@code declaredAbove}: de namen erboven (ook zonder vaste
+     * waarde); {@code topNames}: alle namen bovenaan, ook verder naar onder; {@code sharedNames}: de gedeelde namen van de
+     * global scripts (die mogen hier niet, maar dan zeggen we dat ook).
+     */
+    static String triggerName(Op trigger, Expr arg, java.util.Map<String, Object> top, java.util.Set<String> declaredAbove,
+                              java.util.Set<String> topNames, java.util.Set<String> sharedNames, @Nullable ProgramKind kind) {
+        String problem = Expr.notFixed(arg, top.keySet());
+        if (problem != null) {
+            throw new LogicException(triggerProblem(trigger, arg, problem, declaredAbove, topNames, sharedNames));
+        }
+        // Dezelfde soorten als overal (uit de nalezing): nr = "3" en dan f"Gate {nr - 1}" zegt hier ook "You can only
+        // subtract numbers", in plaats van stilletjes "Gate -1".
+        java.util.Map<String, Expr.Type> scope = new java.util.HashMap<>();
+        top.forEach((name, value) -> scope.put(name, value instanceof Double ? Expr.Type.NUMBER
+                : value instanceof Boolean ? Expr.Type.BOOL : Expr.Type.TEXT));
+        Expr strict = Expr.parseValue(Expr.print(arg), trigger, scope, kind);
+        if (!(Expr.fixedValue(strict, top) instanceof String name)) {
+            throw new LogicException(trigger.code() + " needs a name (text), like " + trigger.code() + "(\"Lab door\")");
+        }
+        return name;
+    }
+
+    /** Waarom een when-regel deze naam (of dit gegeven) niet kan gebruiken, met wat je wel kunt doen. */
+    private static String triggerProblem(Op trigger, Expr arg, String problem, java.util.Set<String> declaredAbove,
+                                         java.util.Set<String> topNames, java.util.Set<String> sharedNames) {
+        boolean name = problem.matches("[A-Za-z_][A-Za-z0-9_]*") && Expr.Variable.byName(problem) == null;
+        if (!name) {
+            // card.name, code, trainee, is_night, is_on(...): die bestaan pas als de when begonnen is.
+            return problem + " cannot be in a when line: it only has a value once the when has started. Use names from the"
+                    + " top of your program, like room = \"Lab\" and then " + trigger.code() + "(f\"{room} door\")";
+        }
+        if (declaredAbove.contains(problem)) {
+            return "The starting value of " + problem + " is only known when the program runs, so a when line cannot use it:"
+                    + " give " + problem + " a fixed value at the top, like " + problem + " = \"Lab\"";
+        }
+        if (topNames.contains(problem)) {
+            return problem + " only gets its value further down: put " + problem + " = ... above this when line";
+        }
+        if (sharedNames.contains(problem)) {
+            return problem + " is a shared name of a global script: a when line can only use names from the top of this"
+                    + " program (they travel with it), like " + problem + " = \"Lab\" above it";
+        }
+        if (arg instanceof Expr.Ref) {
+            return "Put names between quotes: " + trigger.code() + "(\"" + problem + "\")";
+        }
+        return problem + " has no value at the top of your program. A when line can only use names from the top (with their"
+                + " starting value), like " + problem + " = 1 above it";
+    }
+
+    /**
+     * Rekent de namen van when-regels met een berekende naam opnieuw uit, met de namen bovenaan in deze blokjes (hoofdstuk
+     * 135, uit de nalezing). Veranderde je {@code room = "Vault"} in de blokjes, dan wacht {@code when keycard(f"{room}
+     * door"):} na Save op "Vault door", net als in de code. Geeft per blokje dat niet uit te rekenen is de fout (dan blijft
+     * zijn naam zoals hij was); {@code apply}: de nieuwe namen ook echt in de blokjes zetten.
+     */
+    public static java.util.Map<Integer, String> refreshTriggerNames(LogicGraph graph, @Nullable ProgramKind kind, boolean apply) {
+        java.util.Map<Integer, String> problems = new java.util.LinkedHashMap<>();
+        Script script = GraphConverter.toScript(graph);
+        java.util.Set<String> names = new java.util.HashSet<>();
+        for (Script.Top item : script.items()) {
+            if (item instanceof Script.Global global) {
+                names.add(global.name());
+            }
+        }
+        java.util.Map<String, Object> top = new java.util.HashMap<>();
+        java.util.Set<String> above = new java.util.HashSet<>();
+        for (Script.Top item : script.items()) {
+            if (item instanceof Script.Global global) {
+                rememberTop(top, global);
+                above.add(global.name());
+            } else if (item instanceof Script.Handler handler && !handler.textExpr().isBlank()) {
+                try {
+                    String name = triggerName(handler.trigger(), Expr.parseLenient(handler.textExpr(), false), top, above,
+                            names, java.util.Set.of(), kind);
+                    LogicGraph.Node node = graph.node(handler.ref());
+                    if (apply && node != null) {
+                        node.text = name;
+                    }
+                } catch (LogicException e) {
+                    problems.put(handler.ref(), e.getMessage());
+                }
+            }
+        }
+        return problems;
     }
 
     // ================================================================ def naam(parameters):

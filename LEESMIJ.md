@@ -1363,9 +1363,13 @@ when keycard("Lab door"):
 
   Verander je bovenaan `room = "Vault"`, dan werkt alles voor de kluis. Een when moet al weten op welk
   apparaat hij wacht voor er iets draait, dus hij neemt de **beginwaarde** van die namen (zoals ze bovenaan
-  staan): krijgt `room` tijdens het draaien een andere waarde, dan blijft hij op "Lab door" wachten. Een naam
-  die pas in de when bestaat (`i` van een lus, `card.name`) kan in de when-regel zelf niet; dat zegt Check
-  ook. In de blokjes staat de uitgerekende naam ("Lab door").
+  staan, en een `int` afgerond zoals altijd: `n: int = 7 / 2` geeft "Gate 3"): krijgt `room` tijdens het
+  draaien een andere waarde, dan blijft hij op "Lab door" wachten. Een naam die pas in de when bestaat (`i`
+  van een lus, `card.name`, `code`) kan in de when-regel zelf niet, en ook een gedeelde naam van een global
+  script niet (die kan later veranderen); dat zegt Check. Bovenaan mag een gedeelde naam wel:
+  `door = f"{building} lab door"`. In de blokjes staat de uitgerekende naam ("Lab door"), maar de f-tekst gaat
+  mee: hij komt terug als `$"{room} door"`, en verander je `room` in de blokjes, dan rekent Save de naam
+  opnieuw uit. Typ je in de blokjes zelf een andere naam in het when-blokje, dan is het weer een vaste naam.
 - **Namen** (variabelen): `count = 0` helemaal links is een naam voor het hele programma; hij houdt
   zijn waarde tussen de runs (tot je het programma opnieuw bewaart). `count = count + 1` in een when of
   def geeft hem een nieuwe waarde. Een naam die je pas in een when maakt, bestaat alleen in die run; een
@@ -1415,7 +1419,7 @@ when keycard("Lab door"):
   `pulse(door, secs)`. Zo typ je minder: één def die accepteert, logt en de deur opent, voor elke deur.
   Check kijkt na of je er genoeg waarden bij zet, en van de goede soort. Een apparaat mag daardoor
   overal een naam of berekening zijn: `on(door)`, `on("Lamp " + i)`, en sinds 16 november ook `is_on(door)`
-  (in een `when`-regel alleen met namen van bovenaan, zie "Tekst met namen erin"); met iets dat geen waarde heeft
+  (in een `when`-regel alleen met namen van bovenaan dit programma, zie "Tekst met namen erin"); met iets dat geen waarde heeft
   (`on(Lamp)`, `is_on(Lamp)`) zegt Check dat je het tussen aanhalingstekens moet zetten.
   ```
   def open_door(string door):

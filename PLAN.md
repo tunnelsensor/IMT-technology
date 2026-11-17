@@ -10455,8 +10455,9 @@ Jouw wens: "zorg dat een f string bij alles werkt niet enkel bij for loop".
       when-regel zelf wilde het niet (`when turned_on(f"gate {n}"):` gaf "needs a name between quotes"); en
       `return f"..."` kan niet omdat een def in deze taal geen waarde teruggeeft (dat heeft niets met f-teksten te maken).
 - [x] **Nu ook in een when-regel**, met de namen van bovenaan je programma: `room = "Lab"` en dan
-      `when keycard(f"{room} door"):`. Ook `when turned_on("gate " + n):`, `when keycard(door):` met `door = "Vault"`
-      bovenaan, en de gedeelde namen van je global scripts. De parser rekent de naam meteen uit
+      `when keycard(f"{room} door"):`. Ook `when turned_on("gate " + n):` en `when keycard(door):` met `door = "Vault"`
+      bovenaan (de gedeelde namen van je global scripts eerst ook, maar dat haalde de nalezing eruit: zie onder). De
+      parser rekent de naam meteen uit
       (`ScriptParser.fixedTriggerName`, met `Expr.notFixed` en `Expr.fixedValue`): een when moet al weten op welk
       apparaat (of welke opdracht of training) hij wacht voor er iets draait. Daarna is het een gewone vaste naam, dus
       de rest van de mod (lezers, Devices, de telling op je datacenter, de blokjes) merkt geen verschil.
@@ -10483,9 +10484,62 @@ Jouw wens: "zorg dat een f string bij alles werkt niet enkel bij for loop".
 - [x] **Volledige ronde**: alle 663 tests groen (na het rebasen op de nalezing van hoofdstuk 132, die er 2 bij zette).
       De twee rondes daarvoor (661 tests) waren elk 660 groen: telkens een andere bekende wiebeltest
       (`raid_starts_outside_a_base`, daarna `raven_soldier_shoots`), die geen scripts gebruiken. Geen nieuwe test.
+- [x] **Nalezing** (17 november): drie lezers (de taal zelf, waar een programma nog meer gelezen wordt, uitleg en tests),
+      elk met een controleur die de vondsten probeerde te weerleggen: 17 vondsten, 15 echt, samen zes dingen, alle
+      opgelost:
+  - [x] **Een `int` bovenaan wordt afgerond, zoals bij het draaien.** `n: int = 7 / 2` en dan `when keycard(f"Gate {n}"):`
+        wachtte op "Gate 3.5", terwijl `n` bij het draaien 3 is (Interpreter.initGlobals rondt af). Nu rondt de
+        when-regel net zo af: "Gate 3" (`ScriptParser.rememberTop` met `VarType.coerce`).
+  - [x] **Geen gedeelde namen van global scripts meer in een when-regel.** Die werden bij Save in de blokjes vastgezet. Veranderde
+        je daarna de global script (of ging het programma met een SD-kaart naar een server met een andere waarde, of
+        zonder die naam), dan bleef de when op de oude naam wachten, en toonde de app Logic de code uit de blokjes
+        (zonder je f-tekst en je commentaar). Een when-regel neemt nu alleen namen van bovenaan dit programma (die
+        reizen mee); bij een gedeelde naam zegt Check "wing is a shared name of a global script: a when line can only
+        use names from the top of this program (they travel with it)".
+  - [x] **Bovenaan mag een gedeelde naam wel, en nu klopt hij ook bij het draaien.** `door = f"{building} lab door"` met
+        `building = "North"` in een global script: Check vond dat al goed, maar bij het draaien werd het "0 lab door"
+        (de beginwaarden van bovenaan kenden de gedeelde namen niet). Nu vraagt Interpreter.initGlobals ze aan de kern
+        (LogicRunner) of aan de kern van de robot (BotBrain). Dat zat er al sinds hoofdstuk 43 in.
+  - [x] **De f-tekst van een when-regel gaat mee in de blokjes.** Wisselde je naar de blokjes en terug, of bewaarde je in
+        de blokjes, dan werd `when keycard(f"{room} door"):` een vaste naam, terwijl `pulse(f"{room} lock", 3)` eronder
+        wel `room` bleef volgen: na `room = "Vault"` wachtte hij op de Lab-lezer en opende hij het Vault-slot. Nu
+        bewaart het when-blokje de code (`textExpr`, ook in `Script.Handler`): uit de blokjes komt
+        `when keycard($"{room} door"):` terug, en elke Save rekent de naam opnieuw uit met de namen bovenaan in de
+        blokjes (`ScriptParser.refreshTriggerNames`, in SecurityOs.saveProgram); kan dat niet meer (de naam bovenaan is
+        weg), dan zegt Check het, ook in de blokjes. Typ je in het when-blokje zelf een naam, dan is het weer een vaste
+        naam. Op het when-blokje staat de code (`keycard($"{room} door")`), zoals bij een berekend apparaat.
+  - [x] **Dezelfde soorten als overal.** `nr = "3"` en dan `when keycard(f"Gate {nr - 1}"):` gaf stilletjes "Gate -1";
+        nu zegt Check "You can only subtract numbers", zoals in de rest van je code (de when-regel wordt met de soorten
+        van de namen bovenaan nog eens streng gelezen).
+  - [x] **Betere meldingen.** Een gegeven zonder punt (`code`, `trainee`, `is_night`) kreeg "has no value at the top ...
+        like code = 1 above it" (en dat mag niet): nu "cannot be in a when line". Een naam die verder naar onder staat,
+        kreeg "Put names between quotes" (bij `when keycard(door):`) of "has no value at the top": nu "door only gets its
+        value further down: put door = ... above this when line". Een naam bovenaan zonder vaste beginwaarde zegt dat
+        ook zo.
+  - [x] **De Help-regel eindigt met een Enter**, zoals de andere: klikte je hem midden in je code, dan plakte de rest van
+        je regel achter `accept()`.
+  - [x] **Wat je al bewaarde, blijft je eigen code tonen.** Een diagram met een f-tekst in een when-regel dat je met
+        hoofdstuk 135 al bewaarde, heeft een when-blokje zonder de code van zijn naam. De app Logic vergelijkt je code
+        en de blokjes nu met de uitgerekende when-namen (`ScriptPrinter.printWithNames` in `LogicApp.codeFor`), zodat
+        je na het openen nog je eigen code (met je f-tekst en commentaar) ziet; bij de volgende Save krijgt het blokje
+        de code erbij.
+  - [x] **Tests** (in `logic_text_with_names` en `logic_shared_names_run`, geen nieuwe test): `n: int = 7 / 2` geeft
+        "Gate 3"; een robot (`when ordered(f"{cmd}"):`) en een RC program (`mode = "fetch"`, `when ordered(f"{mode}"):`);
+        de vier nieuwe meldingen; de f-tekst komt terug uit de blokjes; `room = "Vault"` in de blokjes en dan opnieuw
+        uitrekenen geeft "Vault door"; zonder `room` bovenaan zegt Check het in de blokjes; een diagram zonder de code van
+        zijn when-naam past nog bij de code met de f-tekst; en in de wereld logt
+        `door = f"{building} lab door"` met een gedeelde naam "North lab door".
+  - Afgewezen: een programma met tientallen namen die elk de vorige verdubbelen kan heel veel geheugen vragen (dat kon
+    bij het draaien al, en het vraagt opzettelijk vreemde code); twee testgevallen die ook zonder dit hoofdstuk slaagden
+    (bewust: ze kijken na dat het oude gedrag blijft).
+- [x] **Volledige ronde na de nalezing**: drie rondes van 663 tests. De eerste (zonder de laatste kleine wijziging, het vergelijken van je bewaarde code)
+      was helemaal groen; de twee met alles erin waren elk 662 groen: een keer `guard_searches_where_he_lost_you` (een
+      bewaker die een speler zoekt; die gebruikt geen scripts en slaagde de keer erna), een keer de bekende wiebeltest
+      `raven_soldier_shoots`. Alle Logic-tests waren elke keer groen. Geen nieuwe test: het blijven 663.
 - **Geen nieuwe versie**: een uitbreiding van wat er al was (2.23, het laatste getal telt vanzelf op). Het netwerkprotocol
-  is niet veranderd.
-- **Nog niet in het spel bekeken**: de nieuwe Help-regels (zie "Nog nooit in het spel bekeken").
+  is niet veranderd (het when-blokje had zijn code-vak al).
+- **Nog niet in het spel bekeken**: de nieuwe Help-regels en het when-blokje met zijn code (zie "Nog nooit in het spel
+  bekeken").
 
 ## Nog nooit in het spel bekeken
 
@@ -10495,7 +10549,8 @@ eruitziet. Dit is gebouwd maar door mij nooit gezien. Laat het weten als iets er
 - [ ] **Een f-tekst in een when-regel (hoofdstuk 135)**: met tests gecontroleerd, niet in het spel gezien. Probeer: (1) zet
       bovenaan `room = "Lab"` en daaronder `when keycard(f"{room} door"):` met `accept()`: werkt je lezer "Lab door"? (2)
       Help in een serverdiagram: staan `say(f"This is test {count}")` en `when keycard(f"{room}"):` er helemaal, en past
-      hun uitleg op twee regels?
+      hun uitleg op twee regels? (3) Wissel naar de blokjes: staat op het when-blokje `keycard($"{room} door")`, en geeft
+      Save na `room = "Vault"` in het room-blokje een werkende "Vault door"?
 - [ ] **Lag en de kick tijdens een raid (hoofdstuk 134)**: met tests gecontroleerd, niet met een echte server en een
       echt spel. Probeer op je server met de nieuwe jar: (1) staat in het logboek van je spel bij het joinen
       "[config] ... numbers from imttech.toml loaded" (en niet meer "Cannot call getFullPath()")? (2) Vlieg naar een plek

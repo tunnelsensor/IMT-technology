@@ -187,7 +187,7 @@ public final class LogicRunner {
     /** Een nieuwe run van dit programma, vanaf blokje {@code first}, met zijn namen van links en de gedeelde namen. */
     private static Run newRun(SecurityCoreBlockEntity core, Runtime runtime, LogicProgram program, int first, Context context,
                               long startAt) {
-        return new Run(program, merged(core, runtime, program), first, context, startAt, globals(runtime, program),
+        return new Run(program, merged(core, runtime, program), first, context, startAt, globals(core, runtime, program),
                 core.logic().sharedValues());
     }
 
@@ -248,10 +248,28 @@ public final class LogicRunner {
      * De namen van links van dit programma. Bij de eerste run (of na opnieuw bewaren: dan is het een
      * ander LogicProgram) rekenen we ze uit; daarna houden ze hun waarde tussen de runs.
      */
-    private static Map<String, Object> globals(Runtime runtime, LogicProgram program) {
+    private static Map<String, Object> globals(SecurityCoreBlockEntity core, Runtime runtime, LogicProgram program) {
         Globals globals = runtime.globals.get(program.name());
         if (globals == null || globals.program() != program) {
-            globals = new Globals(program, Interpreter.initGlobals(program.graph(), NO_FACTS));
+            // Met de gedeelde namen van de global scripts (hoofdstuk 135, nalezing): door = f"{building} lab door" bovenaan.
+            Map<String, Object> shared = core.logic().sharedValues();
+            Expr.Facts top = new Expr.Facts() {
+                @Override
+                public Object value(String variable) {
+                    return NO_FACTS.value(variable);
+                }
+
+                @Override
+                public boolean isOn(String device) {
+                    return false;
+                }
+
+                @Override
+                public @Nullable Object variable(String name) {
+                    return shared.get(name);
+                }
+            };
+            globals = new Globals(program, Interpreter.initGlobals(program.graph(), top));
             runtime.globals.put(program.name(), globals);
         }
         return globals.values();
