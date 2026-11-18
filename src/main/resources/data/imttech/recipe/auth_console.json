@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    },
+    "C": {
+      "item": "imttech:computer_chip"
+    },
+    "G": {
+      "tag": "c:glass_panes"
+    },
+    "S": {
+      "item": "minecraft:stone"
+    }
+  },
+  "pattern": [
+    "IGI",
+    "RCR",
+    "ISI"
+  ],
+  "result": {
+    "id": "imttech:auth_console",
+    "count": 1
+  }
+}

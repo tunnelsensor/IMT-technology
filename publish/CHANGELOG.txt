@@ -1,0 +1,60 @@
+I.M.T TECHNOLOGY - CHANGELOG
+============================
+
+Major updates only. Oldest first.
+
+VERSIONS 2.0 TO 2.9 - THE FIREARMS UPDATE
+-----------------------------------------
+- Firearms built at the Gunsmith Table from parts: MP5, AK-47, AWP and Remington 870, next to the Glock 19.
+- Attachments: Red Dot Sight, Sniper Scope, suppressors, grips, bipod and extended magazines.
+- Raven soldiers carry the new guns.
+
+
+VERSION 2.10
+------------
+- The glasses need your own datacenter.
+- Satellite strikes no longer work in the Nether or End.
+
+
+VERSION 2.11
+------------
+- Body armor: a vest with front and back plates, 3 magazines and text on its back.
+
+
+VERSION 2.12
+------------
+- RC Car: a programmable car that mines and builds, controlled with an RC Controller.
+
+
+VERSION 2.13
+------------
+- Armor Workbench: make and repair vests and plates, dye vests and set their back text.
+
+
+VERSION 2.14
+------------
+- Router: links up to 10 network devices wirelessly within 32 blocks.
+
+
+VERSION 2.15
+------------
+- Storage system: order items from chests with a programmed RC Car, using the Storage Interface and Chest Sensor.
+- Charging Pad for RC Cars.
+- Security fix: a storage interface only uses chest sensors you own or that sit in a base you trust.
+
+
+VERSION 2.16
+------------
+- RC Robot Arm: your RC Car can mine above, below and up to 2 blocks high.
+- Security fix: keycard readers no longer know who holds the card.
+
+
+VERSION 2.17
+------------
+- Autoscan: pings the opening of your room, and can add a nearby cave to your zone.
+- Zones reach up to 500 blocks from their core, and security cores can stand close together.
+
+
+VERSION 2.18
+------------
+- RC programs: write the code for your RC Car on your server in the Logic app, and load it onto the car.
